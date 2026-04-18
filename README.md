@@ -158,7 +158,7 @@ There are two supported ways.
 
 I maintain a companion fork of Freqtrade itself at:
 
-**<https://github.com/titouannwtt/freqtrade-fork>** *(currently private — will be made public soon)*
+**<https://github.com/titouannwtt/freqtrade-fork>**
 
 In that fork, `freqtrade install-ui` is already redirected to fetch this UI instead of the upstream one, so you don't have to do anything special:
 
@@ -379,7 +379,7 @@ Deux méthodes.
 
 Je maintiens un fork complémentaire de Freqtrade lui-même :
 
-**<https://github.com/titouannwtt/freqtrade-fork>** *(en privé pour l'instant — sera rendu public prochainement)*
+**<https://github.com/titouannwtt/freqtrade-fork>**
 
 Dans ce fork, `freqtrade install-ui` pointe déjà sur cette UI au lieu de l'upstream. Rien à faire de spécial :
 
