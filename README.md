@@ -28,6 +28,8 @@ This fork is my answer to that. It rebuilds the dashboard around:
 
 All of this is built on top of the original FreqUI codebase (Vue 3 + PrimeVue + ECharts + Tailwind), and stays compatible with any Freqtrade API.
 
+> **Work in progress.** This fork is functional and I use it daily in production, but it was primarily built for my own needs. Some features may have bugs or behave unexpectedly on setups that differ from mine. I'm actively fixing and adding features. Pull requests, bug reports, feedback, and feature suggestions are very welcome — feel free to open an issue or a PR.
+
 ### What's new vs. upstream?
 
 Concrete inventory (148 files changed, +38 413 / -1 676 lines vs. `freqtrade/frequi`). Highlights:
@@ -227,6 +229,14 @@ I publish French-language tutorials on algorithmic trading with Freqtrade here:
 
 Strategy design, hyperopt methodology, live feedback, fork rationale, etc.
 
+### Disclaimer
+
+This software is provided for **educational and informational purposes only**. It does not constitute investment advice, financial advice, trading advice, or any other sort of advice. The author is **not a licensed financial advisor** (not a CIF — Conseiller en Investissements Financiers — under French law, nor any equivalent certification in any jurisdiction).
+
+- Past performance displayed in the UI is not indicative of future results.
+- You are solely responsible for your own trading decisions and their consequences.
+- **THE AUTHORS ASSUME NO LIABILITY FOR YOUR TRADING RESULTS.**
+
 ### License
 
 Same license as upstream FreqUI (GPL-3.0). See `LICENSE`.
@@ -248,6 +258,8 @@ Ce fork est ma réponse à ce problème. Il reconstruit le dashboard autour de :
 - **i18n complète** — anglais, français, allemand, espagnol, italien, portugais (plus de 1 200 clés).
 
 Le tout repose sur la base de FreqUI (Vue 3 + PrimeVue + ECharts + Tailwind) et reste compatible avec n'importe quelle API Freqtrade.
+
+> **Work in progress.** Ce fork est fonctionnel et je l'utilise quotidiennement en production, mais il a été conçu avant tout pour mes propres besoins. Certaines features peuvent avoir des bugs ou se comporter de façon inattendue sur des setups différents du mien. J'ajoute et corrige activement des features. Les pull requests, rapports de bugs, retours et suggestions de features sont très bienvenus — n'hésitez pas à ouvrir une issue ou une PR.
 
 ### Ce que ce fork apporte vs. upstream
 
@@ -447,6 +459,14 @@ Je publie mes tutoriels sur le trading algorithmique avec Freqtrade ici :
 **<https://buymeacoffee.com/freqtrade_france/posts>**
 
 Design de stratégie, méthodo hyperopt, retours d'expérience live, choix de fork, etc.
+
+### Disclaimer
+
+Ce logiciel est fourni à des fins **éducatives et informatives uniquement**. Il ne constitue en aucun cas un conseil en investissement, un conseil financier, un conseil de trading, ni aucun autre type de conseil. L'auteur **n'est pas Conseiller en Investissements Financiers (CIF)** au sens de l'article L. 541-1 du Code monétaire et financier, ni titulaire d'aucune certification équivalente dans quelque juridiction que ce soit.
+
+- Les performances passées affichées dans l'interface ne préjugent pas des performances futures.
+- Vous êtes seul responsable de vos décisions de trading et de leurs conséquences.
+- **LES AUTEURS N'ASSUMENT AUCUNE RESPONSABILITÉ POUR VOS RÉSULTATS DE TRADING.**
 
 ### Licence
 
