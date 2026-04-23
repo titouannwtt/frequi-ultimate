@@ -1744,19 +1744,43 @@ const groupIcons = [
   // Directional / market
   '🎢', '🏆', '🥇', '🥈', '🥉', '💪', '🧠', '👑',
 ];
-const iconPickerGroupId = ref<string | null>(null);
+const iconPickerTarget = ref<{ type: 'group' | 'bot'; id: string } | null>(null);
 const iconPickerPopover = ref<InstanceType<typeof Popover>>();
 
 function showIconPicker(event: MouseEvent, groupId: string) {
-  iconPickerGroupId.value = groupId;
+  iconPickerTarget.value = { type: 'group', id: groupId };
   iconPickerPopover.value?.toggle(event);
 }
 
-function setGroupIcon(groupId: string, icon: string) {
-  const group = botGroups.value.find(g => g.id === groupId);
-  if (group) group.icon = icon;
+function showBotIconPicker(event: MouseEvent, botId: string) {
+  iconPickerTarget.value = { type: 'bot', id: botId };
+  iconPickerPopover.value?.toggle(event);
+}
+
+function setIcon(icon: string) {
+  const target = iconPickerTarget.value;
+  if (!target) return;
+  if (target.type === 'group') {
+    const group = botGroups.value.find(g => g.id === target.id);
+    if (group) group.icon = icon;
+  } else {
+    botStore.updateBot(target.id, { botIcon: icon });
+  }
   iconPickerPopover.value?.hide();
-  iconPickerGroupId.value = null;
+  iconPickerTarget.value = null;
+}
+
+function clearIcon() {
+  const target = iconPickerTarget.value;
+  if (!target) return;
+  if (target.type === 'bot') {
+    botStore.updateBot(target.id, { botIcon: '' });
+  } else {
+    const group = botGroups.value.find(g => g.id === target.id);
+    if (group) group.icon = '📁';
+  }
+  iconPickerPopover.value?.hide();
+  iconPickerTarget.value = null;
 }
 
 // --- Inline group creation from header ---
@@ -2108,6 +2132,7 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
     val.push({
       botId: k,
       botName: thisBotStore.uiBotName || thisBotStore.botId,
+      botIcon: thisBotStore.uiBotIcon || '',
       trades: `${botStore.allOpenTradeCount[k]} / ${
         (botStore.allBotState[k]?.max_open_trades ?? 0) > 0
           ? botStore.allBotState[k]?.max_open_trades
@@ -3063,8 +3088,16 @@ const correlatedPairs = computed(() => {
           v-for="icon in groupIcons"
           :key="icon"
           class="text-center text-lg cursor-pointer p-1 rounded hover:bg-surface-200 dark:hover:bg-surface-600"
-          @click="iconPickerGroupId && setGroupIcon(iconPickerGroupId, icon)"
+          @click="setIcon(icon)"
         >{{ icon }}</span>
+      </div>
+      <div class="mt-2 pt-2 border-t border-surface-200 dark:border-surface-600 text-center">
+        <button
+          class="text-xs px-2 py-1 rounded bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 cursor-pointer"
+          @click="clearIcon()"
+        >
+          {{ iconPickerTarget?.type === 'bot' ? t('botComparison.clearIcon') : t('botComparison.resetIcon') }}
+        </button>
       </div>
     </Popover>
 
@@ -3528,6 +3561,18 @@ const correlatedPairs = computed(() => {
                     class="absolute -top-1 -right-2 text-[0.5rem] bg-red-500 text-white rounded-full px-1 leading-tight"
                   >{{ getBotAlertCount(data.botId) }}</span>
                 </span>
+                <span
+                  v-if="data.botId && (data as ComparisonTableItems).botIcon"
+                  class="text-sm cursor-pointer hover:opacity-70 mr-0.5"
+                  :title="t('botComparison.changeIcon')"
+                  @click.stop="showBotIconPicker($event, data.botId)"
+                >{{ (data as ComparisonTableItems).botIcon }}</span>
+                <i-mdi-robot
+                  v-else-if="data.botId"
+                  class="text-sm opacity-30 cursor-pointer hover:opacity-100 row-hover-visible mr-0.5"
+                  :title="t('botComparison.changeIcon')"
+                  @click.stop="data.botId && showBotIconPicker($event, data.botId)"
+                />
                 <span
                   v-if="data.botId"
                   @mouseenter="startHoverInfo($event, data.botId)"

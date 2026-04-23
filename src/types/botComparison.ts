@@ -1,6 +1,7 @@
 export interface ComparisonTableItems {
   botId: string | undefined;
   botName: string;
+  botIcon?: string;
   trades?: string;
   profitClosed: number;
   profitClosedRatio?: number;

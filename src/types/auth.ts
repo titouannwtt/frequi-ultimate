@@ -17,6 +17,7 @@ export interface AuthResponse {
 /** Stored Authentication */
 export interface AuthStorage {
   botName: string;
+  botIcon?: string;
   apiUrl: string;
   username?: string;
   refreshToken: string;
@@ -36,6 +37,7 @@ export interface AuthStorageMulti {
 
 export interface BotDescriptor {
   botName: string;
+  botIcon?: string;
   botId: string;
   botUrl: string;
   sortId: number;

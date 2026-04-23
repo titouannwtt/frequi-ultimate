@@ -312,6 +312,8 @@ export default {
     removeFromGroup: 'Rimuovi dal gruppo',
     createGroupInline: 'Crea un gruppo',
     changeIcon: 'Cambia icona',
+    clearIcon: 'Rimuovi icona',
+    resetIcon: 'Reimposta icona',
     editGroup: 'Modifica gruppo',
     alertsTitle: 'Impostazioni avvisi',
     groupsTitle: 'Gruppi bot',

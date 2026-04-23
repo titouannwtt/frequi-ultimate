@@ -30,6 +30,7 @@ export const availableBots = computed<BotDescriptors>(() => {
       response[k] = {
         botId: k,
         botName: bot.botName,
+        botIcon: bot.botIcon,
         botUrl: bot.apiUrl,
         sortId: bot.sortId ?? idx,
       };
@@ -52,6 +53,7 @@ export function useLoginInfo(botId: string) {
   });
   const accessToken = computed(() => currentInfo.value.accessToken);
   const botName = computed(() => currentInfo.value.botName);
+  const botIcon = computed(() => currentInfo.value.botIcon);
 
   const baseUrl = computed<string>(() => {
     const baseURL = currentInfo.value.apiUrl;
@@ -172,6 +174,7 @@ export function useLoginInfo(botId: string) {
     autoRefresh,
     accessToken,
     botName,
+    botIcon,
     logout,
     login,
     refreshToken,

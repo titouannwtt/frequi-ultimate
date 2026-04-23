@@ -318,6 +318,8 @@ export default {
     removeFromGroup: 'Remove from group',
     createGroupInline: 'Create a group',
     changeIcon: 'Change icon',
+    clearIcon: 'Remove icon',
+    resetIcon: 'Reset icon',
     editGroup: 'Edit group',
     alertsTitle: 'Alert Settings',
     groupsTitle: 'Bot Groups',

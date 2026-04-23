@@ -181,6 +181,7 @@ export function createBotSubStore(botId: string, botName: string) {
         return false;
       },
       uiBotName: (state) => loginInfo.botName.value || botName || state.botState?.bot_name || 'freqtrade',
+      uiBotIcon: () => loginInfo.botIcon.value || '',
       botName: (state) => state.botState?.bot_name || 'freqtrade',
       botId: () => botId,
       allTrades: (state) => [...state.openTrades, ...state.trades] as Trade[],
