@@ -229,6 +229,8 @@ I publish French-language tutorials on algorithmic trading with Freqtrade here:
 
 Strategy design, hyperopt methodology, live feedback, fork rationale, etc.
 
+> 📝 **Detailed presentation of this fork (in French):** [Mes forks Freqtrade et FreqUI sont publics — pourquoi les utiliser et comment s'y mettre](https://buymeacoffee.com/freqtrade_france/mes-forks-freqtrade-et-frequi-sont-publics-pourquoi-les-utiliser-et-comment-y)
+
 ### Disclaimer
 
 This software is provided for **educational and informational purposes only**. It does not constitute investment advice, financial advice, trading advice, or any other sort of advice. The author is **not a licensed financial advisor** (not a CIF — Conseiller en Investissements Financiers — under French law, nor any equivalent certification in any jurisdiction).
@@ -459,6 +461,8 @@ Je publie mes tutoriels sur le trading algorithmique avec Freqtrade ici :
 **<https://buymeacoffee.com/freqtrade_france/posts>**
 
 Design de stratégie, méthodo hyperopt, retours d'expérience live, choix de fork, etc.
+
+> 📝 **Présentation détaillée de ce fork :** [Mes forks Freqtrade et FreqUI sont publics — pourquoi les utiliser et comment s'y mettre](https://buymeacoffee.com/freqtrade_france/mes-forks-freqtrade-et-frequi-sont-publics-pourquoi-les-utiliser-et-comment-y)
 
 ### Disclaimer
 
