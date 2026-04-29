@@ -9,7 +9,7 @@ import { useAlertDetection } from '@/composables/useAlertDetection';
 import { trackMouse, fakeEventAtMouse, fakeEvent, delayedHide, cancelDelayedHide, cleanupAllTimeouts } from '@/composables/usePopoverHover';
 import { computePosition, flip, shift, offset, arrow as arrowMiddleware } from '@floating-ui/dom';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const botStore = useBotStore();
 const compStore = useBotComparisonStore();
 
@@ -102,6 +102,10 @@ function closeAllPopovers() {
   tagPickerBotId.value = null;
   alertHoverPopover.value?.hide();
   alertHoverBotId.value = null;
+  botMovePopover.value?.hide();
+  botMoveTargetId.value = null;
+  pairlistInfoPopover.value?.hide();
+  hoveredPairlistBotId.value = null;
 }
 
 // Popovers anchor to the hovered element (shows to the right with arrow)
@@ -332,6 +336,39 @@ function cancelCurrencyHover() {
 function cancelCurrencyHoverKeepPopover() {
   cancelDelayedHide();
   if (currencyHoverTimeout.value) { clearTimeout(currencyHoverTimeout.value); currencyHoverTimeout.value = null; }
+}
+
+// --- Pairlist info popover ---
+const hoveredPairlistBotId = ref<string | null>(null);
+const pairlistInfoPopover = ref<InstanceType<typeof Popover>>();
+const pairlistHoverTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+
+function startPairlistHover(event: MouseEvent, botId: string) {
+  trackMouse(event);
+  const target = event.currentTarget as HTMLElement;
+  cancelDelayedHide();
+  if (hoveredPairlistBotId.value && hoveredPairlistBotId.value !== botId) {
+    hoveredPairlistBotId.value = botId;
+    pairlistInfoPopover.value?.hide();
+    showAtTarget(pairlistInfoPopover.value, target);
+    return;
+  }
+  if (pairlistHoverTimeout.value) clearTimeout(pairlistHoverTimeout.value);
+  pairlistHoverTimeout.value = setTimeout(() => {
+    closeAllPopovers();
+    hoveredPairlistBotId.value = botId;
+    showAtTarget(pairlistInfoPopover.value, target);
+  }, 400);
+}
+
+function cancelPairlistHover() {
+  if (pairlistHoverTimeout.value) { clearTimeout(pairlistHoverTimeout.value); pairlistHoverTimeout.value = null; }
+  delayedHide(pairlistInfoPopover.value, () => { hoveredPairlistBotId.value = null; });
+}
+
+function cancelPairlistHoverKeepPopover() {
+  cancelDelayedHide();
+  if (pairlistHoverTimeout.value) { clearTimeout(pairlistHoverTimeout.value); pairlistHoverTimeout.value = null; }
 }
 
 // --- Open Profit popover ---
@@ -864,6 +901,7 @@ const allColumns: ColumnDefinition[] = [
   { id: 'stakeAmount', labelKey: 'botComparison.stakeAmount', icon: 'i-mdi-cash', default: false, removable: true },
   { id: 'port', labelKey: 'botComparison.port', icon: 'i-mdi-lan', default: false, removable: true },
   { id: 'strategy', labelKey: 'botComparison.strategy', icon: 'i-mdi-cog', default: false, removable: true },
+  { id: 'pairCount', labelKey: 'botComparison.pairCount', icon: 'i-mdi-format-list-numbered', default: false, removable: true },
   {
     id: 'stakeCurrency',
     labelKey: 'botComparison.stakeCurrencyLabel', icon: 'i-mdi-currency-usd',
@@ -1224,14 +1262,16 @@ const statusCounts = computed(() => {
   return { live, dry, offline };
 });
 
-function getBotStatus(botId: string): 'live' | 'dry' | 'offline' {
+function getBotStatus(botId: string): 'live' | 'dry' | 'offline' | 'starting' {
   const store = botStore.botStores[botId];
+  if (store?.isBotStarting) return 'starting';
   if (!store?.isBotOnline) return 'offline';
   return botStore.allBotState[botId]?.dry_run ? 'dry' : 'live';
 }
 
 function isBotVisibleByFilter(botId: string): boolean {
   const status = getBotStatus(botId);
+  if (status === 'starting') return true;
   if (!botFilters.value.status[status]) return false;
   const exchange = botStore.allBotState[botId]?.exchange?.toLowerCase() || '';
   if (exchange && botFilters.value.exchanges[exchange] === false) return false;
@@ -1356,7 +1396,7 @@ function exportCSV() {
       return visibleOrderedColumns.value.map((col) => {
         switch (col.id) {
           case 'botName': return item.botName;
-          case 'status': return item.isOnline ? 'Online' : 'Offline';
+          case 'status': return item.isStarting ? 'Starting' : item.isOnline ? 'Online' : 'Offline';
           case 'exchange': return item.exchange || '';
           case 'trades': return item.trades || '';
           case 'openProfit': return item.profitOpen?.toFixed(2) || '0';
@@ -1366,6 +1406,7 @@ function exportCSV() {
           case 'stakeAmount': return item.stakeAmount || '';
           case 'port': return item.port?.toString() || '';
           case 'strategy': return item.strategy || '';
+          case 'pairCount': return item.pairCount?.toString() || '0';
           case 'stakeCurrency': return item.stakeCurrency || '';
           case 'monthlyProfit': return item.monthlyProfit?.toFixed(2) || '0';
           case 'yearlyProfit': return item.yearlyProfit?.toFixed(2) || '0';
@@ -1734,27 +1775,33 @@ function cancelGroupRename() {
 }
 
 // --- Group icon picker ---
-const groupIcons = [
-  // Original
-  '📁', '🤖', '📈', '📉', '💰', '⚡', '🔥', '🌙', '☀️', '🎯', '🛡️', '⚠️', '🟢', '🔴', '🔵', '⭐', '💎', '🦊', '🐂', '🐻',
-  // Crypto & trading
-  '₿', '🪙', '💲', '🏦', '📊', '🎰', '🚀', '🌕', '💸', '🤑',
-  // Crypto culture / memes
-  '🐕', '🐸', '🦍', '🐳', '🦈', '🐋', '🌐', '⛓️', '🔗', '🗝️',
-  // Directional / market
-  '🎢', '🏆', '🥇', '🥈', '🥉', '💪', '🧠', '👑',
-];
 const iconPickerTarget = ref<{ type: 'group' | 'bot'; id: string } | null>(null);
 const iconPickerPopover = ref<InstanceType<typeof Popover>>();
+const iconSearch = ref('');
+const recentIcons = useStorage<string[]>('ftBotComparisonRecentIcons', []);
+const emojiCatalog = useEmojiCatalog();
+
+function openIconPicker() {
+  iconSearch.value = '';
+  emojiCatalog.loadCatalog(locale.value);
+}
 
 function showIconPicker(event: MouseEvent, groupId: string) {
   iconPickerTarget.value = { type: 'group', id: groupId };
-  iconPickerPopover.value?.toggle(event);
+  openIconPicker();
+  iconPickerPopover.value?.toggle(event, event.currentTarget as HTMLElement);
 }
 
 function showBotIconPicker(event: MouseEvent, botId: string) {
   iconPickerTarget.value = { type: 'bot', id: botId };
-  iconPickerPopover.value?.toggle(event);
+  openIconPicker();
+  iconPickerPopover.value?.toggle(event, event.currentTarget as HTMLElement);
+}
+
+function pushRecent(icon: string) {
+  if (!icon) return;
+  const filtered = recentIcons.value.filter((i) => i !== icon);
+  recentIcons.value = [icon, ...filtered].slice(0, 16);
 }
 
 function setIcon(icon: string) {
@@ -1766,6 +1813,7 @@ function setIcon(icon: string) {
   } else {
     botStore.updateBot(target.id, { botIcon: icon });
   }
+  pushRecent(icon);
   iconPickerPopover.value?.hide();
   iconPickerTarget.value = null;
 }
@@ -1782,6 +1830,11 @@ function clearIcon() {
   iconPickerPopover.value?.hide();
   iconPickerTarget.value = null;
 }
+
+const filteredIcons = computed(() => {
+  if (!iconSearch.value.trim()) return [];
+  return emojiCatalog.search(iconSearch.value);
+});
 
 // --- Inline group creation from header ---
 function createGroupInline() {
@@ -1843,6 +1896,39 @@ function getBotGroupName(botId: string): string | null {
     if (g.botIds.includes(botId)) return g.name;
   }
   return null;
+}
+
+function getBotGroup(botId: string): BotGroup | null {
+  return botGroups.value.find(g => g.botIds.includes(botId)) ?? null;
+}
+
+// --- Bot move-to-folder popover ---
+const botMovePopover = ref<InstanceType<typeof Popover>>();
+const botMoveTargetId = ref<string | null>(null);
+
+function showBotMovePopover(event: MouseEvent, botId: string) {
+  botMoveTargetId.value = botId;
+  botMovePopover.value?.toggle(event);
+}
+
+function moveBotToGroup(botId: string, groupId: string) {
+  for (const g of botGroups.value) {
+    g.botIds = g.botIds.filter(id => id !== botId);
+  }
+  const group = botGroups.value.find(g => g.id === groupId);
+  if (group && !group.botIds.includes(botId)) {
+    group.botIds.push(botId);
+  }
+  botMovePopover.value?.hide();
+  botMoveTargetId.value = null;
+}
+
+function moveBotOutOfGroup(botId: string) {
+  for (const g of botGroups.value) {
+    g.botIds = g.botIds.filter(id => id !== botId);
+  }
+  botMovePopover.value?.hide();
+  botMoveTargetId.value = null;
 }
 
 // --- Group drag & drop reorder ---
@@ -2007,6 +2093,9 @@ function comparatorForField(items: ComparisonTableItems[], field: string, direct
       case 'strategy':
         cmp = (a.strategy || '').localeCompare(b.strategy || '');
         break;
+      case 'pairCount':
+        cmp = (a.pairCount ?? 0) - (b.pairCount ?? 0);
+        break;
       case 'weekly':
         cmp = (a.weeklyProfit ?? 0) - (b.weeklyProfit ?? 0);
         break;
@@ -2150,12 +2239,14 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       stakeCurrencyDecimals: botStore.allBotState[k]?.stake_currency_decimals || 3,
       isDryRun: botStore.allBotState[k]?.dry_run,
       isOnline: botStore.botStores[k]?.isBotOnline,
+      isStarting: botStore.botStores[k]?.isBotStarting,
       lastSeenOnline: botStore.botStores[k]?.lastSeenOnline ?? 0,
       exchange: botStore.allBotState[k]?.exchange || '',
       balanceAppendix: botStore.allBotState[k]?.dry_run ? '(dry)' : '',
       stakeAmount: botStore.allBotState[k]?.stake_amount || '',
       port,
       strategy: botStore.allBotState[k]?.strategy || '',
+      pairCount: botStore.botStores[k]?.whitelist?.length ?? 0,
       tradingMode: (botStore.allBotState[k]?.trading_mode as string) || 'spot',
       yearlyProfit: calculatePeriodProfit(v, 365)?.abs,
       monthlyProfit: calculateMonthlyProfit(v),
@@ -2312,6 +2403,9 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
         }
         case 'strategy':
           cmp = (a.strategy || '').localeCompare(b.strategy || '');
+          break;
+        case 'pairCount':
+          cmp = (a.pairCount ?? 0) - (b.pairCount ?? 0);
           break;
         case 'weekly':
           cmp = (a.weeklyProfit ?? 0) - (b.weeklyProfit ?? 0);
@@ -2897,6 +2991,16 @@ const correlatedPairs = computed(() => {
       </div>
     </Popover>
 
+    <!-- Pairlist info popover -->
+    <Popover ref="pairlistInfoPopover" class="p-0">
+      <div @mouseenter="cancelPairlistHoverKeepPopover()" @mouseleave="cancelPairlistHover()">
+        <PairlistInfoCard
+          v-if="hoveredPairlistBotId"
+          :bot-id="hoveredPairlistBotId"
+        />
+      </div>
+    </Popover>
+
     <!-- Currency info popover -->
     <Popover ref="currencyInfoPopover" class="p-0">
       <div @mouseenter="cancelCurrencyHoverKeepPopover()" @mouseleave="cancelCurrencyHover()">
@@ -3082,22 +3186,76 @@ const correlatedPairs = computed(() => {
     </Popover>
 
     <!-- Icon picker popover -->
-    <Popover ref="iconPickerPopover" class="p-2" style="min-width: 280px">
-      <div class="grid grid-cols-8 gap-1">
-        <span
-          v-for="icon in groupIcons"
-          :key="icon"
-          class="text-center text-lg cursor-pointer p-1 rounded hover:bg-surface-200 dark:hover:bg-surface-600"
-          @click="setIcon(icon)"
-        >{{ icon }}</span>
-      </div>
-      <div class="mt-2 pt-2 border-t border-surface-200 dark:border-surface-600 text-center">
-        <button
-          class="text-xs px-2 py-1 rounded bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 cursor-pointer"
-          @click="clearIcon()"
-        >
-          {{ iconPickerTarget?.type === 'bot' ? t('botComparison.clearIcon') : t('botComparison.resetIcon') }}
-        </button>
+    <Popover ref="iconPickerPopover" class="p-0" style="width: 360px">
+      <div class="flex flex-col" style="max-height: 480px">
+        <!-- Sticky search -->
+        <div class="p-2 border-b border-surface-200 dark:border-surface-600 bg-surface-0 dark:bg-surface-800">
+          <InputText
+            v-model="iconSearch"
+            size="small"
+            :placeholder="t('botComparison.searchIcon')"
+            class="w-full text-sm"
+            autofocus
+            @keydown.escape="iconSearch = ''"
+          />
+        </div>
+        <!-- Scrollable body -->
+        <div class="overflow-y-auto p-2 flex-1" style="max-height: 380px">
+          <div v-if="!emojiCatalog.loaded.value" class="text-xs opacity-60 text-center p-4">
+            {{ emojiCatalog.loading.value ? '…' : '' }}
+          </div>
+          <template v-else-if="iconSearch.trim()">
+            <div class="text-xs font-semibold opacity-60 mb-1">
+              {{ filteredIcons.length }} {{ filteredIcons.length === 1 ? 'result' : 'results' }}
+            </div>
+            <div v-if="filteredIcons.length === 0" class="text-xs opacity-50 text-center p-2">
+              {{ t('botComparison.noIconResults') }}
+            </div>
+            <div v-else class="grid grid-cols-8 gap-1">
+              <span
+                v-for="emoji in filteredIcons"
+                :key="emoji.unicode"
+                :title="emoji.label"
+                class="text-center text-lg cursor-pointer p-1 rounded hover:bg-surface-200 dark:hover:bg-surface-600"
+                @click="setIcon(emoji.unicode)"
+              >{{ emoji.unicode }}</span>
+            </div>
+          </template>
+          <template v-else>
+            <div v-if="recentIcons.length" class="mb-3">
+              <div class="text-xs font-semibold opacity-60 mb-1">{{ t('botComparison.recentIcons') }}</div>
+              <div class="grid grid-cols-8 gap-1">
+                <span
+                  v-for="icon in recentIcons"
+                  :key="`recent-${icon}`"
+                  class="text-center text-lg cursor-pointer p-1 rounded hover:bg-surface-200 dark:hover:bg-surface-600"
+                  @click="setIcon(icon)"
+                >{{ icon }}</span>
+              </div>
+            </div>
+            <div v-for="grp in emojiCatalog.groups.value" :key="grp.id" class="mb-3">
+              <div class="text-xs font-semibold opacity-60 mb-1 capitalize">{{ grp.label }}</div>
+              <div class="grid grid-cols-8 gap-1">
+                <span
+                  v-for="emoji in grp.emojis"
+                  :key="emoji.unicode"
+                  :title="emoji.label"
+                  class="text-center text-lg cursor-pointer p-1 rounded hover:bg-surface-200 dark:hover:bg-surface-600"
+                  @click="setIcon(emoji.unicode)"
+                >{{ emoji.unicode }}</span>
+              </div>
+            </div>
+          </template>
+        </div>
+        <!-- Sticky bottom -->
+        <div class="p-2 border-t border-surface-200 dark:border-surface-600 bg-surface-0 dark:bg-surface-800 text-center">
+          <button
+            class="text-xs px-2 py-1 rounded bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 cursor-pointer"
+            @click="clearIcon()"
+          >
+            {{ iconPickerTarget?.type === 'bot' ? t('botComparison.clearIcon') : t('botComparison.resetIcon') }}
+          </button>
+        </div>
       </div>
     </Popover>
 
@@ -3148,6 +3306,49 @@ const correlatedPairs = computed(() => {
             :value="bId"
           >{{ botStore.botStores[bId]?.uiBotName || bId }}{{ getBotGroupName(bId) ? ` (currently in: ${getBotGroupName(bId)})` : ' (ungrouped)' }}</option>
         </select>
+      </div>
+    </Popover>
+
+    <!-- Bot move-to-folder popover -->
+    <Popover ref="botMovePopover" class="p-0" style="min-width: 240px; max-height: 50vh; overflow-y: auto">
+      <div v-if="botMoveTargetId" class="p-2.5">
+        <div class="text-xs font-semibold opacity-60 mb-2 flex items-center gap-1.5">
+          <i-mdi-folder-arrow-right class="text-sm" />
+          {{ t('botComparison.moveToFolder') }}
+        </div>
+        <!-- Current group info + remove option -->
+        <div
+          v-if="getBotGroup(botMoveTargetId)"
+          class="flex items-center justify-between text-xs p-2 mb-1.5 rounded-md bg-surface-100 dark:bg-surface-700 border border-surface-200 dark:border-surface-600"
+        >
+          <span class="flex items-center gap-1.5 truncate">
+            <span>{{ getBotGroup(botMoveTargetId)?.icon || '📁' }}</span>
+            <span class="font-medium">{{ getBotGroup(botMoveTargetId)?.name }}</span>
+            <span class="opacity-50">({{ t('botComparison.currentFolder') }})</span>
+          </span>
+          <button
+            class="ml-2 px-1.5 py-0.5 rounded text-[0.65rem] bg-red-500/10 text-red-500 hover:bg-red-500/20 cursor-pointer transition-colors"
+            @click="moveBotOutOfGroup(botMoveTargetId!)"
+          >{{ t('botComparison.removeFromGroup') }}</button>
+        </div>
+        <!-- Available groups -->
+        <div class="space-y-0.5">
+          <div
+            v-for="group in botGroups.filter(g => !g.botIds.includes(botMoveTargetId!))"
+            :key="group.id"
+            class="flex items-center justify-between text-xs p-2 rounded-md cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+            @click="moveBotToGroup(botMoveTargetId!, group.id)"
+          >
+            <span class="flex items-center gap-1.5">
+              <span>{{ group.icon || '📁' }}</span>
+              <span>{{ group.name }}</span>
+            </span>
+            <span class="opacity-40 text-[0.65rem]">{{ group.botIds.length }} {{ group.botIds.length === 1 ? 'bot' : 'bots' }}</span>
+          </div>
+        </div>
+        <div v-if="botGroups.filter(g => !g.botIds.includes(botMoveTargetId!)).length === 0 && !getBotGroup(botMoveTargetId)" class="text-xs opacity-40 italic p-1">
+          {{ t('botComparison.noGroupsAvailable') }}
+        </div>
       </div>
     </Popover>
 
@@ -3465,6 +3666,7 @@ const correlatedPairs = computed(() => {
             <i-mdi-cash v-else-if="col.id === 'stakeAmount'" class="text-xs opacity-50" />
             <i-mdi-lan v-else-if="col.id === 'port'" class="text-xs opacity-50" />
             <i-mdi-cog v-else-if="col.id === 'strategy'" class="text-xs opacity-50" />
+            <i-mdi-format-list-numbered v-else-if="col.id === 'pairCount'" class="text-xs opacity-50" />
             <i-mdi-currency-usd v-else-if="col.id === 'stakeCurrency'" class="text-xs opacity-50" />
             <i-mdi-calendar-month v-else-if="col.id === 'monthlyProfit'" class="text-xs opacity-50" />
             <i-mdi-calendar v-else-if="col.id === 'yearlyProfit'" class="text-xs opacity-50" />
@@ -3533,11 +3735,11 @@ const correlatedPairs = computed(() => {
                   <span class="cursor-pointer hover:underline" @click.stop="startGroupRename((data as ComparisonTableItems).groupId!, data.botName)" @dblclick.stop="toggleGroupCollapse((data as ComparisonTableItems).groupId!)">{{ data.botName }}</span>
                 </template>
                 <span class="text-xs opacity-50 font-normal ml-1">({{ (data as ComparisonTableItems).groupBotCount }})</span>
-                <i-mdi-pencil
-                  class="rename-icon row-hover-visible"
+                <span
+                  class="rename-icon row-hover-visible inline-flex items-center"
                   :title="t('botComparison.editGroup')"
                   @click.stop="showGroupEditPopover($event, (data as ComparisonTableItems).groupId!)"
-                />
+                ><i-mdi-pencil /></span>
               </div>
               <!-- Normal bot / summary row -->
               <div v-else class="bot-name-block">
@@ -3563,16 +3765,18 @@ const correlatedPairs = computed(() => {
                 </span>
                 <span
                   v-if="data.botId && (data as ComparisonTableItems).botIcon"
-                  class="text-sm cursor-pointer hover:opacity-70 mr-0.5"
+                  class="text-sm cursor-pointer hover:opacity-70 mr-0.5 inline-flex items-center"
                   :title="t('botComparison.changeIcon')"
                   @click.stop="showBotIconPicker($event, data.botId)"
                 >{{ (data as ComparisonTableItems).botIcon }}</span>
-                <i-mdi-robot
+                <span
                   v-else-if="data.botId"
-                  class="text-sm opacity-30 cursor-pointer hover:opacity-100 row-hover-visible mr-0.5"
+                  class="cursor-pointer row-hover-visible mr-0.5 inline-flex items-center"
                   :title="t('botComparison.changeIcon')"
                   @click.stop="data.botId && showBotIconPicker($event, data.botId)"
-                />
+                >
+                  <i-mdi-robot class="text-sm opacity-50 hover:opacity-100" />
+                </span>
                 <span
                   v-if="data.botId"
                   @mouseenter="startHoverInfo($event, data.botId)"
@@ -3618,6 +3822,12 @@ const correlatedPairs = computed(() => {
                   :title="t('botComparison.renameBot')"
                   @click.stop="startRename(data.botId, data[field as string])"
                 />
+                <span
+                  v-if="data.botId && botGroups.length > 0"
+                  class="rename-icon row-hover-visible inline-flex items-center"
+                  :title="t('botComparison.moveToFolder')"
+                  @click.stop="showBotMovePopover($event, data.botId)"
+                ><i-mdi-folder-arrow-right class="text-[0.7rem]" /></span>
               </div>
               <!-- Online since info line -->
               <div
@@ -3634,7 +3844,12 @@ const correlatedPairs = computed(() => {
                   <!-- Status tag -->
                   <template v-if="tagId === 'status'">
                     <Badge
-                      v-if="data.isOnline && data.isDryRun"
+                      v-if="data.isStarting"
+                      class="text-[0.55rem] animate-pulse" style="padding: 1px 5px; line-height: 1.2"
+                      severity="info"
+                    >{{ t('general.starting') }}</Badge>
+                    <Badge
+                      v-else-if="data.isOnline && data.isDryRun"
                       class="text-[0.55rem] cursor-pointer" style="padding: 1px 5px; line-height: 1.2"
                       :class="{ 'opacity-30': !isTagActive('status', 'dry') }"
                       severity="success"
@@ -3804,6 +4019,10 @@ const correlatedPairs = computed(() => {
                 />
               </div>
             </div>
+            <!-- Bot starting -->
+            <div v-else-if="data.isStarting && data.botId" class="text-center">
+              <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
+            </div>
             <!-- Bot row -->
             <div
               v-else-if="data.trades"
@@ -3859,6 +4078,10 @@ const correlatedPairs = computed(() => {
                 dont {{ Object.entries((data as ComparisonTableItems).perCurrencyProfitOpen ?? {}).filter(([cur]) => cur !== (data as ComparisonTableItems).stakeCurrency).map(([cur, amt]) => formatPriceCurrency(amt as number, cur, 4)).join(' et ') }}
               </div>
             </div>
+            <!-- Bot starting -->
+            <div v-else-if="data.isStarting && data.botId" class="text-center">
+              <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
+            </div>
             <!-- Bot row: hover shows OpenProfitCard -->
             <div
               v-else-if="data.profitOpen && data.botId"
@@ -3906,6 +4129,10 @@ const correlatedPairs = computed(() => {
               <div v-if="(data as ComparisonTableItems).isConverted && Object.keys((data as ComparisonTableItems).perCurrencyProfitClosed ?? {}).length > 1" class="text-[0.5rem] opacity-40 mt-0.5 leading-tight">
                 dont {{ Object.entries((data as ComparisonTableItems).perCurrencyProfitClosed ?? {}).filter(([cur]) => cur !== (data as ComparisonTableItems).stakeCurrency).map(([cur, amt]) => formatPriceCurrency(amt as number, cur, 4)).join(' et ') }}
               </div>
+            </div>
+            <!-- Bot starting -->
+            <div v-else-if="data.isStarting && data.botId" class="text-center">
+              <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
             </div>
             <!-- Bot row: hover shows ClosedProfitCard -->
             <div
@@ -3972,6 +4199,10 @@ const correlatedPairs = computed(() => {
                 </div>
               </template>
             </div>
+            <!-- Bot starting -->
+            <div v-else-if="data.isStarting && data.botId" class="text-center">
+              <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
+            </div>
             <!-- Bot row -->
             <div
               v-else-if="data.balance"
@@ -3992,8 +4223,12 @@ const correlatedPairs = computed(() => {
 
           <!-- winLoss -->
           <template v-else-if="col.id === 'winLoss'">
+            <!-- Bot starting -->
+            <div v-if="data.isStarting && data.botId" class="text-center">
+              <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
+            </div>
             <div
-              v-if="data.losses !== undefined"
+              v-else-if="data.losses !== undefined"
               class="text-center"
               @mouseenter="!data.botId && !(data as ComparisonTableItems).isGroupRow ? startSummaryWinLossHover($event) : (data.botId ? startWinLossHover($event, data.botId) : undefined)"
               @mouseleave="!data.botId && !(data as ComparisonTableItems).isGroupRow ? cancelSummaryWinLossHover() : (data.botId ? cancelWinLossHover() : undefined)"
@@ -4033,6 +4268,16 @@ const correlatedPairs = computed(() => {
           <!-- strategy -->
           <template v-else-if="col.id === 'strategy'">
             <span v-if="data.botId !== undefined" class="text-xs">{{ (data as ComparisonTableItems).strategy }}</span>
+          </template>
+
+          <!-- pairCount -->
+          <template v-else-if="col.id === 'pairCount'">
+            <span
+              v-if="data.botId !== undefined"
+              class="text-xs cursor-pointer hover:text-blue-400 transition-colors"
+              @mouseenter="startPairlistHover($event, data.botId!)"
+              @mouseleave="cancelPairlistHover()"
+            >{{ (data as ComparisonTableItems).pairCount }}</span>
           </template>
 
           <!-- stakeCurrency -->

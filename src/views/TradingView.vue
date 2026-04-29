@@ -147,6 +147,12 @@ function refreshOHLCV(pair: string, columns: string[]) {
                   <span v-if="settingsStore.multiPaneButtonsShowText">{{ t('trading.pairLocks') }}</span>
                 </div>
               </Tab>
+              <Tab value="7" severity="secondary">
+                <div class="flex items-center gap-1" title="Cache Daemons">
+                  <i-mdi-database-sync />
+                  <span v-if="settingsStore.multiPaneButtonsShowText">Cache</span>
+                </div>
+              </Tab>
             </TabList>
             <TabPanels>
               <TabPanel value="0">
@@ -174,6 +180,9 @@ function refreshOHLCV(pair: string, columns: string[]) {
               </TabPanel>
               <TabPanel value="6" lazy>
                 <PairLockList />
+              </TabPanel>
+              <TabPanel value="7" lazy>
+                <CacheStatusWidget />
               </TabPanel>
             </TabPanels>
           </Tabs>

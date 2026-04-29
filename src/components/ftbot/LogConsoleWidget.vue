@@ -47,7 +47,11 @@ onUnmounted(() => clearInterval(tickInterval));
 
 watch(searchInput, (val) => { filters.searchText = val; });
 
-// Apply legacy noise filters on top of useLogFiltering output
+// Apply legacy noise filters on top of useLogFiltering output.
+// Cache the result and only produce a new array when entries actually change.
+let _lastDisplayIds = '';
+let _cachedDisplay: typeof filteredEntries.value = [];
+
 const displayEntries = computed(() => {
   let result = filteredEntries.value;
   if (hideHeartbeat.value) {
@@ -59,18 +63,57 @@ const displayEntries = computed(() => {
   if (hideWalletSync.value) {
     result = result.filter((e) => !e.message.toLowerCase().includes('wallets synced'));
   }
-  // Reverse: oldest first, newest at bottom (terminal-style)
-  return [...result].reverse();
+  const reversed = [...result].reverse();
+  const idKey = reversed.map((e) => e.id).join(',');
+  if (idKey !== _lastDisplayIds) {
+    _lastDisplayIds = idKey;
+    _cachedDisplay = reversed;
+  }
+  return _cachedDisplay;
 });
 
-// Auto-scroll to bottom (newest logs) on mount and on new entries
-function scrollToBottom() {
-  if (logScrollEl.value) {
-    logScrollEl.value.scrollTop = logScrollEl.value.scrollHeight;
-  }
+// Scroll management
+const userScrolledUp = ref(false);
+const pendingNewCount = ref(0);
+
+function onScroll() {
+  if (!logScrollEl.value) return;
+  const el = logScrollEl.value;
+  userScrolledUp.value = el.scrollHeight - el.scrollTop - el.clientHeight > 40;
 }
-watch(displayEntries, () => nextTick(scrollToBottom));
-onMounted(() => setTimeout(scrollToBottom, 500));
+
+function resumeScroll() {
+  pendingNewCount.value = 0;
+  userScrolledUp.value = false;
+  nextTick(() => {
+    if (logScrollEl.value) {
+      logScrollEl.value.scrollTop = logScrollEl.value.scrollHeight;
+    }
+  });
+}
+
+watch(displayEntries, (newVal, oldVal) => {
+  if (newVal === oldVal) return;
+  const added = (newVal?.length ?? 0) - (oldVal?.length ?? 0);
+  if (!userScrolledUp.value) {
+    pendingNewCount.value = 0;
+    nextTick(() => {
+      if (logScrollEl.value) {
+        logScrollEl.value.scrollTop = logScrollEl.value.scrollHeight;
+      }
+    });
+  } else if (added > 0) {
+    pendingNewCount.value += added;
+  }
+});
+
+onMounted(() => {
+  setTimeout(() => {
+    if (logScrollEl.value) {
+      logScrollEl.value.scrollTop = logScrollEl.value.scrollHeight;
+    }
+  }, 500);
+});
 
 function toggleBotCollapse(botId: string) {
   const s = new Set(collapsedBots.value);
@@ -198,6 +241,7 @@ function sevColor(level: string): string {
     case 'CRITICAL': return '#ef4444';
     case 'ERROR': return '#f97316';
     case 'WARNING': return '#eab308';
+    case 'INFO': return '#3b82f6';
     default: return '#6b7280';
   }
 }
@@ -207,6 +251,7 @@ function sevBg(level: string): string {
     case 'CRITICAL': return 'rgba(239,68,68,0.15)';
     case 'ERROR': return 'rgba(249,115,22,0.10)';
     case 'WARNING': return 'rgba(234,179,8,0.08)';
+    case 'INFO': return 'rgba(59,130,246,0.10)';
     default: return 'transparent';
   }
 }
@@ -276,8 +321,18 @@ onUnmounted(() => resizeObserver.value?.disconnect());
       </span>
 
       <span class="ml-auto flex items-center gap-2 text-[10px] text-surface-500">
-        <span v-if="logStore.fetching" class="animate-spin inline-block w-3 h-3 border border-blue-400 border-t-transparent rounded-full" />
-        <span v-else>{{ lastUpdateAgo }}</span>
+        <span
+          v-if="userScrolledUp"
+          class="flex items-center gap-1 px-1.5 py-0.5 rounded text-amber-400 font-semibold"
+          style="background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.25)"
+        >
+          <i-mdi-lock-outline style="font-size: 0.8rem" />
+          Paused
+        </span>
+        <template v-else>
+          <span v-if="logStore.fetching" class="animate-spin inline-block w-3 h-3 border border-blue-400 border-t-transparent rounded-full" />
+          <span v-else>{{ lastUpdateAgo }}</span>
+        </template>
         <span v-if="logStore.unreachableBotCount > 0" class="text-red-400 font-bold">
           {{ logStore.unreachableBotCount }} offline
         </span>
@@ -495,7 +550,27 @@ onUnmounted(() => resizeObserver.value?.disconnect());
     </div>
 
     <!-- ═══ CONTENT AREA ═══ -->
-    <div ref="logScrollEl" class="flex-1 overflow-y-auto min-h-0">
+    <div class="flex-1 min-h-0 relative">
+
+    <!-- Resume button (floating) -->
+    <Transition name="resume-btn">
+      <button
+        v-if="userScrolledUp"
+        class="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold cursor-pointer transition-all hover:brightness-125"
+        style="background: rgba(59,130,246,0.85); color: #fff; backdrop-filter: blur(8px); box-shadow: 0 4px 16px rgba(0,0,0,0.4)"
+        @click="resumeScroll()"
+      >
+        <i-mdi-arrow-down style="font-size: 0.85rem" />
+        Resume
+        <span
+          v-if="pendingNewCount > 0"
+          class="ml-0.5 px-1.5 py-0 rounded-full text-[9px] font-bold"
+          style="background: rgba(255,255,255,0.2)"
+        >+{{ pendingNewCount }}</span>
+      </button>
+    </Transition>
+
+    <div ref="logScrollEl" class="h-full overflow-y-auto" @scroll="onScroll">
 
       <!-- Loading state -->
       <div v-if="!logStore.initialLoadDone" class="flex flex-col items-center justify-center h-full gap-2 text-surface-400">
@@ -628,6 +703,7 @@ onUnmounted(() => resizeObserver.value?.disconnect());
           v-for="entry in displayEntries.slice(0, 500)"
           :key="entry.id"
           class="flex items-start gap-2 px-3 py-0.5 border-b border-surface-800/30 hover:bg-surface-800/30"
+          :class="{ 'log-entry-new': logStore.newEntryIds[entry.id] }"
         >
           <span class="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" :style="{ background: sevColor(entry.level) }" />
           <span class="text-[10px] text-surface-500 font-mono flex-shrink-0 w-[50px]">{{ entry.timestampFormatted.slice(11, 19) }}</span>
@@ -657,5 +733,33 @@ onUnmounted(() => resizeObserver.value?.disconnect());
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.log-entry-new {
+  animation: logFadeIn 0.8s ease-out;
+}
+
+@keyframes logFadeIn {
+  from {
+    opacity: 0;
+    background-color: rgba(59, 130, 246, 0.12);
+  }
+  to {
+    opacity: 1;
+    background-color: transparent;
+  }
+}
+
+.resume-btn-enter-active,
+.resume-btn-leave-active {
+  transition: all 0.2s ease;
+}
+.resume-btn-enter-from,
+.resume-btn-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 8px);
+}
+</style>

@@ -47,11 +47,22 @@ const autoRefreshLoc = computed({
         <ToggleSwitch v-model="autoRefreshLoc" class="mr-2" />
         <div
           v-if="selectedBotStore.isBotLoggedIn"
-          :title="selectedBotStore.isBotOnline ? 'Online' : 'Offline'"
+          :title="
+            selectedBotStore.isBotStarting
+              ? $t('general.starting')
+              : selectedBotStore.isBotOnline
+                ? $t('general.online')
+                : $t('general.offline')
+          "
         >
           <i-mdi-circle
+            v-if="!selectedBotStore.isBotStarting"
             class="mx-1"
             :class="selectedBotStore.isBotOnline ? 'text-green-500' : 'text-red-500'"
+          />
+          <i-mdi-loading
+            v-else
+            class="mx-1 text-amber-500 animate-spin"
           />
         </div>
         <div v-else title="Login info expired, please login again.">

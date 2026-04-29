@@ -67,13 +67,15 @@ const filteredTrades = computed(() => {
         t.pair.toLowerCase().includes(f) ||
         t.botName?.toLowerCase().includes(f) ||
         t.exit_reason?.toLowerCase().includes(f) ||
-        t.enter_tag?.toLowerCase().includes(f),
+        t.enter_tag?.toLowerCase().includes(f) ||
+        (botStore.botStores[t.botId]?.botState?.dry_run ? 'dry' : 'live').includes(f),
     );
   }
   return result.map((t) => ({
     ...t,
     _durationMs: tradeDurationMs(t),
     _durationAnomalyPct: durationAnomalyPct(t, props.trades),
+    botState: botStore.botStores[t.botId]?.botState?.dry_run ? 'Dry' : 'Live',
   }));
 });
 
@@ -110,9 +112,9 @@ watch(
 </script>
 
 <template>
-  <div class="h-full overflow-hidden w-full">
+  <div class="h-full overflow-hidden w-full flex flex-col">
     <!-- Filter bar -->
-    <div class="flex items-center gap-2 px-2 py-1">
+    <div class="flex items-center gap-2 px-2 py-1 flex-shrink-0">
       <InputText
         v-model="filterText"
         :placeholder="t('enhancedTrades.filterPlaceholder')"
@@ -132,7 +134,7 @@ watch(
       :first="(currentPage - 1) * perPage"
       :rows-per-page-options="[25, 50, 100]"
       selection-mode="single"
-      class="text-center text-xs"
+      class="text-center text-xs flex-1 min-h-0"
       size="small"
       :scrollable="true"
       scroll-height="flex"
@@ -161,8 +163,18 @@ watch(
           </div>
         </template>
         <template #body="{ data }">
+          <!-- Bot State (Dry/Live) -->
+          <template v-if="col.key === 'botState'">
+            <span
+              class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold"
+              :class="botStore.botStores[data.botId]?.botState?.dry_run ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'"
+            >
+              {{ botStore.botStores[data.botId]?.botState?.dry_run ? 'Dry' : 'Live' }}
+            </span>
+          </template>
+
           <!-- Bot Name -->
-          <template v-if="col.key === 'botName'">
+          <template v-else-if="col.key === 'botName'">
             <span class="font-semibold text-xs">{{ data.botName }}</span>
           </template>
 

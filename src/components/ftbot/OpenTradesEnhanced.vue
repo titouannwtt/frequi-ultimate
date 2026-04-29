@@ -182,7 +182,8 @@ const filteredTrades = computed(() => {
       (t) =>
         t.pair.toLowerCase().includes(f) ||
         t.botName?.toLowerCase().includes(f) ||
-        t.enter_tag?.toLowerCase().includes(f),
+        t.enter_tag?.toLowerCase().includes(f) ||
+        (botStore.botStores[t.botId]?.botState?.dry_run ? 'dry' : 'live').includes(f),
     );
   }
   // Add computed sort fields for columns that don't map to a Trade property
@@ -190,6 +191,7 @@ const filteredTrades = computed(() => {
     ...t,
     _durationMs: tradeDurationMs(t),
     _durationAnomalyPct: durationAnomalyPct(t, props.trades),
+    botState: botStore.botStores[t.botId]?.botState?.dry_run ? 'Dry' : 'Live',
   }));
 });
 
@@ -287,9 +289,9 @@ watch(
 </script>
 
 <template>
-  <div class="h-full overflow-hidden w-full">
+  <div class="h-full overflow-hidden w-full flex flex-col">
     <!-- Filter bar -->
-    <div class="flex items-center gap-2 px-2 py-1">
+    <div class="flex items-center gap-2 px-2 py-1 flex-shrink-0">
       <InputText
         v-model="filterText"
         :placeholder="t('enhancedTrades.filterPlaceholder')"
@@ -302,22 +304,24 @@ watch(
     </div>
 
     <!-- Correlation alerts with dismiss -->
-    <div
-      v-for="corr in correlatedTrades"
-      :key="corr.key"
-      class="flex items-center gap-2 mx-2 mb-1 px-2 py-1 rounded text-[11px]"
-      style="background: rgba(120, 80, 0, 0.2); border: 1px solid rgba(180, 130, 0, 0.25); color: #fbbf24"
-    >
-      <i-mdi-alert class="flex-shrink-0" style="font-size: 0.75rem" />
-      <span class="flex-1">
-        <strong>{{ corr.pair }}</strong> — {{ t('corrPopover.tradedBy', { bots: corr.entries.map(e => e.botName).join(' & ') }) }}
-      </span>
-      <button
-        class="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] cursor-pointer hover:bg-amber-500/20 transition-colors"
-        style="color: #92700a"
-        :title="t('corrPopover.dismiss')"
-        @click="dismissCorrelation(corr.key)"
-      >✕ {{ t('corrPopover.dismiss') }}</button>
+    <div v-if="correlatedTrades.length > 0" class="overflow-y-auto flex-shrink-0" style="max-height: 80px">
+      <div
+        v-for="corr in correlatedTrades"
+        :key="corr.key"
+        class="flex items-center gap-2 mx-2 mb-1 px-2 py-1 rounded text-[11px]"
+        style="background: rgba(120, 80, 0, 0.2); border: 1px solid rgba(180, 130, 0, 0.25); color: #fbbf24"
+      >
+        <i-mdi-alert class="flex-shrink-0" style="font-size: 0.75rem" />
+        <span class="flex-1">
+          <strong>{{ corr.pair }}</strong> — {{ t('corrPopover.tradedBy', { bots: corr.entries.map(e => e.botName).join(' & ') }) }}
+        </span>
+        <button
+          class="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] cursor-pointer hover:bg-amber-500/20 transition-colors"
+          style="color: #92700a"
+          :title="t('corrPopover.dismiss')"
+          @click="dismissCorrelation(corr.key)"
+        >✕ {{ t('corrPopover.dismiss') }}</button>
+      </div>
     </div>
 
     <DataTable
@@ -325,7 +329,7 @@ watch(
       :value="filteredTrades"
       :rows="200"
       selection-mode="single"
-      class="text-center text-xs"
+      class="text-center text-xs flex-1 min-h-0"
       size="small"
       :scrollable="true"
       scroll-height="flex"
@@ -355,8 +359,18 @@ watch(
           </div>
         </template>
         <template #body="{ data }">
+          <!-- Bot State (Dry/Live) -->
+          <template v-if="col.key === 'botState'">
+            <span
+              class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold"
+              :class="botStore.botStores[data.botId]?.botState?.dry_run ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'"
+            >
+              {{ botStore.botStores[data.botId]?.botState?.dry_run ? 'Dry' : 'Live' }}
+            </span>
+          </template>
+
           <!-- Bot Name -->
-          <template v-if="col.key === 'botName'">
+          <template v-else-if="col.key === 'botName'">
             <span class="font-semibold text-xs">{{ data.botName }}</span>
           </template>
 

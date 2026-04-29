@@ -15,7 +15,9 @@ export interface TradeColumnDef {
 }
 
 const OPEN_COLUMNS: TradeColumnDef[] = [
+  { key: 'botState', labelKey: 'enhancedTrades.colBotState', defaultVisible: true, sortable: true, icon: 'i-mdi-circle' },
   { key: 'botName', labelKey: 'enhancedTrades.colBot', defaultVisible: true, sortable: true, icon: 'i-mdi-robot' },
+  { key: 'trade_id', labelKey: 'enhancedTrades.colTradeId', defaultVisible: true, sortable: true, icon: 'i-mdi-identifier' },
   { key: 'pair', labelKey: 'enhancedTrades.colPair', defaultVisible: true, sortable: true, icon: 'i-mdi-swap-horizontal' },
   { key: 'type', labelKey: 'enhancedTrades.colType', defaultVisible: true, sortable: true, icon: 'i-mdi-arrow-up-down' },
   { key: 'leverage', labelKey: 'enhancedTrades.colLeverage', defaultVisible: true, sortable: true, icon: 'i-mdi-multiplication' },

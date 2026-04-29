@@ -481,12 +481,12 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
             <span>GitHub</span>
           </div>
           <a
-            href="https://github.com/freqtrade/frequi"
+            href="https://github.com/titouannwtt/frequi-fork"
             target="_blank"
             rel="noopener noreferrer"
             class="text-sm text-blue-400 hover:text-blue-300 underline"
           >
-            freqtrade/frequi
+            titouannwtt/frequi-fork
           </a>
         </div>
 

@@ -14,6 +14,7 @@ export interface ComparisonTableItems {
   stakeCurrencyDecimals?: number;
   isDryRun?: boolean;
   isOnline?: boolean;
+  isStarting?: boolean;
   lastSeenOnline?: number;
   balanceAppendix: string;
   capitalWithdrawal?: number;
@@ -22,6 +23,7 @@ export interface ComparisonTableItems {
   stakeAmount?: string;
   port?: number;
   strategy?: string;
+  pairCount?: number;
   monthlyProfit?: number;
   yearlyProfit?: number;
   /** Summary row: total open positions count */

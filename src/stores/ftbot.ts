@@ -247,6 +247,10 @@ export function createBotSubStore(botId: string, botName: string) {
         this.isBotOnline = isBotOnline;
       },
       async refreshSlow(forceUpdate = false) {
+        if (this.isBotStarting) {
+          await this.fetchPing();
+          return;
+        }
         if (this.refreshing && !forceUpdate) {
           return;
         }
@@ -273,6 +277,9 @@ export function createBotSubStore(botId: string, botName: string) {
         return Promise.resolve();
       },
       async refreshFrequent() {
+        if (this.isBotStarting) {
+          return;
+        }
         // Refresh data that's needed in near realtime
         await this.getOpenTrades();
         await this.getLocks();
@@ -1203,7 +1210,11 @@ export function createBotSubStore(botId: string, botName: string) {
         const msg: FTWsMessage = JSON.parse(event.data);
         switch (msg.type) {
           case FtWsMessageTypes.exception:
-            showAlert(`WSException: ${msg.data}`, 'error');
+            if (typeof msg.data === 'string' && msg.data.includes('not in the correct state')) {
+              this.isBotStarting = true;
+            } else {
+              showAlert(`WSException: ${msg.data}`, 'error');
+            }
             break;
           case FtWsMessageTypes.whitelist:
             this.whitelist = msg.data;

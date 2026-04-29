@@ -5,8 +5,8 @@ import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { GaugeChart, BarChart } from 'echarts/charts';
 import { GridComponent, TitleComponent, TooltipComponent } from 'echarts/components';
-import type { RateMetricsResponse } from '@/types';
 import { useI18n } from 'vue-i18n';
+import { useRateMetrics } from '@/composables/useRateMetrics';
 
 use([GaugeChart, BarChart, CanvasRenderer, GridComponent, TitleComponent, TooltipComponent]);
 
@@ -19,47 +19,22 @@ const props = withDefaults(
   { multiBotView: false },
 );
 
-const botStore = useBotStore();
 const settingsStore = useSettingsStore();
 
-const refreshInterval = ref<number | null>(null);
-const selectedBotId = ref('');
-
-const botOptions = computed(() => {
-  const all = botStore.allRateMetrics;
-  const opts = [{ text: `All (${Object.keys(all).length})`, value: '' }];
-  for (const [id, m] of Object.entries(all)) {
-    opts.push({ text: m.exchange ?? id, value: id });
-  }
-  return opts;
-});
+const {
+  selectedWindow,
+  selectedExchange,
+  windowOptions,
+  exchangeOptions,
+  filteredMetrics,
+  primaryMetrics,
+  hasData,
+} = useRateMetrics({ multiBotView: props.multiBotView });
 
 function formatLatency(ms: number): string {
   if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
   return `${ms.toFixed(0)}ms`;
 }
-
-const metricsData = computed((): Record<string, RateMetricsResponse> => {
-  if (props.multiBotView) {
-    const all = botStore.allRateMetrics;
-    if (selectedBotId.value && all[selectedBotId.value]) {
-      return { [selectedBotId.value]: all[selectedBotId.value] };
-    }
-    return all;
-  }
-  const m = botStore.activeBot?.rateMetrics;
-  if (m?.exchange) {
-    return { [botStore.activeBot.botId]: m };
-  }
-  return {};
-});
-
-const hasData = computed(() => Object.keys(metricsData.value).length > 0);
-
-const primaryMetrics = computed((): RateMetricsResponse | null => {
-  const entries = Object.values(metricsData.value);
-  return entries.length > 0 ? entries[0] : null;
-});
 
 const tokenBucketPct = computed(() => {
   const c = primaryMetrics.value?.current;
@@ -218,38 +193,30 @@ const hitRateBarsOption = computed((): EChartsOption => {
     ],
   };
 });
-
-function fetchMetrics() {
-  if (props.multiBotView) {
-    botStore.allGetRateMetrics();
-  } else {
-    botStore.activeBot?.getRateMetrics();
-  }
-}
-
-onMounted(() => {
-  fetchMetrics();
-  refreshInterval.value = window.setInterval(fetchMetrics, 30000);
-});
-
-onUnmounted(() => {
-  if (refreshInterval.value) {
-    clearInterval(refreshInterval.value);
-  }
-});
 </script>
 
 <template>
   <div class="flex flex-col h-full p-2 gap-2 overflow-auto">
     <template v-if="hasData">
-      <!-- Bot selector -->
-      <div v-if="multiBotView && botOptions.length > 2" class="flex items-center gap-2 pb-1">
+      <!-- Window & exchange selector -->
+      <div class="flex items-center gap-2 pb-1">
+        <label class="text-xs text-surface-500">{{ t('rateMonitor.window') }}</label>
         <Select
-          v-model="selectedBotId"
+          v-model="selectedWindow"
           size="small"
           option-label="text"
           option-value="value"
-          :options="botOptions"
+          :options="windowOptions"
+          class="text-xs"
+          style="min-width: 80px"
+        />
+        <Select
+          v-if="multiBotView && exchangeOptions.length > 2"
+          v-model="selectedExchange"
+          size="small"
+          option-label="text"
+          option-value="value"
+          :options="exchangeOptions"
           class="text-xs"
           style="min-width: 100px"
         />
@@ -410,11 +377,11 @@ onUnmounted(() => {
       </div>
 
       <!-- Multi-bot: show per-bot summary -->
-      <template v-if="multiBotView && Object.keys(metricsData).length > 1">
+      <template v-if="multiBotView && Object.keys(filteredMetrics).length > 1">
         <div class="border-t border-surface-700 pt-1 mt-1">
           <span class="text-xs text-surface-500">{{ t('rateMonitor.perBot') }}</span>
           <div
-            v-for="[botId, m] in Object.entries(metricsData)"
+            v-for="[botId, m] in Object.entries(filteredMetrics)"
             :key="botId"
             class="flex items-center justify-between text-xs gap-2 py-0.5"
           >

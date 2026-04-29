@@ -112,6 +112,8 @@ export const useLogConsoleStore = defineStore('logConsole', {
     fetching: false,
     /** Last global fetch timestamp */
     lastFetchTimestamp: 0,
+    /** IDs of entries added in the most recent fetch (for new-entry animation) */
+    newEntryIds: {} as Record<string, boolean>,
   }),
 
   getters: {
@@ -189,9 +191,21 @@ export const useLogConsoleStore = defineStore('logConsole', {
                 .slice(-LOG_LIMIT_PER_BOT)
                 .map((log) => parseLogLine(botId, botName, exchange, tradingMode, isDryRun, log));
 
-              // Remove old entries for this bot and add new ones
-              this.entries = this.entries.filter((e) => e.botId !== botId);
-              this.entries.push(...parsed);
+              // Merge by ID: keep existing entries, only add genuinely new ones
+              const existingIds = new Set(
+                this.entries.filter((e) => e.botId === botId).map((e) => e.id),
+              );
+
+              const added: AggregatedLogEntry[] = [];
+              for (const entry of parsed) {
+                if (!existingIds.has(entry.id)) {
+                  added.push(entry);
+                  this.newEntryIds[entry.id] = true;
+                }
+              }
+              if (added.length > 0) {
+                this.entries.push(...added);
+              }
 
               this.botStatuses[botId].lastFetchTimestamp = Date.now();
               this.botStatuses[botId].lastError = null;
@@ -206,17 +220,27 @@ export const useLogConsoleStore = defineStore('logConsole', {
 
       await Promise.allSettled(fetchPromises);
 
-      // Sort all entries by timestamp descending (newest first)
-      this.entries.sort((a, b) => b.timestamp - a.timestamp);
+      // Only re-sort and cap if entries actually changed
+      const newIdKeys = Object.keys(this.newEntryIds);
+      if (newIdKeys.length > 0) {
+        this.entries.sort((a, b) => b.timestamp - a.timestamp);
 
-      // Cap total entries to prevent memory bloat (keep newest 2000)
-      if (this.entries.length > 2000) {
-        this.entries = this.entries.slice(0, 2000);
+        if (this.entries.length > 2000) {
+          this.entries = this.entries.slice(0, 2000);
+        }
       }
 
       this.fetching = false;
       this.initialLoadDone = true;
       this.lastFetchTimestamp = Date.now();
+
+      // Clear new-entry markers after animation duration (1s)
+      if (newIdKeys.length > 0) {
+        const keysToClean = [...newIdKeys];
+        setTimeout(() => {
+          for (const id of keysToClean) delete this.newEntryIds[id];
+        }, 1000);
+      }
     },
 
     /** Start periodic polling */

@@ -288,6 +288,7 @@ declare global {
   const useElementHover: typeof import('@vueuse/core').useElementHover
   const useElementSize: typeof import('@vueuse/core').useElementSize
   const useElementVisibility: typeof import('@vueuse/core').useElementVisibility
+  const useEmojiCatalog: typeof import('./composables/useEmojiCatalog').useEmojiCatalog
   const useEventBus: typeof import('@vueuse/core').useEventBus
   const useEventListener: typeof import('@vueuse/core').useEventListener
   const useEventSource: typeof import('@vueuse/core').useEventSource
@@ -358,6 +359,7 @@ declare global {
   const usePreferredReducedTransparency: typeof import('@vueuse/core').usePreferredReducedTransparency
   const usePrevious: typeof import('@vueuse/core').usePrevious
   const useRafFn: typeof import('@vueuse/core').useRafFn
+  const useRateMetrics: typeof import('./composables/useRateMetrics').useRateMetrics
   const useRefHistory: typeof import('@vueuse/core').useRefHistory
   const useResizeObserver: typeof import('@vueuse/core').useResizeObserver
   const useRoute: typeof import('vue-router').useRoute
@@ -445,6 +447,9 @@ declare global {
   // @ts-ignore
   export type { TradeColumnDef } from './composables/tradeColumns'
   import('./composables/tradeColumns')
+  // @ts-ignore
+  export type { EmojiEntry, EmojiGroup } from './composables/useEmojiCatalog'
+  import('./composables/useEmojiCatalog')
   // @ts-ignore
   export type { LogLevel, LogFilters, GroupedLogEntry } from './composables/useLogFiltering'
   import('./composables/useLogFiltering')
@@ -757,6 +762,7 @@ declare module 'vue' {
     readonly useElementHover: UnwrapRef<typeof import('@vueuse/core')['useElementHover']>
     readonly useElementSize: UnwrapRef<typeof import('@vueuse/core')['useElementSize']>
     readonly useElementVisibility: UnwrapRef<typeof import('@vueuse/core')['useElementVisibility']>
+    readonly useEmojiCatalog: UnwrapRef<typeof import('./composables/useEmojiCatalog')['useEmojiCatalog']>
     readonly useEventBus: UnwrapRef<typeof import('@vueuse/core')['useEventBus']>
     readonly useEventListener: UnwrapRef<typeof import('@vueuse/core')['useEventListener']>
     readonly useEventSource: UnwrapRef<typeof import('@vueuse/core')['useEventSource']>
@@ -827,6 +833,7 @@ declare module 'vue' {
     readonly usePreferredReducedTransparency: UnwrapRef<typeof import('@vueuse/core')['usePreferredReducedTransparency']>
     readonly usePrevious: UnwrapRef<typeof import('@vueuse/core')['usePrevious']>
     readonly useRafFn: UnwrapRef<typeof import('@vueuse/core')['useRafFn']>
+    readonly useRateMetrics: UnwrapRef<typeof import('./composables/useRateMetrics')['useRateMetrics']>
     readonly useRefHistory: UnwrapRef<typeof import('@vueuse/core')['useRefHistory']>
     readonly useResizeObserver: UnwrapRef<typeof import('@vueuse/core')['useResizeObserver']>
     readonly useRoute: UnwrapRef<typeof import('vue-router')['useRoute']>

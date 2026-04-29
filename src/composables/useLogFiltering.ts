@@ -77,7 +77,7 @@ const DEFAULT_EXCLUDED_PREFIXES = [
 export function useLogFiltering(entries: Ref<AggregatedLogEntry[]>) {
   // ── Reactive filter state ──
   const filters = reactive<LogFilters>({
-    levels: new Set<LogLevel>(['CRITICAL', 'ERROR', 'WARNING']),
+    levels: new Set<LogLevel>(['CRITICAL', 'ERROR', 'WARNING', 'INFO']),
     botIds: new Set<string>(),
     exchanges: new Set<string>(),
     modules: new Set<string>(),
@@ -269,7 +269,7 @@ export function useLogFiltering(entries: Ref<AggregatedLogEntry[]>) {
   }
 
   function resetFilters() {
-    filters.levels = new Set<LogLevel>(['CRITICAL', 'ERROR', 'WARNING']);
+    filters.levels = new Set<LogLevel>(['CRITICAL', 'ERROR', 'WARNING', 'INFO']);
     filters.botIds.clear();
     filters.exchanges.clear();
     filters.modules.clear();

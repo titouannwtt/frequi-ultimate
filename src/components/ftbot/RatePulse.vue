@@ -11,8 +11,9 @@ import {
   MarkLineComponent,
   TooltipComponent,
 } from 'echarts/components';
-import type { RateMetricsResponse, RateTimelineBucket } from '@/types';
+import type { RateTimelineBucket } from '@/types';
 import { useI18n } from 'vue-i18n';
+import { useRateMetrics } from '@/composables/useRateMetrics';
 
 use([
   LineChart,
@@ -35,47 +36,21 @@ const props = withDefaults(
   { multiBotView: false },
 );
 
-const botStore = useBotStore();
 const settingsStore = useSettingsStore();
 
-const refreshInterval = ref<number | null>(null);
-const selectedBotId = ref('');
-const windowOptions = [
-  { text: '10 min', value: 600 },
-  { text: '30 min', value: 1800 },
-  { text: '1h', value: 3600 },
-  { text: '6h', value: 21600 },
-  { text: '24h', value: 86400 },
-];
-const selectedWindow = ref(3600);
-
-const botOptions = computed(() => {
-  const all = botStore.allRateMetrics;
-  const opts = [{ text: `All (${Object.keys(all).length})`, value: '' }];
-  for (const [id, m] of Object.entries(all)) {
-    opts.push({ text: m.exchange ?? id, value: id });
-  }
-  return opts;
-});
-
-const metricsData = computed((): RateMetricsResponse | null => {
-  if (props.multiBotView) {
-    const all = botStore.allRateMetrics;
-    if (selectedBotId.value && all[selectedBotId.value]) {
-      return all[selectedBotId.value];
-    }
-    const entries = Object.values(all);
-    return entries.length > 0 ? entries[0] : null;
-  }
-  const m = botStore.activeBot?.rateMetrics;
-  return m?.exchange ? m : null;
-});
+const {
+  selectedWindow,
+  selectedExchange,
+  windowOptions,
+  exchangeOptions,
+  primaryMetrics,
+} = useRateMetrics({ multiBotView: props.multiBotView });
 
 const timeline = computed((): RateTimelineBucket[] => {
-  return metricsData.value?.timeline ?? [];
+  return primaryMetrics.value?.timeline ?? [];
 });
 
-const recent429s = computed(() => metricsData.value?.recent_429s ?? []);
+const recent429s = computed(() => primaryMetrics.value?.recent_429s ?? []);
 
 function formatTime(ts: number): string {
   const d = new Date(ts * 1000);
@@ -234,37 +209,11 @@ const chartOption = computed((): EChartsOption => {
     ],
   };
 });
-
-function fetchMetrics() {
-  const bucketS = selectedWindow.value <= 1800 ? 10 : selectedWindow.value <= 7200 ? 30 : 60;
-  if (props.multiBotView) {
-    botStore.allBotStores.forEach((bot) => {
-      if (bot.isBotOnline) {
-        bot.getRateMetrics(selectedWindow.value, bucketS);
-      }
-    });
-  } else {
-    botStore.activeBot?.getRateMetrics(selectedWindow.value, bucketS);
-  }
-}
-
-watch(selectedWindow, () => fetchMetrics());
-
-onMounted(() => {
-  fetchMetrics();
-  refreshInterval.value = window.setInterval(fetchMetrics, 30000);
-});
-
-onUnmounted(() => {
-  if (refreshInterval.value) {
-    clearInterval(refreshInterval.value);
-  }
-});
 </script>
 
 <template>
   <div class="flex flex-col h-full">
-    <!-- Window & bot selector -->
+    <!-- Window & exchange selector -->
     <div class="flex items-center gap-2 px-2 pt-1">
       <label class="text-xs text-surface-500">{{ t('rateMonitor.window') }}</label>
       <Select
@@ -277,26 +226,26 @@ onUnmounted(() => {
         style="min-width: 80px"
       />
       <Select
-        v-if="multiBotView && botOptions.length > 2"
-        v-model="selectedBotId"
+        v-if="multiBotView && exchangeOptions.length > 2"
+        v-model="selectedExchange"
         size="small"
         option-label="text"
         option-value="value"
-        :options="botOptions"
+        :options="exchangeOptions"
         class="text-xs"
         style="min-width: 100px"
       />
-      <div v-if="metricsData?.summary" class="flex items-center gap-3 ml-auto text-xs">
+      <div v-if="primaryMetrics?.summary" class="flex items-center gap-3 ml-auto text-xs">
         <span class="text-surface-500">
-          {{ metricsData.summary.total }} {{ t('rateMonitor.req') }}
+          {{ primaryMetrics.summary.total }} {{ t('rateMonitor.req') }}
         </span>
         <span
-          :class="(metricsData.summary.errors_429 ?? 0) > 0 ? 'text-red-400' : 'text-surface-500'"
+          :class="(primaryMetrics.summary.errors_429 ?? 0) > 0 ? 'text-red-400' : 'text-surface-500'"
         >
-          {{ metricsData.summary.errors_429 ?? 0 }} {{ t('rateMonitor.429s') }}
+          {{ primaryMetrics.summary.errors_429 ?? 0 }} {{ t('rateMonitor.429s') }}
         </span>
         <span class="text-surface-500" :title="t('rateMonitor.avgResponseTime')">
-          {{ t('rateMonitor.avgResponse') }} {{ formatLatency(metricsData.summary.avg_latency_ms ?? 0) }}
+          {{ t('rateMonitor.avgResponse') }} {{ formatLatency(primaryMetrics.summary.avg_latency_ms ?? 0) }}
         </span>
       </div>
     </div>

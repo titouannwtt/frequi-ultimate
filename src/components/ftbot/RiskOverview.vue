@@ -17,16 +17,19 @@ const currencyUnit = computed(() => {
 
 const openTrades = computed<Trade[]>(() => botStore.allOpenTradesSelectedBots);
 
-// ── Total balance from all selected bots ──
+// ── Total balance deduplicated by exchange (same exchange = same wallet) ──
 const totalBalance = computed(() => {
-  let total = 0;
-  const balances = botStore.allBalance;
-  for (const [botId, bal] of Object.entries(balances)) {
-    // Only include selected bots
-    if (bal && bal.total > 0) {
-      total += bal.total;
-    }
+  const seen = new Map<string, number>();
+  for (const bot of botStore.selectedBots) {
+    const bal = bot.balance;
+    const st = bot.botState;
+    if (!bal || bal.total <= 0 || !st?.exchange) continue;
+    const key = `${st.exchange}:${st.trading_mode ?? ''}`;
+    const prev = seen.get(key) ?? 0;
+    if (bal.total > prev) seen.set(key, bal.total);
   }
+  let total = 0;
+  for (const v of seen.values()) total += v;
   return total;
 });
 

@@ -65,6 +65,17 @@ export function useApi(userService: UserServiceType, botId: string) {
 
         // maybe redirect to /login if needed !
       }
+      if (err.response && err.response.status === 502) {
+        const errorMsg = err.response.data?.error || '';
+        if (errorMsg.includes('not in the correct state')) {
+          const botStore = useBotStore();
+          if (botStore.botStores[botId]) {
+            botStore.botStores[botId].isBotStarting = true;
+            botStore.botStores[botId].setIsBotOnline(true);
+          }
+          return Promise.resolve(err.response);
+        }
+      }
       if ((err.response && err.response.status === 500) || err.message === 'Network Error') {
         console.log('Bot not running...');
         const botStore = useBotStore();

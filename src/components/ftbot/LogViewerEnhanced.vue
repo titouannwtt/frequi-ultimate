@@ -105,8 +105,14 @@ function scrollToBottom() {
   }
 }
 
+function isNearBottom(): boolean {
+  if (!scrollContainer.value) return true;
+  const el = scrollContainer.value;
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+}
+
 watch(displayEntries, () => {
-  if (autoScroll.value) nextTick(() => scrollToBottom());
+  if (autoScroll.value && isNearBottom()) nextTick(() => scrollToBottom());
 });
 
 // ── Helpers ──
@@ -115,7 +121,7 @@ function sevColor(level: string): string {
     case 'CRITICAL': return '#ef4444';
     case 'ERROR': return '#f97316';
     case 'WARNING': return '#eab308';
-    case 'INFO': return '#22c55e';
+    case 'INFO': return '#3b82f6';
     default: return '#6b7280';
   }
 }
@@ -125,6 +131,7 @@ function sevBg(level: string): string {
     case 'CRITICAL': return 'rgba(239,68,68,0.15)';
     case 'ERROR': return 'rgba(249,115,22,0.10)';
     case 'WARNING': return 'rgba(234,179,8,0.08)';
+    case 'INFO': return 'rgba(59,130,246,0.10)';
     default: return 'transparent';
   }
 }
@@ -452,7 +459,7 @@ const timeWindows = [
           <div
             v-for="entry in displayEntries" :key="entry.id"
             class="flex items-baseline gap-2 px-2 py-0.5 font-mono text-[11px] leading-tight"
-            :class="[levelBorderClass(entry.level), highlightText && entry.message.toLowerCase().includes(highlightText.toLowerCase()) ? 'ring-1 ring-yellow-500/50 bg-yellow-500/10' : '']"
+            :class="[levelBorderClass(entry.level), highlightText && entry.message.toLowerCase().includes(highlightText.toLowerCase()) ? 'ring-1 ring-yellow-500/50 bg-yellow-500/10' : '', logStore.newEntryIds[entry.id] ? 'log-entry-new' : '']"
           >
             <span class="text-surface-500 shrink-0 whitespace-nowrap">{{ entry.timestampFormatted }}</span>
             <span class="shrink-0 w-16 text-center" :class="levelTextClass(entry.level)">{{ entry.level }}</span>
@@ -466,7 +473,7 @@ const timeWindows = [
           <div
             v-for="entry in displayEntries" :key="entry.id"
             class="rounded mb-1 p-2"
-            :class="[levelBorderClass(entry.level), highlightText && entry.message.toLowerCase().includes(highlightText.toLowerCase()) ? 'ring-1 ring-yellow-500/50 bg-yellow-500/10' : '']"
+            :class="[levelBorderClass(entry.level), highlightText && entry.message.toLowerCase().includes(highlightText.toLowerCase()) ? 'ring-1 ring-yellow-500/50 bg-yellow-500/10' : '', logStore.newEntryIds[entry.id] ? 'log-entry-new' : '']"
           >
             <div class="flex items-center gap-2 mb-0.5">
               <span class="text-[10px] text-surface-500">{{ entry.timestampFormatted }}</span>
@@ -488,3 +495,20 @@ const timeWindows = [
     </div>
   </div>
 </template>
+
+<style scoped>
+.log-entry-new {
+  animation: logFadeIn 0.8s ease-out;
+}
+
+@keyframes logFadeIn {
+  from {
+    opacity: 0;
+    background-color: rgba(59, 130, 246, 0.12);
+  }
+  to {
+    opacity: 1;
+    background-color: transparent;
+  }
+}
+</style>

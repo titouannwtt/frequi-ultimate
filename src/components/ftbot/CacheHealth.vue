@@ -5,8 +5,8 @@ import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { GaugeChart, BarChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent } from 'echarts/components';
-import type { RateMetricsResponse } from '@/types';
 import { useI18n } from 'vue-i18n';
+import { useRateMetrics } from '@/composables/useRateMetrics';
 
 use([GaugeChart, BarChart, CanvasRenderer, GridComponent, TooltipComponent]);
 
@@ -19,35 +19,16 @@ const props = withDefaults(
   { multiBotView: false },
 );
 
-const botStore = useBotStore();
 const settingsStore = useSettingsStore();
 
-const refreshInterval = ref<number | null>(null);
-const selectedBotId = ref('');
-
-const botOptions = computed(() => {
-  const all = botStore.allRateMetrics;
-  const opts = [{ text: `All (${Object.keys(all).length})`, value: '' }];
-  for (const [id, m] of Object.entries(all)) {
-    opts.push({ text: m.exchange ?? id, value: id });
-  }
-  return opts;
-});
-
-const primaryMetrics = computed((): RateMetricsResponse | null => {
-  if (props.multiBotView) {
-    const all = botStore.allRateMetrics;
-    if (selectedBotId.value && all[selectedBotId.value]) {
-      return all[selectedBotId.value];
-    }
-    const entries = Object.values(all);
-    return entries.length > 0 ? entries[0] : null;
-  }
-  const m = botStore.activeBot?.rateMetrics;
-  return m?.exchange ? m : null;
-});
-
-const hasData = computed(() => !!primaryMetrics.value?.exchange);
+const {
+  selectedWindow,
+  selectedExchange,
+  windowOptions,
+  exchangeOptions,
+  primaryMetrics,
+  hasData,
+} = useRateMetrics({ multiBotView: props.multiBotView });
 
 const ftcache = computed(() => primaryMetrics.value?.ftcache_extended);
 const ftpairlist = computed(() => primaryMetrics.value?.ftpairlist);
@@ -60,6 +41,7 @@ const pairlistHitPct = computed(() => ftpairlist.value?.hit_rate_pct ?? 0);
 const totalRequests = computed(() => summary.value?.total ?? 0);
 const cachedRequests = computed(() => summary.value?.cached ?? 0);
 const directRequests = computed(() => summary.value?.direct ?? 0);
+const pairlistHits = computed(() => ftpairlist.value?.hits ?? 0);
 const maxReqPerMin = computed(() => exchangeLimit.value?.max_requests_per_min ?? 0);
 
 const usagePct = computed(() => {
@@ -95,6 +77,8 @@ const ftcacheGauge = computed((): EChartsOption => {
           `<br/>${t('cacheHealth.cacheHits')}: ${c.cache_hits}`,
           `<br/>${t('cacheHealth.cacheMisses')}: ${c.cache_misses}`,
           `<br/><br/><em>${t('cacheHealth.ftcacheExplain')}</em>`,
+          `<br/><br/>${t('cacheHealth.gaugeExplain0')}`,
+          `<br/>${t('cacheHealth.gaugeExplain100')}`,
         ].join('');
       },
     },
@@ -158,6 +142,8 @@ const ftpairlistGauge = computed((): EChartsOption => {
           `<br/>${t('cacheHealth.entries')}: ${p.entries}`,
           `<br/>${t('cacheHealth.clients')}: ${p.clients}`,
           `<br/><br/><em>${t('cacheHealth.ftpairlistExplain')}</em>`,
+          `<br/><br/>${t('cacheHealth.gaugeExplain0')}`,
+          `<br/>${t('cacheHealth.gaugeExplain100')}`,
         ].join('');
       },
     },
@@ -174,7 +160,7 @@ const ftpairlistGauge = computed((): EChartsOption => {
           show: true,
           width: 10,
           roundCap: true,
-          itemStyle: { color: statusColor(pct) },
+          itemStyle: { color: '#3b82f6' },
         },
         axisLine: {
           lineStyle: { width: 10, color: [[1, '#334155']] },
@@ -193,7 +179,7 @@ const ftpairlistGauge = computed((): EChartsOption => {
           valueAnimation: true,
           fontSize: 16,
           fontWeight: 'bold',
-          color: statusColor(pct),
+          color: '#3b82f6',
           offsetCenter: [0, '-5%'],
           formatter: '{value}%',
         },
@@ -206,7 +192,8 @@ const ftpairlistGauge = computed((): EChartsOption => {
 const breakdownOption = computed((): EChartsOption => {
   const cached = cachedRequests.value;
   const direct = directRequests.value;
-  const total = totalRequests.value;
+  const pairlist = pairlistHits.value;
+  const total = totalRequests.value + pairlist;
   if (total === 0) return {};
 
   return {
@@ -240,58 +227,58 @@ const breakdownOption = computed((): EChartsOption => {
     },
     series: [
       {
-        name: t('cacheHealth.cached'),
+        name: t('cacheHealth.cachedFtcache'),
         type: 'bar',
         stack: 'total',
         data: [cached],
         color: '#22c55e',
         barWidth: 20,
-        itemStyle: { borderRadius: [4, 0, 0, 4] },
+        itemStyle: { borderRadius: pairlist > 0 ? [4, 0, 0, 4] : [4, 0, 0, 4] },
+      },
+      {
+        name: t('cacheHealth.cachedFtpairlist'),
+        type: 'bar',
+        stack: 'total',
+        data: [pairlist],
+        color: '#3b82f6',
+        barWidth: 20,
       },
       {
         name: t('cacheHealth.directToExchange'),
         type: 'bar',
         stack: 'total',
         data: [direct],
-        color: '#3b82f6',
+        color: '#f59e0b',
         barWidth: 20,
         itemStyle: { borderRadius: [0, 4, 4, 0] },
       },
     ],
   };
 });
-
-function fetchMetrics() {
-  if (props.multiBotView) {
-    botStore.allGetRateMetrics();
-  } else {
-    botStore.activeBot?.getRateMetrics();
-  }
-}
-
-onMounted(() => {
-  fetchMetrics();
-  refreshInterval.value = window.setInterval(fetchMetrics, 30000);
-});
-
-onUnmounted(() => {
-  if (refreshInterval.value) {
-    clearInterval(refreshInterval.value);
-  }
-});
 </script>
 
 <template>
   <div class="flex flex-col h-full p-2 gap-2 overflow-auto">
     <template v-if="hasData">
-      <!-- Bot selector -->
-      <div v-if="multiBotView && botOptions.length > 2" class="flex items-center gap-2">
+      <!-- Window & exchange selector -->
+      <div class="flex items-center gap-2">
+        <label class="text-xs text-surface-500">{{ t('rateMonitor.window') }}</label>
         <Select
-          v-model="selectedBotId"
+          v-model="selectedWindow"
           size="small"
           option-label="text"
           option-value="value"
-          :options="botOptions"
+          :options="windowOptions"
+          class="text-xs"
+          style="min-width: 80px"
+        />
+        <Select
+          v-if="multiBotView && exchangeOptions.length > 2"
+          v-model="selectedExchange"
+          size="small"
+          option-label="text"
+          option-value="value"
+          :options="exchangeOptions"
           class="text-xs"
           style="min-width: 100px"
         />
@@ -326,19 +313,23 @@ onUnmounted(() => {
           {{ t('cacheHealth.breakdown') }}
         </span>
         <ECharts
-          v-if="totalRequests > 0"
+          v-if="totalRequests > 0 || pairlistHits > 0"
           :option="breakdownOption"
           :theme="settingsStore.chartTheme"
           autoresize
           style="width: 100%; height: 35px"
         />
-        <div class="flex justify-between text-xs text-surface-500 mt-0.5">
+        <div class="flex justify-between text-xs text-surface-500 mt-0.5 flex-wrap gap-1">
           <span>
             <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />
-            {{ t('cacheHealth.cached') }}: {{ cachedRequests }}
+            {{ t('cacheHealth.cachedFtcache') }}: {{ cachedRequests }}
+          </span>
+          <span v-if="pairlistHits > 0">
+            <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1" />
+            {{ t('cacheHealth.cachedFtpairlist') }}: {{ pairlistHits }}
           </span>
           <span>
-            <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1" />
+            <span class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1" />
             {{ t('cacheHealth.directToExchange') }}: {{ directRequests }}
           </span>
         </div>
@@ -388,7 +379,7 @@ onUnmounted(() => {
           class="flex items-center gap-1 cursor-help"
           :title="t('cacheHealth.ftpairlistExplain')"
         >
-          <i-mdi-format-list-bulleted class="w-3.5 h-3.5 text-purple-400" />
+          <i-mdi-format-list-bulleted class="w-3.5 h-3.5 text-blue-400" />
           <span class="text-surface-500">ftpairlist</span>
           <span class="font-semibold ml-auto">{{ ftpairlist.gets }} req</span>
         </div>

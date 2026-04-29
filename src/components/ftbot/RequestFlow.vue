@@ -5,8 +5,9 @@ import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { SankeyChart } from 'echarts/charts';
 import { TooltipComponent } from 'echarts/components';
-import type { MethodStats, RateMetricsResponse } from '@/types';
+import type { MethodStats } from '@/types';
 import { useI18n } from 'vue-i18n';
+import { useRateMetrics } from '@/composables/useRateMetrics';
 
 use([SankeyChart, CanvasRenderer, TooltipComponent]);
 
@@ -19,53 +20,27 @@ const props = withDefaults(
   { multiBotView: false },
 );
 
-const botStore = useBotStore();
 const settingsStore = useSettingsStore();
 
-const refreshInterval = ref<number | null>(null);
+const {
+  selectedWindow,
+  selectedExchange,
+  windowOptions,
+  exchangeOptions,
+  primaryMetrics,
+} = useRateMetrics({ multiBotView: props.multiBotView });
+
 const sortKey = ref<'count' | 'cached' | 'errors' | 'avg_latency_ms' | 'p95_latency_ms'>('count');
 const sortAsc = ref(false);
 const showSankey = ref(true);
-
-const windowOptions = [
-  { text: '10 min', value: 600 },
-  { text: '30 min', value: 1800 },
-  { text: '1h', value: 3600 },
-  { text: '6h', value: 21600 },
-  { text: '24h', value: 86400 },
-];
-const selectedWindow = ref(3600);
-const selectedBotId = ref('');
-
-const botOptions = computed(() => {
-  const all = botStore.allRateMetrics;
-  const opts = [{ text: `All (${Object.keys(all).length})`, value: '' }];
-  for (const [id, m] of Object.entries(all)) {
-    opts.push({ text: m.exchange ?? id, value: id });
-  }
-  return opts;
-});
 
 function formatLatency(ms: number): string {
   if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
   return `${ms.toFixed(0)}ms`;
 }
 
-const metricsData = computed((): RateMetricsResponse | null => {
-  if (props.multiBotView) {
-    const all = botStore.allRateMetrics;
-    if (selectedBotId.value && all[selectedBotId.value]) {
-      return all[selectedBotId.value];
-    }
-    const entries = Object.values(all);
-    return entries.length > 0 ? entries[0] : null;
-  }
-  const m = botStore.activeBot?.rateMetrics;
-  return m?.exchange ? m : null;
-});
-
 const byMethod = computed((): Record<string, MethodStats> => {
-  return (metricsData.value?.summary?.by_method as Record<string, MethodStats>) ?? {};
+  return (primaryMetrics.value?.summary?.by_method as Record<string, MethodStats>) ?? {};
 });
 
 const hasData = computed(() => Object.keys(byMethod.value).length > 0);
@@ -99,7 +74,7 @@ const sankeyOption = computed((): EChartsOption => {
   const methods = byMethod.value;
   if (Object.keys(methods).length === 0) return {};
 
-  const exchange = metricsData.value?.exchange ?? 'Exchange';
+  const exchange = primaryMetrics.value?.exchange ?? 'Exchange';
 
   interface SankeyNode {
     name: string;
@@ -243,32 +218,6 @@ function cacheRatio(stats: MethodStats): string {
   if (total === 0) return '—';
   return `${Math.round((stats.cached / total) * 100)}%`;
 }
-
-function fetchMetrics() {
-  const bucketS = selectedWindow.value <= 1800 ? 10 : selectedWindow.value <= 7200 ? 30 : 60;
-  if (props.multiBotView) {
-    botStore.allBotStores.forEach((bot) => {
-      if (bot.isBotOnline) {
-        bot.getRateMetrics(selectedWindow.value, bucketS);
-      }
-    });
-  } else {
-    botStore.activeBot?.getRateMetrics(selectedWindow.value, bucketS);
-  }
-}
-
-watch(selectedWindow, () => fetchMetrics());
-
-onMounted(() => {
-  fetchMetrics();
-  refreshInterval.value = window.setInterval(fetchMetrics, 30000);
-});
-
-onUnmounted(() => {
-  if (refreshInterval.value) {
-    clearInterval(refreshInterval.value);
-  }
-});
 </script>
 
 <template>
@@ -308,12 +257,12 @@ onUnmounted(() => {
           style="min-width: 80px"
         />
         <Select
-          v-if="multiBotView && botOptions.length > 2"
-          v-model="selectedBotId"
+          v-if="multiBotView && exchangeOptions.length > 2"
+          v-model="selectedExchange"
           size="small"
           option-label="text"
           option-value="value"
-          :options="botOptions"
+          :options="exchangeOptions"
           class="text-xs"
           style="min-width: 100px"
         />

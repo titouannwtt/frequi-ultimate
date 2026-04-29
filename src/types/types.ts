@@ -205,6 +205,46 @@ export interface HealthResponse {
   bot_startup_ts: number;
 }
 
+export interface CacheDaemonStatus {
+  online: boolean;
+  uptime_s: number;
+  active_clients: number;
+  requests_total: number;
+  cache_hits: number;
+  cache_partial: number;
+  cache_misses: number;
+  hit_rate_pct: number;
+  fetch_errors: number;
+  series_count: number;
+  pending_fetches: number;
+  peak_pending: number;
+  acquire_total: number;
+  tickers_requests: number;
+  tickers_cache_hits: number;
+  tickers_hit_rate_pct: number;
+  tickers_fetches: number;
+  positions_puts: number;
+  positions_gets: number;
+  positions_cache_hits: number;
+  positions_hit_rate_pct: number;
+}
+
+export interface PairlistCacheStatus {
+  online: boolean;
+  uptime_s: number;
+  active_clients: number;
+  entries: number;
+  gets: number;
+  hits: number;
+  hit_rate_pct: number;
+  puts: number;
+}
+
+export interface CacheStatusResponse {
+  ftcache: CacheDaemonStatus;
+  pairlist_cache: PairlistCacheStatus;
+}
+
 export interface StatusResponse {
   status: string;
 }
