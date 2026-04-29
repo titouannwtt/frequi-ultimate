@@ -66,6 +66,10 @@ const gridLayoutRateBudget = computed((): GridItemData => {
   return findGridLayout(gridLayoutData.value, DashboardLayout.rateBudget);
 });
 
+const gridLayoutRatePulse = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.ratePulse);
+});
+
 const responsiveGridLayouts = computed(() => {
   return {
     sm: layoutStore.getDashboardLayoutSm,
@@ -260,6 +264,21 @@ onMounted(async () => {
       >
         <DraggableContainer header="Rate Budget">
           <RateBudget multi-bot-view />
+        </DraggableContainer>
+      </GridItem>
+      <GridItem
+        v-bind="gridItemProps"
+        :i="gridLayoutRatePulse.i"
+        :x="gridLayoutRatePulse.x"
+        :y="gridLayoutRatePulse.y"
+        :w="gridLayoutRatePulse.w"
+        :h="gridLayoutRatePulse.h"
+        :min-w="4"
+        :min-h="4"
+        drag-allow-from=".drag-header"
+      >
+        <DraggableContainer header="Rate Pulse">
+          <RatePulse multi-bot-view />
         </DraggableContainer>
       </GridItem>
     </template>

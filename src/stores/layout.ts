@@ -23,6 +23,7 @@ export enum DashboardLayout {
   stressTest = 11,
   logConsole = 12,
   rateBudget = 13,
+  ratePulse = 14,
 }
 
 // Define default layouts
@@ -58,6 +59,7 @@ const DEFAULT_DASHBOARD_LAYOUT: GridItemData[] = [
   { i: DashboardLayout.stressTest, x: 0, y: 28, w: 4, h: 6 },
   { i: DashboardLayout.logConsole, x: 4, y: 28, w: 4, h: 6 },
   { i: DashboardLayout.rateBudget, x: 8, y: 28, w: 4, h: 6 },
+  { i: DashboardLayout.ratePulse, x: 0, y: 34, w: 8, h: 5 },
 ];
 
 const DEFAULT_DASHBOARD_LAYOUT_SM: GridItemData[] = [
@@ -75,6 +77,7 @@ const DEFAULT_DASHBOARD_LAYOUT_SM: GridItemData[] = [
   { i: DashboardLayout.stressTest, x: 0, y: 64, w: 12, h: 6 },
   { i: DashboardLayout.logConsole, x: 0, y: 70, w: 12, h: 6 },
   { i: DashboardLayout.rateBudget, x: 0, y: 76, w: 12, h: 6 },
+  { i: DashboardLayout.ratePulse, x: 0, y: 82, w: 12, h: 5 },
 ];
 
 const STORE_LAYOUTS = 'ftLayoutSettings';
