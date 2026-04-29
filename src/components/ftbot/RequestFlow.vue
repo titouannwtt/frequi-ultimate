@@ -6,8 +6,11 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { SankeyChart } from 'echarts/charts';
 import { TooltipComponent } from 'echarts/components';
 import type { MethodStats, RateMetricsResponse } from '@/types';
+import { useI18n } from 'vue-i18n';
 
 use([SankeyChart, CanvasRenderer, TooltipComponent]);
+
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -24,9 +27,36 @@ const sortKey = ref<'count' | 'cached' | 'errors' | 'avg_latency_ms' | 'p95_late
 const sortAsc = ref(false);
 const showSankey = ref(true);
 
+const windowOptions = [
+  { text: '10 min', value: 600 },
+  { text: '30 min', value: 1800 },
+  { text: '1h', value: 3600 },
+  { text: '6h', value: 21600 },
+  { text: '24h', value: 86400 },
+];
+const selectedWindow = ref(3600);
+const selectedBotId = ref('');
+
+const botOptions = computed(() => {
+  const all = botStore.allRateMetrics;
+  const opts = [{ text: `All (${Object.keys(all).length})`, value: '' }];
+  for (const [id, m] of Object.entries(all)) {
+    opts.push({ text: m.exchange ?? id, value: id });
+  }
+  return opts;
+});
+
+function formatLatency(ms: number): string {
+  if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${ms.toFixed(0)}ms`;
+}
+
 const metricsData = computed((): RateMetricsResponse | null => {
   if (props.multiBotView) {
     const all = botStore.allRateMetrics;
+    if (selectedBotId.value && all[selectedBotId.value]) {
+      return all[selectedBotId.value];
+    }
     const entries = Object.values(all);
     return entries.length > 0 ? entries[0] : null;
   }
@@ -82,14 +112,18 @@ const sankeyOption = computed((): EChartsOption => {
     lineStyle?: { color: string; opacity: number };
   }
 
+  const directLabel = t('rateMonitor.direct');
+  const cachedLabel = t('rateMonitor.cached');
+  const errorsLabel = t('rateMonitor.errors');
+
   const nodes: SankeyNode[] = [{ name: exchange, itemStyle: { color: '#6366f1' } }];
   const links: SankeyLink[] = [];
   const methodNames = new Set<string>();
 
   const outcomeNodes: Record<string, SankeyNode> = {
-    Direct: { name: 'Direct', itemStyle: { color: '#3b82f6' } },
-    Cached: { name: 'Cached', itemStyle: { color: '#22c55e' } },
-    Errors: { name: 'Errors', itemStyle: { color: '#ef4444' } },
+    [directLabel]: { name: directLabel, itemStyle: { color: '#3b82f6' } },
+    [cachedLabel]: { name: cachedLabel, itemStyle: { color: '#22c55e' } },
+    [errorsLabel]: { name: errorsLabel, itemStyle: { color: '#ef4444' } },
   };
 
   let totalDirect = 0;
@@ -115,7 +149,7 @@ const sankeyOption = computed((): EChartsOption => {
     if (stats.direct > 0) {
       links.push({
         source: method,
-        target: 'Direct',
+        target: directLabel,
         value: stats.direct,
         lineStyle: { color: '#3b82f6', opacity: 0.25 },
       });
@@ -124,7 +158,7 @@ const sankeyOption = computed((): EChartsOption => {
     if (stats.cached > 0) {
       links.push({
         source: method,
-        target: 'Cached',
+        target: cachedLabel,
         value: stats.cached,
         lineStyle: { color: '#22c55e', opacity: 0.25 },
       });
@@ -133,7 +167,7 @@ const sankeyOption = computed((): EChartsOption => {
     if (stats.errors > 0) {
       links.push({
         source: method,
-        target: 'Errors',
+        target: errorsLabel,
         value: stats.errors,
         lineStyle: { color: '#ef4444', opacity: 0.25 },
       });
@@ -141,9 +175,9 @@ const sankeyOption = computed((): EChartsOption => {
     }
   }
 
-  if (totalDirect > 0) nodes.push(outcomeNodes['Direct']);
-  if (totalCached > 0) nodes.push(outcomeNodes['Cached']);
-  if (totalErrors > 0) nodes.push(outcomeNodes['Errors']);
+  if (totalDirect > 0) nodes.push(outcomeNodes[directLabel]);
+  if (totalCached > 0) nodes.push(outcomeNodes[cachedLabel]);
+  if (totalErrors > 0) nodes.push(outcomeNodes[errorsLabel]);
 
   if (links.length === 0) return {};
 
@@ -160,9 +194,23 @@ const sankeyOption = computed((): EChartsOption => {
           data?: { source: string; target: string; value: number };
         };
         if (p.dataType === 'edge' && p.data) {
-          return `${p.data.source} → ${p.data.target}: <strong>${p.data.value}</strong>`;
+          return `${p.data.source} → ${p.data.target}: <strong>${p.data.value}</strong> ${t('rateMonitor.requests').toLowerCase()}`;
         }
-        return `<strong>${p.name}</strong>: ${p.value ?? ''}`;
+        const stats = methods[p.name];
+        if (stats) {
+          const cachePct = stats.count > 0 ? Math.round((stats.cached / stats.count) * 100) : 0;
+          const errPct = stats.count > 0 ? Math.round((stats.errors / stats.count) * 100) : 0;
+          return [
+            `<strong>${p.name}</strong>`,
+            `Total: ${stats.count} ${t('rateMonitor.requests').toLowerCase()}`,
+            `<span style="color:#3b82f6">●</span> Direct: ${stats.direct}`,
+            `<span style="color:#22c55e">●</span> ${t('rateMonitor.cached')}: ${stats.cached} (${cachePct}%)`,
+            `<span style="color:#ef4444">●</span> ${t('rateMonitor.errors')}: ${stats.errors} (${errPct}%)`,
+            `${t('rateMonitor.avgResponse')}: ${formatLatency(stats.avg_latency_ms)}`,
+            `${t('rateMonitor.p95Response')}: ${formatLatency(stats.p95_latency_ms)}`,
+          ].join('<br/>');
+        }
+        return `<strong>${p.name}</strong>: ${p.value ?? ''} ${t('rateMonitor.requests').toLowerCase()}`;
       },
     },
     series: [
@@ -174,13 +222,14 @@ const sankeyOption = computed((): EChartsOption => {
         orient: 'horizontal',
         nodeWidth: 18,
         nodeGap: 10,
-        left: 10,
-        right: 10,
+        left: 80,
+        right: 80,
         top: 5,
         bottom: 5,
         label: {
-          fontSize: 10,
+          fontSize: 11,
           color: '#cbd5e1',
+          overflow: 'break',
         },
         data: nodes,
         links,
@@ -196,12 +245,19 @@ function cacheRatio(stats: MethodStats): string {
 }
 
 function fetchMetrics() {
+  const bucketS = selectedWindow.value <= 1800 ? 10 : selectedWindow.value <= 7200 ? 30 : 60;
   if (props.multiBotView) {
-    botStore.allGetRateMetrics();
+    botStore.allBotStores.forEach((bot) => {
+      if (bot.isBotOnline) {
+        bot.getRateMetrics(selectedWindow.value, bucketS);
+      }
+    });
   } else {
-    botStore.activeBot?.getRateMetrics();
+    botStore.activeBot?.getRateMetrics(selectedWindow.value, bucketS);
   }
 }
+
+watch(selectedWindow, () => fetchMetrics());
 
 onMounted(() => {
   fetchMetrics();
@@ -229,7 +285,7 @@ onUnmounted(() => {
           "
           @click="showSankey = true"
         >
-          Flow
+          {{ t('rateMonitor.flow') }}
         </button>
         <button
           class="text-xs px-2 py-0.5 rounded transition-colors"
@@ -240,10 +296,29 @@ onUnmounted(() => {
           "
           @click="showSankey = false"
         >
-          Table
+          {{ t('rateMonitor.table') }}
         </button>
+        <Select
+          v-model="selectedWindow"
+          size="small"
+          option-label="text"
+          option-value="value"
+          :options="windowOptions"
+          class="text-xs"
+          style="min-width: 80px"
+        />
+        <Select
+          v-if="multiBotView && botOptions.length > 2"
+          v-model="selectedBotId"
+          size="small"
+          option-label="text"
+          option-value="value"
+          :options="botOptions"
+          class="text-xs"
+          style="min-width: 100px"
+        />
         <span class="text-xs text-surface-500 ml-auto">
-          {{ Object.keys(byMethod).length }} methods
+          {{ t('rateMonitor.methods', { count: Object.keys(byMethod).length }) }}
         </span>
       </div>
 
@@ -256,7 +331,7 @@ onUnmounted(() => {
           autoresize
         />
         <div v-else class="flex items-center justify-center h-full text-surface-500 text-sm">
-          Not enough data for flow diagram
+          {{ t('rateMonitor.noFlowData') }}
         </div>
       </div>
 
@@ -265,36 +340,38 @@ onUnmounted(() => {
         <table class="w-full text-xs">
           <thead>
             <tr class="text-surface-500 border-b border-surface-700">
-              <th class="text-left py-1 px-1 font-semibold">Method</th>
+              <th class="text-left py-1 px-1 font-semibold">{{ t('rateMonitor.method') }}</th>
               <th
                 class="text-right py-1 px-1 font-semibold cursor-pointer select-none"
                 @click="toggleSort('count')"
               >
-                Count {{ sortIcon('count') }}
+                {{ t('rateMonitor.count') }} {{ sortIcon('count') }}
               </th>
               <th
                 class="text-right py-1 px-1 font-semibold cursor-pointer select-none"
                 @click="toggleSort('cached')"
               >
-                Cache {{ sortIcon('cached') }}
+                {{ t('rateMonitor.cached') }} {{ sortIcon('cached') }}
               </th>
               <th
                 class="text-right py-1 px-1 font-semibold cursor-pointer select-none"
                 @click="toggleSort('errors')"
               >
-                Err {{ sortIcon('errors') }}
+                {{ t('rateMonitor.errors') }} {{ sortIcon('errors') }}
               </th>
               <th
                 class="text-right py-1 px-1 font-semibold cursor-pointer select-none"
+                :title="t('rateMonitor.avgResponseDesc')"
                 @click="toggleSort('avg_latency_ms')"
               >
-                Avg ms {{ sortIcon('avg_latency_ms') }}
+                {{ t('rateMonitor.avgResponse') }} {{ sortIcon('avg_latency_ms') }}
               </th>
               <th
                 class="text-right py-1 px-1 font-semibold cursor-pointer select-none"
+                :title="t('rateMonitor.p95ResponseDesc')"
                 @click="toggleSort('p95_latency_ms')"
               >
-                P95 ms {{ sortIcon('p95_latency_ms') }}
+                {{ t('rateMonitor.p95Response') }} {{ sortIcon('p95_latency_ms') }}
               </th>
             </tr>
           </thead>
@@ -318,13 +395,13 @@ onUnmounted(() => {
                 {{ stats.errors }}
               </td>
               <td class="text-right py-1 px-1 font-mono">
-                {{ stats.avg_latency_ms.toFixed(0) }}
+                {{ formatLatency(stats.avg_latency_ms) }}
               </td>
               <td
                 class="text-right py-1 px-1 font-mono"
                 :class="stats.p95_latency_ms > 500 ? 'text-amber-400' : ''"
               >
-                {{ stats.p95_latency_ms.toFixed(0) }}
+                {{ formatLatency(stats.p95_latency_ms) }}
               </td>
             </tr>
           </tbody>
@@ -335,8 +412,8 @@ onUnmounted(() => {
     <!-- Empty state -->
     <div v-else class="flex flex-col items-center justify-center h-full text-surface-500">
       <i-mdi-source-fork class="w-8 h-8 mb-2" />
-      <span class="text-sm">No method data available</span>
-      <span class="text-xs">Waiting for API activity</span>
+      <span class="text-sm">{{ t('rateMonitor.noMethodData') }}</span>
+      <span class="text-xs">{{ t('rateMonitor.waitingActivity') }}</span>
     </div>
   </div>
 </template>

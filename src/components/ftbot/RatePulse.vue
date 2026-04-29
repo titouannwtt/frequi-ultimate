@@ -12,6 +12,7 @@ import {
   TooltipComponent,
 } from 'echarts/components';
 import type { RateMetricsResponse, RateTimelineBucket } from '@/types';
+import { useI18n } from 'vue-i18n';
 
 use([
   LineChart,
@@ -25,6 +26,8 @@ use([
   TooltipComponent,
 ]);
 
+const { t } = useI18n();
+
 const props = withDefaults(
   defineProps<{
     multiBotView?: boolean;
@@ -36,6 +39,7 @@ const botStore = useBotStore();
 const settingsStore = useSettingsStore();
 
 const refreshInterval = ref<number | null>(null);
+const selectedBotId = ref('');
 const windowOptions = [
   { text: '10 min', value: 600 },
   { text: '30 min', value: 1800 },
@@ -45,9 +49,21 @@ const windowOptions = [
 ];
 const selectedWindow = ref(3600);
 
+const botOptions = computed(() => {
+  const all = botStore.allRateMetrics;
+  const opts = [{ text: `All (${Object.keys(all).length})`, value: '' }];
+  for (const [id, m] of Object.entries(all)) {
+    opts.push({ text: m.exchange ?? id, value: id });
+  }
+  return opts;
+});
+
 const metricsData = computed((): RateMetricsResponse | null => {
   if (props.multiBotView) {
     const all = botStore.allRateMetrics;
+    if (selectedBotId.value && all[selectedBotId.value]) {
+      return all[selectedBotId.value];
+    }
     const entries = Object.values(all);
     return entries.length > 0 ? entries[0] : null;
   }
@@ -64,6 +80,11 @@ const recent429s = computed(() => metricsData.value?.recent_429s ?? []);
 function formatTime(ts: number): string {
   const d = new Date(ts * 1000);
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+}
+
+function formatLatency(ms: number): string {
+  if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${ms.toFixed(0)}ms`;
 }
 
 const chartOption = computed((): EChartsOption => {
@@ -101,14 +122,24 @@ const chartOption = computed((): EChartsOption => {
         const idx = p[0].axisValue;
         let html = `<strong>${idx}</strong><br/>`;
         for (const s of p) {
-          const unit = s.seriesName === 'Latency' ? ' ms' : '';
-          html += `<span style="color:${s.color}">●</span> ${s.seriesName}: <strong>${typeof s.value === 'number' ? s.value.toFixed(s.seriesName === 'Latency' ? 1 : 0) : s.value}</strong>${unit}<br/>`;
+          const isLatency = s.seriesName === t('rateMonitor.responseTime');
+          const display = isLatency
+            ? formatLatency(s.value)
+            : typeof s.value === 'number'
+              ? s.value.toFixed(0)
+              : s.value;
+          html += `<span style="color:${s.color}">●</span> ${s.seriesName}: <strong>${display}</strong><br/>`;
         }
         return html;
       },
     },
     legend: {
-      data: ['Direct', 'Cached', 'Errors', 'Latency'],
+      data: [
+        t('rateMonitor.direct'),
+        t('rateMonitor.cached'),
+        t('rateMonitor.errors'),
+        t('rateMonitor.responseTime'),
+      ],
       top: 0,
       right: '5%',
       textStyle: { fontSize: 11 },
@@ -125,7 +156,7 @@ const chartOption = computed((): EChartsOption => {
     yAxis: [
       {
         type: 'value',
-        name: 'Requests',
+        name: t('rateMonitor.requests'),
         nameTextStyle: { fontSize: 10 },
         splitLine: { lineStyle: { color: '#1e293b' } },
         axisLabel: { fontSize: 10 },
@@ -157,7 +188,7 @@ const chartOption = computed((): EChartsOption => {
     ],
     series: [
       {
-        name: 'Direct',
+        name: t('rateMonitor.direct'),
         type: 'line',
         stack: 'requests',
         areaStyle: { opacity: 0.4 },
@@ -175,7 +206,7 @@ const chartOption = computed((): EChartsOption => {
             : undefined,
       },
       {
-        name: 'Cached',
+        name: t('rateMonitor.cached'),
         type: 'line',
         stack: 'requests',
         areaStyle: { opacity: 0.4 },
@@ -185,14 +216,14 @@ const chartOption = computed((): EChartsOption => {
         color: '#22c55e',
       },
       {
-        name: 'Errors',
+        name: t('rateMonitor.errors'),
         type: 'bar',
         data: errorData,
         color: '#ef4444',
         barMaxWidth: 6,
       },
       {
-        name: 'Latency',
+        name: t('rateMonitor.responseTime'),
         type: 'line',
         yAxisIndex: 1,
         lineStyle: { width: 1, type: 'dotted' },
@@ -233,9 +264,9 @@ onUnmounted(() => {
 
 <template>
   <div class="flex flex-col h-full">
-    <!-- Window selector -->
+    <!-- Window & bot selector -->
     <div class="flex items-center gap-2 px-2 pt-1">
-      <label class="text-xs text-surface-500">Window</label>
+      <label class="text-xs text-surface-500">{{ t('rateMonitor.window') }}</label>
       <Select
         v-model="selectedWindow"
         size="small"
@@ -245,15 +276,27 @@ onUnmounted(() => {
         class="text-xs"
         style="min-width: 80px"
       />
+      <Select
+        v-if="multiBotView && botOptions.length > 2"
+        v-model="selectedBotId"
+        size="small"
+        option-label="text"
+        option-value="value"
+        :options="botOptions"
+        class="text-xs"
+        style="min-width: 100px"
+      />
       <div v-if="metricsData?.summary" class="flex items-center gap-3 ml-auto text-xs">
-        <span class="text-surface-500"> {{ metricsData.summary.total }} req </span>
+        <span class="text-surface-500">
+          {{ metricsData.summary.total }} {{ t('rateMonitor.req') }}
+        </span>
         <span
           :class="(metricsData.summary.errors_429 ?? 0) > 0 ? 'text-red-400' : 'text-surface-500'"
         >
-          {{ metricsData.summary.errors_429 ?? 0 }} 429s
+          {{ metricsData.summary.errors_429 ?? 0 }} {{ t('rateMonitor.429s') }}
         </span>
-        <span class="text-surface-500">
-          avg {{ (metricsData.summary.avg_latency_ms ?? 0).toFixed(0) }}ms
+        <span class="text-surface-500" :title="t('rateMonitor.avgResponseTime')">
+          {{ t('rateMonitor.avgResponse') }} {{ formatLatency(metricsData.summary.avg_latency_ms ?? 0) }}
         </span>
       </div>
     </div>
@@ -268,8 +311,8 @@ onUnmounted(() => {
       />
       <div v-else class="flex flex-col items-center justify-center h-full text-surface-500">
         <i-mdi-pulse class="w-8 h-8 mb-2" />
-        <span class="text-sm">No timeline data</span>
-        <span class="text-xs">Waiting for API activity</span>
+        <span class="text-sm">{{ t('rateMonitor.noTimeline') }}</span>
+        <span class="text-xs">{{ t('rateMonitor.waitingActivity') }}</span>
       </div>
     </div>
   </div>

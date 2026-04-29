@@ -63,6 +63,20 @@ export interface FtcacheExtended {
   positions_hit_rate_pct: number;
 }
 
+export interface FtpairlistStats {
+  clients: number;
+  gets: number;
+  hits: number;
+  puts: number;
+  entries: number;
+  hit_rate_pct: number;
+}
+
+export interface ExchangeRateLimit {
+  rate_limit_ms: number;
+  max_requests_per_min: number;
+}
+
 export interface RateMetricsResponse {
   exchange: string;
   timeline: RateTimelineBucket[];
@@ -70,4 +84,6 @@ export interface RateMetricsResponse {
   recent_429s: RateLimitEvent[];
   summary: RateMetricsSummary;
   ftcache_extended: FtcacheExtended;
+  ftpairlist?: FtpairlistStats;
+  exchange_rate_limit?: ExchangeRateLimit;
 }

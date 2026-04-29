@@ -84,6 +84,22 @@ const gridLayoutLogConsole = computed((): GridItemData => {
   return findGridLayout(gridLayoutData.value, DashboardLayout.logConsole);
 });
 
+const gridLayoutRateBudget = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.rateBudget);
+});
+
+const gridLayoutRatePulse = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.ratePulse);
+});
+
+const gridLayoutRequestFlow = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.requestFlow);
+});
+
+const gridLayoutCacheHealth = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.cacheHealth);
+});
+
 const responsiveGridLayouts = computed(() => {
   return {
     sm: layoutStore.getDashboardLayoutSm,
@@ -95,6 +111,7 @@ onMounted(async () => {
   // botStore.activeBot.getTrades();
   botStore.activeBot?.getOpenTrades();
   botStore.activeBot?.getProfit();
+  botStore.allGetRateMetrics();
 });
 </script>
 
@@ -391,6 +408,66 @@ onMounted(async () => {
       >
         <DraggableContainer :header="t('dashboard.logConsole')">
           <LogConsoleWidget />
+        </DraggableContainer>
+      </GridItem>
+      <GridItem
+        v-bind="gridItemProps"
+        :i="gridLayoutRateBudget.i"
+        :x="gridLayoutRateBudget.x"
+        :y="gridLayoutRateBudget.y"
+        :w="gridLayoutRateBudget.w"
+        :h="gridLayoutRateBudget.h"
+        :min-w="3"
+        :min-h="4"
+        drag-allow-from=".drag-header"
+      >
+        <DraggableContainer :header="t('dashboard.rateBudget')">
+          <RateBudget multi-bot-view />
+        </DraggableContainer>
+      </GridItem>
+      <GridItem
+        v-bind="gridItemProps"
+        :i="gridLayoutRatePulse.i"
+        :x="gridLayoutRatePulse.x"
+        :y="gridLayoutRatePulse.y"
+        :w="gridLayoutRatePulse.w"
+        :h="gridLayoutRatePulse.h"
+        :min-w="4"
+        :min-h="4"
+        drag-allow-from=".drag-header"
+      >
+        <DraggableContainer :header="t('dashboard.ratePulse')">
+          <RatePulse multi-bot-view />
+        </DraggableContainer>
+      </GridItem>
+      <GridItem
+        v-bind="gridItemProps"
+        :i="gridLayoutRequestFlow.i"
+        :x="gridLayoutRequestFlow.x"
+        :y="gridLayoutRequestFlow.y"
+        :w="gridLayoutRequestFlow.w"
+        :h="gridLayoutRequestFlow.h"
+        :min-w="3"
+        :min-h="4"
+        drag-allow-from=".drag-header"
+      >
+        <DraggableContainer :header="t('dashboard.requestFlow')">
+          <RequestFlow multi-bot-view />
+        </DraggableContainer>
+      </GridItem>
+      <GridItem
+        v-bind="gridItemProps"
+        :i="gridLayoutCacheHealth.i"
+        :x="gridLayoutCacheHealth.x"
+        :y="gridLayoutCacheHealth.y"
+        :w="gridLayoutCacheHealth.w"
+        :h="gridLayoutCacheHealth.h"
+        :min-w="3"
+        :min-h="4"
+        drag-allow-from=".drag-header"
+      >
+        <DraggableContainer :header="t('dashboard.cacheHealth')">
+          <CacheHealth multi-bot-view />
         </DraggableContainer>
       </GridItem>
     </template>
