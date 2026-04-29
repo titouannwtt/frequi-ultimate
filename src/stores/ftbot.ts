@@ -50,6 +50,8 @@ import type {
   StrategyListResult,
   StrategyResult,
   SysInfoResponse,
+  CacheStatusResponse,
+  RateMetricsResponse,
   TimeSummaryPayload,
   TimeSummaryReturnValue,
   Trade,
@@ -79,6 +81,7 @@ export function createBotSubStore(botId: string, botName: string) {
         ping: '',
         botStatusAvailable: false,
         isBotOnline: false,
+        isBotStarting: false,
         lastSeenOnline: 0 as number,
         isBotLoggedIn: true,
         autoRefresh: false,
@@ -104,6 +107,10 @@ export function createBotSubStore(botId: string, botName: string) {
         weeklyStats: {} as TimeSummaryReturnValue,
         monthlyStats: {} as TimeSummaryReturnValue,
         pairlistMethods: [] as string[],
+        pairlistPipeline: [] as import('@/types/blacklist').PipelineStep[],
+        handlerConfigs: [] as Record<string, any>[],
+        totalMarketPairs: 0,
+        addedPairs: [] as string[],
         detailTradeId: null as number | null,
         selectedPair: '',
         plotMultiPairs: [] as string[],
@@ -131,6 +138,8 @@ export function createBotSubStore(botId: string, botName: string) {
         backtestHistory: {} as Record<string, BacktestResultInMemory>,
         backtestHistoryList: [] as BacktestHistoryEntry[],
         sysInfo: {} as SysInfoResponse,
+        cacheStatus: {} as CacheStatusResponse,
+        rateMetrics: {} as RateMetricsResponse,
       };
     },
     getters: {
@@ -197,9 +206,11 @@ export function createBotSubStore(botId: string, botName: string) {
           const result = await api.get('/ping');
           const now = Date.now();
           this.ping = `${result.data.status} ${now.toString()}`;
+          this.isBotStarting = result.data.status === 'starting';
           this.setIsBotOnline(true);
           return Promise.resolve();
         } catch (error) {
+          this.isBotStarting = false;
           this.setIsBotOnline(false);
           return Promise.reject();
         }
@@ -632,6 +643,10 @@ export function createBotSubStore(botId: string, botName: string) {
           const { data } = await api.get<WhitelistResponse>('/whitelist');
           this.whitelist = data.whitelist;
           this.pairlistMethods = data.method;
+          this.pairlistPipeline = data.pipeline ?? [];
+          this.handlerConfigs = data.handler_configs ?? [];
+          this.totalMarketPairs = data.total_market_pairs ?? 0;
+          this.addedPairs = data.added_pairs ?? [];
           return Promise.resolve(data);
         } catch (error) {
           return Promise.reject(error);
@@ -1158,6 +1173,26 @@ export function createBotSubStore(botId: string, botName: string) {
         try {
           const { data } = await api.get<SysInfoResponse>('/sysinfo');
           this.sysInfo = data;
+          return Promise.resolve(data);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      },
+      async getCacheStatus() {
+        try {
+          const { data } = await api.get<CacheStatusResponse>('/cache_status');
+          this.cacheStatus = data;
+          return Promise.resolve(data);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      },
+      async getRateMetrics(window = 3600, bucket_s = 10) {
+        try {
+          const { data } = await api.get<RateMetricsResponse>('/rate_metrics', {
+            params: { window, bucket_s },
+          });
+          this.rateMetrics = data;
           return Promise.resolve(data);
         } catch (err) {
           return Promise.reject(err);

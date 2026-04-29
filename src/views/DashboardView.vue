@@ -62,6 +62,10 @@ const gridLayoutTradesLogChart = computed((): GridItemData => {
   return findGridLayout(gridLayoutData.value, DashboardLayout.tradesLogChart);
 });
 
+const gridLayoutRateBudget = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.rateBudget);
+});
+
 const responsiveGridLayouts = computed(() => {
   return {
     sm: layoutStore.getDashboardLayoutSm,
@@ -73,6 +77,7 @@ onMounted(async () => {
   // botStore.activeBot.getTrades();
   botStore.activeBot.getOpenTrades();
   botStore.activeBot.getProfit();
+  botStore.allGetRateMetrics();
 });
 </script>
 
@@ -240,6 +245,21 @@ onMounted(async () => {
       >
         <DraggableContainer header="Trades Log">
           <TradesLogChart :trades="botStore.allTradesSelectedBots" :show-title="false" />
+        </DraggableContainer>
+      </GridItem>
+      <GridItem
+        v-bind="gridItemProps"
+        :i="gridLayoutRateBudget.i"
+        :x="gridLayoutRateBudget.x"
+        :y="gridLayoutRateBudget.y"
+        :w="gridLayoutRateBudget.w"
+        :h="gridLayoutRateBudget.h"
+        :min-w="3"
+        :min-h="4"
+        drag-allow-from=".drag-header"
+      >
+        <DraggableContainer header="Rate Budget">
+          <RateBudget multi-bot-view />
         </DraggableContainer>
       </GridItem>
     </template>

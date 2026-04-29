@@ -12,6 +12,7 @@ import type {
   MultiForceExitPayload,
   MultiReloadTradePayload,
   ProfitStats,
+  RateMetricsResponse,
   Trade,
 } from '@/types';
 import { TimeSummaryOptions } from '@/types';
@@ -220,6 +221,15 @@ export const useBotStore = defineStore('ftbot-wrapper', {
         data: Object.values(resp).sort((a, b) => (a.date > b.date ? 1 : -1)),
       };
     },
+    allRateMetrics: (state): Record<string, RateMetricsResponse> => {
+      const result: Record<string, RateMetricsResponse> = {};
+      Object.entries(state.botStores).forEach(([k, botStore]) => {
+        if (botStore.isSelected && botStore.rateMetrics?.exchange) {
+          result[k] = botStore.rateMetrics;
+        }
+      });
+      return result;
+    },
   },
   actions: {
     selectBot(botId: string) {
@@ -424,6 +434,15 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       this.allBotStores.forEach((bot) => {
         if (bot.isBotOnline) {
           updates.push(bot.getTimeSummary(TimeSummaryOptions.daily, payload));
+        }
+      });
+      await Promise.all(updates);
+    },
+    async allGetRateMetrics() {
+      const updates: Promise<RateMetricsResponse>[] = [];
+      this.allBotStores.forEach((bot) => {
+        if (bot.isBotOnline) {
+          updates.push(bot.getRateMetrics());
         }
       });
       await Promise.all(updates);
