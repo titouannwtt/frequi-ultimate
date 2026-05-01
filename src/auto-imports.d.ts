@@ -381,6 +381,7 @@ declare global {
   const useStepper: typeof import('@vueuse/core').useStepper
   const useStorage: typeof import('@vueuse/core').useStorage
   const useStorageAsync: typeof import('@vueuse/core').useStorageAsync
+  const useStrategyDevStore: typeof import('./stores/strategyDevStore').useStrategyDevStore
   const useStyleTag: typeof import('@vueuse/core').useStyleTag
   const useSummaryCurrency: typeof import('./composables/summaryCurrency').useSummaryCurrency
   const useSupported: typeof import('@vueuse/core').useSupported
@@ -855,6 +856,7 @@ declare module 'vue' {
     readonly useStepper: UnwrapRef<typeof import('@vueuse/core')['useStepper']>
     readonly useStorage: UnwrapRef<typeof import('@vueuse/core')['useStorage']>
     readonly useStorageAsync: UnwrapRef<typeof import('@vueuse/core')['useStorageAsync']>
+    readonly useStrategyDevStore: UnwrapRef<typeof import('./stores/strategyDevStore')['useStrategyDevStore']>
     readonly useStyleTag: UnwrapRef<typeof import('@vueuse/core')['useStyleTag']>
     readonly useSummaryCurrency: UnwrapRef<typeof import('./composables/summaryCurrency')['useSummaryCurrency']>
     readonly useSupported: UnwrapRef<typeof import('@vueuse/core')['useSupported']>

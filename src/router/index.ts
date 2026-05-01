@@ -78,6 +78,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/DownloadDataView.vue'),
   },
   {
+    path: '/strategy-dev',
+    name: 'Strategy Development',
+    component: () => import('@/views/StrategyDevView.vue'),
+  },
+  {
     path: '/(.*)*',
     name: '404',
     component: () => import('@/views/Error404View.vue'),

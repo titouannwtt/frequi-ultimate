@@ -151,6 +151,12 @@ const navItems = computed(() => [
       (botStore.activeBot?.isWebserverMode ?? false) &&
       botStore.activeBot.botFeatures.pairlistConfig,
   },
+  {
+    label: t('nav.strategyDev'),
+    to: '/strategy-dev',
+    icon: 'i-mdi-flask-outline',
+    visible: botStore.activeBot?.isBotOnline ?? false,
+  },
 ]);
 
 const menuItems = computed<MenuItem[]>(() => [
@@ -220,6 +226,7 @@ function exportPDF() {
             <i-mdi-flask v-else-if="item.icon === 'i-mdi-flask'" class="w-4 h-4" />
             <i-mdi-download v-else-if="item.icon === 'i-mdi-download'" class="w-4 h-4" />
             <i-mdi-format-list-numbered-rtl v-else-if="item.icon === 'i-mdi-format-list-numbered-rtl'" class="w-4 h-4" />
+            <i-mdi-flask-outline v-else-if="item.icon === 'i-mdi-flask-outline'" class="w-4 h-4" />
             {{ item.label }}
           </RouterLink>
           <button

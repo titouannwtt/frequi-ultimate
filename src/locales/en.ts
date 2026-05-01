@@ -13,6 +13,7 @@ export default {
     resetLayout: 'Reset Layout',
     logout: 'Logout',
     exportPdf: 'Export as PDF',
+    strategyDev: 'Strategy Dev',
   },
 
   // Dashboard
@@ -1753,6 +1754,8 @@ export default {
     entries: 'Entries',
     clients: 'Clients',
     cached: 'Cached',
+    cachedFtcache: 'Cached (ftcache)',
+    cachedFtpairlist: 'Cached (ftpairlist)',
     directToExchange: 'Direct to exchange',
     breakdown: 'Request Breakdown',
     breakdownDesc: 'How requests are split between cache layers and direct exchange calls',
@@ -1764,7 +1767,123 @@ export default {
     ftpairlistExplain: 'ftpairlist: shared pairlist cache daemon that avoids redundant pairlist fetches across multiple bot instances',
     entriesDesc: 'Number of cached pairlist entries currently stored',
     clientsDesc: 'Number of bot instances currently connected to the pairlist cache',
+    gaugeExplain0: '0% = no requests served from cache (all going directly to exchange)',
+    gaugeExplain100: '100% = all requests served from cache (no direct exchange calls)',
     noData: 'No cache data available',
     noDataHint: 'Cache daemons must be running',
+  },
+
+  // Strategy Development Center
+  strategyDev: {
+    title: 'Strategy Development',
+    noRunSelected: 'Select a run from the sidebar to view details.',
+    noRuns: 'No runs found.',
+    loading: 'Loading runs...',
+    search: 'Search strategies...',
+    allTypes: 'All',
+    allStrategies: 'All strategies',
+    filterByType: 'Filter by type',
+    filterByStrategy: 'Filter by strategy',
+
+    // Run types
+    backtest: 'Backtest',
+    hyperopt: 'Hyperopt',
+    wfa: 'Walk-Forward',
+
+    // Detail tabs
+    tabOverview: 'Overview',
+    tabCharts: 'Charts',
+    tabParameters: 'Parameters',
+    tabConfig: 'Config',
+    tabSourceCode: 'Source Code',
+    tabCommand: 'Command',
+
+    // Detail header
+    deleteRun: 'Delete run',
+    deleteConfirm: 'Are you sure you want to delete this run?',
+    copyCommand: 'Copy command',
+    commandCopied: 'Command copied to clipboard',
+    noMetadata: 'No metadata available (legacy run)',
+
+    // Timestamps
+    started: 'Started',
+    ended: 'Ended',
+    duration: 'Duration',
+
+    // Metrics
+    totalProfit: 'Total Profit',
+    totalTrades: 'Total Trades',
+    bestSharpe: 'Best Sharpe',
+    bestLoss: 'Best Loss',
+    epochsCompleted: 'Epochs',
+    verdictGrade: 'Grade',
+    nWindows: 'Windows',
+
+    // Config / Source
+    configSaved: 'Saved Config',
+    configCurrent: 'Current Config',
+    configChanged: 'Config has changed since this run',
+    sourceSaved: 'Saved Strategy Source',
+    sourceCurrent: 'Current Strategy Source',
+    sourceChanged: 'Strategy has been modified since this run',
+    fileDeleted: 'File no longer exists',
+    noDiff: 'No changes detected',
+    showDiff: 'Show diff',
+
+    // WFA
+    trainRange: 'Train Range',
+    testRange: 'Test Range',
+    trainProfit: 'Train Profit',
+    testProfit: 'Test Profit',
+    degradation: 'Degradation',
+    windowsTitle: 'Walk-Forward Windows',
+    oosTradesLabel: 'OOS Trades',
+    noParamsAvailable: 'No parameters available for this run.',
+
+    // Auth errors
+    authRequired: 'Authentication Required',
+    authRequiredDesc:
+      'You need to log in to access Strategy Development. This page shows your strategy source code, configs, and optimization results — it is protected by your bot password.',
+    authStep1Title: '1. Configure API credentials',
+    authStep1Desc:
+      'Make sure your bot config file has an api_server section with a username and password:',
+    authStep2Title: '2. Log in via FreqUI',
+    authStep2Desc:
+      'Go to Settings (gear icon) and add your bot with the URL, username, and password you configured. FreqUI will obtain a JWT token automatically when you log in.',
+    authStep3Title: '3. Come back here',
+    authStep3Desc:
+      'Once logged in, return to this page. Your runs will load automatically. If you see this message again, your session may have expired — just log in again.',
+    modeNotSupported: 'Feature Not Available',
+    modeNotSupportedDesc:
+      'The Strategy Development endpoints are not available on this bot. Make sure you are running a version of Freqtrade that includes the stratdev API module.',
+    endpointNotFound: 'Endpoint Not Found',
+    endpointNotFoundDesc:
+      'The /stratdev API endpoints were not found on this bot. This usually means the bot is running an older version of Freqtrade that does not include Strategy Development. Update your Freqtrade installation and restart the bot.',
+    connectionError: 'Connection Failed',
+    connectionErrorDesc:
+      'Could not connect to the bot API. Check that the bot is running and that FreqUI is configured with the correct URL.',
+    errorDetail: 'Error {code}: {message}',
+    retry: 'Retry',
+
+    // No snapshot fallbacks
+    noSnapshotWarningTitle: 'Snapshot not available',
+    noSnapshotSourceDesc:
+      'The exact strategy source used during this run was not saved. Showing the current version of the strategy file instead.',
+    noSnapshotConfigDesc:
+      'The exact config used during this run was not saved. Showing the current bot configuration instead.',
+    noSnapshotCommandDesc:
+      'The exact command used was not saved. This is an approximation reconstructed from the available metadata.',
+    noSourceAvailable: 'No strategy source available for this run.',
+    noConfigAvailable: 'No config available for this run.',
+    noCommandAvailable: 'No command available for this run type.',
+    commandSaved: 'Saved Command',
+    commandInferred: 'Inferred Command',
+
+    // Actions
+    copyJson: 'Copy JSON',
+    copyAll: 'Copy all',
+    copied: 'Copied!',
+    expand: 'Expand',
+    collapse: 'Collapse',
   },
 };

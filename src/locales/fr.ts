@@ -13,6 +13,7 @@ export default {
     resetLayout: 'Réinitialiser la disposition',
     logout: 'Déconnexion',
     exportPdf: 'Exporter en PDF',
+    strategyDev: 'Dev Stratégie',
   },
 
   // Dashboard
@@ -1698,6 +1699,8 @@ export default {
     entries: 'Entrées',
     clients: 'Clients',
     cached: 'En cache',
+    cachedFtcache: 'Cache ftcache',
+    cachedFtpairlist: 'Cache ftpairlist',
     directToExchange: 'Direct à l\'exchange',
     breakdown: 'Répartition des requêtes',
     breakdownDesc: 'Comment les requêtes sont réparties entre les couches de cache et les appels directs à l\'exchange',
@@ -1709,7 +1712,114 @@ export default {
     ftpairlistExplain: 'ftpairlist : daemon de cache de pairlist partagé qui évite les récupérations redondantes entre plusieurs instances de bots',
     entriesDesc: 'Nombre d\'entrées de pairlist actuellement stockées dans le cache',
     clientsDesc: 'Nombre d\'instances de bots connectées au cache de pairlist',
+    gaugeExplain0: '0% = aucune requête servie depuis le cache (tout va directement à l\'exchange)',
+    gaugeExplain100: '100% = toutes les requêtes servies depuis le cache (aucun appel direct à l\'exchange)',
     noData: 'Aucune donnée de cache disponible',
     noDataHint: 'Les daemons de cache doivent être en cours d\'exécution',
+  },
+
+  // Strategy Development Center
+  strategyDev: {
+    title: 'Développement Stratégie',
+    noRunSelected: 'Sélectionnez un run dans la barre latérale pour voir les détails.',
+    noRuns: 'Aucun run trouvé.',
+    loading: 'Chargement des runs...',
+    search: 'Rechercher des stratégies...',
+    allTypes: 'Tous',
+    allStrategies: 'Toutes les stratégies',
+    filterByType: 'Filtrer par type',
+    filterByStrategy: 'Filtrer par stratégie',
+
+    backtest: 'Backtest',
+    hyperopt: 'Hyperopt',
+    wfa: 'Walk-Forward',
+
+    tabOverview: 'Aperçu',
+    tabCharts: 'Graphiques',
+    tabParameters: 'Paramètres',
+    tabConfig: 'Config',
+    tabSourceCode: 'Code Source',
+    tabCommand: 'Commande',
+
+    deleteRun: 'Supprimer le run',
+    deleteConfirm: 'Êtes-vous sûr de vouloir supprimer ce run ?',
+    copyCommand: 'Copier la commande',
+    commandCopied: 'Commande copiée',
+    noMetadata: 'Pas de métadonnées disponibles (run legacy)',
+
+    started: 'Début',
+    ended: 'Fin',
+    duration: 'Durée',
+
+    totalProfit: 'Profit Total',
+    totalTrades: 'Trades Totaux',
+    bestSharpe: 'Meilleur Sharpe',
+    bestLoss: 'Meilleur Loss',
+    epochsCompleted: 'Époques',
+    verdictGrade: 'Note',
+    nWindows: 'Fenêtres',
+
+    configSaved: 'Config Sauvegardée',
+    configCurrent: 'Config Actuelle',
+    configChanged: 'La config a changé depuis ce run',
+    sourceSaved: 'Code Stratégie Sauvegardé',
+    sourceCurrent: 'Code Stratégie Actuel',
+    sourceChanged: 'La stratégie a été modifiée depuis ce run',
+    fileDeleted: 'Le fichier n\'existe plus',
+    noDiff: 'Aucun changement détecté',
+    showDiff: 'Afficher le diff',
+
+    trainRange: 'Plage Train',
+    testRange: 'Plage Test',
+    trainProfit: 'Profit Train',
+    testProfit: 'Profit Test',
+    degradation: 'Dégradation',
+    windowsTitle: 'Fenêtres Walk-Forward',
+    oosTradesLabel: 'Trades OOS',
+    noParamsAvailable: 'Aucun paramètre disponible pour ce run.',
+
+    authRequired: 'Authentification requise',
+    authRequiredDesc:
+      'Vous devez vous connecter pour accéder au Développement Stratégie. Cette page affiche le code source de vos stratégies, configs et résultats d\'optimisation — elle est protégée par le mot de passe de votre bot.',
+    authStep1Title: '1. Configurer les identifiants API',
+    authStep1Desc:
+      'Vérifiez que le fichier de config de votre bot contient une section api_server avec un username et un password :',
+    authStep2Title: '2. Se connecter via FreqUI',
+    authStep2Desc:
+      'Allez dans Paramètres (icône engrenage) et ajoutez votre bot avec l\'URL, le nom d\'utilisateur et le mot de passe configurés. FreqUI obtient automatiquement un token JWT à la connexion.',
+    authStep3Title: '3. Revenir ici',
+    authStep3Desc:
+      'Une fois connecté, revenez sur cette page. Vos runs se chargeront automatiquement. Si ce message réapparaît, votre session a peut-être expiré — reconnectez-vous.',
+    modeNotSupported: 'Fonctionnalité non disponible',
+    modeNotSupportedDesc:
+      'Les endpoints Strategy Development ne sont pas disponibles sur ce bot. Vérifiez que vous utilisez une version de Freqtrade qui inclut le module API stratdev.',
+    endpointNotFound: 'Endpoint introuvable',
+    endpointNotFoundDesc:
+      'Les endpoints /stratdev n\'ont pas été trouvés sur ce bot. Cela signifie généralement que le bot utilise une version ancienne de Freqtrade sans le module Strategy Development. Mettez à jour votre installation et redémarrez le bot.',
+    connectionError: 'Connexion échouée',
+    connectionErrorDesc:
+      'Impossible de se connecter à l\'API du bot. Vérifiez que le bot tourne et que FreqUI est configuré avec la bonne URL.',
+    errorDetail: 'Erreur {code} : {message}',
+    retry: 'Réessayer',
+
+    // Fallbacks sans snapshot
+    noSnapshotWarningTitle: 'Snapshot non disponible',
+    noSnapshotSourceDesc:
+      'Le code source exact utilisé lors de ce run n\'a pas été sauvegardé. Le code actuel de la stratégie est affiché à la place.',
+    noSnapshotConfigDesc:
+      'La config exacte utilisée lors de ce run n\'a pas été sauvegardée. La config actuelle du bot est affichée à la place.',
+    noSnapshotCommandDesc:
+      'La commande exacte n\'a pas été sauvegardée. Ceci est une approximation reconstruite à partir des métadonnées disponibles.',
+    noSourceAvailable: 'Aucun code source disponible pour ce run.',
+    noConfigAvailable: 'Aucune config disponible pour ce run.',
+    noCommandAvailable: 'Aucune commande disponible pour ce type de run.',
+    commandSaved: 'Commande sauvegardée',
+    commandInferred: 'Commande reconstituée',
+
+    copyJson: 'Copier JSON',
+    copyAll: 'Tout copier',
+    copied: 'Copié !',
+    expand: 'Développer',
+    collapse: 'Réduire',
   },
 };
