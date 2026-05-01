@@ -26,6 +26,7 @@ export enum DashboardLayout {
   ratePulse = 14,
   requestFlow = 15,
   cacheHealth = 16,
+  walletHistoryChart = 17,
 }
 
 // Define default layouts
@@ -64,6 +65,7 @@ const DEFAULT_DASHBOARD_LAYOUT: GridItemData[] = [
   { i: DashboardLayout.ratePulse, x: 0, y: 34, w: 8, h: 5 },
   { i: DashboardLayout.requestFlow, x: 8, y: 34, w: 4, h: 5 },
   { i: DashboardLayout.cacheHealth, x: 0, y: 39, w: 4, h: 6 },
+  { i: DashboardLayout.walletHistoryChart, x: 4, y: 39, w: 4, h: 6 },
 ];
 
 const DEFAULT_DASHBOARD_LAYOUT_SM: GridItemData[] = [
@@ -84,6 +86,7 @@ const DEFAULT_DASHBOARD_LAYOUT_SM: GridItemData[] = [
   { i: DashboardLayout.ratePulse, x: 0, y: 82, w: 12, h: 5 },
   { i: DashboardLayout.requestFlow, x: 0, y: 87, w: 12, h: 6 },
   { i: DashboardLayout.cacheHealth, x: 0, y: 93, w: 12, h: 6 },
+  { i: DashboardLayout.walletHistoryChart, x: 0, y: 99, w: 12, h: 6 },
 ];
 
 const STORE_LAYOUTS = 'ftLayoutSettings';

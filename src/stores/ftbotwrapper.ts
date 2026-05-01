@@ -14,6 +14,7 @@ import type {
   ProfitStats,
   RateMetricsResponse,
   Trade,
+  WalletHistoryPerBot,
 } from '@/types';
 import { TimeSummaryOptions } from '@/types';
 import { createBotSubStore } from './ftbot';
@@ -144,6 +145,15 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       Object.entries(state.botStores).forEach(([, botStore]) => {
         if (botStore.isSelected) {
           result.push(...botStore.trades);
+        }
+      });
+      return result;
+    },
+    allBalanceHistory: (state): WalletHistoryPerBot => {
+      const result: WalletHistoryPerBot = {};
+      Object.entries(state.botStores).forEach(([k, botStore]) => {
+        if (botStore.balanceHistory) {
+          result[k] = botStore.balanceHistory;
         }
       });
       return result;
@@ -514,7 +524,7 @@ export const useBotStore = defineStore('ftbot-wrapper', {
 
 export function initBots() {
   const botStore = useBotStore();
-  Object.entries(availableBots.value).forEach(([, v]) => {
+  Object.entries(loggedInBots.value).forEach(([, v]) => {
     botStore.addBot(v);
   });
   botStore.selectFirstBot();
