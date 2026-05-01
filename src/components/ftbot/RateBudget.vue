@@ -45,6 +45,11 @@ const tokenBucketPct = computed(() => {
 const backoffActive = computed(() => primaryMetrics.value?.current?.backoff_active ?? false);
 const backoffFactor = computed(() => primaryMetrics.value?.current?.backoff_factor ?? 1.0);
 const backoffRemaining = computed(() => primaryMetrics.value?.current?.backoff_remaining_s ?? 0);
+const consecutiveBackoffs = computed(
+  () => primaryMetrics.value?.current?.consecutive_backoffs ?? 0,
+);
+const shedCount = computed(() => primaryMetrics.value?.current?.shed_count ?? 0);
+const backoffCount = computed(() => primaryMetrics.value?.current?.backoff_count ?? 0);
 
 const queueTotal = computed(() => {
   const depths = primaryMetrics.value?.current?.queue_depths ?? {};
@@ -264,9 +269,30 @@ const hitRateBarsOption = computed((): EChartsOption => {
             class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/15 text-amber-400"
             :title="t('rateMonitor.backoffDesc')"
           >
-            <i-mdi-timer-sand class="w-4 h-4" />
+            <i-mdi-timer-sand class="w-4 h-4 animate-pulse" />
             <span>
               {{ t('rateMonitor.backoff', { factor: backoffFactor.toFixed(1), remaining: backoffRemaining.toFixed(0) }) }}
+            </span>
+            <span
+              v-if="consecutiveBackoffs > 1"
+              class="ml-auto text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400"
+            >
+              L{{ consecutiveBackoffs }}/4
+            </span>
+          </div>
+
+          <!-- Shed/429 counters (persistent, not just during backoff) -->
+          <div
+            v-if="backoffCount > 0 && !backoffActive"
+            class="flex items-center gap-3 text-xs text-surface-500"
+          >
+            <span>
+              <i-mdi-shield-alert-outline class="w-3.5 h-3.5 inline text-amber-500" />
+              {{ backoffCount }} backoffs
+            </span>
+            <span v-if="shedCount > 0">
+              <i-mdi-filter-remove-outline class="w-3.5 h-3.5 inline text-orange-400" />
+              {{ shedCount }} shed
             </span>
           </div>
 

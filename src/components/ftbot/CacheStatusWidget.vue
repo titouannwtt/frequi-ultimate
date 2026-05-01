@@ -100,6 +100,46 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
+      <!-- Circuit Breaker -->
+      <div v-if="ftcache.online && (ftcache.backoff_count ?? 0) > 0" class="mt-2 ml-4">
+        <div class="text-xs font-medium opacity-70 mb-1">Circuit Breaker</div>
+        <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+          <div>
+            <span class="opacity-60">429 backoffs:</span>
+            <span class="text-yellow-500">{{ ftcache.backoff_count ?? 0 }}</span>
+          </div>
+          <div>
+            <span class="opacity-60">Shed:</span>
+            <span :class="(ftcache.shed_count ?? 0) > 0 ? 'text-orange-400' : ''">
+              {{ ftcache.shed_count ?? 0 }}
+            </span>
+          </div>
+          <div v-if="ftcache.backoff_active" class="col-span-2">
+            <span
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
+                     bg-red-500/20 text-red-400 border border-red-500/30"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              BACKOFF ACTIVE — {{ Math.ceil(ftcache.backoff_remaining_s ?? 0) }}s
+              (level {{ ftcache.consecutive_backoffs ?? 0 }}/4)
+            </span>
+          </div>
+        </div>
+      </div>
+      <!-- Connection Stats -->
+      <div v-if="ftcache.online && (ftcache.total_connects ?? 0) > 0" class="mt-2 ml-4">
+        <div class="text-xs font-medium opacity-70 mb-1">Connections</div>
+        <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+          <div>
+            <span class="opacity-60">Total:</span>
+            {{ ftcache.total_connects ?? 0 }}
+          </div>
+          <div>
+            <span class="opacity-60">Peak:</span>
+            {{ ftcache.peak_clients ?? 0 }}
+          </div>
+        </div>
+      </div>
       <div v-else class="text-xs ml-4 opacity-50">Offline</div>
     </div>
 

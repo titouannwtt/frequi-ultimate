@@ -228,6 +228,18 @@ export interface CacheDaemonStatus {
   positions_gets: number;
   positions_cache_hits: number;
   positions_hit_rate_pct: number;
+  // Connection churn
+  total_connects: number;
+  total_disconnects: number;
+  peak_clients: number;
+  short_lived_connections: number;
+  // Circuit breaker / backoff
+  shed_count: number;
+  backoff_count: number;
+  backoff_active: boolean;
+  backoff_remaining_s: number;
+  consecutive_backoffs: number;
+  current_backoff_duration_s: number;
 }
 
 export interface PairlistCacheStatus {

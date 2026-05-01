@@ -33,6 +33,10 @@ export interface TokenBucketState {
   backoff_factor: number;
   backoff_remaining_s: number;
   queue_depths: Record<string, number>;
+  shed_count: number;
+  backoff_count: number;
+  consecutive_backoffs: number;
+  current_backoff_duration_s: number;
 }
 
 export interface RateMetricsSummary {

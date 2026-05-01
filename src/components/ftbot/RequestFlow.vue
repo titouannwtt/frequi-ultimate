@@ -90,10 +90,12 @@ const sankeyOption = computed((): EChartsOption => {
   const directLabel = t('rateMonitor.direct');
   const cachedLabel = t('rateMonitor.cached');
   const errorsLabel = t('rateMonitor.errors');
+  const pairlistLabel = 'ftpairlist';
 
   const nodes: SankeyNode[] = [{ name: exchange, itemStyle: { color: '#6366f1' } }];
   const links: SankeyLink[] = [];
   const methodNames = new Set<string>();
+  let hasPairlistMethods = false;
 
   const outcomeNodes: Record<string, SankeyNode> = {
     [directLabel]: { name: directLabel, itemStyle: { color: '#3b82f6' } },
@@ -106,24 +108,35 @@ const sankeyOption = computed((): EChartsOption => {
   let totalErrors = 0;
 
   for (const [method, stats] of Object.entries(methods)) {
-    if (!methodNames.has(method)) {
-      methodNames.add(method);
-      nodes.push({ name: method, itemStyle: { color: '#94a3b8' } });
+    const isPairlist = method.startsWith('pl:');
+    const displayName = isPairlist ? method.slice(3) : method;
+
+    if (!methodNames.has(displayName)) {
+      methodNames.add(displayName);
+      nodes.push({
+        name: displayName,
+        itemStyle: { color: isPairlist ? '#3b82f6' : '#94a3b8' },
+      });
     }
+
+    if (isPairlist) hasPairlistMethods = true;
+
+    const sourceNode = isPairlist ? pairlistLabel : exchange;
+    const sourceColor = isPairlist ? '#3b82f6' : '#6366f1';
 
     const total = stats.direct + stats.cached + stats.errors;
     if (total > 0) {
       links.push({
-        source: exchange,
-        target: method,
+        source: sourceNode,
+        target: displayName,
         value: total,
-        lineStyle: { color: '#6366f1', opacity: 0.15 },
+        lineStyle: { color: sourceColor, opacity: 0.15 },
       });
     }
 
     if (stats.direct > 0) {
       links.push({
-        source: method,
+        source: displayName,
         target: directLabel,
         value: stats.direct,
         lineStyle: { color: '#3b82f6', opacity: 0.25 },
@@ -132,7 +145,7 @@ const sankeyOption = computed((): EChartsOption => {
     }
     if (stats.cached > 0) {
       links.push({
-        source: method,
+        source: displayName,
         target: cachedLabel,
         value: stats.cached,
         lineStyle: { color: '#22c55e', opacity: 0.25 },
@@ -141,13 +154,17 @@ const sankeyOption = computed((): EChartsOption => {
     }
     if (stats.errors > 0) {
       links.push({
-        source: method,
+        source: displayName,
         target: errorsLabel,
         value: stats.errors,
         lineStyle: { color: '#ef4444', opacity: 0.25 },
       });
       totalErrors += stats.errors;
     }
+  }
+
+  if (hasPairlistMethods) {
+    nodes.push({ name: pairlistLabel, itemStyle: { color: '#3b82f6' } });
   }
 
   if (totalDirect > 0) nodes.push(outcomeNodes[directLabel]);
@@ -171,7 +188,7 @@ const sankeyOption = computed((): EChartsOption => {
         if (p.dataType === 'edge' && p.data) {
           return `${p.data.source} → ${p.data.target}: <strong>${p.data.value}</strong> ${t('rateMonitor.requests').toLowerCase()}`;
         }
-        const stats = methods[p.name];
+        const stats = methods[p.name] ?? methods[`pl:${p.name}`];
         if (stats) {
           const cachePct = stats.count > 0 ? Math.round((stats.cached / stats.count) * 100) : 0;
           const errPct = stats.count > 0 ? Math.round((stats.errors / stats.count) * 100) : 0;
@@ -331,7 +348,12 @@ function cacheRatio(stats: MethodStats): string {
               class="border-b border-surface-800 hover:bg-surface-800/50"
             >
               <td class="py-1 px-1 truncate max-w-[140px]" :title="method">
-                {{ method }}
+                <span
+                  v-if="method.startsWith('pl:')"
+                  class="text-[9px] font-semibold px-1 py-0.5 rounded mr-1"
+                  style="background: rgba(59,130,246,0.15); color: #60a5fa"
+                >PL</span>
+                {{ method.startsWith('pl:') ? method.slice(3) : method }}
               </td>
               <td class="text-right py-1 px-1 font-mono">{{ stats.count }}</td>
               <td class="text-right py-1 px-1 font-mono text-green-400">
