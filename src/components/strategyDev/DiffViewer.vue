@@ -65,25 +65,25 @@ function simpleDiff(a: string, b: string): DiffLine[] {
 <template>
   <div>
     <div class="flex items-center gap-2 mb-2 text-sm">
-      <Tag :value="savedLabel" severity="danger" class="text-xs" />
+      <Tag :value="savedLabel" severity="danger" class="text-sm" />
       <span class="text-surface-400">vs</span>
-      <Tag :value="currentLabel" severity="success" class="text-xs" />
+      <Tag :value="currentLabel" severity="success" class="text-sm" />
     </div>
 
     <div v-if="current === null" class="mb-2">
-      <Message severity="warn" :closable="false" class="text-xs">
+      <Message severity="warn" :closable="false" class="text-sm">
         {{ t('strategyDev.fileDeleted') }}
       </Message>
     </div>
 
     <div v-else-if="!hasChanges" class="mb-2">
-      <Message severity="info" :closable="false" class="text-xs">
+      <Message severity="info" :closable="false" class="text-sm">
         {{ t('strategyDev.noDiff') }}
       </Message>
     </div>
 
     <div v-if="diffLines.length" class="bg-surface-900 rounded-lg overflow-auto max-h-[60vh]">
-      <table class="w-full text-xs font-mono">
+      <table class="w-full text-sm font-mono">
         <tbody>
           <tr
             v-for="(line, i) in diffLines"

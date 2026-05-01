@@ -52,7 +52,7 @@ const bestParams = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 py-3">
+  <div class="flex flex-col gap-4 py-3" style="max-width: 1600px; margin: 0 auto">
     <!-- Summary metrics -->
     <div v-if="metrics.length" class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div
@@ -60,7 +60,7 @@ const bestParams = computed(() => {
         :key="m.label"
         class="flex flex-col p-3 rounded-lg bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700"
       >
-        <span class="text-xs text-surface-500 uppercase tracking-wide">{{ m.label }}</span>
+        <span class="text-sm text-surface-500 uppercase tracking-wide">{{ m.label }}</span>
         <span class="text-lg font-semibold mt-1">{{ m.value }}</span>
       </div>
     </div>

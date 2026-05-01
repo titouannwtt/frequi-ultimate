@@ -72,7 +72,7 @@ const regimeBadges = computed(() =>
       <span
         v-for="b in regimeBadges"
         :key="b.index"
-        class="text-xs px-2 py-0.5 rounded-full capitalize"
+        class="text-sm px-2 py-0.5 rounded-full capitalize"
         :class="{
           'bg-green-900/30 text-green-400': b.regime === 'bull',
           'bg-red-900/30 text-red-400': b.regime === 'bear',

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 interface DofData {
   n_trades: number;
@@ -10,6 +11,8 @@ interface DofData {
 }
 
 const props = defineProps<{ data: DofData }>();
+
+const { t } = useI18n();
 
 const levelColor = computed(() => {
   const map: Record<string, string> = {
@@ -36,13 +39,13 @@ const barColor = computed(() => {
 
 <template>
   <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-4">
-    <h4 class="text-sm font-semibold mb-3">Degrees of Freedom</h4>
+    <h4 class="text-sm font-semibold mb-3">{{ t('strategyDev.dofTitle') }}</h4>
     <div class="flex items-end gap-4 mb-3">
       <div class="text-3xl font-bold tabular-nums" :class="levelColor">
         {{ data.ratio.toFixed(1) }}
       </div>
       <div class="text-sm text-surface-500 pb-1">
-        {{ data.n_trades }} trades / {{ data.n_params }} params
+        {{ t('strategyDev.dofTradesParams', { trades: data.n_trades, params: data.n_params }) }}
       </div>
     </div>
     <div class="h-2 bg-surface-700 rounded-full overflow-hidden">
@@ -52,10 +55,10 @@ const barColor = computed(() => {
         :style="{ width: barWidth + '%' }"
       />
     </div>
-    <div class="flex justify-between text-xs text-surface-500 mt-1">
-      <span>Critical (5)</span>
+    <div class="flex justify-between text-sm text-surface-500 mt-1">
+      <span>{{ t('strategyDev.dofCritical') }}</span>
       <span :class="levelColor">{{ data.label }}</span>
-      <span>Excellent (30+)</span>
+      <span>{{ t('strategyDev.dofExcellent') }}</span>
     </div>
   </div>
 </template>

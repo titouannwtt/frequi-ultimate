@@ -54,12 +54,12 @@ function severityIcon(s: string) {
         <span class="text-lg">{{ severityIcon(w.severity) }}</span>
         <div class="flex-1">
           <h4 class="font-semibold text-sm">{{ getTitle(w) }}</h4>
-          <p class="text-xs opacity-80 mt-1">{{ getDetail(w) }}</p>
+          <p class="text-sm opacity-80 mt-1">{{ getDetail(w) }}</p>
           <div v-if="w.values" class="flex flex-wrap gap-1.5 mt-2">
             <span
               v-for="(val, key) in w.values"
               :key="String(key)"
-              class="text-xs px-2 py-0.5 rounded-full bg-surface-700/50 text-surface-300"
+              class="text-sm px-2 py-0.5 rounded-full bg-surface-700/50 text-surface-300"
             >
               {{ key }}: {{ val }}
             </span>
@@ -68,7 +68,7 @@ function severityIcon(s: string) {
             <li
               v-for="(action, j) in getActions(w)"
               :key="j"
-              class="text-xs opacity-70 flex items-start gap-1"
+              class="text-sm opacity-70 flex items-start gap-1"
             >
               <span class="mt-0.5">&rarr;</span>
               <span>{{ action }}</span>

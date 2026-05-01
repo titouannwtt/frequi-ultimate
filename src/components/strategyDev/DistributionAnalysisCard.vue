@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+
 interface DistData {
   skewness: number;
   excess_kurtosis: number;
@@ -12,7 +16,7 @@ defineProps<{ data: DistData }>();
 
 <template>
   <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-4">
-    <h4 class="text-sm font-semibold mb-3">Return Distribution</h4>
+    <h4 class="text-sm font-semibold mb-3">{{ t('strategyDev.distTitle') }}</h4>
     <div class="grid grid-cols-3 gap-4 text-center">
       <div>
         <div
@@ -21,8 +25,8 @@ defineProps<{ data: DistData }>();
         >
           {{ data.skewness.toFixed(3) }}
         </div>
-        <div class="text-xs text-surface-500 mt-0.5">Skewness</div>
-        <div v-if="data.skew_alert" class="text-xs text-red-400 mt-0.5">Heavy left tail</div>
+        <div class="text-sm text-surface-500 mt-0.5">{{ t('strategyDev.distSkewness') }}</div>
+        <div v-if="data.skew_alert" class="text-sm text-red-400 mt-0.5">{{ t('strategyDev.distHeavyLeftTail') }}</div>
       </div>
       <div>
         <div
@@ -31,14 +35,14 @@ defineProps<{ data: DistData }>();
         >
           {{ data.excess_kurtosis.toFixed(3) }}
         </div>
-        <div class="text-xs text-surface-500 mt-0.5">Kurtosis</div>
-        <div v-if="data.kurtosis_alert" class="text-xs text-amber-400 mt-0.5">Fat tails</div>
+        <div class="text-sm text-surface-500 mt-0.5">{{ t('strategyDev.distKurtosis') }}</div>
+        <div v-if="data.kurtosis_alert" class="text-sm text-amber-400 mt-0.5">{{ t('strategyDev.distFatTails') }}</div>
       </div>
       <div>
         <div class="text-xl font-bold tabular-nums text-surface-300">
           {{ data.n_trades }}
         </div>
-        <div class="text-xs text-surface-500 mt-0.5">Trades</div>
+        <div class="text-sm text-surface-500 mt-0.5">{{ t('strategyDev.distTrades') }}</div>
       </div>
     </div>
   </div>

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+
 interface HalfStats {
   trades: number;
   profit_pct: number;
@@ -21,16 +25,16 @@ defineProps<{ data: RegimeData }>();
 <template>
   <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-4">
     <div class="flex items-center justify-between mb-3">
-      <h4 class="text-sm font-semibold">Regime Analysis</h4>
+      <h4 class="text-sm font-semibold">{{ t('strategyDev.raTitle') }}</h4>
       <span
-        class="text-xs px-2 py-0.5 rounded-full"
+        class="text-sm px-2 py-0.5 rounded-full"
         :class="
           data.consistent
             ? 'bg-green-900/30 text-green-400 border border-green-700/40'
             : 'bg-red-900/30 text-red-400 border border-red-700/40'
         "
       >
-        {{ data.consistent ? 'Consistent' : 'Inconsistent' }}
+        {{ data.consistent ? t('strategyDev.raConsistent') : t('strategyDev.raInconsistent') }}
       </span>
     </div>
     <div class="grid grid-cols-2 gap-4">
@@ -42,24 +46,24 @@ defineProps<{ data: RegimeData }>();
         :key="label"
         class="space-y-2"
       >
-        <h5 class="text-xs font-medium text-surface-400 uppercase">{{ label }}</h5>
+        <h5 class="text-sm font-medium text-surface-400 uppercase">{{ label }}</h5>
         <div class="space-y-1 text-sm">
           <div class="flex justify-between">
-            <span class="text-surface-500">Trades</span>
+            <span class="text-surface-500">{{ t('strategyDev.raTrades') }}</span>
             <span>{{ half.trades }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-surface-500">Profit</span>
+            <span class="text-surface-500">{{ t('strategyDev.raProfit') }}</span>
             <span :class="half.profit_pct >= 0 ? 'text-green-400' : 'text-red-400'">
               {{ half.profit_pct.toFixed(1) }}%
             </span>
           </div>
           <div class="flex justify-between">
-            <span class="text-surface-500">Win Rate</span>
+            <span class="text-surface-500">{{ t('strategyDev.raWinRate') }}</span>
             <span>{{ half.win_rate.toFixed(1) }}%</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-surface-500">Avg Profit</span>
+            <span class="text-surface-500">{{ t('strategyDev.raAvgProfit') }}</span>
             <span :class="half.avg_profit >= 0 ? 'text-green-400' : 'text-red-400'">
               {{ half.avg_profit.toFixed(2) }}%
             </span>

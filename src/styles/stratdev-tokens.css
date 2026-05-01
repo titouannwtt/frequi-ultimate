@@ -1,0 +1,158 @@
+/*
+ * Strategy Dev — Design Tokens
+ * Catppuccin Mocha palette as single source of truth.
+ * All stratdev components should use these variables instead of hardcoded colors.
+ */
+
+:root {
+  /* ── Surface / Background ── */
+  --sd-base: #1e1e2e;
+  --sd-mantle: #181825;
+  --sd-crust: #11111b;
+  --sd-surface0: #313244;
+  --sd-surface1: #45475a;
+  --sd-surface2: #585b70;
+
+  /* ── Text ── */
+  --sd-text: #cdd6f4;
+  --sd-subtext: #a6adc8;
+  --sd-overlay: #6c7086;
+
+  /* ── Semantic ── */
+  --sd-success: #a6e3a1;
+  --sd-success-dim: rgba(166, 227, 161, 0.12);
+  --sd-danger: #f38ba8;
+  --sd-danger-dim: rgba(243, 139, 168, 0.12);
+  --sd-warning: #f9e2af;
+  --sd-warning-dim: rgba(249, 226, 175, 0.12);
+  --sd-info: #89b4fa;
+  --sd-info-dim: rgba(137, 180, 250, 0.12);
+
+  /* ── Accent colors ── */
+  --sd-blue: #89b4fa;
+  --sd-lavender: #b4befe;
+  --sd-sapphire: #74c7ec;
+  --sd-green: #a6e3a1;
+  --sd-yellow: #f9e2af;
+  --sd-peach: #fab387;
+  --sd-red: #f38ba8;
+  --sd-pink: #f5c2e7;
+  --sd-mauve: #cba6f7;
+  --sd-teal: #94e2d5;
+  --sd-sky: #89dceb;
+
+  /* ── Typography ── */
+  --sd-font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --sd-text-2xs: 0.6875rem; /* 11px */
+  --sd-text-xs: 0.8125rem; /* 13px */
+  --sd-text-sm: 0.875rem; /* 14px */
+  --sd-text-base: 1rem; /* 16px */
+  --sd-text-lg: 1.125rem; /* 18px */
+  --sd-text-xl: 1.375rem; /* 22px */
+  --sd-text-2xl: 1.625rem; /* 26px */
+
+  /* ── Spacing ── */
+  --sd-radius-sm: 0.375rem;
+  --sd-radius-md: 0.5rem;
+  --sd-radius-lg: 0.75rem;
+  --sd-radius-xl: 1rem;
+
+  /* ── Borders ── */
+  --sd-border: rgba(69, 71, 90, 0.6);
+  --sd-border-subtle: rgba(69, 71, 90, 0.3);
+  --sd-border-accent: rgba(137, 180, 250, 0.2);
+
+  /* ── Shadows ── */
+  --sd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --sd-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --sd-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --sd-shadow-glow-green: 0 0 8px rgba(166, 227, 161, 0.3);
+  --sd-shadow-glow-red: 0 0 8px rgba(243, 139, 168, 0.3);
+
+  /* ── Transitions ── */
+  --sd-transition-fast: 150ms ease;
+  --sd-transition-base: 200ms ease;
+  --sd-transition-slow: 300ms ease-out;
+}
+
+/* ── Utility animations ── */
+@keyframes sd-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sd-slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sd-slide-right {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes sd-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes sd-pulse-once {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+@keyframes sd-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes sd-check-bounce {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes sd-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Skeleton loader ── */
+.sd-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--sd-surface0) 25%,
+    var(--sd-surface1) 50%,
+    var(--sd-surface0) 75%
+  );
+  background-size: 200% 100%;
+  animation: sd-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--sd-radius-sm);
+}
+
+/* ── Copy button feedback ── */
+.sd-copied {
+  animation: sd-check-bounce 300ms ease forwards;
+}
+
+/* ── Panel entrance ── */
+.sd-panel-enter {
+  animation: sd-slide-up 250ms ease-out forwards;
+}
+
+/* ── Card stagger entrance ── */
+.sd-stagger-enter {
+  animation: sd-scale-in 200ms ease-out forwards;
+  animation-fill-mode: both;
+}
+
+/* ── Tab content transition (Vue) ── */
+.sd-tab-enter-active {
+  animation: sd-slide-up 200ms ease-out;
+}
+.sd-tab-leave-active {
+  transition: opacity 100ms ease;
+}
+.sd-tab-leave-to {
+  opacity: 0;
+}

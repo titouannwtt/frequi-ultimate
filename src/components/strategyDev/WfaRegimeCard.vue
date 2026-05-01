@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 interface RegimeStats {
   trades: number;
@@ -15,6 +16,8 @@ interface WfaRegimeData {
 }
 
 const props = defineProps<{ data: WfaRegimeData }>();
+
+const { t } = useI18n();
 
 const regimeColors: Record<string, string> = {
   bull: 'text-green-400',
@@ -33,16 +36,16 @@ const regimes = computed(() =>
 <template>
   <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-4">
     <div class="flex items-center justify-between mb-3">
-      <h4 class="text-sm font-semibold">Regime Analysis</h4>
+      <h4 class="text-sm font-semibold">{{ t('strategyDev.wfaRegimeTitle') }}</h4>
       <span
-        class="text-xs px-2 py-0.5 rounded-full"
+        class="text-sm px-2 py-0.5 rounded-full"
         :class="
           data.regime_dependent
             ? 'bg-amber-900/30 text-amber-400 border border-amber-700/40'
             : 'bg-green-900/30 text-green-400 border border-green-700/40'
         "
       >
-        {{ data.regime_dependent ? 'Regime-Dependent' : 'Regime-Robust' }}
+        {{ data.regime_dependent ? t('strategyDev.wfaRegimeDependent') : t('strategyDev.wfaRegimeRobust') }}
       </span>
     </div>
     <div class="space-y-2">
@@ -58,7 +61,7 @@ const regimes = computed(() =>
         >
           {{ r.regime }}
         </span>
-        <div class="flex-1 grid grid-cols-4 gap-2 text-xs text-center">
+        <div class="flex-1 grid grid-cols-4 gap-2 text-sm text-center">
           <div>
             <span
               class="font-bold tabular-nums"
@@ -83,8 +86,8 @@ const regimes = computed(() =>
         </div>
       </div>
     </div>
-    <div v-if="data.worst_regime" class="text-xs text-red-400/70 mt-2">
-      Worst regime: {{ data.worst_regime }}
+    <div v-if="data.worst_regime" class="text-sm text-red-400/70 mt-2">
+      {{ t('strategyDev.wfaWorstRegime', { regime: data.worst_regime }) }}
     </div>
   </div>
 </template>

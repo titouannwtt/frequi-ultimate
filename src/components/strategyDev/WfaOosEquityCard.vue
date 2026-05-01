@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+
 interface OosEquityData {
   total_return_pct: number;
   max_dd_pct: number;
@@ -11,7 +15,7 @@ defineProps<{ data: OosEquityData }>();
 
 <template>
   <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-4">
-    <h4 class="text-sm font-semibold mb-3">OOS Equity Curve</h4>
+    <h4 class="text-sm font-semibold mb-3">{{ t('strategyDev.wfaOosEquityTitle') }}</h4>
     <div class="grid grid-cols-4 gap-4 text-center">
       <div>
         <div
@@ -20,13 +24,13 @@ defineProps<{ data: OosEquityData }>();
         >
           {{ data.total_return_pct.toFixed(2) }}%
         </div>
-        <div class="text-xs text-surface-500">Total Return</div>
+        <div class="text-sm text-surface-500">{{ t('strategyDev.wfaTotalReturn') }}</div>
       </div>
       <div>
         <div class="text-xl font-bold tabular-nums text-red-400">
           {{ data.max_dd_pct.toFixed(2) }}%
         </div>
-        <div class="text-xs text-surface-500">Max DD</div>
+        <div class="text-sm text-surface-500">{{ t('strategyDev.wfaMaxDD') }}</div>
       </div>
       <div>
         <div
@@ -35,11 +39,11 @@ defineProps<{ data: OosEquityData }>();
         >
           {{ data.k_ratio.toFixed(3) }}
         </div>
-        <div class="text-xs text-surface-500">K-Ratio</div>
+        <div class="text-sm text-surface-500">{{ t('strategyDev.wfaKRatio') }}</div>
       </div>
       <div>
         <div class="text-xl font-bold tabular-nums text-surface-300">{{ data.n_trades }}</div>
-        <div class="text-xs text-surface-500">Trades</div>
+        <div class="text-sm text-surface-500">{{ t('strategyDev.wfaTrades') }}</div>
       </div>
     </div>
   </div>

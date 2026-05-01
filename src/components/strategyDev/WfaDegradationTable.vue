@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+
 interface WinDeg {
   index: number;
   train_range: string;
@@ -24,17 +28,17 @@ function fmtDeg(val: number | undefined): string {
 
 <template>
   <div class="bg-surface-50 dark:bg-surface-800 rounded-lg overflow-hidden">
-    <h4 class="text-sm font-semibold p-3 pb-0">Degradation per Window</h4>
+    <h4 class="text-sm font-semibold p-3 pb-0">{{ t('strategyDev.wfaDegradationTitle') }}</h4>
     <div class="overflow-auto">
       <table class="w-full text-sm">
         <thead class="bg-surface-900/50">
           <tr>
-            <th class="text-left px-3 py-2 text-xs text-surface-400 uppercase">Window</th>
-            <th class="text-right px-3 py-2 text-xs text-surface-400 uppercase">Train Profit</th>
-            <th class="text-right px-3 py-2 text-xs text-surface-400 uppercase">Test Profit</th>
-            <th class="text-right px-3 py-2 text-xs text-surface-400 uppercase">Deg. Profit</th>
-            <th class="text-right px-3 py-2 text-xs text-surface-400 uppercase">Deg. Sharpe</th>
-            <th class="text-right px-3 py-2 text-xs text-surface-400 uppercase">Deg. Calmar</th>
+            <th class="text-left px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaWindow') }}</th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaTrainProfit') }}</th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaTestProfit') }}</th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaDegProfit') }}</th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaDegSharpe') }}</th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaDegCalmar') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -43,7 +47,7 @@ function fmtDeg(val: number | undefined): string {
             :key="w.index"
             class="border-t border-surface-700 hover:bg-surface-700/30"
           >
-            <td class="px-3 py-2 font-mono text-xs">W{{ w.index }}</td>
+            <td class="px-3 py-2 font-mono text-sm">W{{ w.index }}</td>
             <td
               class="px-3 py-2 text-right tabular-nums"
               :class="

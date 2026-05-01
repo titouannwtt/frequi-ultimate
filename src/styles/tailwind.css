@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './stratdev-tokens.css';
 
 @plugin 'tailwindcss-primeui';
 

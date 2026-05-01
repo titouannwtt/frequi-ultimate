@@ -3,7 +3,7 @@ import type { RunListEntry } from '@/types';
 import { RunType } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 
-defineProps<{
+const props = defineProps<{
   run: RunListEntry;
   selected: boolean;
 }>();
@@ -11,6 +11,10 @@ defineProps<{
 defineEmits<{
   click: [];
 }>();
+
+const store = useStrategyDevStore();
+
+const isCached = computed(() => store.runCache.has(props.run.filename));
 
 const typeColors: Record<RunType, string> = {
   [RunType.backtest]: 'info',
@@ -35,28 +39,173 @@ function timeAgo(ts: number): string {
   if (!ts) return '';
   return formatDistanceToNow(new Date(ts * 1000), { addSuffix: true });
 }
+
+const isNew = computed(() => {
+  if (!props.run.timestamp) return false;
+  const oneDayAgo = Date.now() / 1000 - 86400;
+  return props.run.timestamp > oneDayAgo;
+});
+
+const verdictDot = computed<string | null>(() => {
+  const r = props.run;
+  if (r.run_type === RunType.wfa && r.verdict_grade) {
+    if (r.verdict_grade <= 'B') return 'var(--sd-success)';
+    if (r.verdict_grade === 'C') return 'var(--sd-warning)';
+    return 'var(--sd-danger)';
+  }
+  if (r.run_type === RunType.hyperopt && r.best_loss != null) {
+    if (r.best_loss < 0) return 'var(--sd-success)';
+    return 'var(--sd-warning)';
+  }
+  if (r.total_profit_pct != null) {
+    if (r.total_profit_pct > 0) return 'var(--sd-success)';
+    return 'var(--sd-danger)';
+  }
+  return null;
+});
 </script>
 
 <template>
   <button
-    class="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-md text-sm cursor-pointer transition-colors"
-    :class="{
-      'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300': selected,
-      'hover:bg-surface-100 dark:hover:bg-surface-800': !selected,
-    }"
+    class="run-item"
+    :class="{ 'run-item--selected': selected }"
     @click="$emit('click')"
   >
+    <!-- Verdict dot -->
+    <span
+      v-if="verdictDot"
+      class="run-verdict-dot"
+      :style="{ backgroundColor: verdictDot }"
+    />
+
+    <!-- Type tag -->
     <Tag
       :value="run.run_type"
       :severity="typeColors[run.run_type]"
-      class="text-[10px] px-1 py-0 shrink-0"
+      class="run-type-tag"
     />
-    <div class="flex flex-col min-w-0 flex-1">
-      <span class="truncate font-medium text-xs">{{ run.strategy }}</span>
-      <span class="text-[10px] text-surface-400 truncate">{{ timeAgo(run.timestamp) }}</span>
+
+    <!-- Info -->
+    <div class="run-info">
+      <div class="run-info-top">
+        <span class="run-strategy">{{ run.strategy }}</span>
+        <i-mdi-star v-if="run.favorite" class="run-fav-star" />
+        <i-mdi-cached v-if="isCached" class="run-cached-icon" />
+        <span v-if="isNew" class="run-new-badge">new</span>
+      </div>
+      <span class="run-time">{{ timeAgo(run.timestamp) }}</span>
     </div>
-    <span v-if="metricLabel(run)" class="text-[10px] font-mono text-surface-500 shrink-0">
+
+    <!-- Metric -->
+    <span v-if="metricLabel(run)" class="run-metric" :style="{ color: verdictDot || undefined }">
       {{ metricLabel(run) }}
     </span>
   </button>
 </template>
+
+<style scoped>
+.run-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: var(--sd-radius-md);
+  cursor: pointer;
+  transition: all var(--sd-transition-fast);
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+}
+
+.run-item:hover:not(.run-item--selected) {
+  background: var(--sd-surface0);
+  border-color: var(--sd-border-subtle);
+}
+
+.run-item--selected {
+  background: var(--sd-info-dim);
+  border-color: rgba(137, 180, 250, 0.25);
+}
+
+.run-verdict-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.run-type-tag {
+  font-size: 9px !important;
+  padding: 1px 4px !important;
+  flex-shrink: 0;
+}
+
+.run-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.run-info-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.run-strategy {
+  font-size: var(--sd-text-xs);
+  font-weight: 500;
+  color: var(--sd-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.run-item--selected .run-strategy {
+  color: var(--sd-info);
+}
+
+.run-fav-star {
+  width: 12px;
+  height: 12px;
+  color: var(--sd-yellow);
+  flex-shrink: 0;
+}
+
+.run-cached-icon {
+  width: 11px;
+  height: 11px;
+  color: var(--sd-overlay);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.run-new-badge {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sd-info);
+  background: var(--sd-info-dim);
+  padding: 0 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.run-time {
+  font-size: 9px;
+  color: var(--sd-overlay);
+}
+
+.run-metric {
+  font-size: var(--sd-text-2xs);
+  font-family: var(--sd-font-mono);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+</style>

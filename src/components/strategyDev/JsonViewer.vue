@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 const props = defineProps<{
   data: Record<string, unknown> | unknown[] | unknown;
   maxDepth?: number;
+  root?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -65,7 +66,7 @@ function toggle(key: string) {
 
 <template>
   <div>
-    <div class="flex justify-end mb-1">
+    <div v-if="root !== false" class="flex justify-end mb-1">
       <Button
         :label="copied ? t('strategyDev.copied') : t('strategyDev.copyJson')"
         :severity="copied ? 'success' : 'secondary'"
@@ -80,7 +81,7 @@ function toggle(key: string) {
       </Button>
     </div>
 
-    <div class="font-mono text-xs leading-5">
+    <div class="font-mono text-sm leading-5">
       <div v-for="entry in entries" :key="entry.key">
         <template v-if="isExpandable(entry.value)">
           <button
@@ -102,7 +103,7 @@ function toggle(key: string) {
             v-if="expandedKeys.has(entry.key)"
             class="ml-4 border-l border-surface-300 dark:border-surface-600 pl-2"
           >
-            <JsonViewer :data="entry.value as Record<string, unknown>" />
+            <JsonViewer :data="entry.value as Record<string, unknown>" :root="false" />
           </div>
         </template>
         <template v-else>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -21,6 +22,8 @@ interface CpcvData {
 }
 
 const props = defineProps<{ data: CpcvData }>();
+
+const { t } = useI18n();
 
 const chartOptions = computed<EChartsOption>(() => {
   const returns = [...props.data.path_returns].sort((a, b) => a - b);
@@ -61,9 +64,9 @@ const chartOptions = computed<EChartsOption>(() => {
 <template>
   <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-4">
     <div class="flex items-center justify-between mb-3">
-      <h4 class="text-sm font-semibold">CPCV (Combinatorial Purged Cross-Validation)</h4>
+      <h4 class="text-sm font-semibold">{{ t('strategyDev.wfaCpcvTitle') }}</h4>
       <span
-        class="text-xs px-2 py-0.5 rounded-full"
+        class="text-sm px-2 py-0.5 rounded-full"
         :class="
           data.prob_of_loss < 0.5
             ? 'bg-green-900/30 text-green-400 border border-green-700/40'
@@ -81,21 +84,21 @@ const chartOptions = computed<EChartsOption>(() => {
         >
           {{ data.avg_return.toFixed(2) }}%
         </div>
-        <div class="text-xs text-surface-500">Avg Return</div>
+        <div class="text-sm text-surface-500">Avg Return</div>
       </div>
       <div>
         <div class="text-lg font-bold tabular-nums text-blue-400">
           {{ data.sharpe_of_paths.toFixed(3) }}
         </div>
-        <div class="text-xs text-surface-500">Sharpe of Paths</div>
+        <div class="text-sm text-surface-500">Sharpe of Paths</div>
       </div>
       <div>
         <div class="text-lg font-bold tabular-nums">{{ data.n_combinations }}</div>
-        <div class="text-xs text-surface-500">Combinations</div>
+        <div class="text-sm text-surface-500">Combinations</div>
       </div>
       <div>
         <div class="text-lg font-bold tabular-nums">{{ data.n_paths }}</div>
-        <div class="text-xs text-surface-500">Paths</div>
+        <div class="text-sm text-surface-500">Paths</div>
       </div>
     </div>
     <ECharts

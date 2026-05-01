@@ -100,7 +100,7 @@ function valClass(v: unknown): string {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 py-3">
+  <div class="flex flex-col gap-3 py-3" style="max-width: 1600px; margin: 0 auto">
     <div v-if="!params" class="text-center text-surface-500 py-8">
       {{ t('strategyDev.noParamsAvailable') }}
     </div>
@@ -109,9 +109,9 @@ function valClass(v: unknown): string {
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-2">
           <h4 class="text-sm font-semibold">{{ t('strategyDev.tabParameters') }}</h4>
-          <Tag v-if="runType === RunType.hyperopt" value="Best Epoch" severity="success" class="text-xs" />
-          <Tag v-else-if="runType === RunType.wfa" value="Consensus" severity="info" class="text-xs" />
-          <Tag v-else-if="runType === RunType.backtest" value="Snapshot" severity="secondary" class="text-xs" />
+          <Tag v-if="runType === RunType.hyperopt" :value="t('strategyDev.ppBestEpochTag')" severity="success" class="text-sm" />
+          <Tag v-else-if="runType === RunType.wfa" :value="t('strategyDev.ppConsensusTag')" severity="info" class="text-sm" />
+          <Tag v-else-if="runType === RunType.backtest" :value="t('strategyDev.ppSnapshotTag')" severity="secondary" class="text-sm" />
         </div>
         <div class="flex items-center gap-2">
           <SelectButton
@@ -123,7 +123,7 @@ function valClass(v: unknown): string {
             optionLabel="label"
             optionValue="value"
             :allowEmpty="false"
-            class="text-xs"
+            class="text-sm"
           />
           <Button
             size="small"
@@ -139,7 +139,7 @@ function valClass(v: unknown): string {
       </div>
 
       <!-- JSON View -->
-      <div v-if="viewMode === 'json'">
+      <div v-if="viewMode === 'json'" class="text-left">
         <CodeViewer :code="jsonString" language="json" />
       </div>
 
@@ -149,22 +149,22 @@ function valClass(v: unknown): string {
           <table class="param-table">
             <thead>
               <tr>
-                <th v-if="tableRows.some(r => r.space)" class="th-space">Space</th>
-                <th class="th-param">Parameter</th>
+                <th v-if="tableRows.some(r => r.space)" class="th-space">{{ t('strategyDev.ppSpace') }}</th>
+                <th class="th-param">{{ t('strategyDev.ppParameter') }}</th>
                 <th class="th-val">
-                  {{ runType === RunType.hyperopt ? 'Best Epoch' : runType === RunType.wfa ? 'Consensus' : 'Value' }}
+                  {{ runType === RunType.hyperopt ? t('strategyDev.ppBestEpochTag') : runType === RunType.wfa ? t('strategyDev.ppConsensusTag') : t('strategyDev.ppValue') }}
                 </th>
                 <template v-if="runType === RunType.hyperopt && paramStats">
-                  <th class="th-val">Top-5 Median</th>
-                  <th class="th-val">Top-10 Median</th>
-                  <th class="th-val">Recommended</th>
+                  <th class="th-val">{{ t('strategyDev.ppTop5Median') }}</th>
+                  <th class="th-val">{{ t('strategyDev.ppTop10Median') }}</th>
+                  <th class="th-val">{{ t('strategyDev.ppRecommended') }}</th>
                 </template>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(row, i) in tableRows" :key="i">
                 <td v-if="tableRows.some(r => r.space)" class="td-space">
-                  <Tag v-if="row.space" :value="row.space" severity="secondary" class="text-xs" />
+                  <Tag v-if="row.space" :value="row.space" severity="secondary" class="text-sm" />
                 </td>
                 <td class="td-param">{{ row.key }}</td>
                 <td class="td-val" :class="valClass(row.value)">{{ formatVal(row.value) }}</td>
@@ -203,7 +203,7 @@ function valClass(v: unknown): string {
 .param-table th {
   padding: 0.5rem 0.75rem;
   text-align: left;
-  font-size: 0.7rem;
+  font-size: var(--sd-text-sm);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;

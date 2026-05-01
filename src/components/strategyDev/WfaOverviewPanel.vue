@@ -32,7 +32,7 @@ const metrics = computed(() => {
     });
   }
   if (run?.n_windows != null) items.push({ label: t('strategyDev.nWindows'), value: String(run.n_windows) });
-  if (run?.hyperopt_loss) items.push({ label: 'Loss Function', value: run.hyperopt_loss });
+  if (run?.hyperopt_loss) items.push({ label: t('strategyDev.hoLossFunction'), value: run.hyperopt_loss });
 
   const dsr = d?.deflated_sharpe_ratio as number | undefined;
   if (dsr != null) {
@@ -120,7 +120,7 @@ const healthBadges = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 py-3">
+  <div class="flex flex-col gap-4 py-3" style="max-width: 1600px; margin: 0 auto">
     <!-- Verdict Badge -->
     <div v-if="verdict" class="flex items-center gap-4">
       <div
@@ -137,14 +137,14 @@ const healthBadges = computed(() => {
         {{ verdict.grade }}
       </div>
       <div>
-        <p class="font-semibold text-lg">Walk-Forward Verdict</p>
+        <p class="font-semibold text-lg">{{ t('strategyDev.wfaVerdict') }}</p>
         <p v-if="verdict.summary" class="text-sm text-surface-500">{{ verdict.summary }}</p>
       </div>
     </div>
 
     <!-- Health badges -->
     <div v-if="healthBadges.length" class="flex flex-wrap gap-2">
-      <Tag v-for="b in healthBadges" :key="b.label" :value="b.label" :severity="b.severity as any" class="text-xs" />
+      <Tag v-for="b in healthBadges" :key="b.label" :value="b.label" :severity="b.severity as any" class="text-sm" />
     </div>
 
     <!-- Metric cards -->
@@ -154,7 +154,7 @@ const healthBadges = computed(() => {
         :key="m.label"
         class="flex flex-col p-3 rounded-lg bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700"
       >
-        <span class="text-xs text-surface-500 uppercase tracking-wide">{{ m.label }}</span>
+        <span class="text-sm text-surface-500 uppercase tracking-wide">{{ m.label }}</span>
         <span
           class="text-lg font-semibold mt-1"
           :class="{
@@ -169,7 +169,7 @@ const healthBadges = computed(() => {
 
     <!-- Verdict checks -->
     <div v-if="verdict?.checks" class="mt-2">
-      <h4 class="text-sm font-semibold mb-2">Verdict Checks</h4>
+      <h4 class="text-sm font-semibold mb-2">{{ t('strategyDev.wfaVerdictChecks') }}</h4>
       <div class="flex flex-col gap-1">
         <div
           v-for="(check, idx) in (verdict.checks as Record<string, unknown>[])"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 interface HoldoutData {
   test_range: string;
@@ -8,6 +9,8 @@ interface HoldoutData {
 }
 
 const props = defineProps<{ data: HoldoutData }>();
+
+const { t } = useI18n();
 
 const metrics = computed(() => {
   const m = props.data.test_metrics;
@@ -31,14 +34,14 @@ const metrics = computed(() => {
   <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-4">
     <div class="flex items-center gap-2 mb-3">
       <i-mdi-shield-check class="w-5 h-5 text-blue-400" />
-      <h4 class="text-sm font-semibold">Holdout Validation</h4>
+      <h4 class="text-sm font-semibold">{{ t('strategyDev.wfaHoldoutTitle') }}</h4>
     </div>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div v-for="m in metrics" :key="m.label" class="text-center">
         <div class="text-lg font-bold tabular-nums" :class="m.color || 'text-surface-300'">
           {{ m.value }}
         </div>
-        <div class="text-xs text-surface-500">{{ m.label }}</div>
+        <div class="text-sm text-surface-500">{{ m.label }}</div>
       </div>
     </div>
   </div>

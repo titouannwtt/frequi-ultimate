@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 const store = useStrategyDevStore();
 
 const detail = computed(() => store.wfaDetail);
@@ -20,7 +23,7 @@ const degradationData = computed(() =>
   windows.value.map((w, i) => ({
     index: i + 1,
     train: ((w.train_profit as number) ?? (w.train_metrics as any)?.profit_pct ?? 0) * (
-      (w.train_metrics as any)?.profit_pct != null ? 1 : 100
+      (w.test_metrics as any)?.profit_pct != null ? 1 : 100
     ),
     test: ((w.test_profit as number) ?? (w.test_metrics as any)?.profit_pct ?? 0) * (
       (w.test_metrics as any)?.profit_pct != null ? 1 : 100
@@ -111,61 +114,130 @@ const degradationWindows = computed(() => {
 
 <template>
   <div v-if="!detail" class="text-center text-surface-500 py-8">
-    No WFA data available.
+    {{ t('strategyDev.wfaNoData') }}
   </div>
-  <div v-else class="flex flex-col gap-6 py-3">
-    <!-- Section 1: Warnings -->
-    <div v-if="warnings">
-      <h3 class="text-sm font-semibold text-surface-400 uppercase tracking-wider mb-3">
-        Warnings
-      </h3>
+  <div v-else class="wfa-page">
+    <!-- ═══ SECTION 1: WARNINGS ═══ -->
+    <div v-if="warnings" class="section">
+      <div class="section-header">
+        <span class="section-num">1</span>
+        <h3>{{ t('strategyDev.sectionWarnings') }}</h3>
+      </div>
       <OverfitWarningsPanel :warnings="warnings as any" />
     </div>
 
-    <!-- Section 2: OOS Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      <WfaOosEquityCard v-if="oosEquity" :data="oosEquity as any" />
-      <WfaPerturbationCard v-if="perturbation" :data="perturbation as any" />
-      <WfaHoldoutCard v-if="holdout" :data="holdout as any" />
+    <!-- ═══ SECTION 2: OOS SUMMARY ═══ -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">{{ warnings ? '2' : '1' }}</span>
+        <h3>{{ t('strategyDev.sectionHealthChecks') }}</h3>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <WfaOosEquityCard v-if="oosEquity" :data="oosEquity as any" />
+        <WfaPerturbationCard v-if="perturbation" :data="perturbation as any" />
+        <WfaHoldoutCard v-if="holdout" :data="holdout as any" />
+      </div>
     </div>
 
-    <!-- Section 3: Window Performance Charts -->
-    <h3 class="text-sm font-semibold text-surface-400 uppercase tracking-wider">
-      Window Performance
-    </h3>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <WfeBarChart v-if="hasWfeData" :data="wfeData" title="Walk-Forward Efficiency" />
-      <DegradationChart :data="degradationData" title="Train vs Test Profit" />
+    <!-- ═══ SECTION 3: WINDOW PERFORMANCE ═══ -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">{{ warnings ? '3' : '2' }}</span>
+        <h3>{{ t('strategyDev.sectionWindowPerformance') }}</h3>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ChartWrapper v-if="hasWfeData" :title="t('strategyDev.wfaWfeTitle')" :hint="t('strategyDev.hintWfe')" chart-id="wfe">
+          <WfeBarChart :data="wfeData" :title="t('strategyDev.wfaWfeTitle')" />
+          <template #fullscreen>
+            <WfeBarChart :data="wfeData" :title="t('strategyDev.wfaWfeTitle')" />
+          </template>
+        </ChartWrapper>
+        <ChartWrapper :title="t('strategyDev.wfaTrainVsTestTitle')" :hint="t('strategyDev.hintTrainVsTest')" chart-id="degradation">
+          <DegradationChart :data="degradationData" :title="t('strategyDev.wfaTrainVsTestTitle')" />
+          <template #fullscreen>
+            <DegradationChart :data="degradationData" :title="t('strategyDev.wfaTrainVsTestTitle')" />
+          </template>
+        </ChartWrapper>
+      </div>
+      <div v-if="degradationWindows.length || marketContextWindows.length" class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        <WfaDegradationTable v-if="degradationWindows.length" :windows="degradationWindows" />
+        <ChartWrapper v-if="marketContextWindows.length" :title="t('strategyDev.wfaMarketContextTitle')" :hint="t('strategyDev.hintMarketContext')" chart-id="market-context">
+          <WfaMarketContextChart :windows="marketContextWindows" :title="t('strategyDev.wfaMarketContextTitle')" />
+          <template #fullscreen>
+            <WfaMarketContextChart :windows="marketContextWindows" :title="t('strategyDev.wfaMarketContextTitle')" />
+          </template>
+        </ChartWrapper>
+      </div>
     </div>
 
-    <!-- Section 4: Degradation detail + Market Context -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <WfaDegradationTable v-if="degradationWindows.length" :windows="degradationWindows" />
-      <WfaMarketContextChart
-        v-if="marketContextWindows.length"
-        :windows="marketContextWindows"
-        title="Market Context per Window"
-      />
-    </div>
-
-    <!-- Section 5: Robustness -->
-    <template v-if="monteCarlo || cpcv || regimeAnalysis">
-      <h3 class="text-sm font-semibold text-surface-400 uppercase tracking-wider">
-        Robustness Analysis
-      </h3>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- ═══ SECTION 4: ROBUSTNESS ═══ -->
+    <div v-if="monteCarlo || cpcv || regimeAnalysis" class="section">
+      <div class="section-header">
+        <span class="section-num">{{ warnings ? '4' : '3' }}</span>
+        <h3>{{ t('strategyDev.sectionRobustnessAnalysis') }}</h3>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <WfaMonteCarloCard v-if="monteCarlo" :data="monteCarlo as any" />
         <WfaRegimeCard v-if="regimeAnalysis" :data="regimeAnalysis as any" />
       </div>
-      <WfaCpcvCard v-if="cpcv" :data="cpcv as any" />
-    </template>
+      <WfaCpcvCard v-if="cpcv" :data="cpcv as any" class="mt-4" />
+    </div>
 
-    <!-- Section 6: Parameter Stability -->
-    <template v-if="paramStability">
-      <h3 class="text-sm font-semibold text-surface-400 uppercase tracking-wider">
-        Parameter Analysis
-      </h3>
+    <!-- ═══ SECTION 5: PARAMETER STABILITY ═══ -->
+    <div v-if="paramStability" class="section">
+      <div class="section-header">
+        <span class="section-num">{{ warnings ? '5' : '4' }}</span>
+        <h3>{{ t('strategyDev.sectionParameterAnalysis') }}</h3>
+      </div>
       <WfaParamStabilityTable :data="paramStability as any" />
-    </template>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.wfa-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0.75rem 0;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.section {
+  padding: 1.25rem 0;
+}
+.section + .section {
+  border-top: 1px solid rgba(137, 180, 250, 0.08);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 1rem;
+}
+
+.section-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  background: rgba(137, 180, 250, 0.12);
+  color: #89b4fa;
+  font-size: var(--sd-text-xs);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.section-header h3 {
+  font-size: var(--sd-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #89b4fa;
+  margin: 0;
+}
+</style>

@@ -76,7 +76,7 @@ const viewMode = ref<'tree' | 'raw'>('tree');
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 py-3">
+  <div class="flex flex-col gap-4 py-3" style="max-width: 1600px; margin: 0 auto">
     <!-- Warning: no snapshot, showing current -->
     <div
       v-if="!hasSnapshot && displayConfig"
@@ -89,9 +89,8 @@ const viewMode = ref<'tree' | 'raw'>('tree');
       </div>
     </div>
 
-    <div v-if="loadingCurrent" class="text-center text-surface-500 py-8">
-      <i-mdi-loading class="w-5 h-5 animate-spin inline-block mr-2" />
-      {{ t('strategyDev.loading') }}
+    <div v-if="loadingCurrent" class="py-4">
+      <SkeletonPanel variant="text" :rows="10" />
     </div>
 
     <div v-else-if="displayConfig">

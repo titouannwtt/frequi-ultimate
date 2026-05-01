@@ -6,73 +6,345 @@ const stratDevStore = useStrategyDevStore();
 const botStore = useBotStore();
 const showLeftBar = ref(true);
 
+const isBotOnline = computed(() => botStore.activeBot?.isBotOnline ?? false);
+
 onMounted(async () => {
-  await botStore.activeBot.getState();
-  await Promise.all([stratDevStore.fetchAllRuns(), stratDevStore.fetchGlossary()]);
+  if (isBotOnline.value) {
+    await botStore.activeBot.getState();
+    await Promise.all([stratDevStore.fetchAllRuns(), stratDevStore.fetchGlossary()]);
+  }
 });
+
+watch(isBotOnline, async (online) => {
+  if (online && !stratDevStore.allRuns) {
+    await botStore.activeBot.getState();
+    await Promise.all([stratDevStore.fetchAllRuns(), stratDevStore.fetchGlossary()]);
+  }
+});
+
+// ── Resizable sidebar ──
+const sidebarRef = ref<HTMLElement>();
+const isResizing = ref(false);
+const sidebarWidth = computed(() => stratDevStore.sidebarWidth);
+
+function startResize(e: MouseEvent) {
+  e.preventDefault();
+  isResizing.value = true;
+  const startX = e.clientX;
+  const startW = sidebarWidth.value;
+
+  function onMove(ev: MouseEvent) {
+    const delta = ev.clientX - startX;
+    const newW = Math.max(240, Math.min(480, startW + delta));
+    stratDevStore.setSidebarWidth(newW);
+  }
+
+  function onUp() {
+    isResizing.value = false;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
+
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+// ── Keyboard shortcuts ──
+function onKeydown(e: KeyboardEvent) {
+  const active = document.activeElement;
+  const isInput = active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA';
+
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    showLeftBar.value = true;
+    nextTick(() => {
+      const input = document.querySelector('.sd-sidebar input') as HTMLInputElement;
+      input?.focus();
+    });
+  }
+  if (e.key === 'Escape' && !isInput) {
+    if (stratDevStore.selectedRun) {
+      stratDevStore.selectRun(null);
+    }
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+    e.preventDefault();
+    showLeftBar.value = !showLeftBar.value;
+  }
+}
+
+onMounted(() => document.addEventListener('keydown', onKeydown));
+onUnmounted(() => document.removeEventListener('keydown', onKeydown));
 </script>
 
 <template>
-  <div class="flex flex-row pt-1 me-1 relative" style="height: calc(100vh - 60px)">
+  <div class="sd-layout" :class="{ 'sd-layout--resizing': isResizing }">
     <!-- Sidebar -->
-    <div
-      class="flex md:flex-row h-full w-16 transition-all duration-200 shrink-0 me-1 border-r border-surface-200 dark:border-surface-900"
-      :class="{ 'w-78!': showLeftBar }"
+    <aside
+      ref="sidebarRef"
+      class="sd-sidebar"
+      :class="{ 'sd-sidebar--collapsed': !showLeftBar }"
+      :style="showLeftBar ? { width: sidebarWidth + 'px' } : undefined"
     >
-      <div class="flex flex-col fixed">
-        <Button
-          class="self-start"
-          aria-label="Toggle sidebar"
-          size="small"
-          severity="secondary"
-          variant="outlined"
+      <div class="sd-sidebar-inner">
+        <button
+          class="sd-sidebar-toggle"
+          :title="showLeftBar ? 'Collapse sidebar' : 'Expand sidebar (Ctrl+K)'"
           @click="showLeftBar = !showLeftBar"
         >
-          <i-mdi-chevron-right v-if="!showLeftBar" width="24" height="24" />
-          <i-mdi-chevron-left v-if="showLeftBar" width="24" height="24" />
-        </Button>
-        <Transition name="fade">
+          <i-mdi-chevron-left v-if="showLeftBar" class="w-5 h-5" />
+          <i-mdi-chevron-right v-else class="w-5 h-5" />
+        </button>
+
+        <Transition name="sd-sidebar-content">
           <StrategyDevSidebar v-if="showLeftBar" />
         </Transition>
       </div>
-    </div>
+
+      <!-- Resize handle -->
+      <div
+        v-if="showLeftBar"
+        class="sd-resize-handle"
+        @mousedown="startResize"
+      />
+    </aside>
 
     <!-- Main content -->
-    <div class="flex flex-col w-full overflow-auto">
-      <h2 class="ms-5 text-3xl font-bold">{{ t('strategyDev.title') }}</h2>
+    <main class="sd-main">
+      <h2 class="sd-page-title">{{ t('strategyDev.title') }}</h2>
 
-      <!-- Auth / connection error -->
-      <StrategyDevAuthError v-if="stratDevStore.errorCode !== null" />
+      <!-- Bot offline -->
+      <div v-if="!isBotOnline" class="sd-empty-state">
+        <i-mdi-power-plug-off class="sd-empty-icon" />
+        <p class="sd-empty-title">{{ t('strategyDev.botOfflineTitle') }}</p>
+        <p class="sd-empty-desc">{{ t('strategyDev.botOfflineDesc') }}</p>
+      </div>
+
+      <!-- Auth error -->
+      <StrategyDevAuthError v-else-if="stratDevStore.errorCode !== null" />
 
       <!-- Loading -->
-      <div
-        v-else-if="stratDevStore.loading && !stratDevStore.allRuns"
-        class="flex flex-col items-center justify-center h-full text-surface-400"
-      >
-        <ProgressSpinner style="width: 50px; height: 50px" />
-        <p class="mt-4">{{ t('strategyDev.loading') }}</p>
+      <div v-else-if="stratDevStore.loading && !stratDevStore.allRuns" class="sd-empty-state">
+        <div class="sd-loading-spinner" />
+        <p class="sd-empty-desc">{{ t('strategyDev.loading') }}</p>
       </div>
 
       <!-- Detail view -->
       <StrategyDevDetail v-else-if="stratDevStore.selectedRun" />
 
       <!-- Empty state -->
-      <div v-else class="flex flex-col items-center justify-center h-full text-surface-400">
-        <i-mdi-flask-outline class="w-16 h-16 mb-4 opacity-30" />
-        <p>{{ t('strategyDev.noRunSelected') }}</p>
+      <div v-else class="sd-empty-state">
+        <i-mdi-flask-outline class="sd-empty-icon" />
+        <p class="sd-empty-desc">{{ t('strategyDev.noRunSelected') }}</p>
+        <p class="sd-empty-hint">{{ t('strategyDev.selectRunHint') }}</p>
+        <div class="sd-shortcuts">
+          <div class="sd-shortcut">
+            <kbd>Ctrl</kbd>+<kbd>K</kbd>
+            <span>{{ t('strategyDev.shortcutSearch') }}</span>
+          </div>
+          <div class="sd-shortcut">
+            <kbd>Ctrl</kbd>+<kbd>B</kbd>
+            <span>{{ t('strategyDev.shortcutSidebar') }}</span>
+          </div>
+          <div class="sd-shortcut">
+            <kbd>↑</kbd><kbd>↓</kbd>
+            <span>{{ t('strategyDev.shortcutNavigate') }}</span>
+          </div>
+          <div class="sd-shortcut">
+            <kbd>Esc</kbd>
+            <span>{{ t('strategyDev.shortcutDeselect') }}</span>
+          </div>
+        </div>
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
-<style lang="css" scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.2s;
+<style scoped>
+.sd-layout {
+  display: flex;
+  height: calc(100vh - 60px);
+  overflow: hidden;
 }
 
-.fade-enter-from,
-.fade-leave-to {
+.sd-layout--resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* ── Sidebar ── */
+.sd-sidebar {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  border-right: 1px solid var(--sd-border-subtle);
+  transition: width var(--sd-transition-base);
+  overflow: hidden;
+}
+
+.sd-sidebar--collapsed {
+  width: 48px;
+}
+
+.sd-sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.sd-sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 8px;
+  border-radius: var(--sd-radius-sm);
+  border: 1px solid var(--sd-border-subtle);
+  background: transparent;
+  color: var(--sd-subtext);
+  cursor: pointer;
+  transition: all var(--sd-transition-fast);
+  flex-shrink: 0;
+}
+
+.sd-sidebar-toggle:hover {
+  background: var(--sd-surface0);
+  color: var(--sd-text);
+  border-color: var(--sd-border);
+}
+
+/* ── Resize handle ── */
+.sd-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  transition: background var(--sd-transition-fast);
+}
+
+.sd-resize-handle:hover,
+.sd-layout--resizing .sd-resize-handle {
+  background: var(--sd-info);
+  opacity: 0.3;
+}
+
+/* ── Main content ── */
+.sd-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sd-page-title {
+  font-size: var(--sd-text-2xl);
+  font-weight: 700;
+  color: var(--sd-text);
+  margin: 8px 0 4px 20px;
+}
+
+/* ── Empty states ── */
+.sd-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60%;
+  color: var(--sd-overlay);
+  animation: sd-fade-in 400ms ease;
+}
+
+.sd-empty-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  opacity: 0.25;
+}
+
+.sd-empty-title {
+  font-size: var(--sd-text-lg);
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--sd-subtext);
+}
+
+.sd-empty-desc {
+  font-size: var(--sd-text-sm);
+  text-align: center;
+  max-width: 360px;
+}
+
+.sd-empty-hint {
+  font-size: var(--sd-text-xs);
+  color: var(--sd-overlay);
+  margin-top: 8px;
+}
+
+/* ── Keyboard shortcuts ── */
+.sd-shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 24px;
+  padding: 12px 16px;
+  background: var(--sd-surface);
+  border-radius: var(--sd-radius-md);
+  border: 1px solid var(--sd-border-subtle);
+}
+
+.sd-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--sd-text-2xs);
+  color: var(--sd-subtext);
+}
+
+.sd-shortcut kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 3px;
+  background: var(--sd-base);
+  border: 1px solid var(--sd-border-subtle);
+  color: var(--sd-text);
+  font-family: var(--sd-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ── Loading spinner ── */
+.sd-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--sd-surface1);
+  border-top-color: var(--sd-info);
+  border-radius: 50%;
+  animation: sd-spin 800ms linear infinite;
+  margin-bottom: 16px;
+}
+
+/* ── Sidebar content transition ── */
+.sd-sidebar-content-enter-active {
+  transition: opacity 200ms ease;
+}
+.sd-sidebar-content-leave-active {
+  transition: opacity 150ms ease;
+}
+.sd-sidebar-content-enter-from,
+.sd-sidebar-content-leave-to {
   opacity: 0;
 }
 </style>

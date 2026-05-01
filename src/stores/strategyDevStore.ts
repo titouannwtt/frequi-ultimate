@@ -8,6 +8,12 @@ import type {
 } from '@/types';
 import { RunType } from '@/types';
 
+interface CachedRunData {
+  detail: Record<string, unknown> | null;
+  analysis: Record<string, unknown> | null;
+  snapshot: BacktestSnapshotResponse | null;
+}
+
 export const useStrategyDevStore = defineStore('strategyDev', () => {
   const botStore = useBotStore();
 
@@ -18,13 +24,24 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
   const selectedRun = ref<RunListEntry | null>(null);
   const hyperoptDetail = ref<Record<string, unknown> | null>(null);
   const hyperoptAnalysis = ref<Record<string, unknown> | null>(null);
+  const advancedAnalytics = ref<Record<string, unknown> | null>(null);
   const wfaDetail = ref<Record<string, unknown> | null>(null);
   const backtestSnapshot = ref<BacktestSnapshotResponse | null>(null);
   const diffResult = ref<SnapshotDiffResponse | null>(null);
   const glossary = ref<GlossaryResponse | null>(null);
+
+  const runCache = reactive(new Map<string, CachedRunData>());
   const filterText = ref('');
   const filterType = ref<RunType | null>(null);
   const filterStrategy = ref<string | null>(null);
+  const filterDateRange = ref<number | null>(null);
+  const sortBy = ref<'date' | 'profit' | 'loss' | 'grade'>(
+    (localStorage.getItem('sd-sortBy') as 'date' | 'profit' | 'loss' | 'grade') || 'date',
+  );
+  const groupBy = ref<'type' | 'strategy'>(
+    (localStorage.getItem('sd-groupBy') as 'type' | 'strategy') || 'type',
+  );
+  const sidebarWidth = ref(parseInt(localStorage.getItem('sd-sidebarWidth') || '300', 10));
 
   function getApi() {
     const loginInfo = useLoginInfo(botStore.selectedBot);
@@ -40,6 +57,10 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
 
   const filteredRuns = computed<RunListEntry[]>(() => {
     let runs = allRunsFlat.value;
+    if (filterDateRange.value) {
+      const cutoff = Date.now() / 1000 - filterDateRange.value;
+      runs = runs.filter((r) => r.timestamp >= cutoff);
+    }
     if (filterType.value) {
       runs = runs.filter((r) => r.run_type === filterType.value);
     }
@@ -55,8 +76,39 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
           (r.notes ?? '').toLowerCase().includes(q),
       );
     }
+    const s = sortBy.value;
+    if (s === 'profit') {
+      runs = [...runs].sort((a, b) => (b.total_profit_pct ?? -Infinity) - (a.total_profit_pct ?? -Infinity));
+    } else if (s === 'loss') {
+      runs = [...runs].sort((a, b) => (a.best_loss ?? Infinity) - (b.best_loss ?? Infinity));
+    } else if (s === 'grade') {
+      const gradeOrder: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, F: 4 };
+      runs = [...runs].sort(
+        (a, b) =>
+          (gradeOrder[a.verdict_grade ?? ''] ?? 99) - (gradeOrder[b.verdict_grade ?? ''] ?? 99),
+      );
+    }
     return runs;
   });
+
+  const favoriteRuns = computed<RunListEntry[]>(() => {
+    return allRunsFlat.value.filter((r) => r.favorite).slice(0, 5);
+  });
+
+  function setSortBy(s: 'date' | 'profit' | 'loss' | 'grade') {
+    sortBy.value = s;
+    localStorage.setItem('sd-sortBy', s);
+  }
+
+  function setGroupBy(g: 'type' | 'strategy') {
+    groupBy.value = g;
+    localStorage.setItem('sd-groupBy', g);
+  }
+
+  function setSidebarWidth(w: number) {
+    sidebarWidth.value = w;
+    localStorage.setItem('sd-sidebarWidth', String(w));
+  }
 
   const strategies = computed<string[]>(() => {
     const set = new Set(allRunsFlat.value.map((r) => r.strategy));
@@ -81,39 +133,69 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     }
   }
 
+  function _ensureCacheEntry(filename: string): CachedRunData {
+    if (!runCache.has(filename)) {
+      runCache.set(filename, { detail: null, analysis: null, snapshot: null });
+    }
+    return runCache.get(filename)!;
+  }
+
   async function fetchHyperoptDetail(filename: string) {
+    const cached = runCache.get(filename);
+    if (cached?.detail) {
+      hyperoptDetail.value = cached.detail;
+      return;
+    }
     try {
       const api = getApi();
       const { data } = await api.get<Record<string, unknown>>(`/stratdev/hyperopt/${filename}`);
       hyperoptDetail.value = data;
+      _ensureCacheEntry(filename).detail = data;
     } catch (e) {
       console.error('Failed to fetch hyperopt detail', e);
     }
   }
 
   async function fetchHyperoptAnalysis(filename: string) {
+    const cached = runCache.get(filename);
+    if (cached?.analysis) {
+      hyperoptAnalysis.value = cached.analysis;
+      return;
+    }
     try {
       const api = getApi();
       const { data } = await api.get<Record<string, unknown>>(
         `/stratdev/hyperopt/${filename}/analysis`,
       );
       hyperoptAnalysis.value = data;
+      _ensureCacheEntry(filename).analysis = data;
     } catch (e) {
       console.error('Failed to fetch hyperopt analysis', e);
     }
   }
 
   async function fetchWfaDetail(filename: string) {
+    const cached = runCache.get(filename);
+    if (cached?.detail) {
+      wfaDetail.value = cached.detail;
+      return;
+    }
     try {
       const api = getApi();
       const { data } = await api.get<Record<string, unknown>>(`/stratdev/wfa/${filename}`);
       wfaDetail.value = data;
+      _ensureCacheEntry(filename).detail = data;
     } catch (e) {
       console.error('Failed to fetch WFA detail', e);
     }
   }
 
   async function fetchBacktestSnapshot(filename: string, strategy: string) {
+    const cached = runCache.get(filename);
+    if (cached?.snapshot) {
+      backtestSnapshot.value = cached.snapshot;
+      return;
+    }
     try {
       const api = getApi();
       const { data } = await api.get<BacktestSnapshotResponse>(
@@ -121,6 +203,7 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
         { params: { strategy } },
       );
       backtestSnapshot.value = data;
+      _ensureCacheEntry(filename).snapshot = data;
     } catch (e) {
       console.error('Failed to fetch backtest snapshot', e);
     }
@@ -183,13 +266,73 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     }
   }
 
+  // ── Per-run view state (tab + scroll persistence) ──
+  const runViewState = reactive(new Map<string, { tab: string; scrollTop: Record<string, number> }>());
+
+  function saveRunViewState(filename: string, tab: string, scrollTop: Record<string, number>) {
+    runViewState.set(filename, { tab, scrollTop });
+  }
+
+  function getRunViewState(filename: string) {
+    return runViewState.get(filename) ?? null;
+  }
+
+  // ── Comparison ──
+  const compareRun = ref<RunListEntry | null>(null);
+  const compareDetail = ref<Record<string, unknown> | null>(null);
+
+  async function setCompareRun(run: RunListEntry | null) {
+    compareRun.value = run;
+    compareDetail.value = null;
+    if (!run) return;
+    const cached = runCache.get(run.filename);
+    if (cached?.detail) {
+      compareDetail.value = cached.detail;
+      return;
+    }
+    if (cached?.snapshot) {
+      compareDetail.value = cached.snapshot as unknown as Record<string, unknown>;
+      return;
+    }
+    try {
+      const api = getApi();
+      if (run.run_type === RunType.hyperopt) {
+        const { data } = await api.get<Record<string, unknown>>(`/stratdev/hyperopt/${run.filename}`);
+        compareDetail.value = data;
+        _ensureCacheEntry(run.filename).detail = data;
+      } else if (run.run_type === RunType.wfa) {
+        const { data } = await api.get<Record<string, unknown>>(`/stratdev/wfa/${run.filename}`);
+        compareDetail.value = data;
+        _ensureCacheEntry(run.filename).detail = data;
+      } else if (run.run_type === RunType.backtest) {
+        const { data } = await api.get<Record<string, unknown>>(
+          `/stratdev/backtest/${run.filename}/snapshot`,
+          { params: { strategy: run.strategy } },
+        );
+        compareDetail.value = data;
+        _ensureCacheEntry(run.filename).snapshot = data as unknown as BacktestSnapshotResponse;
+      }
+    } catch (e) {
+      console.error('Failed to fetch compare detail', e);
+    }
+  }
+
   function selectRun(run: RunListEntry | null) {
     selectedRun.value = run;
-    hyperoptDetail.value = null;
-    hyperoptAnalysis.value = null;
-    wfaDetail.value = null;
-    backtestSnapshot.value = null;
     diffResult.value = null;
+    if (run) {
+      const cached = runCache.get(run.filename);
+      hyperoptDetail.value = cached?.detail && run.run_type === RunType.hyperopt ? cached.detail : null;
+      hyperoptAnalysis.value = cached?.analysis ?? null;
+      wfaDetail.value = cached?.detail && run.run_type === RunType.wfa ? cached.detail : null;
+      backtestSnapshot.value = cached?.snapshot ?? null;
+    } else {
+      hyperoptDetail.value = null;
+      hyperoptAnalysis.value = null;
+      advancedAnalytics.value = null;
+      wfaDetail.value = null;
+      backtestSnapshot.value = null;
+    }
   }
 
   return {
@@ -207,9 +350,17 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     filterText,
     filterType,
     filterStrategy,
+    filterDateRange,
+    sortBy,
+    groupBy,
+    sidebarWidth,
     allRunsFlat,
     filteredRuns,
+    favoriteRuns,
     strategies,
+    setSortBy,
+    setGroupBy,
+    setSidebarWidth,
     fetchAllRuns,
     fetchHyperoptDetail,
     fetchHyperoptAnalysis,
@@ -220,5 +371,40 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     updateMetadata,
     fetchGlossary,
     selectRun,
+    compareRun,
+    compareDetail,
+    setCompareRun,
+    runCache,
+    runViewState,
+    saveRunViewState,
+    getRunViewState,
+    advancedAnalytics,
+    fetchAdvancedAnalytics,
+    fetchEpochDetail,
   };
+
+  async function fetchAdvancedAnalytics(filename: string) {
+    try {
+      const api = getApi();
+      const { data } = await api.get<Record<string, unknown>>(
+        `/stratdev/hyperopt/${filename}/advanced`,
+      );
+      advancedAnalytics.value = data;
+    } catch (e) {
+      console.error('Failed to fetch advanced analytics', e);
+    }
+  }
+
+  async function fetchEpochDetail(filename: string, rank: number): Promise<Record<string, unknown> | null> {
+    try {
+      const api = getApi();
+      const { data } = await api.get<Record<string, unknown>>(
+        `/stratdev/hyperopt/${filename}/epoch/${rank}`,
+      );
+      return data;
+    } catch (e) {
+      console.error('Failed to fetch epoch detail', e);
+      return null;
+    }
+  }
 });

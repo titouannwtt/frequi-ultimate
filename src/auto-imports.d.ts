@@ -23,7 +23,6 @@ declare global {
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
   const availableBacktestMetrics: typeof import('./utils/backtestMetrics').availableBacktestMetrics
-  const availableBots: typeof import('./composables/loginInfo').availableBots
   const binData: typeof import('./utils/charts/binCount').binData
   const calculateDiff: typeof import('./utils/charts/areaPlotDataset').calculateDiff
   const cancelDelayedHide: typeof import('./composables/usePopoverHover').cancelDelayedHide
@@ -74,12 +73,8 @@ declare global {
   const extendRef: typeof import('@vueuse/core').extendRef
   const fakeEvent: typeof import('./composables/usePopoverHover').fakeEvent
   const fakeEventAtMouse: typeof import('./composables/usePopoverHover').fakeEventAtMouse
-  const fetchBNBHistory: typeof import('./composables/benchmarkData').fetchBNBHistory
-  const fetchBTCHistory: typeof import('./composables/benchmarkData').fetchBTCHistory
   const fetchBenchmarkHistory: typeof import('./utils/benchmarkData').fetchBenchmarkHistory
   const fetchCoinHistory: typeof import('./utils/benchmarkData').fetchCoinHistory
-  const fetchETHHistory: typeof import('./composables/benchmarkData').fetchETHHistory
-  const fetchSOLHistory: typeof import('./composables/benchmarkData').fetchSOLHistory
   const findGridLayout: typeof import('./stores/layout').findGridLayout
   const formatDecimal: typeof import('./utils/formatters/numberformat').formatDecimal
   const formatNumber: typeof import('./utils/formatters/numberformat').formatNumber
@@ -96,15 +91,12 @@ declare global {
   const generateMarkAreaSeries: typeof import('./utils/charts/tradeChartData').generateMarkAreaSeries
   const generateTradeSeries: typeof import('./utils/charts/tradeChartData').generateTradeSeries
   const getActivePinia: typeof import('pinia').getActivePinia
-  const getAvailableBotList: typeof import('./composables/loginInfo')['getAvailableBotList']
-  const getAvailableBots: typeof import('./composables/loginInfo')['getAvailableBots']
   const getClosedTradeColumns: typeof import('./composables/tradeColumns').getClosedTradeColumns
   const getCurrentInstance: typeof import('vue').getCurrentInstance
   const getCurrentScope: typeof import('vue').getCurrentScope
   const getCurrentWatcher: typeof import('vue').getCurrentWatcher
   const getDiffColumnsFromPlotConfig: typeof import('./utils/charts/areaPlotDataset').getDiffColumnsFromPlotConfig
   const getOpenTradeColumns: typeof import('./composables/tradeColumns').getOpenTradeColumns
-  const getTheme: typeof import('./utils/themes')['getTheme']
   const h: typeof import('vue').h
   const hasConfiguredBots: typeof import('./composables/useConfigExport').hasConfiguredBots
   const hasFeature: typeof import('./utils/features').hasFeature
@@ -125,7 +117,6 @@ declare global {
   const isShallow: typeof import('vue').isShallow
   const loggedInBots: typeof import('./composables/loginInfo').loggedInBots
   const makeDestructurable: typeof import('@vueuse/core').makeDestructurable
-  const manualResetRef: typeof import('@vueuse/core').manualResetRef
   const mapActions: typeof import('pinia').mapActions
   const mapGetters: typeof import('pinia').mapGetters
   const mapState: typeof import('pinia').mapState
@@ -134,7 +125,6 @@ declare global {
   const markRaw: typeof import('vue').markRaw
   const nextTick: typeof import('vue').nextTick
   const normalizeToPercent: typeof import('./utils/benchmarkData').normalizeToPercent
-  const numberformat: typeof import('./utils/formatters/numberformat')['default']
   const onActivated: typeof import('vue').onActivated
   const onBeforeMount: typeof import('vue').onBeforeMount
   const onBeforeRouteLeave: typeof import('vue-router').onBeforeRouteLeave
@@ -181,7 +171,6 @@ declare global {
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveGeckoId: typeof import('./utils/benchmarkData').resolveGeckoId
   const resolveRef: typeof import('@vueuse/core').resolveRef
-  const resolveUnref: typeof import('@vueuse/core')['resolveUnref']
   const roundTimeframe: typeof import('./utils/roundTimeframe').default
   const rowBgClass: typeof import('./composables/tradeColumns').rowBgClass
   const setActivePinia: typeof import('pinia').setActivePinia
@@ -271,6 +260,7 @@ declare global {
   const useCssVars: typeof import('vue').useCssVars
   const useCurrentElement: typeof import('@vueuse/core').useCurrentElement
   const useCycleList: typeof import('@vueuse/core').useCycleList
+  const useDaemonHealth: typeof import('./composables/useDaemonHealth').useDaemonHealth
   const useDark: typeof import('@vueuse/core').useDark
   const useDateFormat: typeof import('@vueuse/core').useDateFormat
   const useDebounce: typeof import('@vueuse/core').useDebounce
@@ -410,7 +400,6 @@ declare global {
   const useTransition: typeof import('@vueuse/core').useTransition
   const useUrlSearchParams: typeof import('@vueuse/core').useUrlSearchParams
   const useUserMedia: typeof import('@vueuse/core').useUserMedia
-  const useUserService: typeof import('./composables/loginInfo')['useUserService']
   const useVModel: typeof import('@vueuse/core').useVModel
   const useVModels: typeof import('@vueuse/core').useVModels
   const useVibrate: typeof import('@vueuse/core').useVibrate
@@ -423,7 +412,6 @@ declare global {
   const useWindowFocus: typeof import('@vueuse/core').useWindowFocus
   const useWindowScroll: typeof import('@vueuse/core').useWindowScroll
   const useWindowSize: typeof import('@vueuse/core').useWindowSize
-  const usedColumns: typeof import('./utils/charts/usedColumns')['default']
   const watch: typeof import('vue').watch
   const watchArray: typeof import('@vueuse/core').watchArray
   const watchAtMost: typeof import('@vueuse/core').watchAtMost
@@ -449,6 +437,9 @@ declare global {
   // @ts-ignore
   export type { TradeColumnDef } from './composables/tradeColumns'
   import('./composables/tradeColumns')
+  // @ts-ignore
+  export type { DaemonHealthState, HealthLevel } from './composables/useDaemonHealth'
+  import('./composables/useDaemonHealth')
   // @ts-ignore
   export type { EmojiEntry, EmojiGroup } from './composables/useEmojiCatalog'
   import('./composables/useEmojiCatalog')
@@ -746,6 +737,7 @@ declare module 'vue' {
     readonly useCssVars: UnwrapRef<typeof import('vue')['useCssVars']>
     readonly useCurrentElement: UnwrapRef<typeof import('@vueuse/core')['useCurrentElement']>
     readonly useCycleList: UnwrapRef<typeof import('@vueuse/core')['useCycleList']>
+    readonly useDaemonHealth: UnwrapRef<typeof import('./composables/useDaemonHealth')['useDaemonHealth']>
     readonly useDark: UnwrapRef<typeof import('@vueuse/core')['useDark']>
     readonly useDateFormat: UnwrapRef<typeof import('@vueuse/core')['useDateFormat']>
     readonly useDebounce: UnwrapRef<typeof import('@vueuse/core')['useDebounce']>
