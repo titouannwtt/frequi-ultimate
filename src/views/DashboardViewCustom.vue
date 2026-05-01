@@ -100,6 +100,10 @@ const gridLayoutCacheHealth = computed((): GridItemData => {
   return findGridLayout(gridLayoutData.value, DashboardLayout.cacheHealth);
 });
 
+const gridLayoutFleetOverview = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.fleetOverview);
+});
+
 const responsiveGridLayouts = computed(() => {
   return {
     sm: layoutStore.getDashboardLayoutSm,
@@ -111,7 +115,7 @@ onMounted(async () => {
   // botStore.activeBot.getTrades();
   botStore.activeBot?.getOpenTrades();
   botStore.activeBot?.getProfit();
-  botStore.allGetRateMetrics();
+  // Rate metrics are now fetched independently by each widget via useRateMetrics composable
 });
 </script>
 
@@ -468,6 +472,21 @@ onMounted(async () => {
       >
         <DraggableContainer :header="t('dashboard.cacheHealth')">
           <CacheHealth multi-bot-view />
+        </DraggableContainer>
+      </GridItem>
+      <GridItem
+        v-bind="gridItemProps"
+        :i="gridLayoutFleetOverview.i"
+        :x="gridLayoutFleetOverview.x"
+        :y="gridLayoutFleetOverview.y"
+        :w="gridLayoutFleetOverview.w"
+        :h="gridLayoutFleetOverview.h"
+        :min-w="4"
+        :min-h="4"
+        drag-allow-from=".drag-header"
+      >
+        <DraggableContainer header="Fleet Overview">
+          <FleetOverview />
         </DraggableContainer>
       </GridItem>
     </template>

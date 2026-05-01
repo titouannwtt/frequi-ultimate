@@ -51,6 +51,8 @@ import type {
   StrategyResult,
   SysInfoResponse,
   CacheStatusResponse,
+  FleetEventsResponse,
+  FleetStatusResponse,
   RateMetricsResponse,
   TimeSummaryPayload,
   TimeSummaryReturnValue,
@@ -143,6 +145,7 @@ export function createBotSubStore(botId: string, botName: string) {
         sysInfo: {} as SysInfoResponse,
         cacheStatus: {} as CacheStatusResponse,
         rateMetrics: {} as RateMetricsResponse,
+        fleetStatus: null as FleetStatusResponse | null,
       };
     },
     getters: {
@@ -1233,12 +1236,30 @@ export function createBotSubStore(botId: string, botName: string) {
           return Promise.reject(err);
         }
       },
+      async getFleetStatus() {
+        try {
+          const { data } = await api.get<FleetStatusResponse>('/fleet/status');
+          this.fleetStatus = data;
+          return Promise.resolve(data);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      },
+      async getFleetEvents(since = 0, limit = 50) {
+        try {
+          const { data } = await api.get<FleetEventsResponse>('/fleet/events', {
+            params: { since, limit },
+          });
+          return Promise.resolve(data);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      },
       async getRateMetrics(window = 3600, bucket_s = 10) {
         try {
           const { data } = await api.get<RateMetricsResponse>('/rate_metrics', {
             params: { window, bucket_s },
           });
-          this.rateMetrics = data;
           return Promise.resolve(data);
         } catch (err) {
           return Promise.reject(err);
