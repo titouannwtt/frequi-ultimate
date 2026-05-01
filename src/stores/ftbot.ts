@@ -56,6 +56,8 @@ import type {
   TimeSummaryReturnValue,
   Trade,
   TradeResponse,
+  WalletHistory,
+  WalletHistoryPerBot,
   WhitelistResponse,
 } from '@/types';
 import { BacktestSteps, LoadingStatus, RunModes, TimeSummaryOptions } from '@/types';
@@ -100,12 +102,13 @@ export function createBotSubStore(botId: string, botName: string) {
         mixTagStats: [] as MixTagStats[],
         whitelist: [] as string[],
         blacklist: [] as string[],
-        profitAll: {} as AllProfitStats,
+        profitAll: undefined as AllProfitStats | undefined,
         botState: {} as BotState,
         balance: {} as BalanceInterface,
         dailyStats: {} as TimeSummaryReturnValue,
         weeklyStats: {} as TimeSummaryReturnValue,
         monthlyStats: {} as TimeSummaryReturnValue,
+        balanceHistory: undefined as WalletHistory | undefined,
         pairlistMethods: [] as string[],
         pairlistPipeline: [] as import('@/types/blacklist').PipelineStep[],
         handlerConfigs: [] as Record<string, any>[],
@@ -125,7 +128,7 @@ export function createBotSubStore(botId: string, botName: string) {
         freqaiModelList: [] as string[],
         hyperoptLossList: [] as HyperoptLossObj[],
         exchangeList: [] as Exchange[],
-        strategy: {} as StrategyResult,
+        strategy: {} as StrategyResult | undefined,
         pairlist: [] as string[],
         pairlistWithTimeframe: [] as PairIntervalTuple[],
         currentLocks: undefined as LockResponse | undefined,
@@ -195,7 +198,7 @@ export function createBotSubStore(botId: string, botName: string) {
       botId: () => botId,
       allTrades: (state) => [...state.openTrades, ...state.trades] as Trade[],
       activeLocks: (state) => state.currentLocks?.locks || [],
-      profit: (state): ProfitStats => state.profitAll.all,
+      profit: (state): ProfitStats | undefined => state.profitAll?.all,
     },
     actions: {
       botAdded() {
@@ -264,6 +267,7 @@ export function createBotSubStore(botId: string, botName: string) {
             updates.push(this.getProfit());
             updates.push(this.getTrades());
             updates.push(this.getBalance());
+            updates.push(this.updateWalletChange());
             //     /* white/blacklist might be refreshed more often as they are not expensive on the backend */
             updates.push(this.getWhitelist());
             updates.push(this.getBlacklist());
@@ -496,7 +500,7 @@ export function createBotSubStore(botId: string, botName: string) {
         try {
           const payload = {};
           if (this.isWebserverMode) {
-            if (!this.strategy.strategy) {
+            if (!this.strategy?.strategy) {
               return Promise.reject({ data: 'No strategy selected' });
             }
             payload['strategy'] = this.strategy.strategy;
@@ -677,6 +681,9 @@ export function createBotSubStore(botId: string, botName: string) {
           }
           // Fallback to old profit endpoint
           const { data } = await api.get<ProfitStats>('/profit');
+          if (!this.profitAll) {
+            this.profitAll = {} as AllProfitStats;
+          }
           this.profitAll['all'] = data;
           return Promise.resolve(data);
         } catch (error) {
@@ -710,6 +717,18 @@ export function createBotSubStore(botId: string, botName: string) {
         } catch (error) {
           console.error(error);
           return Promise.reject(error);
+        }
+      },
+      async updateWalletChange() {
+        if (!this.botFeatures.walletChange) {
+          return;
+        }
+        try {
+          const { data } = await api.get<WalletHistory>('/historic_balance');
+          this.balanceHistory = data;
+          this.balanceHistory['botName'] = this.botName;
+        } catch (err) {
+          console.error(err);
         }
       },
       async getState() {
@@ -1137,6 +1156,26 @@ export function createBotSubStore(botId: string, botName: string) {
             `/backtest/history/${this.selectedBacktestMetadata.filename}/market_change`,
           );
           return data;
+        } catch (err) {
+          console.error(err);
+          return Promise.reject(err);
+        }
+      },
+      async getBacktestWalletChange(): Promise<WalletHistoryPerBot> {
+        if (!this.botFeatures.walletChange) {
+          return Promise.reject('Backtest wallet change not available');
+        }
+        if (!this.selectedBacktestMetadata?.filename) {
+          return Promise.reject('No backtest selected');
+        }
+        try {
+          const { data } = await api.get<WalletHistory>(
+            `/backtest/history/${this.selectedBacktestMetadata.filename}/${this.selectedBacktestMetadata.strategyName}/wallet`,
+          );
+          data['botName'] = `${this.selectedBacktestMetadata.strategyName} (Backtest)`;
+          return {
+            [data['botName']]: data,
+          };
         } catch (err) {
           console.error(err);
           return Promise.reject(err);

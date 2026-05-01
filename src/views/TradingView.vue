@@ -78,7 +78,7 @@ function refreshOHLCV(pair: string, columns: string[]) {
   >
     <template #default="{ gridItemProps }">
       <GridItem
-        v-if="gridLayoutMultiPane.h != 0"
+        v-if="gridLayoutMultiPane.h !== 0"
         v-bind="gridItemProps"
         :i="gridLayoutMultiPane.i"
         :x="gridLayoutMultiPane.x"
@@ -189,7 +189,7 @@ function refreshOHLCV(pair: string, columns: string[]) {
         </DraggableContainer>
       </GridItem>
       <GridItem
-        v-if="gridLayoutOpenTrades.h != 0"
+        v-if="gridLayoutOpenTrades.h !== 0"
         v-bind="gridItemProps"
         :i="gridLayoutOpenTrades.i"
         :x="gridLayoutOpenTrades.x"
@@ -215,7 +215,7 @@ function refreshOHLCV(pair: string, columns: string[]) {
         </DraggableContainer>
       </GridItem>
       <GridItem
-        v-if="gridLayoutTradeHistory.h != 0"
+        v-if="gridLayoutTradeHistory.h !== 0"
         v-bind="gridItemProps"
         :i="gridLayoutTradeHistory.i"
         :x="gridLayoutTradeHistory.x"
@@ -244,7 +244,7 @@ function refreshOHLCV(pair: string, columns: string[]) {
         v-if="
           botStore.activeBot.detailTradeId &&
           botStore.activeBot.tradeDetail &&
-          gridLayoutTradeDetail.h != 0
+          gridLayoutTradeDetail.h !== 0
         "
         v-bind="gridItemProps"
         :i="gridLayoutTradeDetail.i"
@@ -269,7 +269,7 @@ function refreshOHLCV(pair: string, columns: string[]) {
         </DraggableContainer>
       </GridItem>
       <GridItem
-        v-if="gridLayoutTradeDetail.h != 0"
+        v-if="gridLayoutTradeDetail.h !== 0"
         v-bind="gridItemProps"
         :i="gridLayoutChartView.i"
         :x="gridLayoutChartView.x"

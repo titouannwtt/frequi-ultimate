@@ -60,6 +60,41 @@ export function generateBacktestMetricRows(result: StrategyBacktestResult) {
         ]
       : [];
 
+  const _b_append = ` (wallet balance)`;
+  const walletBalanceMetrics = result.wallet_stats
+    ? [
+        { '--- Wallet Balance metrics ---': '' },
+        {
+          [`Max Drawdown${_b_append}`]: formatPercent(result.wallet_stats.max_drawdown_account),
+        },
+        {
+          [`Max Drawdown abs${_b_append}`]: formatPriceStake(result.wallet_stats.max_drawdown_abs),
+        },
+        {
+          [`Drawdown duration${_b_append}`]: result.wallet_stats.drawdown_duration ?? 'N/A',
+        },
+        {
+          [`Profit at Drawdown start | end${_b_append}`]: `${formatPriceStake(result.wallet_stats.max_drawdown_high)} | ${formatPriceStake(
+            result.wallet_stats.max_drawdown_low,
+          )}`,
+        },
+        // { 'Max Drawdown dates (wallet balance)': formatPercent(result.wallet_stats.max_drawdown_account) },
+        {
+          [`Drawdown start${_b_append}`]: timestampms(result.wallet_stats?.drawdown_start_ts ?? 0),
+        },
+        { [`Drawdown end${_b_append}`]: timestampms(result.wallet_stats?.drawdown_end_ts ?? 0) },
+        {
+          [`Sortino${_b_append}`]: formatNumber(result.wallet_stats.sortino, 2),
+        },
+        {
+          [`Sharpe${_b_append}`]: formatNumber(result.wallet_stats.sharpe, 2),
+        },
+        {
+          [`Calmar${_b_append}`]: formatNumber(result.wallet_stats.calmar, 2),
+        },
+      ]
+    : [];
+
   const tmp = [
     {
       'Total Profit': `${formatPercent(result.profit_total)} | ${formatPriceStake(
@@ -166,8 +201,12 @@ export function generateBacktestMetricRows(result: StrategyBacktestResult) {
     ...shortMetrics,
 
     { ___: '___' },
-    { 'Min balance': formatPriceStake(result.csum_min) },
-    { 'Max balance': formatPriceStake(result.csum_max) },
+    {
+      'Min/Max balance (closed trades)': `${formatPriceStake(result.csum_min)} / ${formatPriceStake(result.csum_max)}`,
+    },
+    {
+      'Min/Max balance (wallet balance)': `${formatPriceStake(result.wallet_stats?.low_balance)} / ${formatPriceStake(result.wallet_stats?.high_balance)}`,
+    },
     { 'Market change': formatPercent(result.market_change) },
     { '___  ': '___' },
     {
@@ -186,8 +225,8 @@ export function generateBacktestMetricRows(result: StrategyBacktestResult) {
     },
     { 'Drawdown start': timestampms(result.drawdown_start_ts) },
     { 'Drawdown end': timestampms(result.drawdown_end_ts) },
-    { '___   ': '___' },
-
+    ...walletBalanceMetrics,
+    { '___    ': '___' },
     {
       'Best Pair': `${result.best_pair.key} ${formatPercent(result.best_pair.profit_total)}`,
     },
