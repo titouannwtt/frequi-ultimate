@@ -62,12 +62,12 @@ const DEFAULT_DASHBOARD_LAYOUT: GridItemData[] = [
   { i: DashboardLayout.riskOverview, x: 8, y: 23, w: 4, h: 5 },
   { i: DashboardLayout.stressTest, x: 0, y: 28, w: 4, h: 6 },
   { i: DashboardLayout.logConsole, x: 4, y: 28, w: 4, h: 6 },
-  { i: DashboardLayout.rateBudget, x: 8, y: 28, w: 4, h: 6 },
-  { i: DashboardLayout.ratePulse, x: 0, y: 34, w: 8, h: 5 },
-  { i: DashboardLayout.requestFlow, x: 8, y: 34, w: 4, h: 5 },
-  { i: DashboardLayout.cacheHealth, x: 0, y: 39, w: 4, h: 6 },
-  { i: DashboardLayout.fleetOverview, x: 4, y: 39, w: 8, h: 8 },
-  { i: DashboardLayout.walletHistoryChart, x: 4, y: 47, w: 4, h: 6 },
+  { i: DashboardLayout.rateBudget, x: 0, y: 28, w: 4, h: 7 } /* Rate Monitor (consolidated) */,
+  { i: DashboardLayout.ratePulse, x: 4, y: 28, w: 8, h: 7 } /* Request Timeline (consolidated) */,
+  { i: DashboardLayout.requestFlow, x: 0, y: 100, w: 0, h: 0 } /* deprecated — merged into requestTimeline */,
+  { i: DashboardLayout.cacheHealth, x: 0, y: 100, w: 0, h: 0 } /* deprecated — merged into rateMonitor */,
+  { i: DashboardLayout.fleetOverview, x: 0, y: 35, w: 12, h: 7 } /* Infrastructure Health (consolidated) */,
+  { i: DashboardLayout.walletHistoryChart, x: 0, y: 42, w: 4, h: 6 },
 ];
 
 const DEFAULT_DASHBOARD_LAYOUT_SM: GridItemData[] = [
@@ -84,12 +84,12 @@ const DEFAULT_DASHBOARD_LAYOUT_SM: GridItemData[] = [
   { i: DashboardLayout.riskOverview, x: 0, y: 59, w: 12, h: 5 },
   { i: DashboardLayout.stressTest, x: 0, y: 64, w: 12, h: 6 },
   { i: DashboardLayout.logConsole, x: 0, y: 70, w: 12, h: 6 },
-  { i: DashboardLayout.rateBudget, x: 0, y: 76, w: 12, h: 6 },
-  { i: DashboardLayout.ratePulse, x: 0, y: 82, w: 12, h: 5 },
-  { i: DashboardLayout.requestFlow, x: 0, y: 87, w: 12, h: 6 },
-  { i: DashboardLayout.cacheHealth, x: 0, y: 93, w: 12, h: 6 },
-  { i: DashboardLayout.fleetOverview, x: 0, y: 99, w: 12, h: 8 },
-  { i: DashboardLayout.walletHistoryChart, x: 0, y: 107, w: 12, h: 6 },
+  { i: DashboardLayout.rateBudget, x: 0, y: 76, w: 12, h: 7 },
+  { i: DashboardLayout.ratePulse, x: 0, y: 83, w: 12, h: 7 },
+  { i: DashboardLayout.requestFlow, x: 0, y: 200, w: 0, h: 0 },
+  { i: DashboardLayout.cacheHealth, x: 0, y: 200, w: 0, h: 0 },
+  { i: DashboardLayout.fleetOverview, x: 0, y: 90, w: 12, h: 7 },
+  { i: DashboardLayout.walletHistoryChart, x: 0, y: 97, w: 12, h: 6 },
 ];
 
 const STORE_LAYOUTS = 'ftLayoutSettings';

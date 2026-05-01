@@ -51,6 +51,7 @@ const collapsedBots = ref<Set<string>>(new Set());
 const hideHeartbeat = ref(true);
 const hideWebSocket = ref(false);
 const hideWalletSync = ref(true);
+const hideBtAnalysis = ref(true);
 
 watch(searchInput, (val) => { filters.searchText = val; });
 
@@ -74,6 +75,9 @@ const displayEntries = computed(() => {
   }
   if (hideWalletSync.value) {
     result = result.filter((e) => !e.message.toLowerCase().includes('wallets synced'));
+  }
+  if (hideBtAnalysis.value) {
+    result = result.filter((e) => !e.module.includes('bt_fileutils'));
   }
   // Reverse: oldest first, newest at bottom (terminal-style)
   return [...result].reverse();
@@ -253,6 +257,15 @@ const timeWindows = [
       >
         <i-mdi-wallet class="inline w-3 h-3 mr-0.5 align-text-bottom" />
         Hide Wallet
+      </button>
+      <button
+        v-tooltip.bottom="'Hide backtest file analysis messages'"
+        class="px-2 py-0.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors"
+        :class="hideBtAnalysis ? 'bg-indigo-500/80 text-white' : 'bg-surface-200/50 dark:bg-surface-700/50 text-surface-500'"
+        @click="hideBtAnalysis = !hideBtAnalysis"
+      >
+        <i-mdi-file-search class="inline w-3 h-3 mr-0.5 align-text-bottom" />
+        Hide BT
       </button>
 
       <div class="h-4 w-px bg-surface-300 dark:bg-surface-600" />

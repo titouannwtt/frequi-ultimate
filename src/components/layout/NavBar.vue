@@ -155,7 +155,7 @@ const navItems = computed(() => [
     label: t('nav.strategyDev'),
     to: '/strategy-dev',
     icon: 'i-mdi-flask-outline',
-    visible: botStore.activeBot?.isBotOnline ?? false,
+    visible: true,
   },
 ]);
 

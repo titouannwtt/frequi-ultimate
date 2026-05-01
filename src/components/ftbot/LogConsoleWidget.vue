@@ -38,6 +38,7 @@ const showAllBotSections = ref(false);
 const hideHeartbeat = ref(true);
 const hideWebSocket = ref(false);
 const hideWalletSync = ref(true);
+const hideBtAnalysis = ref(true);
 
 // Reactive tick for relative timestamps (updates every 10s)
 const tick = ref(0);
@@ -62,6 +63,9 @@ const displayEntries = computed(() => {
   }
   if (hideWalletSync.value) {
     result = result.filter((e) => !e.message.toLowerCase().includes('wallets synced'));
+  }
+  if (hideBtAnalysis.value) {
+    result = result.filter((e) => !e.module.includes('bt_fileutils'));
   }
   const reversed = [...result].reverse();
   const idKey = reversed.map((e) => e.id).join(',');
@@ -404,6 +408,11 @@ onUnmounted(() => resizeObserver.value?.disconnect());
           :class="hideWalletSync ? 'text-indigo-400 bg-indigo-500/10' : 'text-surface-500'"
           @click="hideWalletSync = !hideWalletSync"
         >Hide Wallet</button>
+        <button
+          class="px-1.5 py-0.5 rounded text-[10px] cursor-pointer"
+          :class="hideBtAnalysis ? 'text-indigo-400 bg-indigo-500/10' : 'text-surface-500'"
+          @click="hideBtAnalysis = !hideBtAnalysis"
+        >Hide BT</button>
       </template>
 
       <!-- Advanced filters toggle -->
