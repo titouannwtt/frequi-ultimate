@@ -35,7 +35,20 @@ const epochMetricKeys = [
 ];
 
 function getMetrics(epoch: Record<string, unknown>): Record<string, number> {
-  return (epoch.results_metrics as Record<string, number>) ?? {};
+  const rm = (epoch.results_metrics as Record<string, number>) ?? {};
+  // Fallback: build from top-level epoch fields if results_metrics is empty
+  if (Object.keys(rm).length === 0) {
+    return {
+      profit_total: ((epoch.profit_pct as number) ?? 0) / 100,
+      profit_total_abs: 0,
+      total_trades: (epoch.trades as number) ?? 0,
+      sharpe: (epoch.sharpe as number) ?? 0,
+      max_drawdown_account: ((epoch.dd_pct as number) ?? 0) / 100,
+      winrate: ((epoch.winrate as number) ?? 0) / 100,
+      loss: (epoch.loss as number) ?? 0,
+    };
+  }
+  return rm;
 }
 </script>
 

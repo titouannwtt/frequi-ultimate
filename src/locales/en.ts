@@ -1993,6 +1993,24 @@ export default {
     daySat: 'Sat',
     daySun: 'Sun',
 
+    // Weekday pattern chart
+    wdTotalProfit: 'Total Profit',
+    wdWinRate: 'Win Rate',
+    wdTrades: 'Trades',
+    wdAvgProfit: 'Avg Profit',
+
+    // Exit reason chart
+    erCount: 'Count',
+    erAvgProfit: 'Avg Profit %',
+    erWinRate: 'Win Rate',
+    erTotalProfit: 'Total Profit',
+
+    // Convergence chart
+    convEpochLoss: 'Epoch loss',
+    convBestSoFar: 'Best so far',
+    convEpoch: 'Epoch',
+    convLoss: 'Loss',
+
     // Streaks
     skMaxWinStreak: 'Max Win Streak',
     skMaxLossStreak: 'Max Loss Streak',
@@ -2026,6 +2044,10 @@ export default {
     totalTrades: 'Total Trades',
     bestSharpe: 'Best Sharpe',
     bestLoss: 'Best Loss',
+    hintTotalProfit: 'Total profit of the best epoch as a percentage of starting capital.',
+    hintTotalTrades: 'Total number of trades executed during the best epoch.',
+    hintBestSharpe: 'Sharpe ratio of the best epoch. Above 1.0 is good, above 2.0 is excellent.',
+    hintBestLoss: 'Loss function value of the best epoch. Lower (more negative) is better.',
     bestEpochResults: 'Best epoch results:',
     epochsCompleted: 'Epochs',
     verdictGrade: 'Grade',
@@ -2354,6 +2376,8 @@ export default {
     raAvgProfit: 'Avg Profit',
     raConsistent: 'Consistent',
     raInconsistent: 'Inconsistent',
+    raFirstHalf: 'First half',
+    raSecondHalf: 'Second half',
 
     // Benchmark Card
     bmTitle: 'Benchmark Comparison',

@@ -9,8 +9,11 @@ import {
   TooltipComponent,
   LegendComponent,
 } from 'echarts/components';
+import { useI18n } from 'vue-i18n';
 
 use([BarChart, LineChart, CanvasRenderer, GridComponent, TooltipComponent, LegendComponent]);
+
+const { t } = useI18n();
 
 interface ExitReason {
   reason: string;
@@ -46,15 +49,15 @@ const chartOptions = computed<EChartsOption>(() => {
         const d = sorted[ps[0].dataIndex];
         return [
           `<b>${d.reason}</b>`,
-          `Count: <b>${d.count}</b>`,
-          `Avg profit: <b>${d.avg_profit >= 0 ? '+' : ''}${d.avg_profit.toFixed(2)}%</b>`,
-          `Win rate: <b>${(d.winrate * 100).toFixed(1)}%</b>`,
-          `Total profit: <b>${d.total_profit >= 0 ? '+' : ''}${d.total_profit.toFixed(2)}</b>`,
+          `${t('strategyDev.erCount')}: <b>${d.count}</b>`,
+          `${t('strategyDev.erAvgProfit')}: <b>${d.avg_profit >= 0 ? '+' : ''}${d.avg_profit.toFixed(2)}%</b>`,
+          `${t('strategyDev.erWinRate')}: <b>${(d.winrate * 100).toFixed(1)}%</b>`,
+          `${t('strategyDev.erTotalProfit')}: <b>${d.total_profit >= 0 ? '+' : ''}${d.total_profit.toFixed(2)}</b>`,
         ].join('<br/>');
       },
     },
     legend: {
-      data: ['Count', 'Avg Profit %'],
+      data: [t('strategyDev.erCount'), t('strategyDev.erAvgProfit')],
       textStyle: { color: '#6c7086', fontSize: 10 },
       top: 0,
       right: 10,
@@ -69,14 +72,14 @@ const chartOptions = computed<EChartsOption>(() => {
     xAxis: [
       {
         type: 'value',
-        name: 'Count',
+        name: t('strategyDev.erCount'),
         nameTextStyle: { color: '#a6adc8' },
         axisLabel: { color: '#a6adc8' },
         splitLine: { lineStyle: { color: '#313244' } },
       },
       {
         type: 'value',
-        name: 'Avg Profit %',
+        name: t('strategyDev.erAvgProfit'),
         nameTextStyle: { color: '#a6adc8' },
         axisLabel: { color: '#a6adc8' },
         splitLine: { show: false },
@@ -84,7 +87,7 @@ const chartOptions = computed<EChartsOption>(() => {
     ],
     series: [
       {
-        name: 'Count',
+        name: t('strategyDev.erCount'),
         type: 'bar',
         xAxisIndex: 0,
         data: counts.map((v, i) => ({
@@ -93,7 +96,7 @@ const chartOptions = computed<EChartsOption>(() => {
         })),
       },
       {
-        name: 'Avg Profit %',
+        name: t('strategyDev.erAvgProfit'),
         type: 'line',
         xAxisIndex: 1,
         data: avgProfits,

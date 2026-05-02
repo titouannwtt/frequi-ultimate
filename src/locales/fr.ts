@@ -1932,6 +1932,24 @@ export default {
     daySat: 'Sam',
     daySun: 'Dim',
 
+    // Weekday pattern chart
+    wdTotalProfit: 'Profit Total',
+    wdWinRate: 'Taux de Gain',
+    wdTrades: 'Trades',
+    wdAvgProfit: 'Profit Moyen',
+
+    // Exit reason chart
+    erCount: 'Nombre',
+    erAvgProfit: 'Profit Moyen %',
+    erWinRate: 'Taux de Gain',
+    erTotalProfit: 'Profit Total',
+
+    // Convergence chart
+    convEpochLoss: 'Loss de l\'epoch',
+    convBestSoFar: 'Meilleur jusqu\'ici',
+    convEpoch: 'Epoch',
+    convLoss: 'Loss',
+
     // Séries
     skMaxWinStreak: 'Série Max Gains',
     skMaxLossStreak: 'Série Max Pertes',
@@ -1962,6 +1980,10 @@ export default {
     totalTrades: 'Trades Totaux',
     bestSharpe: 'Meilleur Sharpe',
     bestLoss: 'Meilleur Loss',
+    hintTotalProfit: 'Profit total de la meilleure epoch en pourcentage du capital initial.',
+    hintTotalTrades: 'Nombre total de trades exécutés pendant la meilleure epoch.',
+    hintBestSharpe: 'Ratio de Sharpe de la meilleure epoch. Au-dessus de 1.0 c\'est bien, au-dessus de 2.0 c\'est excellent.',
+    hintBestLoss: 'Valeur de la fonction de perte de la meilleure epoch. Plus négatif = meilleur.',
     bestEpochResults: 'Résultats de la meilleure epoch :',
     epochsCompleted: 'Époques',
     verdictGrade: 'Note',
@@ -2286,6 +2308,8 @@ export default {
     raAvgProfit: 'Profit Moyen',
     raConsistent: 'Consistant',
     raInconsistent: 'Inconsistant',
+    raFirstHalf: 'Première moitié',
+    raSecondHalf: 'Seconde moitié',
 
     // Carte Benchmark
     bmTitle: 'Comparaison au Benchmark',

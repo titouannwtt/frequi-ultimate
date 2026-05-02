@@ -66,7 +66,16 @@ function getAssessment(pct: number): { label: string; color: string } {
 const assessment = computed(() => getAssessment(props.histogram.best_percentile));
 
 const chartOptions = computed<EChartsOption>(() => {
-  const bins = props.histogram.bins;
+  const maxReasonable = (() => {
+    const nonEmpty = props.histogram.bins.filter(b => b.count > 0);
+    if (nonEmpty.length <= 2) return Infinity;
+    // Find the bin with highest count and use its range as reference
+    const sorted = [...nonEmpty].sort((a, b) => b.count - a.count);
+    const peakHi = sorted[0].hi;
+    return peakHi + (Math.abs(peakHi) + 1) * 3;
+  })();
+  const filteredBins = props.histogram.bins.filter(b => b.lo < maxReasonable);
+  const bins = filteredBins;
   const bestLoss = props.histogram.best_loss;
   const bestPct = props.histogram.best_percentile;
   const nBins = bins.length;

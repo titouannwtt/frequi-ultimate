@@ -26,7 +26,9 @@ const option = computed<EChartsOption>(() => {
       textStyle: { color: '#cdd6f4', fontSize: 12 },
       formatter: (params: unknown) => {
         const p = (params as { data: number[]; axisValue: string }[])[0];
-        return `<b>${p.axisValue}</b><br/>Profit Factor: ${p.data[1].toFixed(2)}`;
+        const dateStr = new Date(p.axisValue).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        const pf = typeof p.data[1] === 'number' && isFinite(p.data[1]) ? p.data[1].toFixed(2) : '—';
+        return `<b>${dateStr}</b><br/>Profit Factor: ${pf}`;
       },
     },
     grid: { left: 55, right: 20, top: 20, bottom: 60 },

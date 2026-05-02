@@ -61,11 +61,11 @@ const chartOptions = computed<EChartsOption>(() => {
         if (!ps.length) return '';
         const d = days[ps[0].dataIndex];
         return [
-          `<b>${d.day}</b>`,
-          `Total profit: <b>${d.total_profit >= 0 ? '+' : ''}${d.total_profit.toFixed(2)}</b>`,
-          `Win rate: <b>${(d.winrate * 100).toFixed(1)}%</b>`,
-          `Trades: <b>${d.trades}</b>`,
-          `Avg profit: <b>${d.avg_profit >= 0 ? '+' : ''}${d.avg_profit.toFixed(2)}%</b>`,
+          `<b>${dayNames.value[d.day_index] ?? d.day}</b>`,
+          `${t('strategyDev.wdTotalProfit')}: <b>${d.total_profit >= 0 ? '+' : ''}${d.total_profit.toFixed(2)}</b>`,
+          `${t('strategyDev.wdWinRate')}: <b>${(d.winrate * 100).toFixed(1)}%</b>`,
+          `${t('strategyDev.wdTrades')}: <b>${d.trades}</b>`,
+          `${t('strategyDev.wdAvgProfit')}: <b>${d.avg_profit >= 0 ? '+' : ''}${d.avg_profit.toFixed(2)}%</b>`,
         ].join('<br/>');
       },
     },
@@ -79,14 +79,14 @@ const chartOptions = computed<EChartsOption>(() => {
     yAxis: [
       {
         type: 'value',
-        name: 'Total Profit',
+        name: t('strategyDev.wdTotalProfit'),
         nameTextStyle: { color: '#a6adc8' },
         axisLabel: { color: '#a6adc8' },
         splitLine: { lineStyle: { color: '#313244' } },
       },
       {
         type: 'value',
-        name: 'Win Rate %',
+        name: t('strategyDev.wdWinRate'),
         nameTextStyle: { color: '#f9e2af' },
         axisLabel: { color: '#f9e2af' },
         splitLine: { show: false },

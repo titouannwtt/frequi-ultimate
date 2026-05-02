@@ -30,7 +30,9 @@ const option = computed<EChartsOption>(() => {
       formatter: (params: unknown) => {
         const p = (params as { data: [string, number]; axisValue: string }[])[0];
         const val = Array.isArray(p.data) ? p.data[1] : p.data;
-        return `<b>${p.axisValue}</b><br/>Win Rate: ${(val * 100).toFixed(1)}%`;
+        const dateStr = new Date(p.axisValue).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        const wr = typeof val === 'number' && !isNaN(val) ? (val * 100).toFixed(1) : '—';
+        return `<b>${dateStr}</b><br/>Win Rate: ${wr}%`;
       },
     },
     grid: { left: 55, right: 20, top: 20, bottom: 60 },

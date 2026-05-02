@@ -33,10 +33,21 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
+const maxReasonableLoss = computed(() => {
+  const sorted = [...props.data].filter(v => isFinite(v)).sort((a, b) => a - b);
+  if (sorted.length === 0) return 100;
+  const p95 = sorted[Math.floor(sorted.length * 0.95)];
+  return Math.max(p95 * 2, Math.abs(sorted[0]) * 2, 1);
+});
+
+const clampedData = computed(() =>
+  props.data.map(v => Math.min(v, maxReasonableLoss.value)),
+);
+
 const bestSoFar = computed(() => {
   const result: number[] = [];
   let best = Infinity;
-  for (const v of props.data) {
+  for (const v of clampedData.value) {
     best = Math.min(best, v);
     result.push(best);
   }
@@ -73,7 +84,7 @@ const chartOptions = computed<EChartsOption>(() => {
     legend: {
       bottom: 28,
       textStyle: { color: '#a6adc8', fontSize: 11 },
-      data: ['Epoch loss', 'Best so far'],
+      data: [t('strategyDev.convEpochLoss'), t('strategyDev.convBestSoFar')],
     },
     grid: { left: 60, right: 20, top: 40, bottom: 76 },
     dataZoom: [
@@ -94,27 +105,27 @@ const chartOptions = computed<EChartsOption>(() => {
     ],
     xAxis: {
       type: 'category',
-      name: 'Epoch',
+      name: t('strategyDev.convEpoch'),
       data: epochs,
       axisLabel: { color: '#a6adc8', interval: Math.max(Math.floor(epochs.length / 10), 1) },
       axisLine: { lineStyle: { color: '#45475a' } },
     },
     yAxis: {
       type: 'value',
-      name: 'Loss',
+      name: t('strategyDev.convLoss'),
       axisLabel: { color: '#a6adc8' },
       splitLine: { lineStyle: { color: '#313244' } },
     },
     series: [
       {
-        name: 'Epoch loss',
+        name: t('strategyDev.convEpochLoss'),
         type: 'scatter',
-        data: props.data,
+        data: clampedData.value,
         symbolSize: 3,
         itemStyle: { color: '#6c7086', opacity: 0.4 },
       },
       {
-        name: 'Best so far',
+        name: t('strategyDev.convBestSoFar'),
         type: 'line',
         data: bestSoFar.value,
         smooth: false,
