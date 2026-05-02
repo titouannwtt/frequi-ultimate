@@ -1855,6 +1855,7 @@ export default {
     aaRiskMetrics: 'Risk Metrics',
     aaDrawdownDetails: 'Drawdown Analysis',
     aaStreaks: 'Win/Loss Streaks',
+    aaPairProfit: 'Pair Profit Distribution',
     hintEquityCurve: 'Portfolio balance over time. Shows how the account value evolved throughout the backtest period. Steep drops indicate drawdowns.',
     hintUnderwater: 'Continuous drawdown below the high-water mark. Shows the percentage decline from peak balance. The deeper the red, the more the strategy is underwater.',
     hintMonthlyReturns: 'Calendar heatmap of monthly returns. Green = positive, red = negative. Helps identify seasonal patterns and consistency across months.',
@@ -1890,6 +1891,7 @@ export default {
     aaRollingProfitFactor: 'Rolling Profit Factor',
     aaLongShort: 'Long vs Short',
     aaExposure: 'Position Exposure',
+    exposureYAxis: 'Open Positions',
     aaExpectancy: 'Trade Expectancy',
     aaSectionRollingPerf: 'Rolling Performance',
     aaSectionStructure: 'Strategy Structure',
@@ -2180,6 +2182,7 @@ export default {
 
     // Loss Histogram
     lhBestLoss: 'Best loss: {value} — beats {pct}% of epochs',
+    lhSubtitle: 'Your best loss ({loss}) outperforms {pct}% of all epochs',
     lhExceptional: 'Exceptional — top {pct}%',
     lhDecent: 'Decent — but many similar results',
     lhStruggled: 'Optimizer struggled',
@@ -2315,6 +2318,7 @@ export default {
     dsrNTrials: 'N Trials',
     dsrGenuine: 'Genuine',
     dsrOverfitted: 'Overfitted',
+    hintDsr: 'Deflated Sharpe Ratio (DSR) tests whether the observed Sharpe ratio is statistically significant given the number of trials. If DSR says "Overfitted", the Sharpe may be due to luck from running many optimizations.',
 
     // DOF Analysis Card
     dofTitle: 'Degrees of Freedom',
@@ -2323,6 +2327,7 @@ export default {
     dofTradesLabel: 'trades',
     dofParamsLabel: 'params',
     dofTradesParams: '{trades} trades / {params} params',
+    hintDof: 'Degrees of Freedom measures the ratio of trades to optimized parameters. More trades per parameter = more reliable optimization. Below 10:1 is concerning, above 20:1 is excellent.',
 
     // Distribution Analysis Card
     distTitle: 'Return Distribution',
@@ -2505,6 +2510,7 @@ export default {
     prtType: 'Type',
     prtBest: 'Best',
     prtRecommended: 'Rec.',
+    prtMedian: 'Median',
     prtSearchRange: 'Search Range',
     prtTop10Range: 'Top-10 Range',
     prtTendency: 'Tendency',

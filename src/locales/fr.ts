@@ -1798,6 +1798,7 @@ export default {
     aaRiskMetrics: 'Métriques de Risque',
     aaDrawdownDetails: 'Analyse des Drawdowns',
     aaStreaks: 'Séries Gains/Pertes',
+    aaPairProfit: 'Distribution des Profits par Paire',
     hintEquityCurve: 'Balance du portefeuille dans le temps. Montre l\'évolution de la valeur du compte durant la période de backtest. Les chutes abruptes indiquent des drawdowns.',
     hintUnderwater: 'Drawdown continu sous le plus haut historique. Montre le pourcentage de baisse depuis le pic de balance. Plus le rouge est profond, plus la stratégie est en difficulté.',
     hintMonthlyReturns: 'Heatmap calendaire des rendements mensuels. Vert = positif, rouge = négatif. Aide à identifier les patterns saisonniers et la régularité entre les mois.',
@@ -1833,6 +1834,7 @@ export default {
     aaRollingProfitFactor: 'Profit Factor Glissant',
     aaLongShort: 'Long vs Short',
     aaExposure: 'Exposition des Positions',
+    exposureYAxis: 'Positions Ouvertes',
     aaExpectancy: 'Espérance de Trade',
     aaSectionRollingPerf: 'Performance Glissante',
     aaSectionStructure: 'Structure de la Stratégie',
@@ -2112,6 +2114,7 @@ export default {
 
     // Histogramme de Loss
     lhBestLoss: 'Meilleur loss : {value} — bat {pct}% des époques',
+    lhSubtitle: 'Votre meilleure loss ({loss}) surpasse {pct}% de toutes les epochs',
     lhExceptional: 'Exceptionnel — top {pct}%',
     lhDecent: 'Correct — mais beaucoup de résultats similaires',
     lhStruggled: 'L\'optimiseur a eu du mal',
@@ -2247,6 +2250,7 @@ export default {
     dsrNTrials: 'N Essais',
     dsrGenuine: 'Authentique',
     dsrOverfitted: 'Surappris',
+    hintDsr: 'Le Deflated Sharpe Ratio (DSR) teste si le Sharpe observé est statistiquement significatif étant donné le nombre d\'essais. Si le DSR indique "Overfitted", le Sharpe pourrait être dû au hasard.',
 
     // Carte DOF
     dofTitle: 'Degrés de Liberté',
@@ -2255,6 +2259,7 @@ export default {
     dofTradesLabel: 'trades',
     dofTradesParams: '{trades} trades / {params} params',
     dofParamsLabel: 'params',
+    hintDof: 'Les degrés de liberté mesurent le ratio trades/paramètres optimisés. Plus de trades par paramètre = optimisation plus fiable. En dessous de 10:1 est préoccupant, au-dessus de 20:1 est excellent.',
 
     // Carte Distribution
     distTitle: 'Distribution des Rendements',
@@ -2437,6 +2442,7 @@ export default {
     prtType: 'Type',
     prtBest: 'Meilleur',
     prtRecommended: 'Rec.',
+    prtMedian: 'Médiane',
     prtSearchRange: 'Plage de Recherche',
     prtTop10Range: 'Plage Top-10',
     prtTendency: 'Tendance',
