@@ -356,6 +356,19 @@ function fmtNum(v: unknown, decimals = 2): string {
         >
           <StreaksCard :streaks="epochData.streaks as any" />
         </ChartWrapper>
+
+        <!-- Pair profit -->
+        <ChartWrapper
+          v-if="epochData.pair_profit"
+          :title="t('strategyDev.aaPairProfit')"
+          :hint="t('strategyDev.hintPairProfit')"
+          chart-id="epoch-pairs"
+        >
+          <PairProfitBarChart :data="epochData.pair_profit as any[]" :title="''" />
+          <template #fullscreen>
+            <PairProfitBarChart :data="epochData.pair_profit as any[]" :title="''" />
+          </template>
+        </ChartWrapper>
       </div>
     </template>
 
@@ -369,7 +382,10 @@ function fmtNum(v: unknown, decimals = 2): string {
 
 <style scoped>
 .epoch-panel {
-  padding: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--sd-mantle);
+  border-radius: var(--sd-radius-lg);
+  border: 1px solid var(--sd-border-subtle);
 }
 
 /* ── Epoch selector ── */
