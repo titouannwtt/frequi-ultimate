@@ -19,6 +19,16 @@ const props = defineProps<{
 
 const totalTrades = computed(() => props.streaks.wins + props.streaks.losses + props.streaks.draws);
 
+const streakDominance = computed(() => {
+  return props.streaks.max_consecutive_wins > props.streaks.max_consecutive_losses ? 'win' : 'loss';
+});
+
+const streakRatio = computed(() => {
+  const total = props.streaks.wins + props.streaks.losses;
+  if (total === 0) return 0;
+  return (props.streaks.wins / total) * 100;
+});
+
 const winStreakHist = computed(() => {
   if (!props.streaks.distribution) return [];
   return _buildHist(props.streaks.distribution.win_streaks);
@@ -51,11 +61,11 @@ function maxCount(hist: { length: number; count: number }[]): number {
     <div class="sk-summary">
       <div class="sk-stat">
         <span class="sk-stat-label">{{ t('strategyDev.skMaxWinStreak') }}</span>
-        <span class="sk-stat-value sk-stat-win">{{ streaks.max_consecutive_wins }}</span>
+        <span class="sk-stat-value" :class="streakDominance === 'win' ? 'sk-stat-win' : ''">{{ streaks.max_consecutive_wins }}</span>
       </div>
       <div class="sk-stat">
         <span class="sk-stat-label">{{ t('strategyDev.skMaxLossStreak') }}</span>
-        <span class="sk-stat-value sk-stat-loss">{{ streaks.max_consecutive_losses }}</span>
+        <span class="sk-stat-value" :class="streakDominance === 'loss' ? 'sk-stat-loss' : ''">{{ streaks.max_consecutive_losses }}</span>
       </div>
       <div class="sk-stat">
         <span class="sk-stat-label">{{ t('strategyDev.skWins') }}</span>
@@ -68,6 +78,18 @@ function maxCount(hist: { length: number; count: number }[]): number {
       <div class="sk-stat">
         <span class="sk-stat-label">{{ t('strategyDev.skWinRate') }}</span>
         <span class="sk-stat-value">{{ totalTrades > 0 ? ((streaks.wins / totalTrades) * 100).toFixed(1) : 0 }}%</span>
+      </div>
+    </div>
+
+    <!-- Streak ratio bar -->
+    <div v-if="streaks.wins + streaks.losses > 0" class="sk-ratio">
+      <div class="sk-ratio-label">
+        <span>Streak Ratio</span>
+        <span class="sk-ratio-pct">{{ streakRatio.toFixed(1) }}% wins</span>
+      </div>
+      <div class="sk-ratio-track">
+        <div class="sk-ratio-fill-win" :style="{ width: `${streakRatio}%` }" />
+        <div class="sk-ratio-fill-loss" :style="{ width: `${100 - streakRatio}%` }" />
       </div>
     </div>
 
@@ -124,7 +146,7 @@ function maxCount(hist: { length: number; count: number }[]): number {
 
 .sk-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
 }
 
@@ -213,5 +235,46 @@ function maxCount(hist: { length: number; count: number }[]): number {
   color: var(--sd-subtext);
   width: 20px;
   flex-shrink: 0;
+}
+
+/* Streak ratio bar */
+.sk-ratio {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sk-ratio-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sd-overlay);
+}
+
+.sk-ratio-pct {
+  font-family: var(--sd-font-mono);
+  color: var(--sd-subtext);
+}
+
+.sk-ratio-track {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.sk-ratio-fill-win {
+  background: var(--sd-success);
+  opacity: 0.7;
+  transition: width 0.5s ease;
+}
+
+.sk-ratio-fill-loss {
+  background: var(--sd-danger);
+  opacity: 0.7;
+  transition: width 0.5s ease;
 }
 </style>
