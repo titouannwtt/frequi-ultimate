@@ -102,20 +102,21 @@ const verdictColor: Record<string, string> = {
       :key="item.key"
       class="rm-card"
     >
-      <div class="rm-card-header">
-        <span class="rm-label">{{ item.label }}</span>
-        <span
-          class="rm-verdict-dot"
-          :style="{ backgroundColor: verdictColor[item.verdict] }"
-        />
-      </div>
-      <span
-        class="rm-value"
-        :style="{ color: verdictColor[item.verdict] }"
+      <MetricPopover
+        :label="item.label"
+        :value="item.value"
+        :verdict="item.verdict"
+        :verdict-text="item.description"
+        position="bottom"
       >
-        {{ item.value }}
-      </span>
-      <span class="rm-desc">{{ item.description }}</span>
+        <div class="rm-card-inner">
+          <div class="rm-card-header">
+            <span class="rm-label">{{ item.label }}</span>
+            <span class="rm-verdict-dot" :style="{ backgroundColor: verdictColor[item.verdict] }" />
+          </div>
+          <span class="rm-value" :style="{ color: verdictColor[item.verdict] }">{{ item.value }}</span>
+        </div>
+      </MetricPopover>
     </div>
   </div>
 </template>
@@ -130,11 +131,14 @@ const verdictColor: Record<string, string> = {
 .rm-card {
   display: flex;
   flex-direction: column;
-  padding: 12px;
   background: var(--sd-base);
   border: 1px solid var(--sd-border-subtle);
   border-radius: var(--sd-radius-md);
   gap: 2px;
+}
+
+.rm-card-inner {
+  padding: 12px;
 }
 
 .rm-card-header {
@@ -164,10 +168,4 @@ const verdictColor: Record<string, string> = {
   font-family: var(--sd-font-mono);
 }
 
-.rm-desc {
-  font-size: 10px;
-  color: var(--sd-overlay);
-  line-height: 1.3;
-  margin-top: 4px;
-}
 </style>

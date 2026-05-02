@@ -39,7 +39,7 @@ const barColor = computed(() => {
 
 <template>
   <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-4">
-    <h4 class="text-sm font-semibold mb-3">{{ t('strategyDev.dofTitle') }}</h4>
+    <h4 class="text-sm font-semibold mb-3 flex items-center gap-1.5">{{ t('strategyDev.dofTitle') }} <InfoTip :text="t('strategyDev.hintDof')" /></h4>
     <div class="flex items-end gap-4 mb-3">
       <div class="text-3xl font-bold tabular-nums" :class="levelColor">
         {{ data.ratio.toFixed(1) }}
