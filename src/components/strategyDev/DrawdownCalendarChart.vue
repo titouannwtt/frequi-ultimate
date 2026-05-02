@@ -37,18 +37,28 @@ const chartOptions = computed<EChartsOption>(() => {
 
   const maxDd = Math.max(...props.data.map((d) => d.dd_pct), 1);
 
-  const calendars = years.map((y, i) => ({
-    top: 40 + i * 160,
-    left: 50,
-    right: 30,
-    cellSize: ['auto', 14],
-    range: String(y),
-    itemStyle: { borderWidth: 2, borderColor: '#1e1e2e' },
-    splitLine: { lineStyle: { color: '#313244' } },
-    yearLabel: { color: '#a6adc8', fontSize: 12, margin: 30 },
-    dayLabel: { color: '#6c7086', fontSize: 9, nameMap: 'en' },
-    monthLabel: { color: '#a6adc8', fontSize: 10 },
-  }));
+  const yearRanges: Record<number, [string, string]> = {};
+  for (const d of props.data) {
+    const y = parseInt(d.date.split('-')[0]);
+    if (!yearRanges[y]) yearRanges[y] = [d.date, d.date];
+    else yearRanges[y][1] = d.date;
+  }
+
+  const calendars = years.map((y, i) => {
+    const range = yearRanges[y] ?? [String(y), String(y)];
+    return {
+      top: 40 + i * 160,
+      left: 50,
+      right: 30,
+      cellSize: ['auto', 14],
+      range: range[0] === range[1] ? String(y) : range,
+      itemStyle: { borderWidth: 2, borderColor: '#1e1e2e' },
+      splitLine: { lineStyle: { color: '#313244' } },
+      yearLabel: { color: '#a6adc8', fontSize: 12, margin: 30 },
+      dayLabel: { color: '#6c7086', fontSize: 9, nameMap: 'en' },
+      monthLabel: { color: '#a6adc8', fontSize: 10 },
+    };
+  });
 
   const series = years.map((y, i) => ({
     type: 'heatmap' as const,
