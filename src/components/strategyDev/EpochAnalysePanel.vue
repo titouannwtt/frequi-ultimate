@@ -137,7 +137,12 @@ function fmtNum(v: unknown, decimals = 2): string {
 
       <!-- Charts grid -->
       <div class="grid grid-cols-1 gap-4 mt-4">
-        <!-- Equity + Underwater -->
+        <!-- ═══ Equity & Drawdowns ═══ -->
+        <div class="epoch-section-header">
+          <span class="epoch-section-num">1</span>
+          <h3>{{ t('strategyDev.epochSectionEquity') }}</h3>
+        </div>
+
         <ChartWrapper
           v-if="epochData.equity_curve"
           :title="t('strategyDev.aaEquityCurve')"
@@ -155,6 +160,7 @@ function fmtNum(v: unknown, decimals = 2): string {
             />
           </template>
         </ChartWrapper>
+        <ChartEmptyState v-else />
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ChartWrapper
@@ -168,6 +174,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <UnderwaterChart :series="epochData.drawdown_series as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
 
           <ChartWrapper
             v-if="epochData.cumulative_trades"
@@ -180,9 +187,15 @@ function fmtNum(v: unknown, decimals = 2): string {
               <CumulativeTradesChart :trades="epochData.cumulative_trades as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
         </div>
 
-        <!-- New charts: Return Distribution, Drawdown Calendar, MAE/MFE -->
+        <!-- ═══ Performance ═══ -->
+        <div class="epoch-section-header">
+          <span class="epoch-section-num">2</span>
+          <h3>{{ t('strategyDev.epochSectionPerformance') }}</h3>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ChartWrapper
             v-if="epochData.return_distribution_fit"
@@ -195,6 +208,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <ReturnDistributionChart :data="epochData.return_distribution_fit as any" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
 
           <ChartWrapper
             v-if="epochData.mae_mfe"
@@ -207,6 +221,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <MaeMfeScatter :points="epochData.mae_mfe as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
         </div>
 
         <ChartWrapper
@@ -220,8 +235,8 @@ function fmtNum(v: unknown, decimals = 2): string {
             <DrawdownCalendarChart :data="epochData.drawdown_calendar as any[]" />
           </template>
         </ChartWrapper>
+        <ChartEmptyState v-else />
 
-        <!-- Monthly returns -->
         <ChartWrapper
           v-if="epochData.monthly_returns"
           :title="t('strategyDev.aaMonthlyReturns')"
@@ -233,8 +248,14 @@ function fmtNum(v: unknown, decimals = 2): string {
             <MonthlyReturnsHeatmap :data="epochData.monthly_returns as any[]" />
           </template>
         </ChartWrapper>
+        <ChartEmptyState v-else />
 
-        <!-- Trade analysis -->
+        <!-- ═══ Trades ═══ -->
+        <div class="epoch-section-header">
+          <span class="epoch-section-num">3</span>
+          <h3>{{ t('strategyDev.epochSectionTrades') }}</h3>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ChartWrapper
             v-if="epochData.trade_pnl_distribution"
@@ -247,6 +268,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <TradePnlChart :distribution="epochData.trade_pnl_distribution as any" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
 
           <ChartWrapper
             v-if="epochData.duration_scatter"
@@ -259,6 +281,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <DurationScatterChart :points="epochData.duration_scatter as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -273,6 +296,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <ExitReasonChart :reasons="epochData.exit_reason_detail as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
 
           <ChartWrapper
             v-if="epochData.weekday_pattern"
@@ -285,9 +309,15 @@ function fmtNum(v: unknown, decimals = 2): string {
               <WeekdayPatternChart :pattern="epochData.weekday_pattern as any" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
         </div>
 
-        <!-- Risk & Structure -->
+        <!-- ═══ Risk & Structure ═══ -->
+        <div class="epoch-section-header">
+          <span class="epoch-section-num">4</span>
+          <h3>{{ t('strategyDev.epochSectionRisk') }}</h3>
+        </div>
+
         <RiskMetricsCard v-if="epochData.risk_metrics" :metrics="epochData.risk_metrics as any" />
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -299,6 +329,7 @@ function fmtNum(v: unknown, decimals = 2): string {
           >
             <LongShortCard :split="epochData.long_short_split as any" />
           </ChartWrapper>
+          <ChartEmptyState v-else />
 
           <ChartWrapper
             v-if="epochData.trade_expectancy"
@@ -308,6 +339,13 @@ function fmtNum(v: unknown, decimals = 2): string {
           >
             <ExpectancyCard :data="epochData.trade_expectancy as any" />
           </ChartWrapper>
+          <ChartEmptyState v-else />
+        </div>
+
+        <!-- ═══ Consistency ═══ -->
+        <div class="epoch-section-header">
+          <span class="epoch-section-num">5</span>
+          <h3>{{ t('strategyDev.epochSectionConsistency') }}</h3>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -322,6 +360,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <RollingWinrateChart :data="epochData.rolling_winrate as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
 
           <ChartWrapper
             v-if="epochData.rolling_profit_factor"
@@ -334,6 +373,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <RollingProfitFactorChart :data="epochData.rolling_profit_factor as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
         </div>
 
         <ChartWrapper
@@ -347,6 +387,7 @@ function fmtNum(v: unknown, decimals = 2): string {
             <ExposureChart :timeline="epochData.exposure_timeline as any[]" />
           </template>
         </ChartWrapper>
+        <ChartEmptyState v-else />
 
         <ChartWrapper
           v-if="epochData.streaks"
@@ -356,8 +397,8 @@ function fmtNum(v: unknown, decimals = 2): string {
         >
           <StreaksCard :streaks="epochData.streaks as any" />
         </ChartWrapper>
+        <ChartEmptyState v-else />
 
-        <!-- Capital Utilization -->
         <ChartWrapper
           v-if="epochData.capital_utilization && (epochData.capital_utilization as any[]).length > 0"
           :title="t('strategyDev.btCapitalUtilization')"
@@ -370,7 +411,6 @@ function fmtNum(v: unknown, decimals = 2): string {
           </template>
         </ChartWrapper>
 
-        <!-- Pair profit -->
         <ChartWrapper
           v-if="epochData.pair_profit"
           :title="t('strategyDev.aaPairProfit')"
@@ -382,6 +422,7 @@ function fmtNum(v: unknown, decimals = 2): string {
             <PairProfitBarChart :data="epochData.pair_profit as any[]" :title="''" />
           </template>
         </ChartWrapper>
+        <ChartEmptyState v-else />
       </div>
     </template>
 
@@ -532,6 +573,45 @@ function fmtNum(v: unknown, decimals = 2): string {
 
 .sc-pos { color: #a6e3a1; }
 .sc-neg { color: #f38ba8; }
+
+/* ── Section headers ── */
+.epoch-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(137, 180, 250, 0.08);
+}
+
+.epoch-section-header:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.epoch-section-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(137, 180, 250, 0.1);
+  color: #89b4fa;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.epoch-section-header h3 {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #89b4fa;
+  margin: 0;
+}
 
 /* ── Empty ── */
 .epoch-empty {

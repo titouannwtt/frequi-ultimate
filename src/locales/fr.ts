@@ -1958,6 +1958,15 @@ export default {
     skWinRate: 'Taux de Gain',
     skWinStreakDist: 'Distribution des Séries de Gains',
     skLossStreakDist: 'Distribution des Séries de Pertes',
+    skBarTooltip: '{count} occurrence(s) de {length} {type} consécutifs',
+    skBarWinType: 'gains',
+    skBarLossType: 'pertes',
+
+    epochSectionEquity: 'Equity & Drawdowns',
+    epochSectionPerformance: 'Performance',
+    epochSectionTrades: 'Trades',
+    epochSectionRisk: 'Risque & Structure',
+    epochSectionConsistency: 'Consistance',
 
     deleteRun: 'Supprimer le run',
     deleteConfirm: 'Êtes-vous sûr de vouloir supprimer ce run ?',
@@ -2191,6 +2200,7 @@ export default {
     pcQualityBad: 'Mauvais (loss élevée)',
     pcQualityNoData: 'Pas de données',
     pcQualityBest: 'Meilleure epoch',
+    pcQualityMedian: 'Médiane',
 
     // Heatmap de corrélation
     corrRedundant: 'Certains paramètres ont |r| > 0.7 — envisagez de fusionner ou supprimer les paramètres redondants',

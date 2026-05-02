@@ -2019,6 +2019,15 @@ export default {
     skWinRate: 'Win Rate',
     skWinStreakDist: 'Win Streak Distribution',
     skLossStreakDist: 'Loss Streak Distribution',
+    skBarTooltip: '{count} occurrence(s) of {length} consecutive {type}',
+    skBarWinType: 'wins',
+    skBarLossType: 'losses',
+
+    epochSectionEquity: 'Equity & Drawdowns',
+    epochSectionPerformance: 'Performance',
+    epochSectionTrades: 'Trades',
+    epochSectionRisk: 'Risk & Structure',
+    epochSectionConsistency: 'Consistency',
 
     // Detail header
     deleteRun: 'Delete run',
@@ -2259,6 +2268,7 @@ export default {
     pcQualityBad: 'Bad (high loss)',
     pcQualityNoData: 'No data',
     pcQualityBest: 'Best epoch',
+    pcQualityMedian: 'Median',
 
     // Correlation Heatmap
     corrRedundant: 'Some parameters have |r| > 0.7 — consider merging or removing redundant params',

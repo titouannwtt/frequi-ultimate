@@ -181,6 +181,7 @@ interface ParamStrip {
   name: string;
   bins: QualityBin[];
   bestBinIndex: number;
+  medianBinIndex: number;
   minLabel: string;
   maxLabel: string;
 }
@@ -216,6 +217,16 @@ const qualityStrips = computed<ParamStrip[]>(() => {
     const bestActual = range ? denormalize(bestNorm, pMin, pMax) : bestNorm;
     const bestBi = Math.min(Math.floor((bestActual - pMin) / binSize), N_BINS - 1);
 
+    const allActuals = lines.map((line) => {
+      const norm = line.values[p] ?? 0.5;
+      return range ? denormalize(norm, pMin, pMax) : norm;
+    });
+    allActuals.sort((a, b) => a - b);
+    const medianActual = allActuals.length % 2 === 0
+      ? (allActuals[allActuals.length / 2 - 1] + allActuals[allActuals.length / 2]) / 2
+      : allActuals[Math.floor(allActuals.length / 2)];
+    const medianBi = Math.min(Math.floor((medianActual - pMin) / binSize), N_BINS - 1);
+
     const bins: QualityBin[] = binLosses.map((bl) => {
       if (bl.length === 0) {
         return { color: '#313244', opacity: 0.3, count: 0 };
@@ -232,6 +243,7 @@ const qualityStrips = computed<ParamStrip[]>(() => {
       name: shortNames.value[pi],
       bins,
       bestBinIndex: bestBi,
+      medianBinIndex: medianBi,
       minLabel: fmtVal(pMin),
       maxLabel: fmtVal(pMax),
     };
@@ -282,6 +294,7 @@ const bestLoss = computed(() => {
               }"
               :title="`${strip.name} bin ${j + 1}: ${bin.count} epochs`"
             >
+              <div v-if="j === strip.medianBinIndex" class="quality-median-marker" />
               <div v-if="j === strip.bestBinIndex" class="quality-best-marker" />
             </div>
           </div>
@@ -308,6 +321,10 @@ const bestLoss = computed(() => {
         <span class="quality-legend-item">
           <span class="quality-best-marker-legend" />
           {{ t('strategyDev.pcQualityBest') }}
+        </span>
+        <span class="quality-legend-item">
+          <span class="quality-median-marker-legend" />
+          {{ t('strategyDev.pcQualityMedian') }}
         </span>
       </div>
     </div>
@@ -453,11 +470,33 @@ const bestLoss = computed(() => {
   opacity: 0.3;
 }
 
+.quality-median-marker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #cba6f7;
+  border: 2px solid #1e1e2e;
+  box-shadow: 0 0 4px rgba(203, 166, 247, 0.6);
+}
+
 .quality-best-marker-legend {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: #cdd6f4;
+  border: 2px solid #6c7086;
+  flex-shrink: 0;
+}
+
+.quality-median-marker-legend {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #cba6f7;
   border: 2px solid #6c7086;
   flex-shrink: 0;
 }
