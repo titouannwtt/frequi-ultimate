@@ -54,6 +54,7 @@ interface Row {
   type: string;
   bestValue: string;
   recommended: string;
+  median: string;
   range: string;
   top10Range: string;
   tendency: string;
@@ -89,6 +90,7 @@ const rows = computed<Row[]>(() => {
     const type = dd?.type ?? '?';
     const bestValue = fmtVal(dd?.best_value);
     const recommended = fmtVal(ps?.recommended);
+    const median = fmtVal(dd?.top10_median ?? ps?.median);
 
     let range = '—';
     if (dd?.range_low != null && dd?.range_high != null) {
@@ -167,6 +169,7 @@ const rows = computed<Row[]>(() => {
       type,
       bestValue,
       recommended,
+      median,
       range,
       top10Range,
       tendency,
@@ -203,8 +206,9 @@ const summary = computed(() => {
           <tr>
             <th>{{ t('strategyDev.prtParam') }}</th>
             <th>{{ t('strategyDev.prtType') }}</th>
-            <th class="text-right">{{ t('strategyDev.prtBest') }}</th>
-            <th class="text-right">{{ t('strategyDev.prtRecommended') }}</th>
+            <th>{{ t('strategyDev.prtBest') }}</th>
+            <th>{{ t('strategyDev.prtRecommended') }}</th>
+            <th>{{ t('strategyDev.prtMedian') }}</th>
             <th>{{ t('strategyDev.prtSearchRange') }}</th>
             <th>{{ t('strategyDev.prtTop10Range') }}</th>
             <th>{{ t('strategyDev.prtTendency') }}</th>
@@ -216,8 +220,9 @@ const summary = computed(() => {
           <tr v-for="row in rows" :key="row.name">
             <td class="td-name">{{ row.name }}</td>
             <td class="td-type">{{ row.type }}</td>
-            <td class="td-val text-right text-blue-400">{{ row.bestValue }}</td>
-            <td class="td-val text-right font-semibold text-green-300">{{ row.recommended }}</td>
+            <td class="td-val text-blue-400">{{ row.bestValue }}</td>
+            <td class="td-val font-semibold text-green-300">{{ row.recommended }}</td>
+            <td class="td-val" style="color: #cba6f7">{{ row.median }}</td>
             <td class="td-range">{{ row.range }}</td>
             <td class="td-range">{{ row.top10Range }}</td>
             <td :class="row.tendencyColor">{{ row.tendency }}</td>
