@@ -70,6 +70,7 @@ const chartOptions = computed<EChartsOption>(() => {
   const medianIdx = findClosestBin(median);
 
   return {
+    backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
       backgroundColor: '#313244',
@@ -81,6 +82,7 @@ const chartOptions = computed<EChartsOption>(() => {
         return `<b>${p.name}</b><br/>Count: ${p.value}`;
       },
     },
+    color: ['#a6e3a1', '#f38ba8', '#89b4fa', '#f9e2af'],
     grid: { left: 50, right: 20, top: 20, bottom: 60 },
     xAxis: {
       type: 'category',

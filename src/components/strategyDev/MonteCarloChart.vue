@@ -177,20 +177,45 @@ const chartOptions = computed<EChartsOption>(() => {
 
           const boxColor = d.p25 >= 0 ? C.green : C.red;
 
+          const minLabelGap = 45;
+          const topLabels = [
+            { x: xP25, text: `P25: ${fmtPct(d.p25)}`, fill: C.subtext, fontSize: 10, fontWeight: 'normal' as const },
+            { x: xP50, text: `P50: ${fmtPct(d.p50)}`, fill: C.blue, fontSize: 11, fontWeight: 'bold' as const },
+            { x: xP75, text: `P75: ${fmtPct(d.p75)}`, fill: C.subtext, fontSize: 10, fontWeight: 'normal' as const },
+          ];
+          const baseY = yCoord - boxH / 2 - 8;
+          const topY: number[] = [baseY, baseY, baseY];
+          if (Math.abs(topLabels[1].x - topLabels[0].x) < minLabelGap) {
+            topY[0] = baseY - 14;
+          }
+          if (Math.abs(topLabels[2].x - topLabels[1].x) < minLabelGap) {
+            topY[2] = baseY - 14;
+          }
+          if (Math.abs(topLabels[2].x - topLabels[0].x) < minLabelGap && topY[0] === topY[2]) {
+            topY[0] = baseY - 26;
+          }
+
+          const bottomLabels = [
+            { x: xP5, text: `P5: ${fmtPct(d.p5)}`, fill: C.subtext },
+            { x: xP95, text: `P95: ${fmtPct(d.p95)}`, fill: C.subtext },
+          ];
+          const bottomBaseY = yCoord + boxH / 2 + 14;
+          const bottomY: number[] = [bottomBaseY, bottomBaseY];
+          if (Math.abs(bottomLabels[1].x - bottomLabels[0].x) < minLabelGap) {
+            bottomY[1] = bottomBaseY + 14;
+          }
+
           const children = [
-            // Left whisker (P5 - P25)
             {
               type: 'line',
               shape: { x1: xP5, y1: yCoord, x2: xP25, y2: yCoord },
               style: { stroke: C.subtext, lineWidth: 2 },
             },
-            // Right whisker (P75 - P95)
             {
               type: 'line',
               shape: { x1: xP75, y1: yCoord, x2: xP95, y2: yCoord },
               style: { stroke: C.subtext, lineWidth: 2 },
             },
-            // Left cap (P5)
             {
               type: 'line',
               shape: {
@@ -201,7 +226,6 @@ const chartOptions = computed<EChartsOption>(() => {
               },
               style: { stroke: C.subtext, lineWidth: 2 },
             },
-            // Right cap (P95)
             {
               type: 'line',
               shape: {
@@ -212,7 +236,6 @@ const chartOptions = computed<EChartsOption>(() => {
               },
               style: { stroke: C.subtext, lineWidth: 2 },
             },
-            // Box (P25 - P75)
             {
               type: 'rect',
               shape: {
@@ -227,7 +250,6 @@ const chartOptions = computed<EChartsOption>(() => {
                 lineWidth: 2,
               },
             },
-            // Median line (P50)
             {
               type: 'line',
               shape: {
@@ -238,67 +260,29 @@ const chartOptions = computed<EChartsOption>(() => {
               },
               style: { stroke: C.blue, lineWidth: 3 },
             },
-            // P5 label
-            {
+            ...bottomLabels.map((lbl, i) => ({
               type: 'text',
               style: {
-                text: `P5: ${fmtPct(d.p5)}`,
-                x: xP5,
-                y: yCoord + boxH / 2 + 14,
-                fill: C.subtext,
+                text: lbl.text,
+                x: lbl.x,
+                y: bottomY[i],
+                fill: lbl.fill,
                 fontSize: 10,
                 textAlign: 'center' as const,
               },
-            },
-            // P25 label
-            {
+            })),
+            ...topLabels.map((lbl, i) => ({
               type: 'text',
               style: {
-                text: `P25: ${fmtPct(d.p25)}`,
-                x: xP25,
-                y: yCoord - boxH / 2 - 8,
-                fill: C.subtext,
-                fontSize: 10,
+                text: lbl.text,
+                x: lbl.x,
+                y: topY[i],
+                fill: lbl.fill,
+                fontSize: lbl.fontSize,
+                fontWeight: lbl.fontWeight,
                 textAlign: 'center' as const,
               },
-            },
-            // P50 label
-            {
-              type: 'text',
-              style: {
-                text: `P50: ${fmtPct(d.p50)}`,
-                x: xP50,
-                y: yCoord - boxH / 2 - 8,
-                fill: C.blue,
-                fontSize: 11,
-                fontWeight: 'bold',
-                textAlign: 'center' as const,
-              },
-            },
-            // P75 label
-            {
-              type: 'text',
-              style: {
-                text: `P75: ${fmtPct(d.p75)}`,
-                x: xP75,
-                y: yCoord - boxH / 2 - 8,
-                fill: C.subtext,
-                fontSize: 10,
-                textAlign: 'center' as const,
-              },
-            },
-            // P95 label
-            {
-              type: 'text',
-              style: {
-                text: `P95: ${fmtPct(d.p95)}`,
-                x: xP95,
-                y: yCoord + boxH / 2 + 14,
-                fill: C.subtext,
-                fontSize: 10,
-                textAlign: 'center' as const,
-              },
-            },
+            })),
           ];
 
           return { type: 'group', children };

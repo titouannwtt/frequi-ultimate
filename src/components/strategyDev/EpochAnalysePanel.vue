@@ -357,6 +357,19 @@ function fmtNum(v: unknown, decimals = 2): string {
           <StreaksCard :streaks="epochData.streaks as any" />
         </ChartWrapper>
 
+        <!-- Capital Utilization -->
+        <ChartWrapper
+          v-if="epochData.capital_utilization && (epochData.capital_utilization as any[]).length > 0"
+          :title="t('strategyDev.btCapitalUtilization')"
+          :hint="t('strategyDev.hintBtCapitalUtilization')"
+          chart-id="epoch-cap-util"
+        >
+          <CapitalUtilizationChart :data="epochData.capital_utilization as any[]" />
+          <template #fullscreen>
+            <CapitalUtilizationChart :data="epochData.capital_utilization as any[]" />
+          </template>
+        </ChartWrapper>
+
         <!-- Pair profit -->
         <ChartWrapper
           v-if="epochData.pair_profit"
