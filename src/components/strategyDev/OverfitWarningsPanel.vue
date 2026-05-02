@@ -29,10 +29,10 @@ function getActions(w: OverfitWarning) {
   return isFr.value ? w.actions_fr : w.actions_en;
 }
 
-function severityClasses(s: string) {
-  if (s === 'high') return 'border-red-500/40 bg-red-900/20 text-red-300';
-  if (s === 'medium') return 'border-amber-500/40 bg-amber-900/20 text-amber-300';
-  return 'border-blue-500/40 bg-blue-900/20 text-blue-300';
+function severityStyle(s: string) {
+  if (s === 'high') return { borderColor: 'rgba(239,68,68,0.4)', background: 'rgba(127,29,29,0.2)', color: '#fca5a5' };
+  if (s === 'medium') return { borderColor: 'rgba(245,158,11,0.4)', background: 'rgba(120,53,15,0.2)', color: '#fcd34d' };
+  return { borderColor: 'rgba(59,130,246,0.4)', background: 'rgba(30,58,138,0.2)', color: '#93c5fd' };
 }
 
 function severityIcon(s: string) {
@@ -48,7 +48,7 @@ function severityIcon(s: string) {
       v-for="(w, i) in warnings"
       :key="i"
       class="rounded-lg border p-4 text-left"
-      :class="severityClasses(w.severity)"
+      :style="severityStyle(w.severity)"
     >
       <div class="flex items-start gap-2">
         <span class="text-lg">{{ severityIcon(w.severity) }}</span>

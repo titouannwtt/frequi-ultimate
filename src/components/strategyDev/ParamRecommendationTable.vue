@@ -49,6 +49,16 @@ const props = defineProps<{
   paramStability?: Record<string, ParamStability>;
 }>();
 
+interface BoxPlotData {
+  rangeMin: number;
+  rangeMax: number;
+  t10Min: number;
+  t10Max: number;
+  median: number;
+  best: number;
+  mean: number;
+}
+
 interface Row {
   name: string;
   type: string;
@@ -62,6 +72,7 @@ interface Row {
   sensitivity: string;
   sensitivityColor: string;
   reasoning: string;
+  boxPlot: BoxPlotData | null;
 }
 
 function fmtVal(v: unknown): string {
@@ -164,6 +175,22 @@ const rows = computed<Row[]>(() => {
     }
     reasoning = reasons.join('. ');
 
+    let boxPlot: BoxPlotData | null = null;
+    if (dd?.range_low != null && dd?.range_high != null && dd.range_high > dd.range_low
+      && dd?.top10_min != null && dd?.top10_max != null && dd?.top10_median != null) {
+      const bestNum = typeof dd.best_value === 'number' ? dd.best_value : dd.top10_median;
+      const meanNum = ps?.mean ?? ps?.median ?? dd.top10_median;
+      boxPlot = {
+        rangeMin: dd.range_low,
+        rangeMax: dd.range_high,
+        t10Min: dd.top10_min,
+        t10Max: dd.top10_max,
+        median: dd.top10_median,
+        best: bestNum,
+        mean: meanNum,
+      };
+    }
+
     result.push({
       name,
       type,
@@ -177,11 +204,21 @@ const rows = computed<Row[]>(() => {
       sensitivity,
       sensitivityColor,
       reasoning,
+      boxPlot,
     });
   }
 
   return result;
 });
+
+function boxX(val: number, bp: BoxPlotData, width: number): number {
+  const range = bp.rangeMax - bp.rangeMin;
+  if (range <= 0) return width / 2;
+  return Math.max(2, Math.min(width - 2, ((val - bp.rangeMin) / range) * width));
+}
+
+const BOX_W = 140;
+const BOX_H = 18;
 
 const summary = computed(() => {
   const converging = rows.value.filter(r => r.tendency === t('strategyDev.prtConverging') || r.tendency === t('strategyDev.prtStable')).length;
@@ -211,6 +248,7 @@ const summary = computed(() => {
             <th>{{ t('strategyDev.prtMedian') }}</th>
             <th>{{ t('strategyDev.prtSearchRange') }}</th>
             <th>{{ t('strategyDev.prtTop10Range') }}</th>
+            <th class="th-boxplot">{{ t('strategyDev.prtDistribution') }}</th>
             <th>{{ t('strategyDev.prtTendency') }}</th>
             <th>{{ t('strategyDev.prtSensitivity') }}</th>
             <th>{{ t('strategyDev.prtReasoning') }}</th>
@@ -225,12 +263,90 @@ const summary = computed(() => {
             <td class="td-val" style="color: #cba6f7">{{ row.median }}</td>
             <td class="td-range">{{ row.range }}</td>
             <td class="td-range">{{ row.top10Range }}</td>
+            <td class="td-boxplot">
+              <svg v-if="row.boxPlot" :width="BOX_W" :height="BOX_H" class="bp-svg">
+                <!-- Full range whisker line -->
+                <line
+                  x1="2" :y1="BOX_H / 2" :x2="BOX_W - 2" :y2="BOX_H / 2"
+                  stroke="#45475a" stroke-width="1"
+                />
+                <!-- Min/Max whisker caps -->
+                <line x1="2" :y1="BOX_H / 2 - 4" x2="2" :y2="BOX_H / 2 + 4" stroke="#45475a" stroke-width="1" />
+                <line :x1="BOX_W - 2" :y1="BOX_H / 2 - 4" :x2="BOX_W - 2" :y2="BOX_H / 2 + 4" stroke="#45475a" stroke-width="1" />
+                <!-- Top 10 box -->
+                <rect
+                  :x="boxX(row.boxPlot.t10Min, row.boxPlot, BOX_W)"
+                  :y="BOX_H / 2 - 6"
+                  :width="Math.max(2, boxX(row.boxPlot.t10Max, row.boxPlot, BOX_W) - boxX(row.boxPlot.t10Min, row.boxPlot, BOX_W))"
+                  :height="12"
+                  rx="2"
+                  fill="rgba(137, 180, 250, 0.25)"
+                  stroke="#89b4fa"
+                  stroke-width="1"
+                />
+                <!-- Median line -->
+                <line
+                  :x1="boxX(row.boxPlot.median, row.boxPlot, BOX_W)"
+                  :y1="BOX_H / 2 - 6"
+                  :x2="boxX(row.boxPlot.median, row.boxPlot, BOX_W)"
+                  :y2="BOX_H / 2 + 6"
+                  stroke="#f9e2af"
+                  stroke-width="2"
+                />
+                <!-- Mean dot -->
+                <circle
+                  :cx="boxX(row.boxPlot.mean, row.boxPlot, BOX_W)"
+                  :cy="BOX_H / 2"
+                  r="3"
+                  fill="#cba6f7"
+                  stroke="#1e1e2e"
+                  stroke-width="1"
+                />
+                <!-- Best value dot -->
+                <circle
+                  :cx="boxX(row.boxPlot.best, row.boxPlot, BOX_W)"
+                  :cy="BOX_H / 2"
+                  r="3.5"
+                  fill="#a6e3a1"
+                  stroke="#1e1e2e"
+                  stroke-width="1"
+                />
+                <!-- Labels at extremes -->
+                <text x="2" :y="BOX_H / 2 - 6" class="bp-label">{{ fmtVal(row.boxPlot.rangeMin) }}</text>
+                <text :x="BOX_W - 2" :y="BOX_H / 2 - 6" class="bp-label" text-anchor="end">{{ fmtVal(row.boxPlot.rangeMax) }}</text>
+              </svg>
+              <span v-else class="td-range">—</span>
+            </td>
             <td :class="row.tendencyColor">{{ row.tendency }}</td>
             <td :class="row.sensitivityColor">{{ row.sensitivity }}</td>
             <td class="td-reason">{{ row.reasoning }}</td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Box plot legend -->
+    <div class="bp-legend">
+      <span class="bp-legend-item">
+        <svg width="16" height="12"><line x1="0" y1="6" x2="16" y2="6" stroke="#45475a" stroke-width="1" /></svg>
+        {{ t('strategyDev.prtBpFullRange') }}
+      </span>
+      <span class="bp-legend-item">
+        <svg width="16" height="12"><rect x="2" y="2" width="12" height="8" rx="1" fill="rgba(137,180,250,0.25)" stroke="#89b4fa" stroke-width="1" /></svg>
+        Top 10
+      </span>
+      <span class="bp-legend-item">
+        <svg width="8" height="12"><line x1="4" y1="1" x2="4" y2="11" stroke="#f9e2af" stroke-width="2" /></svg>
+        {{ t('strategyDev.prtMedian') }}
+      </span>
+      <span class="bp-legend-item">
+        <svg width="10" height="10"><circle cx="5" cy="5" r="3" fill="#cba6f7" stroke="#1e1e2e" stroke-width="1" /></svg>
+        {{ t('strategyDev.prtBpMean') }}
+      </span>
+      <span class="bp-legend-item">
+        <svg width="10" height="10"><circle cx="5" cy="5" r="3.5" fill="#a6e3a1" stroke="#1e1e2e" stroke-width="1" /></svg>
+        {{ t('strategyDev.prtBest') }}
+      </span>
     </div>
 
     <!-- Summary advisory -->
@@ -270,7 +386,7 @@ const summary = computed(() => {
 
 .prt-table {
   width: 100%;
-  min-width: 900px;
+  min-width: 1050px;
   border-collapse: collapse;
   font-size: var(--sd-text-xs);
   font-family: var(--sd-font-mono);
@@ -290,6 +406,10 @@ const summary = computed(() => {
   color: var(--sd-overlay);
   border-bottom: 1px solid var(--sd-border-subtle);
   white-space: nowrap;
+}
+
+.th-boxplot {
+  min-width: 150px;
 }
 
 .prt-table tbody tr {
@@ -330,6 +450,20 @@ const summary = computed(() => {
   color: #a6adc8;
 }
 
+.td-boxplot {
+  padding: 0.25rem 0.5rem;
+}
+
+.bp-svg {
+  display: block;
+}
+
+.bp-label {
+  font-size: 7px;
+  fill: #6c7086;
+  font-family: var(--sd-font-mono, monospace);
+}
+
 .td-reason {
   color: #a6adc8;
   font-size: var(--sd-text-2xs);
@@ -337,6 +471,22 @@ const summary = computed(() => {
   min-width: 200px;
   max-width: 450px;
   line-height: 1.4;
+}
+
+.bp-legend {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.bp-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #6c7086;
 }
 
 .prt-summary {

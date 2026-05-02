@@ -181,7 +181,7 @@ const healthBadges = computed(() => {
             class="w-4 h-4 text-green-500 shrink-0"
           />
           <i-mdi-close-circle v-else class="w-4 h-4 text-red-500 shrink-0" />
-          <span>{{ check.label || check.name }}</span>
+          <span class="text-surface-200">{{ check.label || check.name }}</span>
         </div>
       </div>
     </div>
