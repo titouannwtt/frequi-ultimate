@@ -179,9 +179,9 @@ const verdictDot = computed<string | null>(() => {
 .run-cached-icon {
   width: 11px;
   height: 11px;
-  color: var(--sd-overlay);
+  color: var(--sd-info);
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .run-new-badge {

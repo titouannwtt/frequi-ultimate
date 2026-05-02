@@ -133,6 +133,10 @@ const healthBadges = computed(() => {
 
 const showAllMetrics = ref(false);
 
+watch(() => store.selectedRun?.filename, () => {
+  showAllMetrics.value = false;
+});
+
 const verdictColorMap: Record<string, string> = {
   good: 'var(--sd-success)',
   ok: 'var(--sd-info)',

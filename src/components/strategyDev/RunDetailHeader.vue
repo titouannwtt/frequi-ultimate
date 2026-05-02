@@ -38,6 +38,12 @@ const detail = computed(() => {
   return null;
 });
 
+const bestEpochTrades = computed<number | null>(() => {
+  if (props.run.run_type !== RunType.hyperopt) return null;
+  const rm = (detail.value?.best_epoch_metrics ?? {}) as Record<string, number>;
+  return rm.total_trades ?? null;
+});
+
 const runDuration = computed(() => {
   const d = detail.value;
   if (!d) return '';
@@ -71,11 +77,12 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
     });
   }
 
-  if (r.total_trades != null) {
+  const tradesCount = bestEpochTrades.value ?? r.total_trades;
+  if (tradesCount != null) {
     stats.push({
       label: 'Trades',
-      value: String(r.total_trades),
-      color: r.total_trades >= 60 ? 'var(--sd-text)' : 'var(--sd-warning)',
+      value: String(tradesCount),
+      color: tradesCount >= 60 ? 'var(--sd-text)' : 'var(--sd-warning)',
     });
   }
 

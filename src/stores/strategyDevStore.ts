@@ -265,11 +265,8 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
         }
       }
 
-      // Clean up cache
-      runCache.value.delete(filename);
+      runCache.delete(filename);
 
-      // Re-fetch to stay in sync with backend
-      await fetchAllRuns();
     } catch (e) {
       console.error('Failed to delete run', e);
     }

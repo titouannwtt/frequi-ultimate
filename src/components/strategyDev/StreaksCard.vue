@@ -102,6 +102,7 @@ function maxCount(hist: { length: number; count: number }[]): number {
             v-for="h in winStreakHist"
             :key="'w' + h.length"
             class="sk-bar-row"
+            :title="t('strategyDev.skBarTooltip', { count: h.count, length: h.length, type: t('strategyDev.skBarWinType') })"
           >
             <span class="sk-bar-label">{{ h.length }}</span>
             <div class="sk-bar-track">
@@ -121,6 +122,7 @@ function maxCount(hist: { length: number; count: number }[]): number {
             v-for="h in lossStreakHist"
             :key="'l' + h.length"
             class="sk-bar-row"
+            :title="t('strategyDev.skBarTooltip', { count: h.count, length: h.length, type: t('strategyDev.skBarLossType') })"
           >
             <span class="sk-bar-label">{{ h.length }}</span>
             <div class="sk-bar-track">

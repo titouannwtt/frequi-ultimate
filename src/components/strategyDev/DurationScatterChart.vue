@@ -79,6 +79,8 @@ const chartOptions = computed<EChartsOption>(() => {
     yAxis: {
       type: 'value',
       name: 'Profit %',
+      nameLocation: 'center',
+      nameGap: 40,
       axisLabel: { color: '#a6adc8' },
       splitLine: { lineStyle: { color: '#313244' } },
     },

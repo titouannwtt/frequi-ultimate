@@ -138,9 +138,19 @@ onUnmounted(() => {
 }
 
 .cw-actions {
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.cw:hover .cw-actions {
+  opacity: 1;
 }
 
 .cw-btn {
