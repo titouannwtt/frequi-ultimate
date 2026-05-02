@@ -69,6 +69,7 @@ const chartOptions = computed<EChartsOption>(() => {
         const params = p as { value: number[]; dataIndex: number };
         const d = props.data[params.dataIndex];
         return [
+          `<b>Epoch #${params.dataIndex + 1}</b>`,
           `DD: <b>${params.value[0].toFixed(1)}%</b>`,
           `Profit: <b>${params.value[1].toFixed(1)}%</b>`,
           d?.trades ? `Trades: <b>${d.trades}</b>` : '',
@@ -106,6 +107,14 @@ const chartOptions = computed<EChartsOption>(() => {
             opacity: i === bestIdx ? 1 : 0.6,
             borderColor: i === bestIdx ? '#1e1e2e' : undefined,
             borderWidth: i === bestIdx ? 2 : 0,
+          },
+          label: {
+            show: i < 5,
+            formatter: `#${i + 1}`,
+            fontSize: 9,
+            color: i === bestIdx ? '#94e2d5' : '#a6adc8',
+            position: 'top',
+            distance: 4,
           },
         })),
         markArea: {
