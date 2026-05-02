@@ -20,6 +20,11 @@ interface RegimeData {
 }
 
 defineProps<{ data: RegimeData }>();
+
+const labelMap: Record<string, string> = {
+  first_half: 'strategyDev.raFirstHalf',
+  second_half: 'strategyDev.raSecondHalf',
+};
 </script>
 
 <template>
@@ -46,7 +51,7 @@ defineProps<{ data: RegimeData }>();
         :key="label"
         class="space-y-2"
       >
-        <h5 class="text-sm font-medium text-surface-400 uppercase">{{ label }}</h5>
+        <h5 class="text-sm font-medium text-surface-400 uppercase">{{ labelMap[label] ? t(labelMap[label]) : label }}</h5>
         <div class="space-y-1 text-sm">
           <div class="flex justify-between">
             <span class="text-surface-500">{{ t('strategyDev.raTrades') }}</span>
