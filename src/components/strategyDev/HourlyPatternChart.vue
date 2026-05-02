@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import { BarChart, LineChart } from 'echarts/charts';
 import {
   DataZoomComponent,
@@ -10,22 +11,26 @@ import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import VChart from 'vue-echarts';
 
+const { t } = useI18n();
+
 use([CanvasRenderer, BarChart, LineChart, GridComponent, TooltipComponent, LegendComponent, DataZoomComponent]);
 
 const props = defineProps<{
   data: {
-    hours: number[];
-    avg_profit: number[];
-    winrate: number[];
-    trade_count: number[];
+    hours: Array<number | { hour: number; avg_profit: number; winrate: number; trades: number }>;
+    avg_profit?: number[];
+    winrate?: number[];
+    trade_count?: number[];
   };
 }>();
 
 const chartOptions = computed(() => {
-  const hours = props.data.hours ?? [];
-  const avgProfit = props.data.avg_profit ?? [];
-  const winrate = props.data.winrate ?? [];
-  const tradeCount = props.data.trade_count ?? [];
+  const raw = props.data.hours ?? [];
+  const isObjArray = raw.length > 0 && typeof raw[0] === 'object';
+  const hours = isObjArray ? (raw as any[]).map((h) => h.hour) : (raw as number[]);
+  const avgProfit = isObjArray ? (raw as any[]).map((h) => h.avg_profit) : (props.data.avg_profit ?? []);
+  const winrate = isObjArray ? (raw as any[]).map((h) => h.winrate) : (props.data.winrate ?? []);
+  const tradeCount = isObjArray ? (raw as any[]).map((h) => h.trades) : (props.data.trade_count ?? []);
 
   return {
     tooltip: {
@@ -34,12 +39,14 @@ const chartOptions = computed(() => {
       borderColor: 'rgba(69, 71, 90, 0.5)',
       textStyle: { color: '#cdd6f4', fontSize: 11 },
       formatter: (params: any[]) => {
+        const winRateLabel = t('strategyDev.metricWinRate');
+        const tradesLabel = t('strategyDev.metricTrades');
         const h = params[0]?.name ?? '';
         let html = `<div style="font-weight:600;margin-bottom:4px">${h}:00</div>`;
         for (const p of params) {
-          const val = p.seriesName === 'Win Rate'
+          const val = p.seriesName === winRateLabel
             ? `${(p.value * 100).toFixed(1)}%`
-            : p.seriesName === 'Trades'
+            : p.seriesName === tradesLabel
               ? p.value
               : `${p.value >= 0 ? '+' : ''}${(p.value * 100).toFixed(2)}%`;
           html += `<div>${p.marker} ${p.seriesName}: <b>${val}</b></div>`;
@@ -48,7 +55,7 @@ const chartOptions = computed(() => {
       },
     },
     legend: {
-      data: ['Avg Profit', 'Win Rate', 'Trades'],
+      data: [t('strategyDev.metricAvgProfit'), t('strategyDev.metricWinRate'), t('strategyDev.metricTrades')],
       textStyle: { color: '#6c7086', fontSize: 10 },
       top: 0,
     },
@@ -62,7 +69,7 @@ const chartOptions = computed(() => {
     yAxis: [
       {
         type: 'value',
-        name: 'Profit',
+        name: t('strategyDev.metricProfit'),
         position: 'left',
         axisLabel: {
           color: '#6c7086',
@@ -73,7 +80,7 @@ const chartOptions = computed(() => {
       },
       {
         type: 'value',
-        name: 'Win Rate',
+        name: t('strategyDev.metricWinRate'),
         position: 'right',
         min: 0,
         max: 1,
@@ -87,7 +94,7 @@ const chartOptions = computed(() => {
     ],
     series: [
       {
-        name: 'Avg Profit',
+        name: t('strategyDev.metricAvgProfit'),
         type: 'bar',
         data: avgProfit,
         yAxisIndex: 0,
@@ -99,7 +106,7 @@ const chartOptions = computed(() => {
         },
       },
       {
-        name: 'Win Rate',
+        name: t('strategyDev.metricWinRate'),
         type: 'line',
         data: winrate,
         yAxisIndex: 1,
@@ -110,7 +117,7 @@ const chartOptions = computed(() => {
         symbolSize: 4,
       },
       {
-        name: 'Trades',
+        name: t('strategyDev.metricTrades'),
         type: 'bar',
         data: tradeCount,
         yAxisIndex: 0,

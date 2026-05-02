@@ -102,8 +102,8 @@ const viewMode = ref<'tree' | 'raw'>('tree');
           <SelectButton
             v-model="viewMode"
             :options="[
-              { label: 'Tree', value: 'tree' },
-              { label: 'Raw', value: 'raw' },
+              { label: t('strategyDev.viewTree'), value: 'tree' },
+              { label: t('strategyDev.viewRaw'), value: 'raw' },
             ]"
             optionLabel="label"
             optionValue="value"

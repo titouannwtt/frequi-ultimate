@@ -3,17 +3,26 @@ import { LineChart } from 'echarts/charts';
 import {
   DataZoomComponent,
   GridComponent,
+  MarkAreaComponent,
   TooltipComponent,
 } from 'echarts/components';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import VChart from 'vue-echarts';
+import { useRegimeOverlay, type RegimeTimelineEntry } from '@/composables/useRegimeOverlay';
+import { useI18n } from 'vue-i18n';
 
-use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, DataZoomComponent]);
+use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, DataZoomComponent, MarkAreaComponent]);
+
+const { t } = useI18n();
 
 const props = defineProps<{
   data: Array<{ date: string; utilization_pct: number; deployed: number }>;
+  regimes?: RegimeTimelineEntry[];
 }>();
+
+const regimeTimeline = computed(() => props.regimes);
+const { showRegimes, markAreaData } = useRegimeOverlay(regimeTimeline);
 
 const chartOptions = computed(() => {
   const dates = props.data.map((d) => d.date);
@@ -82,6 +91,7 @@ const chartOptions = computed(() => {
         lineStyle: { color: '#a6e3a1', width: 1.5 },
         itemStyle: { color: '#a6e3a1' },
         symbol: 'none',
+        markArea: markAreaData.value.length ? { silent: true, data: markAreaData.value as any } : undefined,
       },
     ],
   };
@@ -89,5 +99,53 @@ const chartOptions = computed(() => {
 </script>
 
 <template>
-  <VChart :option="chartOptions" autoresize style="height: 280px" />
+  <div>
+    <div v-if="regimes?.length" class="regime-toggle">
+      <button
+        class="regime-toggle-btn"
+        :class="{ active: showRegimes }"
+        @click="showRegimes = !showRegimes"
+      >
+        <span class="regime-dot" />
+        {{ t('strategyDev.regimeShowOverlay') }}
+      </button>
+    </div>
+    <VChart :option="chartOptions" autoresize style="height: 280px" />
+  </div>
 </template>
+
+<style scoped>
+.regime-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+.regime-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(69, 71, 90, 0.4);
+  background: transparent;
+  color: #a6adc8;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.regime-toggle-btn:hover {
+  border-color: rgba(69, 71, 90, 0.7);
+  color: #cdd6f4;
+}
+.regime-toggle-btn.active {
+  background: rgba(137, 180, 250, 0.12);
+  border-color: rgba(137, 180, 250, 0.4);
+  color: #89b4fa;
+}
+.regime-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a6e3a1, #f9e2af, #89b4fa, #f38ba8);
+}
+</style>

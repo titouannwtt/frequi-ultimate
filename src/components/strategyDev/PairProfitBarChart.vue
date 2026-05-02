@@ -93,7 +93,7 @@ const chartOptions = computed<EChartsOption>(() => {
     },
     xAxis: {
       type: 'value',
-      name: 'Profit (abs)',
+      name: t('strategyDev.metricProfitAbs'),
       nameTextStyle: { color: '#a6adc8' },
       axisLabel: { color: '#a6adc8' },
       splitLine: { lineStyle: { color: '#313244' } },

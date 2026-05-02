@@ -15,17 +15,17 @@ const { t } = useI18n();
 const metrics = computed(() => {
   const m = props.data.test_metrics;
   return [
-    { label: 'Period', value: props.data.test_range },
+    { label: t('strategyDev.columnPeriod'), value: props.data.test_range },
     {
-      label: 'Profit',
+      label: t('strategyDev.metricProfit'),
       value: `${(m.profit_pct ?? 0).toFixed(2)}%`,
       color: (m.profit_pct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400',
     },
-    { label: 'Trades', value: String(m.trades ?? 0) },
-    { label: 'Win Rate', value: `${((m.win_rate ?? 0) * 100).toFixed(1)}%` },
-    { label: 'Max DD', value: `${(m.max_dd_pct ?? 0).toFixed(2)}%`, color: 'text-red-400' },
-    { label: 'Sharpe', value: (m.sharpe ?? 0).toFixed(3) },
-    { label: 'Calmar', value: (m.calmar ?? 0).toFixed(2) },
+    { label: t('strategyDev.metricTrades'), value: String(m.trades ?? 0) },
+    { label: t('strategyDev.metricWinRate'), value: `${((m.win_rate ?? 0) * 100).toFixed(1)}%` },
+    { label: t('strategyDev.metricMaxDD'), value: `${(m.max_dd_pct ?? 0).toFixed(2)}%`, color: 'text-red-400' },
+    { label: t('strategyDev.metricSharpe'), value: (m.sharpe ?? 0).toFixed(3) },
+    { label: t('strategyDev.metricCalmar'), value: (m.calmar ?? 0).toFixed(2) },
   ].filter((x) => x.value !== '0' && x.value !== '0.00%' && x.value !== '0.000');
 });
 </script>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -25,6 +26,8 @@ const props = defineProps<{
   points: MaeMfePoint[];
   mode?: 'mae' | 'mfe';
 }>();
+
+const { t } = useI18n();
 
 const selectedMode = ref(props.mode ?? 'mae');
 
@@ -84,13 +87,13 @@ const chartOptions = computed<EChartsOption>(() => {
     },
     yAxis: {
       type: 'value',
-      name: 'Profit %',
+      name: t('strategyDev.axisProfit'),
       axisLabel: { color: '#a6adc8' },
       splitLine: { lineStyle: { color: '#313244' } },
     },
     series: [
       {
-        name: 'Winners',
+        name: t('strategyDev.seriesWinners'),
         type: 'scatter',
         data: wins.map((p) => [p[xKey], p.profit]),
         symbolSize: 6,
@@ -98,7 +101,7 @@ const chartOptions = computed<EChartsOption>(() => {
         tooltip: { formatter: makeFmt(wins) },
       },
       {
-        name: 'Losers',
+        name: t('strategyDev.seriesLosers'),
         type: 'scatter',
         data: losses.map((p) => [p[xKey], p.profit]),
         symbolSize: 6,

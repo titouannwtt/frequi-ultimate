@@ -27,24 +27,33 @@ use([
 ]);
 
 const props = defineProps<{
-  data: number[];
+  data: (number | { loss: number; best: number })[];
   title: string;
 }>();
 
 const { t } = useI18n();
 
+const losses = computed(() =>
+  props.data.map(v => (typeof v === 'number' ? v : v.loss)),
+);
+
 const maxReasonableLoss = computed(() => {
-  const sorted = [...props.data].filter(v => isFinite(v)).sort((a, b) => a - b);
+  const sorted = [...losses.value].filter(v => isFinite(v)).sort((a, b) => a - b);
   if (sorted.length === 0) return 100;
   const p95 = sorted[Math.floor(sorted.length * 0.95)];
   return Math.max(p95 * 2, Math.abs(sorted[0]) * 2, 1);
 });
 
 const clampedData = computed(() =>
-  props.data.map(v => Math.min(v, maxReasonableLoss.value)),
+  losses.value.map(v => Math.min(v, maxReasonableLoss.value)),
 );
 
 const bestSoFar = computed(() => {
+  if (props.data.length > 0 && typeof props.data[0] === 'object') {
+    return (props.data as { loss: number; best: number }[]).map(v =>
+      Math.min(v.best, maxReasonableLoss.value),
+    );
+  }
   const result: number[] = [];
   let best = Infinity;
   for (const v of clampedData.value) {
@@ -56,14 +65,14 @@ const bestSoFar = computed(() => {
 
 const bestIdx = computed(() => {
   let minIdx = 0;
-  for (let i = 1; i < props.data.length; i++) {
-    if (props.data[i] < props.data[minIdx]) minIdx = i;
+  for (let i = 1; i < losses.value.length; i++) {
+    if (losses.value[i] < losses.value[minIdx]) minIdx = i;
   }
   return minIdx;
 });
 
 const converged = computed(() => {
-  const n = props.data.length;
+  const n = losses.value.length;
   if (n < 10) return null;
   const lastPortion = bestSoFar.value.slice(Math.floor(n * 0.7));
   if (lastPortion.length < 2) return null;
@@ -72,7 +81,7 @@ const converged = computed(() => {
 });
 
 const chartOptions = computed<EChartsOption>(() => {
-  const epochs = props.data.map((_, i) => i + 1);
+  const epochs = losses.value.map((_, i) => i + 1);
   return {
     title: { text: props.title, left: 'center', textStyle: { fontSize: 14, color: '#cdd6f4' } },
     tooltip: {
@@ -135,12 +144,12 @@ const chartOptions = computed<EChartsOption>(() => {
         markPoint: {
           data: [
             {
-              coord: [bestIdx.value, props.data[bestIdx.value]],
+              coord: [bestIdx.value, losses.value[bestIdx.value]],
               symbolSize: 12,
               itemStyle: { color: '#94e2d5', borderColor: '#1e1e2e', borderWidth: 2 },
               label: {
                 show: true,
-                formatter: `Best: ${props.data[bestIdx.value]?.toFixed(4)}`,
+                formatter: `Best: ${losses.value[bestIdx.value]?.toFixed(4)}`,
                 position: 'top',
                 fontSize: 10,
                 color: '#94e2d5',

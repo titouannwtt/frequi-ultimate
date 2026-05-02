@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -9,7 +10,9 @@ import {
   TooltipComponent,
   DataZoomComponent,
   LegendComponent,
+  MarkAreaComponent,
 } from 'echarts/components';
+import { useRegimeOverlay, type RegimeTimelineEntry } from '@/composables/useRegimeOverlay';
 
 use([
   LineChart,
@@ -19,6 +22,7 @@ use([
   TooltipComponent,
   DataZoomComponent,
   LegendComponent,
+  MarkAreaComponent,
 ]);
 
 interface TradePoint {
@@ -31,7 +35,13 @@ interface TradePoint {
 
 const props = defineProps<{
   trades: TradePoint[];
+  regimes?: RegimeTimelineEntry[];
 }>();
+
+const { t } = useI18n();
+
+const regimeTimeline = computed(() => props.regimes);
+const { showRegimes, markAreaData } = useRegimeOverlay(regimeTimeline);
 
 const chartOptions = computed<EChartsOption>(() => {
   const dates = props.trades.map((t) => t.date);
@@ -59,7 +69,7 @@ const chartOptions = computed<EChartsOption>(() => {
       },
     },
     legend: {
-      data: ['Cumulative %', 'Balance', 'Trade P&L'],
+      data: [t('strategyDev.seriesCumulativePct'), t('strategyDev.seriesBalance'), t('strategyDev.seriesTradePnL')],
       top: 0,
       textStyle: { color: '#a6adc8', fontSize: 11 },
     },
@@ -93,14 +103,14 @@ const chartOptions = computed<EChartsOption>(() => {
     yAxis: [
       {
         type: 'value',
-        name: 'Cumulative %',
+        name: t('strategyDev.seriesCumulativePct'),
         nameTextStyle: { color: '#89b4fa' },
         axisLabel: { color: '#a6adc8', fontSize: 11 },
         splitLine: { lineStyle: { color: '#313244' } },
       },
       {
         type: 'value',
-        name: 'Balance',
+        name: t('strategyDev.seriesBalance'),
         nameTextStyle: { color: '#cba6f7' },
         axisLabel: { color: '#a6adc8', fontSize: 11 },
         splitLine: { show: false },
@@ -108,7 +118,7 @@ const chartOptions = computed<EChartsOption>(() => {
     ],
     series: [
       {
-        name: 'Cumulative %',
+        name: t('strategyDev.seriesCumulativePct'),
         type: 'line',
         yAxisIndex: 0,
         data: cumPct,
@@ -127,9 +137,10 @@ const chartOptions = computed<EChartsOption>(() => {
             ],
           },
         },
+        markArea: markAreaData.value.length ? { silent: true, data: markAreaData.value as any } : undefined,
       },
       {
-        name: 'Balance',
+        name: t('strategyDev.seriesBalance'),
         type: 'line',
         yAxisIndex: 1,
         data: balances,
@@ -137,7 +148,7 @@ const chartOptions = computed<EChartsOption>(() => {
         lineStyle: { width: 2, color: '#cba6f7' },
       },
       {
-        name: 'Trade P&L',
+        name: t('strategyDev.seriesTradePnL'),
         type: 'scatter',
         yAxisIndex: 0,
         data: profits,
@@ -155,5 +166,53 @@ const chartOptions = computed<EChartsOption>(() => {
 </script>
 
 <template>
-  <ECharts :option="chartOptions" autoresize style="height: 320px" />
+  <div>
+    <div v-if="regimes?.length" class="regime-toggle">
+      <button
+        class="regime-toggle-btn"
+        :class="{ active: showRegimes }"
+        @click="showRegimes = !showRegimes"
+      >
+        <span class="regime-dot" />
+        {{ t('strategyDev.regimeShowOverlay') }}
+      </button>
+    </div>
+    <ECharts :option="chartOptions" autoresize style="height: 320px" />
+  </div>
 </template>
+
+<style scoped>
+.regime-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+.regime-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(69, 71, 90, 0.4);
+  background: transparent;
+  color: #a6adc8;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.regime-toggle-btn:hover {
+  border-color: rgba(69, 71, 90, 0.7);
+  color: #cdd6f4;
+}
+.regime-toggle-btn.active {
+  background: rgba(137, 180, 250, 0.12);
+  border-color: rgba(137, 180, 250, 0.4);
+  color: #89b4fa;
+}
+.regime-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a6e3a1, #f9e2af, #89b4fa, #f38ba8);
+}
+</style>

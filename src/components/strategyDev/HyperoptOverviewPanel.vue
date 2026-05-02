@@ -51,35 +51,35 @@ const metrics = computed<MetricItem[]>(() => {
     });
   if (rm.sharpe != null)
     items.push({
-      label: 'Sharpe',
+      label: t('strategyDev.metricSharpe'),
       value: rm.sharpe.toFixed(3),
       rawValue: rm.sharpe,
       metricKey: 'sharpe',
     });
   if (rm.max_drawdown_account != null)
     items.push({
-      label: 'Max DD',
+      label: t('strategyDev.metricMaxDD'),
       value: `${(rm.max_drawdown_account * 100).toFixed(1)}%`,
       rawValue: rm.max_drawdown_account,
       metricKey: 'max_drawdown_account',
     });
   if (rm.profit_factor != null)
     items.push({
-      label: 'Profit Factor',
+      label: t('strategyDev.metricProfitFactor'),
       value: rm.profit_factor.toFixed(2),
       rawValue: rm.profit_factor,
       metricKey: 'profit_factor',
     });
   if (rm.winrate != null)
     items.push({
-      label: 'Win Rate',
+      label: t('strategyDev.metricWinRate'),
       value: `${(rm.winrate * 100).toFixed(1)}%`,
       rawValue: rm.winrate,
       metricKey: 'winrate',
     });
   if (rm.sqn != null)
     items.push({
-      label: 'SQN',
+      label: t('strategyDev.metricSQN'),
       value: rm.sqn.toFixed(2),
       rawValue: rm.sqn,
       metricKey: 'sqn',
@@ -126,7 +126,7 @@ const healthBadges = computed(() => {
     const high = warnings.filter((w: any) => w.severity === 'high').length;
     if (high > 0) badges.push({ label: `${high} high warnings`, severity: 'danger' });
     else if (warnings.length > 0) badges.push({ label: `${warnings.length} warnings`, severity: 'warn' });
-    else badges.push({ label: 'No warnings', severity: 'success' });
+    else badges.push({ label: t('strategyDev.noWarnings'), severity: 'success' });
   }
   return badges;
 });

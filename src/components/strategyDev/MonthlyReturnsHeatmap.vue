@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -32,7 +33,15 @@ interface MonthlyEntry {
 
 const props = defineProps<{ data: MonthlyEntry[] }>();
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const { locale } = useI18n();
+
+const MONTHS = computed(() => {
+  const loc = locale.value || 'en';
+  return Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(2000, i, 1);
+    return new Intl.DateTimeFormat(loc, { month: 'short' }).format(d);
+  });
+});
 
 const years = computed(() => {
   const ySet = new Set<number>();
@@ -80,7 +89,7 @@ const chartOptions = computed<EChartsOption>(() => {
         const item = p as { value: [number, number, number] };
         const [mi, yi, val] = item.value;
         const year = years.value[yi];
-        const month = MONTHS[mi];
+        const month = MONTHS.value[mi];
         const entry = lookup.get(`${year}-${mi + 1}`);
         const trades = entry ? entry.trades : 0;
         const color = val >= 0 ? C.green : C.red;
@@ -95,7 +104,7 @@ const chartOptions = computed<EChartsOption>(() => {
     grid: { left: 60, right: 80, top: 10, bottom: 30 },
     xAxis: {
       type: 'category',
-      data: MONTHS,
+      data: MONTHS.value,
       splitArea: { show: true, areaStyle: { color: ['transparent', 'rgba(255,255,255,0.02)'] } },
       axisLabel: { color: C.subtext, fontSize: 11 },
       axisLine: { lineStyle: { color: C.overlay } },
@@ -132,7 +141,11 @@ const chartOptions = computed<EChartsOption>(() => {
             return fmtProfit(val);
           },
           fontSize: 10,
-          color: C.text,
+          color: (p: unknown) => {
+            const item = p as { value: [number, number, number] };
+            const ratio = Math.abs(item.value[2]) / maxAbs.value;
+            return ratio > 0.3 ? '#1e1e2e' : C.text;
+          },
         },
         emphasis: {
           itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' },

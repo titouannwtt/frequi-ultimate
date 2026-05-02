@@ -24,6 +24,11 @@ const btcEquityInput = computed(() => data.value?.equity_curve as { date: string
 const btcStartBal = computed(() => (data.value?.starting_balance as number) ?? 1000);
 const { benchmarkEquity: btcBenchmark } = useBtcBenchmark(btcEquityInput, btcStartBal);
 
+const regimeTimeline = computed(() => {
+  const mr = data.value?.market_regime as Record<string, unknown> | undefined;
+  return mr?.timeline as { date: string; regime: string; volatility: number; trend: number }[] | undefined;
+});
+
 const activeSection = ref('summary');
 const sections = computed(() => [
   { id: 'summary', label: t('strategyDev.btNavSummary'), icon: 'i-mdi-view-dashboard' },
@@ -175,6 +180,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               :starting-balance="(data.starting_balance as number) ?? 1000"
               :benchmark="btcBenchmark"
               benchmark-label="BTC"
+              :regimes="regimeTimeline"
             />
             <template #fullscreen>
               <EquityCurveChart
@@ -182,6 +188,7 @@ function fmtNum(v: unknown, decimals = 2): string {
                 :starting-balance="(data.starting_balance as number) ?? 1000"
                 :benchmark="btcBenchmark"
                 benchmark-label="BTC"
+                :regimes="regimeTimeline"
               />
             </template>
           </ChartWrapper>
@@ -193,9 +200,9 @@ function fmtNum(v: unknown, decimals = 2): string {
             :hint="t('strategyDev.hintUnderwater')"
             chart-id="bt-underwater"
           >
-            <UnderwaterChart :series="data.drawdown_series as any[]" />
+            <UnderwaterChart :series="data.drawdown_series as any[]" :regimes="regimeTimeline" />
             <template #fullscreen>
-              <UnderwaterChart :series="data.drawdown_series as any[]" />
+              <UnderwaterChart :series="data.drawdown_series as any[]" :regimes="regimeTimeline" />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -217,9 +224,9 @@ function fmtNum(v: unknown, decimals = 2): string {
               :hint="t('strategyDev.hintCumulativeTrades')"
               chart-id="bt-cumulative-trades"
             >
-              <CumulativeTradesChart :trades="data.cumulative_trades as any[]" />
+              <CumulativeTradesChart :trades="data.cumulative_trades as any[]" :regimes="regimeTimeline" />
               <template #fullscreen>
-                <CumulativeTradesChart :trades="data.cumulative_trades as any[]" />
+                <CumulativeTradesChart :trades="data.cumulative_trades as any[]" :regimes="regimeTimeline" />
               </template>
             </ChartWrapper>
             <ChartEmptyState v-else />
@@ -400,6 +407,151 @@ function fmtNum(v: unknown, decimals = 2): string {
             </ChartWrapper>
             <ChartEmptyState v-else />
           </div>
+
+          <!-- Duration Deep Analysis -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ChartWrapper
+              v-if="data.duration_boxplot"
+              :title="t('strategyDev.aaDurationBoxplot')"
+              :hint="t('strategyDev.hintDurationBoxplot')"
+              chart-id="bt-duration-boxplot"
+            >
+              <DurationBoxPlotChart :data="data.duration_boxplot as any" />
+              <template #fullscreen>
+                <DurationBoxPlotChart :data="data.duration_boxplot as any" />
+              </template>
+            </ChartWrapper>
+            <ChartEmptyState v-else />
+
+            <ChartWrapper
+              v-if="data.duration_buckets"
+              :title="t('strategyDev.aaDurationBuckets')"
+              :hint="t('strategyDev.hintDurationBuckets')"
+              chart-id="bt-duration-buckets"
+            >
+              <DurationBucketChart :data="data.duration_buckets as any" />
+              <template #fullscreen>
+                <DurationBucketChart :data="data.duration_buckets as any" />
+              </template>
+            </ChartWrapper>
+            <ChartEmptyState v-else />
+          </div>
+
+          <ChartWrapper
+            v-if="data.duration_profit_heatmap"
+            :title="t('strategyDev.aaDurationProfitHeatmap')"
+            :hint="t('strategyDev.hintDurationProfitHeatmap')"
+            chart-id="bt-duration-heatmap"
+          >
+            <DurationProfitHeatmap :data="data.duration_profit_heatmap as any" />
+            <template #fullscreen>
+              <DurationProfitHeatmap :data="data.duration_profit_heatmap as any" />
+            </template>
+          </ChartWrapper>
+
+          <ChartWrapper
+            v-if="data.stuck_trades && (data.stuck_trades as any).stuck_count > 0"
+            :title="t('strategyDev.aaStuckTrades')"
+            :hint="t('strategyDev.hintStuckTrades')"
+            chart-id="bt-stuck-trades"
+          >
+            <DurationStuckTradesCard :data="data.stuck_trades as any" />
+          </ChartWrapper>
+
+          <!-- DCA Analysis -->
+          <div v-if="data.dca_analysis && !(data.dca_analysis as any).no_dca" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ChartWrapper
+              :title="t('strategyDev.aaDcaDistribution')"
+              :hint="t('strategyDev.hintDcaDistribution')"
+              chart-id="bt-dca-distribution"
+            >
+              <DcaLevelDistributionChart :data="data.dca_analysis as any" />
+              <template #fullscreen>
+                <DcaLevelDistributionChart :data="data.dca_analysis as any" />
+              </template>
+            </ChartWrapper>
+            <ChartWrapper
+              :title="t('strategyDev.aaDcaProfitContribution')"
+              :hint="t('strategyDev.hintDcaProfitContribution')"
+              chart-id="bt-dca-contribution"
+            >
+              <DcaProfitContributionChart :data="data.dca_analysis as any" />
+              <template #fullscreen>
+                <DcaProfitContributionChart :data="data.dca_analysis as any" />
+              </template>
+            </ChartWrapper>
+          </div>
+          <ChartWrapper
+            v-if="data.dca_analysis && !(data.dca_analysis as any).no_dca"
+            :title="t('strategyDev.aaDcaRecovery')"
+            :hint="t('strategyDev.hintDcaRecovery')"
+            chart-id="bt-dca-recovery"
+          >
+            <DcaRecoveryCard :data="data.dca_analysis as any" />
+          </ChartWrapper>
+
+          <!-- Pair Correlation -->
+          <div v-if="data.pair_correlation" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ChartWrapper
+              :title="t('strategyDev.aaPairCorrelation')"
+              :hint="t('strategyDev.hintPairCorrelation')"
+              chart-id="bt-pair-correlation"
+            >
+              <PairCorrelationHeatmap :data="data.pair_correlation as any" />
+              <template #fullscreen>
+                <PairCorrelationHeatmap :data="data.pair_correlation as any" />
+              </template>
+            </ChartWrapper>
+            <div class="flex flex-col gap-4">
+              <ChartWrapper
+                :title="t('strategyDev.aaConcentrationRisk')"
+                :hint="t('strategyDev.hintConcentrationRisk')"
+                chart-id="bt-concentration-risk"
+              >
+                <ConcentrationRiskCard :data="data.pair_correlation as any" />
+              </ChartWrapper>
+              <ChartWrapper
+                v-if="(data.pair_correlation as any).max_simultaneous_loss"
+                :title="t('strategyDev.aaMaxSimultaneousLoss')"
+                :hint="t('strategyDev.hintMaxSimultaneousLoss')"
+                chart-id="bt-max-simul-loss"
+              >
+                <MaxSimultaneousLossCard :data="(data.pair_correlation as any).max_simultaneous_loss" />
+              </ChartWrapper>
+            </div>
+          </div>
+
+          <!-- Market Regime -->
+          <div v-if="data.market_regime" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ChartWrapper
+              :title="t('strategyDev.aaRegimePerformance')"
+              :hint="t('strategyDev.hintRegimePerformance')"
+              chart-id="bt-regime-perf"
+            >
+              <RegimePerformanceChart :data="data.market_regime as any" />
+              <template #fullscreen>
+                <RegimePerformanceChart :data="data.market_regime as any" />
+              </template>
+            </ChartWrapper>
+            <ChartWrapper
+              :title="t('strategyDev.aaRegimeTimeline')"
+              :hint="t('strategyDev.hintRegimeTimeline')"
+              chart-id="bt-regime-timeline"
+            >
+              <RegimeEquityOverlayChart :data="data.market_regime as any" :equity="data.equity_curve as any" />
+              <template #fullscreen>
+                <RegimeEquityOverlayChart :data="data.market_regime as any" :equity="data.equity_curve as any" />
+              </template>
+            </ChartWrapper>
+          </div>
+          <ChartWrapper
+            v-if="data.market_regime"
+            :title="t('strategyDev.aaRegimeTransitions')"
+            :hint="t('strategyDev.hintRegimeTransitions')"
+            chart-id="bt-regime-transitions"
+          >
+            <RegimeTransitionCard :data="data.market_regime as any" />
+          </ChartWrapper>
         </div>
       </section>
 
@@ -429,9 +581,9 @@ function fmtNum(v: unknown, decimals = 2): string {
             :hint="t('strategyDev.hintExposure')"
             chart-id="bt-exposure"
           >
-            <ExposureChart :timeline="data.exposure_timeline as any[]" />
+            <ExposureChart :timeline="data.exposure_timeline as any[]" :regimes="regimeTimeline" />
             <template #fullscreen>
-              <ExposureChart :timeline="data.exposure_timeline as any[]" />
+              <ExposureChart :timeline="data.exposure_timeline as any[]" :regimes="regimeTimeline" />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -444,9 +596,9 @@ function fmtNum(v: unknown, decimals = 2): string {
           chart-id="bt-capital-util"
           class="mt-4"
         >
-          <CapitalUtilizationChart :data="data.capital_utilization as any[]" />
+          <CapitalUtilizationChart :data="data.capital_utilization as any[]" :regimes="regimeTimeline" />
           <template #fullscreen>
-            <CapitalUtilizationChart :data="data.capital_utilization as any[]" />
+            <CapitalUtilizationChart :data="data.capital_utilization as any[]" :regimes="regimeTimeline" />
           </template>
         </ChartWrapper>
         <ChartEmptyState v-else class="mt-4" />
@@ -466,9 +618,9 @@ function fmtNum(v: unknown, decimals = 2): string {
             :hint="t('strategyDev.hintRollingWinrate')"
             chart-id="bt-rolling-winrate"
           >
-            <RollingWinrateChart :data="data.rolling_winrate as any[]" />
+            <RollingWinrateChart :data="data.rolling_winrate as any[]" :regimes="regimeTimeline" />
             <template #fullscreen>
-              <RollingWinrateChart :data="data.rolling_winrate as any[]" />
+              <RollingWinrateChart :data="data.rolling_winrate as any[]" :regimes="regimeTimeline" />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -479,9 +631,9 @@ function fmtNum(v: unknown, decimals = 2): string {
             :hint="t('strategyDev.hintRollingProfitFactor')"
             chart-id="bt-rolling-pf"
           >
-            <RollingProfitFactorChart :data="data.rolling_profit_factor as any[]" />
+            <RollingProfitFactorChart :data="data.rolling_profit_factor as any[]" :regimes="regimeTimeline" />
             <template #fullscreen>
-              <RollingProfitFactorChart :data="data.rolling_profit_factor as any[]" />
+              <RollingProfitFactorChart :data="data.rolling_profit_factor as any[]" :regimes="regimeTimeline" />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />

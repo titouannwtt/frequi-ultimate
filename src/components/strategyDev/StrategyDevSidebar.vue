@@ -29,12 +29,12 @@ const dateRangeOptions = [
   { label: t('strategyDev.date1y'), value: 31536000 },
 ];
 
-const sortOptions = [
-  { label: 'Date', value: 'date' as const, icon: 'i-mdi-sort-calendar-descending' },
-  { label: 'Profit', value: 'profit' as const, icon: 'i-mdi-trending-up' },
-  { label: 'Loss', value: 'loss' as const, icon: 'i-mdi-target' },
-  { label: 'Grade', value: 'grade' as const, icon: 'i-mdi-school' },
-];
+const sortOptions = computed(() => [
+  { label: t('strategyDev.sortDate'), value: 'date' as const, icon: 'i-mdi-sort-calendar-descending' },
+  { label: t('strategyDev.sortProfit'), value: 'profit' as const, icon: 'i-mdi-trending-up' },
+  { label: t('strategyDev.sortLoss'), value: 'loss' as const, icon: 'i-mdi-target' },
+  { label: t('strategyDev.sortGrade'), value: 'grade' as const, icon: 'i-mdi-school' },
+]);
 
 const groupOptions = [
   { label: t('strategyDev.groupByType'), value: 'type' as const },
@@ -105,7 +105,7 @@ function clearSearch() {
           :key="opt.value"
           class="sd-sort-btn"
           :class="{ 'sd-sort-btn--active': store.sortBy === opt.value }"
-          :title="`Sort by ${opt.label}`"
+          :title="t('strategyDev.sortBy', { metric: opt.label })"
           @click="store.setSortBy(opt.value)"
         >
           {{ opt.label }}
@@ -113,7 +113,7 @@ function clearSearch() {
         <button
           class="sd-sort-btn sd-fav-filter-btn"
           :class="{ 'sd-sort-btn--active': store.filterFavoritesOnly }"
-          title="Favoris uniquement"
+          :title="t('strategyDev.favoritesOnly')"
           @click="store.filterFavoritesOnly = !store.filterFavoritesOnly"
         >
           <i-mdi-star class="w-3 h-3" />
@@ -136,7 +136,7 @@ function clearSearch() {
     <div v-if="store.favoriteRuns.length && !store.filterText" class="sd-favorites">
       <div class="sd-favorites-header">
         <i-mdi-star class="w-3 h-3" style="color: var(--sd-yellow)" />
-        <span>Favoris</span>
+        <span>{{ t('strategyDev.favorites') }}</span>
       </div>
       <RunTreeItem
         v-for="run in store.favoriteRuns"

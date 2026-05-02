@@ -63,7 +63,7 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
   if (r.total_profit_pct != null) {
     const v = r.total_profit_pct;
     stats.push({
-      label: 'Profit',
+      label: t('strategyDev.metricProfit'),
       value: `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`,
       color: v >= 0 ? 'var(--sd-success)' : 'var(--sd-danger)',
     });
@@ -71,7 +71,7 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
 
   if (r.best_loss != null) {
     stats.push({
-      label: 'Loss',
+      label: t('strategyDev.metricLoss'),
       value: r.best_loss.toFixed(4),
       color: r.best_loss < 0 ? 'var(--sd-success)' : 'var(--sd-warning)',
     });
@@ -80,7 +80,7 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
   const tradesCount = bestEpochTrades.value ?? r.total_trades;
   if (tradesCount != null) {
     stats.push({
-      label: 'Trades',
+      label: t('strategyDev.metricTrades'),
       value: String(tradesCount),
       color: tradesCount >= 60 ? 'var(--sd-text)' : 'var(--sd-warning)',
     });
@@ -92,7 +92,7 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
       C: 'var(--sd-warning)', D: 'var(--sd-danger)', F: 'var(--sd-danger)',
     };
     stats.push({
-      label: 'Grade',
+      label: t('strategyDev.metricGrade'),
       value: r.verdict_grade,
       color: gradeColors[r.verdict_grade] || 'var(--sd-text)',
     });
@@ -100,7 +100,7 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
 
   if (r.epochs_completed != null && r.epochs_total != null) {
     stats.push({
-      label: 'Epochs',
+      label: t('strategyDev.metricEpochs'),
       value: `${r.epochs_completed}/${r.epochs_total}`,
       color: 'var(--sd-text)',
     });
@@ -108,7 +108,7 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
 
   if (r.best_sharpe != null) {
     stats.push({
-      label: 'Sharpe',
+      label: t('strategyDev.metricSharpe'),
       value: r.best_sharpe.toFixed(3),
       color: r.best_sharpe >= 0 ? 'var(--sd-success)' : 'var(--sd-danger)',
     });
@@ -116,7 +116,7 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
 
   if (r.best_max_dd != null) {
     stats.push({
-      label: 'Max DD',
+      label: t('strategyDev.metricMaxDD'),
       value: `${(r.best_max_dd * 100).toFixed(1)}%`,
       color: 'var(--sd-danger)',
     });
@@ -124,7 +124,7 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
 
   if (r.best_profit_factor != null) {
     stats.push({
-      label: 'PF',
+      label: t('strategyDev.metricPF'),
       value: r.best_profit_factor.toFixed(2),
       color: r.best_profit_factor >= 1 ? 'var(--sd-success)' : 'var(--sd-warning)',
     });
@@ -132,7 +132,7 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
 
   if (r.best_winrate != null) {
     stats.push({
-      label: 'Win Rate',
+      label: t('strategyDev.metricWinRate'),
       value: `${(r.best_winrate * 100).toFixed(1)}%`,
       color: r.best_winrate >= 0.5 ? 'var(--sd-success)' : 'var(--sd-warning)',
     });
@@ -140,7 +140,7 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
 
   if (r.best_sqn != null) {
     stats.push({
-      label: 'SQN',
+      label: t('strategyDev.metricSQN'),
       value: r.best_sqn.toFixed(2),
       color: r.best_sqn >= 2 ? 'var(--sd-success)' : r.best_sqn >= 1 ? 'var(--sd-warning)' : 'var(--sd-danger)',
     });

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -19,6 +20,8 @@ interface DistBin {
   count: number;
   normal_expected: number;
 }
+
+const { t } = useI18n();
 
 const props = defineProps<{
   data: {
@@ -44,7 +47,7 @@ const chartOptions = computed<EChartsOption>(() => {
     legend: {
       top: 4,
       textStyle: { color: '#a6adc8', fontSize: 10 },
-      data: ['Actual', 'Normal fit'],
+      data: [t('strategyDev.seriesActual'), t('strategyDev.seriesNormalFit')],
     },
     grid: { left: 50, right: 20, top: 36, bottom: 40 },
     xAxis: {
@@ -60,7 +63,7 @@ const chartOptions = computed<EChartsOption>(() => {
     },
     series: [
       {
-        name: 'Actual',
+        name: t('strategyDev.seriesActual'),
         type: 'bar',
         data: bins.map((b) => ({
           value: b.count,
@@ -69,7 +72,7 @@ const chartOptions = computed<EChartsOption>(() => {
         barWidth: '80%',
       },
       {
-        name: 'Normal fit',
+        name: t('strategyDev.seriesNormalFit'),
         type: 'line',
         data: bins.map((b) => b.normal_expected),
         smooth: true,

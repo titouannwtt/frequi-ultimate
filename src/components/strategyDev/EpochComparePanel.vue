@@ -89,14 +89,14 @@ const metricRows = computed<MetricRow[]>(() => {
   }
 
   return [
-    { label: 'Profit', left: fmtPct(li.total_profit), right: fmtPct(ri.total_profit), better: cmp(li.total_profit, ri.total_profit) },
-    { label: 'Trades', left: String(li.total_trades), right: String(ri.total_trades), better: cmp(li.total_trades, ri.total_trades) },
-    { label: 'Drawdown', left: fmtPct(li.max_drawdown), right: fmtPct(ri.max_drawdown), better: cmp(li.max_drawdown, ri.max_drawdown, false) },
-    { label: 'Sharpe', left: fmtNum(li.sharpe), right: fmtNum(ri.sharpe), better: cmp(li.sharpe, ri.sharpe) },
-    { label: 'Sortino', left: fmtNum(li.sortino), right: fmtNum(ri.sortino), better: cmp(li.sortino, ri.sortino) },
-    { label: 'Profit Factor', left: fmtNum(li.profit_factor), right: fmtNum(ri.profit_factor), better: cmp(li.profit_factor, ri.profit_factor) },
-    { label: 'Win Rate', left: fmtPct(li.winrate), right: fmtPct(ri.winrate), better: cmp(li.winrate, ri.winrate) },
-    { label: 'Loss', left: fmtNum(li.loss, 4), right: fmtNum(ri.loss, 4), better: cmp(li.loss, ri.loss, false) },
+    { label: t('strategyDev.metricProfit'), left: fmtPct(li.total_profit), right: fmtPct(ri.total_profit), better: cmp(li.total_profit, ri.total_profit) },
+    { label: t('strategyDev.metricTrades'), left: String(li.total_trades), right: String(ri.total_trades), better: cmp(li.total_trades, ri.total_trades) },
+    { label: t('strategyDev.metricDrawdown'), left: fmtPct(li.max_drawdown), right: fmtPct(ri.max_drawdown), better: cmp(li.max_drawdown, ri.max_drawdown, false) },
+    { label: t('strategyDev.metricSharpe'), left: fmtNum(li.sharpe), right: fmtNum(ri.sharpe), better: cmp(li.sharpe, ri.sharpe) },
+    { label: t('strategyDev.metricSortino'), left: fmtNum(li.sortino), right: fmtNum(ri.sortino), better: cmp(li.sortino, ri.sortino) },
+    { label: t('strategyDev.metricProfitFactor'), left: fmtNum(li.profit_factor), right: fmtNum(ri.profit_factor), better: cmp(li.profit_factor, ri.profit_factor) },
+    { label: t('strategyDev.metricWinRate'), left: fmtPct(li.winrate), right: fmtPct(ri.winrate), better: cmp(li.winrate, ri.winrate) },
+    { label: t('strategyDev.metricLoss'), left: fmtNum(li.loss, 4), right: fmtNum(ri.loss, 4), better: cmp(li.loss, ri.loss, false) },
   ];
 });
 
@@ -282,6 +282,19 @@ const paramDiff = computed(() => {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
+  table-layout: fixed;
+}
+
+.diff-table th:first-child,
+.diff-table td:first-child {
+  width: 40%;
+}
+
+.diff-table th:nth-child(2),
+.diff-table td:nth-child(2),
+.diff-table th:nth-child(3),
+.diff-table td:nth-child(3) {
+  width: 30%;
 }
 
 .diff-table th {
@@ -303,11 +316,17 @@ const paramDiff = computed(() => {
 .dt-label {
   color: #a6adc8;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dt-val {
   font-family: var(--sd-font-mono);
   color: #cdd6f4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dt-better {

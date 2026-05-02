@@ -11,28 +11,30 @@ const expandedRows = ref<Record<string, boolean>>({});
 const visibleMetrics = ref<Set<number>>(new Set());
 
 function toggleMetrics(rank: number) {
-  if (visibleMetrics.value.has(rank)) {
-    visibleMetrics.value.delete(rank);
+  const copy = new Set(visibleMetrics.value);
+  if (copy.has(rank)) {
+    copy.delete(rank);
   } else {
-    visibleMetrics.value.add(rank);
+    copy.add(rank);
   }
+  visibleMetrics.value = copy;
 }
 
-const epochMetricKeys = [
-  { key: 'profit_total_abs', label: 'Profit (abs)', fmt: (v: number) => v.toFixed(2) },
-  { key: 'profit_total', label: 'Profit %', fmt: (v: number) => `${(v * 100).toFixed(2)}%` },
-  { key: 'total_trades', label: 'Trades', fmt: (v: number) => String(Math.round(v)) },
-  { key: 'sharpe', label: 'Sharpe', fmt: (v: number) => v.toFixed(3) },
-  { key: 'sortino', label: 'Sortino', fmt: (v: number) => v.toFixed(3) },
-  { key: 'calmar', label: 'Calmar', fmt: (v: number) => v.toFixed(3) },
-  { key: 'max_drawdown_account', label: 'Max DD', fmt: (v: number) => `${(v * 100).toFixed(1)}%` },
-  { key: 'profit_factor', label: 'Profit Factor', fmt: (v: number) => v.toFixed(2) },
-  { key: 'winrate', label: 'Win Rate', fmt: (v: number) => `${(v * 100).toFixed(1)}%` },
-  { key: 'expectancy_ratio', label: 'Expectancy', fmt: (v: number) => v.toFixed(3) },
-  { key: 'sqn', label: 'SQN', fmt: (v: number) => v.toFixed(2) },
-  { key: 'avg_profit', label: 'Avg Profit', fmt: (v: number) => `${v.toFixed(2)}%` },
-  { key: 'holding_avg', label: 'Avg Duration', fmt: (v: number) => `${v.toFixed(0)}m` },
-];
+const epochMetricKeys = computed(() => [
+  { key: 'profit_total_abs', label: t('strategyDev.metricProfitAbs'), fmt: (v: number) => v.toFixed(2) },
+  { key: 'profit_total', label: t('strategyDev.metricProfitPct'), fmt: (v: number) => `${(v * 100).toFixed(2)}%` },
+  { key: 'total_trades', label: t('strategyDev.metricTrades'), fmt: (v: number) => String(Math.round(v)) },
+  { key: 'sharpe', label: t('strategyDev.metricSharpe'), fmt: (v: number) => v.toFixed(3) },
+  { key: 'sortino', label: t('strategyDev.metricSortino'), fmt: (v: number) => v.toFixed(3) },
+  { key: 'calmar', label: t('strategyDev.metricCalmar'), fmt: (v: number) => v.toFixed(3) },
+  { key: 'max_drawdown_account', label: t('strategyDev.metricMaxDD'), fmt: (v: number) => `${(v * 100).toFixed(1)}%` },
+  { key: 'profit_factor', label: t('strategyDev.metricProfitFactor'), fmt: (v: number) => v.toFixed(2) },
+  { key: 'winrate', label: t('strategyDev.metricWinRate'), fmt: (v: number) => `${(v * 100).toFixed(1)}%` },
+  { key: 'expectancy_ratio', label: t('strategyDev.metricExpectancy'), fmt: (v: number) => v.toFixed(3) },
+  { key: 'sqn', label: t('strategyDev.metricSQN'), fmt: (v: number) => v.toFixed(2) },
+  { key: 'avg_profit', label: t('strategyDev.metricAvgProfit'), fmt: (v: number) => `${v.toFixed(2)}%` },
+  { key: 'holding_avg', label: t('strategyDev.metricAvgDuration'), fmt: (v: number) => `${v.toFixed(0)}m` },
+]);
 
 function getMetrics(epoch: Record<string, unknown>): Record<string, number> {
   const rm = (epoch.results_metrics as Record<string, number>) ?? {};
@@ -64,13 +66,13 @@ function getMetrics(epoch: Record<string, unknown>): Record<string, number> {
       data-key="rank"
     >
       <Column expander style="width: 2rem" />
-      <Column field="rank" header="#" style="width: 3rem" />
-      <Column field="loss" header="Loss" sortable>
+      <Column field="rank" :header="t('strategyDev.columnRank')" style="width: 3rem" />
+      <Column field="loss" :header="t('strategyDev.metricLoss')" sortable>
         <template #body="{ data }">
           {{ (data as Record<string, unknown>).loss }}
         </template>
       </Column>
-      <Column field="profit_pct" header="Profit %" sortable>
+      <Column field="profit_pct" :header="t('strategyDev.metricProfitPct')" sortable>
         <template #body="{ data }">
           <span
             :class="{
@@ -82,14 +84,14 @@ function getMetrics(epoch: Record<string, unknown>): Record<string, number> {
           </span>
         </template>
       </Column>
-      <Column field="trades" header="Trades" sortable />
-      <Column field="sharpe" header="Sharpe" sortable />
-      <Column field="dd_pct" header="DD %" sortable>
+      <Column field="trades" :header="t('strategyDev.metricTrades')" sortable />
+      <Column field="sharpe" :header="t('strategyDev.metricSharpe')" sortable />
+      <Column field="dd_pct" :header="t('strategyDev.metricMaxDD')" sortable>
         <template #body="{ data }">
           {{ (data as Record<string, unknown>).dd_pct }}%
         </template>
       </Column>
-      <Column field="winrate" header="Win %" sortable>
+      <Column field="winrate" :header="t('strategyDev.metricWinRate')" sortable>
         <template #body="{ data }">
           {{ (data as Record<string, unknown>).winrate }}%
         </template>

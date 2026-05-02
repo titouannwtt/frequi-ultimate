@@ -30,6 +30,7 @@ interface MCData {
   p75: number;
   p95: number;
   mean: number;
+  final_return_pct?: number;
   n_simulations: number;
   n_trades: number;
   prob_positive: number;
@@ -105,15 +106,19 @@ const chartOptions = computed<EChartsOption>(() => {
       borderColor: C.overlay,
       textStyle: { color: C.text, fontSize: 12 },
       formatter: () => {
-        return [
-          '<b>Distribution of final returns</b>',
-          `P95 (best 5%): ${fmtPct(d.p95)}`,
-          `P75 (upper quartile): ${fmtPct(d.p75)}`,
+        const lines = [
+          '<b>Max Drawdown Distribution</b>',
+          `P5 (best case): ${fmtPct(d.p5)}`,
+          `P25: ${fmtPct(d.p25)}`,
           `P50 (median): ${fmtPct(d.p50)}`,
-          `P25 (lower quartile): ${fmtPct(d.p25)}`,
-          `P5 (worst 5%): ${fmtPct(d.p5)}`,
+          `P75: ${fmtPct(d.p75)}`,
+          `P95 (worst case): ${fmtPct(d.p95)}`,
           `Mean: ${fmtPct(d.mean)}`,
-        ].join('<br/>');
+        ];
+        if (d.final_return_pct != null) {
+          lines.push(`Final Return: ${fmtPct(d.final_return_pct)}`);
+        }
+        return lines.join('<br/>');
       },
     },
     dataZoom: [
@@ -175,13 +180,13 @@ const chartOptions = computed<EChartsOption>(() => {
           const xP75 = (api.coord([p75c, catIdx]) as number[])[0];
           const xP95 = (api.coord([p95c, catIdx]) as number[])[0];
 
-          const boxColor = d.p25 >= 0 ? C.green : C.red;
+          const boxColor = d.p75 < 30 ? C.green : d.p75 < 50 ? C.yellow : C.red;
 
           const minLabelGap = 45;
           const topLabels = [
-            { x: xP25, text: `P25: ${fmtPct(d.p25)}`, fill: C.subtext, fontSize: 10, fontWeight: 'normal' as const },
-            { x: xP50, text: `P50: ${fmtPct(d.p50)}`, fill: C.blue, fontSize: 11, fontWeight: 'bold' as const },
-            { x: xP75, text: `P75: ${fmtPct(d.p75)}`, fill: C.subtext, fontSize: 10, fontWeight: 'normal' as const },
+            { x: xP25, text: `P25: ${fmtPct(d.p25)} DD`, fill: C.subtext, fontSize: 10, fontWeight: 'normal' as const },
+            { x: xP50, text: `P50: ${fmtPct(d.p50)} DD`, fill: C.blue, fontSize: 11, fontWeight: 'bold' as const },
+            { x: xP75, text: `P75: ${fmtPct(d.p75)} DD`, fill: C.subtext, fontSize: 10, fontWeight: 'normal' as const },
           ];
           const baseY = yCoord - boxH / 2 - 8;
           const topY: number[] = [baseY, baseY, baseY];
@@ -379,7 +384,7 @@ const hasClamped = computed(() => {
           <span
             class="mc-legend-box"
             :style="{
-              borderColor: data.p25 >= 0 ? C.green : C.red,
+              borderColor: data.p75 < 30 ? C.green : data.p75 < 50 ? C.yellow : C.red,
               backgroundColor: 'transparent',
             }"
           ></span>

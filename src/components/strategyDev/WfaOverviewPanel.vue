@@ -37,7 +37,7 @@ const metrics = computed(() => {
   const dsr = d?.deflated_sharpe_ratio as number | undefined;
   if (dsr != null) {
     items.push({
-      label: 'DSR',
+      label: t('strategyDev.metricDSR'),
       value: dsr.toFixed(3),
       severity: dsr >= 1.0 ? 'success' : 'danger',
     });
@@ -45,12 +45,12 @@ const metrics = computed(() => {
 
   const oos = d?.oos_aggregate as Record<string, number> | undefined;
   if (oos) {
-    if (oos.total_trades != null) items.push({ label: 'OOS Trades', value: String(oos.total_trades) });
-    if (oos.sqn != null) items.push({ label: 'OOS SQN', value: oos.sqn.toFixed(2) });
-    if (oos.expectancy != null) items.push({ label: 'OOS Expectancy', value: oos.expectancy.toFixed(4) });
+    if (oos.total_trades != null) items.push({ label: t('strategyDev.metricOOSTrades'), value: String(oos.total_trades) });
+    if (oos.sqn != null) items.push({ label: t('strategyDev.metricOOSSQN'), value: oos.sqn.toFixed(2) });
+    if (oos.expectancy != null) items.push({ label: t('strategyDev.metricOOSExpectancy'), value: oos.expectancy.toFixed(4) });
     if (oos.profit_total != null) {
       items.push({
-        label: 'OOS Profit',
+        label: t('strategyDev.metricOOSProfit'),
         value: `${(oos.profit_total * 100).toFixed(2)}%`,
         severity: oos.profit_total > 0 ? 'success' : 'danger',
       });
@@ -60,7 +60,7 @@ const metrics = computed(() => {
   const oosEquity = d?.oos_equity as Record<string, number> | undefined;
   if (oosEquity) {
     if (oosEquity.k_ratio != null) items.push({
-      label: 'K-Ratio',
+      label: t('strategyDev.metricKRatio'),
       value: oosEquity.k_ratio.toFixed(3),
       severity: oosEquity.k_ratio >= 0 ? 'success' : 'danger',
     });
@@ -69,7 +69,7 @@ const metrics = computed(() => {
   const mc = d?.monte_carlo as Record<string, number> | undefined;
   if (mc) {
     if (mc.carver_discount != null) items.push({
-      label: 'Carver Discount',
+      label: t('strategyDev.metricCarverDiscount'),
       value: `${(mc.carver_discount * 100).toFixed(0)}%`,
       severity: mc.carver_discount >= 0.5 ? 'success' : 'danger',
     });
@@ -172,16 +172,16 @@ const healthBadges = computed(() => {
       <h4 class="text-sm font-semibold mb-2">{{ t('strategyDev.wfaVerdictChecks') }}</h4>
       <div class="flex flex-col gap-1">
         <div
-          v-for="(check, idx) in (verdict.checks as Record<string, unknown>[])"
+          v-for="(check, idx) in (verdict.checks as [string, boolean, string][])"
           :key="idx"
           class="flex items-center gap-2 text-sm"
         >
           <i-mdi-check-circle
-            v-if="check.pass"
+            v-if="check[1]"
             class="w-4 h-4 text-green-500 shrink-0"
           />
           <i-mdi-close-circle v-else class="w-4 h-4 text-red-500 shrink-0" />
-          <span class="text-surface-200">{{ check.label || check.name }}</span>
+          <span class="text-surface-300">{{ check[2] }}</span>
         </div>
       </div>
     </div>

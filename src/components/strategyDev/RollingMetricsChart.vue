@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -48,6 +49,8 @@ const props = defineProps<{
   };
 }>();
 
+const { t } = useI18n();
+
 const chartOptions = computed<EChartsOption>(() => {
   const { sharpe, sortino, volatility, window } = props.metrics;
 
@@ -64,7 +67,7 @@ const chartOptions = computed<EChartsOption>(() => {
         let html = `<b>${date}</b>`;
         for (const item of items) {
           const val = item.value[1];
-          const fmt = item.seriesName.includes('Volatility')
+          const fmt = item.seriesName.includes(t('strategyDev.seriesVolatility'))
             ? `${(val * 100).toFixed(2)}%`
             : val.toFixed(3);
           html += `<br/><span style="color:${item.color}">\u25CF</span> ${item.seriesName}: ${fmt}`;
@@ -76,9 +79,9 @@ const chartOptions = computed<EChartsOption>(() => {
       top: 0,
       textStyle: { color: C.subtext, fontSize: 11 },
       data: [
-        `Rolling Sharpe (${window}d)`,
-        `Rolling Sortino (${window}d)`,
-        `Rolling Volatility (${window}d)`,
+        t('strategyDev.seriesRollingSharpe', { window }),
+        t('strategyDev.seriesRollingSortino', { window }),
+        t('strategyDev.seriesRollingVolatility', { window }),
       ],
     },
     grid: { left: 60, right: 60, top: 36, bottom: 60 },
@@ -110,14 +113,14 @@ const chartOptions = computed<EChartsOption>(() => {
     yAxis: [
       {
         type: 'value',
-        name: 'Ratio',
+        name: t('strategyDev.axisRatio'),
         nameTextStyle: { color: C.subtext, fontSize: 10 },
         axisLabel: { color: C.subtext, fontSize: 10 },
         splitLine: { lineStyle: { color: C.surface1, type: 'dashed' } },
       },
       {
         type: 'value',
-        name: 'Volatility',
+        name: t('strategyDev.axisVolatility'),
         nameTextStyle: { color: C.subtext, fontSize: 10 },
         axisLabel: {
           color: C.subtext,
@@ -129,7 +132,7 @@ const chartOptions = computed<EChartsOption>(() => {
     ],
     series: [
       {
-        name: `Rolling Sharpe (${window}d)`,
+        name: t('strategyDev.seriesRollingSharpe', { window }),
         type: 'line',
         data: sharpe.map((s) => [s.date, s.value]),
         symbol: 'none',
@@ -145,7 +148,7 @@ const chartOptions = computed<EChartsOption>(() => {
         },
       },
       {
-        name: `Rolling Sortino (${window}d)`,
+        name: t('strategyDev.seriesRollingSortino', { window }),
         type: 'line',
         data: sortino.map((s) => [s.date, s.value]),
         symbol: 'none',
@@ -154,7 +157,7 @@ const chartOptions = computed<EChartsOption>(() => {
         yAxisIndex: 0,
       },
       {
-        name: `Rolling Volatility (${window}d)`,
+        name: t('strategyDev.seriesRollingVolatility', { window }),
         type: 'line',
         data: volatility.map((s) => [s.date, s.value]),
         symbol: 'none',

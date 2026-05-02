@@ -29,12 +29,12 @@ interface MetricItem {
 }
 
 function sqnLabel(sqn: number): { text: string; color: string } {
-  if (sqn > 5) return { text: 'Superb', color: 'var(--sd-success)' };
-  if (sqn >= 3) return { text: 'Excellent', color: 'var(--sd-success)' };
-  if (sqn >= 2.5) return { text: 'Good', color: 'var(--sd-info)' };
-  if (sqn >= 2) return { text: 'Average', color: 'var(--sd-text)' };
-  if (sqn >= 1.6) return { text: 'Below avg', color: 'var(--sd-warning)' };
-  return { text: 'Poor', color: 'var(--sd-danger)' };
+  if (sqn > 5) return { text: t('strategyDev.sqnSuperb'), color: 'var(--sd-success)' };
+  if (sqn >= 3) return { text: t('strategyDev.sqnExcellent'), color: 'var(--sd-success)' };
+  if (sqn >= 2.5) return { text: t('strategyDev.sqnGood'), color: 'var(--sd-info)' };
+  if (sqn >= 2) return { text: t('strategyDev.sqnAverage'), color: 'var(--sd-text)' };
+  if (sqn >= 1.6) return { text: t('strategyDev.sqnBelowAvg'), color: 'var(--sd-warning)' };
+  return { text: t('strategyDev.sqnPoor'), color: 'var(--sd-danger)' };
 }
 
 function kellyColor(pct: number): string {
@@ -49,49 +49,49 @@ const items = computed<MetricItem[]>(() => {
   return [
     {
       key: 'expectancy',
-      label: 'Expectancy',
+      label: t('strategyDev.metricExpectancy'),
       value: `${d.expectancy >= 0 ? '+' : ''}${d.expectancy.toFixed(4)}`,
       color: d.expectancy >= 0 ? 'var(--sd-success)' : 'var(--sd-danger)',
     },
     {
       key: 'win_rate',
-      label: 'Win Rate',
+      label: t('strategyDev.metricWinRate'),
       value: `${(d.win_rate * 100).toFixed(1)}%`,
       color: 'var(--sd-text)',
     },
     {
       key: 'avg_win',
-      label: 'Avg Win',
+      label: t('strategyDev.metricAvgWin'),
       value: `+${d.avg_win.toFixed(2)}%`,
       color: 'var(--sd-success)',
     },
     {
       key: 'avg_loss',
-      label: 'Avg Loss',
+      label: t('strategyDev.metricAvgLoss'),
       value: `${d.avg_loss.toFixed(2)}%`,
       color: 'var(--sd-danger)',
     },
     {
       key: 'payoff_ratio',
-      label: 'Payoff Ratio',
+      label: t('strategyDev.metricPayoffRatio'),
       value: d.payoff_ratio.toFixed(2),
       color: 'var(--sd-text)',
     },
     {
       key: 'kelly_pct',
-      label: 'Kelly %',
+      label: t('strategyDev.metricKelly'),
       value: `${d.kelly_pct.toFixed(1)}%`,
       color: kellyColor(d.kelly_pct),
     },
     {
       key: 'half_kelly_pct',
-      label: 'Half Kelly %',
+      label: t('strategyDev.metricHalfKelly'),
       value: `${d.half_kelly_pct.toFixed(1)}%`,
       color: kellyColor(d.half_kelly_pct),
     },
     {
       key: 'sqn',
-      label: 'SQN',
+      label: t('strategyDev.metricSQN'),
       value: d.sqn.toFixed(2),
       color: sqnInfo.color,
       badge: sqnInfo.text,
@@ -99,13 +99,13 @@ const items = computed<MetricItem[]>(() => {
     },
     {
       key: 'ci_95',
-      label: 'CI 95%',
+      label: t('strategyDev.metricCI95'),
       value: `[${d.ci_95_low.toFixed(4)}, ${d.ci_95_high.toFixed(4)}]`,
       color: 'var(--sd-text)',
     },
     {
       key: 'total_trades',
-      label: 'Total Trades',
+      label: t('strategyDev.metricTotalTrades'),
       value: `${d.total_trades}`,
       color: 'var(--sd-text)',
     },

@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -39,7 +42,7 @@ async function doCopy() {
   <button
     class="copy-btn"
     :class="[`copy-btn--${size}`, `copy-btn--${variant}`, { 'copy-btn--copied': copied }]"
-    :title="copied ? 'Copied!' : (label || 'Copy')"
+    :title="copied ? t('strategyDev.copied') : (label || t('strategyDev.copy'))"
     @click.stop="doCopy"
   >
     <Transition name="copy-icon" mode="out-in">
@@ -47,7 +50,7 @@ async function doCopy() {
       <i-mdi-content-copy v-else :key="'copy'" class="copy-icon" />
     </Transition>
     <span v-if="variant === 'button'" class="copy-label">
-      {{ copied ? 'Copied' : (label || 'Copy') }}
+      {{ copied ? t('strategyDev.copied') : (label || t('strategyDev.copy')) }}
     </span>
   </button>
 </template>

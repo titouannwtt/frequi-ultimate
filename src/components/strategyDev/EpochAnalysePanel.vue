@@ -11,6 +11,11 @@ const btcEquityInput = computed(() => epochData.value?.equity_curve as { date: s
 const btcStartBal = computed(() => (epochData.value?.starting_balance as number) ?? 1000);
 const { benchmarkEquity: btcBenchmark } = useBtcBenchmark(btcEquityInput, btcStartBal);
 
+const regimeTimeline = computed(() => {
+  const mr = epochData.value?.market_regime as Record<string, unknown> | undefined;
+  return mr?.timeline as { date: string; regime: string; volatility: number; trend: number }[] | undefined;
+});
+
 const topEpochs = computed(() => {
   const a = store.hyperoptAnalysis;
   if (!a) return [];
@@ -58,6 +63,17 @@ function fmtNum(v: unknown, decimals = 2): string {
   if (isNaN(n)) return '—';
   return n.toFixed(decimals);
 }
+
+const showParams = ref(false);
+const paramsCopied = ref(false);
+
+function copyParams() {
+  const data = epochData.value?.params_details ?? epochData.value?.params_dict;
+  if (!data) return;
+  navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+  paramsCopied.value = true;
+  setTimeout(() => { paramsCopied.value = false; }, 2000);
+}
 </script>
 
 <template>
@@ -95,8 +111,8 @@ function fmtNum(v: unknown, decimals = 2): string {
       <div class="scorecard">
         <div class="scorecard-badge">
           <i-mdi-numeric class="w-3.5 h-3.5" />
-          Epoch #{{ epochInfo.current_epoch ?? selectedRank }}
-          <span class="scorecard-rank">Rank {{ selectedRank }}</span>
+          {{ t('strategyDev.metricEpochNum', { n: epochInfo.current_epoch ?? selectedRank }) }}
+          <span class="scorecard-rank">{{ t('strategyDev.metricRank') }} {{ selectedRank }}</span>
         </div>
         <div class="scorecard-metrics">
           <div class="sc-metric">
@@ -114,11 +130,11 @@ function fmtNum(v: unknown, decimals = 2): string {
             <span class="sc-value sc-neg">{{ fmtPct(epochInfo.max_drawdown) }}</span>
           </div>
           <div class="sc-metric">
-            <span class="sc-label">Sharpe</span>
+            <span class="sc-label">{{ t('strategyDev.metricSharpe') }}</span>
             <span class="sc-value">{{ fmtNum(epochInfo.sharpe) }}</span>
           </div>
           <div class="sc-metric">
-            <span class="sc-label">Sortino</span>
+            <span class="sc-label">{{ t('strategyDev.metricSortino') }}</span>
             <span class="sc-value">{{ fmtNum(epochInfo.sortino) }}</span>
           </div>
           <div class="sc-metric">
@@ -130,13 +146,35 @@ function fmtNum(v: unknown, decimals = 2): string {
             </span>
           </div>
           <div class="sc-metric">
-            <span class="sc-label">PF</span>
+            <span class="sc-label">{{ t('strategyDev.metricPF') }}</span>
             <span class="sc-value">{{ fmtNum(epochInfo.profit_factor) }}</span>
           </div>
           <div class="sc-metric">
-            <span class="sc-label">Loss</span>
+            <span class="sc-label">{{ t('strategyDev.metricLoss') }}</span>
             <span class="sc-value">{{ fmtNum(epochInfo.loss, 4) }}</span>
           </div>
+        </div>
+      </div>
+
+      <!-- Params export -->
+      <div v-if="epochData.params_dict || epochData.params_details" class="params-export-panel mt-3">
+        <button
+          class="params-toggle-btn"
+          @click="showParams = !showParams"
+        >
+          <i-mdi-code-json class="w-4 h-4" />
+          {{ t('strategyDev.exportParams') }}
+          <i-mdi-chevron-down v-if="!showParams" class="w-4 h-4" />
+          <i-mdi-chevron-up v-else class="w-4 h-4" />
+        </button>
+        <div v-if="showParams" class="params-json-wrap">
+          <pre class="params-json">{{ JSON.stringify(epochData.params_details ?? epochData.params_dict, null, 2) }}</pre>
+          <button
+            class="params-copy-btn"
+            @click="copyParams"
+          >
+            {{ paramsCopied ? t('strategyDev.copied') : t('strategyDev.copy') }}
+          </button>
         </div>
       </div>
 
@@ -159,6 +197,7 @@ function fmtNum(v: unknown, decimals = 2): string {
             :starting-balance="(epochData.starting_balance as number) ?? 1000"
             :benchmark="btcBenchmark"
             benchmark-label="BTC"
+            :regimes="regimeTimeline"
           />
           <template #fullscreen>
             <EquityCurveChart
@@ -166,6 +205,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               :starting-balance="(epochData.starting_balance as number) ?? 1000"
               :benchmark="btcBenchmark"
               benchmark-label="BTC"
+              :regimes="regimeTimeline"
             />
           </template>
         </ChartWrapper>
@@ -178,9 +218,9 @@ function fmtNum(v: unknown, decimals = 2): string {
             :hint="t('strategyDev.hintUnderwater')"
             chart-id="epoch-underwater"
           >
-            <UnderwaterChart :series="epochData.drawdown_series as any[]" />
+            <UnderwaterChart :series="epochData.drawdown_series as any[]" :regimes="regimeTimeline" />
             <template #fullscreen>
-              <UnderwaterChart :series="epochData.drawdown_series as any[]" />
+              <UnderwaterChart :series="epochData.drawdown_series as any[]" :regimes="regimeTimeline" />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -191,9 +231,9 @@ function fmtNum(v: unknown, decimals = 2): string {
             :hint="t('strategyDev.hintCumulativeTrades')"
             chart-id="epoch-cumulative"
           >
-            <CumulativeTradesChart :trades="epochData.cumulative_trades as any[]" />
+            <CumulativeTradesChart :trades="epochData.cumulative_trades as any[]" :regimes="regimeTimeline" />
             <template #fullscreen>
-              <CumulativeTradesChart :trades="epochData.cumulative_trades as any[]" />
+              <CumulativeTradesChart :trades="epochData.cumulative_trades as any[]" :regimes="regimeTimeline" />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -364,9 +404,9 @@ function fmtNum(v: unknown, decimals = 2): string {
             :hint="t('strategyDev.hintRollingWinrate')"
             chart-id="epoch-rwr"
           >
-            <RollingWinrateChart :data="epochData.rolling_winrate as any[]" />
+            <RollingWinrateChart :data="epochData.rolling_winrate as any[]" :regimes="regimeTimeline" />
             <template #fullscreen>
-              <RollingWinrateChart :data="epochData.rolling_winrate as any[]" />
+              <RollingWinrateChart :data="epochData.rolling_winrate as any[]" :regimes="regimeTimeline" />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -377,9 +417,9 @@ function fmtNum(v: unknown, decimals = 2): string {
             :hint="t('strategyDev.hintRollingProfitFactor')"
             chart-id="epoch-rpf"
           >
-            <RollingProfitFactorChart :data="epochData.rolling_profit_factor as any[]" />
+            <RollingProfitFactorChart :data="epochData.rolling_profit_factor as any[]" :regimes="regimeTimeline" />
             <template #fullscreen>
-              <RollingProfitFactorChart :data="epochData.rolling_profit_factor as any[]" />
+              <RollingProfitFactorChart :data="epochData.rolling_profit_factor as any[]" :regimes="regimeTimeline" />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -391,9 +431,9 @@ function fmtNum(v: unknown, decimals = 2): string {
           :hint="t('strategyDev.hintExposure')"
           chart-id="epoch-exposure"
         >
-          <ExposureChart :timeline="epochData.exposure_timeline as any[]" />
+          <ExposureChart :timeline="epochData.exposure_timeline as any[]" :regimes="regimeTimeline" />
           <template #fullscreen>
-            <ExposureChart :timeline="epochData.exposure_timeline as any[]" />
+            <ExposureChart :timeline="epochData.exposure_timeline as any[]" :regimes="regimeTimeline" />
           </template>
         </ChartWrapper>
         <ChartEmptyState v-else />
@@ -414,9 +454,9 @@ function fmtNum(v: unknown, decimals = 2): string {
           :hint="t('strategyDev.hintBtCapitalUtilization')"
           chart-id="epoch-cap-util"
         >
-          <CapitalUtilizationChart :data="epochData.capital_utilization as any[]" />
+          <CapitalUtilizationChart :data="epochData.capital_utilization as any[]" :regimes="regimeTimeline" />
           <template #fullscreen>
-            <CapitalUtilizationChart :data="epochData.capital_utilization as any[]" />
+            <CapitalUtilizationChart :data="epochData.capital_utilization as any[]" :regimes="regimeTimeline" />
           </template>
         </ChartWrapper>
 
@@ -632,5 +672,64 @@ function fmtNum(v: unknown, decimals = 2): string {
   padding: 3rem;
   color: #6c7086;
   text-align: center;
+}
+
+.params-export-panel {
+  border: 1px solid rgba(69, 71, 90, 0.25);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.params-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: rgba(30, 30, 46, 0.5);
+  border: none;
+  color: #a6adc8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.params-toggle-btn:hover {
+  background: rgba(30, 30, 46, 0.8);
+  color: #cdd6f4;
+}
+
+.params-json-wrap {
+  position: relative;
+  background: rgba(17, 17, 27, 0.5);
+}
+
+.params-json {
+  max-height: 300px;
+  overflow: auto;
+  padding: 0.75rem;
+  margin: 0;
+  font-size: 11px;
+  font-family: var(--sd-font-mono);
+  color: #cdd6f4;
+  white-space: pre;
+}
+
+.params-copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: rgba(69, 71, 90, 0.5);
+  border: 1px solid rgba(69, 71, 90, 0.4);
+  border-radius: 0.25rem;
+  color: #a6adc8;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.params-copy-btn:hover {
+  background: rgba(69, 71, 90, 0.8);
+  color: #cdd6f4;
 }
 </style>

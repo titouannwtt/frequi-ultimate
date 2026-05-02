@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -10,6 +11,8 @@ import {
   TooltipComponent,
   MarkLineComponent,
 } from 'echarts/components';
+
+const { t } = useI18n();
 
 use([BarChart, CanvasRenderer, GridComponent, TooltipComponent, MarkLineComponent]);
 
@@ -138,14 +141,14 @@ const chartOptions = computed<EChartsOption>(() => {
 });
 
 const stats = computed(() => [
-  { label: 'Total Trades', value: props.distribution.total.toString() },
-  { label: 'Mean', value: fmtPct(props.distribution.mean) },
-  { label: 'Median', value: fmtPct(props.distribution.median) },
-  { label: 'Std Dev', value: `${props.distribution.std.toFixed(2)}%` },
-  { label: 'Avg Win', value: fmtPct(props.distribution.avg_win) },
-  { label: 'Avg Loss', value: fmtPct(props.distribution.avg_loss) },
-  { label: 'Best Trade', value: fmtPct(props.distribution.best_trade) },
-  { label: 'Worst Trade', value: fmtPct(props.distribution.worst_trade) },
+  { label: t('strategyDev.metricTotalTrades'), value: props.distribution.total.toString() },
+  { label: t('strategyDev.metricMean'), value: fmtPct(props.distribution.mean) },
+  { label: t('strategyDev.metricMedian'), value: fmtPct(props.distribution.median) },
+  { label: t('strategyDev.metricStdDev'), value: `${props.distribution.std.toFixed(2)}%` },
+  { label: t('strategyDev.metricAvgWin'), value: fmtPct(props.distribution.avg_win) },
+  { label: t('strategyDev.metricAvgLoss'), value: fmtPct(props.distribution.avg_loss) },
+  { label: t('strategyDev.metricBestTrade'), value: fmtPct(props.distribution.best_trade) },
+  { label: t('strategyDev.metricWorstTrade'), value: fmtPct(props.distribution.worst_trade) },
 ]);
 </script>
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -26,6 +27,8 @@ interface WinMC {
 
 const props = defineProps<{ windows: WinMC[]; title: string }>();
 
+const { t } = useI18n();
+
 const chartOptions = computed<EChartsOption>(() => {
   const labels = props.windows.map((w) => `W${w.index}`);
   const btc = props.windows.map((w) => w.market_context?.btc_change_pct ?? 0);
@@ -40,7 +43,7 @@ const chartOptions = computed<EChartsOption>(() => {
     yAxis: { type: 'value', name: '%' },
     series: [
       {
-        name: 'BTC Change',
+        name: t('strategyDev.seriesBTCChange'),
         type: 'bar',
         data: btc.map((v) => ({
           value: v,
@@ -48,7 +51,7 @@ const chartOptions = computed<EChartsOption>(() => {
         })),
       },
       {
-        name: 'Volatility',
+        name: t('strategyDev.seriesVolatility'),
         type: 'bar',
         data: vol,
         itemStyle: { color: '#cba6f7' },

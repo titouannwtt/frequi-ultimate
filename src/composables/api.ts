@@ -77,9 +77,12 @@ export function useApi(userService: UserServiceType, botId: string) {
         }
       }
       if ((err.response && err.response.status === 500) || err.message === 'Network Error') {
-        console.log('Bot not running...');
-        const botStore = useBotStore();
-        botStore.botStores[botId]?.setIsBotOnline(false);
+        const url = err.config?.url ?? '';
+        if (!url.includes('/stratdev/')) {
+          console.log('Bot not running...');
+          const botStore = useBotStore();
+          botStore.botStores[botId]?.setIsBotOnline(false);
+        }
       }
 
       return new Promise((resolve, reject) => {

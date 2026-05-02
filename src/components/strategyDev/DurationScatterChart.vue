@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -22,6 +23,8 @@ interface DurationPoint {
 const props = defineProps<{
   points: DurationPoint[];
 }>();
+
+const { t } = useI18n();
 
 const chartOptions = computed<EChartsOption>(() => {
   const green = props.points
@@ -70,7 +73,7 @@ const chartOptions = computed<EChartsOption>(() => {
     ],
     xAxis: {
       type: 'value',
-      name: 'Duration (min)',
+      name: t('strategyDev.axisDuration'),
       nameLocation: 'center',
       nameGap: 45,
       axisLabel: { color: '#a6adc8' },
@@ -78,7 +81,7 @@ const chartOptions = computed<EChartsOption>(() => {
     },
     yAxis: {
       type: 'value',
-      name: 'Profit %',
+      name: t('strategyDev.axisProfit'),
       nameLocation: 'center',
       nameGap: 40,
       axisLabel: { color: '#a6adc8' },

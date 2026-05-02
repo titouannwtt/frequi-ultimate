@@ -30,7 +30,7 @@ const {
   primaryMetrics,
   hasData,
   secondsSinceRefresh,
-} = useRateMetrics({ multiBotView: props.multiBotView, refreshMs: 15_000 });
+} = useRateMetrics({ multiBotView: props.multiBotView, refreshMs: 2_000 });
 
 // --- data ---
 const current = computed(() => primaryMetrics.value?.current);
@@ -72,8 +72,6 @@ const loadPct = computed(() => {
   if (!maxReqPerMin.value) return 0;
   return Math.min(100, Math.round((directRequests.value / maxReqPerMin.value) * 100));
 });
-
-const refreshProgress = computed(() => Math.min(100, (secondsSinceRefresh.value / 15) * 100));
 
 const detailOpen = ref(false);
 
@@ -174,14 +172,6 @@ const hitBarsOption = computed((): EChartsOption => {
 
 <template>
   <div class="flex flex-col h-full overflow-hidden" @mousemove="trackMouse">
-    <!-- Refresh progress bar -->
-    <div class="h-0.5 w-full bg-surface-800 shrink-0">
-      <div
-        class="h-full transition-all duration-1000 ease-linear"
-        :style="{ width: `${refreshProgress}%`, backgroundColor: bucketColor(tokenPct) }"
-      />
-    </div>
-
     <div class="flex flex-col h-full p-2 gap-1.5 overflow-auto">
       <template v-if="hasData">
         <!-- Toolbar -->

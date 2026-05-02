@@ -170,10 +170,10 @@ const chartOption = computed<EChartsOption>(() => {
 
   // Entry/exit signals as scatter
   const signalCols = [
-    { col: 'enter_long', color: GREEN, symbol: 'triangle', symbolSize: 10, label: 'Entry Long' },
-    { col: 'exit_long', color: RED, symbol: 'pin', symbolSize: 10, label: 'Exit Long' },
-    { col: 'enter_short', color: BLUE, symbol: 'diamond', symbolSize: 10, label: 'Entry Short' },
-    { col: 'exit_short', color: MAUVE, symbol: 'arrow', symbolSize: 10, label: 'Exit Short' },
+    { col: 'enter_long', color: GREEN, symbol: 'triangle', symbolSize: 10, label: t('strategyDev.signalEntryLong') },
+    { col: 'exit_long', color: RED, symbol: 'pin', symbolSize: 10, label: t('strategyDev.signalExitLong') },
+    { col: 'enter_short', color: BLUE, symbol: 'diamond', symbolSize: 10, label: t('strategyDev.signalEntryShort') },
+    { col: 'exit_short', color: MAUVE, symbol: 'arrow', symbolSize: 10, label: t('strategyDev.signalExitShort') },
   ];
   for (const sig of signalCols) {
     const sIdx = colIndex(sig.col);
@@ -216,7 +216,7 @@ const chartOption = computed<EChartsOption>(() => {
   if (entryMarkers.length > 0) {
     series.push({
       type: 'scatter',
-      name: 'Trade Entry',
+      name: t('strategyDev.seriesTradeEntry'),
       data: entryMarkers.map(([i, v]) => ({ value: [dates[i], v] })),
       xAxisIndex: 0,
       yAxisIndex: 0,
@@ -229,7 +229,7 @@ const chartOption = computed<EChartsOption>(() => {
   if (exitMarkers.length > 0) {
     series.push({
       type: 'scatter',
-      name: 'Trade Exit',
+      name: t('strategyDev.seriesTradeExit'),
       data: exitMarkers.map(([i, v]) => ({ value: [dates[i], v] })),
       xAxisIndex: 0,
       yAxisIndex: 0,
@@ -243,7 +243,7 @@ const chartOption = computed<EChartsOption>(() => {
   if (volumeData.length > 0) {
     series.push({
       type: 'bar',
-      name: 'Volume',
+      name: t('strategyDev.seriesVolume'),
       data: volumeData,
       xAxisIndex: 1,
       yAxisIndex: 1,

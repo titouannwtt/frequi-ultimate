@@ -63,16 +63,16 @@ const backtestMetrics = computed(() => {
   const items: { label: string; value: string }[] = [];
   if (s.profit_total != null) items.push({ label: t('strategyDev.totalProfit'), value: `${((s.profit_total as number) * 100).toFixed(2)}%` });
   if (s.total_trades != null) items.push({ label: t('strategyDev.totalTrades'), value: String(s.total_trades) });
-  if (s.sharpe != null) items.push({ label: 'Sharpe', value: (s.sharpe as number).toFixed(3) });
-  if (s.sortino != null) items.push({ label: 'Sortino', value: (s.sortino as number).toFixed(3) });
-  if (s.max_drawdown_account != null) items.push({ label: 'Max DD', value: `${((s.max_drawdown_account as number) * 100).toFixed(1)}%` });
-  if (s.profit_factor != null) items.push({ label: 'Profit Factor', value: (s.profit_factor as number).toFixed(2) });
-  if (s.winrate != null) items.push({ label: 'Win Rate', value: `${((s.winrate as number) * 100).toFixed(1)}%` });
-  if (s.calmar != null) items.push({ label: 'Calmar', value: (s.calmar as number).toFixed(2) });
-  if (s.trades_per_day != null) items.push({ label: 'Trades/Day', value: (s.trades_per_day as number).toFixed(1) });
-  if (s.backtest_days != null) items.push({ label: 'Days', value: String(s.backtest_days) });
-  if (s.timeframe) items.push({ label: 'Timeframe', value: String(s.timeframe) });
-  if (s.final_balance != null) items.push({ label: 'Final Balance', value: (s.final_balance as number).toFixed(2) });
+  if (s.sharpe != null) items.push({ label: t('strategyDev.metricSharpe'), value: (s.sharpe as number).toFixed(3) });
+  if (s.sortino != null) items.push({ label: t('strategyDev.metricSortino'), value: (s.sortino as number).toFixed(3) });
+  if (s.max_drawdown_account != null) items.push({ label: t('strategyDev.metricMaxDD'), value: `${((s.max_drawdown_account as number) * 100).toFixed(1)}%` });
+  if (s.profit_factor != null) items.push({ label: t('strategyDev.metricProfitFactor'), value: (s.profit_factor as number).toFixed(2) });
+  if (s.winrate != null) items.push({ label: t('strategyDev.metricWinRate'), value: `${((s.winrate as number) * 100).toFixed(1)}%` });
+  if (s.calmar != null) items.push({ label: t('strategyDev.metricCalmar'), value: (s.calmar as number).toFixed(2) });
+  if (s.trades_per_day != null) items.push({ label: t('strategyDev.metricTradesPerDay'), value: (s.trades_per_day as number).toFixed(1) });
+  if (s.backtest_days != null) items.push({ label: t('strategyDev.metricDays'), value: String(s.backtest_days) });
+  if (s.timeframe) items.push({ label: t('strategyDev.metricTimeframe'), value: String(s.timeframe) });
+  if (s.final_balance != null) items.push({ label: t('strategyDev.metricFinalBalance'), value: (s.final_balance as number).toFixed(2) });
   return items;
 });
 </script>

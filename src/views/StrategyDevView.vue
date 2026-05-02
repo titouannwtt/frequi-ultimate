@@ -95,7 +95,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
       <div class="sd-sidebar-inner">
         <button
           class="sd-sidebar-toggle"
-          :title="showLeftBar ? 'Collapse sidebar' : 'Expand sidebar (Ctrl+K)'"
+          :title="showLeftBar ? t('strategyDev.collapseSidebar') : t('strategyDev.expandSidebar')"
           @click="showLeftBar = !showLeftBar"
         >
           <i-mdi-chevron-left v-if="showLeftBar" class="w-5 h-5" />

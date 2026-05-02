@@ -10,6 +10,8 @@ const loading = ref(false);
 const error = ref('');
 
 const refreshInterval = ref<ReturnType<typeof setInterval> | null>(null);
+const botsExpanded = ref(false);
+const eventsExpanded = ref(false);
 
 const bots = computed(() => fleetStatus.value?.bots ?? []);
 const daemon = computed(() => fleetStatus.value?.daemon);
@@ -155,7 +157,7 @@ async function fetchData() {
 
 onMounted(() => {
   fetchData();
-  refreshInterval.value = setInterval(fetchData, 10000);
+  refreshInterval.value = setInterval(fetchData, 1000);
 });
 
 onUnmounted(() => {
@@ -201,45 +203,58 @@ onUnmounted(() => {
       {{ error }}
     </div>
 
-    <!-- Bot table -->
-    <div v-if="bots.length > 0" class="table-responsive">
-      <table class="table table-sm table-hover mb-2">
-        <thead>
-          <tr class="small text-muted">
-            <th>Bot</th>
-            <th>Exchange</th>
-            <th>Strategy</th>
-            <th>Pairs</th>
-            <th>State</th>
-            <th>Uptime</th>
-            <th>HB</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="bot in sortedBots" :key="bot.bot_id">
-            <td class="text-nowrap">
-              <span class="fw-semibold">{{ bot.bot_id }}</span>
-              <span v-if="bot.dry_run" class="badge bg-info ms-1 small">DRY</span>
-            </td>
-            <td>
-              <code class="small">{{ exchangeShort(bot.exchange, bot.trading_mode) }}</code>
-            </td>
-            <td class="small text-truncate" style="max-width: 150px">
-              {{ bot.strategy }}
-            </td>
-            <td class="text-center">{{ bot.pairs_count }}</td>
-            <td>
-              <span class="badge" :class="`bg-${stateBadge(bot.state)}`">
-                {{ bot.state.toUpperCase() }}
-              </span>
-            </td>
-            <td class="small">{{ formatUptime(bot.uptime_s) }}</td>
-            <td :class="heartbeatClass(bot.last_heartbeat_ago_s)" class="small">
-              {{ Math.round(bot.last_heartbeat_ago_s) }}s
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Bot table (collapsible) -->
+    <div v-if="bots.length > 0">
+      <button
+        class="d-flex align-items-center gap-1 small text-muted bg-transparent border-0 p-0 mb-1"
+        style="cursor: pointer"
+        @click="botsExpanded = !botsExpanded"
+      >
+        <span
+          class="d-inline-block transition-transform"
+          :style="{ transform: botsExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }"
+        >&#9654;</span>
+        Bots ({{ bots.length }})
+      </button>
+      <div v-if="botsExpanded" class="table-responsive">
+        <table class="table table-sm table-hover mb-2">
+          <thead>
+            <tr class="small text-muted">
+              <th>Bot</th>
+              <th>Exchange</th>
+              <th>Strategy</th>
+              <th>Pairs</th>
+              <th>State</th>
+              <th>Uptime</th>
+              <th>HB</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="bot in sortedBots" :key="bot.bot_id">
+              <td class="text-nowrap">
+                <span class="fw-semibold">{{ bot.bot_id }}</span>
+                <span v-if="bot.dry_run" class="badge bg-info ms-1 small">DRY</span>
+              </td>
+              <td>
+                <code class="small">{{ exchangeShort(bot.exchange, bot.trading_mode) }}</code>
+              </td>
+              <td class="small text-truncate" style="max-width: 150px">
+                {{ bot.strategy }}
+              </td>
+              <td class="text-center">{{ bot.pairs_count }}</td>
+              <td>
+                <span class="badge" :class="`bg-${stateBadge(bot.state)}`">
+                  {{ bot.state.toUpperCase() }}
+                </span>
+              </td>
+              <td class="small">{{ formatUptime(bot.uptime_s) }}</td>
+              <td :class="heartbeatClass(bot.last_heartbeat_ago_s)" class="small">
+                {{ Math.round(bot.last_heartbeat_ago_s) }}s
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Rate limiters -->
@@ -253,10 +268,20 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Event log -->
+    <!-- Event log (collapsible) -->
     <div v-if="fleetEvents.length > 0">
-      <div class="small text-muted mb-1">Recent Events (1h)</div>
-      <div class="fleet-events-scroll">
+      <button
+        class="d-flex align-items-center gap-1 small text-muted bg-transparent border-0 p-0 mb-1"
+        style="cursor: pointer"
+        @click="eventsExpanded = !eventsExpanded"
+      >
+        <span
+          class="d-inline-block"
+          :style="{ transform: eventsExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }"
+        >&#9654;</span>
+        Events ({{ fleetEvents.length }})
+      </button>
+      <div v-if="eventsExpanded" class="fleet-events-scroll">
         <div
           v-for="(evt, idx) in fleetEvents"
           :key="idx"

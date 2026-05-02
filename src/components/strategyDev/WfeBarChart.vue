@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -13,12 +14,14 @@ const props = defineProps<{
   title: string;
 }>();
 
+const { t } = useI18n();
+
 const chartOptions = computed<EChartsOption>(() => ({
   title: { text: props.title, left: 'center', textStyle: { fontSize: 14 } },
   tooltip: { trigger: 'axis' },
   grid: { left: 50, right: 20, top: 40, bottom: 30 },
-  xAxis: { type: 'category', name: 'Window', data: props.data.map((d) => `W${d.index}`) },
-  yAxis: { type: 'value', name: 'WFE' },
+  xAxis: { type: 'category', name: t('strategyDev.axisWindow'), data: props.data.map((d) => `W${d.index}`) },
+  yAxis: { type: 'value', name: t('strategyDev.axisWFE') },
   series: [
     {
       type: 'bar',

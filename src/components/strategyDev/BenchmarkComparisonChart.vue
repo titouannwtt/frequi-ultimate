@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import { LineChart } from 'echarts/charts';
 import {
   DataZoomComponent,
@@ -10,20 +11,22 @@ import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import VChart from 'vue-echarts';
 
+const { t } = useI18n();
+
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent, DataZoomComponent]);
 
 const props = defineProps<{
   data: {
-    strategy_equity: Array<{ date: string; value: number }>;
-    buyhold_equity: Array<{ date: string; value: number }>;
+    strategy_equity: Array<{ date: string; value?: number; balance?: number }>;
+    buyhold_equity: Array<{ date: string; value?: number; balance?: number }>;
     alpha: number;
   };
 }>();
 
 const chartOptions = computed(() => {
   const stratDates = props.data.strategy_equity.map((d) => d.date);
-  const stratVals = props.data.strategy_equity.map((d) => d.value);
-  const bhVals = props.data.buyhold_equity.map((d) => d.value);
+  const stratVals = props.data.strategy_equity.map((d) => d.value ?? d.balance ?? 0);
+  const bhVals = props.data.buyhold_equity.map((d) => d.value ?? d.balance ?? 0);
 
   return {
     tooltip: {
@@ -33,7 +36,7 @@ const chartOptions = computed(() => {
       textStyle: { color: '#cdd6f4', fontSize: 11 },
     },
     legend: {
-      data: ['Strategy', 'Buy & Hold'],
+      data: [t('strategyDev.seriesStrategy'), t('strategyDev.seriesBuyHold')],
       textStyle: { color: '#6c7086', fontSize: 10 },
       top: 0,
     },
@@ -63,7 +66,7 @@ const chartOptions = computed(() => {
     },
     series: [
       {
-        name: 'Strategy',
+        name: t('strategyDev.seriesStrategy'),
         type: 'line',
         data: stratVals,
         smooth: true,
@@ -82,7 +85,7 @@ const chartOptions = computed(() => {
         },
       },
       {
-        name: 'Buy & Hold',
+        name: t('strategyDev.seriesBuyHold'),
         type: 'line',
         data: bhVals,
         smooth: true,

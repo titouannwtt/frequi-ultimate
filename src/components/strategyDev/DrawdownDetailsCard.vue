@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+
 interface Drawdown {
   start: string;
   valley: string;
@@ -48,14 +52,14 @@ function fmtDays(d: number | undefined): string {
       <table class="dd-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Depth</th>
-            <th>Start</th>
-            <th>Valley</th>
-            <th>End</th>
-            <th>Decline</th>
-            <th>Recovery</th>
-            <th>Total</th>
+            <th>{{ t('strategyDev.columnRank') }}</th>
+            <th>{{ t('strategyDev.columnDepth') }}</th>
+            <th>{{ t('strategyDev.columnStart') }}</th>
+            <th>{{ t('strategyDev.columnValley') }}</th>
+            <th>{{ t('strategyDev.columnEnd') }}</th>
+            <th>{{ t('strategyDev.columnDecline') }}</th>
+            <th>{{ t('strategyDev.columnRecovery') }}</th>
+            <th>{{ t('strategyDev.columnTotal') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -69,7 +73,7 @@ function fmtDays(d: number | undefined): string {
             <td class="dd-date">{{ dd.active ? '\u2014' : fmtDate(dd.end) }}</td>
             <td class="dd-days">{{ fmtDays(dd.decline_days) }}</td>
             <td class="dd-days">
-              <span v-if="dd.active" class="dd-active-badge">Active</span>
+              <span v-if="dd.active" class="dd-active-badge">{{ t('strategyDev.statusActive') }}</span>
               <template v-else>{{ fmtDays(dd.recovery_days) }}</template>
             </td>
             <td class="dd-days">{{ dd.active ? '\u2014' : fmtDays(dd.total_days) }}</td>

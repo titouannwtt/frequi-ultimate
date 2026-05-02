@@ -214,9 +214,9 @@ const paramTabIndex = ref(0);
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ChartWrapper v-if="analysis.convergence" :title="t('strategyDev.chartLossConvergence')" :hint="t('strategyDev.hintConvergence')" chart-id="convergence">
-            <ConvergenceChart :data="analysis.convergence as number[]" :title="t('strategyDev.chartLossConvergence')" />
+            <ConvergenceChart :data="analysis.convergence as any[]" :title="t('strategyDev.chartLossConvergence')" />
             <template #fullscreen>
-              <ConvergenceChart :data="analysis.convergence as number[]" :title="t('strategyDev.chartLossConvergence')" />
+              <ConvergenceChart :data="analysis.convergence as any[]" :title="t('strategyDev.chartLossConvergence')" />
             </template>
           </ChartWrapper>
           <ChartWrapper v-if="analysis.loss_histogram" :title="t('strategyDev.chartLossDistribution')" :hint="t('strategyDev.hintLossHistogram')" chart-id="loss-histogram">
@@ -241,9 +241,116 @@ const paramTabIndex = ref(0);
       </div>
 
       <!-- ═══ SECTION 5: PARAMETER ANALYSIS ═══ -->
-      <div class="section">
+      <!-- ═══ SECTION: TRADE DURATION ═══ -->
+      <div v-if="analysis.duration_boxplot || analysis.duration_buckets" class="section">
         <div class="section-header">
           <span class="section-num">{{ overfitWarnings ? '5' : '4' }}</span>
+          <h3>{{ t('strategyDev.aaDurationBuckets') }}</h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ChartWrapper v-if="analysis.duration_boxplot" :title="t('strategyDev.aaDurationBoxplot')" :hint="t('strategyDev.hintDurationBoxplot')" chart-id="ho-duration-boxplot">
+            <DurationBoxPlotChart :data="analysis.duration_boxplot as any" />
+            <template #fullscreen>
+              <DurationBoxPlotChart :data="analysis.duration_boxplot as any" />
+            </template>
+          </ChartWrapper>
+          <ChartWrapper v-if="analysis.duration_buckets" :title="t('strategyDev.aaDurationBuckets')" :hint="t('strategyDev.hintDurationBuckets')" chart-id="ho-duration-buckets">
+            <DurationBucketChart :data="analysis.duration_buckets as any" />
+            <template #fullscreen>
+              <DurationBucketChart :data="analysis.duration_buckets as any" />
+            </template>
+          </ChartWrapper>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <ChartWrapper v-if="analysis.duration_profit_heatmap" :title="t('strategyDev.aaDurationProfitHeatmap')" :hint="t('strategyDev.hintDurationProfitHeatmap')" chart-id="ho-duration-heatmap">
+            <DurationProfitHeatmap :data="analysis.duration_profit_heatmap as any" />
+            <template #fullscreen>
+              <DurationProfitHeatmap :data="analysis.duration_profit_heatmap as any" />
+            </template>
+          </ChartWrapper>
+          <ChartWrapper v-if="analysis.stuck_trades && (analysis.stuck_trades as any).stuck_count > 0" :title="t('strategyDev.aaStuckTrades')" :hint="t('strategyDev.hintStuckTrades')" chart-id="ho-stuck-trades">
+            <DurationStuckTradesCard :data="analysis.stuck_trades as any" />
+          </ChartWrapper>
+        </div>
+      </div>
+
+      <!-- ═══ SECTION: DCA ANALYSIS ═══ -->
+      <div v-if="analysis.dca_analysis && !(analysis.dca_analysis as any).no_dca" class="section">
+        <div class="section-header">
+          <span class="section-num">{{ (overfitWarnings ? 5 : 4) + (analysis.duration_boxplot || analysis.duration_buckets ? 1 : 0) }}</span>
+          <h3>{{ t('strategyDev.aaDcaDistribution') }}</h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ChartWrapper :title="t('strategyDev.aaDcaDistribution')" :hint="t('strategyDev.hintDcaDistribution')" chart-id="ho-dca-distribution">
+            <DcaLevelDistributionChart :data="analysis.dca_analysis as any" />
+            <template #fullscreen>
+              <DcaLevelDistributionChart :data="analysis.dca_analysis as any" />
+            </template>
+          </ChartWrapper>
+          <ChartWrapper :title="t('strategyDev.aaDcaProfitContribution')" :hint="t('strategyDev.hintDcaProfitContribution')" chart-id="ho-dca-contribution">
+            <DcaProfitContributionChart :data="analysis.dca_analysis as any" />
+            <template #fullscreen>
+              <DcaProfitContributionChart :data="analysis.dca_analysis as any" />
+            </template>
+          </ChartWrapper>
+        </div>
+        <ChartWrapper :title="t('strategyDev.aaDcaRecovery')" :hint="t('strategyDev.hintDcaRecovery')" chart-id="ho-dca-recovery" class="mt-4">
+          <DcaRecoveryCard :data="analysis.dca_analysis as any" />
+        </ChartWrapper>
+      </div>
+
+      <!-- ═══ SECTION: PAIR CORRELATION ═══ -->
+      <div v-if="analysis.pair_correlation_analysis" class="section">
+        <div class="section-header">
+          <span class="section-num">{{ (overfitWarnings ? 5 : 4) + (analysis.duration_boxplot || analysis.duration_buckets ? 1 : 0) + (analysis.dca_analysis && !(analysis.dca_analysis as any).no_dca ? 1 : 0) }}</span>
+          <h3>{{ t('strategyDev.aaPairCorrelation') }}</h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ChartWrapper :title="t('strategyDev.aaPairCorrelation')" :hint="t('strategyDev.hintPairCorrelation')" chart-id="ho-pair-correlation">
+            <PairCorrelationHeatmap :data="analysis.pair_correlation_analysis as any" />
+            <template #fullscreen>
+              <PairCorrelationHeatmap :data="analysis.pair_correlation_analysis as any" />
+            </template>
+          </ChartWrapper>
+          <div class="flex flex-col gap-4">
+            <ChartWrapper :title="t('strategyDev.aaConcentrationRisk')" :hint="t('strategyDev.hintConcentrationRisk')" chart-id="ho-concentration-risk">
+              <ConcentrationRiskCard :data="analysis.pair_correlation_analysis as any" />
+            </ChartWrapper>
+            <ChartWrapper v-if="(analysis.pair_correlation_analysis as any).max_simultaneous_loss" :title="t('strategyDev.aaMaxSimultaneousLoss')" :hint="t('strategyDev.hintMaxSimultaneousLoss')" chart-id="ho-max-simul-loss">
+              <MaxSimultaneousLossCard :data="(analysis.pair_correlation_analysis as any).max_simultaneous_loss" />
+            </ChartWrapper>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ SECTION: MARKET REGIME ═══ -->
+      <div v-if="analysis.market_regime_analysis" class="section">
+        <div class="section-header">
+          <span class="section-num">{{ (overfitWarnings ? 5 : 4) + (analysis.duration_boxplot || analysis.duration_buckets ? 1 : 0) + (analysis.dca_analysis && !(analysis.dca_analysis as any).no_dca ? 1 : 0) + (analysis.pair_correlation_analysis ? 1 : 0) }}</span>
+          <h3>{{ t('strategyDev.aaRegimePerformance') }}</h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ChartWrapper :title="t('strategyDev.aaRegimePerformance')" :hint="t('strategyDev.hintRegimePerformance')" chart-id="ho-regime-perf">
+            <RegimePerformanceChart :data="analysis.market_regime_analysis as any" />
+            <template #fullscreen>
+              <RegimePerformanceChart :data="analysis.market_regime_analysis as any" />
+            </template>
+          </ChartWrapper>
+          <ChartWrapper :title="t('strategyDev.aaRegimeTimeline')" :hint="t('strategyDev.hintRegimeTimeline')" chart-id="ho-regime-timeline">
+            <RegimeEquityOverlayChart :data="analysis.market_regime_analysis as any" />
+            <template #fullscreen>
+              <RegimeEquityOverlayChart :data="analysis.market_regime_analysis as any" />
+            </template>
+          </ChartWrapper>
+        </div>
+        <ChartWrapper :title="t('strategyDev.aaRegimeTransitions')" :hint="t('strategyDev.hintRegimeTransitions')" chart-id="ho-regime-transitions" class="mt-4">
+          <RegimeTransitionCard :data="analysis.market_regime_analysis as any" />
+        </ChartWrapper>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <span class="section-num">{{ (overfitWarnings ? 5 : 4) + (analysis.duration_boxplot || analysis.duration_buckets ? 1 : 0) + (analysis.dca_analysis && !(analysis.dca_analysis as any).no_dca ? 1 : 0) + (analysis.pair_correlation_analysis ? 1 : 0) + (analysis.market_regime_analysis ? 1 : 0) }}</span>
           <h3>{{ t('strategyDev.sectionParameterAnalysis') }}</h3>
         </div>
 

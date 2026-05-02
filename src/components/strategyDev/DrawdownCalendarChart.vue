@@ -17,6 +17,8 @@ interface CalEntry {
   date: string;
   dd_pct: number;
   pnl: number;
+  trades_closed?: number;
+  positions_open?: number;
 }
 
 const props = defineProps<{
@@ -77,8 +79,13 @@ const chartOptions = computed<EChartsOption>(() => {
       formatter: (p: unknown) => {
         const params = p as { value: [string, number] };
         const entry = props.data.find((d) => d.date === params.value[0]);
-        const pnl = entry ? `PnL: ${entry.pnl >= 0 ? '+' : ''}${entry.pnl.toFixed(2)}` : '';
-        return `<b>${params.value[0]}</b><br/>DD: ${params.value[1].toFixed(2)}%<br/>${pnl}`;
+        const lines = [`<b>${params.value[0]}</b>`, `DD: ${params.value[1].toFixed(2)}%`];
+        if (entry) {
+          lines.push(`PnL: ${entry.pnl >= 0 ? '+' : ''}${entry.pnl.toFixed(2)}`);
+          if (entry.trades_closed != null) lines.push(`Trades closed: ${entry.trades_closed}`);
+          if (entry.positions_open != null) lines.push(`Positions open: ${entry.positions_open}`);
+        }
+        return lines.join('<br/>');
       },
     },
     visualMap: {

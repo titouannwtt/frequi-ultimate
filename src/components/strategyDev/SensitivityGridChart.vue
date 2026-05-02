@@ -115,6 +115,9 @@ const chartOptions = computed<EChartsOption>(() => {
       textStyle: { fontSize: 13 },
     },
     tooltip: {
+      backgroundColor: '#1e1e2e',
+      borderColor: '#45475a',
+      textStyle: { color: '#cdd6f4', fontSize: 12 },
       formatter: (p: unknown) => {
         const item = p as { value: [number, number, number | null] };
         const bi = item.value[0];

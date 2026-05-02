@@ -30,10 +30,14 @@ const cards = computed(() => {
   const result: Array<{ label: string; value: string; sub?: string; color?: string }> = [];
 
   if (s.best_pair) {
-    result.push({ label: t('strategyDev.btBestPair'), value: String(s.best_pair), color: 'green' });
+    const bp = s.best_pair;
+    const label = typeof bp === 'object' && bp !== null ? (bp as any).key ?? String(bp) : String(bp);
+    result.push({ label: t('strategyDev.btBestPair'), value: label, color: 'green' });
   }
   if (s.worst_pair) {
-    result.push({ label: t('strategyDev.btWorstPair'), value: String(s.worst_pair), color: 'red' });
+    const wp = s.worst_pair;
+    const label = typeof wp === 'object' && wp !== null ? (wp as any).key ?? String(wp) : String(wp);
+    result.push({ label: t('strategyDev.btWorstPair'), value: label, color: 'red' });
   }
   if (s.trades_per_day != null) {
     result.push({ label: t('strategyDev.btTradesPerDay'), value: fmtNum(s.trades_per_day, 1) });
@@ -75,8 +79,8 @@ const cards = computed(() => {
     });
   }
 
-  if (s.sqn != null) result.push({ label: 'SQN', value: fmtNum(s.sqn) });
-  if (s.cagr != null) result.push({ label: 'CAGR', value: fmtPct(s.cagr) });
+  if (s.sqn != null) result.push({ label: t('strategyDev.metricSQN'), value: fmtNum(s.sqn) });
+  if (s.cagr != null) result.push({ label: t('strategyDev.metricCAGR'), value: fmtPct(s.cagr) });
   if (s.expectancy != null) result.push({ label: t('strategyDev.btExpectancy'), value: fmtNum(s.expectancy, 4) });
   if (s.expectancy_ratio != null) result.push({ label: t('strategyDev.btExpectancyRatio'), value: fmtNum(s.expectancy_ratio) });
 

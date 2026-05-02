@@ -18,6 +18,12 @@ const data = computed(() => store.advancedAnalytics);
 const btcEquityInput = computed(() => data.value?.equity_curve as { date: string; balance: number }[] | undefined);
 const btcStartBal = computed(() => (data.value?.starting_balance as number) ?? 1000);
 const { benchmarkEquity: btcBenchmark } = useBtcBenchmark(btcEquityInput, btcStartBal);
+
+const regimeTimeline = computed(() => {
+  const mr = data.value?.market_regime as Record<string, unknown> | undefined;
+  return mr?.timeline as { date: string; regime: string; volatility: number; trend: number }[] | undefined;
+});
+
 const epochInfo = computed(() => (data.value?.epoch_info as Record<string, unknown>) ?? null);
 
 function fmtPct(v: unknown): string {
@@ -116,11 +122,13 @@ function fmtNum(v: unknown, decimals = 2): string {
               :starting-balance="(data.starting_balance as number) ?? 1000"
               :benchmark="btcBenchmark"
               benchmark-label="BTC"
+              :regimes="regimeTimeline"
             />
             <template #fullscreen>
               <EquityCurveChart
                 :equity="data.equity_curve as any[]"
                 :starting-balance="(data.starting_balance as number) ?? 1000"
+                :regimes="regimeTimeline"
               />
             </template>
           </ChartWrapper>
@@ -131,9 +139,9 @@ function fmtNum(v: unknown, decimals = 2): string {
             :hint="t('strategyDev.hintUnderwater')"
             chart-id="underwater-plot"
           >
-            <UnderwaterChart :series="data.drawdown_series as any[]" />
+            <UnderwaterChart :series="data.drawdown_series as any[]" :regimes="regimeTimeline" />
             <template #fullscreen>
-              <UnderwaterChart :series="data.drawdown_series as any[]" />
+              <UnderwaterChart :series="data.drawdown_series as any[]" :regimes="regimeTimeline" />
             </template>
           </ChartWrapper>
 

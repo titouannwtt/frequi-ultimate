@@ -227,6 +227,9 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
 
     all429s.sort((a, b) => b.ts - a.ts);
 
+    const firstWithPairlist = entries.find((e) => e.ftpairlist) ?? entries[0];
+    const firstWithRateLimit = entries.find((e) => e.exchange_rate_limit) ?? entries[0];
+
     return {
       exchange: [...exchanges].join(' + '),
       timeline: Object.values(timelineBuckets).sort((a, b) => a.ts - b.ts),
@@ -234,6 +237,8 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
       summary: mergedSummary,
       current: entries[0].current,
       ftcache_extended: entries[0].ftcache_extended,
+      ftpairlist: firstWithPairlist.ftpairlist,
+      exchange_rate_limit: firstWithRateLimit.exchange_rate_limit,
     };
   });
 

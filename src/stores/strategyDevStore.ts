@@ -129,15 +129,16 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
   });
 
   const HO_BATCH_SIZE = 15;
+  let _fetchInFlight = false;
 
   async function fetchAllRuns() {
+    if (_fetchInFlight) return;
+    _fetchInFlight = true;
     loading.value = true;
     errorCode.value = null;
     errorMessage.value = null;
 
-    if (!allRuns.value) {
-      allRuns.value = { backtests: [], hyperopts: [], wfa_runs: [] };
-    }
+    allRuns.value = { backtests: [], hyperopts: [], wfa_runs: [] };
 
     loadingTypes.value = new Set(['backtest', 'wfa', 'hyperopt']);
 
@@ -219,6 +220,7 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     }
 
     loading.value = false;
+    _fetchInFlight = false;
   }
 
   function _ensureCacheEntry(filename: string): CachedRunData {

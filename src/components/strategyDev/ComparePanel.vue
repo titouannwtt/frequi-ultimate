@@ -38,17 +38,24 @@ interface MetricRow {
 function extractMetrics(run: RunListEntry | null, detail: Record<string, unknown> | null): Record<string, number | null> {
   const m: Record<string, number | null> = {};
   const rm = (detail?.best_epoch_metrics ?? {}) as Record<string, number>;
+  const ss = (detail?.strategy_summary ?? {}) as Record<string, unknown>;
 
   m.best_loss = run?.best_loss ?? null;
-  m.profit_total = rm.profit_total ?? (run?.total_profit_pct != null ? run.total_profit_pct / 100 : null);
-  m.total_trades = rm.total_trades ?? run?.total_trades ?? null;
-  m.sharpe = rm.sharpe ?? run?.best_sharpe ?? null;
-  m.max_drawdown_account = rm.max_drawdown_account ?? null;
-  m.profit_factor = rm.profit_factor ?? null;
-  m.winrate = rm.winrate ?? null;
-  m.sqn = rm.sqn ?? null;
+  m.profit_total = rm.profit_total ?? asNum(ss.profit_total) ?? (run?.total_profit_pct != null ? run.total_profit_pct / 100 : null);
+  m.total_trades = rm.total_trades ?? asNum(ss.total_trades) ?? run?.total_trades ?? null;
+  m.sharpe = rm.sharpe ?? asNum(ss.sharpe) ?? run?.best_sharpe ?? null;
+  m.max_drawdown_account = rm.max_drawdown_account ?? asNum(ss.max_drawdown_account) ?? asNum(ss.max_drawdown) ?? null;
+  m.profit_factor = rm.profit_factor ?? asNum(ss.profit_factor) ?? null;
+  m.winrate = rm.winrate ?? asNum(ss.winrate) ?? asNum(ss.win_rate) ?? null;
+  m.sqn = rm.sqn ?? asNum(ss.sqn) ?? null;
 
   return m;
+}
+
+function asNum(v: unknown): number | null {
+  if (v == null) return null;
+  const n = Number(v);
+  return isNaN(n) ? null : n;
 }
 
 const currentDetail = computed(() => {
@@ -59,22 +66,22 @@ const currentDetail = computed(() => {
   return null;
 });
 
-const metricDefs: { key: string; label: string; format: (v: number) => string; higherBetter: boolean }[] = [
-  { key: 'best_loss', label: 'Best Loss', format: (v) => v.toFixed(5), higherBetter: false },
-  { key: 'profit_total', label: 'Total Profit', format: (v) => `${(v * 100).toFixed(2)}%`, higherBetter: true },
-  { key: 'total_trades', label: 'Trades', format: (v) => String(Math.round(v)), higherBetter: true },
-  { key: 'sharpe', label: 'Sharpe', format: (v) => v.toFixed(3), higherBetter: true },
-  { key: 'max_drawdown_account', label: 'Max DD', format: (v) => `${(v * 100).toFixed(1)}%`, higherBetter: false },
-  { key: 'profit_factor', label: 'Profit Factor', format: (v) => v.toFixed(2), higherBetter: true },
-  { key: 'winrate', label: 'Win Rate', format: (v) => `${(v * 100).toFixed(1)}%`, higherBetter: true },
-  { key: 'sqn', label: 'SQN', format: (v) => v.toFixed(2), higherBetter: true },
-];
+const metricDefs = computed(() => [
+  { key: 'best_loss', label: t('strategyDev.metricBestLoss'), format: (v: number) => v.toFixed(5), higherBetter: false },
+  { key: 'profit_total', label: t('strategyDev.metricTotalProfit'), format: (v: number) => `${(v * 100).toFixed(2)}%`, higherBetter: true },
+  { key: 'total_trades', label: t('strategyDev.metricTrades'), format: (v: number) => String(Math.round(v)), higherBetter: true },
+  { key: 'sharpe', label: t('strategyDev.metricSharpe'), format: (v: number) => v.toFixed(3), higherBetter: true },
+  { key: 'max_drawdown_account', label: t('strategyDev.metricMaxDD'), format: (v: number) => `${(v * 100).toFixed(1)}%`, higherBetter: false },
+  { key: 'profit_factor', label: t('strategyDev.metricProfitFactor'), format: (v: number) => v.toFixed(2), higherBetter: true },
+  { key: 'winrate', label: t('strategyDev.metricWinRate'), format: (v: number) => `${(v * 100).toFixed(1)}%`, higherBetter: true },
+  { key: 'sqn', label: t('strategyDev.metricSQN'), format: (v: number) => v.toFixed(2), higherBetter: true },
+]);
 
 const metricRows = computed<MetricRow[]>(() => {
   const metricsA = extractMetrics(currentRun.value, currentDetail.value);
   const metricsB = extractMetrics(compareRun.value, store.compareDetail);
 
-  return metricDefs
+  return metricDefs.value
     .filter((d) => metricsA[d.key] != null || metricsB[d.key] != null)
     .map((d) => {
       const va = metricsA[d.key];
@@ -142,6 +149,8 @@ const showUnchanged = ref(false);
 function formatParam(v: unknown): string {
   if (v === null || v === undefined) return '—';
   if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(4);
+  if (typeof v === 'boolean') return v ? 'true' : 'false';
+  if (typeof v === 'object') return JSON.stringify(v);
   return String(v);
 }
 

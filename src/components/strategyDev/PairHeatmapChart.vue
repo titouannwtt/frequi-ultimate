@@ -54,14 +54,14 @@ function fmtPct(v: number): string {
   return `${v >= 0 ? '+' : ''}${(v * 100).toFixed(2)}%`;
 }
 
-const columns = [
-  { key: 'pair', label: 'Pair' },
-  { key: 'trades', label: 'Trades' },
-  { key: 'winrate', label: 'Win Rate' },
-  { key: 'avg_profit', label: 'Avg Profit' },
-  { key: 'total_profit', label: 'Total Profit' },
-  { key: 'profit_factor', label: 'PF' },
-];
+const columns = computed(() => [
+  { key: 'pair', label: t('strategyDev.columnPair') },
+  { key: 'trades', label: t('strategyDev.metricTrades') },
+  { key: 'winrate', label: t('strategyDev.metricWinRate') },
+  { key: 'avg_profit', label: t('strategyDev.metricAvgProfit') },
+  { key: 'total_profit', label: t('strategyDev.metricTotalProfit') },
+  { key: 'profit_factor', label: t('strategyDev.metricPF') },
+]);
 </script>
 
 <template>

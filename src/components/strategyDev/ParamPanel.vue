@@ -117,8 +117,8 @@ function valClass(v: unknown): string {
           <SelectButton
             v-model="viewMode"
             :options="[
-              { label: 'JSON', value: 'json' },
-              { label: 'Table', value: 'table' },
+              { label: t('strategyDev.formatJSON'), value: 'json' },
+              { label: t('strategyDev.formatTable'), value: 'table' },
             ]"
             optionLabel="label"
             optionValue="value"

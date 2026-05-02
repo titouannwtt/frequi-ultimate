@@ -95,6 +95,7 @@ const timelineOption = computed((): EChartsOption => {
     lineStyle: { color: '#ef4444', type: 'dashed' as const, width: 1 },
   }));
 
+
   return {
     backgroundColor: 'rgba(0, 0, 0, 0)',
     tooltip: {
@@ -198,9 +199,8 @@ const sankeyOption = computed((): EChartsOption => {
   const nameSet = new Set<string>();
   let totDirect = 0, totCached = 0, totErrors = 0;
 
-  // Group methods per exchange across all bots
-  // pl: methods come from the global pairlist daemon — deduplicate per exchange
   const perExchange: Record<string, Record<string, MethodStats>> = {};
+  const pairlistMethods: Record<string, MethodStats> = {};
   const seenPL = new Set<string>();
   for (const m of allMetrics) {
     const ex = m.exchange ?? 'unknown';
@@ -211,6 +211,16 @@ const sankeyOption = computed((): EChartsOption => {
       if (isPL) {
         if (seenPL.has(method)) continue;
         seenPL.add(method);
+        const existing = pairlistMethods[key];
+        if (existing) {
+          existing.count += stats.count;
+          existing.cached += stats.cached;
+          existing.direct += stats.direct;
+          existing.errors += stats.errors;
+        } else {
+          pairlistMethods[key] = { ...stats };
+        }
+        continue;
       }
       const existing = perExchange[ex][key];
       if (existing) {
@@ -243,7 +253,21 @@ const sankeyOption = computed((): EChartsOption => {
     }
   }
 
-  // (pl: methods are now merged into their exchange above)
+  if (Object.keys(pairlistMethods).length > 0) {
+    const plColor = '#06b6d4';
+    nodes.push({ name: 'Pairlist', itemStyle: { color: plColor } });
+    for (const [method, stats] of Object.entries(pairlistMethods)) {
+      if (!nameSet.has(method)) {
+        nameSet.add(method);
+        nodes.push({ name: method, itemStyle: { color: '#94a3b8' } });
+      }
+      const total = stats.direct + stats.cached + stats.errors;
+      if (total > 0) links.push({ source: 'Pairlist', target: method, value: total, lineStyle: { color: plColor, opacity: 0.15 } });
+      if (stats.direct > 0) { links.push({ source: method, target: directLabel, value: stats.direct, lineStyle: { color: '#3b82f6', opacity: 0.25 } }); totDirect += stats.direct; }
+      if (stats.cached > 0) { links.push({ source: method, target: cachedLabel, value: stats.cached, lineStyle: { color: '#22c55e', opacity: 0.25 } }); totCached += stats.cached; }
+      if (stats.errors > 0) { links.push({ source: method, target: errorsLabel, value: stats.errors, lineStyle: { color: '#ef4444', opacity: 0.25 } }); totErrors += stats.errors; }
+    }
+  }
   if (totDirect > 0) nodes.push({ name: directLabel, itemStyle: { color: '#3b82f6' } });
   if (totCached > 0) nodes.push({ name: cachedLabel, itemStyle: { color: '#22c55e' } });
   if (totErrors > 0) nodes.push({ name: errorsLabel, itemStyle: { color: '#ef4444' } });

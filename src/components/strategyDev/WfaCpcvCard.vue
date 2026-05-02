@@ -28,7 +28,7 @@ const { t } = useI18n();
 const chartOptions = computed<EChartsOption>(() => {
   const returns = [...props.data.path_returns].sort((a, b) => a - b);
   return {
-    title: { text: 'CPCV Path Returns', left: 'center', textStyle: { fontSize: 13 } },
+    title: { text: t('strategyDev.chartCPCVPathReturns'), left: 'center', textStyle: { fontSize: 13 } },
     tooltip: {
       trigger: 'axis',
       formatter: (params: unknown) => {
@@ -41,11 +41,11 @@ const chartOptions = computed<EChartsOption>(() => {
     xAxis: {
       type: 'category',
       data: returns.map((_, i) => i + 1),
-      name: 'Path',
+      name: t('strategyDev.axisPath'),
     },
     yAxis: {
       type: 'value',
-      name: 'Return %',
+      name: t('strategyDev.axisReturnPct'),
       axisLabel: { formatter: '{value}%' },
     },
     series: [
@@ -84,21 +84,21 @@ const chartOptions = computed<EChartsOption>(() => {
         >
           {{ data.avg_return.toFixed(2) }}%
         </div>
-        <div class="text-sm text-surface-500">Avg Return</div>
+        <div class="text-sm text-surface-500">{{ t('strategyDev.wfaAvgReturn') }}</div>
       </div>
       <div>
         <div class="text-lg font-bold tabular-nums text-blue-400">
           {{ data.sharpe_of_paths.toFixed(3) }}
         </div>
-        <div class="text-sm text-surface-500">Sharpe of Paths</div>
+        <div class="text-sm text-surface-500">{{ t('strategyDev.wfaSharpePaths') }}</div>
       </div>
       <div>
         <div class="text-lg font-bold tabular-nums">{{ data.n_combinations }}</div>
-        <div class="text-sm text-surface-500">Combinations</div>
+        <div class="text-sm text-surface-500">{{ t('strategyDev.wfaCombinations') }}</div>
       </div>
       <div>
         <div class="text-lg font-bold tabular-nums">{{ data.n_paths }}</div>
-        <div class="text-sm text-surface-500">Paths</div>
+        <div class="text-sm text-surface-500">{{ t('strategyDev.wfaPaths') }}</div>
       </div>
     </div>
     <ECharts

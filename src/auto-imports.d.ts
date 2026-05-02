@@ -15,6 +15,8 @@ declare global {
   const EffectScope: typeof import('vue').EffectScope
   const KNOWN_BENCHMARKS: typeof import('./utils/benchmarkData').KNOWN_BENCHMARKS
   const OpenTradeVizOptions: typeof import('./stores/settings').OpenTradeVizOptions
+  const REGIME_COLORS: typeof import('./composables/useRegimeOverlay').REGIME_COLORS
+  const REGIME_LABEL_KEYS: typeof import('./composables/useRegimeOverlay').REGIME_LABEL_KEYS
   const ROUND_CLOSER: typeof import('./utils/roundTimeframe').ROUND_CLOSER
   const ROUND_DOWN: typeof import('./utils/roundTimeframe').ROUND_DOWN
   const ROUND_UP: typeof import('./utils/roundTimeframe').ROUND_UP
@@ -353,6 +355,7 @@ declare global {
   const useRafFn: typeof import('@vueuse/core').useRafFn
   const useRateMetrics: typeof import('./composables/useRateMetrics').useRateMetrics
   const useRefHistory: typeof import('@vueuse/core').useRefHistory
+  const useRegimeOverlay: typeof import('./composables/useRegimeOverlay').useRegimeOverlay
   const useResizeObserver: typeof import('@vueuse/core').useResizeObserver
   const useRoute: typeof import('vue-router').useRoute
   const useRouter: typeof import('vue-router').useRouter
@@ -405,6 +408,7 @@ declare global {
   const useVModels: typeof import('@vueuse/core').useVModels
   const useVibrate: typeof import('@vueuse/core').useVibrate
   const useVirtualList: typeof import('@vueuse/core').useVirtualList
+  const useVolumeComparator: typeof import('./composables/useVolumeComparator').useVolumeComparator
   const useWakeLock: typeof import('@vueuse/core').useWakeLock
   const useWebNotification: typeof import('@vueuse/core').useWebNotification
   const useWebSocket: typeof import('@vueuse/core').useWebSocket
@@ -451,6 +455,9 @@ declare global {
   export type { LogLevel, LogFilters, GroupedLogEntry } from './composables/useLogFiltering'
   import('./composables/useLogFiltering')
   // @ts-ignore
+  export type { RegimeTimelineEntry } from './composables/useRegimeOverlay'
+  import('./composables/useRegimeOverlay')
+  // @ts-ignore
   export type { PopoverName } from './composables/useTradePopover'
   import('./composables/useTradePopover')
   // @ts-ignore
@@ -496,6 +503,8 @@ declare module 'vue' {
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly KNOWN_BENCHMARKS: UnwrapRef<typeof import('./utils/benchmarkData')['KNOWN_BENCHMARKS']>
     readonly OpenTradeVizOptions: UnwrapRef<typeof import('./stores/settings')['OpenTradeVizOptions']>
+    readonly REGIME_COLORS: UnwrapRef<typeof import('./composables/useRegimeOverlay')['REGIME_COLORS']>
+    readonly REGIME_LABEL_KEYS: UnwrapRef<typeof import('./composables/useRegimeOverlay')['REGIME_LABEL_KEYS']>
     readonly ROUND_CLOSER: UnwrapRef<typeof import('./utils/roundTimeframe')['ROUND_CLOSER']>
     readonly ROUND_DOWN: UnwrapRef<typeof import('./utils/roundTimeframe')['ROUND_DOWN']>
     readonly ROUND_UP: UnwrapRef<typeof import('./utils/roundTimeframe')['ROUND_UP']>
@@ -834,6 +843,7 @@ declare module 'vue' {
     readonly useRafFn: UnwrapRef<typeof import('@vueuse/core')['useRafFn']>
     readonly useRateMetrics: UnwrapRef<typeof import('./composables/useRateMetrics')['useRateMetrics']>
     readonly useRefHistory: UnwrapRef<typeof import('@vueuse/core')['useRefHistory']>
+    readonly useRegimeOverlay: UnwrapRef<typeof import('./composables/useRegimeOverlay')['useRegimeOverlay']>
     readonly useResizeObserver: UnwrapRef<typeof import('@vueuse/core')['useResizeObserver']>
     readonly useRoute: UnwrapRef<typeof import('vue-router')['useRoute']>
     readonly useRouter: UnwrapRef<typeof import('vue-router')['useRouter']>
@@ -886,6 +896,7 @@ declare module 'vue' {
     readonly useVModels: UnwrapRef<typeof import('@vueuse/core')['useVModels']>
     readonly useVibrate: UnwrapRef<typeof import('@vueuse/core')['useVibrate']>
     readonly useVirtualList: UnwrapRef<typeof import('@vueuse/core')['useVirtualList']>
+    readonly useVolumeComparator: UnwrapRef<typeof import('./composables/useVolumeComparator')['useVolumeComparator']>
     readonly useWakeLock: UnwrapRef<typeof import('@vueuse/core')['useWakeLock']>
     readonly useWebNotification: UnwrapRef<typeof import('@vueuse/core')['useWebNotification']>
     readonly useWebSocket: UnwrapRef<typeof import('@vueuse/core')['useWebSocket']>

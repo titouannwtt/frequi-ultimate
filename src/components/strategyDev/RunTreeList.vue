@@ -121,7 +121,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
           <TransitionGroup name="sd-item" appear>
             <RunTreeItem
               v-for="(run, idx) in group.runs"
-              :key="run.filename"
+              :key="`${run.run_type}:${run.filename}`"
               :run="run"
               :selected="isSelected(run)"
               :style="{ '--stagger': idx }"
