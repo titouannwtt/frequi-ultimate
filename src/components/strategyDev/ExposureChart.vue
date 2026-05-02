@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -12,9 +13,17 @@ import {
 
 use([LineChart, CanvasRenderer, GridComponent, TooltipComponent, DataZoomComponent]);
 
+const { t } = useI18n();
+
 const props = defineProps<{
   timeline: { date: string; open_positions: number }[];
 }>();
+
+function fmtDate(raw: string): string {
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
 
 const option = computed<EChartsOption>(() => {
   return {
@@ -26,10 +35,10 @@ const option = computed<EChartsOption>(() => {
       formatter: (params: unknown) => {
         const p = (params as { data: [string, number]; axisValue: string }[])[0];
         const val = Array.isArray(p.data) ? p.data[1] : p.data;
-        return `<b>${p.axisValue}</b><br/>Open Positions: ${val}`;
+        return `<b>${fmtDate(p.axisValue)}</b><br/>${t('strategyDev.exposureYAxis')}: ${val}`;
       },
     },
-    grid: { left: 45, right: 20, top: 20, bottom: 60 },
+    grid: { left: 60, right: 20, top: 30, bottom: 60 },
     dataZoom: [
       { type: 'inside', xAxisIndex: 0, filterMode: 'none' },
       {
@@ -54,6 +63,8 @@ const option = computed<EChartsOption>(() => {
     yAxis: {
       type: 'value',
       minInterval: 1,
+      name: t('strategyDev.exposureYAxis'),
+      nameTextStyle: { color: '#a6adc8', fontSize: 11 },
       axisLabel: { color: '#a6adc8', fontSize: 11 },
       splitLine: { lineStyle: { color: '#313244' } },
     },

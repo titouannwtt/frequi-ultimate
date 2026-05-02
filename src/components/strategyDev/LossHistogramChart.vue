@@ -101,7 +101,7 @@ const chartOptions = computed<EChartsOption>(() => {
   return {
     title: {
       text: props.title,
-      subtext: `Best loss: ${fmtNum(bestLoss)} \u2014 beats ${bestPct.toFixed(0)}% of epochs`,
+      subtext: t('strategyDev.lhSubtitle', { loss: fmtNum(bestLoss), pct: bestPct.toFixed(0) }),
       left: 'center',
       textStyle: { fontSize: 14, color: cat.text },
       subtextStyle: { fontSize: 11, color: assessInfo.color },
