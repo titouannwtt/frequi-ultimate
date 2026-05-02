@@ -151,16 +151,16 @@ function clearSearch() {
     <div class="sd-divider" />
 
     <!-- Run list -->
-    <div v-if="store.loading" class="sd-center-state">
+    <div v-if="store.loading && !store.filteredRuns.length && !store.loadingTypes.size" class="sd-center-state">
       <div class="sd-loading-spinner sd-loading-spinner--sm" />
       <p>{{ t('strategyDev.loading') }}</p>
     </div>
 
-    <div v-else-if="store.filteredRuns.length === 0" class="sd-center-state">
+    <div v-else-if="!store.loading && store.filteredRuns.length === 0 && !store.loadingTypes.size" class="sd-center-state">
       <p>{{ t('strategyDev.noRuns') }}</p>
     </div>
 
-    <RunTreeList v-else :runs="store.filteredRuns" />
+    <RunTreeList v-else :runs="store.filteredRuns" :loading-types="store.loadingTypes" />
   </div>
 </template>
 
