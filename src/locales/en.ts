@@ -1830,6 +1830,23 @@ export default {
     tabCommand: 'Command',
     tabAnalytics: 'Analytics',
     tabAnalyse: 'Analysis',
+    tabGraphiques: 'Charts',
+
+    // Plot Profit & Plot Dataframe
+    plotProfitTitle: 'Profit Plot',
+    plotDataframeTitle: 'Pair Analysis',
+    plotSelectPair: 'Select a pair',
+    plotCombinedProfit: 'Combined Profit',
+    plotProfitPerPair: 'Profit per Pair',
+    plotParallelism: 'Trade Parallelism',
+    plotUnderwaterAbs: 'Underwater (Absolute)',
+    plotUnderwaterPct: 'Underwater (Relative %)',
+    plotMaxDrawdown: 'Max Drawdown Zone',
+    plotNoOhlcv: 'OHLCV data not available on disk',
+    plotLoadingStrategy: 'Loading strategy indicators...',
+    plotLoadingProfit: 'Computing profit plot...',
+    plotLoadingDataframe: 'Loading pair data...',
+    plotNoData: 'No data available',
 
     // Advanced Analytics
     aaLoadingAnalytics: 'Computing performance analytics for best epoch...',

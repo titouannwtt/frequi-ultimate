@@ -23,7 +23,7 @@ onMounted(() => {
 function validTabsForType(type: RunType | undefined): string[] {
   const common = ['overview', 'params', 'config', 'source', 'command', 'compare'];
   if (type === RunType.hyperopt) return [...common, 'analyse'];
-  if (type === RunType.backtest) return [...common, 'analyse'];
+  if (type === RunType.backtest) return [...common, 'analyse', 'graphiques'];
   if (type === RunType.wfa) return [...common, 'wfa-charts'];
   return common;
 }
@@ -110,6 +110,10 @@ watch(
           <i-mdi-chart-areaspline class="w-4 h-4" />
           {{ t('strategyDev.tabAnalyse') }}
         </Tab>
+        <Tab v-if="isBacktest" value="graphiques" class="sd-tab">
+          <i-mdi-chart-bar class="w-4 h-4" />
+          {{ t('strategyDev.tabGraphiques') }}
+        </Tab>
         <Tab v-if="isWfa" value="wfa-charts" class="sd-tab">
           <i-mdi-chart-line class="w-4 h-4" />
           {{ t('strategyDev.tabCharts') }}
@@ -151,6 +155,13 @@ watch(
             <div key="analyse" class="sd-panel-enter">
               <HyperoptAnalysePanel v-if="isHyperopt" />
               <BacktestAnalysePanel v-else-if="isBacktest" />
+            </div>
+          </Transition>
+        </TabPanel>
+        <TabPanel v-if="isBacktest" value="graphiques">
+          <Transition name="sd-tab" mode="out-in">
+            <div key="graphiques" class="sd-panel-enter">
+              <BacktestChartsPanel />
             </div>
           </Transition>
         </TabPanel>
