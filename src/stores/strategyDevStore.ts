@@ -280,6 +280,10 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
       } else if (runType === RunType.wfa) {
         await api.patch(`/stratdev/wfa/${filename}`, body);
       }
+      const entry = allRunsFlat.value.find((r) => r.filename === filename);
+      if (entry && body.favorite !== undefined) {
+        entry.favorite = body.favorite;
+      }
     } catch (e) {
       console.error('Failed to update metadata', e);
     }
