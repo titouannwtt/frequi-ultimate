@@ -1912,6 +1912,9 @@ export default {
     compareLeft: 'Left epoch',
     compareRight: 'Right epoch',
     compareParams: 'Parameter Differences',
+    compareMetric: 'Metric',
+    compareParameter: 'Parameter',
+    compareRankN: 'Rank {n}',
 
     // New charts
     aaReturnDistribution: 'Return Distribution Fit',
@@ -2236,6 +2239,11 @@ export default {
     corrRedundant: 'Some parameters have |r| > 0.7 — consider merging or removing redundant params',
     corrIndependent: 'All correlations < 0.3 — each parameter contributes independently',
     corrModerate: 'Max |r| = {val} — moderate correlations, generally acceptable',
+    corrCoeff: 'Correlation',
+    corrStrength: 'Strength',
+    corrWeak: 'Weak',
+    corrMod: 'Moderate',
+    corrStrong: 'Strong',
     corrHowToReadTitle: 'How to read this chart',
     corrDesc: 'Shows how parameters relate to each other across top optimization results.',
     corrGray: 'Gray (near 0)',

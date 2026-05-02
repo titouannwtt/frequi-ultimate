@@ -1855,6 +1855,9 @@ export default {
     compareLeft: 'Epoch gauche',
     compareRight: 'Epoch droite',
     compareParams: 'Différences de paramètres',
+    compareMetric: 'Métrique',
+    compareParameter: 'Paramètre',
+    compareRankN: 'Rang {n}',
 
     // Nouveaux graphiques
     aaReturnDistribution: 'Distribution des Rendements',
@@ -2168,6 +2171,11 @@ export default {
     corrRedundant: 'Certains paramètres ont |r| > 0.7 — envisagez de fusionner ou supprimer les paramètres redondants',
     corrIndependent: 'Toutes les corrélations < 0.3 — chaque paramètre contribue indépendamment',
     corrModerate: 'Max |r| = {val} — corrélations modérées, généralement acceptable',
+    corrCoeff: 'Corrélation',
+    corrStrength: 'Force',
+    corrWeak: 'Faible',
+    corrMod: 'Modérée',
+    corrStrong: 'Forte',
     corrHowToReadTitle: 'Comment lire ce graphique',
     corrDesc: 'Montre comment les paramètres sont liés entre eux à travers les meilleurs résultats d\'optimisation.',
     corrGray: 'Gris (proche de 0)',
