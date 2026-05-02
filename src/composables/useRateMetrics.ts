@@ -21,7 +21,7 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
   const botStore = useBotStore();
 
   const selectedWindow = ref(opts.defaultWindow ?? 3600);
-  const selectedExchange = ref('');
+  const selectedExchange = ref('__all__');
   const localMetrics = ref<Record<string, RateMetricsResponse>>({});
   const refreshInterval = ref<number | null>(null);
 
@@ -85,7 +85,7 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
       counts[ex] = (counts[ex] ?? 0) + 1;
     }
     const total = Object.values(localMetrics.value).length;
-    const allOpts: ExchangeOption[] = [{ text: `All (${total})`, value: '' }];
+    const allOpts: ExchangeOption[] = [{ text: `All (${total})`, value: '__all__' }];
     for (const [name, count] of Object.entries(counts).sort((a, b) => b[1] - a[1])) {
       allOpts.push({ text: count > 1 ? `${name} (${count})` : name, value: name });
     }
@@ -93,7 +93,7 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
   });
 
   const filteredMetrics = computed((): Record<string, RateMetricsResponse> => {
-    if (!selectedExchange.value) return localMetrics.value;
+    if (selectedExchange.value === '__all__') return localMetrics.value;
     const result: Record<string, RateMetricsResponse> = {};
     for (const [id, m] of Object.entries(localMetrics.value)) {
       if (m.exchange === selectedExchange.value) {
