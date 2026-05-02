@@ -110,6 +110,14 @@ function clearSearch() {
         >
           {{ opt.label }}
         </button>
+        <button
+          class="sd-sort-btn sd-fav-filter-btn"
+          :class="{ 'sd-sort-btn--active': store.filterFavoritesOnly }"
+          title="Favoris uniquement"
+          @click="store.filterFavoritesOnly = !store.filterFavoritesOnly"
+        >
+          <i-mdi-star class="w-3 h-3" />
+        </button>
       </div>
       <div class="sd-group-toggle">
         <button
@@ -268,6 +276,16 @@ function clearSearch() {
   background: var(--sd-info-dim);
   color: var(--sd-info);
   font-weight: 600;
+}
+
+.sd-fav-filter-btn {
+  flex: 0;
+  padding: 3px 6px;
+}
+
+.sd-fav-filter-btn.sd-sort-btn--active {
+  background: rgba(249, 226, 175, 0.15);
+  color: var(--sd-yellow);
 }
 
 .sd-group-toggle {

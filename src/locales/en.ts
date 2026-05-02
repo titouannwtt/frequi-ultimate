@@ -1979,6 +1979,15 @@ export default {
     btConfigRoiReturn: 'Return',
     btConfigMarket: 'Market Context',
 
+    // Day names
+    dayMon: 'Mon',
+    dayTue: 'Tue',
+    dayWed: 'Wed',
+    dayThu: 'Thu',
+    dayFri: 'Fri',
+    daySat: 'Sat',
+    daySun: 'Sun',
+
     // Streaks
     skMaxWinStreak: 'Max Win Streak',
     skMaxLossStreak: 'Max Loss Streak',
@@ -2012,6 +2021,7 @@ export default {
     totalTrades: 'Total Trades',
     bestSharpe: 'Best Sharpe',
     bestLoss: 'Best Loss',
+    bestEpochResults: 'Best epoch results:',
     epochsCompleted: 'Epochs',
     verdictGrade: 'Grade',
     nWindows: 'Windows',
@@ -2449,6 +2459,29 @@ export default {
     wfaDegProfit: 'Deg. Profit',
     wfaDegSharpe: 'Deg. Sharpe',
     wfaDegCalmar: 'Deg. Calmar',
+
+    // WFA additional keys
+    wfaWindow: 'Window',
+    wfaTrainProfit: 'Train Profit',
+    wfaTestProfit: 'Test Profit',
+    wfaStd: 'Std Dev',
+    wfaStdRange: 'Range',
+    wfaStatus: 'Status',
+    wfaValues: 'Values',
+    wfaStable: 'Stable',
+    wfaMixed: 'Mixed',
+    wfaUnstable: 'Unstable',
+    wfaParamStabilityTitle: 'Parameter Stability Analysis',
+    wfaPerturbTitle: 'Perturbation Analysis',
+    wfaPerturbations: '{n} perturbations tested',
+    wfaHoldoutTitle: 'Holdout Validation',
+    wfaOosEquityTitle: 'Out-of-Sample Equity',
+    wfaRegimeDependent: 'Strategy is regime-dependent',
+    wfaRegimeRobust: 'Strategy is regime-robust',
+    wfaWorstRegime: 'Worst regime: {regime}',
+    wfaMcTitle: 'Monte Carlo Simulation',
+    wfaMcDdPercentiles: 'Drawdown Percentiles',
+    wfaMcReturnDdRatio: 'Return / Drawdown Ratio',
 
     // Run detail header
     rdhFavorite: 'Favorite',

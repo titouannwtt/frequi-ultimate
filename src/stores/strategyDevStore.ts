@@ -40,6 +40,7 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
   const filterType = ref<RunType | null>(null);
   const filterStrategy = ref<string | null>(null);
   const filterDateRange = ref<number | null>(null);
+  const filterFavoritesOnly = ref(false);
   const sortBy = ref<'date' | 'profit' | 'loss' | 'grade'>(
     (localStorage.getItem('sd-sortBy') as 'date' | 'profit' | 'loss' | 'grade') || 'date',
   );
@@ -71,6 +72,9 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     }
     if (filterStrategy.value) {
       runs = runs.filter((r) => r.strategy === filterStrategy.value);
+    }
+    if (filterFavoritesOnly.value) {
+      runs = runs.filter((r) => r.favorite);
     }
     if (filterText.value) {
       const q = filterText.value.toLowerCase();
@@ -236,12 +240,36 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
       } else if (runType === RunType.wfa) {
         await api.delete(`/stratdev/wfa/${filename}`);
       }
-      await fetchAllRuns();
+
+      // Immediately clear selection if we deleted the selected run
       if (selectedRun.value?.filename === filename) {
         selectedRun.value = null;
         hyperoptDetail.value = null;
         wfaDetail.value = null;
       }
+
+      // Remove from local list immediately for snappy UI
+      if (allRuns.value) {
+        if (runType === RunType.hyperopt) {
+          allRuns.value.hyperopts = allRuns.value.hyperopts.filter(
+            (r) => r.filename !== filename,
+          );
+        } else if (runType === RunType.wfa) {
+          allRuns.value.wfa_runs = allRuns.value.wfa_runs.filter(
+            (r) => r.filename !== filename,
+          );
+        } else if (runType === RunType.backtest) {
+          allRuns.value.backtests = allRuns.value.backtests.filter(
+            (r) => r.filename !== filename,
+          );
+        }
+      }
+
+      // Clean up cache
+      runCache.value.delete(filename);
+
+      // Re-fetch to stay in sync with backend
+      await fetchAllRuns();
     } catch (e) {
       console.error('Failed to delete run', e);
     }
@@ -416,6 +444,7 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     filterType,
     filterStrategy,
     filterDateRange,
+    filterFavoritesOnly,
     sortBy,
     groupBy,
     sidebarWidth,

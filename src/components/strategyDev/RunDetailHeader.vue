@@ -99,6 +99,46 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
     });
   }
 
+  if (r.best_sharpe != null) {
+    stats.push({
+      label: 'Sharpe',
+      value: r.best_sharpe.toFixed(3),
+      color: r.best_sharpe >= 0 ? 'var(--sd-success)' : 'var(--sd-danger)',
+    });
+  }
+
+  if (r.best_max_dd != null) {
+    stats.push({
+      label: 'Max DD',
+      value: `${(r.best_max_dd * 100).toFixed(1)}%`,
+      color: 'var(--sd-danger)',
+    });
+  }
+
+  if (r.best_profit_factor != null) {
+    stats.push({
+      label: 'PF',
+      value: r.best_profit_factor.toFixed(2),
+      color: r.best_profit_factor >= 1 ? 'var(--sd-success)' : 'var(--sd-warning)',
+    });
+  }
+
+  if (r.best_winrate != null) {
+    stats.push({
+      label: 'Win Rate',
+      value: `${(r.best_winrate * 100).toFixed(1)}%`,
+      color: r.best_winrate >= 0.5 ? 'var(--sd-success)' : 'var(--sd-warning)',
+    });
+  }
+
+  if (r.best_sqn != null) {
+    stats.push({
+      label: 'SQN',
+      value: r.best_sqn.toFixed(2),
+      color: r.best_sqn >= 2 ? 'var(--sd-success)' : r.best_sqn >= 1 ? 'var(--sd-warning)' : 'var(--sd-danger)',
+    });
+  }
+
   return stats;
 });
 
@@ -236,10 +276,13 @@ function filterByType() {
     <!-- Row 2: Quick stats + metadata -->
     <div class="rdh-stats-row">
       <!-- Quick stats -->
-      <div v-if="quickStats.length" class="rdh-quick-stats">
-        <div v-for="stat in quickStats" :key="stat.label" class="rdh-stat">
-          <span class="rdh-stat-label">{{ stat.label }}</span>
-          <span class="rdh-stat-value" :style="{ color: stat.color }">{{ stat.value }}</span>
+      <div v-if="quickStats.length" class="rdh-quick-stats-wrapper">
+        <span class="rdh-stats-label">{{ t('strategyDev.bestEpochResults') }}</span>
+        <div class="rdh-quick-stats">
+          <div v-for="stat in quickStats" :key="stat.label" class="rdh-stat">
+            <span class="rdh-stat-label">{{ stat.label }}</span>
+            <span class="rdh-stat-value" :style="{ color: stat.color }">{{ stat.value }}</span>
+          </div>
         </div>
       </div>
 
@@ -382,9 +425,24 @@ function filterByType() {
   flex-wrap: wrap;
 }
 
+.rdh-quick-stats-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rdh-stats-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sd-overlay);
+}
+
 .rdh-quick-stats {
   display: flex;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
 .rdh-stat {
@@ -504,7 +562,7 @@ function filterByType() {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--sd-text-2xs);
+  font-size: var(--sd-text-sm);
   color: var(--sd-warning);
   padding: 4px 10px;
   background: var(--sd-warning-dim);

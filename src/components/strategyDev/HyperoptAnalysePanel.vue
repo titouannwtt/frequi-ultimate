@@ -367,6 +367,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
 
           <ChartWrapper
             v-if="advanced?.drawdown_series"
@@ -379,6 +380,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <UnderwaterChart :series="advanced.drawdown_series as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <ChartWrapper
@@ -389,6 +391,7 @@ function fmtNum(v: unknown, decimals = 2): string {
             >
               <DrawdownDetailsCard :drawdowns="advanced.top_drawdowns as any[]" />
             </ChartWrapper>
+            <ChartEmptyState v-else />
 
             <ChartWrapper
               v-if="advanced?.cumulative_trades"
@@ -401,6 +404,7 @@ function fmtNum(v: unknown, decimals = 2): string {
                 <CumulativeTradesChart :trades="advanced.cumulative_trades as any[]" />
               </template>
             </ChartWrapper>
+            <ChartEmptyState v-else />
           </div>
 
           <ChartWrapper
@@ -414,6 +418,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <DrawdownCalendarChart :data="advanced.drawdown_calendar as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
         </div>
       </section>
 
@@ -436,6 +441,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <MonthlyReturnsHeatmap :data="advanced.monthly_returns as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
 
           <ChartWrapper
             v-if="advanced?.rolling_metrics"
@@ -448,6 +454,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <RollingMetricsChart :metrics="advanced.rolling_metrics as any" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
         </div>
       </section>
 
@@ -471,6 +478,7 @@ function fmtNum(v: unknown, decimals = 2): string {
                 <TradePnlChart :distribution="advanced.trade_pnl_distribution as any" />
               </template>
             </ChartWrapper>
+            <ChartEmptyState v-else />
 
             <ChartWrapper
               v-if="advanced?.duration_scatter"
@@ -483,6 +491,7 @@ function fmtNum(v: unknown, decimals = 2): string {
                 <DurationScatterChart :points="advanced.duration_scatter as any[]" />
               </template>
             </ChartWrapper>
+            <ChartEmptyState v-else />
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -497,6 +506,7 @@ function fmtNum(v: unknown, decimals = 2): string {
                 <ExitReasonChart :reasons="advanced.exit_reason_detail as any[]" />
               </template>
             </ChartWrapper>
+            <ChartEmptyState v-else />
 
             <ChartWrapper
               v-if="advanced?.streaks"
@@ -506,6 +516,7 @@ function fmtNum(v: unknown, decimals = 2): string {
             >
               <StreaksCard :streaks="advanced.streaks as any" />
             </ChartWrapper>
+            <ChartEmptyState v-else />
           </div>
 
           <ChartWrapper
@@ -516,6 +527,7 @@ function fmtNum(v: unknown, decimals = 2): string {
           >
             <ExpectancyCard :data="advanced.trade_expectancy as any" />
           </ChartWrapper>
+          <ChartEmptyState v-else />
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <ChartWrapper
@@ -529,6 +541,7 @@ function fmtNum(v: unknown, decimals = 2): string {
                 <ReturnDistributionChart :data="advanced.return_distribution_fit as any" />
               </template>
             </ChartWrapper>
+            <ChartEmptyState v-else />
 
             <ChartWrapper
               v-if="advanced?.mae_mfe"
@@ -541,6 +554,7 @@ function fmtNum(v: unknown, decimals = 2): string {
                 <MaeMfeScatter :points="advanced.mae_mfe as any[]" />
               </template>
             </ChartWrapper>
+            <ChartEmptyState v-else />
           </div>
         </div>
       </section>
@@ -563,6 +577,7 @@ function fmtNum(v: unknown, decimals = 2): string {
           >
             <LongShortCard :split="advanced.long_short_split as any" />
           </ChartWrapper>
+          <ChartEmptyState v-else />
 
           <ChartWrapper
             v-if="advanced?.exposure_timeline"
@@ -575,6 +590,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <ExposureChart :timeline="advanced.exposure_timeline as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
         </div>
       </section>
 
@@ -597,6 +613,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <RollingWinrateChart :data="advanced.rolling_winrate as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
 
           <ChartWrapper
             v-if="advanced?.rolling_profit_factor"
@@ -609,6 +626,7 @@ function fmtNum(v: unknown, decimals = 2): string {
               <RollingProfitFactorChart :data="advanced.rolling_profit_factor as any[]" />
             </template>
           </ChartWrapper>
+          <ChartEmptyState v-else />
         </div>
 
         <ChartWrapper
@@ -623,6 +641,7 @@ function fmtNum(v: unknown, decimals = 2): string {
             <WeekdayPatternChart :pattern="advanced.weekday_pattern as any" />
           </template>
         </ChartWrapper>
+        <ChartEmptyState v-else class="mt-4" />
       </section>
 
       <!-- ═══ SECTION 7: ROBUSTNESS ═══ -->

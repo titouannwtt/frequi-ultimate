@@ -39,6 +39,7 @@ const detail = computed(() => {
   if (!run.value) return null;
   if (run.value.run_type === RunType.hyperopt) return store.hyperoptDetail;
   if (run.value.run_type === RunType.wfa) return store.wfaDetail;
+  if (run.value.run_type === RunType.backtest) return store.backtestSnapshot as Record<string, unknown> | null;
   return null;
 });
 
@@ -48,6 +49,30 @@ const bestParams = computed(() => {
   return (
     (d.best_params as Record<string, unknown>) || (d.consensus as Record<string, unknown>) || null
   );
+});
+
+const backtestSummary = computed(() => {
+  if (run.value?.run_type !== RunType.backtest || !detail.value) return null;
+  return (detail.value as Record<string, unknown>).strategy_summary as Record<string, unknown> | null;
+});
+
+const backtestMetrics = computed(() => {
+  const s = backtestSummary.value;
+  if (!s) return [];
+  const items: { label: string; value: string }[] = [];
+  if (s.profit_total != null) items.push({ label: t('strategyDev.totalProfit'), value: `${((s.profit_total as number) * 100).toFixed(2)}%` });
+  if (s.total_trades != null) items.push({ label: t('strategyDev.totalTrades'), value: String(s.total_trades) });
+  if (s.sharpe != null) items.push({ label: 'Sharpe', value: (s.sharpe as number).toFixed(3) });
+  if (s.sortino != null) items.push({ label: 'Sortino', value: (s.sortino as number).toFixed(3) });
+  if (s.max_drawdown_account != null) items.push({ label: 'Max DD', value: `${((s.max_drawdown_account as number) * 100).toFixed(1)}%` });
+  if (s.profit_factor != null) items.push({ label: 'Profit Factor', value: (s.profit_factor as number).toFixed(2) });
+  if (s.winrate != null) items.push({ label: 'Win Rate', value: `${((s.winrate as number) * 100).toFixed(1)}%` });
+  if (s.calmar != null) items.push({ label: 'Calmar', value: (s.calmar as number).toFixed(2) });
+  if (s.trades_per_day != null) items.push({ label: 'Trades/Day', value: (s.trades_per_day as number).toFixed(1) });
+  if (s.backtest_days != null) items.push({ label: 'Days', value: String(s.backtest_days) });
+  if (s.timeframe) items.push({ label: 'Timeframe', value: String(s.timeframe) });
+  if (s.final_balance != null) items.push({ label: 'Final Balance', value: (s.final_balance as number).toFixed(2) });
+  return items;
 });
 </script>
 
@@ -99,6 +124,18 @@ const bestParams = computed(() => {
         <JsonViewer
           :data="(detail as Record<string, unknown>).best_epoch_metrics as Record<string, unknown>"
         />
+      </div>
+    </div>
+
+    <!-- Backtest detailed metrics -->
+    <div v-if="backtestMetrics.length" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div
+        v-for="m in backtestMetrics"
+        :key="m.label"
+        class="flex flex-col p-3 rounded-lg bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700"
+      >
+        <span class="text-sm text-surface-500 uppercase tracking-wide">{{ m.label }}</span>
+        <span class="text-lg font-semibold mt-1">{{ m.value }}</span>
       </div>
     </div>
   </div>

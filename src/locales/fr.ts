@@ -1918,6 +1918,15 @@ export default {
     btConfigRoiReturn: 'Rendement',
     btConfigMarket: 'Contexte Marché',
 
+    // Noms des jours
+    dayMon: 'Lun',
+    dayTue: 'Mar',
+    dayWed: 'Mer',
+    dayThu: 'Jeu',
+    dayFri: 'Ven',
+    daySat: 'Sam',
+    daySun: 'Dim',
+
     // Séries
     skMaxWinStreak: 'Série Max Gains',
     skMaxLossStreak: 'Série Max Pertes',
@@ -1948,6 +1957,7 @@ export default {
     totalTrades: 'Trades Totaux',
     bestSharpe: 'Meilleur Sharpe',
     bestLoss: 'Meilleur Loss',
+    bestEpochResults: 'Résultats de la meilleure epoch :',
     epochsCompleted: 'Époques',
     verdictGrade: 'Note',
     nWindows: 'Fenêtres',
@@ -2381,6 +2391,29 @@ export default {
     wfaDegProfit: 'Dég. Profit',
     wfaDegSharpe: 'Dég. Sharpe',
     wfaDegCalmar: 'Dég. Calmar',
+
+    // WFA clés supplémentaires
+    wfaWindow: 'Fenêtre',
+    wfaTrainProfit: 'Profit Entraînement',
+    wfaTestProfit: 'Profit Test',
+    wfaStd: 'Écart-type',
+    wfaStdRange: 'Plage',
+    wfaStatus: 'Statut',
+    wfaValues: 'Valeurs',
+    wfaStable: 'Stable',
+    wfaMixed: 'Mixte',
+    wfaUnstable: 'Instable',
+    wfaParamStabilityTitle: 'Analyse de Stabilité des Paramètres',
+    wfaPerturbTitle: 'Analyse de Perturbation',
+    wfaPerturbations: '{n} perturbations testées',
+    wfaHoldoutTitle: 'Validation Holdout',
+    wfaOosEquityTitle: 'Equity Hors-Échantillon',
+    wfaRegimeDependent: 'Stratégie dépendante du régime',
+    wfaRegimeRobust: 'Stratégie robuste aux régimes',
+    wfaWorstRegime: 'Pire régime : {regime}',
+    wfaMcTitle: 'Simulation Monte Carlo',
+    wfaMcDdPercentiles: 'Percentiles de Drawdown',
+    wfaMcReturnDdRatio: 'Ratio Rendement / Drawdown',
 
     // En-tête détail run
     rdhFavorite: 'Favori',

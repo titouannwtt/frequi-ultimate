@@ -21,7 +21,7 @@ onMounted(() => {
 });
 
 function validTabsForType(type: RunType | undefined): string[] {
-  const common = ['overview', 'params', 'config', 'source', 'command', 'compare', 'timeline'];
+  const common = ['overview', 'params', 'config', 'source', 'command', 'compare'];
   if (type === RunType.hyperopt) return [...common, 'analyse'];
   if (type === RunType.backtest) return [...common, 'analyse'];
   if (type === RunType.wfa) return [...common, 'wfa-charts'];
@@ -134,10 +134,6 @@ watch(
           <i-mdi-compare-horizontal class="w-4 h-4" />
           {{ t('strategyDev.tabCompare') }}
         </Tab>
-        <Tab value="timeline" class="sd-tab">
-          <i-mdi-timeline-clock-outline class="w-4 h-4" />
-          {{ t('strategyDev.tabTimeline') }}
-        </Tab>
       </TabList>
 
       <TabPanels>
@@ -197,13 +193,6 @@ watch(
           <Transition name="sd-tab" mode="out-in">
             <div key="compare" class="sd-panel-enter">
               <ComparePanel />
-            </div>
-          </Transition>
-        </TabPanel>
-        <TabPanel value="timeline">
-          <Transition name="sd-tab" mode="out-in">
-            <div key="timeline" class="sd-panel-enter">
-              <RunTimeline />
             </div>
           </Transition>
         </TabPanel>
