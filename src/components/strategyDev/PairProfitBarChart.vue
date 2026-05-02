@@ -124,11 +124,11 @@ const displayCount = computed(() => {
 <template>
   <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-3">
     <!-- Toggle & info -->
-    <div class="flex items-center justify-between mb-2 px-1">
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-2 px-1">
       <span class="text-sm text-surface-500">
         {{ t('strategyDev.pairProfitPairsWithTrades', { traded: tradedCount, total: totalCount }) }}
       </span>
-      <label class="flex items-center gap-1.5 text-sm text-surface-500 cursor-pointer select-none">
+      <label class="flex items-center gap-1.5 text-sm text-surface-500 cursor-pointer select-none whitespace-nowrap">
         <input v-model="showAll" type="checkbox" class="accent-green-400 w-3.5 h-3.5" />
         {{ t('strategyDev.pairProfitShowAll') }}
       </label>

@@ -973,6 +973,7 @@ function fmtNum(v: unknown, decimals = 2): string {
   border: 1px solid rgba(243, 139, 168, 0.25);
   color: #f38ba8;
   margin-bottom: 0.75rem;
+  text-align: left;
 }
 
 .alert-critical-icon {

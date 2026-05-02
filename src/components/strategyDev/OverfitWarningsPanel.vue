@@ -43,11 +43,11 @@ function severityIcon(s: string) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
+  <div class="flex flex-col gap-3 text-left">
     <div
       v-for="(w, i) in warnings"
       :key="i"
-      class="rounded-lg border p-4"
+      class="rounded-lg border p-4 text-left"
       :class="severityClasses(w.severity)"
     >
       <div class="flex items-start gap-2">
@@ -68,7 +68,7 @@ function severityIcon(s: string) {
             <li
               v-for="(action, j) in getActions(w)"
               :key="j"
-              class="text-sm opacity-70 flex items-start gap-1"
+              class="text-sm opacity-70 flex items-start gap-1 text-left"
             >
               <span class="mt-0.5">&rarr;</span>
               <span>{{ action }}</span>
