@@ -244,6 +244,7 @@ declare global {
   const useBroadcastChannel: typeof import('@vueuse/core').useBroadcastChannel
   const useBrowserLocation: typeof import('@vueuse/core').useBrowserLocation
   const useBtStore: typeof import('./stores/btStore').useBtStore
+  const useBtcBenchmark: typeof import('./composables/useBtcBenchmark').useBtcBenchmark
   const useCached: typeof import('@vueuse/core').useCached
   const useChartConfigStore: typeof import('./stores/chartConfig').useChartConfigStore
   const useClipboard: typeof import('@vueuse/core').useClipboard
@@ -437,6 +438,9 @@ declare global {
   // @ts-ignore
   export type { TradeColumnDef } from './composables/tradeColumns'
   import('./composables/tradeColumns')
+  // @ts-ignore
+  export type { BenchmarkPoint } from './composables/useBtcBenchmark'
+  import('./composables/useBtcBenchmark')
   // @ts-ignore
   export type { DaemonHealthState, HealthLevel } from './composables/useDaemonHealth'
   import('./composables/useDaemonHealth')
@@ -721,6 +725,7 @@ declare module 'vue' {
     readonly useBroadcastChannel: UnwrapRef<typeof import('@vueuse/core')['useBroadcastChannel']>
     readonly useBrowserLocation: UnwrapRef<typeof import('@vueuse/core')['useBrowserLocation']>
     readonly useBtStore: UnwrapRef<typeof import('./stores/btStore')['useBtStore']>
+    readonly useBtcBenchmark: UnwrapRef<typeof import('./composables/useBtcBenchmark')['useBtcBenchmark']>
     readonly useCached: UnwrapRef<typeof import('@vueuse/core')['useCached']>
     readonly useChartConfigStore: UnwrapRef<typeof import('./stores/chartConfig')['useChartConfigStore']>
     readonly useClipboard: UnwrapRef<typeof import('@vueuse/core')['useClipboard']>

@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import { useBtcBenchmark } from '@/composables/useBtcBenchmark';
 
 const { t } = useI18n();
 const store = useStrategyDevStore();
 const epochData = ref<Record<string, unknown> | null>(null);
 const epochLoading = ref(false);
+
+const btcEquityInput = computed(() => epochData.value?.equity_curve as { date: string; balance: number }[] | undefined);
+const btcStartBal = computed(() => (epochData.value?.starting_balance as number) ?? 1000);
+const { benchmarkEquity: btcBenchmark } = useBtcBenchmark(btcEquityInput, btcStartBal);
 
 const topEpochs = computed(() => {
   const a = store.hyperoptAnalysis;
@@ -152,11 +157,15 @@ function fmtNum(v: unknown, decimals = 2): string {
           <EquityCurveChart
             :equity="epochData.equity_curve as any[]"
             :starting-balance="(epochData.starting_balance as number) ?? 1000"
+            :benchmark="btcBenchmark"
+            benchmark-label="BTC"
           />
           <template #fullscreen>
             <EquityCurveChart
               :equity="epochData.equity_curve as any[]"
               :starting-balance="(epochData.starting_balance as number) ?? 1000"
+              :benchmark="btcBenchmark"
+              benchmark-label="BTC"
             />
           </template>
         </ChartWrapper>

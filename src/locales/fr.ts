@@ -1800,6 +1800,8 @@ export default {
     aaStreaks: 'Séries Gains/Pertes',
     aaPairProfit: 'Distribution des Profits par Paire',
     hintEquityCurve: 'Balance du portefeuille dans le temps. Montre l\'évolution de la valeur du compte durant la période de backtest. Les chutes abruptes indiquent des drawdowns.',
+    eqStrategy: 'Stratégie',
+    eqBtcBenchmark: 'Benchmark BTC',
     hintUnderwater: 'Drawdown continu sous le plus haut historique. Montre le pourcentage de baisse depuis le pic de balance. Plus le rouge est profond, plus la stratégie est en difficulté.',
     hintMonthlyReturns: 'Heatmap calendaire des rendements mensuels. Vert = positif, rouge = négatif. Aide à identifier les patterns saisonniers et la régularité entre les mois.',
     hintRollingMetrics: 'Sharpe, Sortino et volatilité calculés sur une fenêtre glissante de 30 jours. Révèle comment la performance ajustée au risque évolue dans le temps — un Sharpe stable est plus fiable qu\'un Sharpe erratique.',

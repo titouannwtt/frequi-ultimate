@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import { useBtcBenchmark } from '@/composables/useBtcBenchmark';
 
 const { t } = useI18n();
 const store = useStrategyDevStore();
 const analysisLoading = ref(false);
 const advancedLoading = ref(false);
+
+const btcEquityInput = computed(() => store.advancedAnalytics?.equity_curve as { date: string; balance: number }[] | undefined);
+const btcStartBal = computed(() => (store.advancedAnalytics?.starting_balance as number) ?? 1000);
+const { benchmarkEquity: btcBenchmark } = useBtcBenchmark(btcEquityInput, btcStartBal);
 
 onMounted(async () => {
   const filename = store.selectedRun?.filename;
@@ -359,11 +364,15 @@ function fmtNum(v: unknown, decimals = 2): string {
             <EquityCurveChart
               :equity="advanced.equity_curve as any[]"
               :starting-balance="(advanced.starting_balance as number) ?? 1000"
+              :benchmark="btcBenchmark"
+              benchmark-label="BTC"
             />
             <template #fullscreen>
               <EquityCurveChart
                 :equity="advanced.equity_curve as any[]"
                 :starting-balance="(advanced.starting_balance as number) ?? 1000"
+                :benchmark="btcBenchmark"
+                benchmark-label="BTC"
               />
             </template>
           </ChartWrapper>

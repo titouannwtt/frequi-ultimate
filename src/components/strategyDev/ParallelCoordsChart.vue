@@ -294,8 +294,16 @@ const bestLoss = computed(() => {
               }"
               :title="`${strip.name} bin ${j + 1}: ${bin.count} epochs`"
             >
-              <div v-if="j === strip.medianBinIndex" class="quality-median-marker" />
-              <div v-if="j === strip.bestBinIndex" class="quality-best-marker" />
+              <div
+                v-if="j === strip.medianBinIndex"
+                class="quality-median-marker"
+                :class="{ 'quality-marker-offset-left': j === strip.bestBinIndex }"
+              />
+              <div
+                v-if="j === strip.bestBinIndex"
+                class="quality-best-marker"
+                :class="{ 'quality-marker-offset-right': j === strip.medianBinIndex }"
+              />
             </div>
           </div>
           <span class="quality-range-label">{{ strip.maxLabel }}</span>
@@ -434,12 +442,12 @@ const bestLoss = computed(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #cdd6f4;
+  background: #a6e3a1;
   border: 2px solid #1e1e2e;
-  box-shadow: 0 0 4px rgba(205, 214, 244, 0.6);
+  box-shadow: 0 0 5px rgba(166, 227, 161, 0.7);
 }
 
 .quality-legend {
@@ -475,28 +483,36 @@ const bestLoss = computed(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #cba6f7;
+  background: #f9e2af;
   border: 2px solid #1e1e2e;
-  box-shadow: 0 0 4px rgba(203, 166, 247, 0.6);
+  box-shadow: 0 0 5px rgba(249, 226, 175, 0.7);
+}
+
+.quality-marker-offset-left {
+  left: 35%;
+}
+
+.quality-marker-offset-right {
+  left: 65%;
 }
 
 .quality-best-marker-legend {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #cdd6f4;
+  background: #a6e3a1;
   border: 2px solid #6c7086;
   flex-shrink: 0;
 }
 
 .quality-median-marker-legend {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #cba6f7;
+  background: #f9e2af;
   border: 2px solid #6c7086;
   flex-shrink: 0;
 }

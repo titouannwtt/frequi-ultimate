@@ -1857,6 +1857,8 @@ export default {
     aaStreaks: 'Win/Loss Streaks',
     aaPairProfit: 'Pair Profit Distribution',
     hintEquityCurve: 'Portfolio balance over time. Shows how the account value evolved throughout the backtest period. Steep drops indicate drawdowns.',
+    eqStrategy: 'Strategy',
+    eqBtcBenchmark: 'BTC Benchmark',
     hintUnderwater: 'Continuous drawdown below the high-water mark. Shows the percentage decline from peak balance. The deeper the red, the more the strategy is underwater.',
     hintMonthlyReturns: 'Calendar heatmap of monthly returns. Green = positive, red = negative. Helps identify seasonal patterns and consistency across months.',
     hintRollingMetrics: 'Sharpe, Sortino and volatility computed on a rolling 30-day window. Reveals how risk-adjusted performance changes over time — a stable Sharpe is more trustworthy than a spiky one.',

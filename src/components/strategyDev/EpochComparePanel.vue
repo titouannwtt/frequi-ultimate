@@ -1,11 +1,20 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import { useBtcBenchmark } from '@/composables/useBtcBenchmark';
 
 const { t } = useI18n();
 const store = useStrategyDevStore();
 const leftData = ref<Record<string, unknown> | null>(null);
 const rightData = ref<Record<string, unknown> | null>(null);
 const loading = ref(false);
+
+const leftEq = computed(() => leftData.value?.equity_curve as { date: string; balance: number }[] | undefined);
+const leftBal = computed(() => (leftData.value?.starting_balance as number) ?? 1000);
+const { benchmarkEquity: leftBtc } = useBtcBenchmark(leftEq, leftBal);
+
+const rightEq = computed(() => rightData.value?.equity_curve as { date: string; balance: number }[] | undefined);
+const rightBal = computed(() => (rightData.value?.starting_balance as number) ?? 1000);
+const { benchmarkEquity: rightBtc } = useBtcBenchmark(rightEq, rightBal);
 
 const topEpochs = computed(() => {
   const a = store.hyperoptAnalysis;
@@ -180,12 +189,16 @@ const paramDiff = computed(() => {
           <EquityCurveChart
             :equity="leftData.equity_curve as any[]"
             :starting-balance="(leftData.starting_balance as number) ?? 1000"
+            :benchmark="leftBtc"
+            benchmark-label="BTC"
           />
         </ChartWrapper>
         <ChartWrapper :title="`${t('strategyDev.aaEquityCurve')} — ${t('strategyDev.compareRankN', { n: rightRank })}`" chart-id="cmp-equity-r">
           <EquityCurveChart
             :equity="rightData.equity_curve as any[]"
             :starting-balance="(rightData.starting_balance as number) ?? 1000"
+            :benchmark="rightBtc"
+            benchmark-label="BTC"
           />
         </ChartWrapper>
       </div>
