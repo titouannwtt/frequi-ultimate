@@ -522,14 +522,20 @@ export const useBotStore = defineStore('ftbot-wrapper', {
   },
 });
 
+let _botsInitialized = false;
+
 export function initBots() {
   const botStore = useBotStore();
+  if (_botsInitialized && botStore.hasBots) {
+    return;
+  }
   Object.entries(loggedInBots.value).forEach(([, v]) => {
     botStore.addBot(v);
   });
   botStore.selectFirstBot();
   botStore.startRefresh();
   botStore.allRefreshFull();
+  _botsInitialized = true;
 }
 
 if (import.meta.hot) {

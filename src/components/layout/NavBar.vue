@@ -405,6 +405,8 @@ function exportPDF() {
 
 <style scoped>
 .navbar-glass {
+  position: relative;
+  z-index: 50;
   background: rgba(15, 15, 25, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
