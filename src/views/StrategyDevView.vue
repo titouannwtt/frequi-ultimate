@@ -11,14 +11,16 @@ const isBotOnline = computed(() => botStore.activeBot?.isBotOnline ?? false);
 onMounted(async () => {
   if (isBotOnline.value) {
     await botStore.activeBot.getState();
-    await Promise.all([stratDevStore.fetchAllRuns(), stratDevStore.fetchGlossary()]);
+    stratDevStore.fetchAllRuns();
+    stratDevStore.fetchGlossary();
   }
 });
 
 watch(isBotOnline, async (online) => {
   if (online && !stratDevStore.allRuns) {
     await botStore.activeBot.getState();
-    await Promise.all([stratDevStore.fetchAllRuns(), stratDevStore.fetchGlossary()]);
+    stratDevStore.fetchAllRuns();
+    stratDevStore.fetchGlossary();
   }
 });
 
@@ -127,8 +129,8 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
       <!-- Auth error -->
       <StrategyDevAuthError v-else-if="stratDevStore.errorCode !== null" />
 
-      <!-- Loading -->
-      <div v-else-if="stratDevStore.loading && !stratDevStore.allRuns" class="sd-empty-state">
+      <!-- Loading (only if no data at all yet) -->
+      <div v-else-if="!stratDevStore.allRuns" class="sd-empty-state">
         <div class="sd-loading-spinner" />
         <p class="sd-empty-desc">{{ t('strategyDev.loading') }}</p>
       </div>

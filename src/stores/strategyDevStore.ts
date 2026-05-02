@@ -19,6 +19,7 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
 
   const allRuns = ref<AllRunsResponse | null>(null);
   const loading = ref(false);
+  const loadingTypes = ref<Set<string>>(new Set());
   const errorCode = ref<number | null>(null);
   const errorMessage = ref<string | null>(null);
   const selectedRun = ref<RunListEntry | null>(null);
@@ -30,6 +31,9 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
   const backtestAnalysis = ref<Record<string, unknown> | null>(null);
   const diffResult = ref<SnapshotDiffResponse | null>(null);
   const glossary = ref<GlossaryResponse | null>(null);
+  const plotProfitData = ref<Record<string, unknown> | null>(null);
+  const plotDataframeData = ref<Record<string, unknown> | null>(null);
+  const backtestPairs = ref<string[]>([]);
 
   const runCache = reactive(new Map<string, CachedRunData>());
   const epochAnalyticsCache = reactive(new Map<string, Record<string, unknown>>());
@@ -128,18 +132,61 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     loading.value = true;
     errorCode.value = null;
     errorMessage.value = null;
-    try {
-      const api = getApi();
-      const { data } = await api.get<AllRunsResponse>('/stratdev/runs');
-      allRuns.value = data;
-    } catch (e: unknown) {
-      const axiosErr = e as { response?: { status?: number; data?: { detail?: string } } };
-      errorCode.value = axiosErr.response?.status ?? 0;
-      errorMessage.value = axiosErr.response?.data?.detail ?? 'Network error';
-      console.error('Failed to fetch stratdev runs', e);
-    } finally {
-      loading.value = false;
+
+    if (!allRuns.value) {
+      allRuns.value = { backtests: [], hyperopts: [], wfa_runs: [] };
     }
+
+    const types: { key: keyof AllRunsResponse; param: string }[] = [
+      { key: 'backtests', param: 'backtest' },
+      { key: 'wfa_runs', param: 'wfa' },
+      { key: 'hyperopts', param: 'hyperopt' },
+    ];
+
+    loadingTypes.value = new Set(types.map((t) => t.param));
+
+    const api = getApi();
+    let firstError: { status: number; detail: string } | null = null;
+
+    const promises = types.map(async ({ key, param }) => {
+      try {
+        const { data } = await api.get<AllRunsResponse>(`/stratdev/runs`, {
+          params: { run_type: param },
+          timeout: 120000,
+        });
+        allRuns.value = {
+          ...allRuns.value!,
+          [key]: data[key] || [],
+        };
+      } catch (e: unknown) {
+        const axiosErr = e as { response?: { status?: number; data?: { detail?: string } } };
+        if (!firstError) {
+          firstError = {
+            status: axiosErr.response?.status ?? 0,
+            detail: axiosErr.response?.data?.detail ?? 'Network error',
+          };
+        }
+        console.error(`Failed to fetch ${param} runs`, e);
+      } finally {
+        loadingTypes.value.delete(param);
+        loadingTypes.value = new Set(loadingTypes.value);
+      }
+    });
+
+    await Promise.all(promises);
+
+    if (
+      firstError &&
+      !allRuns.value?.backtests.length &&
+      !allRuns.value?.hyperopts.length &&
+      !allRuns.value?.wfa_runs.length
+    ) {
+      errorCode.value = firstError.status;
+      errorMessage.value = firstError.detail;
+      allRuns.value = null;
+    }
+
+    loading.value = false;
   }
 
   function _ensureCacheEntry(filename: string): CachedRunData {
@@ -368,6 +415,9 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
       wfaDetail.value = null;
       backtestSnapshot.value = null;
       backtestAnalysis.value = null;
+      plotProfitData.value = null;
+      plotDataframeData.value = null;
+      backtestPairs.value = [];
     }
   }
 
@@ -416,6 +466,45 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     }
   }
 
+  async function fetchPlotProfit(filename: string, strategy: string) {
+    try {
+      const api = getApi();
+      const { data } = await api.get<Record<string, unknown>>(
+        `/stratdev/backtest/${filename}/plot-profit`,
+        { params: { strategy } },
+      );
+      plotProfitData.value = data;
+    } catch (e) {
+      console.error('Failed to fetch plot-profit data', e);
+    }
+  }
+
+  async function fetchPlotDataframe(filename: string, strategy: string, pair: string) {
+    try {
+      const api = getApi();
+      const { data } = await api.get<Record<string, unknown>>(
+        `/stratdev/backtest/${filename}/plot-dataframe`,
+        { params: { strategy, pair } },
+      );
+      plotDataframeData.value = data;
+    } catch (e) {
+      console.error('Failed to fetch plot-dataframe data', e);
+    }
+  }
+
+  async function fetchBacktestPairs(filename: string, strategy: string) {
+    try {
+      const api = getApi();
+      const { data } = await api.get<{ pairs: string[] }>(
+        `/stratdev/backtest/${filename}/pairs`,
+        { params: { strategy } },
+      );
+      backtestPairs.value = data.pairs || [];
+    } catch (e) {
+      console.error('Failed to fetch backtest pairs', e);
+    }
+  }
+
   async function fetchBacktestAnalysis(filename: string, strategy: string) {
     try {
       const api = getApi();
@@ -432,6 +521,7 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
   return {
     allRuns,
     loading,
+    loadingTypes,
     errorCode,
     errorMessage,
     selectedRun,
@@ -483,5 +573,11 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     analyseMode,
     compareEpochRanks,
     fetchEpochAdvancedAnalytics,
+    plotProfitData,
+    plotDataframeData,
+    backtestPairs,
+    fetchPlotProfit,
+    fetchPlotDataframe,
+    fetchBacktestPairs,
   };
 });
