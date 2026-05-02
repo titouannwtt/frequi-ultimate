@@ -92,10 +92,6 @@ const gridLayoutRatePulse = computed((): GridItemData => {
   return findGridLayout(gridLayoutData.value, DashboardLayout.ratePulse);
 });
 
-const gridLayoutCacheHealth = computed((): GridItemData => {
-  return findGridLayout(gridLayoutData.value, DashboardLayout.cacheHealth);
-});
-
 const gridLayoutFleetOverview = computed((): GridItemData => {
   return findGridLayout(gridLayoutData.value, DashboardLayout.fleetOverview);
 });
@@ -423,7 +419,7 @@ onMounted(async () => {
         drag-allow-from=".drag-header"
       >
         <DraggableContainer :header="t('dashboard.rateMonitor')">
-          <RateMonitorWidget />
+          <CacheRateMonitor multi-bot-view />
         </DraggableContainer>
       </GridItem>
       <!-- Request Timeline (consolidated: RatePulse + RequestFlow) -->
@@ -440,21 +436,6 @@ onMounted(async () => {
       >
         <DraggableContainer :header="t('dashboard.requestTimeline')">
           <RequestTimeline multi-bot-view />
-        </DraggableContainer>
-      </GridItem>
-      <!-- Deprecated: cacheHealth (merged into RateMonitor) -->
-      <GridItem
-        v-if="gridLayoutCacheHealth.w > 0"
-        v-bind="gridItemProps"
-        :i="gridLayoutCacheHealth.i"
-        :x="gridLayoutCacheHealth.x"
-        :y="gridLayoutCacheHealth.y"
-        :w="gridLayoutCacheHealth.w"
-        :h="gridLayoutCacheHealth.h"
-        drag-allow-from=".drag-header"
-      >
-        <DraggableContainer :header="t('dashboard.cacheHealth')">
-          <CacheHealth multi-bot-view />
         </DraggableContainer>
       </GridItem>
       <!-- Infrastructure Health (consolidated: FleetOverview + CacheStatus) -->
