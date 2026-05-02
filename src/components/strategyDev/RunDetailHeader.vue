@@ -562,7 +562,8 @@ function filterByType() {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--sd-text-sm);
+  font-size: var(--sd-text-base);
+  font-weight: 500;
   color: var(--sd-warning);
   padding: 4px 10px;
   background: var(--sd-warning-dim);

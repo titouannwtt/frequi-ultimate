@@ -9,19 +9,20 @@ const run = computed(() => store.selectedRun);
 
 const metrics = computed(() => {
   if (!run.value) return [];
-  const items: { label: string; value: string | number }[] = [];
+  const items: { label: string; value: string | number; hint?: string }[] = [];
 
   if (run.value.total_profit_pct != null)
     items.push({
       label: t('strategyDev.totalProfit'),
       value: `${run.value.total_profit_pct.toFixed(2)}%`,
+      hint: t('strategyDev.hintTotalProfit'),
     });
   if (run.value.total_trades != null)
-    items.push({ label: t('strategyDev.totalTrades'), value: run.value.total_trades });
+    items.push({ label: t('strategyDev.totalTrades'), value: run.value.total_trades, hint: t('strategyDev.hintTotalTrades') });
   if (run.value.best_sharpe != null)
-    items.push({ label: t('strategyDev.bestSharpe'), value: run.value.best_sharpe.toFixed(3) });
+    items.push({ label: t('strategyDev.bestSharpe'), value: run.value.best_sharpe.toFixed(3), hint: t('strategyDev.hintBestSharpe') });
   if (run.value.best_loss != null)
-    items.push({ label: t('strategyDev.bestLoss'), value: run.value.best_loss.toFixed(5) });
+    items.push({ label: t('strategyDev.bestLoss'), value: run.value.best_loss.toFixed(5), hint: t('strategyDev.hintBestLoss') });
   if (run.value.epochs_completed != null && run.value.epochs_total != null)
     items.push({
       label: t('strategyDev.epochsCompleted'),
@@ -85,7 +86,10 @@ const backtestMetrics = computed(() => {
         :key="m.label"
         class="flex flex-col p-3 rounded-lg bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700"
       >
-        <span class="text-sm text-surface-500 uppercase tracking-wide">{{ m.label }}</span>
+        <span class="text-sm text-surface-500 uppercase tracking-wide flex items-center gap-1">
+          {{ m.label }}
+          <InfoTip v-if="m.hint" :text="m.hint" width="280px" />
+        </span>
         <span class="text-lg font-semibold mt-1">{{ m.value }}</span>
       </div>
     </div>
