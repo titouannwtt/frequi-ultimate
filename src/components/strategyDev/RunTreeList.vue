@@ -110,6 +110,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
         <i-mdi-chevron-right v-else class="sd-tree-chevron" />
         <span class="sd-tree-label">{{ group.label }}</span>
         <span v-if="group.loading" class="sd-tree-loading-badge">
+          <span class="sd-tree-count sd-tree-count--loading">{{ group.runs.length }}</span>
           <span class="sd-tree-spinner" />
         </span>
         <span v-else class="sd-tree-count">{{ group.runs.length }}</span>
@@ -219,9 +220,12 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
 .sd-tree-loading-badge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
   flex-shrink: 0;
-  min-width: 18px;
+}
+
+.sd-tree-count--loading {
+  opacity: 0.6;
 }
 
 .sd-tree-spinner {

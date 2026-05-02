@@ -31,6 +31,7 @@ export interface AllRunsResponse {
   backtests: RunListEntry[];
   hyperopts: RunListEntry[];
   wfa_runs: RunListEntry[];
+  hyperopts_total?: number;
 }
 
 export interface SnapshotDiffRequest {
@@ -49,6 +50,7 @@ export interface BacktestSnapshotResponse {
   strategy_source?: string;
   config?: Record<string, unknown>;
   strategy_params?: Record<string, unknown>;
+  strategy_summary?: Record<string, unknown>;
 }
 
 export interface MetadataUpdateRequest {

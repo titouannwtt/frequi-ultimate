@@ -128,6 +128,8 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     return [...set].sort();
   });
 
+  const HO_BATCH_SIZE = 15;
+
   async function fetchAllRuns() {
     loading.value = true;
     errorCode.value = null;
@@ -137,43 +139,73 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
       allRuns.value = { backtests: [], hyperopts: [], wfa_runs: [] };
     }
 
-    const types: { key: keyof AllRunsResponse; param: string }[] = [
-      { key: 'backtests', param: 'backtest' },
-      { key: 'wfa_runs', param: 'wfa' },
-      { key: 'hyperopts', param: 'hyperopt' },
-    ];
-
-    loadingTypes.value = new Set(types.map((t) => t.param));
+    loadingTypes.value = new Set(['backtest', 'wfa', 'hyperopt']);
 
     const api = getApi();
     let firstError: { status: number; detail: string } | null = null;
 
-    const promises = types.map(async ({ key, param }) => {
+    function captureError(e: unknown) {
+      const axiosErr = e as { response?: { status?: number; data?: { detail?: string } } };
+      if (!firstError) {
+        firstError = {
+          status: axiosErr.response?.status ?? 0,
+          detail: axiosErr.response?.data?.detail ?? 'Network error',
+        };
+      }
+    }
+
+    function finishType(param: string) {
+      loadingTypes.value.delete(param);
+      loadingTypes.value = new Set(loadingTypes.value);
+    }
+
+    const fastTypes = [
+      { key: 'backtests' as const, param: 'backtest' },
+      { key: 'wfa_runs' as const, param: 'wfa' },
+    ];
+
+    const fastPromises = fastTypes.map(async ({ key, param }) => {
       try {
-        const { data } = await api.get<AllRunsResponse>(`/stratdev/runs`, {
+        const { data } = await api.get<AllRunsResponse>('/stratdev/runs', {
           params: { run_type: param },
           timeout: 120000,
         });
-        allRuns.value = {
-          ...allRuns.value!,
-          [key]: data[key] || [],
-        };
-      } catch (e: unknown) {
-        const axiosErr = e as { response?: { status?: number; data?: { detail?: string } } };
-        if (!firstError) {
-          firstError = {
-            status: axiosErr.response?.status ?? 0,
-            detail: axiosErr.response?.data?.detail ?? 'Network error',
-          };
-        }
+        allRuns.value = { ...allRuns.value!, [key]: data[key] || [] };
+      } catch (e) {
+        captureError(e);
         console.error(`Failed to fetch ${param} runs`, e);
       } finally {
-        loadingTypes.value.delete(param);
-        loadingTypes.value = new Set(loadingTypes.value);
+        finishType(param);
       }
     });
 
-    await Promise.all(promises);
+    const hyperoptPromise = (async () => {
+      try {
+        let offset = 0;
+        let total = Infinity;
+        while (offset < total) {
+          const { data } = await api.get<AllRunsResponse>('/stratdev/runs', {
+            params: { run_type: 'hyperopt', ho_offset: offset, ho_limit: HO_BATCH_SIZE },
+            timeout: 120000,
+          });
+          const batch = data.hyperopts || [];
+          total = data.hyperopts_total ?? batch.length;
+          allRuns.value = {
+            ...allRuns.value!,
+            hyperopts: [...(allRuns.value?.hyperopts || []), ...batch],
+          };
+          offset += HO_BATCH_SIZE;
+          if (batch.length < HO_BATCH_SIZE) break;
+        }
+      } catch (e) {
+        captureError(e);
+        console.error('Failed to fetch hyperopt runs', e);
+      } finally {
+        finishType('hyperopt');
+      }
+    })();
+
+    await Promise.all([...fastPromises, hyperoptPromise]);
 
     if (
       firstError &&
