@@ -138,9 +138,9 @@ const paramDiff = computed(() => {
         <table class="diff-table">
           <thead>
             <tr>
-              <th>Metric</th>
-              <th>Rank {{ leftRank }}</th>
-              <th>Rank {{ rightRank }}</th>
+              <th>{{ t('strategyDev.compareMetric') }}</th>
+              <th>{{ t('strategyDev.compareRankN', { n: leftRank }) }}</th>
+              <th>{{ t('strategyDev.compareRankN', { n: rightRank }) }}</th>
             </tr>
           </thead>
           <tbody>
@@ -159,9 +159,9 @@ const paramDiff = computed(() => {
         <table class="diff-table">
           <thead>
             <tr>
-              <th>Parameter</th>
-              <th>Rank {{ leftRank }}</th>
-              <th>Rank {{ rightRank }}</th>
+              <th>{{ t('strategyDev.compareParameter') }}</th>
+              <th>{{ t('strategyDev.compareRankN', { n: leftRank }) }}</th>
+              <th>{{ t('strategyDev.compareRankN', { n: rightRank }) }}</th>
             </tr>
           </thead>
           <tbody>
@@ -176,13 +176,13 @@ const paramDiff = computed(() => {
 
       <!-- Side-by-side equity curves -->
       <div v-if="leftData?.equity_curve && rightData?.equity_curve" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <ChartWrapper :title="`Equity — Rank ${leftRank}`" chart-id="cmp-equity-l">
+        <ChartWrapper :title="`${t('strategyDev.aaEquityCurve')} — ${t('strategyDev.compareRankN', { n: leftRank })}`" chart-id="cmp-equity-l">
           <EquityCurveChart
             :equity="leftData.equity_curve as any[]"
             :starting-balance="(leftData.starting_balance as number) ?? 1000"
           />
         </ChartWrapper>
-        <ChartWrapper :title="`Equity — Rank ${rightRank}`" chart-id="cmp-equity-r">
+        <ChartWrapper :title="`${t('strategyDev.aaEquityCurve')} — ${t('strategyDev.compareRankN', { n: rightRank })}`" chart-id="cmp-equity-r">
           <EquityCurveChart
             :equity="rightData.equity_curve as any[]"
             :starting-balance="(rightData.starting_balance as number) ?? 1000"
@@ -192,10 +192,10 @@ const paramDiff = computed(() => {
 
       <!-- Side-by-side trade PnL -->
       <div v-if="leftData?.trade_pnl_distribution && rightData?.trade_pnl_distribution" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <ChartWrapper :title="`PnL Distribution — Rank ${leftRank}`" chart-id="cmp-pnl-l">
+        <ChartWrapper :title="`${t('strategyDev.aaTradePnl')} — ${t('strategyDev.compareRankN', { n: leftRank })}`" chart-id="cmp-pnl-l">
           <TradePnlChart :distribution="leftData.trade_pnl_distribution as any" />
         </ChartWrapper>
-        <ChartWrapper :title="`PnL Distribution — Rank ${rightRank}`" chart-id="cmp-pnl-r">
+        <ChartWrapper :title="`${t('strategyDev.aaTradePnl')} — ${t('strategyDev.compareRankN', { n: rightRank })}`" chart-id="cmp-pnl-r">
           <TradePnlChart :distribution="rightData.trade_pnl_distribution as any" />
         </ChartWrapper>
       </div>

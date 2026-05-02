@@ -95,17 +95,17 @@ function fmtNum(v: unknown, decimals = 2): string {
         </div>
         <div class="scorecard-metrics">
           <div class="sc-metric">
-            <span class="sc-label">Profit</span>
+            <span class="sc-label">{{ t('strategyDev.totalProfit') }}</span>
             <span class="sc-value" :class="Number(epochInfo.total_profit) >= 0 ? 'sc-pos' : 'sc-neg'">
               {{ fmtPct(epochInfo.total_profit) }}
             </span>
           </div>
           <div class="sc-metric">
-            <span class="sc-label">Trades</span>
+            <span class="sc-label">{{ t('strategyDev.totalTrades') }}</span>
             <span class="sc-value">{{ epochInfo.total_trades }}</span>
           </div>
           <div class="sc-metric">
-            <span class="sc-label">Drawdown</span>
+            <span class="sc-label">{{ t('strategyDev.btScorecardDD') }}</span>
             <span class="sc-value sc-neg">{{ fmtPct(epochInfo.max_drawdown) }}</span>
           </div>
           <div class="sc-metric">
@@ -117,7 +117,7 @@ function fmtNum(v: unknown, decimals = 2): string {
             <span class="sc-value">{{ fmtNum(epochInfo.sortino) }}</span>
           </div>
           <div class="sc-metric">
-            <span class="sc-label">Win Rate</span>
+            <span class="sc-label">{{ t('strategyDev.btScorecardWinrate') }}</span>
             <span class="sc-value">
               {{ typeof epochInfo.winrate === 'number' && epochInfo.winrate <= 1
                 ? (Number(epochInfo.winrate) * 100).toFixed(1)
