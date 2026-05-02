@@ -51,7 +51,7 @@ const chartOptions = computed<EChartsOption>(() => {
       borderColor: '#45475a',
       textStyle: { color: '#cdd6f4', fontSize: 12 },
     },
-    grid: { left: 60, right: 20, top: 20, bottom: 60 },
+    grid: { left: 60, right: 20, top: 20, bottom: 80 },
     dataZoom: [
       { type: 'inside', xAxisIndex: 0, filterMode: 'none' },
       {
@@ -72,7 +72,7 @@ const chartOptions = computed<EChartsOption>(() => {
       type: 'value',
       name: 'Duration (min)',
       nameLocation: 'center',
-      nameGap: 30,
+      nameGap: 45,
       axisLabel: { color: '#a6adc8' },
       splitLine: { lineStyle: { color: '#313244' } },
     },

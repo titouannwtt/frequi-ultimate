@@ -47,7 +47,7 @@ const chartOptions = computed<EChartsOption>(() => {
   const barData = counts.map((count, i) => ({
     value: count,
     itemStyle: {
-      color: midpoints[i] >= 0 ? 'var(--sd-success, #a6e3a1)' : 'var(--sd-danger, #f38ba8)',
+      color: midpoints[i] >= 0 ? '#a6e3a1' : '#f38ba8',
       opacity: 0.85,
     },
   }));
@@ -72,9 +72,9 @@ const chartOptions = computed<EChartsOption>(() => {
   return {
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'var(--sd-surface0, #313244)',
-      borderColor: 'var(--sd-border-subtle, #45475a)',
-      textStyle: { color: 'var(--sd-text, #cdd6f4)', fontSize: 12 },
+      backgroundColor: '#313244',
+      borderColor: '#45475a',
+      textStyle: { color: '#cdd6f4', fontSize: 12 },
       formatter: (params: unknown) => {
         const p = (params as { name: string; value: number }[])[0];
         if (!p) return '';
@@ -88,17 +88,17 @@ const chartOptions = computed<EChartsOption>(() => {
       axisLabel: {
         rotate: 40,
         fontSize: 9,
-        color: 'var(--sd-subtext, #a6adc8)',
+        color: '#a6adc8',
         interval: labels.length > 20 ? Math.floor(labels.length / 10) : 0,
       },
-      axisLine: { lineStyle: { color: 'var(--sd-overlay, #45475a)' } },
+      axisLine: { lineStyle: { color: '#45475a' } },
     },
     yAxis: {
       type: 'value',
       name: 'Count',
-      nameTextStyle: { fontSize: 11, color: 'var(--sd-subtext, #a6adc8)' },
-      axisLabel: { color: 'var(--sd-subtext, #a6adc8)' },
-      splitLine: { lineStyle: { color: 'var(--sd-surface0, #313244)' } },
+      nameTextStyle: { fontSize: 11, color: '#a6adc8' },
+      axisLabel: { color: '#a6adc8' },
+      splitLine: { lineStyle: { color: '#313244' } },
     },
     series: [
       {

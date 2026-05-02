@@ -53,7 +53,13 @@ const chartOptions = computed<EChartsOption>(() => {
         ].join('<br/>');
       },
     },
-    grid: { left: 140, right: 60, top: 20, bottom: 30 },
+    legend: {
+      data: ['Count', 'Avg Profit %'],
+      textStyle: { color: '#6c7086', fontSize: 10 },
+      top: 0,
+      right: 10,
+    },
+    grid: { left: 140, right: 60, top: 30, bottom: 30 },
     yAxis: {
       type: 'category',
       data: labels,
@@ -78,6 +84,7 @@ const chartOptions = computed<EChartsOption>(() => {
     ],
     series: [
       {
+        name: 'Count',
         type: 'bar',
         xAxisIndex: 0,
         data: counts.map((v, i) => ({
@@ -86,6 +93,7 @@ const chartOptions = computed<EChartsOption>(() => {
         })),
       },
       {
+        name: 'Avg Profit %',
         type: 'line',
         xAxisIndex: 1,
         data: avgProfits,

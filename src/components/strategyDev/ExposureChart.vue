@@ -24,8 +24,9 @@ const option = computed<EChartsOption>(() => {
       borderColor: '#45475a',
       textStyle: { color: '#cdd6f4', fontSize: 12 },
       formatter: (params: unknown) => {
-        const p = (params as { data: number[]; axisValue: string }[])[0];
-        return `<b>${p.axisValue}</b><br/>Open Positions: ${p.data[1]}`;
+        const p = (params as { data: [string, number]; axisValue: string }[])[0];
+        const val = Array.isArray(p.data) ? p.data[1] : p.data;
+        return `<b>${p.axisValue}</b><br/>Open Positions: ${val}`;
       },
     },
     grid: { left: 45, right: 20, top: 20, bottom: 60 },

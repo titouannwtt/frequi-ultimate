@@ -9,8 +9,11 @@ import {
   TooltipComponent,
   LegendComponent,
 } from 'echarts/components';
+import { useI18n } from 'vue-i18n';
 
 use([BarChart, LineChart, CanvasRenderer, GridComponent, TooltipComponent, LegendComponent]);
+
+const { t } = useI18n();
 
 interface DayPattern {
   day: string;
@@ -27,13 +30,23 @@ const props = defineProps<{
   };
 }>();
 
+const dayNames = computed(() => [
+  t('strategyDev.dayMon'),
+  t('strategyDev.dayTue'),
+  t('strategyDev.dayWed'),
+  t('strategyDev.dayThu'),
+  t('strategyDev.dayFri'),
+  t('strategyDev.daySat'),
+  t('strategyDev.daySun'),
+]);
+
 const sortedDays = computed(() =>
   [...props.pattern.days].sort((a, b) => a.day_index - b.day_index),
 );
 
 const chartOptions = computed<EChartsOption>(() => {
   const days = sortedDays.value;
-  const labels = days.map((d) => d.day);
+  const labels = days.map((d) => dayNames.value[d.day_index] ?? d.day);
   const profits = days.map((d) => d.total_profit);
   const winrates = days.map((d) => d.winrate * 100);
 
@@ -115,7 +128,7 @@ const chartOptions = computed<EChartsOption>(() => {
         class="text-center rounded px-1 py-1.5"
         style="background-color: #313244"
       >
-        <div class="text-xs font-medium" style="color: #cdd6f4">{{ d.day }}</div>
+        <div class="text-xs font-medium" style="color: #cdd6f4">{{ dayNames[d.day_index] ?? d.day }}</div>
         <div class="text-xs" style="color: #a6adc8">{{ d.trades }} trades</div>
         <div
           class="text-xs font-medium"

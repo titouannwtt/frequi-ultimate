@@ -64,8 +64,8 @@ onUnmounted(() => {
 
 <template>
   <div ref="wrapperRef" class="cw">
-    <!-- Toolbar (visible on hover) -->
-    <div class="cw-toolbar">
+    <!-- Header bar (always visible) -->
+    <div class="cw-header">
       <span v-if="title" class="cw-title">{{ title }}</span>
       <div class="cw-actions">
         <InfoTip v-if="hint" :text="hint" position="bottom" width="300px" />
@@ -123,28 +123,18 @@ onUnmounted(() => {
   position: relative;
 }
 
-.cw-toolbar {
-  position: absolute;
-  top: 4px;
-  right: 4px;
+.cw-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  z-index: 10;
-  opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none;
-}
-
-.cw:hover .cw-toolbar {
-  opacity: 1;
-  pointer-events: auto;
+  justify-content: space-between;
+  padding: 6px 8px 4px;
+  min-height: 28px;
 }
 
 .cw-title {
-  font-size: 10px;
-  color: var(--sd-overlay);
-  font-weight: 500;
+  font-size: 12px;
+  color: #a6adc8;
+  font-weight: 600;
 }
 
 .cw-actions {
