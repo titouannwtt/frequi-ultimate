@@ -2041,6 +2041,10 @@ export default {
     skBarTooltip: '{count} occurrence(s) of {length} consecutive {type}',
     skBarWinType: 'wins',
     skBarLossType: 'losses',
+    skWinStreakDistDesc: 'How many times each winning streak length occurred. A streak of 3 means 3 consecutive winning trades.',
+    skLossStreakDistDesc: 'How many times each losing streak length occurred. Long streaks indicate potential regime sensitivity.',
+    skAxisStreakLength: 'Streak length',
+    skAxisOccurrences: 'Occurrences',
 
     epochSectionEquity: 'Equity & Drawdowns',
     epochSectionPerformance: 'Performance',

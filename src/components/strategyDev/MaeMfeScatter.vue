@@ -122,7 +122,7 @@ const chartOptions = computed<EChartsOption>(() => {
 </script>
 
 <template>
-  <div>
+  <div class="sd-chart-card">
     <div class="mae-mfe-toggle">
       <button
         class="mae-mfe-btn"

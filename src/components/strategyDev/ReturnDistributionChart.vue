@@ -83,7 +83,7 @@ const chartOptions = computed<EChartsOption>(() => {
 </script>
 
 <template>
-  <div>
+  <div class="sd-chart-card">
     <div class="dist-stats">
       <span>μ={{ data.mean.toFixed(3) }}%</span>
       <span>σ={{ data.std.toFixed(3) }}%</span>

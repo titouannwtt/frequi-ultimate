@@ -95,5 +95,7 @@ const option = computed<EChartsOption>(() => {
 </script>
 
 <template>
-  <ECharts :option="option" autoresize style="height: 250px" />
+  <div class="sd-chart-card">
+    <ECharts :option="option" autoresize style="height: 250px" />
+  </div>
 </template>

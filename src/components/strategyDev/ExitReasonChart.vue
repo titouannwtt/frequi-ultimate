@@ -59,10 +59,10 @@ const chartOptions = computed<EChartsOption>(() => {
     legend: {
       data: [t('strategyDev.erCount'), t('strategyDev.erAvgProfit')],
       textStyle: { color: '#6c7086', fontSize: 10 },
-      top: 0,
+      top: 4,
       right: 10,
     },
-    grid: { left: 140, right: 60, top: 30, bottom: 30 },
+    grid: { left: 140, right: 60, top: 40, bottom: 30 },
     yAxis: {
       type: 'category',
       data: labels,
@@ -111,5 +111,7 @@ const chartOptions = computed<EChartsOption>(() => {
 </script>
 
 <template>
-  <ECharts :option="chartOptions" autoresize :style="{ height: chartHeight }" />
+  <div class="sd-chart-card" style="overflow: hidden">
+    <ECharts :option="chartOptions" autoresize :style="{ height: chartHeight }" />
+  </div>
 </template>

@@ -118,7 +118,7 @@ const chartOptions = computed<EChartsOption>(() => {
 </script>
 
 <template>
-  <div>
+  <div class="sd-chart-card">
     <ECharts :option="chartOptions" autoresize style="height: 280px" />
 
     <div class="grid grid-cols-7 gap-1 mt-2 px-1">

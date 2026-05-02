@@ -145,6 +145,10 @@ const items = computed<MetricItem[]>(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 10px;
+  background: var(--sd-surface0, #313244);
+  border: 1px solid var(--sd-border-subtle, rgba(69, 71, 90, 0.3));
+  border-radius: var(--sd-radius-md, 0.5rem);
+  padding: 12px;
 }
 
 .ex-card {

@@ -97,42 +97,52 @@ function maxCount(hist: { length: number; count: number }[]): number {
     <div v-if="winStreakHist.length || lossStreakHist.length" class="sk-distributions">
       <div v-if="winStreakHist.length" class="sk-dist-section">
         <h5 class="sk-dist-title">{{ t('strategyDev.skWinStreakDist') }}</h5>
-        <div class="sk-bars">
-          <div
-            v-for="h in winStreakHist"
-            :key="'w' + h.length"
-            class="sk-bar-row"
-            :title="t('strategyDev.skBarTooltip', { count: h.count, length: h.length, type: t('strategyDev.skBarWinType') })"
-          >
-            <span class="sk-bar-label">{{ h.length }}</span>
-            <div class="sk-bar-track">
-              <div
-                class="sk-bar-fill sk-bar-win"
-                :style="{ width: `${(h.count / maxCount(winStreakHist)) * 100}%` }"
-              />
+        <p class="sk-dist-desc">{{ t('strategyDev.skWinStreakDistDesc') }}</p>
+        <div class="sk-dist-axes">
+          <span class="sk-axis-y">{{ t('strategyDev.skAxisStreakLength') }}</span>
+          <div class="sk-bars">
+            <div
+              v-for="h in winStreakHist"
+              :key="'w' + h.length"
+              class="sk-bar-row"
+              v-tooltip.top="t('strategyDev.skBarTooltip', { count: h.count, length: h.length, type: t('strategyDev.skBarWinType') })"
+            >
+              <span class="sk-bar-label">{{ h.length }}</span>
+              <div class="sk-bar-track">
+                <div
+                  class="sk-bar-fill sk-bar-win"
+                  :style="{ width: `${(h.count / maxCount(winStreakHist)) * 100}%` }"
+                />
+              </div>
+              <span class="sk-bar-count">{{ h.count }}x</span>
             </div>
-            <span class="sk-bar-count">{{ h.count }}</span>
           </div>
+          <span class="sk-axis-x">{{ t('strategyDev.skAxisOccurrences') }}</span>
         </div>
       </div>
       <div v-if="lossStreakHist.length" class="sk-dist-section">
         <h5 class="sk-dist-title">{{ t('strategyDev.skLossStreakDist') }}</h5>
-        <div class="sk-bars">
-          <div
-            v-for="h in lossStreakHist"
-            :key="'l' + h.length"
-            class="sk-bar-row"
-            :title="t('strategyDev.skBarTooltip', { count: h.count, length: h.length, type: t('strategyDev.skBarLossType') })"
-          >
-            <span class="sk-bar-label">{{ h.length }}</span>
-            <div class="sk-bar-track">
-              <div
-                class="sk-bar-fill sk-bar-loss"
-                :style="{ width: `${(h.count / maxCount(lossStreakHist)) * 100}%` }"
-              />
+        <p class="sk-dist-desc">{{ t('strategyDev.skLossStreakDistDesc') }}</p>
+        <div class="sk-dist-axes">
+          <span class="sk-axis-y">{{ t('strategyDev.skAxisStreakLength') }}</span>
+          <div class="sk-bars">
+            <div
+              v-for="h in lossStreakHist"
+              :key="'l' + h.length"
+              class="sk-bar-row"
+              v-tooltip.top="t('strategyDev.skBarTooltip', { count: h.count, length: h.length, type: t('strategyDev.skBarLossType') })"
+            >
+              <span class="sk-bar-label">{{ h.length }}</span>
+              <div class="sk-bar-track">
+                <div
+                  class="sk-bar-fill sk-bar-loss"
+                  :style="{ width: `${(h.count / maxCount(lossStreakHist)) * 100}%` }"
+                />
+              </div>
+              <span class="sk-bar-count">{{ h.count }}x</span>
             </div>
-            <span class="sk-bar-count">{{ h.count }}</span>
           </div>
+          <span class="sk-axis-x">{{ t('strategyDev.skAxisOccurrences') }}</span>
         </div>
       </div>
     </div>
@@ -144,6 +154,10 @@ function maxCount(hist: { length: number; count: number }[]): number {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: var(--sd-surface0, #313244);
+  border: 1px solid var(--sd-border-subtle, rgba(69, 71, 90, 0.3));
+  border-radius: var(--sd-radius-md, 0.5rem);
+  padding: 12px;
 }
 
 .sk-summary {
@@ -190,7 +204,35 @@ function maxCount(hist: { length: number; count: number }[]): number {
   font-size: var(--sd-text-xs);
   font-weight: 600;
   color: var(--sd-subtext);
+  margin: 0 0 2px;
+}
+
+.sk-dist-desc {
+  font-size: 10px;
+  color: var(--sd-overlay);
   margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+.sk-dist-axes {
+  position: relative;
+}
+
+.sk-axis-y {
+  font-size: 9px;
+  color: var(--sd-overlay);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sk-axis-x {
+  display: block;
+  font-size: 9px;
+  color: var(--sd-overlay);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: right;
+  margin-top: 4px;
 }
 
 .sk-bars {

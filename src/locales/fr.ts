@@ -1980,6 +1980,10 @@ export default {
     skBarTooltip: '{count} occurrence(s) de {length} {type} consécutifs',
     skBarWinType: 'gains',
     skBarLossType: 'pertes',
+    skWinStreakDistDesc: 'Nombre de fois où chaque longueur de série gagnante est apparue. Une série de 3 = 3 trades gagnants consécutifs.',
+    skLossStreakDistDesc: 'Nombre de fois où chaque longueur de série perdante est apparue. Les longues séries indiquent une sensibilité au régime de marché.',
+    skAxisStreakLength: 'Longueur de série',
+    skAxisOccurrences: 'Occurrences',
 
     epochSectionEquity: 'Equity & Drawdowns',
     epochSectionPerformance: 'Performance',

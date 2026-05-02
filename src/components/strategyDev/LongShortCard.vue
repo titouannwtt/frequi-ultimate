@@ -107,6 +107,10 @@ function winrateColor(val: number): string {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: var(--sd-surface0, #313244);
+  border: 1px solid var(--sd-border-subtle, rgba(69, 71, 90, 0.3));
+  border-radius: var(--sd-radius-md, 0.5rem);
+  padding: 12px;
 }
 
 .ls-ratio-bar {
