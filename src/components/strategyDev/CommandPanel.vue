@@ -77,6 +77,15 @@ const segments = computed<CmdSegment[]>(() => {
   if (spaces?.length) {
     segs.push({ flag: '--spaces', value: spaces.join(' '), description: flagDescriptions['--spaces'], copyText: `--spaces ${spaces.join(' ')}` });
   }
+  if (d.max_open_trades != null) {
+    segs.push({ flag: '--max-open-trades', value: String(d.max_open_trades), description: flagDescriptions['--max-open-trades'], copyText: `--max-open-trades ${d.max_open_trades}` });
+  }
+  if (d.dry_run_wallet != null) {
+    segs.push({ flag: '--dry-run-wallet', value: String(d.dry_run_wallet), description: flagDescriptions['--dry-run-wallet'], copyText: `--dry-run-wallet ${d.dry_run_wallet}` });
+  }
+  if (d.stake_amount != null) {
+    segs.push({ flag: '--stake-amount', value: String(d.stake_amount), description: flagDescriptions['--stake-amount'], copyText: `--stake-amount ${d.stake_amount}` });
+  }
 
   return segs;
 });
