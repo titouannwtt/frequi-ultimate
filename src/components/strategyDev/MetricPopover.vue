@@ -20,6 +20,19 @@ const props = withDefaults(
 const store = useStrategyDevStore();
 const showExpanded = ref(false);
 const visible = ref(false);
+let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+function show() {
+  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+  visible.value = true;
+}
+
+function hide() {
+  hideTimer = setTimeout(() => {
+    visible.value = false;
+    showExpanded.value = false;
+  }, 150);
+}
 
 const entry = computed<GlossaryEntry | null>(() => {
   if (props.glossary) return props.glossary;
@@ -44,8 +57,8 @@ const verdictStyle = computed(() => verdictColors[props.verdict]);
 <template>
   <span
     class="metric-popover-trigger"
-    @mouseenter="visible = true"
-    @mouseleave="visible = false; showExpanded = false"
+    @mouseenter="show"
+    @mouseleave="hide"
   >
     <slot />
 
@@ -54,6 +67,8 @@ const verdictStyle = computed(() => verdictColors[props.verdict]);
         v-if="visible && (entry || verdictText)"
         class="metric-popover"
         :class="`metric-popover--${position}`"
+        @mouseenter="show"
+        @mouseleave="hide"
       >
         <!-- Header -->
         <div class="pop-header">
