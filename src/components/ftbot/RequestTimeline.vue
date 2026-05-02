@@ -188,7 +188,6 @@ const sankeyOption = computed((): EChartsOption => {
   const directLabel = t('rateMonitor.direct');
   const cachedLabel = t('rateMonitor.cached');
   const errorsLabel = t('rateMonitor.errors');
-  const plLabel = 'ftpairlist';
   const exchangeColors = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#7c3aed'];
 
   interface SNode { name: string; itemStyle?: { color: string } }
@@ -197,29 +196,30 @@ const sankeyOption = computed((): EChartsOption => {
   const nodes: SNode[] = [];
   const links: SLink[] = [];
   const nameSet = new Set<string>();
-  let hasPL = false;
   let totDirect = 0, totCached = 0, totErrors = 0;
 
   // Group methods per exchange across all bots
-  // pl: methods come from the global pairlist daemon — deduplicate them
+  // pl: methods come from the global pairlist daemon — deduplicate per exchange
   const perExchange: Record<string, Record<string, MethodStats>> = {};
-  const plMethods: Record<string, MethodStats> = {};
+  const seenPL = new Set<string>();
   for (const m of allMetrics) {
     const ex = m.exchange ?? 'unknown';
     if (!perExchange[ex]) perExchange[ex] = {};
     for (const [method, stats] of Object.entries(m.summary?.by_method ?? {})) {
-      if (method.startsWith('pl:')) {
-        if (!plMethods[method]) plMethods[method] = { ...stats };
-        continue;
+      const isPL = method.startsWith('pl:');
+      const key = isPL ? method.slice(3) : method;
+      if (isPL) {
+        if (seenPL.has(method)) continue;
+        seenPL.add(method);
       }
-      const existing = perExchange[ex][method];
+      const existing = perExchange[ex][key];
       if (existing) {
         existing.count += stats.count;
         existing.cached += stats.cached;
         existing.direct += stats.direct;
         existing.errors += stats.errors;
       } else {
-        perExchange[ex][method] = { ...stats };
+        perExchange[ex][key] = { ...stats };
       }
     }
   }
@@ -243,22 +243,7 @@ const sankeyOption = computed((): EChartsOption => {
     }
   }
 
-  // Add pairlist daemon methods (global, not per-bot)
-  for (const [method, stats] of Object.entries(plMethods)) {
-    const display = method.slice(3);
-    hasPL = true;
-    if (!nameSet.has(display)) {
-      nameSet.add(display);
-      nodes.push({ name: display, itemStyle: { color: '#3b82f6' } });
-    }
-    const total = stats.direct + stats.cached + stats.errors;
-    if (total > 0) links.push({ source: plLabel, target: display, value: total, lineStyle: { color: '#3b82f6', opacity: 0.15 } });
-    if (stats.direct > 0) { links.push({ source: display, target: directLabel, value: stats.direct, lineStyle: { color: '#3b82f6', opacity: 0.25 } }); totDirect += stats.direct; }
-    if (stats.cached > 0) { links.push({ source: display, target: cachedLabel, value: stats.cached, lineStyle: { color: '#22c55e', opacity: 0.25 } }); totCached += stats.cached; }
-    if (stats.errors > 0) { links.push({ source: display, target: errorsLabel, value: stats.errors, lineStyle: { color: '#ef4444', opacity: 0.25 } }); totErrors += stats.errors; }
-  }
-
-  if (hasPL) nodes.push({ name: plLabel, itemStyle: { color: '#3b82f6' } });
+  // (pl: methods are now merged into their exchange above)
   if (totDirect > 0) nodes.push({ name: directLabel, itemStyle: { color: '#3b82f6' } });
   if (totCached > 0) nodes.push({ name: cachedLabel, itemStyle: { color: '#22c55e' } });
   if (totErrors > 0) nodes.push({ name: errorsLabel, itemStyle: { color: '#ef4444' } });
