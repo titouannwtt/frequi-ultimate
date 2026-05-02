@@ -28,6 +28,7 @@ export enum DashboardLayout {
   cacheHealth = 16,
   fleetOverview = 17,
   walletHistoryChart = 18,
+  volumeComparator = 19,
 }
 
 // Define default layouts
@@ -68,6 +69,7 @@ const DEFAULT_DASHBOARD_LAYOUT: GridItemData[] = [
   { i: DashboardLayout.cacheHealth, x: 0, y: 100, w: 0, h: 0 } /* deprecated — merged into rateMonitor */,
   { i: DashboardLayout.fleetOverview, x: 0, y: 35, w: 12, h: 7 } /* Infrastructure Health (consolidated) */,
   { i: DashboardLayout.walletHistoryChart, x: 0, y: 42, w: 4, h: 6 },
+  { i: DashboardLayout.volumeComparator, x: 4, y: 42, w: 8, h: 7 },
 ];
 
 const DEFAULT_DASHBOARD_LAYOUT_SM: GridItemData[] = [
@@ -90,6 +92,7 @@ const DEFAULT_DASHBOARD_LAYOUT_SM: GridItemData[] = [
   { i: DashboardLayout.cacheHealth, x: 0, y: 200, w: 0, h: 0 },
   { i: DashboardLayout.fleetOverview, x: 0, y: 90, w: 12, h: 7 },
   { i: DashboardLayout.walletHistoryChart, x: 0, y: 97, w: 12, h: 6 },
+  { i: DashboardLayout.volumeComparator, x: 0, y: 103, w: 12, h: 7 },
 ];
 
 const STORE_LAYOUTS = 'ftLayoutSettings';

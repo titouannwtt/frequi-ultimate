@@ -96,6 +96,10 @@ const gridLayoutFleetOverview = computed((): GridItemData => {
   return findGridLayout(gridLayoutData.value, DashboardLayout.fleetOverview);
 });
 
+const gridLayoutVolumeComparator = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.volumeComparator);
+});
+
 const responsiveGridLayouts = computed(() => {
   return {
     sm: layoutStore.getDashboardLayoutSm,
@@ -452,6 +456,22 @@ onMounted(async () => {
       >
         <DraggableContainer :header="t('dashboard.infraHealth')">
           <InfrastructureHealth />
+        </DraggableContainer>
+      </GridItem>
+      <!-- Volume Comparator -->
+      <GridItem
+        v-bind="gridItemProps"
+        :i="gridLayoutVolumeComparator.i"
+        :x="gridLayoutVolumeComparator.x"
+        :y="gridLayoutVolumeComparator.y"
+        :w="gridLayoutVolumeComparator.w"
+        :h="gridLayoutVolumeComparator.h"
+        :min-w="4"
+        :min-h="5"
+        drag-allow-from=".drag-header"
+      >
+        <DraggableContainer :header="t('dashboard.volumeComparator')">
+          <VolumeComparatorChart multi-bot-view />
         </DraggableContainer>
       </GridItem>
     </template>

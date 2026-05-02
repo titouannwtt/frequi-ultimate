@@ -43,8 +43,22 @@ export default {
     rateMonitor: 'Moniteur de taux',
     requestTimeline: 'Timeline des requêtes',
     infraHealth: 'Infrastructure',
+    volumeComparator: 'Comparateur de Volume',
     opened: 'ouvert',
     closed: 'fermé',
+  },
+  volumeComparator: {
+    exchangeVolume: 'Volume Exchange',
+    botVolume: 'Volume Bot',
+    tradeCount: 'Trades',
+    profit: 'Profit',
+    anomalies: 'Anomalies',
+    volumeRatio: 'Ratio Vol',
+    coverage: 'couverture pairs',
+    correlation: 'Corrélation',
+    noData: 'Données OHLCV non disponibles. Lancez freqtrade download-data pour les pairs whitelist.',
+    loading: 'Chargement des données de volume...',
+    profitPerVol: 'Profit/Vol',
   },
 
   // Profit cumulé amélioré

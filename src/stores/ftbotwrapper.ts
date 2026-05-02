@@ -14,6 +14,7 @@ import type {
   ProfitStats,
   RateMetricsResponse,
   Trade,
+  VolumeHistoryResponse,
   WalletHistoryPerBot,
 } from '@/types';
 import { TimeSummaryOptions } from '@/types';
@@ -453,6 +454,15 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       this.allBotStores.forEach((bot) => {
         if (bot.isBotOnline) {
           updates.push(bot.getRateMetrics());
+        }
+      });
+      await Promise.all(updates);
+    },
+    async allGetVolumeHistory(days = 90, bucket = '1d') {
+      const updates: Promise<VolumeHistoryResponse>[] = [];
+      this.allBotStores.forEach((bot) => {
+        if (bot.isBotOnline) {
+          updates.push(bot.getVolumeHistory(days, bucket));
         }
       });
       await Promise.all(updates);

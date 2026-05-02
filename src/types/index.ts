@@ -22,3 +22,4 @@ export * from './trades';
 export * from './tradeStats';
 export * from './strategyDev';
 export * from './types';
+export * from './volume';

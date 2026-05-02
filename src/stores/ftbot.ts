@@ -54,6 +54,7 @@ import type {
   FleetEventsResponse,
   FleetStatusResponse,
   RateMetricsResponse,
+  VolumeHistoryResponse,
   TimeSummaryPayload,
   TimeSummaryReturnValue,
   Trade,
@@ -145,6 +146,7 @@ export function createBotSubStore(botId: string, botName: string) {
         sysInfo: {} as SysInfoResponse,
         cacheStatus: {} as CacheStatusResponse,
         rateMetrics: {} as RateMetricsResponse,
+        volumeHistory: undefined as VolumeHistoryResponse | undefined,
         fleetStatus: null as FleetStatusResponse | null,
       };
     },
@@ -1260,6 +1262,17 @@ export function createBotSubStore(botId: string, botName: string) {
           const { data } = await api.get<RateMetricsResponse>('/rate_metrics', {
             params: { window, bucket_s },
           });
+          return Promise.resolve(data);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      },
+      async getVolumeHistory(days = 90, bucket = '1d') {
+        try {
+          const { data } = await api.get<VolumeHistoryResponse>('/volume_history', {
+            params: { days, bucket },
+          });
+          this.volumeHistory = data;
           return Promise.resolve(data);
         } catch (err) {
           return Promise.reject(err);

@@ -43,8 +43,22 @@ export default {
     rateMonitor: 'Rate Monitor',
     requestTimeline: 'Request Timeline',
     infraHealth: 'Infrastructure',
+    volumeComparator: 'Volume Comparator',
     opened: 'opened',
     closed: 'closed',
+  },
+  volumeComparator: {
+    exchangeVolume: 'Exchange Volume',
+    botVolume: 'Bot Volume',
+    tradeCount: 'Trades',
+    profit: 'Profit',
+    anomalies: 'Anomalies',
+    volumeRatio: 'Vol Ratio',
+    coverage: 'pair coverage',
+    correlation: 'Correlation',
+    noData: 'No OHLCV data available. Run freqtrade download-data for whitelist pairs.',
+    loading: 'Loading volume data...',
+    profitPerVol: 'Profit/Vol',
   },
 
   // Cumulative Profit Enhanced
