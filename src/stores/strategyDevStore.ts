@@ -27,10 +27,15 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
   const advancedAnalytics = ref<Record<string, unknown> | null>(null);
   const wfaDetail = ref<Record<string, unknown> | null>(null);
   const backtestSnapshot = ref<BacktestSnapshotResponse | null>(null);
+  const backtestAnalysis = ref<Record<string, unknown> | null>(null);
   const diffResult = ref<SnapshotDiffResponse | null>(null);
   const glossary = ref<GlossaryResponse | null>(null);
 
   const runCache = reactive(new Map<string, CachedRunData>());
+  const epochAnalyticsCache = reactive(new Map<string, Record<string, unknown>>());
+  const selectedEpochRank = ref(1);
+  const analyseMode = ref<'global' | 'epoch' | 'compare'>('global');
+  const compareEpochRanks = ref<[number, number]>([1, 2]);
   const filterText = ref('');
   const filterType = ref<RunType | null>(null);
   const filterStrategy = ref<string | null>(null);
@@ -326,12 +331,72 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
       hyperoptAnalysis.value = cached?.analysis ?? null;
       wfaDetail.value = cached?.detail && run.run_type === RunType.wfa ? cached.detail : null;
       backtestSnapshot.value = cached?.snapshot ?? null;
+      backtestAnalysis.value = null;
     } else {
       hyperoptDetail.value = null;
       hyperoptAnalysis.value = null;
       advancedAnalytics.value = null;
       wfaDetail.value = null;
       backtestSnapshot.value = null;
+      backtestAnalysis.value = null;
+    }
+  }
+
+  async function fetchAdvancedAnalytics(filename: string) {
+    try {
+      const api = getApi();
+      const { data } = await api.get<Record<string, unknown>>(
+        `/stratdev/hyperopt/${filename}/advanced`,
+      );
+      advancedAnalytics.value = data;
+    } catch (e) {
+      console.error('Failed to fetch advanced analytics', e);
+    }
+  }
+
+  async function fetchEpochDetail(filename: string, rank: number): Promise<Record<string, unknown> | null> {
+    try {
+      const api = getApi();
+      const { data } = await api.get<Record<string, unknown>>(
+        `/stratdev/hyperopt/${filename}/epoch/${rank}`,
+      );
+      return data;
+    } catch (e) {
+      console.error('Failed to fetch epoch detail', e);
+      return null;
+    }
+  }
+
+  async function fetchEpochAdvancedAnalytics(
+    filename: string,
+    rank: number,
+  ): Promise<Record<string, unknown> | null> {
+    const cacheKey = `${filename}:${rank}`;
+    const cached = epochAnalyticsCache.get(cacheKey);
+    if (cached) return cached;
+    try {
+      const api = getApi();
+      const { data } = await api.get<Record<string, unknown>>(
+        `/stratdev/hyperopt/${filename}/epoch/${rank}/advanced`,
+      );
+      epochAnalyticsCache.set(cacheKey, data);
+      return data;
+    } catch (e) {
+      console.error('Failed to fetch epoch advanced analytics', e);
+      return null;
+    }
+  }
+
+  async function fetchBacktestAnalysis(filename: string, strategy: string) {
+    try {
+      const api = getApi();
+      const { data } = await api.get<Record<string, unknown>>(
+        `/stratdev/backtest/${filename}/analysis`,
+        { params: { strategy } },
+      );
+      backtestAnalysis.value = data;
+    } catch (e) {
+      console.error('Failed to fetch backtest analysis', e);
     }
   }
 
@@ -379,32 +444,14 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     saveRunViewState,
     getRunViewState,
     advancedAnalytics,
+    backtestAnalysis,
+    fetchBacktestAnalysis,
     fetchAdvancedAnalytics,
     fetchEpochDetail,
+    epochAnalyticsCache,
+    selectedEpochRank,
+    analyseMode,
+    compareEpochRanks,
+    fetchEpochAdvancedAnalytics,
   };
-
-  async function fetchAdvancedAnalytics(filename: string) {
-    try {
-      const api = getApi();
-      const { data } = await api.get<Record<string, unknown>>(
-        `/stratdev/hyperopt/${filename}/advanced`,
-      );
-      advancedAnalytics.value = data;
-    } catch (e) {
-      console.error('Failed to fetch advanced analytics', e);
-    }
-  }
-
-  async function fetchEpochDetail(filename: string, rank: number): Promise<Record<string, unknown> | null> {
-    try {
-      const api = getApi();
-      const { data } = await api.get<Record<string, unknown>>(
-        `/stratdev/hyperopt/${filename}/epoch/${rank}`,
-      );
-      return data;
-    } catch (e) {
-      console.error('Failed to fetch epoch detail', e);
-      return null;
-    }
-  }
 });

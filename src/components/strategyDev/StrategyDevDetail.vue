@@ -10,6 +10,7 @@ const detailLoading = ref(false);
 
 const isHyperopt = computed(() => store.selectedRun?.run_type === RunType.hyperopt);
 const isWfa = computed(() => store.selectedRun?.run_type === RunType.wfa);
+const isBacktest = computed(() => store.selectedRun?.run_type === RunType.backtest);
 
 // ── Scroll container (.sd-main) ──
 const scrollEl = ref<HTMLElement | null>(null);
@@ -22,6 +23,7 @@ onMounted(() => {
 function validTabsForType(type: RunType | undefined): string[] {
   const common = ['overview', 'params', 'config', 'source', 'command', 'compare', 'timeline'];
   if (type === RunType.hyperopt) return [...common, 'analyse'];
+  if (type === RunType.backtest) return [...common, 'analyse'];
   if (type === RunType.wfa) return [...common, 'wfa-charts'];
   return common;
 }
@@ -104,7 +106,7 @@ watch(
           <i-mdi-information-outline class="w-4 h-4" />
           {{ t('strategyDev.tabOverview') }}
         </Tab>
-        <Tab v-if="isHyperopt" value="analyse" class="sd-tab">
+        <Tab v-if="isHyperopt || isBacktest" value="analyse" class="sd-tab">
           <i-mdi-chart-areaspline class="w-4 h-4" />
           {{ t('strategyDev.tabAnalyse') }}
         </Tab>
@@ -148,10 +150,11 @@ watch(
             </div>
           </Transition>
         </TabPanel>
-        <TabPanel v-if="isHyperopt" value="analyse">
+        <TabPanel v-if="isHyperopt || isBacktest" value="analyse">
           <Transition name="sd-tab" mode="out-in">
             <div key="analyse" class="sd-panel-enter">
-              <HyperoptAnalysePanel />
+              <HyperoptAnalysePanel v-if="isHyperopt" />
+              <BacktestAnalysePanel v-else-if="isBacktest" />
             </div>
           </Transition>
         </TabPanel>

@@ -1842,6 +1842,82 @@ export default {
     hintExposure: 'Nombre de positions ouvertes simultanément. Les pics = concentration du capital. Exposition stable = utilisation prévisible du capital.',
     hintExpectancy: 'Profit attendu par trade avec intervalle de confiance. SQN mesure la fiabilité de l\'edge. Kelly % suggère le sizing optimal.',
 
+    // Mode toggle
+    modeGlobal: 'Analyse Globale',
+    modeEpoch: 'Par Epoch',
+    modeCompare: 'Comparer',
+
+    // Sélecteur d'epoch
+    epochSelectorLabel: 'Top 10 Epochs (par loss)',
+    epochSelectPrompt: 'Sélectionnez un epoch ci-dessus pour voir son analyse détaillée',
+
+    // Mode comparaison
+    compareLeft: 'Epoch gauche',
+    compareRight: 'Epoch droite',
+    compareParams: 'Différences de paramètres',
+
+    // Nouveaux graphiques
+    aaReturnDistribution: 'Distribution des Rendements',
+    aaDrawdownCalendar: 'Calendrier de Drawdown',
+    aaMaeMfe: 'MAE / MFE Scatter',
+    hintReturnDistribution: 'Histogramme des rendements par trade superposé à une distribution normale. Les écarts à la normalité (skew, queues épaisses) révèlent des risques cachés.',
+    hintDrawdownCalendar: 'Intensité du drawdown journalier en heatmap calendrier. Cellules foncées = drawdown profond. Aide à identifier les patterns saisonniers et les périodes de pertes prolongées.',
+    hintMaeMfe: 'Maximum Adverse Excursion (MAE) et Maximum Favorable Excursion (MFE) vs PnL final. MAE = pire drawdown intra-trade ; MFE = meilleur gain non-réalisé. Aide à optimiser le stop-loss et take-profit.',
+
+    // Sections analyse backtest
+    btNavSummary: 'Résumé',
+    btNavEquity: 'Equity & Drawdowns',
+    btNavPerformance: 'Performance',
+    btNavTrades: 'Trades',
+    btNavRisk: 'Risque',
+    btNavConsistency: 'Consistance',
+    btNavPairs: 'Paires',
+    btNavConfig: 'Configuration',
+    btScorecardTitle: 'Résultats du Backtest',
+
+    btHourlyPattern: 'Pattern Horaire',
+    hintBtHourlyPattern: 'Profit moyen et winrate par heure (0-23). Révèle les patterns intra-journaliers — quelles heures génèrent le plus d\'alpha.',
+    btCapitalUtilization: 'Utilisation du Capital',
+    hintBtCapitalUtilization: 'Pourcentage du capital disponible déployé dans le temps. Faible utilisation = capital dormant ; très haute = opportunités potentiellement manquées.',
+    btPairHeatmap: 'Matrice de Performance par Paire',
+    hintBtPairHeatmap: 'Tableau triable des métriques par paire. Cellules colorées pour identifier les meilleurs et pires performers.',
+    btBenchmark: 'Stratégie vs Buy & Hold',
+    hintBtBenchmark: 'Comparaison d\'equity entre la stratégie et un simple buy-and-hold. Alpha = surperformance de la stratégie par rapport au benchmark.',
+
+    btBestPair: 'Meilleure Paire',
+    btWorstPair: 'Pire Paire',
+    btTradesPerDay: 'Trades / Jour',
+    btMarketChange: 'Évolution du Marché',
+    btWinLossDays: 'Jours Gain / Perte / Neutre',
+    btHoldingAvg: 'Holding Moyen',
+    btWinnerHolding: 'Holding Gagnants',
+    btLoserHolding: 'Holding Perdants',
+    btExpectancy: 'Espérance',
+    btExpectancyRatio: 'Ratio d\'Espérance',
+    btFinalBalance: 'Solde Final',
+
+    btOrderStats: 'Statistiques d\'Ordres',
+    btRejectedSignals: 'Signaux Rejetés',
+    btTimedoutEntry: 'Entrées Expirées',
+    btTimedoutExit: 'Sorties Expirées',
+    btCanceledEntries: 'Entrées Annulées',
+
+    btConfigGeneral: 'Général',
+    btConfigTimeframe: 'Timeframe',
+    btConfigTimerange: 'Plage Temporelle',
+    btConfigMaxOpenTrades: 'Max Open Trades',
+    btConfigDays: 'Jours de Backtest',
+    btConfigStart: 'Date de Début',
+    btConfigEnd: 'Date de Fin',
+    btConfigStoploss: 'Stoploss & Trailing',
+    btConfigTrailing: 'Trailing Stop',
+    btConfigTrailingPositive: 'Trailing Positif',
+    btConfigTrailingOffset: 'Trailing Offset',
+    btConfigRoi: 'Table ROI',
+    btConfigRoiMinutes: 'Minutes',
+    btConfigRoiReturn: 'Rendement',
+    btConfigMarket: 'Contexte Marché',
+
     // Séries
     skMaxWinStreak: 'Série Max Gains',
     skMaxLossStreak: 'Série Max Pertes',

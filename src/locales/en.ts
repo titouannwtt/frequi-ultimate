@@ -1899,6 +1899,86 @@ export default {
     hintExposure: 'Number of simultaneously open positions over time. High spikes = capital concentration risk. Consistent exposure = predictable capital usage.',
     hintExpectancy: 'Expected profit per trade with statistical confidence. SQN (System Quality Number) measures edge reliability. Kelly % suggests optimal position sizing.',
 
+    // Mode toggle
+    modeGlobal: 'Global Analysis',
+    modeEpoch: 'Per Epoch',
+    modeCompare: 'Compare Epochs',
+
+    // Epoch selector
+    epochSelectorLabel: 'Top 10 Epochs (by loss)',
+    epochSelectPrompt: 'Select an epoch above to view its detailed analytics',
+
+    // Compare mode
+    compareLeft: 'Left epoch',
+    compareRight: 'Right epoch',
+    compareParams: 'Parameter Differences',
+
+    // New charts
+    aaReturnDistribution: 'Return Distribution Fit',
+    aaDrawdownCalendar: 'Drawdown Calendar',
+    aaMaeMfe: 'MAE / MFE Scatter',
+    hintReturnDistribution: 'Histogram of individual trade returns overlaid with a normal distribution fit. Deviations from normality (skew, fat tails) reveal hidden risk. Green bars = profitable trades, red = losses.',
+    hintDrawdownCalendar: 'Daily drawdown intensity displayed as a calendar heatmap. Darker cells = deeper drawdown on that day. Helps identify seasonal patterns and prolonged losing periods.',
+    hintMaeMfe: 'Maximum Adverse Excursion (MAE) and Maximum Favorable Excursion (MFE) vs final PnL. MAE shows worst intra-trade drawdown; MFE shows best unrealized gain. Helps optimize stop-loss and take-profit levels.',
+
+    // Backtest analyse sections
+    btNavSummary: 'Summary',
+    btNavEquity: 'Equity & Drawdowns',
+    btNavPerformance: 'Performance',
+    btNavTrades: 'Trades',
+    btNavRisk: 'Risk',
+    btNavConsistency: 'Consistency',
+    btNavPairs: 'Pairs',
+    btNavConfig: 'Configuration',
+    btScorecardTitle: 'Backtest Results',
+
+    // Backtest specific charts
+    btHourlyPattern: 'Hourly Pattern',
+    hintBtHourlyPattern: 'Average profit and win rate by hour of day (0-23). Reveals intraday patterns — which hours generate the most alpha.',
+    btCapitalUtilization: 'Capital Utilization',
+    hintBtCapitalUtilization: 'Percentage of available capital deployed over time. Low utilization means idle capital; very high utilization means the strategy may miss opportunities.',
+    btPairHeatmap: 'Pair Performance Matrix',
+    hintBtPairHeatmap: 'Sortable table showing per-pair performance metrics. Color-coded cells highlight best and worst performers.',
+    btBenchmark: 'Strategy vs Buy & Hold',
+    hintBtBenchmark: 'Equity curve comparison between the strategy and a simple buy-and-hold approach. Alpha = strategy excess return over benchmark.',
+
+    // Backtest summary cards
+    btBestPair: 'Best Pair',
+    btWorstPair: 'Worst Pair',
+    btTradesPerDay: 'Trades / Day',
+    btMarketChange: 'Market Change',
+    btWinLossDays: 'Win / Loss / Draw Days',
+    btHoldingAvg: 'Avg Holding',
+    btWinnerHolding: 'Winner Holding',
+    btLoserHolding: 'Loser Holding',
+    btExpectancy: 'Expectancy',
+    btExpectancyRatio: 'Expectancy Ratio',
+    btFinalBalance: 'Final Balance',
+
+    // Backtest order stats
+    btOrderStats: 'Order Statistics',
+    btRejectedSignals: 'Rejected Signals',
+    btTimedoutEntry: 'Timed Out Entries',
+    btTimedoutExit: 'Timed Out Exits',
+    btCanceledEntries: 'Canceled Entries',
+
+    // Backtest config card
+    btConfigGeneral: 'General',
+    btConfigTimeframe: 'Timeframe',
+    btConfigTimerange: 'Time Range',
+    btConfigMaxOpenTrades: 'Max Open Trades',
+    btConfigDays: 'Backtest Days',
+    btConfigStart: 'Start Date',
+    btConfigEnd: 'End Date',
+    btConfigStoploss: 'Stoploss & Trailing',
+    btConfigTrailing: 'Trailing Stop',
+    btConfigTrailingPositive: 'Trailing Positive',
+    btConfigTrailingOffset: 'Trailing Offset',
+    btConfigRoi: 'ROI Table',
+    btConfigRoiMinutes: 'Minutes',
+    btConfigRoiReturn: 'Return',
+    btConfigMarket: 'Market Context',
+
     // Streaks
     skMaxWinStreak: 'Max Win Streak',
     skMaxLossStreak: 'Max Loss Streak',

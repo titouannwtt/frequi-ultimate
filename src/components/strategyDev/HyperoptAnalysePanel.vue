@@ -31,6 +31,11 @@ const advanced = computed(() => store.advancedAnalytics);
 const epochInfo = computed(() => (advanced.value?.epoch_info as Record<string, unknown>) ?? null);
 const isLoading = computed(() => analysisLoading.value || advancedLoading.value);
 
+const analyseMode = computed({
+  get: () => store.analyseMode,
+  set: (v) => { store.analyseMode = v; },
+});
+
 // ── Section visibility ──
 const activeSection = ref('diagnostic');
 const sections = computed(() => {
@@ -203,7 +208,43 @@ function fmtNum(v: unknown, decimals = 2): string {
     </div>
 
     <template v-else>
+      <!-- ═══ MODE TOGGLE ═══ -->
+      <div class="mode-toggle">
+        <button
+          class="mode-btn"
+          :class="{ active: analyseMode === 'global' }"
+          @click="analyseMode = 'global'"
+        >
+          <i-mdi-chart-line class="w-3.5 h-3.5" />
+          {{ t('strategyDev.modeGlobal') }}
+        </button>
+        <button
+          class="mode-btn"
+          :class="{ active: analyseMode === 'epoch' }"
+          @click="analyseMode = 'epoch'"
+        >
+          <i-mdi-numeric class="w-3.5 h-3.5" />
+          {{ t('strategyDev.modeEpoch') }}
+        </button>
+        <button
+          class="mode-btn"
+          :class="{ active: analyseMode === 'compare' }"
+          @click="analyseMode = 'compare'"
+        >
+          <i-mdi-compare-horizontal class="w-3.5 h-3.5" />
+          {{ t('strategyDev.modeCompare') }}
+        </button>
+      </div>
+
+      <!-- ═══ PER-EPOCH MODE ═══ -->
+      <EpochAnalysePanel v-if="analyseMode === 'epoch'" />
+
+      <!-- ═══ COMPARE MODE ═══ -->
+      <EpochComparePanel v-else-if="analyseMode === 'compare'" />
+
+      <!-- ═══ GLOBAL MODE ═══ -->
       <!-- ═══ SCORECARD BANNER ═══ -->
+      <template v-else>
       <div v-if="epochInfo" class="scorecard">
         <div class="scorecard-badge">
           <i-mdi-trophy class="w-3.5 h-3.5" />
@@ -361,6 +402,18 @@ function fmtNum(v: unknown, decimals = 2): string {
               </template>
             </ChartWrapper>
           </div>
+
+          <ChartWrapper
+            v-if="advanced?.drawdown_calendar"
+            :title="t('strategyDev.aaDrawdownCalendar')"
+            :hint="t('strategyDev.hintDrawdownCalendar')"
+            chart-id="drawdown-calendar"
+          >
+            <DrawdownCalendarChart :data="advanced.drawdown_calendar as any[]" />
+            <template #fullscreen>
+              <DrawdownCalendarChart :data="advanced.drawdown_calendar as any[]" />
+            </template>
+          </ChartWrapper>
         </div>
       </section>
 
@@ -463,6 +516,32 @@ function fmtNum(v: unknown, decimals = 2): string {
           >
             <ExpectancyCard :data="advanced.trade_expectancy as any" />
           </ChartWrapper>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ChartWrapper
+              v-if="advanced?.return_distribution_fit"
+              :title="t('strategyDev.aaReturnDistribution')"
+              :hint="t('strategyDev.hintReturnDistribution')"
+              chart-id="return-dist"
+            >
+              <ReturnDistributionChart :data="advanced.return_distribution_fit as any" />
+              <template #fullscreen>
+                <ReturnDistributionChart :data="advanced.return_distribution_fit as any" />
+              </template>
+            </ChartWrapper>
+
+            <ChartWrapper
+              v-if="advanced?.mae_mfe"
+              :title="t('strategyDev.aaMaeMfe')"
+              :hint="t('strategyDev.hintMaeMfe')"
+              chart-id="mae-mfe"
+            >
+              <MaeMfeScatter :points="advanced.mae_mfe as any[]" />
+              <template #fullscreen>
+                <MaeMfeScatter :points="advanced.mae_mfe as any[]" />
+              </template>
+            </ChartWrapper>
+          </div>
         </div>
       </section>
 
@@ -666,6 +745,7 @@ function fmtNum(v: unknown, decimals = 2): string {
           class="mt-4"
         />
       </section>
+      </template>
     </template>
   </div>
 </template>
@@ -678,6 +758,44 @@ function fmtNum(v: unknown, decimals = 2): string {
   padding: 0.75rem 0;
   max-width: 1600px;
   margin: 0 auto;
+}
+
+/* ── Mode toggle ── */
+.mode-toggle {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: rgba(49, 50, 68, 0.5);
+  border-radius: 0.625rem;
+  margin-bottom: 0.75rem;
+  width: fit-content;
+}
+
+.mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6c7086;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.mode-btn:hover {
+  color: #a6adc8;
+  background: rgba(69, 71, 90, 0.4);
+}
+
+.mode-btn.active {
+  color: #cdd6f4;
+  background: rgba(137, 180, 250, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* ── Scorecard ── */
