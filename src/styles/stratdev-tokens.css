@@ -164,3 +164,94 @@
 .sd-tab-leave-to {
   opacity: 0;
 }
+
+/* ══════════════════════════════════════════
+   Freqtrade Dashboard — Shared Animations
+   ══════════════════════════════════════════ */
+
+@keyframes ft-wave-drift {
+  0% { background-position: 0% 0%; }
+  25% { background-position: 60% 30%; }
+  50% { background-position: 100% 60%; }
+  75% { background-position: 40% 100%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes ft-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ft-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+@keyframes ft-slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ft-data-flash {
+  0% { background-color: rgba(137, 180, 250, 0.15); }
+  100% { background-color: transparent; }
+}
+
+@keyframes ft-scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ft-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Dashboard utility classes ── */
+
+.ft-widget-hidden-border {
+  border: 2px dashed rgba(137, 180, 250, 0.4) !important;
+}
+
+.ft-widget-hidden-content {
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.ft-data-pulse {
+  animation: ft-data-flash 400ms ease-out;
+}
+
+.ft-live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sd-success, #a6e3a1);
+  animation: ft-live-pulse 2s ease-in-out infinite;
+}
+
+/* ── Vue transition classes ── */
+.ft-enter-active {
+  animation: ft-fade-in 300ms ease-out;
+}
+.ft-leave-active {
+  transition: opacity 150ms ease;
+}
+.ft-leave-to {
+  opacity: 0;
+}
+
+.ft-list-move,
+.ft-list-enter-active {
+  transition: all 300ms ease;
+}
+.ft-list-leave-active {
+  transition: all 200ms ease;
+  position: absolute;
+}
+.ft-list-enter-from,
+.ft-list-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}

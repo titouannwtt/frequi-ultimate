@@ -57,6 +57,7 @@ const props = defineProps<{
   dataset: PairHistory;
   heikinAshi: boolean;
   showMarkArea: boolean;
+  hideSimultaneousEntryExit: boolean;
   useUTC: boolean;
   plotConfig: PlotConfig;
   theme: 'dark' | 'light';
@@ -76,17 +77,17 @@ const SUBPLOTHEIGHT = 8; // Value in %
 // minimal helpers for debugging
 const showAxisLine = false;
 
-// Candle Colors
+// Candle Colors — TradingView-style
 const upColor = props.colorUp;
 const upBorderColor = props.colorUp;
 const downColor = props.colorDown;
 const downBorderColor = props.colorDown;
 
-// Buy / Sell Signal Colors
-const buySignalColor = '#00ff26';       // Long entry: green
-const shortEntrySignalColor = '#ff4444'; // Short entry: red
-const sellSignalColor = '#faba25';       // Long exit: yellow
-const shortexitSignalColor = '#faba25';  // Short exit: yellow
+// Signal Colors — cleaner TradingView-inspired palette
+const buySignalColor = '#26a69a';        // Long entry: teal green
+const shortEntrySignalColor = '#ef5350'; // Short entry: warm red
+const sellSignalColor = '#ff9800';       // Long exit: amber
+const shortexitSignalColor = '#ff9800';  // Short exit: amber
 
 const candleChart = useTemplateRef<InstanceType<typeof ECharts>>('candleChart');
 const chartOptions = shallowRef<EChartsOption>({});
@@ -203,6 +204,25 @@ function updateChart(initial = false) {
       dataset = calculateDiff(columns, dataset, colFrom, colTo);
     }
   });
+  // Filter out simultaneous entry/exit signals on the same candle
+  if (props.hideSimultaneousEntryExit) {
+    const longEntry = colEntryData >= 0 ? colEntryData : -1;
+    const longExit = colExitData >= 0 ? colExitData : -1;
+    const shortEntry = colShortEntryData >= 0 ? colShortEntryData : -1;
+    const shortExit = colShortExitData >= 0 ? colShortExitData : -1;
+    for (const row of dataset) {
+      // Long: if both entry and exit signal on same candle, hide both
+      if (longEntry >= 0 && longExit >= 0 && row[longEntry] && row[longExit]) {
+        row[longEntry] = null;
+        row[longExit] = null;
+      }
+      // Short: if both entry and exit signal on same candle, hide both
+      if (shortEntry >= 0 && shortExit >= 0 && row[shortEntry] && row[shortExit]) {
+        row[shortEntry] = null;
+        row[shortExit] = null;
+      }
+    }
+  }
   // Add new rows to end to allow slight "scroll past"
   const scrollPastLength = 5;
   const lastColDate = dataset[dataset.length - 1]?.[colDate];
@@ -237,12 +257,15 @@ function updateChart(initial = false) {
       {
         name: 'Candles',
         type: 'candlestick',
-        barWidth: '80%',
+        barWidth: '65%',
+        barMinWidth: 1,
+        barMaxWidth: 20,
         itemStyle: {
           color: upColor,
           color0: downColor,
           borderColor: upBorderColor,
           borderColor0: downBorderColor,
+          borderWidth: 1,
         },
         encode: {
           x: colDate,
@@ -256,7 +279,15 @@ function updateChart(initial = false) {
         xAxisIndex: 1,
         yAxisIndex: 1,
         itemStyle: {
-          color: '#777777',
+          color: (params) => {
+            const d = params.data as number[];
+            if (d && d[colOpen] !== undefined && d[colClose] !== undefined) {
+              return d[colClose] >= d[colOpen]
+                ? 'rgba(38, 166, 154, 0.35)'
+                : 'rgba(239, 83, 80, 0.35)';
+            }
+            return 'rgba(120, 120, 140, 0.2)';
+          },
         },
         large: true,
         encode: {
@@ -268,14 +299,24 @@ function updateChart(initial = false) {
     xAxis: [
       {
         type: 'time',
-        axisLine: { onZero: false },
-        axisTick: { show: true },
-        axisLabel: { show: true },
+        axisLine: { onZero: false, lineStyle: { color: props.theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' } },
+        axisTick: { show: true, lineStyle: { color: props.theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' } },
+        axisLabel: {
+          show: true,
+          color: props.theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+          fontSize: 10,
+        },
         axisPointer: {
           label: { show: false },
         },
         position: 'top',
-        splitLine: { show: false },
+        splitLine: {
+          show: true,
+          lineStyle: {
+            color: props.theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+            type: 'dashed',
+          },
+        },
         splitNumber: 20,
         min: 'dataMin',
         max: 'dataMax',
@@ -283,7 +324,7 @@ function updateChart(initial = false) {
       {
         type: 'time',
         gridIndex: 1,
-        axisLine: { onZero: false },
+        axisLine: { onZero: false, lineStyle: { color: 'transparent' } },
         axisTick: { show: false },
         axisLabel: { show: false },
         axisPointer: {
@@ -304,13 +345,22 @@ function updateChart(initial = false) {
         min: (value) => {
           return formatDecimal(value.min - (value.max - value.min) * 0.04);
         },
-        name: ' ', // Necessary to avoid layout shift
+        name: ' ',
         nameLocation: 'middle',
         nameGap: NAMEGAP,
-        axisLine: { show: showAxisLine },
+        axisLine: { show: false },
         axisLabel: {
           hideOverlap: true,
           overflow: 'truncate',
+          color: props.theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)',
+          fontSize: 10,
+        },
+        splitLine: {
+          show: true,
+          lineStyle: {
+            color: props.theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+            type: 'dashed',
+          },
         },
         position: props.labelSide,
       },
@@ -600,13 +650,19 @@ function initializeChartOptions() {
     ],
     backgroundColor: 'rgba(0, 0, 0, 0)',
     useUTC: props.useUTC,
-    animation: false,
+    animation: true,
+    animationDuration: 300,
+    animationEasing: 'cubicOut',
     legend: {
       // Initial legend, further entries are pushed to the below list
       data: ['Candles', 'Volume', 'Entry', 'Exit'],
       right: '1%',
       top: 0,
       type: 'scroll',
+      textStyle: {
+        color: props.theme === 'dark' ? 'rgba(255,255,255,0.6)' : '#666',
+        fontSize: 11,
+      },
       pageTextStyle: {
         color: props.theme === 'dark' ? '#dedede' : '#333',
       },
@@ -617,15 +673,17 @@ function initializeChartOptions() {
       show: true,
       trigger: 'axis',
       renderMode: 'richText',
-      backgroundColor: 'rgba(80,80,80,0.7)',
-      borderWidth: 0,
+      backgroundColor: props.theme === 'dark' ? 'rgba(15, 15, 25, 0.92)' : 'rgba(255, 255, 255, 0.95)',
+      borderColor: props.theme === 'dark' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(0, 0, 0, 0.08)',
+      borderWidth: 1,
       textStyle: {
-        color: '#fff',
+        color: props.theme === 'dark' ? '#e0e0e0' : '#333',
+        fontSize: 12,
       },
       axisPointer: {
         type: 'cross',
         lineStyle: {
-          color: '#cccccc',
+          color: props.theme === 'dark' ? 'rgba(165, 180, 252, 0.3)' : 'rgba(99, 102, 241, 0.2)',
           width: 1,
           opacity: 1,
         },
@@ -729,7 +787,7 @@ watch([() => props.useUTC, () => props.theme, () => props.plotConfig], () =>
   initializeChartOptions(),
 );
 
-watch([() => props.dataset, () => props.heikinAshi, () => props.showMarkArea], () => updateChart());
+watch([() => props.dataset, () => props.heikinAshi, () => props.showMarkArea, () => props.hideSimultaneousEntryExit], () => updateChart());
 
 watch(
   () => props.sliderPosition,

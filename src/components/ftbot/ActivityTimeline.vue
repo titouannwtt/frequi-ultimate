@@ -26,7 +26,7 @@ interface TimelineEvent {
 }
 
 // --- State ---
-const compactMode = ref(false);
+const compactMode = ref(true);
 const searchQuery = ref('');
 const selectedBotFilter = ref<string>('all');
 const enabledEventTypes = ref<Set<EventType>>(
@@ -426,8 +426,11 @@ function eventDescription(event: TimelineEvent): string {
           <div
             v-for="(event, idx) in section.events"
             :key="event.id"
-            class="relative flex items-start gap-3 group"
-            :class="compactMode ? 'py-0.5' : 'py-1.5'"
+            class="relative flex items-start gap-3 group rounded-sm"
+            :class="[
+              compactMode ? 'py-0.5 pl-1 border-l-2' : 'py-1.5',
+              compactMode ? (event.type === 'trade_closed_profit' ? 'border-green-500/40' : event.type === 'trade_closed_loss' ? 'border-red-500/40' : event.type === 'trade_opened' ? 'border-blue-500/40' : 'border-surface-500/20') : '',
+            ]"
           >
             <!-- Timeline dot -->
             <div class="relative z-10 flex-shrink-0 mt-1">

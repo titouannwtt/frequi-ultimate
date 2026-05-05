@@ -6,6 +6,7 @@
  * Designed for the multi-bot log console dashboard widget.
  */
 import type { LogLine } from '@/types/types';
+import { timestampms } from '@/utils/formatters/timeformat';
 
 /** A single log entry enriched with bot metadata */
 export interface AggregatedLogEntry {
@@ -82,7 +83,7 @@ function parseLogLine(
     botId,
     botName,
     timestamp: log[1],
-    timestampFormatted: log[0],
+    timestampFormatted: timestampms(log[1]),
     level: log[3] as AggregatedLogEntry['level'],
     module: log[2],
     message,

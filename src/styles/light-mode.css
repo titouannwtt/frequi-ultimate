@@ -1,0 +1,404 @@
+/*
+ * FreqUI Light Mode Fixes
+ * Overrides hardcoded Catppuccin dark colors for light mode readability.
+ * Applied when <html> does NOT have class "ft-dark-theme".
+ *
+ * Custom dashboard variables (--sd-*) and hardcoded dark component colors
+ * need explicit light-mode overrides because they bypass PrimeVue theming.
+ */
+
+/* ===== Override --sd-* custom vars for light mode ===== */
+:root:not(.ft-dark-theme) {
+  --sd-base: #f0ece6;
+  --sd-mantle: #e5e0d8;
+  --sd-crust: #d8d2c8;
+  --sd-surface0: #d8d2c8;
+  --sd-surface1: #c8c0b4;
+  --sd-surface2: #b8b0a4;
+  --sd-text: #2c2c2c;
+  --sd-subtext: #4a4a4a;
+  --sd-overlay: #6b6b6b;
+  --sd-success: #2e7d32;
+  --sd-success-dim: #2e7d321f;
+  --sd-danger: #c62828;
+  --sd-danger-dim: #c628281f;
+  --sd-warning: #e65100;
+  --sd-warning-dim: #e651001f;
+  --sd-info: #1565c0;
+  --sd-info-dim: #1565c01f;
+  --sd-blue: #1565c0;
+  --sd-lavender: #5c6bc0;
+  --sd-sapphire: #0277bd;
+  --sd-green: #2e7d32;
+  --sd-yellow: #e65100;
+  --sd-peach: #d84315;
+  --sd-red: #c62828;
+  --sd-pink: #ad1457;
+  --sd-mauve: #6a1b9a;
+  --sd-teal: #00695c;
+  --sd-sky: #0277bd;
+  --sd-border: #c8c0b499;
+  --sd-border-subtle: #c8c0b44d;
+  --sd-border-accent: #1565c033;
+  --sd-shadow-sm: 0 1px 2px #00000014;
+  --sd-shadow-md: 0 2px 8px #00000014;
+  --sd-shadow-lg: 0 4px 16px #0000001a;
+  --sd-shadow-glow-green: 0 0 8px #2e7d324d;
+  --sd-shadow-glow-red: 0 0 8px #c628284d;
+}
+
+/* ===== General body ===== */
+:root:not(.ft-dark-theme) body {
+  background-color: #f0ece6;
+  color: #2c2c2c;
+}
+
+/* ===== Glass cards (Settings, Dashboard widgets) ===== */
+:root:not(.ft-dark-theme) .glass-card {
+  background: #f5f2ed !important;
+  border: 1px solid #d8d2c8 !important;
+  box-shadow: 0 2px 8px #00000014 !important;
+  color: #2c2c2c !important;
+}
+
+:root:not(.ft-dark-theme) .glass-card .section-header {
+  color: #1a1a1a !important;
+}
+
+:root:not(.ft-dark-theme) .glass-card .setting-label,
+:root:not(.ft-dark-theme) .glass-card .setting-item {
+  color: #2c2c2c !important;
+}
+
+:root:not(.ft-dark-theme) .glass-card .stat-label {
+  color: #5a5a5a !important;
+}
+
+:root:not(.ft-dark-theme) .glass-card .stat-value {
+  color: #1a1a1a !important;
+}
+
+/* ===== Glass panel (Infrastructure hover) ===== */
+:root:not(.ft-dark-theme) .glass-panel {
+  background: #f5f2edf2 !important;
+  border: 1px solid #d8d2c8 !important;
+  color: #2c2c2c !important;
+}
+
+/* ===== Navbar ===== */
+:root:not(.ft-dark-theme) .navbar-glass {
+  background: #e5e0d8ee;
+}
+
+:root:not(.ft-dark-theme) .navbar-glass .nav-link {
+  color: #4a4a4a;
+}
+
+:root:not(.ft-dark-theme) .navbar-glass .nav-link:hover {
+  color: #1a1a1a;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+:root:not(.ft-dark-theme) .nav-link-active {
+  color: #1a1a1a !important;
+  background: rgba(99, 102, 241, 0.12) !important;
+  box-shadow: inset 0 -2px 0 0 rgba(99, 102, 241, 0.6) !important;
+}
+
+/* Brand title "Freqtrade Ultimate" */
+:root:not(.ft-dark-theme) .navbar-glass .text-slate-200 {
+  color: #1a1a1a !important;
+}
+
+/* Navbar border */
+:root:not(.ft-dark-theme) .navbar-glass {
+  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Action buttons: edit page, config, settings, logout */
+:root:not(.ft-dark-theme) .navbar-glass .text-surface-300,
+:root:not(.ft-dark-theme) .navbar-glass button.text-surface-300 {
+  color: #4a4a4a !important;
+}
+
+:root:not(.ft-dark-theme) .navbar-glass .text-surface-300:hover,
+:root:not(.ft-dark-theme) .navbar-glass button.text-surface-300:hover {
+  color: #1a1a1a !important;
+  background: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ThemeSelect button */
+:root:not(.ft-dark-theme) .navbar-glass .text-surface-200,
+:root:not(.ft-dark-theme) .navbar-glass button.text-surface-200 {
+  color: #4a4a4a !important;
+}
+
+/* Language selector */
+:root:not(.ft-dark-theme) .navbar-glass .text-surface-400,
+:root:not(.ft-dark-theme) .navbar-glass select.text-surface-400 {
+  color: #3a3a3a !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+:root:not(.ft-dark-theme) .navbar-glass select.text-surface-400:hover {
+  color: #1a1a1a !important;
+}
+
+/* Divider line between theme toggle and nav links */
+:root:not(.ft-dark-theme) .navbar-glass .bg-white\/10 {
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Edit mode active state — keep indigo visible */
+:root:not(.ft-dark-theme) .navbar-glass .bg-indigo-500\/30 {
+  background: rgba(99, 102, 241, 0.15) !important;
+}
+
+:root:not(.ft-dark-theme) .navbar-glass .text-indigo-300 {
+  color: #4f46e5 !important;
+}
+
+/* hover:bg-white/10 on buttons in light mode */
+:root:not(.ft-dark-theme) .navbar-glass button:hover,
+:root:not(.ft-dark-theme) .navbar-glass a:hover {
+  --tw-bg-opacity: 1;
+}
+
+/* Confirm dialog warning icons */
+:root:not(.ft-dark-theme) .navbar-glass .text-yellow-300 {
+  color: #b45309 !important;
+}
+
+/* Mobile menu sidebar title */
+:root:not(.ft-dark-theme) .text-surface-200 {
+  color: #2c2c2c !important;
+}
+
+/* ===== vc- prefixed components (charts, controls) ===== */
+:root:not(.ft-dark-theme) .vc-btn-group {
+  background: #d8d2c899 !important;
+}
+
+:root:not(.ft-dark-theme) .vc-btn {
+  color: #4a4a4a !important;
+}
+
+:root:not(.ft-dark-theme) .vc-btn:hover {
+  color: #1a1a1a !important;
+}
+
+:root:not(.ft-dark-theme) .vc-btn--active {
+  color: #1565c0 !important;
+  background: #1565c033 !important;
+}
+
+:root:not(.ft-dark-theme) .vc-controls-right,
+:root:not(.ft-dark-theme) .vc-toggle,
+:root:not(.ft-dark-theme) .vc-empty,
+:root:not(.ft-dark-theme) .vc-footer {
+  color: #4a4a4a !important;
+}
+
+:root:not(.ft-dark-theme) .vc-stat b {
+  color: #1a1a1a !important;
+}
+
+:root:not(.ft-dark-theme) .vc-coverage {
+  color: #2e7d32 !important;
+  background: #2e7d3226 !important;
+}
+
+:root:not(.ft-dark-theme) .vc-spinner {
+  border-color: #c8c0b480 !important;
+  border-top-color: #1565c0 !important;
+}
+
+:root:not(.ft-dark-theme) .vc-footer {
+  border-top-color: #c8c0b480 !important;
+}
+
+:root:not(.ft-dark-theme) .vc-toggle input {
+  accent-color: #1565c0 !important;
+}
+
+/* ===== Trade popover / tooltip (Infrastructure hover) ===== */
+:root:not(.ft-dark-theme) .trade-popover-panel {
+  background: #f5f2edf5 !important;
+  border: 1px solid #d8d2c8 !important;
+  box-shadow: 0 8px 32px #00000026, 0 2px 8px #0000001a !important;
+  color: #2c2c2c !important;
+}
+
+:root:not(.ft-dark-theme) .trade-popover-arrow {
+  background: #f5f2edf5 !important;
+  border-top: 1px solid #d8d2c8 !important;
+  border-left: 1px solid #d8d2c8 !important;
+}
+
+:root:not(.ft-dark-theme) .p-popover,
+:root:not(.ft-dark-theme) .p-popover-content {
+  background: #f5f2ed !important;
+  color: #2c2c2c !important;
+  border-color: #d8d2c8 !important;
+}
+
+:root:not(.ft-dark-theme) .p-tooltip .p-tooltip-text {
+  color: #2c2c2c !important;
+  background: #f5f2ed !important;
+}
+
+/* ===== Activity timeline (Infrastructure) ===== */
+:root:not(.ft-dark-theme) .activity-timeline {
+  color: #2c2c2c !important;
+  scrollbar-color: #b8b0a4 transparent !important;
+}
+
+:root:not(.ft-dark-theme) .activity-timeline span,
+:root:not(.ft-dark-theme) .activity-timeline div,
+:root:not(.ft-dark-theme) .activity-timeline p {
+  color: #3a3a3a !important;
+}
+
+:root:not(.ft-dark-theme) .activity-timeline select option {
+  color: #2c2c2c !important;
+  background: #f5f2ed !important;
+}
+
+/* ===== Trades: profit colors (green too pale in light mode) ===== */
+:root:not(.ft-dark-theme) .text-green-400 {
+  color: #15803d !important;
+}
+
+:root:not(.ft-dark-theme) .text-red-400 {
+  color: #b91c1c !important;
+}
+
+/* ===== Trade badges (direction, best/worst) ===== */
+:root:not(.ft-dark-theme) .direction-badge--short {
+  color: #b91c1c !important;
+  background: #b91c1c1a !important;
+}
+
+:root:not(.ft-dark-theme) .direction-badge--long {
+  color: #15803d !important;
+  background: #15803d1a !important;
+}
+
+:root:not(.ft-dark-theme) .badge-best {
+  color: #15803d !important;
+  background: #15803d26 !important;
+}
+
+:root:not(.ft-dark-theme) .badge-worst {
+  color: #b91c1c !important;
+  background: #b91c1c26 !important;
+}
+
+/* ===== Trade rows ===== */
+:root:not(.ft-dark-theme) .trade-row--win {
+  background: #15803d0a !important;
+}
+
+:root:not(.ft-dark-theme) .trade-row--win:hover {
+  background: #15803d1a !important;
+}
+
+:root:not(.ft-dark-theme) .trade-row--loss {
+  background: #dc26260a !important;
+}
+
+:root:not(.ft-dark-theme) .trade-row--loss:hover {
+  background: #dc26261a !important;
+}
+
+/* ===== Duration dots ===== */
+:root:not(.ft-dark-theme) .duration-dot--green {
+  background: #15803d !important;
+  box-shadow: 0 0 4px #15803d66 !important;
+}
+
+:root:not(.ft-dark-theme) .duration-dot--yellow {
+  background: #ca8a04 !important;
+  box-shadow: 0 0 4px #ca8a0466 !important;
+}
+
+:root:not(.ft-dark-theme) .duration-dot--red {
+  background: #dc2626 !important;
+  box-shadow: 0 0 6px #dc262680 !important;
+}
+
+/* ===== Metric cells ===== */
+:root:not(.ft-dark-theme) .metric-cell {
+  background: #0000000a !important;
+  border: 1px solid #00000014 !important;
+  color: #2c2c2c !important;
+}
+
+:root:not(.ft-dark-theme) .metric-cell:hover {
+  background: #00000014 !important;
+}
+
+/* ===== Warning/anomaly ===== */
+:root:not(.ft-dark-theme) .warning-box {
+  background: #f59e0b1a !important;
+  border: 1px solid #f59e0b40 !important;
+  color: #92400e !important;
+}
+
+:root:not(.ft-dark-theme) .anomaly-warning {
+  color: #b45309 !important;
+}
+
+/* ===== Progress bars ===== */
+:root:not(.ft-dark-theme) .progress-track {
+  background: #0000000f !important;
+}
+
+:root:not(.ft-dark-theme) .progress-time {
+  background: #00000014 !important;
+}
+
+:root:not(.ft-dark-theme) .progress-profit {
+  background: #15803d44 !important;
+}
+
+/* ===== Profit benchmark widget ===== */
+:root:not(.ft-dark-theme) .profit-benchmark {
+  --glass-bg: #f5f2ed99;
+  --glass-border: #d8d2c840;
+}
+
+:root:not(.ft-dark-theme) .period-stats {
+  background: #0000000a !important;
+}
+
+/* ===== Edit toolbar ===== */
+:root:not(.ft-dark-theme) .edit-toolbar {
+  background: #e5e0d8ee;
+  border-bottom-color: rgba(99, 102, 241, 0.15);
+}
+
+/* ===== Scrollbars ===== */
+:root:not(.ft-dark-theme) ::-webkit-scrollbar-track {
+  background: #e5e0d8;
+}
+
+:root:not(.ft-dark-theme) ::-webkit-scrollbar-thumb {
+  background: #b8b0a4;
+}
+
+:root:not(.ft-dark-theme) ::-webkit-scrollbar-thumb:hover {
+  background: #a89e90;
+}
+
+/* ===== Console/Logs text ===== */
+:root:not(.ft-dark-theme) [class*="LogView"] {
+  color: #2c2c2c !important;
+}
+
+:root:not(.ft-dark-theme) [class*="LogView"] span,
+:root:not(.ft-dark-theme) [class*="LogView"] div,
+:root:not(.ft-dark-theme) [class*="LogView"] pre,
+:root:not(.ft-dark-theme) [class*="LogView"] code {
+  color: #333333 !important;
+}

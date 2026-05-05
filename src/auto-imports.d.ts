@@ -150,6 +150,7 @@ declare global {
   const onWatcherCleanup: typeof import('vue').onWatcherCleanup
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
   const plotConfigColumns: typeof import('./utils/charts/plotConfigColumns').plotConfigColumns
+  const previewConfig: typeof import('./composables/useConfigExport').previewConfig
   const profitBgClass: typeof import('./composables/tradeColumns').profitBgClass
   const provide: typeof import('vue').provide
   const provideLocal: typeof import('@vueuse/core').provideLocal
@@ -446,6 +447,9 @@ declare global {
   export type { BenchmarkPoint } from './composables/useBtcBenchmark'
   import('./composables/useBtcBenchmark')
   // @ts-ignore
+  export type { ConfigPreview } from './composables/useConfigExport'
+  import('./composables/useConfigExport')
+  // @ts-ignore
   export type { DaemonHealthState, HealthLevel } from './composables/useDaemonHealth'
   import('./composables/useDaemonHealth')
   // @ts-ignore
@@ -638,6 +642,7 @@ declare module 'vue' {
     readonly onWatcherCleanup: UnwrapRef<typeof import('vue')['onWatcherCleanup']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
     readonly plotConfigColumns: UnwrapRef<typeof import('./utils/charts/plotConfigColumns')['plotConfigColumns']>
+    readonly previewConfig: UnwrapRef<typeof import('./composables/useConfigExport')['previewConfig']>
     readonly profitBgClass: UnwrapRef<typeof import('./composables/tradeColumns')['profitBgClass']>
     readonly provide: UnwrapRef<typeof import('vue')['provide']>
     readonly provideLocal: UnwrapRef<typeof import('@vueuse/core')['provideLocal']>

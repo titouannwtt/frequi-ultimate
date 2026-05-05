@@ -563,7 +563,7 @@ onMounted(() => {
   refreshInterval = setInterval(() => {
     fetchAllSlots();
     fetchBenchmarks();
-  }, 5 * 60 * 1000); // refresh every 5 min
+  }, 30 * 1000); // refresh every 30s
 });
 
 onUnmounted(() => {

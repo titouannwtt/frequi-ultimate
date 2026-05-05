@@ -4,7 +4,7 @@ export default {
     trade: 'Operar',
     dashboard: 'Panel',
     chart: 'Gráfico',
-    logs: 'Registros',
+    logs: 'Logs',
     settings: 'Configuración',
     backtest: 'Backtest',
     downloadData: 'Descargar datos',

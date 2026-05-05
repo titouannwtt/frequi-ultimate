@@ -2,6 +2,7 @@
 import type { ComparisonTableItems, ColumnDefinition, BotGroup, CustomTag, AlertTypeDefinition, AlertConfigV2, AlertSettingConfig, DetectedAlert } from '@/types';
 import type Popover from 'primevue/popover';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { useExchangeRates } from '@/composables/exchangeRates';
 import { useBotComparisonStore, ALERT_TYPES, ALERT_CATEGORIES } from '@/stores/botComparison';
 import type { BotTagVisibility, BotFilters, ActiveSort, SortDirection, TagId } from '@/stores/botComparison';
@@ -9,6 +10,7 @@ import { useAlertDetection } from '@/composables/useAlertDetection';
 import { trackMouse, fakeEventAtMouse, fakeEvent, delayedHide, cancelDelayedHide, cleanupAllTimeouts } from '@/composables/usePopoverHover';
 import { computePosition, flip, shift, offset, arrow as arrowMiddleware } from '@floating-ui/dom';
 
+const router = useRouter();
 const { t, locale } = useI18n();
 const botStore = useBotStore();
 const compStore = useBotComparisonStore();
@@ -1387,64 +1389,50 @@ function showGroupsPopover(event: MouseEvent) {
   groupsPopover.value?.toggle(event);
 }
 
-// --- CSV Export ---
-function exportCSV() {
-  const headers = visibleOrderedColumns.value.map((c) => t(c.labelKey));
-  const rows = tableItems.value
-    .filter((item) => item.botId && !item.isGroupRow)
-    .map((item) => {
-      return visibleOrderedColumns.value.map((col) => {
-        switch (col.id) {
-          case 'botName': return item.botName;
-          case 'status': return item.isStarting ? 'Starting' : item.isOnline ? 'Online' : 'Offline';
-          case 'exchange': return item.exchange || '';
-          case 'trades': return item.trades || '';
-          case 'openProfit': return item.profitOpen?.toFixed(2) || '0';
-          case 'closedProfit': return item.profitClosed?.toFixed(2) || '0';
-          case 'balance': return item.balance?.toFixed(2) || '0';
-          case 'winLoss': return `${item.wins}/${item.losses}`;
-          case 'stakeAmount': return item.stakeAmount || '';
-          case 'port': return item.port?.toString() || '';
-          case 'strategy': return item.strategy || '';
-          case 'pairCount': return item.pairCount?.toString() || '0';
-          case 'stakeCurrency': return item.stakeCurrency || '';
-          case 'monthlyProfit': return item.monthlyProfit?.toFixed(2) || '0';
-          case 'yearlyProfit': return item.yearlyProfit?.toFixed(2) || '0';
-          default: return '';
-        }
-      });
-    });
-  const summaryItem = tableItems.value.find((i) => !i.botId && !i.isGroupRow);
-  if (summaryItem) {
-    const summaryRow = visibleOrderedColumns.value.map((col) => {
-      switch (col.id) {
-        case 'botName': return 'Summary';
-        case 'openProfit': return summaryItem.profitOpen?.toFixed(2) || '0';
-        case 'closedProfit': return summaryItem.profitClosed?.toFixed(2) || '0';
-        case 'balance': return summaryItem.balance?.toFixed(2) || '0';
-        case 'winLoss': return `${summaryItem.wins}/${summaryItem.losses}`;
-        case 'trades': return summaryItem.trades || '';
-        case 'monthlyProfit': return summaryItem.monthlyProfit?.toFixed(2) || '0';
-        case 'yearlyProfit': return summaryItem.yearlyProfit?.toFixed(2) || '0';
-        default: return '';
-      }
-    });
-    rows.push(summaryRow);
-  }
-  const escapeField = (f: string) => {
-    if (f.includes(',') || f.includes('"') || f.includes('\n')) {
-      return `"${f.replace(/"/g, '""')}"`;
+// --- Bot controls ---
+const botActionPending = ref<Record<string, string>>({});
+const confirmAction = ref<{ botId: string; action: string; label: string } | null>(null);
+
+async function executeBotAction(botId: string, action: string) {
+  const store = botStore.botStores[botId];
+  if (!store) return;
+  botActionPending.value[botId] = action;
+  try {
+    switch (action) {
+      case 'start': await store.startBot(); break;
+      case 'stop': await store.stopBot(); break;
+      case 'pause': await store.stopBuy(); break;
+      case 'reload': await store.reloadConfig(); break;
+      case 'forceExitAll': await store.forceexit({ tradeid: 'all' }); break;
     }
-    return f;
-  };
-  const csv = [headers.map(escapeField).join(','), ...rows.map((r) => r.map(escapeField).join(','))].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `bot_comparison_${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+    botActionFeedback.value[botId] = 'success';
+  } catch {
+    botActionFeedback.value[botId] = 'error';
+  }
+  delete botActionPending.value[botId];
+  setTimeout(() => { delete botActionFeedback.value[botId]; }, 2000);
+}
+
+const botActionFeedback = ref<Record<string, 'success' | 'error'>>({});
+
+function requestBotAction(botId: string, action: string, label: string) {
+  if (action === 'stop' || action === 'forceExitAll') {
+    confirmAction.value = { botId, action, label };
+  } else {
+    executeBotAction(botId, action);
+  }
+}
+
+function confirmAndExecute() {
+  if (confirmAction.value) {
+    executeBotAction(confirmAction.value.botId, confirmAction.value.action);
+    confirmAction.value = null;
+  }
+}
+
+const botActionMenuRef = ref<Record<string, InstanceType<typeof Popover>>>({});
+function showBotActionMenu(event: MouseEvent, botId: string) {
+  botActionMenuRef.value[botId]?.toggle(event);
 }
 
 // --- Keyboard shortcuts ---
@@ -1493,7 +1481,7 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyboard);
 });
 
-defineExpose({ showColumnPopover, showSortPopover, showFilterPopover, showAlertsPopover, showGroupsPopover, exportCSV });
+defineExpose({ showColumnPopover, showSortPopover, showFilterPopover, showAlertsPopover, showGroupsPopover });
 
 // --- Column ordering (from store) ---
 const columnOrder = computed({
@@ -3937,49 +3925,69 @@ const correlatedPairs = computed(() => {
 
           <!-- status -->
           <template v-else-if="col.id === 'status'">
-            <Badge
-              v-if="!data.botId"
-              class="items-center text-slate-200 bg-slate-800 cursor-pointer"
-              severity="contrast"
-              :title="t('botComparison.selectAllBots')"
-              @click="botStore.toggleBotsByState('all')"
-            >
-              {{ t('botComparison.all') }}
-            </Badge>
-            <Badge
-              v-else-if="data.isOnline && data.isDryRun"
-              class="items-center bg-green-800 text-slate-200 cursor-pointer"
-              severity="success"
-              :title="t('botComparison.selectDryBots')"
-              @click="botStore.toggleBotsByState('dry')"
-            >
-              {{ t('botComparison.dry') }}
-            </Badge>
-            <Badge
-              v-else-if="data.isOnline && !data.isDryRun"
-              class="items-center cursor-pointer"
-              severity="warning"
-              :title="t('botComparison.selectLiveBots')"
-              @click="botStore.toggleBotsByState('live')"
-            >
-              {{ t('botComparison.live') }}
-            </Badge>
-            <div v-else-if="data.isOnline === false" class="text-center">
-              <Badge class="items-center" severity="secondary">
-                {{ t('botComparison.offline') }}
-              </Badge>
-              <div
-                v-if="(data as ComparisonTableItems).lastSeenOnline"
-                class="text-xs opacity-60 mt-0.5"
+            <div class="flex items-center gap-1.5">
+              <!-- State indicator dot -->
+              <span v-if="data.botId && data.isOnline" class="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                :class="botStore.allBotState[data.botId]?.state === 'running' ? 'bg-green-500 ft-live-dot' : 'bg-amber-400'"
+              ></span>
+              <span v-else-if="data.botId && data.isOnline === false" class="inline-block w-2 h-2 rounded-full bg-surface-400 flex-shrink-0"></span>
+              <Badge
+                v-if="!data.botId"
+                class="items-center text-slate-200 bg-slate-800 cursor-pointer"
+                severity="contrast"
+                :title="t('botComparison.selectAllBots')"
+                @click="botStore.toggleBotsByState('all')"
               >
-                {{
-                  t('botComparison.offlineSince', {
-                    duration: humanizeDuration(
-                      (data as ComparisonTableItems).lastSeenOnline ?? 0,
-                    ),
-                  })
-                }}
+                {{ t('botComparison.all') }}
+              </Badge>
+              <Badge
+                v-else-if="data.isOnline && data.isDryRun"
+                class="items-center bg-green-800 text-slate-200 cursor-pointer"
+                severity="success"
+                :title="t('botComparison.selectDryBots')"
+                @click="botStore.toggleBotsByState('dry')"
+              >
+                {{ t('botComparison.dry') }}
+              </Badge>
+              <Badge
+                v-else-if="data.isOnline && !data.isDryRun"
+                class="items-center cursor-pointer"
+                severity="warning"
+                :title="t('botComparison.selectLiveBots')"
+                @click="botStore.toggleBotsByState('live')"
+              >
+                {{ t('botComparison.live') }}
+              </Badge>
+              <div v-else-if="data.isOnline === false" class="text-center">
+                <Badge class="items-center" severity="secondary">
+                  {{ t('botComparison.offline') }}
+                </Badge>
+                <div
+                  v-if="(data as ComparisonTableItems).lastSeenOnline"
+                  class="text-xs opacity-60 mt-0.5"
+                >
+                  {{
+                    t('botComparison.offlineSince', {
+                      duration: humanizeDuration(
+                        (data as ComparisonTableItems).lastSeenOnline ?? 0,
+                      ),
+                    })
+                  }}
+                </div>
               </div>
+              <!-- Bot action menu trigger -->
+              <button
+                v-if="data.botId && !(data as ComparisonTableItems).isGroupRow"
+                class="p-0.5 rounded transition-opacity flex-shrink-0"
+                :class="data.isOnline === false
+                  ? 'opacity-20 cursor-not-allowed'
+                  : 'hover:bg-surface-200 dark:hover:bg-surface-700 cursor-pointer opacity-50 hover:opacity-100'"
+                :title="data.isOnline === false ? t('botComparison.offline') : t('botComparison.botActions')"
+                :disabled="data.isOnline === false"
+                @click.stop="data.isOnline !== false && showBotActionMenu($event, data.botId!)"
+              >
+                <i-mdi-dots-vertical class="text-sm" />
+              </button>
             </div>
           </template>
 
@@ -4378,6 +4386,92 @@ const correlatedPairs = computed(() => {
         </template>
       </Column>
     </DataTable>
+
+    <!-- Bot action menu popovers -->
+    <template v-for="item in tableItems.filter(i => i.botId && !i.isGroupRow)" :key="'action-' + item.botId">
+      <Popover :ref="(el: any) => { if (el) botActionMenuRef[item.botId!] = el; }">
+        <div class="flex flex-col gap-0.5 p-1 min-w-[160px]">
+          <div v-if="item.isOnline === false" class="text-xs text-surface-400 px-2 py-1.5 text-center italic">
+            {{ t('botComparison.offline') }}
+          </div>
+          <template v-else>
+            <button
+              class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
+              :disabled="!!botActionPending[item.botId!]"
+              @click="requestBotAction(item.botId!, 'start', item.botName); botActionMenuRef[item.botId!]?.hide()"
+            >
+              <i-mdi-play class="text-green-500" /> {{ t('botComparison.actionStart') }}
+            </button>
+            <button
+              class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
+              :disabled="!!botActionPending[item.botId!]"
+              @click="requestBotAction(item.botId!, 'pause', item.botName); botActionMenuRef[item.botId!]?.hide()"
+            >
+              <i-mdi-pause class="text-amber-400" /> {{ t('botComparison.actionPause') }}
+            </button>
+            <button
+              class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
+              :disabled="!!botActionPending[item.botId!]"
+              @click="requestBotAction(item.botId!, 'reload', item.botName); botActionMenuRef[item.botId!]?.hide()"
+            >
+              <i-mdi-refresh class="text-blue-400" /> {{ t('botComparison.actionReload') }}
+            </button>
+            <div class="border-t border-surface-200 dark:border-surface-700 my-0.5"></div>
+            <button
+              class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-red-500/10 w-full text-left cursor-pointer transition-colors text-red-400"
+              :disabled="!!botActionPending[item.botId!]"
+              @click="requestBotAction(item.botId!, 'stop', item.botName); botActionMenuRef[item.botId!]?.hide()"
+            >
+              <i-mdi-stop class="text-red-500" /> {{ t('botComparison.actionStop') }}
+            </button>
+            <button
+              class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-red-500/10 w-full text-left cursor-pointer transition-colors text-red-400"
+              :disabled="!!botActionPending[item.botId!]"
+              @click="requestBotAction(item.botId!, 'forceExitAll', item.botName); botActionMenuRef[item.botId!]?.hide()"
+            >
+              <i-mdi-close-circle class="text-red-500" /> {{ t('botComparison.actionForceExitAll') }}
+            </button>
+          </template>
+          <!-- Navigation actions (always visible, even when offline) -->
+          <div class="border-t border-surface-200 dark:border-surface-700 my-0.5"></div>
+          <button
+            class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
+            @click="botStore.selectBot(item.botId!); router.push('/logs'); botActionMenuRef[item.botId!]?.hide()"
+          >
+            <i-mdi-console class="text-surface-500" /> {{ t('botComparison.viewLogs') }}
+          </button>
+          <button
+            class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
+            @click="botStore.selectBot(item.botId!); router.push('/trade'); botActionMenuRef[item.botId!]?.hide()"
+          >
+            <i-mdi-swap-horizontal class="text-surface-500" /> {{ t('botComparison.viewTrades') }}
+          </button>
+          <!-- Action feedback -->
+          <div v-if="botActionFeedback[item.botId!]" class="text-center py-1">
+            <i-mdi-check-circle v-if="botActionFeedback[item.botId!] === 'success'" class="text-green-500 text-lg" />
+            <i-mdi-close-circle v-else class="text-red-500 text-lg" />
+          </div>
+        </div>
+      </Popover>
+    </template>
+
+    <!-- Confirmation dialog -->
+    <Dialog
+      v-if="confirmAction"
+      :visible="!!confirmAction"
+      modal
+      :header="t('botComparison.confirmAction')"
+      :style="{ width: '350px' }"
+      @update:visible="confirmAction = null"
+    >
+      <p class="text-sm">
+        {{ t('botComparison.confirmActionMsg', { action: confirmAction.label, bot: confirmAction.botId }) }}
+      </p>
+      <template #footer>
+        <Button label="Cancel" severity="secondary" size="small" @click="confirmAction = null" />
+        <Button label="Confirm" severity="danger" size="small" @click="confirmAndExecute" />
+      </template>
+    </Dialog>
   </div>
 </template>
 

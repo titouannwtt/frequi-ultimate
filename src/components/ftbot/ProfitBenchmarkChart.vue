@@ -10,7 +10,6 @@ import {
   LegendComponent,
   TitleComponent,
   TooltipComponent,
-  ToolboxComponent,
   MarkLineComponent,
 } from 'echarts/components';
 import { use } from 'echarts/core';
@@ -38,7 +37,6 @@ use([
   LegendComponent,
   TitleComponent,
   TooltipComponent,
-  ToolboxComponent,
   MarkLineComponent,
 ]);
 
@@ -59,20 +57,20 @@ const props = withDefaults(
 const botStore = useBotStore();
 const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
-const { summaryCurrency, setSummaryCurrency } = useSummaryCurrency();
+const { summaryCurrency } = useSummaryCurrency();
 const { convert } = useExchangeRates();
 
 const chart = ref<InstanceType<typeof ECharts>>();
 
 // --- State ---
-type TabKey = 'combined' | 'perBot' | 'cumulative';
+type TabKey = 'combined' | 'perBot';
 type TimeframeKey = '1D' | '7D' | '30D' | '90D' | 'YTD' | 'ALL';
-type NormMode = 'pctFromStart' | 'absolute' | 'pctFromCapital';
+type ValueModeKey = 'pct' | 'abs';
 
 const activeTab = ref<TabKey>('combined');
 const selectedTimeframe = ref<TimeframeKey>('ALL');
-const normMode = ref<NormMode>('pctFromStart'); // Default to % from start
-const showSettings = ref(false);
+const normMode = ref<'pctFromStart'>('pctFromStart');
+const valueMode = ref<ValueModeKey>('pct');
 
 // --- Benchmark management ---
 const BENCHMARKS_STORAGE_KEY = 'ft_benchmarks_enabled';
@@ -153,35 +151,13 @@ function getBenchmarkColor(ticker: string): string {
   return BENCHMARK_COLORS[ticker] ?? `hsl(${(ticker.charCodeAt(0) * 37) % 360}, 60%, 55%)`;
 }
 
-// --- Currency selector ---
-const currencyOptions = ['auto', 'USDC', 'USDT', 'USD', 'BTC', 'ETH', 'EUR'];
-
-const currencyLabel = computed(() => {
-  if (summaryCurrency.value && summaryCurrency.value !== 'auto') {
-    return ` (${summaryCurrency.value})`;
-  }
-  return '';
-});
-
-function onCurrencyChange(event: Event) {
-  const val = (event.target as HTMLSelectElement).value;
-  setSummaryCurrency(val);
-}
-
-// --- Tabs, timeframes, normalization ---
+// --- Tabs, timeframes ---
 const tabs: { key: TabKey; labelKey: string }[] = [
   { key: 'combined', labelKey: 'profitBenchmark.tabCombined' },
   { key: 'perBot', labelKey: 'profitBenchmark.tabPerBot' },
-  { key: 'cumulative', labelKey: 'profitBenchmark.tabCumulative' },
 ];
 
 const timeframes: TimeframeKey[] = ['1D', '7D', '30D', '90D', 'YTD', 'ALL'];
-
-const normOptions: { key: NormMode; labelKey: string }[] = [
-  { key: 'pctFromStart', labelKey: 'profitBenchmark.normPctFromStart' },
-  { key: 'absolute', labelKey: 'profitBenchmark.normAbsolute' },
-  { key: 'pctFromCapital', labelKey: 'profitBenchmark.normPctFromCapital' },
-];
 
 // Bot color palette
 const BOT_COLORS = [
@@ -336,44 +312,22 @@ const cumulativeData = computed<CumPoint[]>(() => {
   return points;
 });
 
-// --- Normalized data ---
+// --- Normalized data (always % from start) ---
 const normalizedData = computed<CumPoint[]>(() => {
   const raw = cumulativeData.value;
   if (raw.length === 0) return [];
 
-  if (normMode.value === 'absolute') return raw;
-
   const startBal = totalStartingBalance.value;
   const perBotBal = startingBalancePerBot.value;
 
-  if (normMode.value === 'pctFromStart') {
-    // % from start: profit / starting_balance * 100 (fixed denominator)
-    return raw.map((p) => {
-      const pct: CumPoint = {
-        date: p.date,
-        combined: (p.combined / startBal) * 100,
-      };
-      botIds.value.forEach((id) => {
-        const bal = perBotBal[id] ?? 1;
-        pct[id] = ((p[id] ?? 0) / bal) * 100;
-      });
-      return pct;
-    });
-  }
-
-  // pctFromCapital: profit / (starting_balance + cumulative_profit) * 100
-  // Shows the marginal return on CURRENT capital (diminishes as capital grows)
   return raw.map((p) => {
-    const currentCapital = startBal + p.combined;
     const pct: CumPoint = {
       date: p.date,
-      combined: currentCapital > 0 ? (p.combined / currentCapital) * 100 : 0,
+      combined: (p.combined / startBal) * 100,
     };
     botIds.value.forEach((id) => {
       const bal = perBotBal[id] ?? 1;
-      const botProfit = p[id] ?? 0;
-      const botCapital = bal + botProfit;
-      pct[id] = botCapital > 0 ? (botProfit / botCapital) * 100 : 0;
+      pct[id] = ((p[id] ?? 0) / bal) * 100;
     });
     return pct;
   });
@@ -426,16 +380,7 @@ const benchmarkNormalized = computed<Record<string, PricePoint[]>>(() => {
   const result: Record<string, PricePoint[]> = {};
   for (const [ticker, data] of Object.entries(benchmarkRawData.value)) {
     if (data.length === 0) continue;
-    if (normMode.value === 'absolute') {
-      // In absolute mode: show USD price change rebased to 0
-      const startPrice = data[0].price;
-      result[ticker] = data.map((p) => ({
-        timestamp: p.timestamp,
-        price: ((p.price - startPrice) / startPrice) * 100, // Still %, but for 2nd axis labeling
-      }));
-    } else {
-      result[ticker] = normalizeToPercent(data);
-    }
+    result[ticker] = normalizeToPercent(data);
   }
   return result;
 });
@@ -496,7 +441,6 @@ const periodStats = computed<PeriodStats>(() => {
 
 // --- Chart series builders ---
 function buildCombinedSeries(): any[] {
-  const isNorm = normMode.value !== 'absolute';
   const series: any[] = [];
 
   series.push({
@@ -516,6 +460,8 @@ function buildCombinedSeries(): any[] {
       },
     },
     encode: { x: 'date', y: 'combined' },
+    animationDuration: 1500,
+    animationEasing: 'cubicOut',
   });
 
   // Open trades projection
@@ -523,13 +469,7 @@ function buildCombinedSeries(): any[] {
   if (props.openTrades.length > 0 && data.length > 0) {
     const lastPoint = data[data.length - 1]!;
     const totalOpen = Object.values(openProfitPerBot.value).reduce((s, v) => s + v, 0);
-    let projectedValue: number;
-
-    if (isNorm) {
-      projectedValue = lastPoint.combined + (totalOpen / totalStartingBalance.value) * 100;
-    } else {
-      projectedValue = lastPoint.combined + totalOpen;
-    }
+    const projectedValue = lastPoint.combined + (totalOpen / totalStartingBalance.value) * 100;
 
     series.push({
       type: 'line',
@@ -559,34 +499,6 @@ function buildPerBotSeries(): any[] {
   }));
 }
 
-function buildCumulativeSeries(): any[] {
-  const series: any[] = [];
-
-  // Cumulative total with HWM
-  const data = normalizedData.value;
-
-  series.push({
-    type: 'line',
-    name: t('profitBenchmark.combined'),
-    step: 'end',
-    symbol: 'none',
-    lineStyle: { color: settingsStore.chartTheme === 'dark' ? '#c2c2c2' : '#333' },
-    itemStyle: { color: settingsStore.chartTheme === 'dark' ? '#c2c2c2' : '#333' },
-    areaStyle: {
-      color: {
-        type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-        colorStops: [
-          { offset: 0, color: colorStore.colorProfit + '40' },
-          { offset: 1, color: colorStore.colorLoss + '10' },
-        ],
-      },
-    },
-    encode: { x: 'date', y: 'combined' },
-  });
-
-  return series;
-}
-
 /**
  * Build benchmark series.
  *
@@ -603,7 +515,6 @@ function buildCumulativeSeries(): any[] {
  */
 function buildBenchmarkSeries(): any[] {
   const series: any[] = [];
-  const isNorm = normMode.value !== 'absolute';
 
   for (const ticker of enabledBenchmarks.value) {
     const data = benchmarkNormalized.value[ticker];
@@ -615,11 +526,11 @@ function buildBenchmarkSeries(): any[] {
       name: ticker,
       smooth: true,
       symbol: 'none',
+      animationDuration: 1500,
+      animationEasing: 'cubicOut',
+      animationDurationUpdate: 500,
       lineStyle: { width: 1.8, color, type: 'dotted' },
       itemStyle: { color },
-      // In normalized mode, benchmarks share the profit y-axis (both in %)
-      // In absolute mode, benchmarks use a second y-axis
-      yAxisIndex: isNorm ? 0 : 1,
       data: data.map((p) => [p.timestamp, p.price]),
     });
   }
@@ -629,20 +540,11 @@ function buildBenchmarkSeries(): any[] {
 
 // --- Chart options ---
 const chartOptions = computed<EChartsOption>(() => {
-  const isNorm = normMode.value !== 'absolute';
   const activeBenchmarks = enabledBenchmarks.value.filter(
     (t) => benchmarkNormalized.value[t] && benchmarkNormalized.value[t].length > 0,
   );
-  const hasBenchmarks = activeBenchmarks.length > 0;
-  const needsSecondAxis = !isNorm && hasBenchmarks;
 
-  let tabSeries: any[];
-  switch (activeTab.value) {
-    case 'perBot': tabSeries = buildPerBotSeries(); break;
-    case 'cumulative': tabSeries = buildCumulativeSeries(); break;
-    case 'combined':
-    default: tabSeries = buildCombinedSeries(); break;
-  }
+  const tabSeries = activeTab.value === 'perBot' ? buildPerBotSeries() : buildCombinedSeries();
 
   const benchmarkSeries = buildBenchmarkSeries();
   const allSeries = [...tabSeries, ...benchmarkSeries];
@@ -665,34 +567,18 @@ const chartOptions = computed<EChartsOption>(() => {
   const yAxes: any[] = [
     {
       type: 'value',
-      name: isNorm ? t('profitBenchmark.profitPct') : t('profitBenchmark.profitAbs') + currencyLabel.value,
+      name: t('profitBenchmark.profitPct'),
       nameTextStyle: { color: '#808098', fontSize: 10 },
       splitLine: { show: true, lineStyle: { color: 'rgba(100, 100, 140, 0.08)', type: 'dashed' } },
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
         color: '#808098', fontSize: 10,
-        formatter: (value: number) => isNorm ? `${value.toFixed(1)}%` : formatPrice(value, 1),
+        formatter: (value: number) => `${value.toFixed(1)}%`,
       },
       nameRotate: 90, nameLocation: 'middle', nameGap: 45,
     },
   ];
-
-  if (needsSecondAxis) {
-    yAxes.push({
-      type: 'value',
-      name: t('profitBenchmark.benchmarkPct'),
-      nameTextStyle: { color: '#808098', fontSize: 10 },
-      splitLine: { show: false },
-      axisLine: { show: false },
-      axisTick: { show: false },
-      axisLabel: {
-        color: '#808098', fontSize: 10,
-        formatter: (value: number) => `${value.toFixed(1)}%`,
-      },
-      nameRotate: -90, nameLocation: 'middle', nameGap: 45,
-    });
-  }
 
   const dims = ['date', 'combined', ...botIds.value];
 
@@ -702,15 +588,9 @@ const chartOptions = computed<EChartsOption>(() => {
       dimensions: dims,
       source: normalizedData.value,
     },
-    toolbox: {
-      feature: {
-        dataZoom: { title: { zoom: 'Zoom', back: 'Reset' } },
-        restore: { title: 'Reset' },
-      },
-      right: 10,
-      top: 5,
-      iconStyle: { borderColor: '#666' },
-    },
+    animationDuration: 1500,
+    animationEasing: 'cubicOut',
+    animationDurationUpdate: 500,
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'cross', crossStyle: { color: '#555' } },
@@ -744,16 +624,14 @@ const chartOptions = computed<EChartsOption>(() => {
           } else if (p.seriesName === t('profitBenchmark.combined') || activeTab.value === 'perBot') {
             if (profitValue === null) profitValue = val;
           }
-          const formatted = (isNorm || isBenchmark)
-            ? `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`
-            : formatPrice(val, 2);
+          const formatted = `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`;
           html += `<div style="display:flex;justify-content:space-between;gap:12px">`
             + `<span>${p.marker} ${p.seriesName}</span>`
             + `<span style="font-weight:600">${formatted}</span></div>`;
         }
 
         // Show outperformance comparison for each benchmark
-        if (profitValue !== null && isNorm) {
+        if (profitValue !== null) {
           for (const [ticker, bVal] of Object.entries(benchmarkValues)) {
             const diff = profitValue - bVal;
             const color = diff >= 0 ? '#22c55e' : '#ef4444';
@@ -792,7 +670,7 @@ const chartOptions = computed<EChartsOption>(() => {
       splitLine: { show: true, lineStyle: { color: 'rgba(100, 100, 140, 0.08)', type: 'dashed' } },
     },
     yAxis: yAxes,
-    grid: { left: '60', right: needsSecondAxis ? '60' : '20', top: '35', bottom: '65' },
+    grid: { left: '60', right: '20', top: '35', bottom: '65' },
     dataZoom: [
       { type: 'inside', start: 0, end: 100 },
       { type: 'slider', start: 0, end: 100, height: 20, bottom: 5 },
@@ -805,25 +683,12 @@ const chartOptions = computed<EChartsOption>(() => {
 const chartDescription = computed(() => {
   const tab = activeTab.value;
   const tf = selectedTimeframe.value;
-  const norm = normMode.value;
   const benchmarks = enabledBenchmarks.value;
 
-  let desc = '';
-
-  // Tab description
-  if (tab === 'combined') desc += t('profitBenchmark.descCombined');
-  else if (tab === 'perBot') desc += t('profitBenchmark.descPerBot');
-  else desc += t('profitBenchmark.descCumulative');
-
-  // Period
+  let desc = tab === 'combined' ? t('profitBenchmark.descCombined') : t('profitBenchmark.descPerBot');
   desc += ` ${t('profitBenchmark.descOverPeriod', { period: tf })}`;
+  desc += `, ${t('profitBenchmark.descNormPctStart')}`;
 
-  // Normalization
-  if (norm === 'pctFromStart') desc += `, ${t('profitBenchmark.descNormPctStart')}`;
-  else if (norm === 'absolute') desc += `, ${t('profitBenchmark.descNormAbsolute', { currency: summaryCurrency.value || 'auto' })}`;
-  else desc += `, ${t('profitBenchmark.descNormPctCapital')}`;
-
-  // Benchmarks
   if (benchmarks.length > 0) {
     desc += `. ${t('profitBenchmark.descBenchmarks', { list: benchmarks.join(', ') })}`;
     desc += ` ${t('profitBenchmark.descBenchmarkHint')}`;
@@ -914,42 +779,6 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
           {{ tf }}
         </button>
       </div>
-
-      <div class="w-px h-4 bg-gray-600/30"></div>
-
-      <!-- Currency selector -->
-      <select
-        :value="summaryCurrency"
-        class="text-[10px] bg-transparent border border-gray-600/30 rounded-md px-1.5 py-0.5 text-gray-300 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
-        :title="t('profitBenchmark.currencySelector')"
-        @change="onCurrencyChange"
-      >
-        <option
-          v-for="curr in currencyOptions"
-          :key="curr"
-          :value="curr"
-          class="bg-gray-800 text-gray-200"
-        >
-          {{ curr === 'auto' ? t('profitBenchmark.currencyAuto') : curr }}
-        </option>
-      </select>
-
-      <div class="w-px h-4 bg-gray-600/30"></div>
-
-      <!-- Normalization dropdown -->
-      <select
-        v-model="normMode"
-        class="text-[10px] bg-transparent border border-gray-600/30 rounded-md px-1.5 py-0.5 text-gray-300 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
-      >
-        <option
-          v-for="opt in normOptions"
-          :key="opt.key"
-          :value="opt.key"
-          class="bg-gray-800 text-gray-200"
-        >
-          {{ t(opt.labelKey) }}
-        </option>
-      </select>
 
       <div class="flex-1"></div>
 
@@ -1042,14 +871,6 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
 
       <div class="w-px h-4 bg-gray-600/30"></div>
 
-      <!-- Export CSV -->
-      <button
-        class="px-1.5 py-0.5 text-[10px] text-gray-400 hover:text-gray-200 hover:bg-white/5 rounded transition-all cursor-pointer"
-        :title="t('profitBenchmark.exportCSV')"
-        @click="exportCSV"
-      >
-        <i-mdi-download class="inline w-3.5 h-3.5" />
-      </button>
       <!-- Export PNG -->
       <button
         class="px-1.5 py-0.5 text-[10px] text-gray-400 hover:text-gray-200 hover:bg-white/5 rounded transition-all cursor-pointer"
@@ -1058,46 +879,6 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
       >
         <i-mdi-image class="inline w-3.5 h-3.5" />
       </button>
-
-      <!-- Settings gear -->
-      <button
-        class="px-1.5 py-0.5 text-[10px] text-gray-400 hover:text-gray-200 hover:bg-white/5 rounded transition-all cursor-pointer"
-        :title="t('profitBenchmark.settings')"
-        @click="showSettings = !showSettings"
-      >
-        <i-mdi-cog class="inline w-3.5 h-3.5" />
-      </button>
-    </div>
-
-    <!-- Settings panel (collapsible) -->
-    <div
-      v-if="showSettings"
-      class="flex flex-wrap gap-4 px-3 py-2 text-[10px] border-b border-gray-700/30"
-      style="background: rgba(100, 100, 160, 0.04)"
-    >
-      <div class="flex flex-col gap-1">
-        <span class="text-gray-500 uppercase tracking-wide font-semibold">{{ t('profitBenchmark.normalization') }}</span>
-        <label
-          v-for="opt in normOptions"
-          :key="opt.key"
-          class="flex items-center gap-1.5 cursor-pointer"
-        >
-          <input
-            :checked="normMode === opt.key"
-            type="radio"
-            name="normMode"
-            class="accent-indigo-500 w-3 h-3"
-            @change="normMode = opt.key"
-          />
-          <span class="text-gray-300">{{ t(opt.labelKey) }}</span>
-        </label>
-      </div>
-      <div class="flex flex-col gap-1">
-        <span class="text-gray-500 uppercase tracking-wide font-semibold">{{ t('profitBenchmark.normExplain') }}</span>
-        <p class="text-gray-400 max-w-xs leading-relaxed">
-          {{ t('profitBenchmark.normExplainDetail') }}
-        </p>
-      </div>
     </div>
 
     <!-- Stats strip -->
@@ -1109,7 +890,6 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
           class="font-semibold"
         >
           {{ formatPrice(periodStats.periodReturn, 2) }}
-          <span v-if="currencyLabel" class="text-gray-500 font-normal text-[0.6rem]">{{ currencyLabel.trim() }}</span>
           <span class="text-gray-500 font-normal">({{ periodStats.periodReturnPct >= 0 ? '+' : '' }}{{ periodStats.periodReturnPct.toFixed(2) }}%)</span>
         </span>
       </div>

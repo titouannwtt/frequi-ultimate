@@ -365,7 +365,7 @@ function buildHistogramChart(): EChartsOption {
       name: t('profitDist.profitPct'),
       nameLocation: 'middle',
       nameGap: 30,
-      axisLabel: { rotate: 45, fontSize: 10 },
+      axisLabel: { rotate: 45, fontSize: 9, interval: 'auto' },
     },
     yAxis: {
       type: 'value',
@@ -382,7 +382,7 @@ function buildHistogramChart(): EChartsOption {
         data: data.map((d) => ({
           value: d.count,
           itemStyle: {
-            color: d.isPositive ? colorProfit : colorLoss,
+            color: d.isPositive ? `${colorProfit}80` : `${colorLoss}80`,
             borderRadius: [2, 2, 0, 0],
           },
         })),
@@ -457,7 +457,7 @@ function buildPerBotChart(): EChartsOption {
       name: t('profitDist.profitPct'),
       nameLocation: 'middle',
       nameGap: 30,
-      axisLabel: { rotate: 45, fontSize: 10 },
+      axisLabel: { rotate: 45, fontSize: 9, interval: 'auto' },
     },
     yAxis: {
       type: 'value',
@@ -515,7 +515,7 @@ function buildPerPairChart(): EChartsOption {
         data: reversed.map((d) => ({
           value: d.avgProfit,
           itemStyle: {
-            color: d.avgProfit >= 0 ? colorProfit : colorLoss,
+            color: d.avgProfit >= 0 ? `${colorProfit}80` : `${colorLoss}80`,
             borderRadius: d.avgProfit >= 0 ? [0, 3, 3, 0] : [3, 0, 0, 3],
           },
         })),

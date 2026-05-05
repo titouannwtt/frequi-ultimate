@@ -21,7 +21,7 @@ const OPEN_COLUMNS: TradeColumnDef[] = [
   { key: 'pair', labelKey: 'enhancedTrades.colPair', defaultVisible: true, sortable: true, icon: 'i-mdi-swap-horizontal' },
   { key: 'type', labelKey: 'enhancedTrades.colType', defaultVisible: true, sortable: true, icon: 'i-mdi-arrow-up-down' },
   { key: 'leverage', labelKey: 'enhancedTrades.colLeverage', defaultVisible: true, sortable: true, icon: 'i-mdi-multiplication' },
-  { key: 'open_rate', labelKey: 'enhancedTrades.colEntryPrice', defaultVisible: true, sortable: true, icon: 'i-mdi-login' },
+  { key: 'open_rate', labelKey: 'enhancedTrades.colEntryPrice', defaultVisible: true, sortable: false, icon: 'i-mdi-login' },
   { key: 'current_rate', labelKey: 'enhancedTrades.colCurrentPrice', defaultVisible: true, sortable: true, openOnly: true, icon: 'i-mdi-currency-usd' },
   { key: 'profit_pct', labelKey: 'enhancedTrades.colProfitPct', defaultVisible: true, sortable: true, icon: 'i-mdi-percent' },
   { key: 'profit_abs', labelKey: 'enhancedTrades.colProfitAbs', defaultVisible: true, sortable: true, icon: 'i-mdi-cash' },
@@ -36,10 +36,10 @@ const OPEN_COLUMNS: TradeColumnDef[] = [
 ];
 
 const CLOSED_EXTRA_COLUMNS: TradeColumnDef[] = [
-  { key: 'close_rate', labelKey: 'enhancedTrades.colClosePrice', defaultVisible: true, closedOnly: true, sortable: true, icon: 'i-mdi-logout' },
+  { key: 'close_rate', labelKey: 'enhancedTrades.colClosePrice', defaultVisible: true, closedOnly: true, sortable: false, icon: 'i-mdi-logout' },
   { key: 'exit_reason', labelKey: 'enhancedTrades.colCloseReason', defaultVisible: true, closedOnly: true, sortable: true, icon: 'i-mdi-flag' },
   { key: 'close_date', labelKey: 'enhancedTrades.colCloseDate', defaultVisible: true, closedOnly: true, sortable: true, icon: 'i-mdi-calendar-end' },
-  { key: 'closed_ago', labelKey: 'enhancedTrades.colClosedAgo', defaultVisible: false, closedOnly: true, sortable: true, icon: 'i-mdi-history' },
+  { key: 'closed_ago', labelKey: 'enhancedTrades.colClosedAgo', defaultVisible: false, closedOnly: true, sortable: false, icon: 'i-mdi-history' },
   { key: 'fee', labelKey: 'enhancedTrades.colFee', defaultVisible: false, closedOnly: true, sortable: true, icon: 'i-mdi-receipt' },
 ];
 
@@ -149,8 +149,10 @@ export function durationAnomalyPct(trade: Trade, closedTrades?: Trade[]): number
   const ms = tradeDurationMs(trade);
 
   if (closedTrades && closedTrades.length >= 3) {
-    // Percentile-based (same as DurationHealthPopover)
-    const durations = closedTrades
+    const botTrades = trade.botId
+      ? closedTrades.filter(t => t.botId === trade.botId)
+      : closedTrades;
+    const durations = botTrades
       .map(t => tradeDurationMs(t))
       .filter(d => d > 0)
       .sort((a, b) => a - b);
@@ -160,7 +162,6 @@ export function durationAnomalyPct(trade: Trade, closedTrades?: Trade[]): number
     }
   }
 
-  // Fallback: fixed 72h scale
   const hours = ms / 3600000;
   return Math.min((hours / 72) * 100, 100);
 }

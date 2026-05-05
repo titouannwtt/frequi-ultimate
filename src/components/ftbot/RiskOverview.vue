@@ -239,7 +239,18 @@ const worstDrawdownTrade = computed(() => {
 </script>
 
 <template>
-  <div class="risk-overview flex flex-col h-full p-3 gap-3">
+  <div class="risk-overview flex flex-col h-full p-3 gap-3" style="animation: ft-fade-in 300ms ease-out">
+    <!-- Risk Level Badge -->
+    <div class="flex items-center justify-center gap-2 py-1">
+      <span
+        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+        :class="exposurePct > 70 ? 'bg-red-500/15 text-red-400 border border-red-500/20' : exposurePct > 40 ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' : 'bg-green-500/15 text-green-400 border border-green-500/20'"
+      >
+        <span class="w-2 h-2 rounded-full" :class="exposurePct > 70 ? 'bg-red-500' : exposurePct > 40 ? 'bg-amber-500' : 'bg-green-500'"></span>
+        {{ exposurePct > 70 ? t('riskOverview.riskHigh') : exposurePct > 40 ? t('riskOverview.riskModerate') : t('riskOverview.riskLow') }}
+      </span>
+    </div>
+
     <!-- Current Exposure Gauge -->
     <div
       class="flex flex-col gap-2 rounded-lg px-3 py-2 cursor-help"

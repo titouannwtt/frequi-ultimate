@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import './stratdev-tokens.css';
+@import './light-mode.css';
 
 @plugin 'tailwindcss-primeui';
 
@@ -44,6 +45,9 @@
 
     --p-primary-color: var(--p-primary-600);
 
+    /* ── Dashboard layout control ── */
+    --ft-widget-opacity: 1;
+
     /* Reduce size of listboxes*/
     --p-listbox-option-padding: 0.15rem 0.75rem;
 
@@ -63,15 +67,18 @@
 
     --p-selectbutton-border-radius: var(--radius-sm);
     --p-togglebutton-content-border-radius: 0px;
-    /* --p-button-link-color: var(--p-surface-200); */
-    /* --p-togglebutton-content-border-radius: var(--radius-sm); */
-    /* --p-button-sm-padding-y: 0.1rem;
-    --p-button-sm-padding-x: 0.4rem; */
+  }
 
-    /* --p-datatable-row-selected-background: var(--p-highlight-background); */
-    /* --p-datatable-row-selected-color: var(--p-primary-contrast); */
-
-      /* --p-primary-color: var(--p-primary-500); */
+  /* ── Warm gray light mode surfaces ── */
+  :root:not(.ft-dark-theme) {
+    --p-surface-0: #f8f6f3;
+    --p-surface-50: #f0ece6;
+    --p-surface-100: #e5e0d8;
+    --p-surface-200: #d8d2c8;
+    --p-surface-300: #c8c0b4;
+    --p-surface-400: #a89e90;
+    --p-surface-500: #7d7568;
+    --p-text-color: #3a3630;
   }
 
   .ft-dark-theme {
@@ -138,37 +145,6 @@ html {
 .vue-grid-item {
     /*  Fix white corners in vue-grid-item. */
     background-color: unset !important;
-}
-
-/* Print stylesheet for PDF export */
-@media print {
-  header, .navbar-glass, nav, .drag-header button, .no-print {
-    display: none !important;
-  }
-  body {
-    zoom: 0.6;
-    background: white !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  .p-datatable {
-    font-size: 8px !important;
-  }
-  .p-datatable th, .p-datatable td {
-    padding: 2px 4px !important;
-  }
-  .vue-grid-item {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-  /* Remove scrollbars */
-  * {
-    overflow: visible !important;
-  }
-  @page {
-    size: A4 landscape;
-    margin: 10mm;
-  }
 }
 
 /* Hide PrimeVue's native popover arrow — we use Floating UI's arrow instead */

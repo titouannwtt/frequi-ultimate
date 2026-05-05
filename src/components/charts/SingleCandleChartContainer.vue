@@ -52,7 +52,6 @@ const isLoadingDataset = computed((): boolean => {
   if (props.historicView) {
     return botStore.activeBot.historyStatus === LoadingStatus.loading;
   }
-
   return botStore.activeBot.candleDataStatus === LoadingStatus.loading;
 });
 const noDatasetText = computed((): string => {
@@ -62,15 +61,15 @@ const noDatasetText = computed((): string => {
 
   switch (status) {
     case LoadingStatus.not_loaded:
-      return 'Not loaded yet.';
+      return t('charts.notLoadedYet');
     case LoadingStatus.loading:
-      return 'Loading...';
+      return t('charts.loading');
     case LoadingStatus.success:
-      return 'No data available';
+      return t('charts.noData');
     case LoadingStatus.error:
-      return 'Failed to load data';
+      return t('charts.loadError');
     default:
-      return 'Unknown';
+      return '';
   }
 });
 
@@ -104,11 +103,9 @@ watch(
 watch(
   () => plotStore.plotConfig,
   () => {
-    // Trigger reload if the used columns are not loaded yet but would be available.
     const hasAllColumns = plotStore.usedColumns.some(
       (c) => datasetColumns.value.includes(c) && !datasetLoadedColumns.value.includes(c),
     );
-
     if (settingsStore.useReducedPairCalls && hasAllColumns) {
       refresh();
     }
@@ -121,73 +118,176 @@ watch(
     refreshIfNecessary();
   },
 );
+
+// Signal counts
+const longEntries = computed(() => dataset.value?.enter_long_signals ?? dataset.value?.buy_signals ?? 0);
+const longExits = computed(() => dataset.value?.exit_long_signals ?? dataset.value?.sell_signals ?? 0);
+const shortEntries = computed(() => dataset.value?.enter_short_signals ?? 0);
+const shortExits = computed(() => dataset.value?.exit_short_signals ?? 0);
+const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.value > 0);
 </script>
 
 <template>
   <div
-    class="flex-fill w-full flex-col align-items-stretch flex"
+    class="single-chart-container"
     :class="{
       'h-full': isSinglePairView,
-      'h-150 border border-r border-b border-surface-300 dark:border-surface-700':
-        !isSinglePairView,
+      'multi-view': !isSinglePairView,
     }"
   >
-    <div class="flex me-0 w-full items-center justify-between">
-      <div class="ms-1 md:ms-2 flex flex-wrap md:flex-nowrap items-center gap-1">
-        <div class="flex flex-col md:flex-row md:gap-2">
-          <div class="flex flex-row flex-wrap gap-2">
-            <small v-if="dataset" class="text-sm text-nowrap" :title="t('charts.longEntrySignals')"
-              >{{ t('charts.longEntries') }}: {{ dataset.enter_long_signals || dataset.buy_signals }}</small
-            >
-            <small v-if="dataset" class="text-sm text-nowrap" :title="t('charts.longExitSignals')"
-              >{{ t('charts.longExits') }}: {{ dataset.exit_long_signals || dataset.sell_signals }}</small
-            >
-          </div>
-          <div class="flex flex-row flex-wrap gap-2">
-            <small v-if="dataset && dataset.enter_short_signals" class="text-sm text-nowrap"
-              >{{ t('charts.shortEntries') }}: {{ dataset.enter_short_signals }}</small
-            >
-            <small v-if="dataset && dataset.exit_short_signals" class="text-sm text-nowrap"
-              >{{ t('charts.shortExits') }}: {{ dataset.exit_short_signals }}</small
-            >
-          </div>
-        </div>
+    <!-- Signal stats bar -->
+    <div v-if="dataset" class="signal-bar">
+      <div class="signal-stats">
+        <span class="signal-pill long-entry" :title="t('charts.longEntrySignals')">
+          <i-mdi-triangle class="w-2.5 h-2.5" />
+          {{ longEntries }}
+        </span>
+        <span class="signal-pill long-exit" :title="t('charts.longExitSignals')">
+          <i-mdi-diamond class="w-2.5 h-2.5" />
+          {{ longExits }}
+        </span>
+        <template v-if="hasShortSignals">
+          <span class="signal-pill short-entry" :title="t('charts.shortEntries')">
+            <i-mdi-triangle-down class="w-2.5 h-2.5" />
+            {{ shortEntries }}
+          </span>
+          <span class="signal-pill short-exit">
+            <i-mdi-diamond class="w-2.5 h-2.5" />
+            {{ shortExits }}
+          </span>
+        </template>
       </div>
-      <div>
-        {{ pair || 'Pair' }}
+      <span class="pair-label">{{ pair || 'Pair' }}</span>
+      <div class="signal-bar-right">
+        <ProgressSpinner v-if="isLoadingDataset" class="w-3.5 h-3.5" stroke-width="4" />
       </div>
-      <div v-if="isLoadingDataset">
-        <ProgressSpinner class="w-4 h-4" stroke-width="4" small label="Spinning" />
-      </div>
-      <div v-else class="w-4 h-4"></div>
     </div>
-    <div class="h-full flex">
-      <div class="min-w-0 w-full flex-1">
-        <CandleChart
-          v-if="hasDataset"
-          :dataset="dataset"
-          :trades="trades"
-          :plot-config="plotStore.plotConfig"
-          :heikin-ashi="settingsStore.useHeikinAshiCandles"
-          :show-mark-area="settingsStore.showMarkArea"
-          :use-u-t-c="settingsStore.timezone === 'UTC'"
-          :theme="settingsStore.chartTheme"
-          :slider-position="sliderPosition"
-          :color-up="colorStore.colorUp"
-          :color-down="colorStore.colorDown"
-          :start-candle-count="settingsStore.chartDefaultCandleCount"
-          :label-side="settingsStore.chartLabelSide"
-        />
-        <div v-else class="m-auto">
-          <ProgressSpinner v-if="isLoadingDataset" class="w-5 h-5" label="Spinning" />
-          <div v-else class="text-lg">
-            {{ noDatasetText }}
-          </div>
-          <p v-if="botStore.activeBot.historyTakesLonger">
-            This is taking longer than expected ... Hold on ...
-          </p>
-        </div>
+
+    <!-- Chart -->
+    <div class="chart-render">
+      <CandleChart
+        v-if="hasDataset"
+        :dataset="dataset"
+        :trades="trades"
+        :plot-config="plotStore.plotConfig"
+        :heikin-ashi="settingsStore.useHeikinAshiCandles"
+        :show-mark-area="settingsStore.showMarkArea"
+        :hide-simultaneous-entry-exit="settingsStore.hideSimultaneousEntryExit"
+        :use-u-t-c="settingsStore.timezone === 'UTC'"
+        :theme="settingsStore.chartTheme"
+        :slider-position="sliderPosition"
+        :color-up="colorStore.colorUp"
+        :color-down="colorStore.colorDown"
+        :start-candle-count="settingsStore.chartDefaultCandleCount"
+        :label-side="settingsStore.chartLabelSide"
+      />
+      <div v-else class="chart-placeholder">
+        <ProgressSpinner v-if="isLoadingDataset" class="w-6 h-6" />
+        <template v-else>
+          <i-mdi-chart-line class="w-8 h-8 text-surface-400 dark:text-surface-600 mb-2" />
+          <span class="text-sm text-surface-500 dark:text-surface-400">{{ noDatasetText }}</span>
+        </template>
+        <p v-if="botStore.activeBot.historyTakesLonger" class="text-xs text-surface-400 mt-2">
+          {{ t('charts.takingLonger') }}
+        </p>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.single-chart-container {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.single-chart-container.multi-view {
+  height: 37.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 0.375rem;
+}
+.ft-dark-theme .single-chart-container.multi-view {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Signal bar ── */
+.signal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0.625rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+.ft-dark-theme .signal-bar {
+  border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+
+.signal-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.signal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-family: monospace;
+}
+.signal-pill.long-entry {
+  color: #00cc20;
+  background: rgba(0, 204, 32, 0.08);
+}
+.signal-pill.long-exit {
+  color: #d4a017;
+  background: rgba(212, 160, 23, 0.08);
+}
+.signal-pill.short-entry {
+  color: #e04444;
+  background: rgba(224, 68, 68, 0.08);
+}
+.signal-pill.short-exit {
+  color: #d4a017;
+  background: rgba(212, 160, 23, 0.08);
+}
+
+.pair-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #4a4540;
+}
+.ft-dark-theme .pair-label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.signal-bar-right {
+  width: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Chart render area ── */
+.chart-render {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.chart-render > * {
+  width: 100%;
+  min-height: 0;
+}
+
+.chart-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+</style>

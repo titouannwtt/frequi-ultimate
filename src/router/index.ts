@@ -36,6 +36,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/DashboardViewCustom.vue'),
   },
   {
+    path: '/journal',
+    name: 'Trade Journal',
+    component: () => import('@/views/TradeJournalView.vue'),
+  },
+  {
     path: '/balance',
     name: 'Freqtrade Balance',
     component: () => import('@/components/ftbot/BotBalance.vue'),

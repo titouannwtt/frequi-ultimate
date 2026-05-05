@@ -437,7 +437,7 @@ const timeWindows = [
               <div class="flex items-center gap-2 ml-3.5 text-[9px] text-surface-500 mt-0.5">
                 <span v-if="group.count > 1">{{ relativeTime(group.last.timestamp) }} → {{ relativeTime(group.first.timestamp) }}</span>
                 <span v-else>{{ relativeTime(group.last.timestamp) }}</span>
-                <span class="text-surface-600">{{ shortModule(group.module) }}</span>
+                <span class="text-surface-500 dark:text-surface-300">{{ shortModule(group.module) }}</span>
               </div>
 
               <!-- Expanded -->
@@ -477,8 +477,8 @@ const timeWindows = [
             <span class="text-surface-500 shrink-0 whitespace-nowrap">{{ entry.timestampFormatted }}</span>
             <span class="shrink-0 w-16 text-center" :class="levelTextClass(entry.level)">{{ entry.level }}</span>
             <span class="shrink-0 px-1 rounded text-[10px] bg-surface-700 text-blue-300 whitespace-nowrap">{{ entry.botName }}</span>
-            <span class="shrink-0 px-1 rounded text-[10px] bg-surface-200 dark:bg-surface-700 text-surface-400 whitespace-nowrap">{{ shortModule(entry.module) }}</span>
-            <span class="dark:text-surface-200 break-all" @click="copyMessage(entry.message)">{{ entry.message }}</span>
+            <span class="shrink-0 px-1 rounded text-[10px] bg-surface-200 dark:bg-surface-700 text-surface-500 dark:text-surface-300 whitespace-nowrap">{{ shortModule(entry.module) }}</span>
+            <span class="dark:text-gray-200 break-all" @click="copyMessage(entry.message)">{{ entry.message }}</span>
           </div>
         </template>
 
@@ -494,7 +494,7 @@ const timeWindows = [
               <span class="inline-block px-1.5 rounded text-[10px] bg-surface-700 text-blue-300">{{ entry.botName }}</span>
               <span class="inline-block px-1.5 rounded text-[10px] bg-surface-200 dark:bg-surface-700 text-surface-400">{{ shortModule(entry.module) }}</span>
             </div>
-            <div class="text-xs dark:text-surface-200 font-mono whitespace-pre-wrap break-all" @click="copyMessage(entry.message)">{{ entry.message }}</div>
+            <div class="text-xs dark:text-gray-200 font-mono whitespace-pre-wrap break-all" @click="copyMessage(entry.message)">{{ entry.message }}</div>
             <div v-if="entry.exception" class="mt-1 px-2 py-1 rounded text-[9px] font-mono text-red-300 whitespace-pre-wrap break-all" style="background: rgba(239,68,68,0.08); max-height: 150px; overflow-y: auto">
               {{ entry.exception }}
             </div>

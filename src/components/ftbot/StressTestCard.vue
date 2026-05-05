@@ -104,10 +104,10 @@ const stakeCurrency = computed(() => {
 </script>
 
 <template>
-  <div class="p-4 space-y-4 h-full overflow-y-auto">
+  <div class="p-2 space-y-2 h-full overflow-y-auto text-xs">
     <!-- Header with total impact -->
     <div
-      class="rounded-xl p-4 text-center"
+      class="rounded-lg p-2 text-center"
       :style="{
         background: isPositiveImpact ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
         border: `1px solid ${isPositiveImpact ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
@@ -120,7 +120,7 @@ const stakeCurrency = computed(() => {
         </span>
       </div>
       <div
-        class="text-3xl font-bold"
+        class="text-2xl font-bold"
         :class="isPositiveImpact ? 'text-green-500' : 'text-red-500'"
       >
         {{ totalImpact >= 0 ? '+' : '' }}{{ totalImpact.toFixed(2) }} {{ stakeCurrency }}
@@ -129,14 +129,6 @@ const stakeCurrency = computed(() => {
         ⚠ {{ t('stressTest.liquidationWarning', { count: liquidationCount }) }}
       </div>
     </div>
-
-    <!-- Description -->
-    <p class="text-[0.65rem] text-gray-400 text-center leading-relaxed">
-      {{ t('stressTest.scenarioDesc') }}
-    </p>
-    <p class="text-[0.55rem] text-amber-500/70 text-center leading-relaxed">
-      {{ t('stressTest.isolatedOnly') }}
-    </p>
 
     <!-- Slider: -50% to +50% -->
     <div>

@@ -10,15 +10,15 @@ export function usePercentageTool(
 ) {
   const inputListener = useKeyModifier('Shift', { events: ['keydown', 'keyup'] });
 
-  const color = computed(() => (theme.value === 'dark' ? 'white' : 'black'));
-
   const startPos = ref({ x: 0, y: 0 });
   const drawLimitPerSecond = 144;
   const canDraw = ref(true);
   const active = ref(false);
   const closing = ref(false);
-  const boxHeight = 35;
-  const boxWidth = 170;
+
+  // TradingView-style label dimensions
+  const labelH = 28;
+  const labelW = 220;
 
   function roundTF(timestamp: number) {
     return roundTimeframe(timeframe_ms.value, timestamp, ROUND_CLOSER);
@@ -57,7 +57,10 @@ export function usePercentageTool(
       dataZoom: [{ disabled: true }],
       graphic: [
         {
+          // Selection area — gradient fill
+          id: 'pct-area',
           type: 'rect',
+          z: 3,
           shape: {
             x: startPos.value.x,
             width: 0,
@@ -65,33 +68,85 @@ export function usePercentageTool(
             height: 0,
           },
           style: {
-            fill: color.value,
-            // color: color.value,
-            opacity: 0.1,
+            fill: 'rgba(99, 102, 241, 0.06)',
           },
         },
         {
-          // Rect containing text ...
-          type: 'rect',
-          z: 5,
+          // Left vertical dashed line
+          id: 'pct-line-start',
+          type: 'line',
+          z: 4,
           shape: {
-            x: startPos.value.x,
-            width: boxWidth,
-            y: startPos.value.y,
-            height: boxHeight,
-            r: 5,
+            x1: startPos.value.x,
+            y1: 0,
+            x2: startPos.value.x,
+            y2: 2000,
           },
           style: {
-            fill: '#002fff',
-            // color: color.value,
-            opacity: 0.8,
+            stroke: 'rgba(99, 102, 241, 0.25)',
+            lineWidth: 1,
+            lineDash: [3, 3],
+          },
+        },
+        {
+          // Right vertical dashed line
+          id: 'pct-line-end',
+          type: 'line',
+          z: 4,
+          shape: {
+            x1: startPos.value.x,
+            y1: 0,
+            x2: startPos.value.x,
+            y2: 2000,
+          },
+          style: {
+            stroke: 'rgba(99, 102, 241, 0.25)',
+            lineWidth: 1,
+            lineDash: [3, 3],
+          },
+        },
+        {
+          // Horizontal connector line
+          id: 'pct-hline',
+          type: 'line',
+          z: 4,
+          shape: {
+            x1: startPos.value.x,
+            y1: startPos.value.y,
+            x2: startPos.value.x,
+            y2: startPos.value.y,
+          },
+          style: {
+            stroke: 'rgba(99, 102, 241, 0.4)',
+            lineWidth: 1,
+            lineDash: [4, 4],
+          },
+        },
+        {
+          // Label pill
+          id: 'pct-label',
+          type: 'rect',
+          z: 6,
+          shape: {
+            x: startPos.value.x,
+            width: labelW,
+            y: startPos.value.y,
+            height: labelH,
+            r: 4,
+          },
+          style: {
+            fill: 'rgba(99, 102, 241, 0.9)',
+            shadowBlur: 8,
+            shadowColor: 'rgba(99, 102, 241, 0.3)',
+            shadowOffsetY: 2,
           },
           textContent: {
             z: 10,
             style: {
-              text: '0 bars - 0%',
-              font: '14px sans-serif',
+              text: '0 bars  |  0.00%  |  0s',
+              font: '600 11px "Inter", system-ui, sans-serif',
               fill: 'white',
+              padding: [0, 8],
             },
           },
           textConfig: {
@@ -106,7 +161,13 @@ export function usePercentageTool(
     active.value = false;
     chartRef.value?.setOption({
       dataZoom: [{ disabled: false }],
-      graphic: [{ $action: 'remove' }, { $action: 'remove' }],
+      graphic: [
+        { id: 'pct-area', $action: 'remove' },
+        { id: 'pct-line-start', $action: 'remove' },
+        { id: 'pct-line-end', $action: 'remove' },
+        { id: 'pct-hline', $action: 'remove' },
+        { id: 'pct-label', $action: 'remove' },
+      ],
     });
   }
 
@@ -122,30 +183,68 @@ export function usePercentageTool(
     const endTime = roundTF(Number(endValues[0]));
     const timeDiff = Math.abs(startTime - endTime);
     const xr = chartRef.value?.convertToPixel({ seriesIndex: 0 }, [endTime, 0])[0] ?? 0;
-    const timeElapsed = humanizeDuration(timeDiff, { units: ['d', 'h', 'm'] });
-    const pct = Math.abs(((startPrice - endPrice) / startPrice) * 100).toFixed(2);
+    const timeElapsed = humanizeDuration(timeDiff, { units: ['d', 'h', 'm'], round: true });
+    const pctRaw = ((endPrice - startPrice) / startPrice) * 100;
+    const pct = pctRaw.toFixed(2);
+    const barCount = Math.round(timeDiff / timeframe_ms.value);
+    const isPositive = pctRaw >= 0;
+
+    // Dynamic colors
+    const areaColor = isPositive
+      ? 'rgba(38, 166, 154, 0.08)'
+      : 'rgba(239, 83, 80, 0.08)';
+    const lineColor = isPositive
+      ? 'rgba(38, 166, 154, 0.3)'
+      : 'rgba(239, 83, 80, 0.3)';
+    const pillColor = isPositive
+      ? 'rgba(38, 166, 154, 0.92)'
+      : 'rgba(239, 83, 80, 0.92)';
+    const pillShadow = isPositive
+      ? 'rgba(38, 166, 154, 0.3)'
+      : 'rgba(239, 83, 80, 0.3)';
+
+    // Area rectangle
+    const areaX = Math.min(startPos.value.x, xr);
+    const areaW = Math.abs(xr - startPos.value.x);
+    const areaY = Math.min(startPos.value.y, y);
+    const areaH = Math.abs(y - startPos.value.y);
+
+    // Label position — centered horizontally, above or below end point
+    const labelX = areaX + areaW / 2 - labelW / 2;
+    const labelY = y < startPos.value.y ? y - labelH - 6 : y + 6;
 
     chartRef.value?.setOption({
       graphic: [
         {
-          // Transparent rectangle ....
-          shape: {
-            width: xr > startPos.value.x ? -1 * (startPos.value.x - xr) : xr - startPos.value.x,
-            height: y > startPos.value.y ? -1 * (startPos.value.y - y) : y - startPos.value.y,
-          },
+          id: 'pct-area',
+          shape: { x: areaX, width: areaW, y: areaY, height: areaH },
+          style: { fill: areaColor },
         },
         {
-          // Rect containing text ...
-          shape: {
-            x: startPos.value.x + (xr - startPos.value.x) / 2 - boxWidth / 2,
-            y: y > startPos.value.y ? y - (boxHeight + 5) : y + 9,
+          id: 'pct-line-start',
+          shape: { x1: startPos.value.x, y1: areaY, x2: startPos.value.x, y2: areaY + areaH },
+          style: { stroke: lineColor },
+        },
+        {
+          id: 'pct-line-end',
+          shape: { x1: xr, y1: areaY, x2: xr, y2: areaY + areaH },
+          style: { stroke: lineColor },
+        },
+        {
+          id: 'pct-hline',
+          shape: { x1: startPos.value.x, y1: y, x2: xr, y2: y },
+          style: { stroke: lineColor },
+        },
+        {
+          id: 'pct-label',
+          shape: { x: labelX, y: labelY },
+          style: {
+            fill: pillColor,
+            shadowColor: pillShadow,
           },
           textContent: {
             style: {
-              textAlign: x < startPos.value.x ? 'left' : 'right',
-              text: `${timeDiff / timeframe_ms.value} bars (${
-                startPrice < endPrice ? pct : '-' + pct
-              }%) \n ${timeElapsed}`,
+              text: `${barCount} bars  |  ${isPositive ? '+' : ''}${pct}%  |  ${timeElapsed}`,
             },
           },
         },
