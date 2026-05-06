@@ -148,6 +148,7 @@ export const useLayoutStore = defineStore('layoutStore', {
       editMode: false,
       hiddenWidgets: [] as number[],
       widgetOpacity: 1,
+      widgetZoom: 100,
     };
   },
   getters: {
@@ -163,9 +164,7 @@ export const useLayoutStore = defineStore('layoutStore', {
     },
     toggleEditMode() {
       this.editMode = !this.editMode;
-      if (this.editMode) {
-        this.layoutLocked = false;
-      }
+      this.layoutLocked = !this.editMode;
     },
     toggleWidgetVisibility(id: number) {
       if (PROTECTED_WIDGETS.has(id)) return;
@@ -181,6 +180,9 @@ export const useLayoutStore = defineStore('layoutStore', {
     },
     setWidgetOpacity(v: number) {
       this.widgetOpacity = Math.max(0.3, Math.min(1, v));
+    },
+    setWidgetZoom(v: number) {
+      this.widgetZoom = Math.max(60, Math.min(120, Math.round(v)));
     },
   },
   persist: {
@@ -239,6 +241,7 @@ export const useLayoutStore = defineStore('layoutStore', {
         context.store.tradingLayout = JSON.parse(JSON.stringify(DEFAULT_TRADING_LAYOUT));
       }
       context.store.editMode = false;
+      context.store.layoutLocked = true;
     },
   },
 });
