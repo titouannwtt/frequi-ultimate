@@ -11,3 +11,4 @@ interface ImportMeta {
 }
 
 declare const __COMMIT_HASH__: string;
+declare const __FORK_VERSION__: string;
