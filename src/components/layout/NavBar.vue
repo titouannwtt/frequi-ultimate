@@ -73,6 +73,7 @@ onBeforeUnmount(() => {
 
 onMounted(async () => {
   await settingsStore.loadUIVersion();
+  settingsStore.checkForkUpdate();
   pingInterval.value = window.setInterval(botStore.pingAll, 60000);
 });
 
@@ -400,6 +401,23 @@ const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fu
             <div v-if="configMenuOpen" class="fixed inset-0 z-40" @click="configMenuOpen = false" />
           </div>
 
+          <!-- Fork version badge -->
+          <div class="flex flex-col items-end leading-tight">
+            <span
+              class="text-[11px] text-surface-500 font-mono cursor-default"
+              :title="`Build ${settingsStore.commitHash}`"
+            >v{{ settingsStore.forkVersion }}</span>
+            <a
+              v-if="settingsStore.forkUpdateAvailable"
+              href="https://github.com/titouannwtt/frequi-fork/releases/latest"
+              target="_blank"
+              rel="noopener"
+              class="fork-update-badge text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap"
+            >
+              {{ t('nav.newVersionAvailable') }}
+            </a>
+          </div>
+
           <!-- Settings button (rightmost) -->
           <button
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer"
@@ -464,9 +482,19 @@ const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fu
                   {{ item.label }}
                 </RouterLink>
                 <Divider />
-                <span class="text-surface-200 text-center"
-                  >{{ t('general.version') }}: {{ settingsStore.uiVersion }}</span
+                <span
+                  class="text-surface-400 text-xs font-mono"
+                  :title="`Build ${settingsStore.commitHash}`"
+                >v{{ settingsStore.forkVersion }}</span>
+                <a
+                  v-if="settingsStore.forkUpdateAvailable"
+                  href="https://github.com/titouannwtt/frequi-fork/releases/latest"
+                  target="_blank"
+                  rel="noopener"
+                  class="fork-update-badge text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap"
                 >
+                  {{ t('nav.newVersionAvailable') }}
+                </a>
                 <div class="flex flex-row items-center justify-center gap-2">
                   <ThemeSelect show-text />
                   <select
@@ -495,10 +523,11 @@ const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fu
     <Transition name="ft">
       <div
         v-if="layoutStore.editMode"
-        class="edit-toolbar flex items-center justify-center gap-4 py-2 px-4"
+        class="edit-toolbar flex items-center justify-center flex-wrap gap-x-4 gap-y-1 py-2 px-4"
       >
         <span class="text-xs text-surface-400">{{ t('nav.editModeHint') }}</span>
         <div class="flex items-center gap-2">
+          <i-mdi-eye-settings-outline class="w-3.5 h-3.5 text-surface-500" />
           <span class="text-xs text-surface-500">{{ t('nav.opacity') }}</span>
           <input
             type="range"
@@ -506,10 +535,32 @@ const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fu
             min="0.3"
             max="1"
             step="0.05"
-            class="w-24 accent-indigo-500"
+            class="w-20 accent-indigo-500"
             @input="layoutStore.setWidgetOpacity(parseFloat(($event.target as HTMLInputElement).value))"
           />
           <span class="text-xs text-surface-500 w-8">{{ Math.round(layoutStore.widgetOpacity * 100) }}%</span>
+        </div>
+        <div class="w-px h-4 bg-white/10" />
+        <div class="flex items-center gap-2">
+          <i-mdi-magnify class="w-3.5 h-3.5 text-surface-500" />
+          <span class="text-xs text-surface-500">Zoom</span>
+          <input
+            type="range"
+            :value="layoutStore.widgetZoom"
+            min="60"
+            max="120"
+            step="5"
+            class="w-20 accent-indigo-500"
+            @input="layoutStore.setWidgetZoom(parseInt(($event.target as HTMLInputElement).value))"
+          />
+          <span class="text-xs text-surface-500 w-8">{{ layoutStore.widgetZoom }}%</span>
+          <button
+            v-if="layoutStore.widgetZoom !== 100"
+            class="text-[10px] text-indigo-400 hover:text-indigo-300 cursor-pointer"
+            @click="layoutStore.setWidgetZoom(100)"
+          >
+            reset
+          </button>
         </div>
         <button
           class="px-3 py-1 text-xs rounded-md text-surface-400 hover:text-red-300 hover:bg-red-500/10 border border-surface-600 hover:border-red-400/30 transition-colors cursor-pointer"
@@ -739,5 +790,22 @@ const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fu
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(99, 102, 241, 0.2);
   z-index: 49;
+}
+
+.fork-update-badge {
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.25), rgba(249, 115, 22, 0.35));
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.4);
+  animation: fork-pulse 2s ease-in-out 3;
+  text-decoration: none;
+}
+.fork-update-badge:hover {
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.35), rgba(249, 115, 22, 0.5));
+  color: #fdba74;
+}
+
+@keyframes fork-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
 }
 </style>
