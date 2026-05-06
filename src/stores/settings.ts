@@ -3,6 +3,10 @@ import { TimeSummaryCols, TimeSummaryOptions } from '@/types';
 import type { ThemeName, UiVersion } from '@/types';
 import { FtWsMessageTypes } from '@/types/wsMessageTypes';
 
+const FORK_REPO = 'titouannwtt/frequi-fork';
+const UPDATE_CHECK_KEY = 'ftForkUpdateCheck';
+const UPDATE_CHECK_TTL = 3600_000; // 1 hour
+
 export enum OpenTradeVizOptions {
   showPill = 'showPill',
   asTitle = 'asTitle',
@@ -39,6 +43,7 @@ export const useSettingsStore = defineStore('uiSettings', {
       multiPairSelection: false,
       hideSimultaneousEntryExit: false,
       backtestAdditionalMetrics: ['profit_factor', 'expectancy'] as string[],
+      _latestForkVersion: null as string | null,
     };
   },
   getters: {
@@ -50,6 +55,19 @@ export const useSettingsStore = defineStore('uiSettings', {
     },
     uiVersion(state) {
       return `${state._uiVersion}-${__COMMIT_HASH__}`;
+    },
+    forkVersion(): string {
+      return __FORK_VERSION__;
+    },
+    commitHash(): string {
+      return __COMMIT_HASH__.trim();
+    },
+    latestForkVersion(state): string | null {
+      return state._latestForkVersion;
+    },
+    forkUpdateAvailable(state): boolean {
+      if (!state._latestForkVersion) return false;
+      return state._latestForkVersion !== __FORK_VERSION__;
     },
   },
   actions: {
@@ -66,9 +84,39 @@ export const useSettingsStore = defineStore('uiSettings', {
         }
       }
     },
+    async checkForkUpdate() {
+      try {
+        const cached = localStorage.getItem(UPDATE_CHECK_KEY);
+        if (cached) {
+          const { version, ts } = JSON.parse(cached);
+          if (Date.now() - ts < UPDATE_CHECK_TTL) {
+            this._latestForkVersion = version;
+            return;
+          }
+        }
+      } catch {
+        // ignore corrupt cache
+      }
+      try {
+        const { data } = await axios.get(
+          `https://api.github.com/repos/${FORK_REPO}/releases/latest`,
+          { timeout: 5000 },
+        );
+        const tag: string = data.tag_name ?? '';
+        const version = tag.startsWith('v') ? tag.slice(1) : tag;
+        this._latestForkVersion = version;
+        localStorage.setItem(
+          UPDATE_CHECK_KEY,
+          JSON.stringify({ version, ts: Date.now() }),
+        );
+      } catch {
+        // network error or no releases — silent
+      }
+    },
   },
   persist: {
     key: 'ftUISettings',
+    omit: ['_latestForkVersion'],
   },
 });
 

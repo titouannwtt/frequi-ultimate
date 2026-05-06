@@ -2,6 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 import createVuePlugin from '@vitejs/plugin-vue';
 import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import AutoImport from 'unplugin-auto-import/vite';
 import IconsResolve from 'unplugin-icons/resolver';
@@ -18,10 +19,13 @@ try {
   console.error('Failed to get commit hash. Running in this mode will not be supported.');
 }
 
+const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
+
 // https://vitejs.dev/config/
 export default defineConfig({
   define: {
     __COMMIT_HASH__: JSON.stringify(commitHash),
+    __FORK_VERSION__: JSON.stringify(pkg.version),
   },
   plugins: [
     createVuePlugin({
