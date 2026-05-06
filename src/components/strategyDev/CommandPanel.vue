@@ -18,6 +18,9 @@ const savedCommand = computed<string | null>(() => {
   if (run.value.run_type === RunType.wfa && store.wfaDetail) {
     return (store.wfaDetail.command as string) ?? null;
   }
+  if (run.value.run_type === RunType.backtest && store.backtestSnapshot) {
+    return (store.backtestSnapshot as any).command ?? null;
+  }
   return null;
 });
 
@@ -44,9 +47,48 @@ const flagDescriptions: Record<string, string> = {
 };
 
 const segments = computed<CmdSegment[]>(() => {
+  const segs: CmdSegment[] = [];
+
+  // Backtest: reconstruct from snapshot config and run metadata
+  if (run.value?.run_type === RunType.backtest) {
+    const snap = store.backtestSnapshot;
+    if (!snap) return [];
+
+    segs.push({ flag: '', value: 'freqtrade backtesting', description: 'Freqtrade command', copyText: 'freqtrade backtesting' });
+
+    if (run.value.strategy) {
+      segs.push({ flag: '--strategy', value: String(run.value.strategy), description: flagDescriptions['--strategy'], copyText: `--strategy ${run.value.strategy}` });
+    }
+    if (run.value.timeframe) {
+      segs.push({ flag: '--timeframe', value: String(run.value.timeframe), description: flagDescriptions['--timeframe'], copyText: `--timeframe ${run.value.timeframe}` });
+    }
+    if (run.value.timerange) {
+      segs.push({ flag: '--timerange', value: String(run.value.timerange), description: flagDescriptions['--timerange'], copyText: `--timerange ${run.value.timerange}` });
+    }
+    const cfg = snap.config as Record<string, unknown> | null;
+    if (cfg) {
+      const configFiles = cfg.config_files as string[] | undefined;
+      if (configFiles?.length) {
+        for (const f of configFiles) {
+          segs.push({ flag: '-c', value: String(f), description: 'Configuration file path', copyText: `-c ${f}` });
+        }
+      }
+      if (cfg.max_open_trades != null) {
+        segs.push({ flag: '--max-open-trades', value: String(cfg.max_open_trades), description: flagDescriptions['--max-open-trades'], copyText: `--max-open-trades ${cfg.max_open_trades}` });
+      }
+      if (cfg.dry_run_wallet != null) {
+        segs.push({ flag: '--dry-run-wallet', value: String(cfg.dry_run_wallet), description: flagDescriptions['--dry-run-wallet'], copyText: `--dry-run-wallet ${cfg.dry_run_wallet}` });
+      }
+      if (cfg.stake_amount != null) {
+        segs.push({ flag: '--stake-amount', value: String(cfg.stake_amount), description: flagDescriptions['--stake-amount'], copyText: `--stake-amount ${cfg.stake_amount}` });
+      }
+    }
+    return segs;
+  }
+
+  // Hyperopt / WFA: read from detail object
   const d = run.value?.run_type === RunType.hyperopt ? store.hyperoptDetail : store.wfaDetail;
   if (!d) return [];
-  const segs: CmdSegment[] = [];
   const cmdName = run.value?.run_type === RunType.hyperopt ? 'freqtrade hyperopt' : 'freqtrade walk-forward';
   segs.push({ flag: '', value: cmdName, description: 'Freqtrade command', copyText: cmdName });
 

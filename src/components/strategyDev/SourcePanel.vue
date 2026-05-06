@@ -98,9 +98,14 @@ async function copySource() {
 
     <div v-else-if="displaySource">
       <div class="flex items-center justify-between mb-2">
-        <h4 class="text-sm font-semibold">
-          {{ hasSnapshot ? t('strategyDev.sourceSaved') : t('strategyDev.sourceCurrent') }}
-        </h4>
+        <div>
+          <h4 class="text-sm font-semibold">
+            {{ hasSnapshot ? t('strategyDev.sourceSaved') : t('strategyDev.sourceCurrent') }}
+          </h4>
+          <div v-if="run?.strategy" class="text-xs text-surface-500 font-mono">
+            user_data/strategies/{{ run.strategy }}.py
+          </div>
+        </div>
         <div class="flex gap-2">
           <Button
             size="small"
