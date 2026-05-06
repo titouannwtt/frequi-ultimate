@@ -9,11 +9,14 @@ const botStore = useBotStore();
 type EventType = 'trade_opened' | 'trade_closed_profit' | 'trade_closed_loss' | 'bot_status' | 'alert' | 'dca';
 type TimeGroup = 'today' | 'yesterday' | 'thisWeek' | 'earlier';
 
+type TradingModeFilter = 'all' | 'live' | 'dry';
+
 interface TimelineEvent {
   id: string;
   timestamp: number;
   botId: string;
   botName: string;
+  isDryRun: boolean;
   type: EventType;
   pair?: string;
   direction?: 'long' | 'short';
@@ -29,6 +32,7 @@ interface TimelineEvent {
 const compactMode = ref(true);
 const searchQuery = ref('');
 const selectedBotFilter = ref<string>('all');
+const tradingModeFilter = ref<TradingModeFilter>('all');
 const enabledEventTypes = ref<Set<EventType>>(
   new Set(['trade_opened', 'trade_closed_profit', 'trade_closed_loss', 'bot_status', 'alert', 'dca']),
 );
@@ -95,12 +99,17 @@ const timeGroupOrder: TimeGroup[] = ['today', 'yesterday', 'thisWeek', 'earlier'
 
 // --- Available bots ---
 const availableBots = computed(() => {
-  const bots: { id: string; name: string }[] = [];
+  const bots: { id: string; name: string; isDryRun: boolean }[] = [];
   for (const [botId, store] of Object.entries(botStore.botStores)) {
     if (!store.isSelected) continue;
-    bots.push({ id: botId, name: store.uiBotName || 'Bot' });
+    bots.push({ id: botId, name: store.uiBotName || 'Bot', isDryRun: !!store.botState?.dry_run });
   }
   return bots;
+});
+
+const hasMultipleModes = computed(() => {
+  const modes = new Set(availableBots.value.map((b) => b.isDryRun));
+  return modes.size > 1;
 });
 
 // --- Build events ---
@@ -110,6 +119,7 @@ const allEvents = computed<TimelineEvent[]>(() => {
   for (const [botId, store] of Object.entries(botStore.botStores)) {
     if (!store.isSelected) continue;
     const botName = store.uiBotName || 'Bot';
+    const isDryRun = !!store.botState?.dry_run;
 
     // Open trades -> trade_opened events + DCA detection
     for (const trade of (store.openTrades as Trade[]) || []) {
@@ -120,18 +130,19 @@ const allEvents = computed<TimelineEvent[]>(() => {
         timestamp: trade.open_timestamp,
         botId,
         botName,
+        isDryRun,
         type: 'trade_opened',
         pair: trade.pair,
         direction: trade.is_short ? 'short' : 'long',
       });
 
-      // If DCA, add a DCA event
       if (isDca) {
         events.push({
           id: `dca-${botId}-${trade.trade_id}`,
-          timestamp: trade.open_timestamp + 1, // slightly after open
+          timestamp: trade.open_timestamp + 1,
           botId,
           botName,
+          isDryRun,
           type: 'dca',
           pair: trade.pair,
           direction: trade.is_short ? 'short' : 'long',
@@ -160,6 +171,7 @@ const allEvents = computed<TimelineEvent[]>(() => {
         timestamp: trade.close_timestamp,
         botId,
         botName,
+        isDryRun,
         type: isProfit ? 'trade_closed_profit' : 'trade_closed_loss',
         pair: trade.pair,
         direction: trade.is_short ? 'short' : 'long',
@@ -169,13 +181,13 @@ const allEvents = computed<TimelineEvent[]>(() => {
         stakeAmount: trade.stake_amount,
       });
 
-      // DCA detection on closed trades
       if ((trade.nr_of_successful_entries ?? 1) > 1) {
         events.push({
           id: `dca-closed-${botId}-${trade.trade_id}`,
           timestamp: trade.open_timestamp + 1,
           botId,
           botName,
+          isDryRun,
           type: 'dca',
           pair: trade.pair,
           direction: trade.is_short ? 'short' : 'long',
@@ -186,37 +198,68 @@ const allEvents = computed<TimelineEvent[]>(() => {
     }
   }
 
-  // Compute annotations for closed trades
+  // Compute annotations for closed trades (per bot)
   const closedEvents = events.filter(
     (e) => e.type === 'trade_closed_profit' || e.type === 'trade_closed_loss',
   );
   if (closedEvents.length > 0) {
-    const avgProfit =
-      closedEvents.reduce((s, e) => s + Math.abs(e.profitAbs ?? 0), 0) / closedEvents.length;
-    const avgDuration =
-      closedEvents.reduce((s, e) => s + (e.durationMs ?? 0), 0) / closedEvents.length;
-    let maxStake = 0;
-    let maxStakeId = '';
+    // Group closed events by bot for per-bot annotations
+    const byBot = new Map<string, TimelineEvent[]>();
     for (const e of closedEvents) {
-      if ((e.stakeAmount ?? 0) > maxStake) {
-        maxStake = e.stakeAmount ?? 0;
-        maxStakeId = e.id;
-      }
+      if (!byBot.has(e.botId)) byBot.set(e.botId, []);
+      byBot.get(e.botId)!.push(e);
     }
 
-    for (const e of closedEvents) {
-      const annotations: string[] = [];
-      if (Math.abs(e.profitAbs ?? 0) > avgProfit * 2) {
-        annotations.push(t('activityTimeline.annotationExceptional'));
+    for (const [, botEvents] of byBot) {
+      if (botEvents.length === 0) continue;
+
+      // Find first trade (oldest close_timestamp = earliest closed trade)
+      let firstTradeId = '';
+      let firstTradeTs = Infinity;
+      // Find best / worst / longest
+      let bestTradeId = '';
+      let bestProfit = -Infinity;
+      let worstTradeId = '';
+      let worstProfit = Infinity;
+      let longestTradeId = '';
+      let longestDuration = 0;
+
+      for (const e of botEvents) {
+        if (e.timestamp < firstTradeTs) {
+          firstTradeTs = e.timestamp;
+          firstTradeId = e.id;
+        }
+        if ((e.profitAbs ?? 0) > bestProfit) {
+          bestProfit = e.profitAbs ?? 0;
+          bestTradeId = e.id;
+        }
+        if ((e.profitAbs ?? 0) < worstProfit) {
+          worstProfit = e.profitAbs ?? 0;
+          worstTradeId = e.id;
+        }
+        if ((e.durationMs ?? 0) > longestDuration) {
+          longestDuration = e.durationMs ?? 0;
+          longestTradeId = e.id;
+        }
       }
-      if ((e.durationMs ?? 0) > avgDuration * 2 && avgDuration > 0) {
-        annotations.push(t('activityTimeline.annotationLongDuration'));
-      }
-      if (e.id === maxStakeId && maxStake > 0) {
-        annotations.push(t('activityTimeline.annotationLargestTrade'));
-      }
-      if (annotations.length > 0) {
-        e.annotation = annotations.join(' ');
+
+      for (const e of botEvents) {
+        const annotations: string[] = [];
+        if (e.id === firstTradeId) {
+          annotations.push(t('activityTimeline.annotationFirstTrade'));
+        }
+        if (e.id === bestTradeId && bestProfit > 0) {
+          annotations.push(t('activityTimeline.annotationBestTrade'));
+        }
+        if (e.id === worstTradeId && worstProfit < 0) {
+          annotations.push(t('activityTimeline.annotationWorstTrade'));
+        }
+        if (e.id === longestTradeId && longestDuration > 0) {
+          annotations.push(t('activityTimeline.annotationLongestTrade'));
+        }
+        if (annotations.length > 0) {
+          e.annotation = annotations.join(' · ');
+        }
       }
     }
   }
@@ -235,6 +278,13 @@ const filteredEvents = computed<TimelineEvent[]>(() => {
   // Filter by bot
   if (selectedBotFilter.value !== 'all') {
     events = events.filter((e) => e.botId === selectedBotFilter.value);
+  }
+
+  // Filter by trading mode
+  if (tradingModeFilter.value === 'live') {
+    events = events.filter((e) => !e.isDryRun);
+  } else if (tradingModeFilter.value === 'dry') {
+    events = events.filter((e) => e.isDryRun);
   }
 
   // Search filter
@@ -347,9 +397,25 @@ function eventDescription(event: TimelineEvent): string {
           </option>
         </select>
 
+        <!-- Trading mode filter (dry/live) -->
+        <select
+          v-if="hasMultipleModes"
+          v-model="tradingModeFilter"
+          class="rounded-lg px-2 py-1 text-xs text-surface-200 cursor-pointer"
+          style="
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            outline: none;
+          "
+        >
+          <option value="all">{{ t('activityTimeline.allModes') }}</option>
+          <option value="live">{{ t('activityTimeline.liveOnly') }}</option>
+          <option value="dry">{{ t('activityTimeline.dryOnly') }}</option>
+        </select>
+
         <!-- Compact toggle -->
         <button
-          class="rounded-lg px-2 py-1 text-xs font-medium transition-all duration-200 cursor-pointer"
+          class="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-all duration-200 cursor-pointer"
           :class="
             compactMode
               ? 'bg-primary text-white shadow-sm'
@@ -364,6 +430,7 @@ function eventDescription(event: TimelineEvent): string {
           @click="compactMode = !compactMode"
         >
           <i :class="compactMode ? 'i-mdi-view-list' : 'i-mdi-view-agenda'" class="text-sm" />
+          <span>{{ t('activityTimeline.compactLabel') }}</span>
         </button>
       </div>
 
