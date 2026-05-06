@@ -288,8 +288,8 @@ onMounted(async () => {
         :y="gridLayoutActivityTimeline.y"
         :w="gridLayoutActivityTimeline.w"
         :h="gridLayoutActivityTimeline.h"
-        :min-w="16"
-        :min-h="24"
+        :min-w="8"
+        :min-h="12"
         drag-allow-from=".drag-header"
       >
         <DraggableContainer :header="t('dashboard.activityTimeline')" :widget-id="DashboardLayout.activityTimeline">
@@ -469,8 +469,39 @@ onMounted(async () => {
 .dashboard-bg {
   min-height: 100vh;
   position: relative;
+  overflow: hidden;
 }
 
+/* ── Light mode ── */
+.dashboard-bg {
+  background: #f0ece6;
+}
+.dashboard-bg::before {
+  content: '';
+  position: absolute;
+  inset: -40% -20%;
+  background:
+    repeating-linear-gradient(
+      115deg,
+      transparent,
+      transparent 40%,
+      rgba(180, 170, 150, 0.07) 42%,
+      transparent 44%
+    ),
+    repeating-linear-gradient(
+      155deg,
+      transparent,
+      transparent 45%,
+      rgba(160, 150, 135, 0.05) 47%,
+      transparent 49%
+    );
+  background-size: 200% 100%;
+  animation: ft-wave-drift 45s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Dark mode ── */
 .ft-dark-theme .dashboard-bg {
   background: #06060c;
 }
@@ -478,13 +509,26 @@ onMounted(async () => {
 .ft-dark-theme .dashboard-bg::before {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -40% -20%;
   background:
-    radial-gradient(ellipse 900px 600px at 10% 20%, rgba(35, 40, 70, 0.6), transparent 65%),
-    radial-gradient(ellipse 700px 500px at 90% 80%, rgba(30, 25, 60, 0.5), transparent 65%),
-    radial-gradient(ellipse 500px 400px at 50% 45%, rgba(25, 35, 55, 0.4), transparent 65%);
-  background-size: 350% 350%;
-  animation: ft-wave-drift 20s ease-in-out infinite alternate;
+    repeating-linear-gradient(
+      115deg,
+      transparent,
+      transparent 38%,
+      rgba(45, 50, 80, 0.35) 40%,
+      rgba(35, 40, 70, 0.18) 42%,
+      transparent 44%
+    ),
+    repeating-linear-gradient(
+      155deg,
+      transparent,
+      transparent 42%,
+      rgba(30, 35, 65, 0.25) 44%,
+      rgba(25, 30, 55, 0.12) 46%,
+      transparent 48%
+    );
+  background-size: 200% 100%;
+  animation: ft-wave-drift 45s linear infinite;
   pointer-events: none;
   will-change: background-position;
   z-index: 0;
@@ -493,29 +537,24 @@ onMounted(async () => {
 .ft-dark-theme .dashboard-bg::after {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -40% -20%;
   background:
-    radial-gradient(ellipse 600px 400px at 65% 15%, rgba(99, 102, 241, 0.08), transparent 65%),
-    radial-gradient(ellipse 600px 400px at 35% 85%, rgba(6, 182, 212, 0.06), transparent 65%);
-  background-size: 280% 280%;
-  animation: ft-wave-drift 30s ease-in-out infinite alternate-reverse;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.dashboard-bg {
-  background: #f0ece6;
-}
-
-.dashboard-bg::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 800px 500px at 20% 30%, rgba(200, 180, 150, 0.15), transparent 65%),
-    radial-gradient(ellipse 600px 400px at 80% 70%, rgba(180, 170, 155, 0.12), transparent 65%);
-  background-size: 300% 300%;
-  animation: ft-wave-drift 25s ease-in-out infinite alternate;
+    repeating-linear-gradient(
+      135deg,
+      transparent,
+      transparent 44%,
+      rgba(99, 102, 241, 0.04) 46%,
+      transparent 48%
+    ),
+    repeating-linear-gradient(
+      170deg,
+      transparent,
+      transparent 46%,
+      rgba(6, 182, 212, 0.03) 48%,
+      transparent 50%
+    );
+  background-size: 200% 100%;
+  animation: ft-wave-drift-reverse 60s linear infinite;
   pointer-events: none;
   z-index: 0;
 }
