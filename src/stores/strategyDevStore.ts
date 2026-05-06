@@ -442,6 +442,8 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
       wfaDetail.value = cached?.detail && run.run_type === RunType.wfa ? cached.detail : null;
       backtestSnapshot.value = cached?.snapshot ?? null;
       backtestAnalysis.value = null;
+      compareRun.value = null;
+      compareDetail.value = null;
     } else {
       hyperoptDetail.value = null;
       hyperoptAnalysis.value = null;
@@ -452,6 +454,8 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
       plotProfitData.value = null;
       plotDataframeData.value = null;
       backtestPairs.value = [];
+      compareRun.value = null;
+      compareDetail.value = null;
     }
   }
 

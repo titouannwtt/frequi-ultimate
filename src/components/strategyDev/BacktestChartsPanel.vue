@@ -26,6 +26,7 @@ onMounted(async () => {
 async function onPairSelected(pair: string) {
   if (!pair || !filename.value || !strategy.value) return;
   dataframeLoading.value = true;
+  store.plotDataframeData = null;
   await store.fetchPlotDataframe(filename.value, strategy.value, pair);
   dataframeLoading.value = false;
 }
@@ -99,6 +100,10 @@ watch(selectedPair, (pair) => {
       <div v-else-if="store.plotDataframeData?.error === 'ohlcv_not_found'" class="text-center py-16 text-surface-400">
         <i-mdi-alert-circle class="w-8 h-8 mx-auto mb-2 text-yellow-500" />
         {{ t('strategyDev.plotNoOhlcv') }}
+      </div>
+      <div v-else-if="selectedPair && !dataframeLoading" class="text-center py-16 text-surface-400">
+        <i-mdi-chart-timeline-variant class="w-8 h-8 mx-auto mb-2 opacity-40" />
+        {{ t('strategyDev.plotNoData') }}
       </div>
     </div>
   </div>

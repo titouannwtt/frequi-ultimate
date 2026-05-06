@@ -95,9 +95,14 @@ const viewMode = ref<'tree' | 'raw'>('tree');
 
     <div v-else-if="displayConfig">
       <div class="flex items-center justify-between mb-2">
-        <h4 class="text-sm font-semibold">
-          {{ hasSnapshot ? t('strategyDev.configSaved') : t('strategyDev.configCurrent') }}
-        </h4>
+        <div>
+          <h4 class="text-sm font-semibold">
+            {{ hasSnapshot ? t('strategyDev.configSaved') : t('strategyDev.configCurrent') }}
+          </h4>
+          <div v-if="displayConfig?.config_files" class="text-xs text-surface-500 font-mono">
+            {{ (displayConfig.config_files as string[]).join(', ') }}
+          </div>
+        </div>
         <div class="flex items-center gap-2">
           <SelectButton
             v-model="viewMode"
