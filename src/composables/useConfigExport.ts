@@ -23,6 +23,8 @@ const LAYOUT_KEYS = [
   'ft_locale',
   'enhancedOpenTradeColumns',
   'enhancedClosedTradeColumns',
+  'enhancedOpenTradeColumnOrder',
+  'enhancedClosedTradeColumnOrder',
   'ft_benchmarks_enabled',
   'ft_market_overview_settings',
   'ft_profit_goal',

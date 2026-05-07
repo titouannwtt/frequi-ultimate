@@ -2641,79 +2641,51 @@ const correlatedPairs = computed(() => {
 
 <template>
   <div>
-    <Popover ref="columnPopover" class="p-3" style="min-width: 220px">
-      <div class="flex justify-between items-center mb-2">
-        <h4 class="font-bold text-sm">{{ t('botComparison.columnSettings') }}</h4>
-        <button
-          class="p-1 rounded hover:bg-surface-200 dark:hover:bg-surface-600 cursor-pointer"
-          :title="t('botComparison.resetColumns')"
-          @click="resetColumns"
-        >
-          <i-mdi-refresh class="text-sm" />
-        </button>
-      </div>
-      <div class="space-y-0.5">
-        <div
-          v-for="col in orderedColumns"
-          :key="col.id"
-          class="flex items-center gap-2 p-1 rounded text-sm relative"
-          :class="col.removable ? 'cursor-grab hover:bg-surface-100 dark:hover:bg-surface-700' : ''"
-          :draggable="col.removable"
-          @dragstart="onDragStart($event, col.id)"
-          @dragover.prevent="onDragOver($event, col.id)"
-          @dragleave="onDragLeaveColumn()"
-          @drop="onDrop($event, col.id)"
-        >
-          <div
-            v-if="dragOverColumnId === col.id && draggedColumnId"
-            class="absolute left-0 right-0 -top-px h-0.5 bg-blue-500 rounded-full z-10"
-          />
-          <i-mdi-drag-vertical v-if="col.removable" class="text-xs opacity-40" />
-          <BaseCheckbox
-            :model-value="isColumnVisible(col.id)"
-            :disabled="!col.removable"
-            @update:model-value="toggleColumn(col.id)"
-          >
-            {{ t(col.labelKey) }}
-          </BaseCheckbox>
+    <Popover ref="columnPopover" class="p-0" style="min-width: 240px">
+      <div class="p-3" style="background: rgba(15,17,23,0.96); backdrop-filter: blur(16px)">
+        <ColumnEditorPanel
+          :columns="orderedColumns.map(c => ({ id: c.id, labelKey: c.labelKey, removable: c.removable }))"
+          :visible-ids="visibleColumnIds"
+          @toggle="toggleColumn"
+          @reorder="(newOrder) => { columnOrder = newOrder; }"
+          @reset="resetColumns"
+        />
+        <!-- Bot tags section -->
+        <div class="mt-3 pt-3 border-t border-white/8">
+          <div class="flex items-center gap-1 mb-2">
+            <i-mdi-tag-outline class="text-sm opacity-60" />
+            <span class="text-xs font-semibold text-surface-300 uppercase tracking-wide">{{ t('botComparison.botTags') }}</span>
+          </div>
+          <div class="space-y-0.5">
+            <div
+              v-for="tagId in tagOrder"
+              :key="tagId"
+              class="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-grab hover:bg-white/5"
+              draggable="true"
+              @dragstart="onTagDragStart($event, tagId)"
+              @dragover.prevent="onTagDragOver($event)"
+              @drop="onTagDrop($event, tagId)"
+            >
+              <i-mdi-drag-vertical class="w-3.5 h-3.5 text-surface-500 opacity-40 flex-shrink-0" />
+              <BaseCheckbox v-model="botTagVisibility[tagId]">
+                {{ t(tagLabels[tagId]) }}
+              </BaseCheckbox>
+            </div>
+          </div>
         </div>
-      </div>
-      <!-- Bot tags section -->
-      <div class="mt-3 pt-3 border-t border-surface-300 dark:border-surface-600">
-        <div class="flex items-center gap-1 mb-2">
-          <i-mdi-tag-outline class="text-sm opacity-60" />
-          <h4 class="font-bold text-sm">{{ t('botComparison.botTags') }}</h4>
-        </div>
-        <div class="space-y-0.5">
-          <div
-            v-for="tagId in tagOrder"
-            :key="tagId"
-            class="flex items-center gap-2 p-1 rounded text-sm cursor-grab hover:bg-surface-100 dark:hover:bg-surface-700"
-            draggable="true"
-            @dragstart="onTagDragStart($event, tagId)"
-            @dragover.prevent="onTagDragOver($event)"
-            @drop="onTagDrop($event, tagId)"
-          >
-            <i-mdi-drag-vertical class="text-xs opacity-40" />
-            <BaseCheckbox v-model="botTagVisibility[tagId]">
-              {{ t(tagLabels[tagId]) }}
+        <!-- Visibility section -->
+        <div class="mt-3 pt-3 border-t border-white/8">
+          <div class="flex items-center gap-1 mb-2">
+            <i-mdi-eye-outline class="text-sm opacity-60" />
+            <span class="text-xs font-semibold text-surface-300 uppercase tracking-wide">{{ t('botComparison.visibility') }}</span>
+          </div>
+          <div class="space-y-0.5">
+            <BaseCheckbox v-model="botTagVisibility.onlineSince" class="text-xs px-2 py-1">
+              {{ t('botComparison.showOnlineSince') }}
             </BaseCheckbox>
           </div>
         </div>
       </div>
-      <!-- Visibility section -->
-      <div class="mt-3 pt-3 border-t border-surface-300 dark:border-surface-600">
-        <div class="flex items-center gap-1 mb-2">
-          <i-mdi-eye-outline class="text-sm opacity-60" />
-          <h4 class="font-bold text-sm">{{ t('botComparison.visibility') }}</h4>
-        </div>
-        <div class="space-y-0.5">
-          <BaseCheckbox v-model="botTagVisibility.onlineSince" class="text-sm p-1">
-            {{ t('botComparison.showOnlineSince') }}
-          </BaseCheckbox>
-        </div>
-      </div>
-
     </Popover>
 
     <!-- Sort popover -->

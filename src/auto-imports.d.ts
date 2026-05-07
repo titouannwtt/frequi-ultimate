@@ -402,6 +402,7 @@ declare global {
   const useToggle: typeof import('@vueuse/core').useToggle
   const useTradeColumnVisibility: typeof import('./composables/tradeColumns').useTradeColumnVisibility
   const useTradePopover: typeof import('./composables/useTradePopover').useTradePopover
+  const useTradingModeFilter: typeof import('./composables/useTradingModeFilter').useTradingModeFilter
   const useTransition: typeof import('@vueuse/core').useTransition
   const useUrlSearchParams: typeof import('@vueuse/core').useUrlSearchParams
   const useUserMedia: typeof import('@vueuse/core').useUserMedia
@@ -415,6 +416,7 @@ declare global {
   const useWebSocket: typeof import('@vueuse/core').useWebSocket
   const useWebWorker: typeof import('@vueuse/core').useWebWorker
   const useWebWorkerFn: typeof import('@vueuse/core').useWebWorkerFn
+  const useWidgetDefaults: typeof import('./composables/useWidgetDefaults').useWidgetDefaults
   const useWindowFocus: typeof import('@vueuse/core').useWindowFocus
   const useWindowScroll: typeof import('@vueuse/core').useWindowScroll
   const useWindowSize: typeof import('@vueuse/core').useWindowSize
@@ -464,6 +466,9 @@ declare global {
   // @ts-ignore
   export type { PopoverName } from './composables/useTradePopover'
   import('./composables/useTradePopover')
+  // @ts-ignore
+  export type { TradingModeFilter } from './composables/useTradingModeFilter'
+  import('./composables/useTradingModeFilter')
   // @ts-ignore
   export type { BotTagVisibility, BotFilters, ActiveSort, SortDirection, TagId } from './stores/botComparison'
   import('./stores/botComparison')
@@ -894,6 +899,7 @@ declare module 'vue' {
     readonly useToggle: UnwrapRef<typeof import('@vueuse/core')['useToggle']>
     readonly useTradeColumnVisibility: UnwrapRef<typeof import('./composables/tradeColumns')['useTradeColumnVisibility']>
     readonly useTradePopover: UnwrapRef<typeof import('./composables/useTradePopover')['useTradePopover']>
+    readonly useTradingModeFilter: UnwrapRef<typeof import('./composables/useTradingModeFilter')['useTradingModeFilter']>
     readonly useTransition: UnwrapRef<typeof import('@vueuse/core')['useTransition']>
     readonly useUrlSearchParams: UnwrapRef<typeof import('@vueuse/core')['useUrlSearchParams']>
     readonly useUserMedia: UnwrapRef<typeof import('@vueuse/core')['useUserMedia']>
@@ -907,6 +913,7 @@ declare module 'vue' {
     readonly useWebSocket: UnwrapRef<typeof import('@vueuse/core')['useWebSocket']>
     readonly useWebWorker: UnwrapRef<typeof import('@vueuse/core')['useWebWorker']>
     readonly useWebWorkerFn: UnwrapRef<typeof import('@vueuse/core')['useWebWorkerFn']>
+    readonly useWidgetDefaults: UnwrapRef<typeof import('./composables/useWidgetDefaults')['useWidgetDefaults']>
     readonly useWindowFocus: UnwrapRef<typeof import('@vueuse/core')['useWindowFocus']>
     readonly useWindowScroll: UnwrapRef<typeof import('@vueuse/core')['useWindowScroll']>
     readonly useWindowSize: UnwrapRef<typeof import('@vueuse/core')['useWindowSize']>
