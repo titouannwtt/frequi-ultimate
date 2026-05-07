@@ -179,6 +179,27 @@
   100% { background-position: 0% 50%; }
 }
 
+@keyframes ft-chaos-1 {
+  0%   { background-position: 0% 0%, 100% 100%, 30% 40%, 70% 60%; transform: rotate(0deg) scale(1); }
+  17%  { background-position: 45% 65%, 55% 25%, 38% 55%, 62% 42%; transform: rotate(1.8deg) scale(1.02); }
+  33%  { background-position: 80% 25%, 20% 75%, 22% 32%, 78% 72%; transform: rotate(-1deg) scale(0.99); }
+  50%  { background-position: 55% 85%, 75% 15%, 45% 65%, 52% 30%; transform: rotate(1.2deg) scale(1.015); }
+  67%  { background-position: 25% 45%, 85% 55%, 55% 42%, 40% 58%; transform: rotate(-1.5deg) scale(1.01); }
+  83%  { background-position: 70% 15%, 35% 80%, 32% 52%, 68% 48%; transform: rotate(0.6deg) scale(1.025); }
+  100% { background-position: 0% 0%, 100% 100%, 30% 40%, 70% 60%; transform: rotate(0deg) scale(1); }
+}
+
+@keyframes ft-chaos-2 {
+  0%   { background-position: 100% 50%, 0% 50%, 60% 30%, 40% 70%; transform: rotate(0deg) scale(1); }
+  14%  { background-position: 72% 82%, 28% 18%, 52% 45%, 55% 58%; transform: rotate(-1.2deg) scale(1.03); }
+  29%  { background-position: 35% 20%, 65% 80%, 68% 58%, 32% 42%; transform: rotate(1.8deg) scale(0.98); }
+  43%  { background-position: 58% 65%, 42% 35%, 42% 32%, 62% 68%; transform: rotate(-0.5deg) scale(1.02); }
+  57%  { background-position: 15% 40%, 85% 60%, 55% 52%, 48% 38%; transform: rotate(1.4deg) scale(0.99); }
+  71%  { background-position: 80% 70%, 20% 30%, 48% 40%, 58% 62%; transform: rotate(-1.6deg) scale(1.01); }
+  86%  { background-position: 45% 25%, 55% 75%, 62% 48%, 42% 52%; transform: rotate(0.8deg) scale(1.025); }
+  100% { background-position: 100% 50%, 0% 50%, 60% 30%, 40% 70%; transform: rotate(0deg) scale(1); }
+}
+
 @keyframes ft-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
