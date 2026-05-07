@@ -55,19 +55,22 @@ export function getClosedTradeColumns(): TradeColumnDef[] {
 
 const STORAGE_KEY_OPEN = 'enhancedOpenTradeColumns';
 const STORAGE_KEY_CLOSED = 'enhancedClosedTradeColumns';
+const STORAGE_KEY_OPEN_ORDER = 'enhancedOpenTradeColumnOrder';
+const STORAGE_KEY_CLOSED_ORDER = 'enhancedClosedTradeColumnOrder';
 
 export function useTradeColumnVisibility(mode: 'open' | 'closed') {
   const storageKey = mode === 'open' ? STORAGE_KEY_OPEN : STORAGE_KEY_CLOSED;
+  const orderStorageKey = mode === 'open' ? STORAGE_KEY_OPEN_ORDER : STORAGE_KEY_CLOSED_ORDER;
   const allColumns = mode === 'open' ? getOpenTradeColumns() : getClosedTradeColumns();
 
   const visibleKeys = ref<string[]>(loadVisibleKeys());
+  const columnOrder = ref<string[]>(loadColumnOrder());
 
   function loadVisibleKeys(): string[] {
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const keys: string[] = JSON.parse(stored);
-        // Auto-add new defaultVisible columns that weren't in the stored list
         const newDefaults = allColumns
           .filter((c) => c.defaultVisible && !keys.includes(c.key))
           .map((c) => c.key);
@@ -81,6 +84,21 @@ export function useTradeColumnVisibility(mode: 'open' | 'closed') {
       // ignore
     }
     return allColumns.filter((c) => c.defaultVisible).map((c) => c.key);
+  }
+
+  function loadColumnOrder(): string[] {
+    try {
+      const stored = localStorage.getItem(orderStorageKey);
+      if (stored) {
+        const order: string[] = JSON.parse(stored);
+        const missing = allColumns.filter((c) => !order.includes(c.key)).map((c) => c.key);
+        if (missing.length > 0) order.push(...missing);
+        return order.filter((k) => allColumns.some((c) => c.key === k));
+      }
+    } catch {
+      // ignore
+    }
+    return allColumns.map((c) => c.key);
   }
 
   function saveVisibleKeys() {
@@ -97,13 +115,39 @@ export function useTradeColumnVisibility(mode: 'open' | 'closed') {
     saveVisibleKeys();
   }
 
+  function setColumnOrder(newOrder: string[]) {
+    columnOrder.value = newOrder;
+    localStorage.setItem(orderStorageKey, JSON.stringify(newOrder));
+  }
+
+  function resetColumns() {
+    visibleKeys.value = allColumns.filter((c) => c.defaultVisible).map((c) => c.key);
+    columnOrder.value = allColumns.map((c) => c.key);
+    saveVisibleKeys();
+    localStorage.setItem(orderStorageKey, JSON.stringify(columnOrder.value));
+  }
+
   function isVisible(key: string): boolean {
     return visibleKeys.value.includes(key);
   }
 
-  const visibleColumns = computed(() => allColumns.filter((c) => isVisible(c.key)));
+  const orderedColumns = computed(() =>
+    columnOrder.value
+      .map((k) => allColumns.find((c) => c.key === k))
+      .filter((c): c is TradeColumnDef => c !== undefined),
+  );
 
-  return { allColumns, visibleKeys, visibleColumns, toggleColumn, isVisible };
+  const visibleColumns = computed(() =>
+    columnOrder.value
+      .filter((k) => visibleKeys.value.includes(k))
+      .map((k) => allColumns.find((c) => c.key === k))
+      .filter((c): c is TradeColumnDef => c !== undefined),
+  );
+
+  return {
+    allColumns, visibleKeys, visibleColumns, toggleColumn, isVisible,
+    columnOrder, orderedColumns, setColumnOrder, resetColumns,
+  };
 }
 
 // --- Utility functions for trade display ---
