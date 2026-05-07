@@ -15,15 +15,19 @@ export default {
     exportPdf: 'Export as PDF',
     strategyDev: 'Strategy Dev',
     journal: 'Journal',
-    editPage: 'Edit page',
+    editPage: 'Edit dashboard',
     editModeHint: 'Edit mode — Move, resize and hide widgets',
     editModeDone: 'Done',
     opacity: 'Opacity',
+    bgAnimation: 'Animation',
     exportConfig: 'Export config',
     importConfig: 'Import config',
     pageConfig: 'Page config',
     configDesc: 'Save and restore your dashboard layout preferences and display settings.',
     resetLayout: 'Reset layout',
+    resetLayoutConfirm: 'Are you sure you want to reset the dashboard to its default layout? You will lose all your window adjustments, column settings, placement, size, zoom, etc.',
+    optimizeLayout: 'Optimize layout',
+    optimizeLayoutConfirm: 'All visible widgets will be moved as far up and to the left as possible, while keeping their current size. This does not affect hidden widgets.',
     newVersionAvailable: 'New version available',
     includeAuth: 'Include authentication tokens',
     authPasswordRequired: 'Tokens grant full bot control. A password is required to encrypt the file.',
@@ -2970,5 +2974,24 @@ export default {
     stable: 'stable',
     unstable: 'unstable',
     marginal: 'marginal',
+  },
+
+  // Column Editor
+  columnEditor: {
+    title: 'Columns',
+    reset: 'Reset to defaults',
+  },
+
+  // Trading mode filter
+  tradingModeFilter: {
+    allModes: 'All modes',
+    liveOnly: 'Live only',
+    dryOnly: 'Dry only',
+  },
+
+  // Widget Defaults
+  widgetDefaults: {
+    saveAsDefault: 'Save as default',
+    saved: 'Defaults saved',
   },
 };
