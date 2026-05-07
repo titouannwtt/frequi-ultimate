@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import { useWindowSize } from '@vueuse/core';
 
 defineOptions({
   inheritAttrs: false,
 });
 
 const { t } = useI18n();
+const REFERENCE_WIDTH = 1920;
+const { width: viewportWidth } = useWindowSize();
 
 const props = withDefaults(
   defineProps<{
@@ -41,8 +44,17 @@ const currentZoom = computed(() =>
   props.widgetId >= 0 ? layoutStore.getWidgetZoom(props.widgetId) : 100,
 );
 
+const viewportScale = computed(() =>
+  Math.max(0.6, Math.min(1.5, viewportWidth.value / REFERENCE_WIDTH)),
+);
+
+const effectiveZoom = computed(() => {
+  if (props.widgetId < 0) return 100;
+  return Math.round(currentZoom.value * viewportScale.value);
+});
+
 const zoomStyle = computed(() =>
-  currentZoom.value !== 100 ? { zoom: `${currentZoom.value}%` } : undefined,
+  effectiveZoom.value !== 100 ? { zoom: `${effectiveZoom.value}%` } : undefined,
 );
 </script>
 
@@ -61,9 +73,9 @@ const zoomStyle = computed(() =>
       :class="{ 'ft-drag-handle': layoutStore.editMode && !isHidden }"
       style="border-image: linear-gradient(to right, transparent, rgba(99, 102, 241, 0.15), transparent) 1"
     >
-      <div class="relative flex items-center w-full gap-2">
+      <div class="flex items-center w-full gap-2">
         <!-- Left: drag icon + title -->
-        <div class="flex items-center gap-1.5 min-w-0 text-[#4a4540] dark:text-surface-200 text-sm">
+        <div class="flex items-center gap-1.5 shrink-0 text-[#4a4540] dark:text-surface-200 text-sm whitespace-nowrap">
           <i-mdi-drag
             v-if="layoutStore.editMode && !isHidden"
             class="w-4 h-4 text-indigo-400/70 flex-shrink-0"
@@ -73,10 +85,13 @@ const zoomStyle = computed(() =>
           </slot>
         </div>
 
-        <!-- Center: edit controls (zoom + columns) — absolutely centered -->
+        <!-- Left spacer -->
+        <div v-if="layoutStore.editMode && widgetId >= 0 && !isHidden" class="flex-1 min-w-0" />
+
+        <!-- Center: edit controls (zoom + columns) — centered via equal spacers -->
         <div
           v-if="layoutStore.editMode && widgetId >= 0 && !isHidden"
-          class="ft-edit-controls ft-no-drag absolute left-1/2 -translate-x-1/2 flex items-center gap-3"
+          class="ft-edit-controls ft-no-drag flex items-center gap-3 shrink-0"
           @mousedown.stop
           @touchstart.stop
           @pointerdown.stop
@@ -124,6 +139,9 @@ const zoomStyle = computed(() =>
             <span class="text-[11px]">{{ t('widgetDefaults.saveAsDefault') }}</span>
           </button>
         </div>
+
+        <!-- Right spacer -->
+        <div v-if="layoutStore.editMode && widgetId >= 0 && !isHidden" class="flex-1 min-w-0" />
 
         <!-- Right: visibility toggle -->
         <div v-if="layoutStore.editMode && widgetId >= 0" class="flex-shrink-0 ms-auto">
