@@ -5,6 +5,7 @@ interface UseVolumeComparatorOptions {
   defaultDays?: number;
   defaultBucket?: VolumeBucketSize;
   refreshMs?: number;
+  botFilter?: (botId: string) => boolean;
 }
 
 export function useVolumeComparator(opts: UseVolumeComparatorOptions) {
@@ -69,7 +70,14 @@ export function useVolumeComparator(opts: UseVolumeComparatorOptions) {
   }
 
   const mergedData = computed((): VolumeHistoryResponse | null => {
-    const entries = Object.values(localData.value);
+    let entries: VolumeHistoryResponse[];
+    if (opts.botFilter) {
+      entries = Object.entries(localData.value)
+        .filter(([botId]) => opts.botFilter!(botId))
+        .map(([, v]) => v);
+    } else {
+      entries = Object.values(localData.value);
+    }
     if (entries.length === 0) return null;
     if (entries.length === 1) return entries[0];
 

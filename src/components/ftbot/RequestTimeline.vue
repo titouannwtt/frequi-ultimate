@@ -37,15 +37,53 @@ const {
   exchangeOptions,
   filteredMetrics,
   primaryMetrics,
-} = useRateMetrics({ multiBotView: props.multiBotView });
+} = useRateMetrics({ multiBotView: props.multiBotView, botFilter: (botId: string) => isBotInMode(botId) });
+
+import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
+import { DashboardLayout } from '@/stores/layout';
+import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
+
+const { tradingMode, hasMultipleModes, isBotInMode } = useTradingModeFilter();
 
 type ViewMode = 'timeline' | 'flow' | 'table';
 const viewMode = ref<ViewMode>('timeline');
 
-const sortKey = ref<'count' | 'cached' | 'errors' | 'avg_latency_ms' | 'p95_latency_ms'>('count');
+type SortKeyType = 'count' | 'cached' | 'errors' | 'avg_latency_ms' | 'p95_latency_ms';
+const sortKey = ref<SortKeyType>('count');
 const sortAsc = ref(false);
 
-function toggleSort(key: typeof sortKey.value) {
+const HARDCODED_DEFAULTS_RT = {
+  viewMode: 'timeline' as string,
+  selectedWindow: 3600,
+  sortKey: 'count' as string,
+  sortAsc: false,
+  tradingMode: 'all' as string,
+};
+
+const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults(
+  DashboardLayout.ratePulse,
+  () => ({
+    viewMode: viewMode.value,
+    selectedWindow: selectedWindow.value,
+    sortKey: sortKey.value,
+    sortAsc: sortAsc.value,
+    tradingMode: tradingMode.value,
+  }),
+  (d) => {
+    if (d.viewMode !== undefined) viewMode.value = d.viewMode as ViewMode;
+    if (d.selectedWindow !== undefined) selectedWindow.value = d.selectedWindow as number;
+    if (d.sortKey !== undefined) sortKey.value = d.sortKey as SortKeyType;
+    if (d.sortAsc !== undefined) sortAsc.value = d.sortAsc as boolean;
+    if (d.tradingMode !== undefined) tradingMode.value = d.tradingMode as typeof tradingMode.value;
+  },
+  HARDCODED_DEFAULTS_RT,
+);
+
+onMounted(() => { loadDefaults(); });
+
+defineExpose({ filtersChanged, saveCurrentAsDefault });
+
+function toggleSort(key: SortKeyType) {
   if (sortKey.value === key) sortAsc.value = !sortAsc.value;
   else { sortKey.value = key; sortAsc.value = false; }
 }
@@ -345,6 +383,7 @@ const sankeyOption = computed((): EChartsOption => {
         class="text-xs"
         style="min-width: 90px"
       />
+      <TradingModeSelect v-model="tradingMode" :show="hasMultipleModes" />
 
       <!-- Summary stats in toolbar -->
       <div v-if="primaryMetrics?.summary" class="flex items-center gap-2 ml-auto text-[10px]">

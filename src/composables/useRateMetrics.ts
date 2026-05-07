@@ -13,6 +13,7 @@ interface ExchangeOption {
 
 interface UseRateMetricsOptions {
   multiBotView: boolean;
+  botFilter?: (botId: string) => boolean;
   defaultWindow?: number;
   refreshMs?: number;
 }
@@ -93,12 +94,11 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
   });
 
   const filteredMetrics = computed((): Record<string, RateMetricsResponse> => {
-    if (selectedExchange.value === '__all__') return localMetrics.value;
     const result: Record<string, RateMetricsResponse> = {};
     for (const [id, m] of Object.entries(localMetrics.value)) {
-      if (m.exchange === selectedExchange.value) {
-        result[id] = m;
-      }
+      if (opts.botFilter && !opts.botFilter(id)) continue;
+      if (selectedExchange.value !== '__all__' && m.exchange !== selectedExchange.value) continue;
+      result[id] = m;
     }
     return result;
   });
