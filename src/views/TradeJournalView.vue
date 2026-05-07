@@ -183,7 +183,7 @@ async function exportExcel() {
         <template #body="{ data }">
           <span
             class="px-1.5 py-0.5 rounded text-[10px] font-semibold"
-            :class="data.botMode === 'Dry' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'"
+            :class="data.botMode === 'Dry' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'"
           >
             {{ data.botMode }}
           </span>
