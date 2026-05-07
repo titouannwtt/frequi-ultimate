@@ -63,6 +63,13 @@ const chart = ref<InstanceType<typeof ECharts>>();
 // Local cache of histogram data for tooltip access
 let _histogramData: { bucket: string; count: number; isPositive: boolean }[] = [];
 
+import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
+import { DashboardLayout } from '@/stores/layout';
+import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
+
+const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
+const modeFilteredTrades = computed(() => filterTradesByMode(props.trades));
+
 // --- State ---
 type TabKey = 'histogram' | 'perBot' | 'perPair' | 'byDuration' | 'byLeverage';
 const activeTab = ref<TabKey>('histogram');
@@ -75,6 +82,34 @@ const activeFilter = ref<FilterKey>('all');
 const histMinPct = ref<number | null>(null);
 const histMaxPct = ref<number | null>(null);
 const histBinCount = ref<number>(20);
+
+const HARDCODED_DEFAULTS_DIST = {
+  activeTab: 'histogram' as string,
+  activeFilter: 'all' as string,
+  histBinCount: 20,
+  tradingMode: 'all' as string,
+};
+
+const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults(
+  DashboardLayout.profitDistributionChart,
+  () => ({
+    activeTab: activeTab.value,
+    activeFilter: activeFilter.value,
+    histBinCount: histBinCount.value,
+    tradingMode: tradingMode.value,
+  }),
+  (d) => {
+    if (d.activeTab !== undefined) activeTab.value = d.activeTab as TabKey;
+    if (d.activeFilter !== undefined) activeFilter.value = d.activeFilter as FilterKey;
+    if (d.histBinCount !== undefined) histBinCount.value = d.histBinCount as number;
+    if (d.tradingMode !== undefined) tradingMode.value = d.tradingMode as typeof tradingMode.value;
+  },
+  HARDCODED_DEFAULTS_DIST,
+);
+
+onMounted(() => { loadDefaults(); });
+
+defineExpose({ filtersChanged, saveCurrentAsDefault });
 
 const tabs: { key: TabKey; labelKey: string }[] = [
   { key: 'histogram', labelKey: 'profitDist.tabHistogram' },
@@ -110,7 +145,7 @@ function getBotName(botId: string): string {
 
 const botIds = computed<string[]>(() => {
   const ids = new Set<string>();
-  for (const t of props.trades) {
+  for (const t of modeFilteredTrades.value) {
     if (t.botId) ids.add(t.botId);
   }
   return Array.from(ids);
@@ -118,7 +153,7 @@ const botIds = computed<string[]>(() => {
 
 // --- Filtered trades based on active filter ---
 const filteredTrades = computed<ClosedTrade[]>(() => {
-  let trades = props.trades;
+  let trades = modeFilteredTrades.value;
   switch (activeFilter.value) {
     case 'spot':
       trades = trades.filter((t) => !t.leverage || t.leverage <= 1);
@@ -705,7 +740,7 @@ function buildLeverageChart(): EChartsOption {
 
 // --- Main chart options ---
 const chartOptions: ComputedRefWithControl<EChartsOption> = computedWithControl(
-  () => [props.trades, activeTab.value, activeFilter.value, histMinPct.value, histMaxPct.value, histBinCount.value],
+  () => [filteredTrades.value, activeTab.value, activeFilter.value, histMinPct.value, histMaxPct.value, histBinCount.value],
   () => {
     let tabOpts: EChartsOption;
     switch (activeTab.value) {
@@ -795,6 +830,7 @@ watch(
       >
         {{ t(f.labelKey) }}
       </button>
+      <TradingModeSelect v-model="tradingMode" :show="hasMultipleModes" />
     </div>
 
     <!-- Histogram controls (only visible on histogram tab) -->

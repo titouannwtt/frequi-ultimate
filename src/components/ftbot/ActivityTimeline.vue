@@ -28,15 +28,44 @@ interface TimelineEvent {
   annotation?: string;
 }
 
+import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
+import { DashboardLayout } from '@/stores/layout';
+import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
+
+const ALL_EVENT_TYPES: EventType[] = ['trade_opened', 'trade_closed_profit', 'trade_closed_loss', 'bot_status', 'alert', 'dca'];
+
 // --- State ---
 const compactMode = ref(true);
 const searchQuery = ref('');
 const selectedBotFilter = ref<string>('all');
-const tradingModeFilter = ref<TradingModeFilter>('all');
-const enabledEventTypes = ref<Set<EventType>>(
-  new Set(['trade_opened', 'trade_closed_profit', 'trade_closed_loss', 'bot_status', 'alert', 'dca']),
-);
+const { tradingMode: tradingModeFilter, hasMultipleModes } = useTradingModeFilter();
+const enabledEventTypes = ref<Set<EventType>>(new Set(ALL_EVENT_TYPES));
 const maxEvents = ref(100);
+
+const HARDCODED_DEFAULTS_ACT = {
+  compactMode: true,
+  tradingModeFilter: 'all' as string,
+  enabledEventTypes: ALL_EVENT_TYPES as string[],
+};
+
+const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults(
+  DashboardLayout.activityTimeline,
+  () => ({
+    compactMode: compactMode.value,
+    tradingModeFilter: tradingModeFilter.value,
+    enabledEventTypes: [...enabledEventTypes.value] as string[],
+  }),
+  (d) => {
+    if (d.compactMode !== undefined) compactMode.value = d.compactMode as boolean;
+    if (d.tradingModeFilter !== undefined) tradingModeFilter.value = d.tradingModeFilter as typeof tradingModeFilter.value;
+    if (d.enabledEventTypes) enabledEventTypes.value = new Set(d.enabledEventTypes as EventType[]);
+  },
+  HARDCODED_DEFAULTS_ACT,
+);
+
+onMounted(() => { loadDefaults(); });
+
+defineExpose({ filtersChanged, saveCurrentAsDefault });
 
 // --- Event type config ---
 const eventTypeConfig: Record<EventType, { icon: string; color: string; dotClass: string }> = {
@@ -105,11 +134,6 @@ const availableBots = computed(() => {
     bots.push({ id: botId, name: store.uiBotName || 'Bot', isDryRun: !!store.botState?.dry_run });
   }
   return bots;
-});
-
-const hasMultipleModes = computed(() => {
-  const modes = new Set(availableBots.value.map((b) => b.isDryRun));
-  return modes.size > 1;
 });
 
 // --- Build events ---
@@ -398,20 +422,7 @@ function eventDescription(event: TimelineEvent): string {
         </select>
 
         <!-- Trading mode filter (dry/live) -->
-        <select
-          v-if="hasMultipleModes"
-          v-model="tradingModeFilter"
-          class="rounded-lg px-2 py-1 text-xs text-surface-200 cursor-pointer"
-          style="
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            outline: none;
-          "
-        >
-          <option value="all">{{ t('activityTimeline.allModes') }}</option>
-          <option value="live">{{ t('activityTimeline.liveOnly') }}</option>
-          <option value="dry">{{ t('activityTimeline.dryOnly') }}</option>
-        </select>
+        <TradingModeSelect v-model="tradingModeFilter" :show="hasMultipleModes" />
 
         <!-- Compact toggle -->
         <button

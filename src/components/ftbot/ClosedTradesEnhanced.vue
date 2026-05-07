@@ -33,10 +33,16 @@ const props = withDefaults(
   { multiBotView: false },
 );
 
+import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
+
 const botStore = useBotStore();
 const router = useRouter();
+const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
 
-const { allColumns, visibleColumns, toggleColumn, isVisible } = useTradeColumnVisibility('closed');
+const {
+  visibleColumns, toggleColumn, isVisible,
+  orderedColumns, setColumnOrder, resetColumns,
+} = useTradeColumnVisibility('closed');
 
 const filterText = ref('');
 const sortField = ref<string>('close_timestamp');
@@ -56,10 +62,10 @@ function showColumnPopover(event: Event) {
   columnPopover.value?.toggle(event);
 }
 
-defineExpose({ showColumnPopover });
+defineExpose({ showColumnPopover, tradingMode, hasMultipleModes });
 
 const filteredTrades = computed(() => {
-  let result = props.trades;
+  let result = filterTradesByMode(props.trades);
   if (filterText.value) {
     const f = filterText.value.toLowerCase();
     result = result.filter(
@@ -121,6 +127,7 @@ watch(
         class="w-48"
         size="small"
       />
+      <TradingModeSelect v-model="tradingMode" :show="hasMultipleModes" />
       <span class="text-xs text-surface-500">
         {{ filteredTrades.length }} {{ t('enhancedTrades.trades') }}
       </span>
@@ -382,16 +389,14 @@ watch(
 
     <!-- Column Selector Popover -->
     <Popover ref="columnPopover" class="p-0">
-      <div class="p-3 min-w-[200px]">
-        <div class="font-bold text-sm mb-2">{{ t('enhancedTrades.columnSettings') }}</div>
-        <div v-for="col in allColumns" :key="col.key" class="flex items-center gap-2 py-0.5">
-          <Checkbox
-            :model-value="isVisible(col.key)"
-            :binary="true"
-            @update:model-value="toggleColumn(col.key)"
-          />
-          <span class="text-xs">{{ t(col.labelKey) }}</span>
-        </div>
+      <div class="p-3 min-w-[240px]" style="background: rgba(15,17,23,0.96); backdrop-filter: blur(16px)">
+        <ColumnEditorPanel
+          :columns="orderedColumns.map(c => ({ id: c.key, labelKey: c.labelKey }))"
+          :visible-ids="visibleColumns.map(c => c.key)"
+          @toggle="toggleColumn"
+          @reorder="setColumnOrder"
+          @reset="resetColumns"
+        />
       </div>
     </Popover>
   </div>

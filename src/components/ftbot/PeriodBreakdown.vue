@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { TimeSummaryOptions } from '@/types';
 import { useI18n } from 'vue-i18n';
+import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
+import { DashboardLayout } from '@/stores/layout';
+import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
+import type { TimeSummaryReturnValue, TimeSummaryRecord } from '@/types';
 
 const { t } = useI18n();
 const botStore = useBotStore();
 const settingsStore = useSettingsStore();
+const { tradingMode, hasMultipleModes, isBotInMode } = useTradingModeFilter();
 
 const props = defineProps<{
   multiBotView?: boolean;
@@ -28,15 +33,64 @@ const absRelSelections = computed(() => [
   { value: 'rel_profit', text: t('periodBreakdown.relProfit') },
 ]);
 
+const HARDCODED_DEFAULTS_PB = {
+  timeProfitPeriod: TimeSummaryOptions.daily as string,
+  timeProfitPreference: 'abs_profit' as string,
+  tradingMode: 'all' as string,
+};
+
+const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults(
+  DashboardLayout.periodBreakdown,
+  () => ({
+    timeProfitPeriod: settingsStore.timeProfitPeriod,
+    timeProfitPreference: settingsStore.timeProfitPreference,
+    tradingMode: tradingMode.value,
+  }),
+  (d) => {
+    if (d.timeProfitPeriod !== undefined) settingsStore.timeProfitPeriod = d.timeProfitPeriod as string;
+    if (d.timeProfitPreference !== undefined) settingsStore.timeProfitPreference = d.timeProfitPreference as string;
+    if (d.tradingMode !== undefined) tradingMode.value = d.tradingMode as typeof tradingMode.value;
+  },
+  HARDCODED_DEFAULTS_PB,
+);
+
+onMounted(() => { loadDefaults(); });
+
+defineExpose({ filtersChanged, saveCurrentAsDefault });
+
+function aggregateStats(
+  statsKey: 'dailyStats' | 'weeklyStats' | 'monthlyStats',
+): TimeSummaryReturnValue {
+  const resp: Record<string, TimeSummaryRecord> = {};
+  Object.entries(botStore.botStores).forEach(([botId, store]) => {
+    if (!store.isSelected || !isBotInMode(botId)) return;
+    store[statsKey]?.data?.forEach((d: TimeSummaryRecord) => {
+      const existing = resp[d.date];
+      if (!existing) {
+        resp[d.date] = { ...d };
+      } else {
+        existing.abs_profit += d.abs_profit;
+        existing.fiat_value += d.fiat_value;
+        existing.trade_count += d.trade_count;
+      }
+    });
+  });
+  return {
+    stake_currency: 'USDT',
+    fiat_display_currency: 'USD',
+    data: Object.values(resp).sort((a, b) => (a.date > b.date ? 1 : -1)),
+  };
+}
+
 const selectedStats = computed(() => {
   if (props.multiBotView) {
     switch (settingsStore.timeProfitPeriod) {
       case TimeSummaryOptions.weekly:
-        return botStore.allWeeklyStatsSelectedBots;
+        return aggregateStats('weeklyStats');
       case TimeSummaryOptions.monthly:
-        return botStore.allMonthlyStatsSelectedBots;
+        return aggregateStats('monthlyStats');
       default:
-        return botStore.allDailyStatsSelectedBots;
+        return aggregateStats('dailyStats');
     }
   }
 
@@ -108,6 +162,7 @@ onMounted(() => {
         button-variant="outline-primary"
       >
       </SelectButton>
+      <TradingModeSelect v-model="tradingMode" :show="hasMultipleModes" />
     </div>
 
     <div

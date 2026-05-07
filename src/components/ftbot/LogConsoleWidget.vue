@@ -4,6 +4,9 @@ import { useRouter } from 'vue-router';
 import { useLogConsoleStore } from '@/stores/logConsole';
 import { useLogFiltering, type LogLevel } from '@/composables/useLogFiltering';
 import { useBotComparisonStore } from '@/stores/botComparison';
+import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
+import { DashboardLayout } from '@/stores/layout';
+import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 import BotNameTruncated from './BotNameTruncated.vue';
 
 const { t } = useI18n();
@@ -40,6 +43,53 @@ const hideWebSocket = ref(false);
 const hideWalletSync = ref(true);
 const hideBtAnalysis = ref(true);
 
+const { tradingMode, hasMultipleModes, isBotInMode } = useTradingModeFilter();
+
+const HARDCODED_DEFAULTS = {
+  displayMode: 'timeline' as string,
+  activeTimeWindow: 0,
+  compactMode: true,
+  hideHeartbeat: true,
+  hideWebSocket: false,
+  hideWalletSync: true,
+  hideBtAnalysis: true,
+  levels: ['CRITICAL', 'ERROR', 'WARNING', 'INFO'] as string[],
+  tradingMode: 'all' as string,
+};
+
+const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults(
+  DashboardLayout.logConsole,
+  () => ({
+    displayMode: displayMode.value,
+    activeTimeWindow: activeTimeWindow.value,
+    compactMode: compactMode.value,
+    hideHeartbeat: hideHeartbeat.value,
+    hideWebSocket: hideWebSocket.value,
+    hideWalletSync: hideWalletSync.value,
+    hideBtAnalysis: hideBtAnalysis.value,
+    levels: [...filters.levels] as string[],
+    tradingMode: tradingMode.value,
+  }),
+  (d) => {
+    if (d.displayMode !== undefined) displayMode.value = d.displayMode as 'timeline' | 'grouped';
+    if (d.activeTimeWindow !== undefined) { activeTimeWindow.value = d.activeTimeWindow as number; setTimeWindow(d.activeTimeWindow as number); }
+    if (d.compactMode !== undefined) compactMode.value = d.compactMode as boolean;
+    if (d.hideHeartbeat !== undefined) hideHeartbeat.value = d.hideHeartbeat as boolean;
+    if (d.hideWebSocket !== undefined) hideWebSocket.value = d.hideWebSocket as boolean;
+    if (d.hideWalletSync !== undefined) hideWalletSync.value = d.hideWalletSync as boolean;
+    if (d.hideBtAnalysis !== undefined) hideBtAnalysis.value = d.hideBtAnalysis as boolean;
+    if (d.levels) {
+      filters.levels = new Set(d.levels as LogLevel[]);
+    }
+    if (d.tradingMode !== undefined) tradingMode.value = d.tradingMode as typeof tradingMode.value;
+  },
+  HARDCODED_DEFAULTS,
+);
+
+onMounted(() => { loadDefaults(); });
+
+defineExpose({ filtersChanged, saveCurrentAsDefault });
+
 // Reactive tick for relative timestamps (updates every 10s)
 const tick = ref(0);
 let tickInterval: ReturnType<typeof setInterval>;
@@ -55,6 +105,9 @@ let _cachedDisplay: typeof filteredEntries.value = [];
 
 const displayEntries = computed(() => {
   let result = filteredEntries.value;
+  if (tradingMode.value !== 'all') {
+    result = result.filter((e) => isBotInMode(e.botId));
+  }
   if (hideHeartbeat.value) {
     result = result.filter((e) => !e.message.toLowerCase().includes('bot heartbeat'));
   }
@@ -389,6 +442,8 @@ onUnmounted(() => resizeObserver.value?.disconnect());
         :class="compactMode ? 'text-blue-400 bg-blue-500/10' : 'text-surface-400'"
         @click="compactMode = !compactMode"
       >Compact</button>
+
+      <TradingModeSelect v-model="tradingMode" :show="hasMultipleModes" />
 
       <!-- Noise filters (only visible when INFO is enabled) -->
       <template v-if="filters.levels.has('INFO')">

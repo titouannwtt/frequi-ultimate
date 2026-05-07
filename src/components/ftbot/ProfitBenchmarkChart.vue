@@ -54,11 +54,19 @@ const props = withDefaults(
   },
 );
 
+import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
+import { DashboardLayout } from '@/stores/layout';
+import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
+
 const botStore = useBotStore();
 const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
 const { summaryCurrency } = useSummaryCurrency();
 const { convert } = useExchangeRates();
+const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
+
+const modeFilteredTrades = computed(() => filterTradesByMode(props.trades));
+const modeFilteredOpenTrades = computed(() => filterTradesByMode(props.openTrades ?? []));
 
 const chart = ref<InstanceType<typeof ECharts>>();
 
@@ -91,6 +99,37 @@ function loadBenchmarksFromStorage(): string[] {
 function saveBenchmarksToStorage() {
   localStorage.setItem(BENCHMARKS_STORAGE_KEY, JSON.stringify(enabledBenchmarks.value));
 }
+
+const HARDCODED_DEFAULTS_BENCH = {
+  activeTab: 'combined' as string,
+  selectedTimeframe: 'ALL' as string,
+  enabledBenchmarks: ['BTC'] as string[],
+  tradingMode: 'all' as string,
+};
+
+const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults(
+  DashboardLayout.dailyChart,
+  () => ({
+    activeTab: activeTab.value,
+    selectedTimeframe: selectedTimeframe.value,
+    enabledBenchmarks: [...enabledBenchmarks.value],
+    tradingMode: tradingMode.value,
+  }),
+  (d) => {
+    if (d.activeTab !== undefined) activeTab.value = d.activeTab as TabKey;
+    if (d.selectedTimeframe !== undefined) selectedTimeframe.value = d.selectedTimeframe as TimeframeKey;
+    if (d.enabledBenchmarks) {
+      enabledBenchmarks.value = [...(d.enabledBenchmarks as string[])];
+      saveBenchmarksToStorage();
+    }
+    if (d.tradingMode !== undefined) tradingMode.value = d.tradingMode as typeof tradingMode.value;
+  },
+  HARDCODED_DEFAULTS_BENCH,
+);
+
+onMounted(() => { loadDefaults(); });
+
+defineExpose({ filtersChanged, saveCurrentAsDefault });
 
 function toggleBenchmark(ticker: string) {
   const idx = enabledBenchmarks.value.indexOf(ticker);
@@ -201,13 +240,13 @@ function timeframeToDays(tf: TimeframeKey): number {
 // --- Compute unique bot IDs ---
 const botIds = computed<string[]>(() => {
   const ids = new Set<string>();
-  props.trades.forEach((tr) => ids.add(tr.botId));
+  modeFilteredTrades.value.forEach((tr) => ids.add(tr.botId));
   return Array.from(ids);
 });
 
 const botNameMap = computed<Record<string, string>>(() => {
   const map: Record<string, string> = {};
-  props.trades.forEach((tr) => {
+  modeFilteredTrades.value.forEach((tr) => {
     if (!map[tr.botId]) {
       map[tr.botId] = tr.botName || tr.botId;
     }
@@ -257,7 +296,7 @@ const totalStartingBalance = computed<number>(() => {
 // --- Filtered + sorted trades ---
 const filteredTrades = computed(() => {
   const cutoff = getTimeframeCutoff(selectedTimeframe.value);
-  return props.trades
+  return modeFilteredTrades.value
     .filter((tr) => tr.close_timestamp && tr.close_timestamp >= cutoff)
     .slice()
     .sort((a, b) => a.close_timestamp - b.close_timestamp);
@@ -266,7 +305,7 @@ const filteredTrades = computed(() => {
 // --- Open profit per bot ---
 const openProfitPerBot = computed<Record<string, number>>(() => {
   const result: Record<string, number> = {};
-  props.openTrades.forEach((tr) => {
+  modeFilteredOpenTrades.value.forEach((tr) => {
     const rawP = tr.total_profit_abs ?? tr.profit_abs ?? 0;
     const p = convertProfit(rawP, tr.botId);
     result[tr.botId] = (result[tr.botId] ?? 0) + p;
@@ -466,7 +505,7 @@ function buildCombinedSeries(): any[] {
 
   // Open trades projection
   const data = normalizedData.value;
-  if (props.openTrades.length > 0 && data.length > 0) {
+  if (modeFilteredOpenTrades.value.length > 0 && data.length > 0) {
     const lastPoint = data[data.length - 1]!;
     const totalOpen = Object.values(openProfitPerBot.value).reduce((s, v) => s + v, 0);
     const projectedValue = lastPoint.combined + (totalOpen / totalStartingBalance.value) * 100;
@@ -556,7 +595,7 @@ const chartOptions = computed<EChartsOption>(() => {
   } else {
     legendData.push(t('profitBenchmark.combined'));
 
-    if (props.openTrades.length > 0 && activeTab.value === 'combined') {
+    if (modeFilteredOpenTrades.value.length > 0 && activeTab.value === 'combined') {
       legendData.push(t('profitBenchmark.projected'));
     }
   }
@@ -779,6 +818,8 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
           {{ tf }}
         </button>
       </div>
+
+      <TradingModeSelect v-model="tradingMode" :show="hasMultipleModes" />
 
       <div class="flex-1"></div>
 

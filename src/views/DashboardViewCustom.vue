@@ -7,6 +7,13 @@ const botStore = useBotStore();
 const botComparisonRef = ref<InstanceType<typeof BotComparisonList>>();
 const openTradesRef = ref<InstanceType<typeof OpenTradesEnhanced>>();
 const closedTradesRef = ref<InstanceType<typeof ClosedTradesEnhanced>>();
+const profitBenchmarkRef = ref<any>();
+const logConsoleRef = ref<any>();
+const profitDistRef = ref<any>();
+const activityTimelineRef = ref<any>();
+const requestTimelineRef = ref<any>();
+const volumeComparatorRef = ref<any>();
+const periodBreakdownRef = ref<any>();
 
 const layoutStore = useLayoutStore();
 const currentBreakpoint = ref('');
@@ -112,7 +119,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="dashboard-bg">
+  <div class="dashboard-bg" :class="{ 'dashboard-bg-static': !layoutStore.backgroundAnimation }">
     <GridLayout
       class="h-full w-full p-2"
       :row-height="12"
@@ -141,9 +148,17 @@ onMounted(async () => {
         :min-w="12"
         :min-h="16"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :header="t('dashboard.profitBenchmark')" :widget-id="DashboardLayout.dailyChart">
+        <DraggableContainer
+          :header="t('dashboard.profitBenchmark')"
+          :widget-id="DashboardLayout.dailyChart"
+          has-filter-defaults
+          :filters-changed="profitBenchmarkRef?.filtersChanged ?? false"
+          @save-filter-defaults="profitBenchmarkRef?.saveCurrentAsDefault()"
+        >
           <ProfitBenchmarkChart
+            ref="profitBenchmarkRef"
             :trades="botStore.allTradesSelectedBots"
             :open-trades="botStore.allOpenTradesSelectedBots"
           />
@@ -159,8 +174,14 @@ onMounted(async () => {
         :min-w="12"
         :min-h="16"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :widget-id="DashboardLayout.botComparison" :can-hide="false">
+        <DraggableContainer
+          :widget-id="DashboardLayout.botComparison"
+          :can-hide="false"
+          has-column-settings
+          @column-settings-click="botComparisonRef?.showColumnPopover($event)"
+        >
           <template #header>
             <div class="flex justify-between items-center w-full">
               <span>{{ t('dashboard.botComparison') }}</span>
@@ -179,13 +200,6 @@ onMounted(async () => {
                 >
                   <i-mdi-folder-multiple class="inline" />
                 </button>
-                <button
-                  class="p-1 text-xs rounded hover:bg-white/10 cursor-pointer"
-                  :title="t('botComparison.columnSettings')"
-                  @click="botComparisonRef?.showColumnPopover($event)"
-                >
-                  <i-mdi-cog class="inline" />
-                </button>
               </div>
             </div>
           </template>
@@ -203,26 +217,20 @@ onMounted(async () => {
         :min-w="12"
         :min-h="16"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :widget-id="DashboardLayout.allOpenTrades">
+        <DraggableContainer
+          :widget-id="DashboardLayout.allOpenTrades"
+          has-column-settings
+          @column-settings-click="openTradesRef?.showColumnPopover($event)"
+        >
           <template #header>
-            <div class="flex justify-between items-center w-full">
-              <div class="flex items-center">
-                <span>{{ t('dashboard.openTrades') }}</span>
-                <InfoBox
-                  class="ms-2"
-                  :hint="t('dashboard.openTradesDesc')"
-                />
-              </div>
-              <div class="flex items-center gap-1">
-                <button
-                  class="p-1 text-xs rounded hover:bg-surface-300 dark:hover:bg-surface-600 cursor-pointer"
-                  :title="t('enhancedTrades.columnSettings')"
-                  @click="openTradesRef?.showColumnPopover($event)"
-                >
-                  <i-mdi-cog class="inline" />
-                </button>
-              </div>
+            <div class="flex items-center">
+              <span>{{ t('dashboard.openTrades') }}</span>
+              <InfoBox
+                class="ms-2"
+                :hint="t('dashboard.openTradesDesc')"
+              />
             </div>
           </template>
           <OpenTradesEnhanced ref="openTradesRef" :trades="botStore.allOpenTradesSelectedBots" multi-bot-view />
@@ -239,26 +247,20 @@ onMounted(async () => {
         :min-w="12"
         :min-h="16"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :widget-id="DashboardLayout.allClosedTrades">
+        <DraggableContainer
+          :widget-id="DashboardLayout.allClosedTrades"
+          has-column-settings
+          @column-settings-click="closedTradesRef?.showColumnPopover($event)"
+        >
           <template #header>
-            <div class="flex justify-between items-center w-full">
-              <div class="flex items-center">
-                <span>{{ t('dashboard.closedTrades') }}</span>
-                <InfoBox
-                  class="ms-2"
-                  :hint="t('dashboard.closedTradesDesc')"
-                />
-              </div>
-              <div class="flex items-center gap-1">
-                <button
-                  class="p-1 text-xs rounded hover:bg-surface-300 dark:hover:bg-surface-600 cursor-pointer"
-                  :title="t('enhancedTrades.columnSettings')"
-                  @click="closedTradesRef?.showColumnPopover($event)"
-                >
-                  <i-mdi-cog class="inline" />
-                </button>
-              </div>
+            <div class="flex items-center">
+              <span>{{ t('dashboard.closedTrades') }}</span>
+              <InfoBox
+                class="ms-2"
+                :hint="t('dashboard.closedTradesDesc')"
+              />
             </div>
           </template>
           <ClosedTradesEnhanced ref="closedTradesRef" :trades="botStore.allClosedTradesSelectedBots" multi-bot-view />
@@ -275,9 +277,16 @@ onMounted(async () => {
         :min-w="12"
         :min-h="16"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :header="t('dashboard.profitDistribution')" :widget-id="DashboardLayout.profitDistributionChart">
-          <ProfitDistributionEnhanced :trades="botStore.allTradesSelectedBots" :show-title="false" />
+        <DraggableContainer
+          :header="t('dashboard.profitDistribution')"
+          :widget-id="DashboardLayout.profitDistributionChart"
+          has-filter-defaults
+          :filters-changed="profitDistRef?.filtersChanged ?? false"
+          @save-filter-defaults="profitDistRef?.saveCurrentAsDefault()"
+        >
+          <ProfitDistributionEnhanced ref="profitDistRef" :trades="botStore.allTradesSelectedBots" :show-title="false" />
         </DraggableContainer>
       </GridItem>
       <GridItem
@@ -291,9 +300,16 @@ onMounted(async () => {
         :min-w="8"
         :min-h="12"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :header="t('dashboard.activityTimeline')" :widget-id="DashboardLayout.activityTimeline">
-          <ActivityTimeline />
+        <DraggableContainer
+          :header="t('dashboard.activityTimeline')"
+          :widget-id="DashboardLayout.activityTimeline"
+          has-filter-defaults
+          :filters-changed="activityTimelineRef?.filtersChanged ?? false"
+          @save-filter-defaults="activityTimelineRef?.saveCurrentAsDefault()"
+        >
+          <ActivityTimeline ref="activityTimelineRef" />
         </DraggableContainer>
       </GridItem>
       <GridItem
@@ -307,6 +323,7 @@ onMounted(async () => {
         :min-w="16"
         :min-h="24"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer :widget-id="DashboardLayout.marketPulse">
           <template #header>
@@ -327,6 +344,7 @@ onMounted(async () => {
         :min-w="12"
         :min-h="16"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer :header="t('dashboard.riskOverview')" :widget-id="DashboardLayout.riskOverview">
           <RiskOverview />
@@ -343,6 +361,7 @@ onMounted(async () => {
         :min-w="12"
         :min-h="16"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer :widget-id="DashboardLayout.stressTest">
           <template #header>
@@ -363,9 +382,16 @@ onMounted(async () => {
         :min-w="16"
         :min-h="16"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :header="t('dashboard.logConsole')" :widget-id="DashboardLayout.logConsole">
-          <LogConsoleWidget />
+        <DraggableContainer
+          :header="t('dashboard.logConsole')"
+          :widget-id="DashboardLayout.logConsole"
+          has-filter-defaults
+          :filters-changed="logConsoleRef?.filtersChanged ?? false"
+          @save-filter-defaults="logConsoleRef?.saveCurrentAsDefault()"
+        >
+          <LogConsoleWidget ref="logConsoleRef" />
         </DraggableContainer>
       </GridItem>
       <GridItem
@@ -379,6 +405,7 @@ onMounted(async () => {
         :min-w="12"
         :min-h="16"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer :widget-id="DashboardLayout.rateBudget">
           <template #header>
@@ -399,13 +426,19 @@ onMounted(async () => {
         :min-w="16"
         :min-h="16"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :widget-id="DashboardLayout.ratePulse">
+        <DraggableContainer
+          :widget-id="DashboardLayout.ratePulse"
+          has-filter-defaults
+          :filters-changed="requestTimelineRef?.filtersChanged ?? false"
+          @save-filter-defaults="requestTimelineRef?.saveCurrentAsDefault()"
+        >
           <template #header>
             <span>{{ t('dashboard.requestTimeline') }}</span>
             <span class="ft-live-dot ml-1.5"></span>
           </template>
-          <RequestTimeline multi-bot-view />
+          <RequestTimeline ref="requestTimelineRef" multi-bot-view />
         </DraggableContainer>
       </GridItem>
       <GridItem
@@ -419,6 +452,7 @@ onMounted(async () => {
         :min-w="16"
         :min-h="16"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer :widget-id="DashboardLayout.fleetOverview">
           <template #header>
@@ -439,9 +473,16 @@ onMounted(async () => {
         :min-w="16"
         :min-h="20"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :header="t('dashboard.volumeComparator')" :widget-id="DashboardLayout.volumeComparator">
-          <VolumeComparatorChart multi-bot-view />
+        <DraggableContainer
+          :header="t('dashboard.volumeComparator')"
+          :widget-id="DashboardLayout.volumeComparator"
+          has-filter-defaults
+          :filters-changed="volumeComparatorRef?.filtersChanged ?? false"
+          @save-filter-defaults="volumeComparatorRef?.saveCurrentAsDefault()"
+        >
+          <VolumeComparatorChart ref="volumeComparatorRef" multi-bot-view />
         </DraggableContainer>
       </GridItem>
       <GridItem
@@ -455,9 +496,16 @@ onMounted(async () => {
         :min-w="12"
         :min-h="16"
         drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :header="t('dashboard.periodBreakdown')" :widget-id="DashboardLayout.periodBreakdown">
-          <PeriodBreakdown multi-bot-view />
+        <DraggableContainer
+          :header="t('dashboard.periodBreakdown')"
+          :widget-id="DashboardLayout.periodBreakdown"
+          has-filter-defaults
+          :filters-changed="periodBreakdownRef?.filtersChanged ?? false"
+          @save-filter-defaults="periodBreakdownRef?.saveCurrentAsDefault()"
+        >
+          <PeriodBreakdown ref="periodBreakdownRef" multi-bot-view />
         </DraggableContainer>
       </GridItem>
     </template>
@@ -557,6 +605,12 @@ onMounted(async () => {
   animation: ft-wave-drift-reverse 60s linear infinite;
   pointer-events: none;
   z-index: 0;
+}
+
+.dashboard-bg-static::before,
+.dashboard-bg-static::after {
+  animation: none !important;
+  opacity: 0.5;
 }
 
 .dashboard-bg > :deep(.vue-grid-layout) {
