@@ -15,15 +15,19 @@ export default {
     exportPdf: 'Exporter en PDF',
     strategyDev: 'Dev Stratégie',
     journal: 'Journal',
-    editPage: 'Éditer la page',
+    editPage: 'Éditer le dashboard',
     editModeHint: 'Mode édition — Déplacez, redimensionnez et masquez les widgets',
     editModeDone: 'Terminé',
     opacity: 'Opacité',
+    bgAnimation: 'Animation',
     exportConfig: 'Exporter la config',
     importConfig: 'Importer une config',
     pageConfig: 'Config de la page',
     configDesc: 'Sauvegardez et restaurez la disposition du dashboard et vos préférences d\'affichage.',
     resetLayout: 'Réinitialiser la disposition',
+    resetLayoutConfirm: 'Êtes-vous sûr de vouloir réinitialiser la disposition du dashboard par défaut ? Vous perdrez tous vos ajustements de fenêtres, de colonnes, de placement, de taille, de zoom, etc.',
+    optimizeLayout: 'Optimiser la fenêtre',
+    optimizeLayoutConfirm: 'Tous les widgets visibles seront déplacés le plus en haut à gauche possible, en conservant leur taille actuelle. Les widgets masqués ne sont pas affectés.',
     newVersionAvailable: 'Nouvelle version disponible',
     includeAuth: 'Inclure les tokens d\'authentification',
     authPasswordRequired: 'Les tokens donnent un contrôle total sur vos bots. Un mot de passe est requis pour chiffrer le fichier.',
@@ -2902,5 +2906,24 @@ export default {
     stable: 'stable',
     unstable: 'instable',
     marginal: 'marginal',
+  },
+
+  // Column Editor
+  columnEditor: {
+    title: 'Colonnes',
+    reset: 'Réinitialiser par défaut',
+  },
+
+  // Trading mode filter
+  tradingModeFilter: {
+    allModes: 'Tous les modes',
+    liveOnly: 'Live uniquement',
+    dryOnly: 'Dry uniquement',
+  },
+
+  // Widget Defaults
+  widgetDefaults: {
+    saveAsDefault: 'Filtre par défaut',
+    saved: 'Filtres sauvegardés',
   },
 };

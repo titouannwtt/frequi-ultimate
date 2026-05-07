@@ -148,7 +148,9 @@ export const useLayoutStore = defineStore('layoutStore', {
       editMode: false,
       hiddenWidgets: [] as number[],
       widgetOpacity: 1,
-      widgetZoom: 100,
+      widgetZooms: {} as Record<number, number>,
+      widgetDefaults: {} as Record<number, Record<string, unknown>>,
+      backgroundAnimation: true,
     };
   },
   getters: {
@@ -161,6 +163,15 @@ export const useLayoutStore = defineStore('layoutStore', {
     },
     resetDashboardLayout() {
       this.dashboardLayout = JSON.parse(JSON.stringify(DEFAULT_DASHBOARD_LAYOUT));
+      this.hiddenWidgets = [];
+      this.widgetZooms = {};
+      this.widgetDefaults = {};
+      this.widgetOpacity = 1;
+      this.backgroundAnimation = true;
+      localStorage.removeItem('enhancedOpenTradeColumns');
+      localStorage.removeItem('enhancedClosedTradeColumns');
+      localStorage.removeItem('enhancedOpenTradeColumnOrder');
+      localStorage.removeItem('enhancedClosedTradeColumnOrder');
     },
     toggleEditMode() {
       this.editMode = !this.editMode;
@@ -181,8 +192,63 @@ export const useLayoutStore = defineStore('layoutStore', {
     setWidgetOpacity(v: number) {
       this.widgetOpacity = Math.max(0.3, Math.min(1, v));
     },
-    setWidgetZoom(v: number) {
-      this.widgetZoom = Math.max(60, Math.min(120, Math.round(v)));
+    getWidgetZoom(id: number): number {
+      return this.widgetZooms[id] ?? 100;
+    },
+    getWidgetDefaults(id: number): Record<string, unknown> | undefined {
+      return this.widgetDefaults[id];
+    },
+    setWidgetDefaults(id: number, defaults: Record<string, unknown>) {
+      this.widgetDefaults[id] = defaults;
+    },
+    compactDashboardLayout() {
+      const COLS = 48;
+      const visible = this.dashboardLayout.filter(
+        (item: GridItemData) => item.w > 0 && item.h > 0,
+      );
+      const hidden = this.dashboardLayout.filter(
+        (item: GridItemData) => item.w === 0 || item.h === 0,
+      );
+      visible.sort((a: GridItemData, b: GridItemData) => a.y - b.y || a.x - b.x);
+
+      const placed: GridItemData[] = [];
+
+      function collides(a: GridItemData, b: GridItemData): boolean {
+        return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+      }
+
+      for (const item of visible) {
+        let bestX = 0;
+        let bestY = Infinity;
+
+        for (let y = 0; y < 10000; y++) {
+          for (let x = 0; x <= COLS - item.w; x++) {
+            const candidate = { ...item, x, y };
+            if (!placed.some((p) => collides(candidate, p))) {
+              if (y < bestY || (y === bestY && x < bestX)) {
+                bestX = x;
+                bestY = y;
+              }
+              break;
+            }
+          }
+          if (bestY <= y) break;
+        }
+
+        item.x = bestX;
+        item.y = bestY;
+        placed.push(item);
+      }
+
+      this.dashboardLayout = [...placed, ...hidden];
+    },
+    setWidgetZoom(id: number, v: number) {
+      const clamped = Math.max(60, Math.min(120, Math.round(v)));
+      if (clamped === 100) {
+        delete this.widgetZooms[id];
+      } else {
+        this.widgetZooms[id] = clamped;
+      }
     },
   },
   persist: {

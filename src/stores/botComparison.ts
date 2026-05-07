@@ -157,6 +157,11 @@ export const useBotComparisonStore = defineStore('botComparison', {
       }
     },
 
+    resetColumns() {
+      this.visibleColumnIds = [];
+      this.columnOrder = [];
+    },
+
     // ── Tags ──
     ensureTagOrder() {
       const valid = this.tagOrder.filter((id) => ALL_TAG_IDS.includes(id));

@@ -17,6 +17,7 @@ const botStore = useBotStore();
 
 const settingsStore = useSettingsStore();
 const layoutStore = useLayoutStore();
+const botComparisonStore = useBotComparisonStore();
 const route = useRoute();
 const router = useRouter();
 const favicon = ref<Favico | undefined>(undefined);
@@ -43,13 +44,31 @@ const setOpenTradesAsPill = (tradeCount: number) => {
     favicon.value.reset();
   }
 };
+const resetConfirmVisible = ref(false);
+const optimizeConfirmVisible = ref(false);
+
+const confirmResetLayout = (): void => {
+  resetConfirmVisible.value = true;
+};
+
+const confirmOptimizeLayout = (): void => {
+  optimizeConfirmVisible.value = true;
+};
+
+const executeOptimizeLayout = (): void => {
+  optimizeConfirmVisible.value = false;
+  layoutStore.compactDashboardLayout();
+};
+
 const resetDynamicLayout = (): void => {
+  resetConfirmVisible.value = false;
   switch (route?.fullPath) {
     case '/trade':
       layoutStore.resetTradingLayout();
       break;
     case '/dashboard':
       layoutStore.resetDashboardLayout();
+      botComparisonStore.resetColumns();
       break;
     default:
   }
@@ -401,6 +420,15 @@ const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fu
             <div v-if="configMenuOpen" class="fixed inset-0 z-40" @click="configMenuOpen = false" />
           </div>
 
+          <!-- Settings button -->
+          <button
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer"
+            @click="router.push('/settings')"
+          >
+            <i-mdi-cog class="w-4 h-4" />
+            {{ t('nav.settings') }}
+          </button>
+
           <!-- Fork version badge -->
           <div class="flex flex-col items-end leading-tight">
             <span
@@ -417,15 +445,6 @@ const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fu
               {{ t('nav.newVersionAvailable') }}
             </a>
           </div>
-
-          <!-- Settings button (rightmost) -->
-          <button
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer"
-            @click="router.push('/settings')"
-          >
-            <i-mdi-cog class="w-4 h-4" />
-            {{ t('nav.settings') }}
-          </button>
 
           <!-- Logout -->
           <button
@@ -541,30 +560,27 @@ const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fu
           <span class="text-xs text-surface-500 w-8">{{ Math.round(layoutStore.widgetOpacity * 100) }}%</span>
         </div>
         <div class="w-px h-4 bg-white/10" />
-        <div class="flex items-center gap-2">
-          <i-mdi-magnify class="w-3.5 h-3.5 text-surface-500" />
-          <span class="text-xs text-surface-500">Zoom</span>
-          <input
-            type="range"
-            :value="layoutStore.widgetZoom"
-            min="60"
-            max="120"
-            step="5"
-            class="w-20 accent-indigo-500"
-            @input="layoutStore.setWidgetZoom(parseInt(($event.target as HTMLInputElement).value))"
-          />
-          <span class="text-xs text-surface-500 w-8">{{ layoutStore.widgetZoom }}%</span>
-          <button
-            v-if="layoutStore.widgetZoom !== 100"
-            class="text-[10px] text-indigo-400 hover:text-indigo-300 cursor-pointer"
-            @click="layoutStore.setWidgetZoom(100)"
-          >
-            reset
-          </button>
-        </div>
+        <button
+          class="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border transition-colors cursor-pointer"
+          :class="layoutStore.backgroundAnimation
+            ? 'text-indigo-300 bg-indigo-500/15 border-indigo-400/30 hover:bg-indigo-500/25'
+            : 'text-surface-500 border-surface-600 hover:text-surface-300 hover:border-surface-500'"
+          @click="layoutStore.backgroundAnimation = !layoutStore.backgroundAnimation"
+        >
+          <i-mdi-waves class="w-3.5 h-3.5" />
+          {{ t('nav.bgAnimation') }}
+        </button>
+        <div class="w-px h-4 bg-white/10" />
+        <button
+          class="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md text-blue-300 bg-blue-500/10 border border-blue-400/20 hover:bg-blue-500/20 transition-colors cursor-pointer"
+          @click="confirmOptimizeLayout"
+        >
+          <i-mdi-view-compact class="w-3.5 h-3.5" />
+          {{ t('nav.optimizeLayout') }}
+        </button>
         <button
           class="px-3 py-1 text-xs rounded-md text-surface-400 hover:text-red-300 hover:bg-red-500/10 border border-surface-600 hover:border-red-400/30 transition-colors cursor-pointer"
-          @click="resetDynamicLayout"
+          @click="confirmResetLayout"
         >
           <i-mdi-lock-reset class="inline w-3.5 h-3.5 mr-1" />
           {{ t('nav.resetLayout') }}
@@ -763,6 +779,68 @@ const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fu
             <i-mdi-check class="w-4 h-4 mr-1" />
             {{ t('nav.applyConfig') }}
           </Button>
+        </div>
+      </div>
+    </Dialog>
+
+    <!-- ═══ Optimize Layout Confirmation ═══ -->
+    <Dialog
+      v-model:visible="optimizeConfirmVisible"
+      :header="t('nav.optimizeLayout')"
+      modal
+      :style="{ width: '440px' }"
+      :pt="{ root: { class: 'config-dialog' } }"
+    >
+      <div class="space-y-4">
+        <div class="flex items-start gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/15">
+          <i-mdi-view-compact class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+          <p class="text-sm text-surface-300 leading-relaxed">
+            {{ t('nav.optimizeLayoutConfirm') }}
+          </p>
+        </div>
+        <div class="flex justify-end gap-2">
+          <Button
+            :label="t('nav.cancel')"
+            severity="secondary"
+            text
+            @click="optimizeConfirmVisible = false"
+          />
+          <Button
+            :label="t('nav.optimizeLayout')"
+            severity="info"
+            @click="executeOptimizeLayout"
+          />
+        </div>
+      </div>
+    </Dialog>
+
+    <!-- ═══ Reset Layout Confirmation ═══ -->
+    <Dialog
+      v-model:visible="resetConfirmVisible"
+      :header="t('nav.resetLayout')"
+      modal
+      :style="{ width: '420px' }"
+      :pt="{ root: { class: 'config-dialog' } }"
+    >
+      <div class="space-y-4">
+        <div class="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/15">
+          <i-mdi-alert class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <p class="text-sm text-surface-300 leading-relaxed">
+            {{ t('nav.resetLayoutConfirm') }}
+          </p>
+        </div>
+        <div class="flex justify-end gap-2">
+          <Button
+            :label="t('nav.cancel')"
+            severity="secondary"
+            text
+            @click="resetConfirmVisible = false"
+          />
+          <Button
+            :label="t('nav.resetLayout')"
+            severity="danger"
+            @click="resetDynamicLayout"
+          />
         </div>
       </div>
     </Dialog>
