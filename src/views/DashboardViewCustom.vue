@@ -527,24 +527,29 @@ onMounted(async () => {
 .dashboard-bg::before {
   content: '';
   position: absolute;
-  inset: -40% -20%;
+  inset: -60% -40%;
   background:
-    repeating-linear-gradient(
-      115deg,
-      transparent,
-      transparent 40%,
-      rgba(180, 170, 150, 0.07) 42%,
-      transparent 44%
-    ),
-    repeating-linear-gradient(
-      155deg,
-      transparent,
-      transparent 45%,
-      rgba(160, 150, 135, 0.05) 47%,
-      transparent 49%
-    );
-  background-size: 200% 100%;
-  animation: ft-wave-drift 45s linear infinite;
+    repeating-linear-gradient(115deg, transparent, transparent 40%, rgba(180, 170, 150, 0.08) 42%, transparent 44%),
+    repeating-linear-gradient(155deg, transparent, transparent 45%, rgba(160, 150, 135, 0.06) 47%, transparent 49%),
+    radial-gradient(ellipse 800px 600px at 30% 40%, rgba(180, 160, 130, 0.06), transparent 70%),
+    radial-gradient(ellipse 600px 800px at 70% 60%, rgba(160, 140, 120, 0.04), transparent 70%);
+  background-size: 300% 300%, 250% 250%, 100% 100%, 100% 100%;
+  animation: ft-chaos-1 37s ease-in-out infinite;
+  transform-origin: center center;
+  pointer-events: none;
+  z-index: 0;
+}
+.dashboard-bg::after {
+  content: '';
+  position: absolute;
+  inset: -50% -30%;
+  background:
+    repeating-linear-gradient(135deg, transparent, transparent 44%, rgba(170, 155, 130, 0.05) 46%, transparent 48%),
+    repeating-linear-gradient(170deg, transparent, transparent 46%, rgba(155, 140, 120, 0.04) 48%, transparent 50%),
+    radial-gradient(ellipse 500px 700px at 60% 30%, rgba(170, 150, 120, 0.05), transparent 60%);
+  background-size: 200% 200%, 250% 250%, 100% 100%;
+  animation: ft-chaos-2 53s ease-in-out infinite;
+  transform-origin: center center;
   pointer-events: none;
   z-index: 0;
 }
@@ -557,59 +562,41 @@ onMounted(async () => {
 .ft-dark-theme .dashboard-bg::before {
   content: '';
   position: absolute;
-  inset: -40% -20%;
+  inset: -60% -40%;
   background:
-    repeating-linear-gradient(
-      115deg,
-      transparent,
-      transparent 38%,
-      rgba(45, 50, 80, 0.35) 40%,
-      rgba(35, 40, 70, 0.18) 42%,
-      transparent 44%
-    ),
-    repeating-linear-gradient(
-      155deg,
-      transparent,
-      transparent 42%,
-      rgba(30, 35, 65, 0.25) 44%,
-      rgba(25, 30, 55, 0.12) 46%,
-      transparent 48%
-    );
-  background-size: 200% 100%;
-  animation: ft-wave-drift 45s linear infinite;
+    repeating-linear-gradient(115deg, transparent, transparent 38%, rgba(45, 50, 80, 0.30) 40%, rgba(35, 40, 70, 0.15) 42%, transparent 44%),
+    repeating-linear-gradient(155deg, transparent, transparent 42%, rgba(30, 35, 65, 0.22) 44%, rgba(25, 30, 55, 0.10) 46%, transparent 48%),
+    radial-gradient(ellipse 800px 600px at 30% 40%, rgba(99, 102, 241, 0.06), transparent 70%),
+    radial-gradient(ellipse 600px 800px at 70% 60%, rgba(6, 182, 212, 0.04), transparent 70%);
+  background-size: 300% 300%, 250% 250%, 100% 100%, 100% 100%;
+  animation: ft-chaos-1 37s ease-in-out infinite;
+  transform-origin: center center;
   pointer-events: none;
-  will-change: background-position;
+  will-change: background-position, transform;
   z-index: 0;
 }
 
 .ft-dark-theme .dashboard-bg::after {
   content: '';
   position: absolute;
-  inset: -40% -20%;
+  inset: -50% -30%;
   background:
-    repeating-linear-gradient(
-      135deg,
-      transparent,
-      transparent 44%,
-      rgba(99, 102, 241, 0.04) 46%,
-      transparent 48%
-    ),
-    repeating-linear-gradient(
-      170deg,
-      transparent,
-      transparent 46%,
-      rgba(6, 182, 212, 0.03) 48%,
-      transparent 50%
-    );
-  background-size: 200% 100%;
-  animation: ft-wave-drift-reverse 60s linear infinite;
+    repeating-linear-gradient(135deg, transparent, transparent 44%, rgba(99, 102, 241, 0.05) 46%, transparent 48%),
+    repeating-linear-gradient(170deg, transparent, transparent 46%, rgba(6, 182, 212, 0.04) 48%, transparent 50%),
+    radial-gradient(ellipse 500px 700px at 60% 30%, rgba(139, 92, 246, 0.05), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 40% 70%, rgba(20, 184, 166, 0.03), transparent 60%);
+  background-size: 200% 200%, 250% 250%, 100% 100%, 100% 100%;
+  animation: ft-chaos-2 53s ease-in-out infinite;
+  transform-origin: center center;
   pointer-events: none;
+  will-change: background-position, transform;
   z-index: 0;
 }
 
 .dashboard-bg-static::before,
 .dashboard-bg-static::after {
   animation: none !important;
+  transform: none !important;
   opacity: 0.5;
 }
 

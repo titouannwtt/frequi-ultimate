@@ -304,6 +304,13 @@ function changeLocale(lang: string) {
 }
 
 const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fullPath === '/trade');
+
+watch(() => route?.fullPath, () => {
+  if (!isDashboard.value && layoutStore.editMode) {
+    layoutStore.editMode = false;
+    layoutStore.layoutLocked = true;
+  }
+});
 </script>
 
 <template>
@@ -343,7 +350,7 @@ const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fu
         </div>
 
         <!-- Right aligned nav items -->
-        <div v-if="!isMobile" class="flex ms-auto items-center gap-2">
+        <div v-if="!isMobile" class="flex ms-auto items-center gap-2 whitespace-nowrap">
           <div
             v-if="!settingsStore.confirmDialog"
             class="my-auto flex text-yellow-300"
@@ -541,7 +548,7 @@ const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fu
     <!-- Edit mode toolbar -->
     <Transition name="ft">
       <div
-        v-if="layoutStore.editMode"
+        v-if="layoutStore.editMode && isDashboard"
         class="edit-toolbar flex items-center justify-center flex-wrap gap-x-4 gap-y-1 py-2 px-4"
       >
         <span class="text-xs text-surface-400">{{ t('nav.editModeHint') }}</span>
