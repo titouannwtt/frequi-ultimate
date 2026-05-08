@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { ClosedTrade } from '@/types';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 
 const { t } = useI18n();
+const route = useRoute();
 const botStore = useBotStore();
 
 const allTrades = computed(() =>
@@ -12,10 +14,12 @@ const allTrades = computed(() =>
   })),
 );
 
+const botQueryParam = route.query.bot as string | undefined;
+
 const filters = ref({
   global: { value: null, matchMode: 'contains' as const },
   botMode: { value: null, matchMode: 'in' as const },
-  botName: { value: null, matchMode: 'in' as const },
+  botName: { value: botQueryParam ? [botQueryParam] : null, matchMode: 'in' as const },
   pair: { value: null, matchMode: 'in' as const },
   exchange: { value: null, matchMode: 'in' as const },
   exit_reason: { value: null, matchMode: 'in' as const },

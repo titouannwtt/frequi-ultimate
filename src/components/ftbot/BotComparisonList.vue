@@ -4408,7 +4408,7 @@ const correlatedPairs = computed(() => {
           <div class="border-t border-surface-200 dark:border-surface-700 my-0.5"></div>
           <button
             class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
-            @click="botStore.selectBot(item.botId!); router.push('/logs'); botActionMenuRef[item.botId!]?.hide()"
+            @click="botStore.selectBot(item.botId!); router.push({ path: '/logs', query: { bot: item.botId } }); botActionMenuRef[item.botId!]?.hide()"
           >
             <i-mdi-console class="text-surface-500" /> {{ t('botComparison.viewLogs') }}
           </button>
@@ -4417,6 +4417,12 @@ const correlatedPairs = computed(() => {
             @click="botStore.selectBot(item.botId!); router.push('/trade'); botActionMenuRef[item.botId!]?.hide()"
           >
             <i-mdi-swap-horizontal class="text-surface-500" /> {{ t('botComparison.viewTrades') }}
+          </button>
+          <button
+            class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
+            @click="router.push({ path: '/journal', query: { bot: item.botName } }); botActionMenuRef[item.botId!]?.hide()"
+          >
+            <i-mdi-book-open-variant class="text-surface-500" /> {{ t('botComparison.viewJournal') }}
           </button>
           <!-- Action feedback -->
           <div v-if="botActionFeedback[item.botId!]" class="text-center py-1">
