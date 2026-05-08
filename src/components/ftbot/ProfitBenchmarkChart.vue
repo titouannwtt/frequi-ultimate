@@ -819,7 +819,7 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
           :class="
             activeTab === tab.key
               ? 'bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/40'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'
           "
           @click="activeTab = tab.key"
         >
@@ -827,7 +827,7 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
         </button>
       </div>
 
-      <div class="w-px h-4 bg-gray-600/30"></div>
+      <div class="w-px h-4 bg-gray-300 dark:bg-gray-600/30"></div>
 
       <!-- Timeframe pills -->
       <div class="flex gap-0.5 tf-pills">
@@ -838,7 +838,7 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
           :class="
             selectedTimeframe === tf
               ? 'bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/40'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'
           "
           @click="selectedTimeframe = tf"
         >
@@ -846,7 +846,7 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
         </button>
       </div>
 
-      <div class="w-px h-4 bg-gray-600/30"></div>
+      <div class="w-px h-4 bg-gray-300 dark:bg-gray-600/30"></div>
 
       <!-- Value mode toggle (% / abs) -->
       <div class="flex gap-0.5">
@@ -857,7 +857,7 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
           :class="
             valueMode === vm.key
               ? 'bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/40'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'
           "
           @click="valueMode = vm.key"
         >
@@ -891,7 +891,7 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
         <!-- Add benchmark button -->
         <div class="relative">
           <button
-            class="px-1.5 py-0.5 text-[10px] font-semibold rounded-md transition-all duration-150 cursor-pointer text-gray-500 hover:text-gray-300 hover:bg-white/5 border border-dashed border-gray-600/30"
+            class="px-1.5 py-0.5 text-[10px] font-semibold rounded-md transition-all duration-150 cursor-pointer text-gray-600 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 hover:bg-black/5 dark:hover:bg-white/5 border border-dashed border-gray-300 dark:border-gray-600/30"
             :title="t('profitBenchmark.addBenchmark')"
             @click="showBenchmarkDropdown = !showBenchmarkDropdown"
           >
@@ -901,17 +901,17 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
           <!-- Dropdown -->
           <div
             v-if="showBenchmarkDropdown"
-            class="absolute right-0 top-full mt-1 z-50 bg-gray-800 border border-gray-600/50 rounded-lg shadow-xl p-2 min-w-[160px]"
+            class="absolute right-0 top-full mt-1 z-50 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600/50 rounded-lg shadow-xl p-2 min-w-[160px]"
           >
             <div class="max-h-[300px] overflow-y-auto">
               <template v-for="cat in BENCHMARK_CATEGORIES" :key="cat.label">
-                <div class="text-[9px] text-gray-500 uppercase tracking-wide font-semibold mt-1.5 mb-0.5 px-1">
+                <div class="text-[9px] text-gray-600 dark:text-gray-500 uppercase tracking-wide font-semibold mt-1.5 mb-0.5 px-1">
                   {{ cat.label }}
                 </div>
                 <template v-for="ticker in cat.tickers" :key="ticker">
                   <button
                     class="flex items-center gap-2 w-full px-2 py-0.5 text-[10px] rounded cursor-pointer transition-colors"
-                    :class="enabledBenchmarks.includes(ticker) ? 'text-white bg-white/10' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'"
+                    :class="enabledBenchmarks.includes(ticker) ? 'text-gray-900 dark:text-white bg-black/10 dark:bg-white/10' : 'text-gray-600 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-200'"
                     @click="toggleBenchmark(ticker)"
                   >
                     <span

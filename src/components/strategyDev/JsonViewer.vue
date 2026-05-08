@@ -25,7 +25,7 @@ async function copyJson() {
 }
 
 function colorClass(val: unknown): string {
-  if (val === null) return 'text-gray-400';
+  if (val === null) return 'text-gray-600 dark:text-gray-400';
   if (typeof val === 'boolean') return 'text-orange-400';
   if (typeof val === 'number') return 'text-blue-400';
   if (typeof val === 'string') return 'text-green-400';

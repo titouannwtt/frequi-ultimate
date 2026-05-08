@@ -113,7 +113,7 @@ const stakeCurrency = computed(() => {
         border: `1px solid ${isPositiveImpact ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
       }"
     >
-      <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">
+      <div class="text-xs text-gray-600 dark:text-gray-500 uppercase tracking-wider mb-1">
         {{ t('stressTest.estimatedImpact') }}
         <span v-if="scenarioPercent !== 0" class="normal-case">
           ({{ scenarioPercent < 0 ? t('stressTest.crashOf', { pct: Math.abs(scenarioPercent) }) : t('stressTest.pumpOf', { pct: scenarioPercent }) }})
@@ -132,7 +132,7 @@ const stakeCurrency = computed(() => {
 
     <!-- Slider: -50% to +50% -->
     <div>
-      <div class="flex justify-between text-xs text-gray-400 mb-1">
+      <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
         <span>{{ t('stressTest.crashScenario') }}</span>
         <span
           class="font-bold"
@@ -147,7 +147,7 @@ const stakeCurrency = computed(() => {
         :step="1"
         class="w-full accent-blue-500"
       />
-      <div class="flex justify-between text-[0.55rem] text-gray-500 mt-0.5">
+      <div class="flex justify-between text-[0.55rem] text-gray-600 dark:text-gray-500 mt-0.5">
         <span>-50% {{ t('stressTest.crash') }}</span>
         <span>0%</span>
         <span>+50% {{ t('stressTest.pump') }}</span>
@@ -157,7 +157,7 @@ const stakeCurrency = computed(() => {
     <!-- No positions -->
     <div
       v-if="stressResults.length === 0"
-      class="text-center text-gray-400 text-sm py-4"
+      class="text-center text-gray-600 dark:text-gray-400 text-sm py-4"
     >
       {{ t('stressTest.noOpenPositions') }}
     </div>

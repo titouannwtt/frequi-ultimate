@@ -660,7 +660,7 @@ watch(selectedTimeframe, () => {
         <Teleport to="body">
           <div
             v-if="editingSlotIdx === idx"
-            class="fixed bg-gray-800 border border-gray-600/50 rounded-lg shadow-2xl p-1.5 min-w-[160px] max-h-[250px] overflow-y-auto"
+            class="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600/50 rounded-lg shadow-2xl p-1.5 min-w-[160px] max-h-[250px] overflow-y-auto"
             :style="slotDropdownStyle(idx)"
             style="z-index: 9999"
           >
