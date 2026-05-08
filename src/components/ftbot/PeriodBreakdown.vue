@@ -125,6 +125,22 @@ function refreshSummary() {
 onMounted(() => {
   refreshSummary();
 });
+
+function periodProfitBgClass(val: number): string {
+  if (val > 5) return 'bg-green-500/20';
+  if (val > 1) return 'bg-green-500/15';
+  if (val > 0) return 'bg-green-500/8';
+  if (val > -1) return 'bg-red-500/8';
+  if (val > -5) return 'bg-red-500/15';
+  return 'bg-red-500/20';
+}
+
+function periodRowClass(val: number): string {
+  if (val > 1) return 'bg-green-500/8';
+  if (val > 0) return 'bg-green-500/4';
+  if (val > -1) return 'bg-red-500/4';
+  return 'bg-red-500/8';
+}
 </script>
 
 <template>
@@ -183,29 +199,66 @@ onMounted(() => {
       Time period chart is only available when a single bot is selected and showing absolute profit.
     </div>
     <div v-if="!props.multiBotView">
-      <DataTable size="small" :value="selectedStats.data">
-        <Column field="date" :header="t('periodBreakdown.day')"></Column>
-        <Column field="abs_profit" :header="t('periodBreakdown.profit')">
-          <template #body="{ data, field }">
-            {{ formatPrice(data[field as string], botStore.activeBot.stakeCurrencyDecimals) }}
+      <DataTable
+        size="small"
+        :value="selectedStats.data"
+        :row-class="(data: any) => periodRowClass(data.abs_profit)"
+        scrollable
+        scroll-height="flex"
+      >
+        <Column field="date" :header="t('periodBreakdown.day')" sortable>
+          <template #body="{ data }">
+            <span class="font-semibold text-xs">{{ data.date }}</span>
+          </template>
+        </Column>
+        <Column field="abs_profit" :header="t('periodBreakdown.profit')" sortable>
+          <template #body="{ data }">
+            <span
+              class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold"
+              :class="periodProfitBgClass(data.abs_profit)"
+            >
+              <span :class="data.abs_profit >= 0 ? 'text-green-400' : 'text-red-400'">
+                {{ data.abs_profit >= 0 ? '+' : '' }}{{ formatPrice(data.abs_profit, botStore.activeBot.stakeCurrencyDecimals) }}
+              </span>
+            </span>
           </template>
         </Column>
         <Column
           field="fiat_value"
           :header="t('periodBreakdown.inFiat', { currency: botStore.activeBot.dailyStats.fiat_display_currency })"
+          sortable
         >
-          <template #body="{ data, field }">
-            {{ formatPrice(data[field as string], 2) }}
+          <template #body="{ data }">
+            <span
+              class="font-mono text-xs"
+              :class="data.fiat_value >= 0 ? 'text-green-400' : 'text-red-400'"
+            >
+              {{ data.fiat_value >= 0 ? '+' : '' }}{{ formatPrice(data.fiat_value, 2) }}
+            </span>
           </template>
         </Column>
-        <Column field="trade_count" :header="t('periodBreakdown.trades')"></Column>
+        <Column field="trade_count" :header="t('periodBreakdown.trades')" sortable>
+          <template #body="{ data }">
+            <span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono bg-surface-500/10">
+              {{ data.trade_count }}
+            </span>
+          </template>
+        </Column>
         <Column
           v-if="botStore.activeBot.botFeatures.advancedDailyMetrics"
           field="rel_profit"
           :header="t('periodBreakdown.profitPct')"
+          sortable
         >
-          <template #body="{ data, field }">
-            {{ formatPercent(data[field as string], 2) }}
+          <template #body="{ data }">
+            <span
+              class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold"
+              :class="periodProfitBgClass(data.rel_profit)"
+            >
+              <span :class="data.rel_profit >= 0 ? 'text-green-400' : 'text-red-400'">
+                {{ data.rel_profit >= 0 ? '+' : '' }}{{ formatPercent(data.rel_profit, 2) }}
+              </span>
+            </span>
           </template>
         </Column>
       </DataTable>
