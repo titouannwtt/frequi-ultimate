@@ -69,7 +69,7 @@ onMounted(() => {
         <li
           v-for="(method, key) in botStore.activeBot.pairlistMethods"
           :key="key"
-          class="pair bg-white text-black align-middle border border-secondary"
+          class="pair align-middle border border-surface-300 dark:border-surface-600 bg-surface-50 dark:bg-surface-800 text-surface-800 dark:text-surface-200"
         >
           {{ method }}
         </li>
@@ -83,7 +83,7 @@ onMounted(() => {
       <li
         v-for="(pair, key) in botStore.activeBot.whitelist"
         :key="key"
-        class="pair bg-white text-black align-middle border border-secondary"
+        class="pair align-middle border border-surface-300 dark:border-surface-600 bg-surface-50 dark:bg-surface-800 text-surface-800 dark:text-surface-200"
       >
         {{ pair }}
       </li>
