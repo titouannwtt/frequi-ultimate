@@ -3,8 +3,62 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const stratDevStore = useStrategyDevStore();
+const editorStore = useEditorStore();
 const botStore = useBotStore();
 const showLeftBar = ref(true);
+const showLauncher = ref(false);
+
+function openLauncher() {
+  showLauncher.value = true;
+  stratDevStore.selectRun(null);
+}
+
+watch(() => stratDevStore.selectedRun, (run) => {
+  if (run) showLauncher.value = false;
+});
+
+// ── Editor split-pane resize ──
+const editorFormWidth = ref(520);
+const isEditorResizing = ref(false);
+
+function startEditorResize(e: MouseEvent) {
+  e.preventDefault();
+  isEditorResizing.value = true;
+  const startX = e.clientX;
+  const startW = editorFormWidth.value;
+
+  function onMove(ev: MouseEvent) {
+    const delta = ev.clientX - startX;
+    editorFormWidth.value = Math.max(400, Math.min(800, startW + delta));
+  }
+
+  function onUp() {
+    isEditorResizing.value = false;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
+
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function handleUseConfig(path: string) {
+  launchConfigOverride.value = path;
+}
+
+const launchConfigOverride = ref<string | null>(null);
+const launchPrefill = ref<Partial<import('@/types').JobStartRequest> | null>(null);
+
+function handleReconstitute(prefill: Partial<import('@/types').JobStartRequest>) {
+  launchPrefill.value = prefill;
+  showLauncher.value = true;
+  stratDevStore.selectRun(null);
+}
+
 
 const isBotOnline = computed(() => botStore.activeBot?.isBotOnline ?? false);
 
@@ -103,7 +157,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
         </button>
 
         <Transition name="sd-sidebar-content">
-          <StrategyDevSidebar v-if="showLeftBar" />
+          <StrategyDevSidebar v-if="showLeftBar" @open-launcher="openLauncher" />
         </Transition>
       </div>
 
@@ -136,7 +190,34 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
       </div>
 
       <!-- Detail view -->
-      <StrategyDevDetail v-else-if="stratDevStore.selectedRun" />
+      <StrategyDevDetail v-else-if="stratDevStore.selectedRun && !showLauncher" @reconstitute="handleReconstitute" />
+
+      <!-- Launcher -->
+      <div
+        v-else-if="showLauncher"
+        class="sd-launcher-container"
+        :class="{ 'sd-launcher--split': editorStore.isOpen, 'sd-launcher--resizing': isEditorResizing }"
+      >
+        <div
+          class="sd-launcher-form"
+          :style="editorStore.isOpen ? { width: editorFormWidth + 'px', flexShrink: 0 } : {}"
+        >
+          <div class="sd-launcher-header">
+            <h3 class="sd-launcher-title">
+              <i-mdi-play-circle-outline class="w-5 h-5" />
+              {{ t('strategyDev.jobLaunch') }}
+            </h3>
+            <button class="sd-launcher-close" @click="showLauncher = false; editorStore.closeAll()">
+              <i-mdi-close class="w-4 h-4" />
+            </button>
+          </div>
+          <LaunchJobPanel :config-override="launchConfigOverride" :prefill="launchPrefill" @config-used="launchConfigOverride = null" @prefill-applied="launchPrefill = null" />
+        </div>
+        <div v-if="editorStore.isOpen" class="sd-launcher-resize" @mousedown="startEditorResize" />
+        <div v-if="editorStore.isOpen" class="sd-launcher-editor">
+          <EditorPane @use-config="handleUseConfig" />
+        </div>
+      </div>
 
       <!-- Empty state -->
       <div v-else class="sd-empty-state">
@@ -336,6 +417,84 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
   border-radius: 50%;
   animation: sd-spin 800ms linear infinite;
   margin-bottom: 16px;
+}
+
+/* ── Launcher container ── */
+.sd-launcher-container {
+  max-width: none;
+  margin: 0;
+  padding: 0 20px;
+}
+
+.sd-launcher--split {
+  max-width: none;
+  display: flex;
+  gap: 0;
+  padding: 0;
+  height: calc(100vh - 110px);
+}
+
+.sd-launcher--split .sd-launcher-form {
+  min-width: 320px;
+  overflow-y: auto;
+  padding: 0 16px;
+}
+
+.sd-launcher-editor {
+  flex: 1;
+  min-width: 300px;
+  max-width: 40%;
+  border-left: 1px solid var(--sd-border-subtle);
+  overflow: hidden;
+}
+
+.sd-launcher-resize {
+  width: 4px;
+  cursor: col-resize;
+  transition: background var(--sd-transition-fast);
+  flex-shrink: 0;
+}
+
+.sd-launcher-resize:hover,
+.sd-launcher--resizing .sd-launcher-resize {
+  background: var(--sd-info);
+  opacity: 0.3;
+}
+
+.sd-launcher-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sd-launcher-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--sd-text-lg);
+  font-weight: 700;
+  color: var(--sd-text);
+  margin: 0;
+}
+
+.sd-launcher-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--sd-border-subtle);
+  border-radius: var(--sd-radius-sm);
+  background: transparent;
+  color: var(--sd-overlay);
+  cursor: pointer;
+  transition: all var(--sd-transition-fast);
+}
+
+.sd-launcher-close:hover {
+  background: var(--sd-surface0);
+  color: var(--sd-text);
 }
 
 /* ── Sidebar content transition ── */
