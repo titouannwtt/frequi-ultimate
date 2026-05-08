@@ -26,6 +26,11 @@ declare global {
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
   const availableBacktestMetrics: typeof import('./utils/backtestMetrics').availableBacktestMetrics
   const binData: typeof import('./utils/charts/binCount').binData
+  const buildLiveBotAnalytics: typeof import('./utils/liveBotAnalytics').buildLiveBotAnalytics
+  const buildPrefillFromBacktest: typeof import('./utils/reconstitute').buildPrefillFromBacktest
+  const buildPrefillFromHyperopt: typeof import('./utils/reconstitute').buildPrefillFromHyperopt
+  const buildPrefillFromLiveBot: typeof import('./utils/reconstitute').buildPrefillFromLiveBot
+  const buildPrefillFromWfa: typeof import('./utils/reconstitute').buildPrefillFromWfa
   const calculateDiff: typeof import('./utils/charts/areaPlotDataset').calculateDiff
   const cancelDelayedHide: typeof import('./composables/usePopoverHover').cancelDelayedHide
   const checkAndNotifyAlerts: typeof import('./utils/browserNotifications').checkAndNotifyAlerts
@@ -78,6 +83,7 @@ declare global {
   const fetchBenchmarkHistory: typeof import('./utils/benchmarkData').fetchBenchmarkHistory
   const fetchCoinHistory: typeof import('./utils/benchmarkData').fetchCoinHistory
   const findGridLayout: typeof import('./stores/layout').findGridLayout
+  const formatDateToTimerange: typeof import('./utils/reconstitute').formatDateToTimerange
   const formatDecimal: typeof import('./utils/formatters/numberformat').formatDecimal
   const formatNumber: typeof import('./utils/formatters/numberformat').formatNumber
   const formatObjectForTable: typeof import('./utils/objectToTableItems').formatObjectForTable
@@ -125,6 +131,7 @@ declare global {
   const mapStores: typeof import('pinia').mapStores
   const mapWritableState: typeof import('pinia').mapWritableState
   const markRaw: typeof import('vue').markRaw
+  const monaco: typeof import('./utils/monacoWorker').monaco
   const nextTick: typeof import('vue').nextTick
   const normalizeToPercent: typeof import('./utils/benchmarkData').normalizeToPercent
   const onActivated: typeof import('vue').onActivated
@@ -148,6 +155,7 @@ declare global {
   const onUnmounted: typeof import('vue').onUnmounted
   const onUpdated: typeof import('vue').onUpdated
   const onWatcherCleanup: typeof import('vue').onWatcherCleanup
+  const parseTimerangeToDates: typeof import('./utils/reconstitute').parseTimerangeToDates
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
   const plotConfigColumns: typeof import('./utils/charts/plotConfigColumns').plotConfigColumns
   const previewConfig: typeof import('./composables/useConfigExport').previewConfig
@@ -176,6 +184,7 @@ declare global {
   const resolveRef: typeof import('@vueuse/core').resolveRef
   const roundTimeframe: typeof import('./utils/roundTimeframe').default
   const rowBgClass: typeof import('./composables/tradeColumns').rowBgClass
+  const runTypeToJobType: typeof import('./utils/reconstitute').runTypeToJobType
   const setActivePinia: typeof import('pinia').setActivePinia
   const setMapStoreSuffix: typeof import('pinia').setMapStoreSuffix
   const setTimezone: typeof import('./utils/formatters/timeformat').setTimezone
@@ -279,6 +288,7 @@ declare global {
   const useDocumentVisibility: typeof import('@vueuse/core').useDocumentVisibility
   const useDraggable: typeof import('@vueuse/core').useDraggable
   const useDropZone: typeof import('@vueuse/core').useDropZone
+  const useEditorStore: typeof import('./stores/editorStore').useEditorStore
   const useElementBounding: typeof import('@vueuse/core').useElementBounding
   const useElementByPoint: typeof import('@vueuse/core').useElementByPoint
   const useElementHover: typeof import('@vueuse/core').useElementHover
@@ -377,6 +387,7 @@ declare global {
   const useStepper: typeof import('@vueuse/core').useStepper
   const useStorage: typeof import('@vueuse/core').useStorage
   const useStorageAsync: typeof import('@vueuse/core').useStorageAsync
+  const useStrategyDevJobStore: typeof import('./stores/strategyDevJobStore').useStrategyDevJobStore
   const useStrategyDevStore: typeof import('./stores/strategyDevStore').useStrategyDevStore
   const useStyleTag: typeof import('@vueuse/core').useStyleTag
   const useSummaryCurrency: typeof import('./composables/summaryCurrency').useSummaryCurrency
@@ -480,6 +491,9 @@ declare global {
   export type { ColorPreferences } from './stores/colors'
   import('./stores/colors')
   // @ts-ignore
+  export type { EditorFile } from './stores/editorStore'
+  import('./stores/editorStore')
+  // @ts-ignore
   export type { BotSubStore, SubStores } from './stores/ftbotwrapper'
   import('./stores/ftbotwrapper')
   // @ts-ignore
@@ -503,6 +517,12 @@ declare global {
   // @ts-ignore
   export type { TradeSeriesOptions } from './utils/charts/tradeChartData'
   import('./utils/charts/tradeChartData')
+  // @ts-ignore
+  export type { LiveBotInput } from './utils/liveBotAnalytics'
+  import('./utils/liveBotAnalytics')
+  // @ts-ignore
+  export type { LiveBotPrefillInput } from './utils/reconstitute'
+  import('./utils/reconstitute')
 }
 
 // for vue template auto import
@@ -530,6 +550,11 @@ declare module 'vue' {
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly availableBacktestMetrics: UnwrapRef<typeof import('./utils/backtestMetrics')['availableBacktestMetrics']>
     readonly binData: UnwrapRef<typeof import('./utils/charts/binCount')['binData']>
+    readonly buildLiveBotAnalytics: UnwrapRef<typeof import('./utils/liveBotAnalytics')['buildLiveBotAnalytics']>
+    readonly buildPrefillFromBacktest: UnwrapRef<typeof import('./utils/reconstitute')['buildPrefillFromBacktest']>
+    readonly buildPrefillFromHyperopt: UnwrapRef<typeof import('./utils/reconstitute')['buildPrefillFromHyperopt']>
+    readonly buildPrefillFromLiveBot: UnwrapRef<typeof import('./utils/reconstitute')['buildPrefillFromLiveBot']>
+    readonly buildPrefillFromWfa: UnwrapRef<typeof import('./utils/reconstitute')['buildPrefillFromWfa']>
     readonly calculateDiff: UnwrapRef<typeof import('./utils/charts/areaPlotDataset')['calculateDiff']>
     readonly cancelDelayedHide: UnwrapRef<typeof import('./composables/usePopoverHover')['cancelDelayedHide']>
     readonly checkAndNotifyAlerts: UnwrapRef<typeof import('./utils/browserNotifications')['checkAndNotifyAlerts']>
@@ -582,6 +607,7 @@ declare module 'vue' {
     readonly fetchBenchmarkHistory: UnwrapRef<typeof import('./utils/benchmarkData')['fetchBenchmarkHistory']>
     readonly fetchCoinHistory: UnwrapRef<typeof import('./utils/benchmarkData')['fetchCoinHistory']>
     readonly findGridLayout: UnwrapRef<typeof import('./stores/layout')['findGridLayout']>
+    readonly formatDateToTimerange: UnwrapRef<typeof import('./utils/reconstitute')['formatDateToTimerange']>
     readonly formatDecimal: UnwrapRef<typeof import('./utils/formatters/numberformat')['formatDecimal']>
     readonly formatNumber: UnwrapRef<typeof import('./utils/formatters/numberformat')['formatNumber']>
     readonly formatObjectForTable: UnwrapRef<typeof import('./utils/objectToTableItems')['formatObjectForTable']>
@@ -629,6 +655,7 @@ declare module 'vue' {
     readonly mapStores: UnwrapRef<typeof import('pinia')['mapStores']>
     readonly mapWritableState: UnwrapRef<typeof import('pinia')['mapWritableState']>
     readonly markRaw: UnwrapRef<typeof import('vue')['markRaw']>
+    readonly monaco: UnwrapRef<typeof import('./utils/monacoWorker')['monaco']>
     readonly nextTick: UnwrapRef<typeof import('vue')['nextTick']>
     readonly normalizeToPercent: UnwrapRef<typeof import('./utils/benchmarkData')['normalizeToPercent']>
     readonly onActivated: UnwrapRef<typeof import('vue')['onActivated']>
@@ -652,6 +679,7 @@ declare module 'vue' {
     readonly onUnmounted: UnwrapRef<typeof import('vue')['onUnmounted']>
     readonly onUpdated: UnwrapRef<typeof import('vue')['onUpdated']>
     readonly onWatcherCleanup: UnwrapRef<typeof import('vue')['onWatcherCleanup']>
+    readonly parseTimerangeToDates: UnwrapRef<typeof import('./utils/reconstitute')['parseTimerangeToDates']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
     readonly plotConfigColumns: UnwrapRef<typeof import('./utils/charts/plotConfigColumns')['plotConfigColumns']>
     readonly previewConfig: UnwrapRef<typeof import('./composables/useConfigExport')['previewConfig']>
@@ -680,6 +708,7 @@ declare module 'vue' {
     readonly resolveRef: UnwrapRef<typeof import('@vueuse/core')['resolveRef']>
     readonly roundTimeframe: UnwrapRef<typeof import('./utils/roundTimeframe')['default']>
     readonly rowBgClass: UnwrapRef<typeof import('./composables/tradeColumns')['rowBgClass']>
+    readonly runTypeToJobType: UnwrapRef<typeof import('./utils/reconstitute')['runTypeToJobType']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>
     readonly setTimezone: UnwrapRef<typeof import('./utils/formatters/timeformat')['setTimezone']>
@@ -783,6 +812,7 @@ declare module 'vue' {
     readonly useDocumentVisibility: UnwrapRef<typeof import('@vueuse/core')['useDocumentVisibility']>
     readonly useDraggable: UnwrapRef<typeof import('@vueuse/core')['useDraggable']>
     readonly useDropZone: UnwrapRef<typeof import('@vueuse/core')['useDropZone']>
+    readonly useEditorStore: UnwrapRef<typeof import('./stores/editorStore')['useEditorStore']>
     readonly useElementBounding: UnwrapRef<typeof import('@vueuse/core')['useElementBounding']>
     readonly useElementByPoint: UnwrapRef<typeof import('@vueuse/core')['useElementByPoint']>
     readonly useElementHover: UnwrapRef<typeof import('@vueuse/core')['useElementHover']>
@@ -881,6 +911,7 @@ declare module 'vue' {
     readonly useStepper: UnwrapRef<typeof import('@vueuse/core')['useStepper']>
     readonly useStorage: UnwrapRef<typeof import('@vueuse/core')['useStorage']>
     readonly useStorageAsync: UnwrapRef<typeof import('@vueuse/core')['useStorageAsync']>
+    readonly useStrategyDevJobStore: UnwrapRef<typeof import('./stores/strategyDevJobStore')['useStrategyDevJobStore']>
     readonly useStrategyDevStore: UnwrapRef<typeof import('./stores/strategyDevStore')['useStrategyDevStore']>
     readonly useStyleTag: UnwrapRef<typeof import('@vueuse/core')['useStyleTag']>
     readonly useSummaryCurrency: UnwrapRef<typeof import('./composables/summaryCurrency')['useSummaryCurrency']>
