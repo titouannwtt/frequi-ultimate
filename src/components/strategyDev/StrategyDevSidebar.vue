@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { RunType } from '@/types';
+import { RunType, JobStatus } from '@/types';
 
 const { t } = useI18n();
 const store = useStrategyDevStore();
+const jobStore = useStrategyDevJobStore();
+
+defineEmits<{
+  openLauncher: [];
+}>();
 
 const typeOptions = [
   { label: t('strategyDev.allTypes'), value: null },
   { label: t('strategyDev.backtest'), value: RunType.backtest },
   { label: t('strategyDev.hyperopt'), value: RunType.hyperopt },
   { label: t('strategyDev.wfa'), value: RunType.wfa },
+  { label: t('strategyDev.liveBots'), value: RunType.live },
 ];
 
 const strategyOptions = computed(() => [
@@ -48,6 +54,31 @@ function clearSearch() {
 
 <template>
   <div class="sd-sidebar-content">
+    <!-- Launch button + job status -->
+    <button class="sd-launch-btn" @click="$emit('openLauncher')">
+      <i-mdi-play-circle-outline class="sd-launch-btn-icon" />
+      <span>{{ t('strategyDev.jobLaunch') }}</span>
+      <span
+        v-if="jobStore.isJobRunning"
+        class="sd-launch-badge sd-launch-badge--running"
+      >
+        <span class="sd-launch-badge-dot" />
+        {{ jobStore.jobProgress || t('strategyDev.jobRunning') }}
+      </span>
+      <span
+        v-else-if="jobStore.activeJob?.status === JobStatus.completed"
+        class="sd-launch-badge sd-launch-badge--done"
+      >
+        ✓
+      </span>
+      <span
+        v-else-if="jobStore.activeJob?.status === JobStatus.failed"
+        class="sd-launch-badge sd-launch-badge--failed"
+      >
+        ✗
+      </span>
+    </button>
+
     <!-- Search with clear button -->
     <div class="sd-search-wrapper">
       <i-mdi-magnify class="sd-search-icon" />
@@ -365,5 +396,72 @@ function clearSearch() {
   border-top-color: var(--sd-info);
   border-radius: 50%;
   animation: sd-spin 800ms linear infinite;
+}
+
+/* ── Launch button ── */
+.sd-launch-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(137, 180, 250, 0.2);
+  border-radius: var(--sd-radius-md);
+  background: rgba(137, 180, 250, 0.06);
+  color: var(--sd-info);
+  font-size: var(--sd-text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--sd-transition-fast);
+}
+
+.sd-launch-btn:hover {
+  background: rgba(137, 180, 250, 0.12);
+  border-color: rgba(137, 180, 250, 0.35);
+}
+
+.sd-launch-btn-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.sd-launch-badge {
+  margin-left: auto;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.sd-launch-badge--running {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--sd-info-dim);
+  color: var(--sd-info);
+}
+
+.sd-launch-badge-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sd-info);
+  animation: sd-pulse 2s ease-in-out infinite;
+}
+
+@keyframes sd-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.sd-launch-badge--done {
+  background: rgba(166, 227, 161, 0.15);
+  color: var(--sd-success);
+}
+
+.sd-launch-badge--failed {
+  background: rgba(243, 139, 168, 0.15);
+  color: var(--sd-danger);
 }
 </style>

@@ -20,6 +20,7 @@ const typeColors: Record<RunType, string> = {
   [RunType.backtest]: 'info',
   [RunType.hyperopt]: 'warn',
   [RunType.wfa]: 'success',
+  [RunType.live]: 'danger',
 };
 
 function metricLabel(run: RunListEntry): string {
@@ -34,6 +35,8 @@ function metricLabel(run: RunListEntry): string {
   }
   return '';
 }
+
+const isLiveBot = computed(() => props.run.run_type === RunType.live);
 
 function timeAgo(ts: number): string {
   if (!ts) return '';
@@ -80,8 +83,8 @@ const verdictDot = computed<string | null>(() => {
 
     <!-- Type tag -->
     <Tag
-      :value="run.run_type"
-      :severity="typeColors[run.run_type]"
+      :value="isLiveBot ? (run.dry_run ? 'dry' : 'live') : run.run_type"
+      :severity="isLiveBot && run.dry_run ? 'warn' : typeColors[run.run_type]"
       class="run-type-tag"
     />
 
@@ -91,9 +94,16 @@ const verdictDot = computed<string | null>(() => {
         <span class="run-strategy">{{ run.strategy }}</span>
         <i-mdi-star v-if="run.favorite" class="run-fav-star" />
         <i-mdi-cached v-if="isCached" class="run-cached-icon" />
-        <span v-if="isNew" class="run-new-badge">new</span>
+        <span v-if="isLiveBot" class="run-live-badge" :class="{ 'run-live-badge--dry': run.dry_run }">
+          <span class="run-live-dot" :class="{ 'run-live-dot--dry': run.dry_run }" />
+          {{ run.dry_run ? 'dry' : 'live' }}
+        </span>
+        <span v-else-if="isNew" class="run-new-badge">new</span>
       </div>
-      <span class="run-time">{{ timeAgo(run.timestamp) }}</span>
+      <span v-if="isLiveBot" class="run-time">
+        {{ run.exchange }} · {{ run.open_trades_count ?? 0 }} open
+      </span>
+      <span v-else class="run-time">{{ timeAgo(run.timestamp) }}</span>
     </div>
 
     <!-- Metric -->
@@ -195,6 +205,44 @@ const verdictDot = computed<string | null>(() => {
   border-radius: 3px;
   flex-shrink: 0;
   line-height: 1.4;
+}
+
+.run-live-badge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sd-success);
+  background: var(--sd-success-dim);
+  padding: 0 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.run-live-badge--dry {
+  color: var(--sd-warning);
+  background: var(--sd-warning-dim);
+}
+
+.run-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sd-success);
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+.run-live-dot--dry {
+  background: var(--sd-warning);
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 .run-time {

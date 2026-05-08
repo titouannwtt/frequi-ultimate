@@ -19,12 +19,14 @@ const typeColors: Record<RunType, string> = {
   [RunType.backtest]: 'info',
   [RunType.hyperopt]: 'warn',
   [RunType.wfa]: 'success',
+  [RunType.live]: 'danger',
 };
 
 const typeLabels: Record<RunType, string> = {
   [RunType.backtest]: 'Backtest',
   [RunType.hyperopt]: 'Hyperopt',
   [RunType.wfa]: 'Walk-Forward',
+  [RunType.live]: 'Live Bot',
 };
 
 const formattedDate = computed(() => {
@@ -53,7 +55,8 @@ const runDuration = computed(() => {
   return formatDistanceStrict(new Date(start * 1000), new Date(end * 1000));
 });
 
-const canEdit = computed(() => props.run.run_type !== RunType.backtest);
+const canEdit = computed(() => props.run.run_type !== RunType.backtest && props.run.run_type !== RunType.live);
+const isLive = computed(() => props.run.run_type === RunType.live);
 
 // ── Quick stats ──
 const quickStats = computed<{ label: string; value: string; color: string }[]>(() => {
@@ -295,16 +298,26 @@ function filterByType() {
 
       <!-- Metadata -->
       <div class="rdh-meta">
-        <span v-if="run.timeframe" class="rdh-meta-item">
+        <span v-if="isLive && run.exchange" class="rdh-meta-item">
+          <i-mdi-swap-horizontal class="rdh-meta-icon" /> {{ run.exchange }}
+        </span>
+        <span v-if="isLive" class="rdh-meta-item" :style="{ color: run.dry_run ? 'var(--sd-warning)' : 'var(--sd-success)' }">
+          <i-mdi-circle class="rdh-meta-icon" style="width: 8px; height: 8px" />
+          {{ run.dry_run ? t('strategyDev.liveDryRun') : t('strategyDev.liveReal') }}
+        </span>
+        <span v-if="isLive && run.open_trades_count != null" class="rdh-meta-item">
+          <i-mdi-chart-timeline class="rdh-meta-icon" /> {{ run.open_trades_count }} open
+        </span>
+        <span v-if="!isLive && run.timeframe" class="rdh-meta-item">
           <i-mdi-clock-outline class="rdh-meta-icon" /> {{ run.timeframe }}
         </span>
-        <span v-if="run.timerange" class="rdh-meta-item">
+        <span v-if="!isLive && run.timerange" class="rdh-meta-item">
           <i-mdi-calendar-range class="rdh-meta-icon" /> {{ run.timerange }}
         </span>
-        <span v-if="formattedDate" class="rdh-meta-item">
+        <span v-if="!isLive && formattedDate" class="rdh-meta-item">
           <i-mdi-calendar class="rdh-meta-icon" /> {{ formattedDate }}
         </span>
-        <span v-if="runDuration" class="rdh-meta-item">
+        <span v-if="!isLive && runDuration" class="rdh-meta-item">
           <i-mdi-timer-outline class="rdh-meta-icon" /> {{ runDuration }}
         </span>
       </div>
