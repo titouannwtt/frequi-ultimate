@@ -44,6 +44,16 @@ export const useSettingsStore = defineStore('uiSettings', {
       hideSimultaneousEntryExit: false,
       backtestAdditionalMetrics: ['profit_factor', 'expectancy'] as string[],
       _latestForkVersion: null as string | null,
+      chartLegendVisible: true,
+      chartLegendPosition: 'top-left' as 'top-left' | 'top-right' | 'bottom-left',
+      chartLegendRealtimeValues: true,
+      chartVolumeVisible: true,
+      chartShowLiquidation: true,
+      chartShowInitialStoploss: false,
+      chartShowLeverage: true,
+      chartKeyboardShortcuts: true,
+      chartAnimations: true,
+      chartCrosshairStyle: 'cross' as 'cross' | 'vertical' | 'horizontal' | 'none',
     };
   },
   getters: {

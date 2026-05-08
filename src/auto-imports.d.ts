@@ -250,6 +250,7 @@ declare global {
   const useBtcBenchmark: typeof import('./composables/useBtcBenchmark').useBtcBenchmark
   const useCached: typeof import('@vueuse/core').useCached
   const useChartConfigStore: typeof import('./stores/chartConfig').useChartConfigStore
+  const useChartShortcuts: typeof import('./composables/useChartShortcuts').useChartShortcuts
   const useClipboard: typeof import('@vueuse/core').useClipboard
   const useClipboardItems: typeof import('@vueuse/core').useClipboardItems
   const useCloned: typeof import('@vueuse/core').useCloned
@@ -449,6 +450,9 @@ declare global {
   export type { BenchmarkPoint } from './composables/useBtcBenchmark'
   import('./composables/useBtcBenchmark')
   // @ts-ignore
+  export type { ChartShortcutActions } from './composables/useChartShortcuts'
+  import('./composables/useChartShortcuts')
+  // @ts-ignore
   export type { ConfigPreview } from './composables/useConfigExport'
   import('./composables/useConfigExport')
   // @ts-ignore
@@ -496,6 +500,9 @@ declare global {
   // @ts-ignore
   export type { SupportedSeriesTypes } from './utils/charts/candleChartSeries'
   import('./utils/charts/candleChartSeries')
+  // @ts-ignore
+  export type { TradeSeriesOptions } from './utils/charts/tradeChartData'
+  import('./utils/charts/tradeChartData')
 }
 
 // for vue template auto import
@@ -747,6 +754,7 @@ declare module 'vue' {
     readonly useBtcBenchmark: UnwrapRef<typeof import('./composables/useBtcBenchmark')['useBtcBenchmark']>
     readonly useCached: UnwrapRef<typeof import('@vueuse/core')['useCached']>
     readonly useChartConfigStore: UnwrapRef<typeof import('./stores/chartConfig')['useChartConfigStore']>
+    readonly useChartShortcuts: UnwrapRef<typeof import('./composables/useChartShortcuts')['useChartShortcuts']>
     readonly useClipboard: UnwrapRef<typeof import('@vueuse/core')['useClipboard']>
     readonly useClipboardItems: UnwrapRef<typeof import('@vueuse/core')['useClipboardItems']>
     readonly useCloned: UnwrapRef<typeof import('@vueuse/core')['useCloned']>
