@@ -26,24 +26,46 @@ function removePairLock(item: Lock) {
       </Button>
     </div>
     <div>
-      <DataTable size="small" :value="botStore.activeBot.activeLocks">
-        <Column field="pair" :header="t('pairLocks.pair')"></Column>
-        <Column field="lock_end_timestamp" :header="t('pairLocks.until')">
-          <template #body="{ data, field }">
-            {{ timestampms(data[field as string]) }}
+      <DataTable
+        size="small"
+        :value="botStore.activeBot.activeLocks"
+        scrollable
+        scroll-height="flex"
+      >
+        <Column field="pair" :header="t('pairLocks.pair')" sortable>
+          <template #body="{ data }">
+            <span class="font-semibold text-xs">{{ data.pair }}</span>
           </template>
         </Column>
-        <Column field="reason" :header="t('pairLocks.reason')"></Column>
+        <Column field="lock_end_timestamp" :header="t('pairLocks.until')" sortable>
+          <template #body="{ data }">
+            <span class="font-mono text-xs text-surface-500">
+              {{ timestampms(data.lock_end_timestamp) }}
+            </span>
+          </template>
+        </Column>
+        <Column field="reason" :header="t('pairLocks.reason')">
+          <template #body="{ data }">
+            <span
+              class="inline-block px-1.5 py-0.5 rounded text-xs font-mono bg-amber-500/10 text-amber-500 dark:text-amber-400"
+            >
+              {{ data.reason }}
+            </span>
+          </template>
+        </Column>
         <Column field="actions" :header="t('pairLocks.actions')">
           <template #body="{ data }">
             <Button
-              class="btn-xs ms-1"
               size="small"
-              severity="secondary"
+              severity="danger"
+              text
+              rounded
               :title="t('pairLocks.deleteLock')"
               @click="removePairLock(data as Lock)"
             >
-              <i-mdi-delete />
+              <template #icon>
+                <i-mdi-delete />
+              </template>
             </Button>
           </template>
         </Column>
