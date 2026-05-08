@@ -51,28 +51,93 @@ const DEFAULT_TRADING_LAYOUT_SM: GridItemData[] = [
 ];
 
 const DEFAULT_DASHBOARD_LAYOUT: GridItemData[] = [
-  { i: DashboardLayout.botComparison, x: 0, y: 0, w: 32, h: 24 },
+  { i: DashboardLayout.logConsole, x: 0, y: 0, w: 32, h: 24 },
   { i: DashboardLayout.dailyChart, x: 32, y: 0, w: 16, h: 24 },
-  { i: DashboardLayout.allOpenTrades, x: 0, y: 24, w: 32, h: 24 },
-  { i: DashboardLayout.cumChartChart, x: 32, y: 24, w: 16, h: 24 },
-  { i: DashboardLayout.allClosedTrades, x: 0, y: 48, w: 32, h: 24 },
-  { i: DashboardLayout.profitDistributionChart, x: 32, y: 48, w: 16, h: 24 },
+  { i: DashboardLayout.botComparison, x: 0, y: 24, w: 32, h: 44 },
+  { i: DashboardLayout.periodBreakdown, x: 32, y: 24, w: 16, h: 29 },
+  { i: DashboardLayout.allOpenTrades, x: 0, y: 68, w: 32, h: 47 },
+  { i: DashboardLayout.profitDistributionChart, x: 32, y: 53, w: 16, h: 25 },
+  { i: DashboardLayout.allClosedTrades, x: 0, y: 115, w: 32, h: 24 },
+  { i: DashboardLayout.activityTimeline, x: 32, y: 78, w: 16, h: 25 },
+  { i: DashboardLayout.marketPulse, x: 0, y: 139, w: 16, h: 26 },
+  { i: DashboardLayout.riskOverview, x: 16, y: 139, w: 16, h: 26 },
+  { i: DashboardLayout.stressTest, x: 32, y: 103, w: 16, h: 56 },
+  { i: DashboardLayout.ratePulse, x: 0, y: 165, w: 32, h: 29 },
+  { i: DashboardLayout.volumeComparator, x: 0, y: 194, w: 32, h: 28 },
+  { i: DashboardLayout.rateBudget, x: 32, y: 159, w: 16, h: 24 },
+  { i: DashboardLayout.fleetOverview, x: 32, y: 183, w: 16, h: 39 },
+  { i: DashboardLayout.cumChartChart, x: 0, y: 222, w: 16, h: 24 },
+  { i: DashboardLayout.walletHistoryChart, x: 16, y: 222, w: 16, h: 24 },
   { i: DashboardLayout.tradesLogChart, x: 0, y: 400, w: 0, h: 0 },
-  { i: DashboardLayout.activityTimeline, x: 32, y: 72, w: 16, h: 20 },
-  { i: DashboardLayout.marketPulse, x: 0, y: 92, w: 16, h: 20 },
   { i: DashboardLayout.performanceHeatmap, x: 0, y: 400, w: 0, h: 0 },
-  { i: DashboardLayout.riskOverview, x: 32, y: 92, w: 16, h: 20 },
-  { i: DashboardLayout.stressTest, x: 0, y: 112, w: 16, h: 24 },
-  { i: DashboardLayout.logConsole, x: 16, y: 112, w: 16, h: 24 },
-  { i: DashboardLayout.rateBudget, x: 0, y: 136, w: 16, h: 28 },
-  { i: DashboardLayout.ratePulse, x: 16, y: 136, w: 32, h: 28 },
   { i: DashboardLayout.requestFlow, x: 0, y: 400, w: 0, h: 0 },
   { i: DashboardLayout.cacheHealth, x: 0, y: 400, w: 0, h: 0 },
-  { i: DashboardLayout.fleetOverview, x: 0, y: 164, w: 48, h: 28 },
-  { i: DashboardLayout.walletHistoryChart, x: 0, y: 192, w: 16, h: 24 },
-  { i: DashboardLayout.volumeComparator, x: 16, y: 192, w: 32, h: 28 },
-  { i: DashboardLayout.periodBreakdown, x: 0, y: 220, w: 24, h: 24 },
 ];
+
+const DEFAULT_WIDGET_ZOOMS: Record<number, number> = {
+  [DashboardLayout.dailyChart]: 75,
+  [DashboardLayout.botComparison]: 60,
+  [DashboardLayout.allOpenTrades]: 75,
+  [DashboardLayout.allClosedTrades]: 75,
+  [DashboardLayout.profitDistributionChart]: 80,
+  [DashboardLayout.activityTimeline]: 75,
+  [DashboardLayout.marketPulse]: 75,
+  [DashboardLayout.riskOverview]: 120,
+  [DashboardLayout.stressTest]: 85,
+  [DashboardLayout.logConsole]: 90,
+  [DashboardLayout.rateBudget]: 90,
+  [DashboardLayout.ratePulse]: 90,
+  [DashboardLayout.fleetOverview]: 90,
+  [DashboardLayout.volumeComparator]: 90,
+};
+
+const DEFAULT_WIDGET_DEFAULTS: Record<number, Record<string, unknown>> = {
+  [DashboardLayout.dailyChart]: {
+    activeTab: 'combined',
+    selectedTimeframe: '90D',
+    enabledBenchmarks: [],
+    tradingMode: 'live',
+  },
+  [DashboardLayout.profitDistributionChart]: {
+    activeTab: 'histogram',
+    activeFilter: 'all',
+    histBinCount: 85,
+    tradingMode: 'all',
+  },
+  [DashboardLayout.activityTimeline]: {
+    compactMode: true,
+    tradingModeFilter: 'live',
+    enabledEventTypes: [
+      'trade_opened', 'trade_closed_profit', 'trade_closed_loss',
+      'bot_status', 'alert', 'dca',
+    ],
+  },
+  [DashboardLayout.logConsole]: {
+    displayMode: 'timeline',
+    activeTimeWindow: 24,
+    compactMode: false,
+    hideHeartbeat: true,
+    hideWebSocket: false,
+    hideWalletSync: true,
+    hideBtAnalysis: true,
+    levels: ['CRITICAL', 'ERROR', 'WARNING'],
+    tradingMode: 'live',
+  },
+  [DashboardLayout.volumeComparator]: {
+    selectedDays: 180,
+    selectedBucket: '1M',
+    showTradeCount: true,
+    showProfit: false,
+    showAnomalies: false,
+    showVolumeRatio: false,
+    tradingMode: 'all',
+  },
+  [DashboardLayout.periodBreakdown]: {
+    timeProfitPeriod: 'weekly',
+    timeProfitPreference: 'abs_profit',
+    tradingMode: 'all',
+  },
+};
 
 const DEFAULT_DASHBOARD_LAYOUT_SM: GridItemData[] = [
   { i: DashboardLayout.botComparison, x: 0, y: 0, w: 48, h: 24 },
@@ -148,8 +213,11 @@ export const useLayoutStore = defineStore('layoutStore', {
       editMode: false,
       hiddenWidgets: [] as number[],
       widgetOpacity: 1,
-      widgetZooms: {} as Record<number, number>,
-      widgetDefaults: {} as Record<number, Record<string, unknown>>,
+      widgetZooms: JSON.parse(JSON.stringify(DEFAULT_WIDGET_ZOOMS)) as Record<number, number>,
+      widgetDefaults: JSON.parse(JSON.stringify(DEFAULT_WIDGET_DEFAULTS)) as Record<
+        number,
+        Record<string, unknown>
+      >,
       backgroundAnimation: true,
       adaptiveZoom: true,
     };
@@ -165,8 +233,8 @@ export const useLayoutStore = defineStore('layoutStore', {
     resetDashboardLayout() {
       this.dashboardLayout = JSON.parse(JSON.stringify(DEFAULT_DASHBOARD_LAYOUT));
       this.hiddenWidgets = [];
-      this.widgetZooms = {};
-      this.widgetDefaults = {};
+      this.widgetZooms = JSON.parse(JSON.stringify(DEFAULT_WIDGET_ZOOMS));
+      this.widgetDefaults = JSON.parse(JSON.stringify(DEFAULT_WIDGET_DEFAULTS));
       this.widgetOpacity = 1;
       this.backgroundAnimation = true;
       this.adaptiveZoom = true;
