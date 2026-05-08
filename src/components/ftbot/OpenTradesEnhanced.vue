@@ -528,7 +528,7 @@ watch(
               @mouseenter="showPopover('duration', $event, data as Trade)"
               @mouseleave="hidePopover()"
             >
-              <div class="flex-1 h-1.5 rounded-full bg-gray-700 overflow-hidden">
+              <div class="flex-1 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
                 <div
                   class="h-full rounded-full"
                   :class="durationAnomalyLevelFromPct(durationAnomalyPct(data, botStore.activeBot?.trades)) === 'ok' ? 'bg-green-500' : durationAnomalyLevelFromPct(durationAnomalyPct(data, botStore.activeBot?.trades)) === 'warn' ? 'bg-amber-500' : 'bg-red-500'"

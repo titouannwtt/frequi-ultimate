@@ -345,8 +345,8 @@ const walletHistoryOptions: ComputedRef<EChartsOption> = computed(() => {
     autoresize
   />
   <div v-else class="flex flex-col items-center justify-center h-full gap-2">
-    <p class="text-gray-500">No historic wallet data available.</p>
-    <p class="text-gray-500 text-sm">
+    <p class="text-gray-600 dark:text-gray-500">No historic wallet data available.</p>
+    <p class="text-gray-600 dark:text-gray-500 text-sm">
       You may need to update your freqtrade version to have historic wallet balance data available.
     </p>
   </div>
