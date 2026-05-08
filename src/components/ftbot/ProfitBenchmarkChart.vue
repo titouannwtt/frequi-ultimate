@@ -630,12 +630,12 @@ const chartOptions = computed<EChartsOption>(() => {
     {
       type: 'value',
       name: isAbsMode ? stakeCurrencyLabel.value : t('profitBenchmark.profitPct'),
-      nameTextStyle: { color: '#808098', fontSize: 10 },
+      nameTextStyle: { color: settingsStore.isDarkTheme ? '#808098' : '#555', fontSize: 10 },
       splitLine: { show: true, lineStyle: { color: 'rgba(100, 100, 140, 0.08)', type: 'dashed' } },
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: '#808098', fontSize: 10,
+        color: settingsStore.isDarkTheme ? '#808098' : '#555', fontSize: 10,
         formatter: isAbsMode
           ? (value: number) => formatPrice(value, 2)
           : (value: number) => `${value.toFixed(1)}%`,
@@ -723,7 +723,7 @@ const chartOptions = computed<EChartsOption>(() => {
       data: legendData,
       top: 4,
       right: '5%',
-      textStyle: { color: '#a0a0b0', fontSize: 11 },
+      textStyle: { color: settingsStore.isDarkTheme ? '#a0a0b0' : '#555', fontSize: 11 },
       icon: 'roundRect',
       itemWidth: 14,
       itemHeight: 8,
@@ -732,7 +732,7 @@ const chartOptions = computed<EChartsOption>(() => {
       type: 'time',
       axisLine: { lineStyle: { color: 'rgba(100, 100, 140, 0.2)' } },
       axisTick: { lineStyle: { color: 'rgba(100, 100, 140, 0.2)' } },
-      axisLabel: { color: '#808098', fontSize: 10 },
+      axisLabel: { color: settingsStore.isDarkTheme ? '#808098' : '#555', fontSize: 10 },
       splitLine: { show: true, lineStyle: { color: 'rgba(100, 100, 140, 0.08)', type: 'dashed' } },
     },
     yAxis: yAxes,
@@ -924,13 +924,13 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
                 </template>
               </template>
             </div>
-            <div class="border-t border-gray-600/30 mt-1.5 pt-1.5">
-              <div class="text-[9px] text-gray-500 px-1 mb-1">{{ t('profitBenchmark.customCoinGecko') }}</div>
+            <div class="border-t border-gray-300 dark:border-gray-600/30 mt-1.5 pt-1.5">
+              <div class="text-[9px] text-gray-600 dark:text-gray-500 px-1 mb-1">{{ t('profitBenchmark.customCoinGecko') }}</div>
               <form class="flex gap-1" @submit.prevent="addCustomBenchmark">
                 <input
                   v-model="customBenchmarkInput"
                   type="text"
-                  class="flex-1 px-1.5 py-0.5 text-[10px] bg-gray-700 border border-gray-600/50 rounded text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                  class="flex-1 px-1.5 py-0.5 text-[10px] bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600/50 rounded text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
                   :class="{ 'border-red-500/60': customBenchmarkError }"
                   :placeholder="t('profitBenchmark.customPlaceholder')"
                   @input="customBenchmarkError = ''"
@@ -953,14 +953,14 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
           </div>
         </div>
 
-        <span v-if="benchmarkLoading" class="text-[9px] text-gray-500 ml-1 animate-pulse">...</span>
+        <span v-if="benchmarkLoading" class="text-[9px] text-gray-600 dark:text-gray-500 ml-1 animate-pulse">...</span>
       </div>
 
-      <div class="w-px h-4 bg-gray-600/30"></div>
+      <div class="w-px h-4 bg-gray-300 dark:bg-gray-600/30"></div>
 
       <!-- Export PNG -->
       <button
-        class="px-1.5 py-0.5 text-[10px] text-gray-400 hover:text-gray-200 hover:bg-white/5 rounded transition-all cursor-pointer"
+        class="px-1.5 py-0.5 text-[10px] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-all cursor-pointer"
         :title="t('profitBenchmark.exportPNG')"
         @click="exportChartImage"
       >
@@ -971,17 +971,17 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
     <!-- Stats strip -->
     <div class="flex flex-wrap gap-3 px-2 py-1 text-[10px] period-stats">
       <div class="flex items-center gap-1">
-        <span class="text-gray-500" v-tooltip.top="t('tooltips.periodReturn')">{{ t('profitBenchmark.periodReturn') }}</span>
+        <span class="text-gray-600 dark:text-gray-500" v-tooltip.top="t('tooltips.periodReturn')">{{ t('profitBenchmark.periodReturn') }}</span>
         <span
           :class="periodStats.periodReturn >= 0 ? 'text-emerald-400' : 'text-red-400'"
           class="font-semibold"
         >
           {{ formatPrice(periodStats.periodReturn, 2) }}
-          <span class="text-gray-500 font-normal">({{ periodStats.periodReturnPct >= 0 ? '+' : '' }}{{ periodStats.periodReturnPct.toFixed(2) }}%)</span>
+          <span class="text-gray-600 dark:text-gray-500 font-normal">({{ periodStats.periodReturnPct >= 0 ? '+' : '' }}{{ periodStats.periodReturnPct.toFixed(2) }}%)</span>
         </span>
       </div>
       <div v-if="periodStats.vsBTC !== null" class="flex items-center gap-1">
-        <span class="text-gray-500">{{ t('profitBenchmark.vsBTC') }}</span>
+        <span class="text-gray-600 dark:text-gray-500">{{ t('profitBenchmark.vsBTC') }}</span>
         <span
           :class="(periodStats.vsBTC ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'"
           class="font-semibold"
@@ -990,7 +990,7 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
         </span>
       </div>
       <div v-if="periodStats.sharpe !== null" class="flex items-center gap-1">
-        <span class="text-gray-500 uppercase tracking-wide" v-tooltip.top="t('tooltips.sharpe')">{{ t('profitBenchmark.sharpe') }}</span>
+        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide" v-tooltip.top="t('tooltips.sharpe')">{{ t('profitBenchmark.sharpe') }}</span>
         <span
           class="font-bold"
           :class="(periodStats.sharpe ?? 0) >= 1 ? 'text-emerald-400' : (periodStats.sharpe ?? 0) >= 0 ? 'text-amber-400' : 'text-red-400'"
@@ -999,13 +999,13 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
         </span>
       </div>
       <div v-if="periodStats.maxDrawdownPct !== null" class="flex items-center gap-1">
-        <span class="text-gray-500 uppercase tracking-wide">{{ t('profitBenchmark.maxDD') }}</span>
+        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{ t('profitBenchmark.maxDD') }}</span>
         <span class="font-bold text-red-400">
           {{ ((periodStats.maxDrawdownPct ?? 0) * 100).toFixed(1) }}%
         </span>
       </div>
       <div v-if="periodStats.winRate !== null" class="flex items-center gap-1">
-        <span class="text-gray-500 uppercase tracking-wide" v-tooltip.top="t('tooltips.winrate')">{{ t('profitBenchmark.winRate') }}</span>
+        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide" v-tooltip.top="t('tooltips.winrate')">{{ t('profitBenchmark.winRate') }}</span>
         <span
           class="font-bold"
           :class="(periodStats.winRate ?? 0) >= 60 ? 'text-emerald-400' : (periodStats.winRate ?? 0) >= 50 ? 'text-amber-400' : 'text-red-400'"
@@ -1027,7 +1027,7 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
       />
       <div
         v-else
-        class="flex items-center justify-center h-full text-gray-500 text-sm"
+        class="flex items-center justify-center h-full text-gray-600 dark:text-gray-500 text-sm"
       >
         {{ t('profitBenchmark.noData') }}
       </div>
@@ -1036,7 +1036,7 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
     <!-- Benchmark loading indicator -->
     <div v-if="benchmarkLoading && enabledBenchmarks.length > 0" class="flex items-center justify-center gap-2 py-1">
       <i-mdi-loading class="animate-spin text-blue-400" style="font-size: 0.8rem" />
-      <span class="text-xs text-gray-400">{{ t('profitBenchmark.loadingBenchmarks') }}</span>
+      <span class="text-xs text-gray-600 dark:text-gray-400">{{ t('profitBenchmark.loadingBenchmarks') }}</span>
     </div>
 
     <!-- Description: icon-only with tooltip (no visible text to avoid overlap) -->

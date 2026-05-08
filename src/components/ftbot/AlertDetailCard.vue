@@ -218,7 +218,7 @@ function treeConnector(index: number, total: number): string {
     <div :style="{ height: '3px', background: severityColorMap[maxSeverity] || '#3b82f6' }" />
 
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-black/10 dark:border-white/10">
       <div class="flex items-center gap-2">
         <i-mdi-robot class="text-lg opacity-70" />
         <span class="font-bold text-sm">{{ botName }}</span>

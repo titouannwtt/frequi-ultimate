@@ -142,7 +142,7 @@ const performanceMetrics = computed(() => {
 });
 
 function metricColor(val: number | undefined | null, good: number, bad: number): string {
-  if (val === undefined || val === null) return 'text-gray-400';
+  if (val === undefined || val === null) return 'text-gray-600 dark:text-gray-400';
   if (val >= good) return 'text-green-400';
   if (val <= bad) return 'text-red-400';
   return 'text-amber-400';
@@ -180,7 +180,7 @@ function profitColor(val: number | undefined | null): string {
   if (val === undefined || val === null) return '';
   if (val > 0) return 'text-green-400';
   if (val < 0) return 'text-red-400';
-  return 'text-gray-400';
+  return 'text-gray-600 dark:text-gray-400';
 }
 </script>
 
@@ -190,8 +190,8 @@ function profitColor(val: number | undefined | null): string {
     <!-- Empty state: no closed trades -->
     <div v-if="!hasClosedTrades" class="flex flex-col items-center justify-center py-8 gap-2">
       <i-mdi-clock-outline class="text-3xl text-amber-400/40" />
-      <div class="text-sm text-gray-200">{{ t('emptyStates.noClosedTrades') }}</div>
-      <div class="text-xs text-gray-400 text-center">{{ t('emptyStates.noClosedTradesDesc') }}</div>
+      <div class="text-sm text-gray-800 dark:text-gray-200">{{ t('emptyStates.noClosedTrades') }}</div>
+      <div class="text-xs text-gray-600 dark:text-gray-400 text-center">{{ t('emptyStates.noClosedTradesDesc') }}</div>
     </div>
 
     <template v-else>
@@ -200,7 +200,7 @@ function profitColor(val: number | undefined | null): string {
       <i-mdi-cash-check class="text-green-400" />
       <span>{{ t('closedProfitCard.realizedPerformance') }}</span>
     </div>
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="flex items-center justify-between">
         <div>
           <div class="text-2xl font-bold" :class="profitColor(totalRealizedProfit)">
@@ -222,19 +222,19 @@ function profitColor(val: number | undefined | null): string {
           />
         </div>
       </div>
-      <div v-if="capitalWithdrawal > 0" class="text-[0.8rem] text-gray-500 mt-1">
+      <div v-if="capitalWithdrawal > 0" class="text-[0.8rem] text-gray-600 dark:text-gray-500 mt-1">
         {{ t('closedProfitCard.netAfterWithdrawals') }}:
         <span :class="profitColor(netProfit)">{{ formatPriceCurrency(netProfit, currency, 2) }}</span>
       </div>
     </div>
 
-    <div v-if="!profit" class="text-center text-gray-500 py-3 text-[0.8rem]">
+    <div v-if="!profit" class="text-center text-gray-600 dark:text-gray-500 py-3 text-[0.8rem]">
       {{ t('closedProfitCard.noData') }}
     </div>
 
     <template v-else>
       <!-- ═══ SECTION 2: Win Rate Donut + Stats ═══ -->
-      <div class="mb-3 pb-3 border-b border-white/5">
+      <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
         <div class="section-header">
           <i-mdi-trophy class="text-yellow-400" />
           <span>{{ t('closedProfitCard.winRateStats') }}</span>
@@ -263,7 +263,7 @@ function profitColor(val: number | undefined | null): string {
               <text x="58" y="54" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 1rem">
                 {{ winrate.toFixed(0) }}%
               </text>
-              <text x="58" y="68" text-anchor="middle" class="fill-gray-500" style="font-size: 0.85rem">
+              <text x="58" y="68" text-anchor="middle" class="fill-gray-600 dark:fill-gray-500" style="font-size: 0.85rem">
                 {{ wins }}W / {{ losses }}L
               </text>
             </svg>
@@ -296,7 +296,7 @@ function profitColor(val: number | undefined | null): string {
       </div>
 
       <!-- ═══ SECTION 3: Performance Grid (2x3) ═══ -->
-      <div class="mb-3 pb-3 border-b border-white/5">
+      <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
         <div class="section-header">
           <i-mdi-chart-bar class="text-blue-400" />
           <span>{{ t('closedProfitCard.performanceMetrics') }}</span>
@@ -307,14 +307,14 @@ function profitColor(val: number | undefined | null): string {
             :key="metric.label"
             class="metric-cell"
           >
-            <div class="text-[0.85rem] text-gray-500 mb-0.5" v-tooltip.top="metric.tooltip">{{ metric.label }}</div>
+            <div class="text-[0.85rem] text-gray-600 dark:text-gray-500 mb-0.5" v-tooltip.top="metric.tooltip">{{ metric.label }}</div>
             <div class="font-bold text-sm" :class="metric.color">{{ metric.value }}</div>
           </div>
         </div>
       </div>
 
       <!-- ═══ SECTION 4: Time Analysis ═══ -->
-      <div class="mb-3 pb-3 border-b border-white/5">
+      <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
         <div class="section-header">
           <i-mdi-calendar-clock class="text-amber-400" />
           <span>{{ t('closedProfitCard.timeAnalysis') }}</span>
@@ -362,7 +362,7 @@ function profitColor(val: number | undefined | null): string {
       </div>
 
       <!-- Bot contribution to total profit -->
-      <div v-if="totalAllBotsProfit > 0" class="mb-3 pb-3 border-b border-white/5">
+      <div v-if="totalAllBotsProfit > 0" class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
         <div class="section-header">
           <i-mdi-chart-pie class="text-blue-400" />
           <span>{{ t('summaryCards.shareOfTotalProfit') }}</span>
@@ -378,7 +378,7 @@ function profitColor(val: number | undefined | null): string {
             {{ pctOfTotalProfit.toFixed(1) }}%
           </span>
         </div>
-        <div class="text-[0.8rem] text-gray-500 mt-1">
+        <div class="text-[0.8rem] text-gray-600 dark:text-gray-500 mt-1">
           {{ t('summaryCards.profitOfTotal', { profit: formatPriceCurrency(totalRealizedProfit, currency, 2), total: formatPriceCurrency(totalAllBotsProfit, currency, 2) }) }}
         </div>
       </div>

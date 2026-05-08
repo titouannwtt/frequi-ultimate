@@ -2651,7 +2651,7 @@ const correlatedPairs = computed(() => {
           @reset="resetColumns"
         />
         <!-- Bot tags section -->
-        <div class="mt-3 pt-3 border-t border-white/8">
+        <div class="mt-3 pt-3 border-t border-black/10 dark:border-white/8">
           <div class="flex items-center gap-1 mb-2">
             <i-mdi-tag-outline class="text-sm opacity-60" />
             <span class="text-xs font-semibold text-surface-300 uppercase tracking-wide">{{ t('botComparison.botTags') }}</span>
@@ -2660,7 +2660,7 @@ const correlatedPairs = computed(() => {
             <div
               v-for="tagId in tagOrder"
               :key="tagId"
-              class="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-grab hover:bg-white/5"
+              class="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-grab hover:bg-black/5 dark:hover:bg-white/5"
               draggable="true"
               @dragstart="onTagDragStart($event, tagId)"
               @dragover.prevent="onTagDragOver($event)"
@@ -2674,7 +2674,7 @@ const correlatedPairs = computed(() => {
           </div>
         </div>
         <!-- Visibility section -->
-        <div class="mt-3 pt-3 border-t border-white/8">
+        <div class="mt-3 pt-3 border-t border-black/10 dark:border-white/8">
           <div class="flex items-center gap-1 mb-2">
             <i-mdi-eye-outline class="text-sm opacity-60" />
             <span class="text-xs font-semibold text-surface-300 uppercase tracking-wide">{{ t('botComparison.visibility') }}</span>
@@ -3111,7 +3111,7 @@ const correlatedPairs = computed(() => {
     <Popover ref="summaryPeriodPopover" class="p-0">
       <div @mouseenter="cancelSummaryPeriodHoverKeepPopover()" @mouseleave="cancelSummaryPeriodHover()">
       <div v-if="summaryPeriodVisible" class="glass-card p-4" style="width: 380px">
-        <div class="flex items-center gap-2 mb-3 pb-2 border-b border-white/10">
+        <div class="flex items-center gap-2 mb-3 pb-2 border-b border-black/10 dark:border-white/10">
           <i-mdi-calendar-month v-if="summaryPeriodMode === 'monthly'" class="text-blue-400" />
           <i-mdi-calendar v-else class="text-green-400" />
           <span class="text-sm font-bold text-gray-100">
@@ -3127,15 +3127,15 @@ const correlatedPairs = computed(() => {
           <!-- Per-bot breakdown -->
           <template v-for="item in tableItems.filter(i => i.botId)" :key="'period-' + item.botId">
             <div class="flex items-center justify-between py-0.5">
-              <span class="text-xs text-gray-300 truncate max-w-[180px]">{{ item.botName }}</span>
-              <span class="text-xs font-bold" :class="(summaryPeriodMode === 'monthly' ? (item.monthlyProfit ?? 0) : (item.yearlyProfit ?? 0)) > 0 ? 'text-green-400' : (summaryPeriodMode === 'monthly' ? (item.monthlyProfit ?? 0) : (item.yearlyProfit ?? 0)) < 0 ? 'text-red-400' : 'text-gray-400'">
+              <span class="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[180px]">{{ item.botName }}</span>
+              <span class="text-xs font-bold" :class="(summaryPeriodMode === 'monthly' ? (item.monthlyProfit ?? 0) : (item.yearlyProfit ?? 0)) > 0 ? 'text-green-400' : (summaryPeriodMode === 'monthly' ? (item.monthlyProfit ?? 0) : (item.yearlyProfit ?? 0)) < 0 ? 'text-red-400' : 'text-gray-600 dark:text-gray-400'">
                 {{ formatPriceCurrency(summaryPeriodMode === 'monthly' ? (item.monthlyProfit ?? 0) : (item.yearlyProfit ?? 0), item.stakeCurrency, 2) }}
               </span>
             </div>
           </template>
           <!-- Total -->
-          <div class="flex items-center justify-between pt-2 mt-1 border-t border-white/10 font-bold">
-            <span class="text-xs text-gray-200">Total</span>
+          <div class="flex items-center justify-between pt-2 mt-1 border-t border-black/10 dark:border-white/10 font-bold">
+            <span class="text-xs text-gray-800 dark:text-gray-200">Total</span>
             <span class="text-sm" :class="tableItems.filter(i => !i.botId && !i.isGroupRow)[0]?.[summaryPeriodMode === 'monthly' ? 'monthlyProfit' : 'yearlyProfit'] > 0 ? 'text-green-400' : 'text-red-400'">
               {{ formatPriceCurrency(tableItems.filter(i => !i.botId && !i.isGroupRow)[0]?.[summaryPeriodMode === 'monthly' ? 'monthlyProfit' : 'yearlyProfit'] ?? 0, tableItems.filter(i => !i.botId && !i.isGroupRow)[0]?.stakeCurrency || '', 2) }}
             </span>

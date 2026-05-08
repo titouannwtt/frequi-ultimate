@@ -114,7 +114,7 @@ const advisoryText = computed(() => {
           </span>
         </div>
 
-        <div class="relative h-7 rounded-full" style="background: rgba(255, 255, 255, 0.06)">
+        <div class="relative h-7 rounded-full bg-black/[0.06] dark:bg-white/[0.06]">
           <!-- Min-Max range band -->
           <div
             class="absolute h-full rounded-full"

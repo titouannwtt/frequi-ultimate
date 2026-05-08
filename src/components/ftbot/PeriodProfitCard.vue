@@ -168,7 +168,7 @@ const yearlyStatus = computed(() => {
 });
 
 function statusColor(target: number, projected: number): string {
-  if (!target) return 'text-gray-400';
+  if (!target) return 'text-gray-600 dark:text-gray-400';
   const ratio = projected / target;
   if (ratio >= 0.95 && ratio <= 1.05) return 'text-blue-400';
   if (ratio > 1.05) return 'text-green-400';
@@ -381,7 +381,7 @@ function profitColor(val: number | undefined | null): string {
   if (val === undefined || val === null) return '';
   if (val > 0) return 'text-green-400';
   if (val < 0) return 'text-red-400';
-  return 'text-gray-400';
+  return 'text-gray-600 dark:text-gray-400';
 }
 </script>
 
@@ -399,16 +399,16 @@ function profitColor(val: number | undefined | null): string {
 
     <div v-if="!profit || tradingPeriodDays < 1 || (profit?.trade_count ?? 0) === 0" class="flex flex-col items-center justify-center py-8 gap-2">
       <i-mdi-calendar-clock class="text-3xl text-blue-400/40" />
-      <div class="text-sm text-gray-200">{{ t('emptyStates.insufficientHistory') }}</div>
-      <div class="text-xs text-gray-400 text-center">{{ t('emptyStates.insufficientHistoryDesc') }}</div>
+      <div class="text-sm text-gray-800 dark:text-gray-200">{{ t('emptyStates.insufficientHistory') }}</div>
+      <div class="text-xs text-gray-600 dark:text-gray-400 text-center">{{ t('emptyStates.insufficientHistoryDesc') }}</div>
     </div>
 
     <template v-else>
       <!-- Large weekly average -->
-      <div class="mb-3 pb-3 border-b border-white/5">
+      <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-[0.8rem] text-gray-500 mb-0.5" v-tooltip.top="t('tooltips.weeklyAvg')">{{ t('periodProfitCard.weeklyAvg') }}</div>
+            <div class="text-[0.8rem] text-gray-600 dark:text-gray-500 mb-0.5" v-tooltip.top="t('tooltips.weeklyAvg')">{{ t('periodProfitCard.weeklyAvg') }}</div>
             <div class="text-2xl font-bold" :class="profitColor(weeklyAvgProfit)">
               {{ weeklyAvgProfit !== undefined ? formatPriceCurrency(weeklyAvgProfit, currency, 2) : 'N/A' }}
             </div>
@@ -417,7 +417,7 @@ function profitColor(val: number | undefined | null): string {
             </div>
           </div>
           <div class="text-right">
-            <div class="text-[0.8rem] text-gray-500 mb-0.5" v-tooltip.top="t('tooltips.monthlyAvg')">{{ t('periodProfitCard.monthlyAvg') }}</div>
+            <div class="text-[0.8rem] text-gray-600 dark:text-gray-500 mb-0.5" v-tooltip.top="t('tooltips.monthlyAvg')">{{ t('periodProfitCard.monthlyAvg') }}</div>
             <div class="text-lg font-bold" :class="profitColor(monthlyAvgProfit)">
               {{ monthlyAvgProfit !== undefined ? formatPriceCurrency(monthlyAvgProfit, currency, 2) : 'N/A' }}
             </div>
@@ -429,7 +429,7 @@ function profitColor(val: number | undefined | null): string {
       </div>
 
       <!-- Daily average -->
-      <div class="mb-3 pb-3 border-b border-white/5">
+      <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
         <div class="section-header">
           <i-mdi-clock-outline class="text-amber-400" />
           <span>{{ t('periodProfitCard.dailyBreakdown') }}</span>
@@ -463,7 +463,7 @@ function profitColor(val: number | undefined | null): string {
       </div>
 
       <!-- ═══ SECTION 2: Projections ═══ -->
-      <div class="mb-3 pb-3 border-b border-white/5">
+      <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
         <div class="section-header">
           <i-mdi-crystal-ball class="text-purple-400" />
           <span>{{ t('periodProfitCard.projections') }}</span>
@@ -471,19 +471,19 @@ function profitColor(val: number | undefined | null): string {
         <div class="text-[0.8rem] text-gray-600 mb-2">{{ t('periodProfitCard.projectionsDisclaimer') }}</div>
         <div class="grid grid-cols-3 gap-2">
           <div class="metric-cell">
-            <div class="text-[0.85rem] text-gray-500 mb-0.5" v-tooltip.top="t('tooltips.projection1m')">1 {{ t('periodProfitCard.month') }}</div>
+            <div class="text-[0.85rem] text-gray-600 dark:text-gray-500 mb-0.5" v-tooltip.top="t('tooltips.projection1m')">1 {{ t('periodProfitCard.month') }}</div>
             <div class="font-bold text-sm" :class="profitColor(projected1m)">
               {{ projected1m !== undefined ? formatPriceCurrency(projected1m, currency, 0) : 'N/A' }}
             </div>
           </div>
           <div class="metric-cell">
-            <div class="text-[0.85rem] text-gray-500 mb-0.5" v-tooltip.top="t('tooltips.projection3m')">3 {{ t('periodProfitCard.months') }}</div>
+            <div class="text-[0.85rem] text-gray-600 dark:text-gray-500 mb-0.5" v-tooltip.top="t('tooltips.projection3m')">3 {{ t('periodProfitCard.months') }}</div>
             <div class="font-bold text-sm" :class="profitColor(projected3m)">
               {{ projected3m !== undefined ? formatPriceCurrency(projected3m, currency, 0) : 'N/A' }}
             </div>
           </div>
           <div class="metric-cell">
-            <div class="text-[0.85rem] text-gray-500 mb-0.5" v-tooltip.top="t('tooltips.projection1y')">1 {{ t('periodProfitCard.year') }}</div>
+            <div class="text-[0.85rem] text-gray-600 dark:text-gray-500 mb-0.5" v-tooltip.top="t('tooltips.projection1y')">1 {{ t('periodProfitCard.year') }}</div>
             <div class="font-bold text-sm" :class="profitColor(projected1y)">
               {{ projected1y !== undefined ? formatPriceCurrency(projected1y, currency, 0) : 'N/A' }}
             </div>
@@ -492,7 +492,7 @@ function profitColor(val: number | undefined | null): string {
       </div>
 
       <!-- ═══ SECTION 3: Monthly Projection Chart ═══ -->
-      <div class="mb-3 pb-3 border-b border-white/5">
+      <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
         <div class="section-header">
           <i-mdi-chart-timeline-variant class="text-green-400" />
           <span>{{ t('periodProfitCard.currentMonth') }}</span>
@@ -503,7 +503,7 @@ function profitColor(val: number | undefined | null): string {
 
         <!-- Mini progress bar -->
         <div class="mb-2">
-          <div class="flex justify-between text-[0.8rem] text-gray-500 mb-1">
+          <div class="flex justify-between text-[0.8rem] text-gray-600 dark:text-gray-500 mb-1">
             <span>{{ t('periodProfitCard.actual') }}: {{ formatPriceCurrency(monthlyCurrentProfit, currency, 2) }}</span>
             <span>{{ t('periodProfitCard.target') }}: {{ formatPriceCurrency(monthlyTarget, currency, 2) }}</span>
           </div>
@@ -546,13 +546,13 @@ function profitColor(val: number | undefined | null): string {
           <text :x="monthlyChart.xEnd" y="116" fill="rgba(255,255,255,0.3)" font-size="9" text-anchor="end">{{ daysInMonth }}</text>
         </svg>
 
-        <div class="flex justify-between text-[0.8rem] text-gray-500 mt-1">
+        <div class="flex justify-between text-[0.8rem] text-gray-600 dark:text-gray-500 mt-1">
           <span>{{ t('periodProfitCard.projection') }}: {{ formatPriceCurrency(monthlyProjectedEnd, currency, 2) }}</span>
         </div>
       </div>
 
       <!-- ═══ SECTION 4: Yearly Projection Chart ═══ -->
-      <div class="mb-3 pb-3 border-b border-white/5">
+      <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
         <div class="section-header">
           <i-mdi-chart-areaspline class="text-purple-400" />
           <span>{{ t('periodProfitCard.currentYear') }}</span>
@@ -584,7 +584,7 @@ function profitColor(val: number | undefined | null): string {
           <text :x="yearlyChart.xEnd" y="116" fill="rgba(255,255,255,0.3)" font-size="9" text-anchor="end">Dec</text>
         </svg>
 
-        <div class="flex justify-between text-[0.8rem] text-gray-500 mt-1">
+        <div class="flex justify-between text-[0.8rem] text-gray-600 dark:text-gray-500 mt-1">
           <span>{{ t('periodProfitCard.actual') }}: {{ formatPriceCurrency(yearlyCurrentProfit, currency, 2) }}</span>
           <span>{{ t('periodProfitCard.projection') }}: {{ formatPriceCurrency(yearlyProjectedEnd, currency, 0) }}</span>
         </div>

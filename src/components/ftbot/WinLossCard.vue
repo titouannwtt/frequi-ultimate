@@ -73,7 +73,7 @@ function profitColor(val: number | undefined | null): string {
     <!-- Empty state: no trades -->
     <div v-if="!hasTradeData" class="flex flex-col items-center justify-center py-8 gap-2">
       <i-mdi-chart-line class="text-3xl text-blue-400/40" />
-      <div class="text-sm text-gray-200">{{ t('emptyStates.noWinLossData') }}</div>
+      <div class="text-sm text-gray-800 dark:text-gray-200">{{ t('emptyStates.noWinLossData') }}</div>
       <div class="text-xs text-gray-600 dark:text-gray-400 text-center">{{ t('emptyStates.noWinLossDataDesc') }}</div>
     </div>
 
@@ -106,7 +106,7 @@ function profitColor(val: number | undefined | null): string {
           <text x="65" y="60" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 1.3rem">
             {{ winrate.toFixed(0) }}%
           </text>
-          <text x="65" y="76" text-anchor="middle" class="fill-gray-500" style="font-size: 0.75rem">
+          <text x="65" y="76" text-anchor="middle" class="fill-gray-600 dark:fill-gray-500" style="font-size: 0.75rem">
             {{ t('winLossCard.winrate') }}
           </text>
         </svg>

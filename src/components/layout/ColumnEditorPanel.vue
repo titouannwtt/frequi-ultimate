@@ -72,7 +72,7 @@ function onDrop(_event: DragEvent, targetId: string) {
         :key="col.id"
         class="col-editor-row flex items-center gap-2 px-2 py-1.5 rounded-md text-xs relative select-none transition-colors"
         :class="col.removable !== false
-          ? 'cursor-grab hover:bg-white/5'
+          ? 'cursor-grab hover:bg-black/5 dark:hover:bg-white/5'
           : 'opacity-50'"
         :draggable="col.removable !== false"
         @dragstart="onDragStart($event, col.id)"

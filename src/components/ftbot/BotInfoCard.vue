@@ -153,7 +153,7 @@ function metricColor(val: number | undefined): string {
     <!-- Online state -->
     <template v-else>
     <!-- Header -->
-    <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-600">
+    <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-300 dark:border-gray-600">
       <div>
         <div class="text-sm font-bold text-gray-100">
           {{ (botState?.bot_name as string) || 'Bot' }}

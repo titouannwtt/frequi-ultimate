@@ -352,7 +352,7 @@ const timeWindows = [
               : 'text-surface-500 bg-surface-800/30 opacity-50'"
             @click="toggleBotId(bot.id)"
           >
-            <span class="inline-block w-1.5 h-1.5 rounded-full mr-0.5" :class="bot.online ? 'bg-green-500' : 'bg-gray-500'" />
+            <span class="inline-block w-1.5 h-1.5 rounded-full mr-0.5" :class="bot.online ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-500'" />
             {{ bot.name }}
           </button>
         </div>

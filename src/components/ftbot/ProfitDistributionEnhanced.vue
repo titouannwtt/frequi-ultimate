@@ -371,6 +371,17 @@ function formatDuration(minutes: number): string {
   return `${(minutes / 1440).toFixed(1)}d`;
 }
 
+// --- Theme-aware ECharts helpers ---
+const isDark = computed(() => settingsStore.chartTheme === 'dark');
+const tooltipStyle = computed(() => ({
+  backgroundColor: isDark.value ? 'rgba(20, 20, 30, 0.92)' : 'rgba(255, 255, 255, 0.95)',
+  borderColor: isDark.value ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.12)',
+  textStyle: { color: isDark.value ? '#e0e0e0' : '#333', fontSize: 12 },
+}));
+const labelColor = computed(() => (isDark.value ? '#999' : '#555'));
+const markLineZeroColor = computed(() => (isDark.value ? '#ffffff80' : '#00000060'));
+const markLineZeroLabelColor = computed(() => (isDark.value ? '#ffffffaa' : '#000000aa'));
+
 // --- Chart builders ---
 function buildHistogramChart(): EChartsOption {
   const { colorProfit, colorLoss } = colorStore;
@@ -381,9 +392,7 @@ function buildHistogramChart(): EChartsOption {
   return {
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(20, 20, 30, 0.92)',
-      borderColor: 'rgba(255,255,255,0.08)',
-      textStyle: { color: '#e0e0e0', fontSize: 12 },
+      ...tooltipStyle.value,
       formatter: (params: any) => {
         if (!Array.isArray(params) || params.length === 0) return '';
         const d = params[0];
@@ -431,8 +440,8 @@ function buildHistogramChart(): EChartsOption {
                 const val = parseFloat(d.bucket);
                 return val >= 0;
               }),
-              lineStyle: { color: '#ffffff80', type: 'solid', width: 1 },
-              label: { show: true, formatter: '0%', color: '#ffffffaa', fontSize: 10 },
+              lineStyle: { color: markLineZeroColor.value, type: 'solid', width: 1 },
+              label: { show: true, formatter: '0%', color: markLineZeroLabelColor.value, fontSize: 10 },
             },
             {
               xAxis: (() => {
@@ -476,9 +485,7 @@ function buildPerBotChart(): EChartsOption {
   return {
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(20, 20, 30, 0.92)',
-      borderColor: 'rgba(255,255,255,0.08)',
-      textStyle: { color: '#e0e0e0', fontSize: 12 },
+      ...tooltipStyle.value,
     },
     legend: {
       data: data.map((d) => d.botName),
@@ -518,9 +525,7 @@ function buildPerPairChart(): EChartsOption {
   return {
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(20, 20, 30, 0.92)',
-      borderColor: 'rgba(255,255,255,0.08)',
-      textStyle: { color: '#e0e0e0', fontSize: 12 },
+      ...tooltipStyle.value,
       formatter: (params: any) => {
         if (!Array.isArray(params) || params.length === 0) return '';
         const d = params[0];
@@ -598,9 +603,7 @@ function buildDurationChart(): EChartsOption {
   return {
     tooltip: {
       trigger: 'item',
-      backgroundColor: 'rgba(20, 20, 30, 0.92)',
-      borderColor: 'rgba(255,255,255,0.08)',
-      textStyle: { color: '#e0e0e0', fontSize: 12 },
+      ...tooltipStyle.value,
       formatter: (params: any) => {
         const d = params.data;
         if (!d) return '';
@@ -679,9 +682,7 @@ function buildLeverageChart(): EChartsOption {
   return {
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(20, 20, 30, 0.92)',
-      borderColor: 'rgba(255,255,255,0.08)',
-      textStyle: { color: '#e0e0e0', fontSize: 12 },
+      ...tooltipStyle.value,
       formatter: (params: any) => {
         if (!Array.isArray(params) || params.length === 0) return '';
         const d = params[0];
@@ -730,7 +731,7 @@ function buildLeverageChart(): EChartsOption {
             const item = sortedBuckets[params.dataIndex];
             return item ? `${item.tradeCount}` : '';
           },
-          color: '#999',
+          color: labelColor.value,
           fontSize: 10,
         },
       },
