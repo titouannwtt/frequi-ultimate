@@ -141,7 +141,7 @@ const chartOptions = computed<EChartsOption>(() => {
         filterMode: 'none',
       },
     ],
-    grid: { left: 30, right: 30, top: 20, bottom: 55 },
+    grid: { left: 30, right: 30, top: 40, bottom: 55 },
     xAxis: {
       type: 'value',
       min: Math.floor(minVal - padding),
@@ -188,7 +188,7 @@ const chartOptions = computed<EChartsOption>(() => {
             { x: xP50, text: `P50: ${fmtPct(d.p50)} DD`, fill: C.blue, fontSize: 11, fontWeight: 'bold' as const },
             { x: xP75, text: `P75: ${fmtPct(d.p75)} DD`, fill: C.subtext, fontSize: 10, fontWeight: 'normal' as const },
           ];
-          const baseY = yCoord - boxH / 2 - 8;
+          const baseY = yCoord - boxH / 2 - 20;
           const topY: number[] = [baseY, baseY, baseY];
           if (Math.abs(topLabels[1].x - topLabels[0].x) < minLabelGap) {
             topY[0] = baseY - 14;
