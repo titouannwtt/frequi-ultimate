@@ -313,7 +313,7 @@ watch(() => route?.fullPath, () => {
 </script>
 
 <template>
-  <header>
+  <header class="relative" style="z-index: 1100">
     <div class="navbar-glass flex border-b border-black/10 dark:border-white/10">
       <RouterLink class="ms-2 flex flex-row items-center pe-2 gap-2" exact to="/">
         <img class="h-[30px] align-middle" src="@/assets/freqtrade-logo.png" alt="Home Logo" />
