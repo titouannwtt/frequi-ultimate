@@ -151,6 +151,7 @@ export const useLayoutStore = defineStore('layoutStore', {
       widgetZooms: {} as Record<number, number>,
       widgetDefaults: {} as Record<number, Record<string, unknown>>,
       backgroundAnimation: true,
+      adaptiveZoom: true,
     };
   },
   getters: {
@@ -168,6 +169,7 @@ export const useLayoutStore = defineStore('layoutStore', {
       this.widgetDefaults = {};
       this.widgetOpacity = 1;
       this.backgroundAnimation = true;
+      this.adaptiveZoom = true;
       localStorage.removeItem('enhancedOpenTradeColumns');
       localStorage.removeItem('enhancedClosedTradeColumns');
       localStorage.removeItem('enhancedOpenTradeColumnOrder');
@@ -201,12 +203,11 @@ export const useLayoutStore = defineStore('layoutStore', {
     setWidgetDefaults(id: number, defaults: Record<string, unknown>) {
       this.widgetDefaults[id] = defaults;
     },
-    compactDashboardLayout() {
-      const COLS = 48;
-      const visible = this.dashboardLayout.filter(
+    compactLayout(layout: GridItemData[], cols: number): GridItemData[] {
+      const visible = layout.filter(
         (item: GridItemData) => item.w > 0 && item.h > 0,
       );
-      const hidden = this.dashboardLayout.filter(
+      const hidden = layout.filter(
         (item: GridItemData) => item.w === 0 || item.h === 0,
       );
       visible.sort((a: GridItemData, b: GridItemData) => a.y - b.y || a.x - b.x);
@@ -222,7 +223,7 @@ export const useLayoutStore = defineStore('layoutStore', {
         let bestY = Infinity;
 
         for (let y = 0; y < 10000; y++) {
-          for (let x = 0; x <= COLS - item.w; x++) {
+          for (let x = 0; x <= cols - item.w; x++) {
             const candidate = { ...item, x, y };
             if (!placed.some((p) => collides(candidate, p))) {
               if (y < bestY || (y === bestY && x < bestX)) {
@@ -240,7 +241,13 @@ export const useLayoutStore = defineStore('layoutStore', {
         placed.push(item);
       }
 
-      this.dashboardLayout = [...placed, ...hidden];
+      return [...placed, ...hidden];
+    },
+    compactDashboardLayout() {
+      this.dashboardLayout = this.compactLayout(this.dashboardLayout, 48);
+    },
+    compactTradingLayout() {
+      this.tradingLayout = this.compactLayout(this.tradingLayout, 12);
     },
     setWidgetZoom(id: number, v: number) {
       const clamped = Math.max(60, Math.min(120, Math.round(v)));

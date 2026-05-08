@@ -45,7 +45,9 @@ const currentZoom = computed(() =>
 );
 
 const viewportScale = computed(() =>
-  Math.max(0.6, Math.min(1.5, viewportWidth.value / REFERENCE_WIDTH)),
+  layoutStore.adaptiveZoom
+    ? Math.max(0.6, Math.min(1.5, viewportWidth.value / REFERENCE_WIDTH))
+    : 1,
 );
 
 const effectiveZoom = computed(() => {

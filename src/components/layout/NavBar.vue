@@ -57,7 +57,11 @@ const confirmOptimizeLayout = (): void => {
 
 const executeOptimizeLayout = (): void => {
   optimizeConfirmVisible.value = false;
-  layoutStore.compactDashboardLayout();
+  if (route?.fullPath === '/trade') {
+    layoutStore.compactTradingLayout();
+  } else {
+    layoutStore.compactDashboardLayout();
+  }
 };
 
 const resetDynamicLayout = (): void => {
@@ -137,11 +141,6 @@ const navItems = computed(() => [
     to: '/journal',
     visible: !botStore.canRunBacktest,
     icon: 'i-mdi-notebook',
-  },
-  {
-    label: t('nav.chart'),
-    to: '/graph',
-    icon: 'i-mdi-chart-line',
   },
   {
     label: t('nav.logs'),
@@ -567,16 +566,73 @@ watch(() => route?.fullPath, () => {
           <span class="text-xs text-surface-500 w-8">{{ Math.round(layoutStore.widgetOpacity * 100) }}%</span>
         </div>
         <div class="w-px h-4 bg-white/10" />
-        <button
-          class="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border transition-colors cursor-pointer"
-          :class="layoutStore.backgroundAnimation
-            ? 'text-indigo-300 bg-indigo-500/15 border-indigo-400/30 hover:bg-indigo-500/25'
-            : 'text-surface-500 border-surface-600 hover:text-surface-300 hover:border-surface-500'"
-          @click="layoutStore.backgroundAnimation = !layoutStore.backgroundAnimation"
-        >
-          <i-mdi-waves class="w-3.5 h-3.5" />
-          {{ t('nav.bgAnimation') }}
-        </button>
+        <div class="relative anim-popover-wrapper">
+          <button
+            class="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border transition-colors cursor-pointer"
+            :class="layoutStore.backgroundAnimation
+              ? 'text-indigo-300 bg-indigo-500/15 border-indigo-400/30 hover:bg-indigo-500/25'
+              : 'text-surface-500 border-surface-600 hover:text-surface-300 hover:border-surface-500'"
+            @click="layoutStore.backgroundAnimation = !layoutStore.backgroundAnimation"
+          >
+            <i-mdi-waves class="w-3.5 h-3.5" />
+            {{ t('nav.bgAnimation') }}
+          </button>
+          <div class="az-popover">
+            <div class="az-popover-title">{{ t('nav.bgAnimation') }}</div>
+            <p class="az-popover-desc">{{ t('nav.bgAnimationDesc') }}</p>
+            <div class="az-demo">
+              <div class="az-demo-row">
+                <span class="az-demo-label">Activé</span>
+                <div class="az-demo-viz anim-demo-on">
+                  <div class="anim-demo-blob" />
+                </div>
+                <span class="az-demo-hint">Fond animé avec dégradés fluides</span>
+              </div>
+              <div class="az-demo-row">
+                <span class="az-demo-label">Désactivé</span>
+                <div class="az-demo-viz anim-demo-off">
+                  <div class="anim-demo-blob" />
+                </div>
+                <span class="az-demo-hint">Fond statique, réduit l'utilisation GPU</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="w-px h-4 bg-white/10" />
+        <div class="relative adaptive-zoom-wrapper">
+          <button
+            class="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border transition-colors cursor-pointer"
+            :class="layoutStore.adaptiveZoom
+              ? 'text-indigo-300 bg-indigo-500/15 border-indigo-400/30 hover:bg-indigo-500/25'
+              : 'text-surface-500 border-surface-600 hover:text-surface-300 hover:border-surface-500'"
+            @click="layoutStore.adaptiveZoom = !layoutStore.adaptiveZoom"
+          >
+            <i-mdi-fit-to-screen class="w-3.5 h-3.5" />
+            {{ t('nav.adaptiveZoom') }}
+          </button>
+          <div class="az-popover">
+            <div class="az-popover-title">{{ t('nav.adaptiveZoom') }}</div>
+            <p class="az-popover-desc">{{ t('nav.adaptiveZoomDesc') }}</p>
+            <div class="az-demo">
+              <div class="az-demo-row">
+                <span class="az-demo-label">Activé</span>
+                <div class="az-demo-viz az-demo-on">
+                  <div class="az-demo-widget" />
+                  <div class="az-demo-widget" />
+                </div>
+                <span class="az-demo-hint">Les widgets s'adaptent à la fenêtre</span>
+              </div>
+              <div class="az-demo-row">
+                <span class="az-demo-label">Désactivé</span>
+                <div class="az-demo-viz az-demo-off">
+                  <div class="az-demo-widget" />
+                  <div class="az-demo-widget" />
+                </div>
+                <span class="az-demo-hint">Taille fixe, identique sur tous les écrans</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="w-px h-4 bg-white/10" />
         <button
           class="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md text-blue-300 bg-blue-500/10 border border-blue-400/20 hover:bg-blue-500/20 transition-colors cursor-pointer"
@@ -875,6 +931,7 @@ watch(() => route?.fullPath, () => {
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(99, 102, 241, 0.2);
   z-index: 49;
+  overflow: visible;
 }
 
 .fork-update-badge {
@@ -892,5 +949,137 @@ watch(() => route?.fullPath, () => {
 @keyframes fork-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.65; }
+}
+
+/* ── Adaptive-zoom popover ── */
+.adaptive-zoom-wrapper {
+  position: relative;
+}
+.az-popover {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  padding: 12px 14px;
+  background: rgba(20, 20, 35, 0.97);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  pointer-events: none;
+}
+.adaptive-zoom-wrapper:hover .az-popover {
+  display: block;
+}
+.az-popover-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin-bottom: 4px;
+}
+.az-popover-desc {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+.az-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.az-demo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.az-demo-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  width: 56px;
+  flex-shrink: 0;
+}
+.az-demo-viz {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  height: 28px;
+  flex-shrink: 0;
+}
+.az-demo-widget {
+  border-radius: 3px;
+  background: rgba(99, 102, 241, 0.3);
+  border: 1px solid rgba(99, 102, 241, 0.5);
+}
+.az-demo-on .az-demo-widget:first-child {
+  width: 32px;
+  height: 20px;
+  animation: az-breathe 2.5s ease-in-out infinite;
+}
+.az-demo-on .az-demo-widget:last-child {
+  width: 24px;
+  height: 16px;
+  animation: az-breathe 2.5s ease-in-out 0.3s infinite;
+}
+.az-demo-off .az-demo-widget:first-child {
+  width: 28px;
+  height: 18px;
+}
+.az-demo-off .az-demo-widget:last-child {
+  width: 28px;
+  height: 18px;
+}
+.az-demo-hint {
+  font-size: 0.5625rem;
+  color: rgba(255, 255, 255, 0.4);
+  flex: 1;
+}
+@keyframes az-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* ── Animation popover ── */
+.anim-popover-wrapper {
+  position: relative;
+}
+.anim-popover-wrapper:hover .az-popover {
+  display: block;
+}
+.anim-demo-on {
+  width: 60px;
+  height: 28px;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.anim-demo-on .anim-demo-blob {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3));
+  background-size: 200% 200%;
+  animation: anim-gradient-move 3s ease-in-out infinite;
+  border-radius: 4px;
+}
+.anim-demo-off {
+  width: 60px;
+  height: 28px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.anim-demo-off .anim-demo-blob {
+  width: 100%;
+  height: 100%;
+  background: rgba(40, 40, 60, 0.6);
+  border: 1px solid rgba(100, 100, 140, 0.2);
+  border-radius: 4px;
+}
+@keyframes anim-gradient-move {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 </style>

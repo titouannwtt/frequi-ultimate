@@ -20,6 +20,9 @@ export default {
     editModeDone: 'Done',
     opacity: 'Opacity',
     bgAnimation: 'Animation',
+    bgAnimationDesc: 'Toggles the animated gradient background on the dashboard. Disabling it reduces GPU usage and improves performance on older devices.',
+    adaptiveZoom: 'Adaptive zoom',
+    adaptiveZoomDesc: 'Automatically adjusts widget zoom based on your browser window size relative to a 1920px reference.',
     exportConfig: 'Export config',
     importConfig: 'Import config',
     pageConfig: 'Page config',
@@ -423,6 +426,7 @@ export default {
     actionForceExitAll: 'Force exit all positions',
     viewLogs: 'View logs',
     viewTrades: 'View trades',
+    viewJournal: 'View trade journal',
     confirmAction: 'Confirm action',
     confirmActionMsg: 'Are you sure you want to {action} on {bot}?',
   },
@@ -797,6 +801,8 @@ export default {
     actions: 'Actions',
     actionsFor: 'Actions for {pair}',
     closeActionsMenu: 'Close Actions menu',
+    viewChart: 'View chart',
+    viewOnExchange: 'View on exchange',
   },
 
   // Enhanced Log Viewer
