@@ -20,6 +20,9 @@ export default {
     editModeDone: 'Terminé',
     opacity: 'Opacité',
     bgAnimation: 'Animation',
+    bgAnimationDesc: 'Active ou désactive le fond animé avec dégradés sur le dashboard. Désactiver réduit l\'utilisation GPU et améliore les performances sur les machines moins puissantes.',
+    adaptiveZoom: 'Ajuster taille widgets',
+    adaptiveZoomDesc: 'Ajuste automatiquement le zoom des widgets selon la taille de la fenêtre du navigateur (référence : 1920px).',
     exportConfig: 'Exporter la config',
     importConfig: 'Importer une config',
     pageConfig: 'Config de la page',
@@ -418,6 +421,7 @@ export default {
     actionForceExitAll: 'Couper toutes les positions',
     viewLogs: 'Voir les logs',
     viewTrades: 'Voir les trades',
+    viewJournal: 'Voir le journal de trades',
     confirmAction: 'Confirmer l\'action',
     confirmActionMsg: 'Êtes-vous sûr de vouloir {action} sur {bot} ?',
   },
@@ -790,6 +794,8 @@ export default {
     actions: 'Actions',
     actionsFor: 'Actions pour {pair}',
     closeActionsMenu: 'Fermer le menu Actions',
+    viewChart: 'Voir le graphique',
+    viewOnExchange: 'Voir sur l\'exchange',
   },
 
   // Visualiseur de logs amélioré
