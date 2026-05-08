@@ -77,7 +77,10 @@ export const useSettingsStore = defineStore('uiSettings', {
     },
     forkUpdateAvailable(state): boolean {
       if (!state._latestForkVersion) return false;
-      return state._latestForkVersion !== __FORK_VERSION__;
+      const parse = (v: string) => v.split('.').map(Number);
+      const [aMaj, aMin, aPat] = parse(state._latestForkVersion);
+      const [bMaj, bMin, bPat] = parse(__FORK_VERSION__);
+      return aMaj > bMaj || (aMaj === bMaj && (aMin > bMin || (aMin === bMin && aPat > bPat)));
     },
   },
   actions: {
