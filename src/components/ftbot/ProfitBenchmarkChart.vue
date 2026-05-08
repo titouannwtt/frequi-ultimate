@@ -80,6 +80,23 @@ const selectedTimeframe = ref<TimeframeKey>('ALL');
 const normMode = ref<'pctFromStart'>('pctFromStart');
 const valueMode = ref<ValueModeKey>('pct');
 
+const valueModeOptions = computed(() => [
+  { key: 'pct' as ValueModeKey, label: '%' },
+  { key: 'abs' as ValueModeKey, label: stakeCurrencyLabel.value },
+]);
+
+const stakeCurrencyLabel = computed(() => {
+  const bots = botStore.selectedBots;
+  if (bots.length > 0) {
+    return bots[0]?.stakeCurrency || 'USDT';
+  }
+  return 'USDT';
+});
+
+const activeChartData = computed<CumPoint[]>(() => {
+  return valueMode.value === 'abs' ? cumulativeData.value : normalizedData.value;
+});
+
 // --- Benchmark management ---
 const BENCHMARKS_STORAGE_KEY = 'ft_benchmarks_enabled';
 const enabledBenchmarks = ref<string[]>(loadBenchmarksFromStorage());
@@ -105,6 +122,7 @@ const HARDCODED_DEFAULTS_BENCH = {
   selectedTimeframe: 'ALL' as string,
   enabledBenchmarks: ['BTC'] as string[],
   tradingMode: 'all' as string,
+  valueMode: 'pct' as string,
 };
 
 const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults(
@@ -114,6 +132,7 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
     selectedTimeframe: selectedTimeframe.value,
     enabledBenchmarks: [...enabledBenchmarks.value],
     tradingMode: tradingMode.value,
+    valueMode: valueMode.value,
   }),
   (d) => {
     if (d.activeTab !== undefined) activeTab.value = d.activeTab as TabKey;
@@ -123,6 +142,7 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
       saveBenchmarksToStorage();
     }
     if (d.tradingMode !== undefined) tradingMode.value = d.tradingMode as typeof tradingMode.value;
+    if (d.valueMode !== undefined) valueMode.value = d.valueMode as ValueModeKey;
   },
   HARDCODED_DEFAULTS_BENCH,
 );
@@ -504,11 +524,13 @@ function buildCombinedSeries(): any[] {
   });
 
   // Open trades projection
-  const data = normalizedData.value;
+  const data = activeChartData.value;
   if (modeFilteredOpenTrades.value.length > 0 && data.length > 0) {
     const lastPoint = data[data.length - 1]!;
     const totalOpen = Object.values(openProfitPerBot.value).reduce((s, v) => s + v, 0);
-    const projectedValue = lastPoint.combined + (totalOpen / totalStartingBalance.value) * 100;
+    const projectedValue = valueMode.value === 'abs'
+      ? lastPoint.combined + totalOpen
+      : lastPoint.combined + (totalOpen / totalStartingBalance.value) * 100;
 
     series.push({
       type: 'line',
@@ -603,19 +625,22 @@ const chartOptions = computed<EChartsOption>(() => {
     legendData.push(ticker);
   }
 
+  const isAbsMode = valueMode.value === 'abs';
   const yAxes: any[] = [
     {
       type: 'value',
-      name: t('profitBenchmark.profitPct'),
+      name: isAbsMode ? stakeCurrencyLabel.value : t('profitBenchmark.profitPct'),
       nameTextStyle: { color: '#808098', fontSize: 10 },
       splitLine: { show: true, lineStyle: { color: 'rgba(100, 100, 140, 0.08)', type: 'dashed' } },
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
         color: '#808098', fontSize: 10,
-        formatter: (value: number) => `${value.toFixed(1)}%`,
+        formatter: isAbsMode
+          ? (value: number) => formatPrice(value, 2)
+          : (value: number) => `${value.toFixed(1)}%`,
       },
-      nameRotate: 90, nameLocation: 'middle', nameGap: 45,
+      nameRotate: 90, nameLocation: 'middle', nameGap: isAbsMode ? 55 : 45,
     },
   ];
 
@@ -625,7 +650,7 @@ const chartOptions = computed<EChartsOption>(() => {
     backgroundColor: 'rgba(0, 0, 0, 0)',
     dataset: {
       dimensions: dims,
-      source: normalizedData.value,
+      source: activeChartData.value,
     },
     animationDuration: 1500,
     animationEasing: 'cubicOut',
@@ -663,7 +688,9 @@ const chartOptions = computed<EChartsOption>(() => {
           } else if (p.seriesName === t('profitBenchmark.combined') || activeTab.value === 'perBot') {
             if (profitValue === null) profitValue = val;
           }
-          const formatted = `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`;
+          const formatted = isBenchmark || !isAbsMode
+            ? `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`
+            : `${val >= 0 ? '+' : ''}${formatPrice(val, 2)} ${stakeCurrencyLabel.value}`;
           html += `<div style="display:flex;justify-content:space-between;gap:12px">`
             + `<span>${p.marker} ${p.seriesName}</span>`
             + `<span style="font-weight:600">${formatted}</span></div>`;
@@ -816,6 +843,25 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
           @click="selectedTimeframe = tf"
         >
           {{ tf }}
+        </button>
+      </div>
+
+      <div class="w-px h-4 bg-gray-600/30"></div>
+
+      <!-- Value mode toggle (% / abs) -->
+      <div class="flex gap-0.5">
+        <button
+          v-for="vm in valueModeOptions"
+          :key="vm.key"
+          class="px-2 py-0.5 text-[10px] font-semibold rounded-md transition-all duration-150 cursor-pointer"
+          :class="
+            valueMode === vm.key
+              ? 'bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/40'
+              : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+          "
+          @click="valueMode = vm.key"
+        >
+          {{ vm.label }}
         </button>
       </div>
 
@@ -972,7 +1018,7 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
     <!-- Chart -->
     <div class="flex-1 min-h-0">
       <ECharts
-        v-if="normalizedData.length > 0"
+        v-if="activeChartData.length > 0"
         ref="chart"
         :option="chartOptions"
         :theme="settingsStore.chartTheme"
