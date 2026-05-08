@@ -63,7 +63,7 @@ function profitColor(val: number | undefined | null): string {
   if (val === undefined || val === null) return '';
   if (val > 0) return 'text-green-400';
   if (val < 0) return 'text-red-400';
-  return 'text-gray-400';
+  return 'text-gray-600 dark:text-gray-400';
 }
 </script>
 
@@ -74,7 +74,7 @@ function profitColor(val: number | undefined | null): string {
     <div v-if="!hasTradeData" class="flex flex-col items-center justify-center py-8 gap-2">
       <i-mdi-chart-line class="text-3xl text-blue-400/40" />
       <div class="text-sm text-gray-200">{{ t('emptyStates.noWinLossData') }}</div>
-      <div class="text-xs text-gray-400 text-center">{{ t('emptyStates.noWinLossDataDesc') }}</div>
+      <div class="text-xs text-gray-600 dark:text-gray-400 text-center">{{ t('emptyStates.noWinLossDataDesc') }}</div>
     </div>
 
     <template v-else>
@@ -83,7 +83,7 @@ function profitColor(val: number | undefined | null): string {
       <i-mdi-trophy class="text-yellow-400" />
       <span>{{ t('winLossCard.title') }}</span>
     </div>
-    <div class="flex items-center justify-around mb-3 pb-3 border-b border-white/5">
+    <div class="flex items-center justify-around mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="flex flex-col items-center">
         <svg width="130" height="130" viewBox="0 0 130 130">
           <circle cx="65" cy="65" :r="donutRadius" fill="none" stroke="rgba(255,255,255,0.06)" :stroke-width="donutStroke" />
@@ -115,21 +115,21 @@ function profitColor(val: number | undefined | null): string {
         <div class="flex items-center gap-2">
           <span class="w-3 h-3 rounded-full bg-green-500" />
           <span class="text-green-400 font-bold text-lg">{{ wins }}</span>
-          <span class="text-gray-500 text-[0.85rem]">{{ t('winLossCard.wins') }}</span>
+          <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]">{{ t('winLossCard.wins') }}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-3 h-3 rounded-full bg-red-500" />
           <span class="text-red-400 font-bold text-lg">{{ losses }}</span>
-          <span class="text-gray-500 text-[0.85rem]">{{ t('winLossCard.losses') }}</span>
+          <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]">{{ t('winLossCard.losses') }}</span>
         </div>
-        <div class="text-gray-500 text-[0.8rem] pt-1 border-t border-white/5">
+        <div class="text-gray-600 dark:text-gray-500 text-[0.8rem] pt-1 border-t border-black/5 dark:border-white/5">
           {{ totalTrades }} {{ t('winLossCard.totalTrades') }}
         </div>
       </div>
     </div>
 
     <!-- ═══ SECTION 2: Streak & Averages ═══ -->
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-chart-timeline-variant class="text-blue-400" />
         <span>{{ t('winLossCard.analysis') }}</span>
@@ -137,7 +137,7 @@ function profitColor(val: number | undefined | null): string {
       <div class="space-y-0.5">
         <div class="stat-row">
           <span class="stat-label" v-tooltip.top="t('tooltips.currentStreak')">{{ t('winLossCard.currentStreak') }}</span>
-          <span class="stat-value text-gray-500">N/A</span>
+          <span class="stat-value text-gray-600 dark:text-gray-500">N/A</span>
         </div>
         <div v-if="avgWinEstimate !== undefined" class="stat-row">
           <span class="stat-label" v-tooltip.top="t('tooltips.avgWinLossRatio')">{{ t('winLossCard.avgWinLossRatio') }}</span>

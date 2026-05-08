@@ -115,7 +115,7 @@ function metricColor(val: number | undefined): string {
   if (val === undefined || val === null) return '';
   if (val > 0) return 'text-green-400';
   if (val < 0) return 'text-red-400';
-  return 'text-gray-400';
+  return 'text-gray-600 dark:text-gray-400';
 }
 </script>
 
@@ -123,29 +123,29 @@ function metricColor(val: number | undefined): string {
   <div class="glass-card text-xs" style="width: 560px">
     <!-- Offline state -->
     <div v-if="isOnline === false" class="flex flex-col items-center gap-3 py-4">
-      <div class="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
         <i-mdi-power-plug-off class="text-3xl text-red-400" />
       </div>
       <div class="text-center">
-        <div class="text-sm font-bold text-gray-200 mb-1">{{ t('botComparison.offline') }}</div>
-        <div class="text-xs text-gray-400 mb-2">{{ t('botComparison.botOfflineDesc') }}</div>
-        <div v-if="lastSeenOnline" class="text-xs text-gray-500">
+        <div class="text-sm font-bold text-gray-800 dark:text-gray-200 mb-1">{{ t('botComparison.offline') }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-400 mb-2">{{ t('botComparison.botOfflineDesc') }}</div>
+        <div v-if="lastSeenOnline" class="text-xs text-gray-600 dark:text-gray-500">
           <i-mdi-clock-outline class="inline" style="font-size: 0.9rem" />
           {{ t('botComparison.lastSeenOnline', { duration: humanizeLastSeen(lastSeenOnline) }) }}
         </div>
       </div>
-      <div v-if="botState" class="w-full pt-2 mt-1 border-t border-gray-700 text-gray-500 space-y-0.5" style="font-size: 0.9rem">
+      <div v-if="botState" class="w-full pt-2 mt-1 border-t border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-500 space-y-0.5" style="font-size: 0.9rem">
         <div v-if="botState.strategy" class="flex justify-between">
           <span>{{ t('botInfoCard.strategy') }}</span>
-          <span class="text-gray-300">{{ botState.strategy }}</span>
+          <span class="text-gray-700 dark:text-gray-300">{{ botState.strategy }}</span>
         </div>
         <div v-if="botState.exchange" class="flex justify-between">
           <span>{{ t('botInfoCard.exchange') }}</span>
-          <span class="text-gray-300">{{ botState.exchange }}</span>
+          <span class="text-gray-700 dark:text-gray-300">{{ botState.exchange }}</span>
         </div>
         <div v-if="port" class="flex justify-between">
           <span>{{ t('botInfoCard.port') }}</span>
-          <span class="text-gray-300">:{{ port }}</span>
+          <span class="text-gray-700 dark:text-gray-300">:{{ port }}</span>
         </div>
       </div>
     </div>
@@ -158,11 +158,11 @@ function metricColor(val: number | undefined): string {
         <div class="text-sm font-bold text-gray-100">
           {{ (botState?.bot_name as string) || 'Bot' }}
         </div>
-        <div class="text-[0.85rem] text-gray-400">
+        <div class="text-[0.85rem] text-gray-600 dark:text-gray-400">
           {{ (botState?.strategy as string) || '' }} • {{ (botState?.exchange as string) || '' }}
         </div>
       </div>
-      <div class="text-right text-[0.85rem] text-gray-400">
+      <div class="text-right text-[0.85rem] text-gray-600 dark:text-gray-400">
         <div v-tooltip.top="t('tooltips.totalTradeCount')">{{ profit?.trade_count ?? 0 }} trades</div>
         <div v-if="profit?.avg_duration">⏱ {{ profit.avg_duration }}</div>
       </div>
@@ -181,15 +181,15 @@ function metricColor(val: number | undefined): string {
         <polyline :points="equityPath" fill="none" :stroke="equityCurveColor" stroke-width="1.5"/>
       </svg>
     </div>
-    <div v-else-if="botId && closedTrades.length === 0 && hasTradeData" class="mb-2 text-center text-gray-500" style="font-size: 0.9rem">
+    <div v-else-if="botId && closedTrades.length === 0 && hasTradeData" class="mb-2 text-center text-gray-600 dark:text-gray-500" style="font-size: 0.9rem">
       {{ t('botInfoCard.loadingEquity') }}
     </div>
 
     <!-- Empty state: no trades yet -->
     <div v-if="!hasTradeData" class="flex flex-col items-center justify-center py-6 gap-2">
       <i-mdi-chart-line class="text-2xl text-blue-400/40" />
-      <div class="text-sm text-gray-200">{{ t('emptyStates.noTradesYet') }}</div>
-      <div class="text-xs text-gray-400 text-center">{{ t('emptyStates.noTradesDesc') }}</div>
+      <div class="text-sm text-gray-800 dark:text-gray-200">{{ t('emptyStates.noTradesYet') }}</div>
+      <div class="text-xs text-gray-600 dark:text-gray-400 text-center">{{ t('emptyStates.noTradesDesc') }}</div>
     </div>
 
     <template v-else>
@@ -221,7 +221,7 @@ function metricColor(val: number | undefined): string {
           <text x="48" y="44" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 0.8rem">
             {{ winrate.toFixed(0) }}%
           </text>
-          <text x="48" y="55" text-anchor="middle" class="fill-gray-400" style="font-size: 0.6rem">
+          <text x="48" y="55" text-anchor="middle" class="fill-gray-600 dark:fill-gray-400" style="font-size: 0.6rem">
             {{ wins }}W/{{ losses }}L
           </text>
         </svg>
@@ -231,12 +231,12 @@ function metricColor(val: number | undefined): string {
       <div class="flex-1">
         <div class="mb-1.5">
           <div class="flex justify-between items-baseline">
-            <span class="text-gray-400" v-tooltip.top="t('tooltips.roi')">ROI</span>
+            <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.roi')">ROI</span>
             <span class="text-lg font-bold" :class="metricColor(roiPercent)">
               {{ formatPercent(roiPercent, 1) }}
             </span>
           </div>
-          <div class="h-2 rounded-full bg-gray-700 overflow-hidden mt-0.5">
+          <div class="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden mt-0.5">
             <div
               class="h-full rounded-full transition-all duration-500"
               :class="roiPercent >= 0 ? 'bg-gradient-to-r from-green-600 to-green-400' : 'bg-gradient-to-r from-red-600 to-red-400'"
@@ -246,21 +246,21 @@ function metricColor(val: number | undefined): string {
         </div>
         <div class="space-y-0.5">
           <div class="flex justify-between">
-            <span class="text-gray-400" v-tooltip.top="t('tooltips.profitFactor')">{{ t('profit.profitFactor') }}</span>
+            <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.profitFactor')">{{ t('profit.profitFactor') }}</span>
             <span>{{ profit?.profit_factor ? formatNumber(profit.profit_factor, 2) : 'N/A' }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-400" v-tooltip.top="t('tooltips.roiAll')">{{ t('profit.roiClosed') }}</span>
+            <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.roiAll')">{{ t('profit.roiClosed') }}</span>
             <span :class="metricColor(profit?.profit_closed_coin)">
               {{ formatPriceCurrency(profit?.profit_closed_coin ?? 0, currency, 2) }}
             </span>
           </div>
           <div v-if="(profit?.capital_withdrawal ?? 0) > 0" class="flex justify-between">
-            <span class="text-gray-400" v-tooltip.top="t('tooltips.withdrawn')">{{ t('profit.withdrawn') }}</span>
+            <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.withdrawn')">{{ t('profit.withdrawn') }}</span>
             <span class="text-yellow-400">-{{ formatPriceCurrency(profit?.capital_withdrawal ?? 0, currency, 2) }}</span>
           </div>
           <div v-if="(profit?.capital_withdrawal ?? 0) > 0" class="flex justify-between font-bold">
-            <span class="text-gray-400" v-tooltip.top="t('tooltips.netProfit')">{{ t('profit.netProfit') }}</span>
+            <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.netProfit')">{{ t('profit.netProfit') }}</span>
             <span :class="metricColor((profit?.profit_closed_coin ?? 0) - (profit?.capital_withdrawal ?? 0))">
               {{ formatPriceCurrency((profit?.profit_closed_coin ?? 0) - (profit?.capital_withdrawal ?? 0), currency, 2) }}
             </span>
@@ -270,72 +270,72 @@ function metricColor(val: number | undefined): string {
     </div>
 
     <!-- Performance metrics -->
-    <div class="mb-2 pb-2 border-b border-gray-700">
-      <div class="flex items-center gap-1 mb-1 text-gray-300 font-semibold">
+    <div class="mb-2 pb-2 border-b border-gray-300 dark:border-gray-700">
+      <div class="flex items-center gap-1 mb-1 text-gray-700 dark:text-gray-300 font-semibold">
         <i-mdi-chart-line class="text-blue-400" style="font-size: 0.9rem" />
         {{ t('botInfoCard.performance') }}
       </div>
       <div class="grid grid-cols-3 gap-x-3 gap-y-0.5">
         <div class="flex flex-col items-center">
-          <span class="text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.cagr')">{{ t('profit.cagr') }}</span>
+          <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.cagr')">{{ t('profit.cagr') }}</span>
           <span class="font-bold" :class="metricColor(profit?.cagr)">{{ profit?.cagr ? formatPercent(profit.cagr, 1) : 'N/A' }}</span>
         </div>
         <div class="flex flex-col items-center">
-          <span class="text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.sharpe')">{{ t('profit.sharpe') }}</span>
+          <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.sharpe')">{{ t('profit.sharpe') }}</span>
           <span class="font-bold" :class="metricColor(profit?.sharpe)">{{ formatNumber(profit?.sharpe, 2) }}</span>
         </div>
         <div class="flex flex-col items-center">
-          <span class="text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.sortino')">{{ t('profit.sortino') }}</span>
+          <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.sortino')">{{ t('profit.sortino') }}</span>
           <span class="font-bold" :class="metricColor(profit?.sortino)">{{ formatNumber(profit?.sortino, 2) }}</span>
         </div>
         <div class="flex flex-col items-center">
-          <span class="text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.sqn')">{{ t('profit.sqn') }}</span>
+          <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.sqn')">{{ t('profit.sqn') }}</span>
           <span class="font-bold" :class="metricColor(profit?.sqn)">{{ formatNumber(profit?.sqn, 2) }}</span>
         </div>
         <div class="flex flex-col items-center">
-          <span class="text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.expectancy')">{{ t('profit.expectancy') }}</span>
+          <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.expectancy')">{{ t('profit.expectancy') }}</span>
           <span class="font-bold">{{ formatNumber(profit?.expectancy, 2) }}</span>
         </div>
         <div class="flex flex-col items-center">
-          <span class="text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.calmar')">{{ t('profit.calmar') }}</span>
+          <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.calmar')">{{ t('profit.calmar') }}</span>
           <span class="font-bold" :class="metricColor(profit?.calmar)">{{ formatNumber(profit?.calmar, 2) }}</span>
         </div>
       </div>
     </div>
 
     <!-- Timing + Best pair -->
-    <div class="mb-2 pb-2 border-b border-gray-700">
-      <div class="flex items-center gap-1 mb-1 text-gray-300 font-semibold">
+    <div class="mb-2 pb-2 border-b border-gray-300 dark:border-gray-700">
+      <div class="flex items-center gap-1 mb-1 text-gray-700 dark:text-gray-300 font-semibold">
         <i-mdi-clock-outline class="text-amber-400" style="font-size: 0.9rem" />
         {{ t('botInfoCard.timing') }}
       </div>
       <div class="space-y-0.5">
         <div class="flex justify-between">
-          <span class="text-gray-400" v-tooltip.top="t('tooltips.avgDuration')">{{ t('profit.avgDuration') }}</span>
+          <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.avgDuration')">{{ t('profit.avgDuration') }}</span>
           <span>{{ profit?.avg_duration ?? 'N/A' }}</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-gray-400" v-tooltip.top="t('tooltips.bestPair')">{{ t('profit.bestPerforming') }}</span>
+          <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.bestPair')">{{ t('profit.bestPerforming') }}</span>
           <span v-if="profit?.best_pair" :class="metricColor(profit?.best_pair_profit_ratio)">
             {{ profit.best_pair }} {{ formatPercent(profit.best_pair_profit_ratio, 1) }}
           </span>
           <span v-else>N/A</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-gray-400" v-tooltip.top="t('tooltips.tradingVolume')">{{ t('profit.tradingVolume') }}</span>
+          <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.tradingVolume')">{{ t('profit.tradingVolume') }}</span>
           <span>{{ formatPriceCurrency(profit?.trading_volume ?? 0, currency, 0) }}</span>
         </div>
       </div>
     </div>
 
     <!-- Drawdown -->
-    <div class="mb-2 pb-2 border-b border-gray-700">
-      <div class="flex items-center gap-1 mb-1 text-gray-300 font-semibold">
+    <div class="mb-2 pb-2 border-b border-gray-300 dark:border-gray-700">
+      <div class="flex items-center gap-1 mb-1 text-gray-700 dark:text-gray-300 font-semibold">
         <i-mdi-trending-down class="text-red-400" style="font-size: 0.9rem" />
         {{ t('botInfoCard.drawdown') }}
       </div>
       <div class="flex items-center gap-2 mb-1">
-        <div class="flex-1 h-1.5 rounded-full bg-gray-700 overflow-hidden">
+        <div class="flex-1 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
           <div
             class="h-full rounded-full bg-gradient-to-r from-red-700 to-red-400"
             :style="{ width: `${drawdownBarWidth}%` }"
@@ -345,7 +345,7 @@ function metricColor(val: number | undefined): string {
           {{ profit?.max_drawdown ? formatPercent(profit.max_drawdown, 1) : '0%' }}
         </span>
       </div>
-      <div class="space-y-0.5 text-gray-400">
+      <div class="space-y-0.5 text-gray-600 dark:text-gray-400">
         <div class="flex justify-between">
           <span v-tooltip="t('tooltips.maxDrawdown')">{{ t('profit.maxDrawdown') }}</span>
           <span>{{ profit?.max_drawdown_abs ? formatPriceCurrency(profit.max_drawdown_abs, currency, 2) : 'N/A' }}</span>
@@ -358,22 +358,22 @@ function metricColor(val: number | undefined): string {
     </div>
 
     <!-- Config footer -->
-    <div class="text-gray-500 space-y-0.5" style="font-size: 0.9rem">
+    <div class="text-gray-600 dark:text-gray-500 space-y-0.5" style="font-size: 0.9rem">
       <div class="flex justify-between">
         <span>{{ t('botInfoCard.strategy') }}</span>
-        <span class="text-gray-300">{{ (botState?.strategy as string) || 'N/A' }}</span>
+        <span class="text-gray-700 dark:text-gray-300">{{ (botState?.strategy as string) || 'N/A' }}</span>
       </div>
       <div class="flex justify-between">
         <span>{{ t('botInfoCard.exchange') }}</span>
-        <span class="text-gray-300">{{ (botState?.exchange as string) || 'N/A' }}</span>
+        <span class="text-gray-700 dark:text-gray-300">{{ (botState?.exchange as string) || 'N/A' }}</span>
       </div>
       <div v-if="port" class="flex justify-between">
         <span>{{ t('botInfoCard.port') }}</span>
-        <span class="text-gray-300">:{{ port }}</span>
+        <span class="text-gray-700 dark:text-gray-300">:{{ port }}</span>
       </div>
       <div v-if="profit?.bot_start_timestamp" class="flex justify-between">
         <span v-tooltip="t('tooltips.botStarted')">{{ t('botInfoCard.started') }}</span>
-        <span class="text-gray-300">{{ timestampms(profit.bot_start_timestamp) }}</span>
+        <span class="text-gray-700 dark:text-gray-300">{{ timestampms(profit.bot_start_timestamp) }}</span>
       </div>
     </div>
     </template>
