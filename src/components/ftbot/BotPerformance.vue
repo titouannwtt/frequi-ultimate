@@ -119,19 +119,80 @@ onMounted(() => {
       size="small"
       @change="refreshSummary"
     ></SelectButton>
-    <DataTable size="small" class="text-center" :value="performanceData">
+    <DataTable
+      size="small"
+      class="text-center"
+      :value="performanceData"
+      :row-class="(data: any) => perfRowClass(data.profit)"
+      scrollable
+      scroll-height="flex"
+    >
       <Column
         v-for="field in performanceTable"
         :key="field.key"
         :field="field.key"
-        :header="field.label"
+        :sortable="true"
       >
-        <template #body="slotProps">
-          {{
-            field.formatter ? field.formatter(slotProps.data[field.key]) : slotProps.data[field.key]
-          }}
+        <template #header>
+          <span>{{ field.label }}</span>
+        </template>
+        <template #body="{ data }">
+          <!-- Key column (pair / tag) -->
+          <template v-if="field.key === 'pair' || field.key === 'enter_tag' || field.key === 'exit_reason' || field.key === 'mix_tag'">
+            <span class="font-semibold text-xs">
+              {{ field.formatter ? field.formatter(data[field.key]) : data[field.key] }}
+            </span>
+          </template>
+          <!-- Profit % -->
+          <template v-else-if="field.key === 'profit'">
+            <span
+              class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold"
+              :class="perfProfitBgClass(data.profit)"
+            >
+              <span :class="data.profit >= 0 ? 'text-green-400' : 'text-red-400'">
+                {{ data.profit >= 0 ? '+' : '' }}{{ data.profit.toFixed(2) }}%
+              </span>
+            </span>
+          </template>
+          <!-- Profit abs -->
+          <template v-else-if="field.key === 'profit_abs'">
+            <span
+              class="font-mono text-xs"
+              :class="data.profit_abs >= 0 ? 'text-green-400' : 'text-red-400'"
+            >
+              {{ data.profit_abs >= 0 ? '+' : '' }}{{ formatPrice(data.profit_abs, 5) }}
+            </span>
+          </template>
+          <!-- Count -->
+          <template v-else-if="field.key === 'count'">
+            <span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono bg-surface-500/10">
+              {{ data.count }}
+            </span>
+          </template>
+          <!-- Fallback -->
+          <template v-else>
+            {{ field.formatter ? field.formatter(data[field.key]) : data[field.key] }}
+          </template>
         </template>
       </Column>
     </DataTable>
   </div>
 </template>
+
+<script lang="ts">
+function perfProfitBgClass(profit: number): string {
+  if (profit > 5) return 'bg-green-500/20';
+  if (profit > 2) return 'bg-green-500/15';
+  if (profit > 0) return 'bg-green-500/8';
+  if (profit > -2) return 'bg-red-500/8';
+  if (profit > -5) return 'bg-red-500/15';
+  return 'bg-red-500/20';
+}
+
+function perfRowClass(profit: number): string {
+  if (profit > 3) return 'bg-green-500/8';
+  if (profit > 0) return 'bg-green-500/4';
+  if (profit > -3) return 'bg-red-500/4';
+  return 'bg-red-500/8';
+}
+</script>
