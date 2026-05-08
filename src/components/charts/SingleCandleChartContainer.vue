@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { ChartSliderPosition, PairHistory, Trade } from '@/types';
+import type { TradeSeriesOptions } from '@/utils/charts/tradeChartData';
+import type { SeriesInfo, AxisPointerValues } from './CandleChart.vue';
+import CandleChart from './CandleChart.vue';
 import { LoadingStatus } from '@/types';
 import { useI18n } from 'vue-i18n';
 
@@ -26,12 +29,97 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   refreshData: [pair: string, columns: string[]];
+  subplotClick: [name: string];
 }>();
 
 const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
 const botStore = useBotStore();
 const plotStore = usePlotConfigStore();
+
+const chartRef = ref<InstanceType<typeof CandleChart> | null>(null);
+const chartContainerRef = ref<HTMLElement | null>(null);
+const loadingStrategyIndicators = ref(false);
+
+async function importIndicatorsFromStrategy() {
+  loadingStrategyIndicators.value = true;
+  try {
+    const config = await botStore.activeBot.getStrategyPlotConfig();
+    if (config) {
+      plotStore.saveCustomPlotConfig(plotStore.plotConfigName, config);
+      plotStore.plotConfigChanged();
+    }
+  } catch {
+    // silently fail
+  } finally {
+    loadingStrategyIndicators.value = false;
+  }
+}
+
+const hasStrategyPlotConfig = computed(() => !botStore.activeBot.isWebserverMode);
+
+const seriesList = ref<SeriesInfo[]>([]);
+const axisValues = ref<AxisPointerValues | undefined>(undefined);
+const legendVisible = computed({
+  get: () => settingsStore.chartLegendVisible,
+  set: (v) => { settingsStore.chartLegendVisible = v; },
+});
+const volumeVisible = computed({
+  get: () => settingsStore.chartVolumeVisible,
+  set: (v) => { settingsStore.chartVolumeVisible = v; },
+});
+
+const tradeSeriesOptions = computed<TradeSeriesOptions>(() => ({
+  showLiquidation: settingsStore.chartShowLiquidation,
+  showInitialStoploss: settingsStore.chartShowInitialStoploss,
+  showLeverage: settingsStore.chartShowLeverage,
+}));
+
+function onSeriesInfo(info: SeriesInfo[]) {
+  seriesList.value = info;
+}
+function onAxisValues(vals: AxisPointerValues) {
+  axisValues.value = vals;
+}
+
+function handleToggle(name: string) {
+  if (name === 'Volume') {
+    volumeVisible.value = !volumeVisible.value;
+    return;
+  }
+  chartRef.value?.toggleSeries(name);
+}
+
+function handleIsolate(name: string) {
+  chartRef.value?.isolateSeries(name);
+}
+
+function handleShowAll() {
+  volumeVisible.value = true;
+  chartRef.value?.showAllSeries();
+}
+
+// Keyboard shortcuts
+const shortcutActions = {
+  toggleVolume: () => { volumeVisible.value = !volumeVisible.value; },
+  toggleTrades: () => { chartRef.value?.toggleSeries('Trades'); },
+  toggleSignals: () => {
+    chartRef.value?.toggleSeries('Entry');
+    chartRef.value?.toggleSeries('Exit');
+  },
+  toggleLegend: () => { legendVisible.value = !legendVisible.value; },
+  resetZoom: () => { chartRef.value?.resetZoom(); },
+  scrollLeft: () => { chartRef.value?.scrollChart(-10); },
+  scrollRight: () => { chartRef.value?.scrollChart(10); },
+  zoomIn: () => { chartRef.value?.zoomChart(0.7); },
+  zoomOut: () => { chartRef.value?.zoomChart(1.4); },
+};
+
+const { showHelp, shortcuts } = useChartShortcuts(
+  shortcutActions,
+  toRef(() => settingsStore.chartKeyboardShortcuts),
+  chartContainerRef,
+);
 
 const dataset = computed((): PairHistory => {
   if (props.historicView) {
@@ -58,18 +146,12 @@ const noDatasetText = computed((): string => {
   const status = props.historicView
     ? botStore.activeBot.historyStatus
     : botStore.activeBot.candleDataStatus;
-
   switch (status) {
-    case LoadingStatus.not_loaded:
-      return t('charts.notLoadedYet');
-    case LoadingStatus.loading:
-      return t('charts.loading');
-    case LoadingStatus.success:
-      return t('charts.noData');
-    case LoadingStatus.error:
-      return t('charts.loadError');
-    default:
-      return '';
+    case LoadingStatus.not_loaded: return t('charts.notLoadedYet');
+    case LoadingStatus.loading: return t('charts.loading');
+    case LoadingStatus.success: return t('charts.noData');
+    case LoadingStatus.error: return t('charts.loadError');
+    default: return '';
   }
 });
 
@@ -78,48 +160,30 @@ function refresh() {
 }
 
 function refreshIfNecessary() {
-  if (!hasDataset.value) {
-    refresh();
-  }
+  if (!hasDataset.value) refresh();
 }
 
 function assignFirstPair() {
   const [firstPair] = props.availablePairs;
-  if (firstPair) {
-    //props.pair = firstPair;
-  }
+  if (firstPair) { /* noop — pair is a prop */ }
 }
 
-watch(
-  () => props.availablePairs,
-  () => {
-    if (!props.availablePairs.find((p) => p === props.pair)) {
-      assignFirstPair();
-      refresh();
-    }
-  },
-);
+watch(() => props.availablePairs, () => {
+  if (!props.availablePairs.find((p) => p === props.pair)) {
+    assignFirstPair();
+    refresh();
+  }
+});
 
-watch(
-  () => plotStore.plotConfig,
-  () => {
-    const hasAllColumns = plotStore.usedColumns.some(
-      (c) => datasetColumns.value.includes(c) && !datasetLoadedColumns.value.includes(c),
-    );
-    if (settingsStore.useReducedPairCalls && hasAllColumns) {
-      refresh();
-    }
-  },
-);
+watch(() => plotStore.plotConfig, () => {
+  const hasAllColumns = plotStore.usedColumns.some(
+    (c) => datasetColumns.value.includes(c) && !datasetLoadedColumns.value.includes(c),
+  );
+  if (settingsStore.useReducedPairCalls && hasAllColumns) refresh();
+});
 
-watch(
-  () => props.timeframe,
-  () => {
-    refreshIfNecessary();
-  },
-);
+watch(() => props.timeframe, () => refreshIfNecessary());
 
-// Signal counts
 const longEntries = computed(() => dataset.value?.enter_long_signals ?? dataset.value?.buy_signals ?? 0);
 const longExits = computed(() => dataset.value?.exit_long_signals ?? dataset.value?.sell_signals ?? 0);
 const shortEntries = computed(() => dataset.value?.enter_short_signals ?? 0);
@@ -129,21 +193,19 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
 
 <template>
   <div
+    ref="chartContainerRef"
     class="single-chart-container"
-    :class="{
-      'h-full': isSinglePairView,
-      'multi-view': !isSinglePairView,
-    }"
+    :class="{ 'h-full': isSinglePairView, 'multi-view': !isSinglePairView }"
   >
     <!-- Signal stats bar -->
     <div v-if="dataset" class="signal-bar">
       <div class="signal-stats">
         <span class="signal-pill long-entry" :title="t('charts.longEntrySignals')">
-          <i-mdi-triangle class="w-2.5 h-2.5" />
+          <i-mdi-circle class="w-2.5 h-2.5" />
           {{ longEntries }}
         </span>
         <span class="signal-pill long-exit" :title="t('charts.longExitSignals')">
-          <i-mdi-diamond class="w-2.5 h-2.5" />
+          <i-mdi-circle-outline class="w-2.5 h-2.5" />
           {{ longExits }}
         </span>
         <template v-if="hasShortSignals">
@@ -152,21 +214,43 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
             {{ shortEntries }}
           </span>
           <span class="signal-pill short-exit">
-            <i-mdi-diamond class="w-2.5 h-2.5" />
+            <i-mdi-triangle-down-outline class="w-2.5 h-2.5" />
             {{ shortExits }}
           </span>
         </template>
       </div>
       <span class="pair-label">{{ pair || 'Pair' }}</span>
+      <button
+        v-if="hasStrategyPlotConfig"
+        class="import-strat-btn"
+        :disabled="loadingStrategyIndicators"
+        title="Importer les indicateurs depuis la stratégie"
+        @click="importIndicatorsFromStrategy"
+      >
+        <i-mdi-chart-line-variant class="w-3.5 h-3.5" />
+      </button>
       <div class="signal-bar-right">
         <ProgressSpinner v-if="isLoadingDataset" class="w-3.5 h-3.5" stroke-width="4" />
       </div>
     </div>
 
+    <!-- Legend bar (above chart, not overlapping) -->
+    <ChartLegend
+      v-if="hasDataset && legendVisible"
+      :series="seriesList"
+      :axis-values="axisValues"
+      :show-realtime-values="settingsStore.chartLegendRealtimeValues"
+      :theme="settingsStore.chartTheme"
+      @toggle="handleToggle"
+      @isolate="handleIsolate"
+      @show-all="handleShowAll"
+    />
+
     <!-- Chart -->
     <div class="chart-render">
       <CandleChart
         v-if="hasDataset"
+        ref="chartRef"
         :dataset="dataset"
         :trades="trades"
         :plot-config="plotStore.plotConfig"
@@ -180,8 +264,41 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
         :color-down="colorStore.colorDown"
         :start-candle-count="settingsStore.chartDefaultCandleCount"
         :label-side="settingsStore.chartLabelSide"
+        :volume-visible="volumeVisible"
+        :crosshair-style="settingsStore.chartCrosshairStyle"
+        :trade-series-options="tradeSeriesOptions"
+        @series-info="onSeriesInfo"
+        @axis-values="onAxisValues"
+        @subplot-click="(name: string) => emit('subplotClick', name)"
       />
-      <div v-else class="chart-placeholder">
+
+      <!-- Keyboard shortcuts help -->
+      <Transition name="fade">
+        <div v-if="showHelp" class="shortcuts-overlay" :class="{ 'shortcuts-dark': settingsStore.chartTheme === 'dark' }">
+          <div class="shortcuts-title">Raccourcis clavier</div>
+          <div v-for="s in shortcuts" :key="s.key" class="shortcut-row">
+            <kbd class="shortcut-key">{{ s.key === 'ArrowLeft' ? '←' : s.key === 'ArrowRight' ? '→' : s.key }}</kbd>
+            <span class="shortcut-desc">{{ s.label }}</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd class="shortcut-key">Esc</kbd>
+            <span class="shortcut-desc">Fermer</span>
+          </div>
+        </div>
+      </Transition>
+
+      <!-- Help button -->
+      <button
+        v-if="hasDataset && settingsStore.chartKeyboardShortcuts"
+        class="shortcuts-btn"
+        :class="{ 'shortcuts-btn-dark': settingsStore.chartTheme === 'dark' }"
+        :title="showHelp ? 'Fermer l\'aide' : 'Raccourcis clavier'"
+        @click="showHelp = !showHelp"
+      >
+        ?
+      </button>
+
+      <div v-if="!hasDataset" class="chart-placeholder">
         <ProgressSpinner v-if="isLoadingDataset" class="w-6 h-6" />
         <template v-else>
           <i-mdi-chart-line class="w-8 h-8 text-surface-400 dark:text-surface-600 mb-2" />
@@ -210,7 +327,6 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
   border-color: rgba(255, 255, 255, 0.06);
 }
 
-/* ── Signal bar ── */
 .signal-bar {
   display: flex;
   align-items: center;
@@ -239,22 +355,10 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
   font-weight: 600;
   font-family: monospace;
 }
-.signal-pill.long-entry {
-  color: #00cc20;
-  background: rgba(0, 204, 32, 0.08);
-}
-.signal-pill.long-exit {
-  color: #d4a017;
-  background: rgba(212, 160, 23, 0.08);
-}
-.signal-pill.short-entry {
-  color: #e04444;
-  background: rgba(224, 68, 68, 0.08);
-}
-.signal-pill.short-exit {
-  color: #d4a017;
-  background: rgba(212, 160, 23, 0.08);
-}
+.signal-pill.long-entry { color: #757575; background: rgba(158, 158, 158, 0.08); }
+.signal-pill.long-exit { color: #757575; background: rgba(158, 158, 158, 0.08); }
+.signal-pill.short-entry { color: #757575; background: rgba(158, 158, 158, 0.08); }
+.signal-pill.short-exit { color: #757575; background: rgba(158, 158, 158, 0.08); }
 
 .pair-label {
   font-size: 0.8125rem;
@@ -265,6 +369,29 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
   color: rgba(255, 255, 255, 0.7);
 }
 
+.import-strat-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  border: none;
+  background: transparent;
+  color: rgba(99, 102, 241, 0.6);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.import-strat-btn:hover {
+  background: rgba(99, 102, 241, 0.1);
+  color: rgba(99, 102, 241, 1);
+}
+.import-strat-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 .signal-bar-right {
   width: 1.5rem;
   display: flex;
@@ -272,13 +399,13 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
   justify-content: center;
 }
 
-/* ── Chart render area ── */
 .chart-render {
   flex: 1;
   min-height: 0;
   display: flex;
+  position: relative;
 }
-.chart-render > * {
+.chart-render > :first-child {
   width: 100%;
   min-height: 0;
 }
@@ -289,5 +416,119 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
   align-items: center;
   justify-content: center;
   flex: 1;
+}
+
+/* Shortcuts button */
+.shortcuts-btn {
+  position: absolute;
+  bottom: 2.5rem;
+  right: 0.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.8);
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+}
+.shortcuts-btn:hover {
+  background: rgba(99, 102, 241, 0.1);
+  color: rgb(99, 102, 241);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+.shortcuts-btn-dark {
+  background: rgba(15, 15, 25, 0.7);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.35);
+}
+.shortcuts-btn-dark:hover {
+  background: rgba(99, 102, 241, 0.15);
+  color: rgb(165, 180, 252);
+}
+
+/* Shortcuts overlay */
+.shortcuts-overlay {
+  position: absolute;
+  bottom: 4.5rem;
+  right: 0.5rem;
+  z-index: 15;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(12px);
+  min-width: 160px;
+}
+.shortcuts-dark {
+  background: rgba(15, 15, 25, 0.95);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.shortcuts-title {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(0, 0, 0, 0.4);
+  margin-bottom: 0.375rem;
+}
+.shortcuts-dark .shortcuts-title {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.125rem 0;
+}
+
+.shortcut-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.375rem;
+  height: 1.25rem;
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.03);
+  font-size: 0.625rem;
+  font-weight: 600;
+  font-family: monospace;
+  color: rgba(0, 0, 0, 0.6);
+}
+.shortcuts-dark .shortcut-key {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.shortcut-desc {
+  font-size: 0.6875rem;
+  color: rgba(0, 0, 0, 0.6);
+}
+.shortcuts-dark .shortcut-desc {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
