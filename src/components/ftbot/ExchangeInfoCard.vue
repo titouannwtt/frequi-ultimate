@@ -293,10 +293,10 @@ const isDex = computed(() => info.value?.type?.includes('DEX') ?? false);
     <!-- Unknown exchange fallback -->
     <template v-if="!info">
       <div class="flex items-center gap-2 py-4">
-        <i-mdi-help-circle class="text-gray-400" style="font-size: 1.5rem" />
+        <i-mdi-help-circle class="text-gray-600 dark:text-gray-400" style="font-size: 1.5rem" />
         <div>
-          <div class="text-sm font-bold text-gray-200">{{ exchange || 'Unknown' }}</div>
-          <div class="text-gray-400 mt-1">{{ t('exchangeCard.exchangeInfoUnavailable') }}</div>
+          <div class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ exchange || 'Unknown' }}</div>
+          <div class="text-gray-600 dark:text-gray-400 mt-1">{{ t('exchangeCard.exchangeInfoUnavailable') }}</div>
         </div>
       </div>
     </template>
@@ -327,44 +327,44 @@ const isDex = computed(() => info.value?.type?.includes('DEX') ?? false);
       </div>
 
       <!-- Description -->
-      <div class="text-gray-300 mb-2.5 leading-relaxed" style="font-size: 0.95rem">
+      <div class="text-gray-700 dark:text-gray-300 mb-2.5 leading-relaxed" style="font-size: 0.95rem">
         {{ info.description }}
       </div>
 
       <!-- Key metrics grid -->
-      <div class="grid grid-cols-3 gap-2 mb-2.5 pb-2.5 border-b border-gray-700">
+      <div class="grid grid-cols-3 gap-2 mb-2.5 pb-2.5 border-b border-gray-300 dark:border-gray-700">
         <div class="flex flex-col items-center text-center">
-          <span class="text-gray-500" style="font-size: 0.95rem">{{ t('exchangeCard.founded') }}</span>
-          <span class="font-bold text-gray-200">{{ info.founded }}</span>
+          <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem">{{ t('exchangeCard.founded') }}</span>
+          <span class="font-bold text-gray-800 dark:text-gray-200">{{ info.founded }}</span>
         </div>
         <div class="flex flex-col items-center text-center">
-          <span class="text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.maxLeverage')">{{ t('exchangeCard.maxLeverage') }}</span>
+          <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.maxLeverage')">{{ t('exchangeCard.maxLeverage') }}</span>
           <span class="font-bold" :style="{ color: style.accent }">{{ info.maxLeverage }}</span>
         </div>
         <div class="flex flex-col items-center text-center">
-          <span class="text-gray-500" style="font-size: 0.95rem">{{ t('exchangeCard.token') }}</span>
-          <span class="font-bold text-gray-200">{{ info.token }}</span>
+          <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem">{{ t('exchangeCard.token') }}</span>
+          <span class="font-bold text-gray-800 dark:text-gray-200">{{ info.token }}</span>
         </div>
       </div>
 
       <!-- Fees -->
-      <div class="flex items-center gap-1 mb-1.5 text-gray-300 font-semibold">
+      <div class="flex items-center gap-1 mb-1.5 text-gray-700 dark:text-gray-300 font-semibold">
         <i-mdi-percent class="text-amber-400" style="font-size: 0.9rem" />
         {{ t('exchangeCard.fees') }}
       </div>
-      <div class="flex gap-4 mb-2.5 pb-2.5 border-b border-gray-700">
+      <div class="flex gap-4 mb-2.5 pb-2.5 border-b border-gray-300 dark:border-gray-700">
         <div class="flex gap-1.5 items-baseline">
-          <span class="text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.makerFee')">{{ t('exchangeCard.makerFee') }}</span>
+          <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.makerFee')">{{ t('exchangeCard.makerFee') }}</span>
           <span class="font-bold text-green-400">{{ info.makerFee }}</span>
         </div>
         <div class="flex gap-1.5 items-baseline">
-          <span class="text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.takerFee')">{{ t('exchangeCard.takerFee') }}</span>
+          <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.takerFee')">{{ t('exchangeCard.takerFee') }}</span>
           <span class="font-bold text-amber-400">{{ info.takerFee }}</span>
         </div>
       </div>
 
       <!-- Trading types -->
-      <div class="flex items-center gap-1 mb-1.5 text-gray-300 font-semibold">
+      <div class="flex items-center gap-1 mb-1.5 text-gray-700 dark:text-gray-300 font-semibold">
         <i-mdi-swap-horizontal class="text-blue-400" style="font-size: 0.9rem" />
         {{ t('exchangeCard.tradingTypes') }}
       </div>
@@ -378,11 +378,11 @@ const isDex = computed(() => info.value?.type?.includes('DEX') ?? false);
       </div>
 
       <!-- Freqtrade support -->
-      <div class="flex items-center gap-1 mb-1.5 text-gray-300 font-semibold">
+      <div class="flex items-center gap-1 mb-1.5 text-gray-700 dark:text-gray-300 font-semibold">
         <i-mdi-check-circle class="text-green-400" style="font-size: 0.9rem" />
         {{ t('exchangeCard.freqtradeSupport') }}
       </div>
-      <div class="flex flex-wrap gap-1 mb-2.5 pb-2.5 border-b border-gray-700">
+      <div class="flex flex-wrap gap-1 mb-2.5 pb-2.5 border-b border-gray-300 dark:border-gray-700">
         <span
           v-for="fs in info.freqtradeSupport"
           :key="fs"
@@ -396,12 +396,12 @@ const isDex = computed(() => info.value?.type?.includes('DEX') ?? false);
       <!-- KYC + HQ -->
       <div class="space-y-1 mb-2">
         <div class="flex justify-between">
-          <span class="text-gray-400" v-tooltip="t('tooltips.kycStatus')">{{ t('exchangeCard.kyc') }}</span>
-          <span class="text-gray-200 font-semibold">{{ info.kyc }}</span>
+          <span class="text-gray-600 dark:text-gray-400" v-tooltip="t('tooltips.kycStatus')">{{ t('exchangeCard.kyc') }}</span>
+          <span class="text-gray-800 dark:text-gray-200 font-semibold">{{ info.kyc }}</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-gray-400">{{ t('exchangeCard.hq') }}</span>
-          <span class="text-gray-200">{{ info.flag }} {{ info.headquarters }}</span>
+          <span class="text-gray-600 dark:text-gray-400">{{ t('exchangeCard.hq') }}</span>
+          <span class="text-gray-800 dark:text-gray-200">{{ info.flag }} {{ info.headquarters }}</span>
         </div>
       </div>
 

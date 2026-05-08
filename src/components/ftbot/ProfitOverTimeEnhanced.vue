@@ -518,7 +518,7 @@ const chartOptions = computed<EChartsOption>(() => {
       top: 4,
       right: '5%',
       textStyle: {
-        color: '#a0a0b0',
+        color: settingsStore.isDarkTheme ? '#a0a0b0' : '#555',
         fontSize: 11,
       },
       icon: 'roundRect',
@@ -530,7 +530,7 @@ const chartOptions = computed<EChartsOption>(() => {
       axisLine: { lineStyle: { color: 'rgba(100, 100, 140, 0.2)' } },
       axisTick: { lineStyle: { color: 'rgba(100, 100, 140, 0.2)' } },
       axisLabel: {
-        color: '#808098',
+        color: settingsStore.isDarkTheme ? '#808098' : '#555',
         fontSize: 10,
       },
       splitLine: {
@@ -546,7 +546,7 @@ const chartOptions = computed<EChartsOption>(() => {
         type: 'value',
         name: isPercentage ? t('profitEnhanced.profitPct') : t('profitEnhanced.profitAbs') + currencyLabel.value,
         nameTextStyle: {
-          color: '#808098',
+          color: settingsStore.isDarkTheme ? '#808098' : '#555',
           fontSize: 10,
         },
         splitLine: {
@@ -559,7 +559,7 @@ const chartOptions = computed<EChartsOption>(() => {
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
-          color: '#808098',
+          color: settingsStore.isDarkTheme ? '#808098' : '#555',
           fontSize: 10,
           formatter: (value: number) => {
             return isPercentage ? `${value.toFixed(1)}%` : formatPrice(value, 1);
@@ -637,7 +637,7 @@ watch(
           :class="
             selectedTimeframe === tf
               ? 'bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/40'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'
           "
           @click="selectedTimeframe = tf"
         >
@@ -645,7 +645,7 @@ watch(
         </button>
       </div>
 
-      <div class="w-px h-4 bg-gray-600/30"></div>
+      <div class="w-px h-4 bg-gray-300 dark:bg-gray-600/30"></div>
 
       <!-- View mode pills -->
       <div class="flex gap-0.5">
@@ -654,7 +654,7 @@ watch(
           :class="
             selectedViewMode === 'combined'
               ? 'bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/40'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'
           "
           :title="t('profitEnhanced.combinedMode')"
           @click="selectedViewMode = 'combined'"
@@ -666,7 +666,7 @@ watch(
           :class="
             selectedViewMode === 'perBot'
               ? 'bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/40'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'
           "
           :title="t('profitEnhanced.perBotMode')"
           @click="selectedViewMode = 'perBot'"
@@ -678,7 +678,7 @@ watch(
           :class="
             selectedViewMode === 'stacked'
               ? 'bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/40'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'
           "
           :title="t('profitEnhanced.stackedMode')"
           @click="selectedViewMode = 'stacked'"
@@ -687,7 +687,7 @@ watch(
         </button>
       </div>
 
-      <div class="w-px h-4 bg-gray-600/30"></div>
+      <div class="w-px h-4 bg-gray-300 dark:bg-gray-600/30"></div>
 
       <!-- Profit type toggle -->
       <div class="flex gap-0.5">
@@ -696,7 +696,7 @@ watch(
           :class="
             selectedProfitType === 'absolute'
               ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'
           "
           @click="selectedProfitType = 'absolute'"
         >
@@ -707,7 +707,7 @@ watch(
           :class="
             selectedProfitType === 'percentage'
               ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5'
           "
           @click="selectedProfitType = 'percentage'"
         >
@@ -718,7 +718,7 @@ watch(
       <!-- Spacer + export -->
       <div class="flex-1"></div>
       <button
-        class="px-1.5 py-0.5 text-[10px] text-gray-400 hover:text-gray-200 hover:bg-white/5 rounded transition-all cursor-pointer"
+        class="px-1.5 py-0.5 text-[10px] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-all cursor-pointer"
         :title="t('profitEnhanced.exportCSV')"
         @click="exportCSV"
       >
@@ -729,26 +729,26 @@ watch(
     <!-- Period stats strip -->
     <div class="flex flex-wrap gap-3 px-2 py-1 text-[10px] period-stats">
       <div class="flex items-center gap-1">
-        <span class="text-gray-500">{{ t('profitEnhanced.periodReturn') }}</span>
+        <span class="text-gray-600 dark:text-gray-500">{{ t('profitEnhanced.periodReturn') }}</span>
         <span
           :class="periodStats.periodReturn >= 0 ? 'text-emerald-400' : 'text-red-400'"
           class="font-semibold"
         >
           {{ formatPrice(periodStats.periodReturn, 2) }}
-          <span v-if="currencyLabel" class="text-gray-500 font-normal text-[0.6rem]">{{ currencyLabel.trim() }}</span>
-          <span class="text-gray-500 font-normal">({{ periodStats.periodReturnPct.toFixed(2) }}%)</span>
+          <span v-if="currencyLabel" class="text-gray-600 dark:text-gray-500 font-normal text-[0.6rem]">{{ currencyLabel.trim() }}</span>
+          <span class="text-gray-600 dark:text-gray-500 font-normal">({{ periodStats.periodReturnPct.toFixed(2) }}%)</span>
         </span>
       </div>
       <div class="flex items-center gap-1">
-        <span class="text-gray-500">{{ t('profitEnhanced.bestDay') }}</span>
+        <span class="text-gray-600 dark:text-gray-500">{{ t('profitEnhanced.bestDay') }}</span>
         <span class="text-emerald-400 font-semibold">{{ formatPrice(periodStats.bestDay, 2) }}</span>
       </div>
       <div class="flex items-center gap-1">
-        <span class="text-gray-500">{{ t('profitEnhanced.worstDay') }}</span>
+        <span class="text-gray-600 dark:text-gray-500">{{ t('profitEnhanced.worstDay') }}</span>
         <span class="text-red-400 font-semibold">{{ formatPrice(periodStats.worstDay, 2) }}</span>
       </div>
       <div class="flex items-center gap-1">
-        <span class="text-gray-500">{{ t('profitEnhanced.avgDaily') }}</span>
+        <span class="text-gray-600 dark:text-gray-500">{{ t('profitEnhanced.avgDaily') }}</span>
         <span
           :class="periodStats.avgDaily >= 0 ? 'text-emerald-400' : 'text-red-400'"
           class="font-semibold"
@@ -757,8 +757,8 @@ watch(
         </span>
       </div>
       <div class="flex items-center gap-1">
-        <span class="text-gray-500">{{ t('profitEnhanced.trades') }}</span>
-        <span class="text-gray-300 font-semibold">{{ periodStats.totalTrades }}</span>
+        <span class="text-gray-600 dark:text-gray-500">{{ t('profitEnhanced.trades') }}</span>
+        <span class="text-gray-700 dark:text-gray-300 font-semibold">{{ periodStats.totalTrades }}</span>
       </div>
     </div>
 
@@ -774,16 +774,16 @@ watch(
       />
       <div
         v-else
-        class="flex items-center justify-center h-full text-gray-500 text-sm"
+        class="flex items-center justify-center h-full text-gray-600 dark:text-gray-500 text-sm"
       >
         {{ t('profitEnhanced.noData') }}
       </div>
     </div>
 
     <!-- Key metrics bar -->
-    <div class="flex flex-wrap justify-center gap-4 px-2 py-1.5 metrics-bar border-t border-gray-700/30">
+    <div class="flex flex-wrap justify-center gap-4 px-2 py-1.5 metrics-bar border-t border-gray-300 dark:border-gray-700/30">
       <div v-if="keyMetrics.sharpe !== null" class="flex items-center gap-1 text-[10px]">
-        <span class="text-gray-500 uppercase tracking-wide">{{ t('profitEnhanced.sharpe') }}</span>
+        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{ t('profitEnhanced.sharpe') }}</span>
         <span
           class="font-bold"
           :class="(keyMetrics.sharpe ?? 0) >= 1 ? 'text-emerald-400' : (keyMetrics.sharpe ?? 0) >= 0 ? 'text-amber-400' : 'text-red-400'"
@@ -792,16 +792,16 @@ watch(
         </span>
       </div>
       <div v-if="keyMetrics.maxDrawdownPct !== null" class="flex items-center gap-1 text-[10px]">
-        <span class="text-gray-500 uppercase tracking-wide">{{ t('profitEnhanced.maxDD') }}</span>
+        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{ t('profitEnhanced.maxDD') }}</span>
         <span class="font-bold text-red-400">
           {{ ((keyMetrics.maxDrawdownPct ?? 0) * 100).toFixed(1) }}%
         </span>
-        <span v-if="keyMetrics.maxDrawdown" class="text-gray-500">
+        <span v-if="keyMetrics.maxDrawdown" class="text-gray-600 dark:text-gray-500">
           ({{ formatPrice(keyMetrics.maxDrawdown, 2) }})
         </span>
       </div>
       <div v-if="keyMetrics.winRate !== null" class="flex items-center gap-1 text-[10px]">
-        <span class="text-gray-500 uppercase tracking-wide">{{ t('profitEnhanced.winRate') }}</span>
+        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{ t('profitEnhanced.winRate') }}</span>
         <span
           class="font-bold"
           :class="(keyMetrics.winRate ?? 0) >= 60 ? 'text-emerald-400' : (keyMetrics.winRate ?? 0) >= 50 ? 'text-amber-400' : 'text-red-400'"
@@ -810,7 +810,7 @@ watch(
         </span>
       </div>
       <div v-if="keyMetrics.profitFactor !== null" class="flex items-center gap-1 text-[10px]">
-        <span class="text-gray-500 uppercase tracking-wide">{{ t('profitEnhanced.profitFactor') }}</span>
+        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{ t('profitEnhanced.profitFactor') }}</span>
         <span
           class="font-bold"
           :class="(keyMetrics.profitFactor ?? 0) >= 1.5 ? 'text-emerald-400' : (keyMetrics.profitFactor ?? 0) >= 1 ? 'text-amber-400' : 'text-red-400'"

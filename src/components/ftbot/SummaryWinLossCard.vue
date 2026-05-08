@@ -99,7 +99,7 @@ function winrateColor(val: number): string {
 <template>
   <div class="glass-card" style="width: 540px">
     <!-- ═══ HEADER ═══ -->
-    <div class="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
+    <div class="flex items-center justify-between mb-3 pb-2 border-b border-black/5 dark:border-white/5">
       <div class="flex items-center gap-2">
         <i-mdi-trophy class="text-yellow-400 text-base" />
         <span class="font-semibold text-gray-100 text-sm">
@@ -114,7 +114,7 @@ function winrateColor(val: number): string {
     </div>
 
     <!-- ═══ SECTION 1: Overall Winrate Donut ═══ -->
-    <div class="flex items-center justify-around mb-3 pb-3 border-b border-white/5">
+    <div class="flex items-center justify-around mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="flex flex-col items-center">
         <svg width="110" height="110" viewBox="0 0 110 110">
           <circle cx="55" cy="55" :r="donutRadius" fill="none" stroke="rgba(255,255,255,0.06)" :stroke-width="donutStroke" />
@@ -146,21 +146,21 @@ function winrateColor(val: number): string {
         <div class="flex items-center gap-2">
           <span class="w-3 h-3 rounded-full bg-green-500" />
           <span class="text-green-400 font-bold text-lg">{{ totalWins }}</span>
-          <span class="text-gray-500 text-[0.85rem]">wins</span>
+          <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]">wins</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-3 h-3 rounded-full bg-red-500" />
           <span class="text-red-400 font-bold text-lg">{{ totalLosses }}</span>
-          <span class="text-gray-500 text-[0.85rem]">losses</span>
+          <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]">losses</span>
         </div>
-        <div class="text-gray-500 text-[0.8rem] pt-1 border-t border-white/5">
+        <div class="text-gray-600 dark:text-gray-500 text-[0.8rem] pt-1 border-t border-black/5 dark:border-white/5">
           {{ t('summaryWinLoss.outOfTrades', { count: totalTrades }) }}
         </div>
       </div>
     </div>
 
     <!-- ═══ SECTION 2: Per-bot Breakdown (horizontal bars sorted by winrate) ═══ -->
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-sort-descending class="text-blue-400" />
         <span>{{ t('summaryWinLoss.overallWinrate') }}</span>
@@ -172,11 +172,11 @@ function winrateColor(val: number): string {
           class="bot-bar-row"
         >
           <div class="flex items-center justify-between mb-0.5">
-            <span class="text-gray-300 text-[0.85rem] font-medium truncate" style="max-width: 140px">
+            <span class="text-gray-700 dark:text-gray-300 text-[0.85rem] font-medium truncate" style="max-width: 140px">
               {{ entry.name }}
             </span>
             <div class="flex items-center gap-2">
-              <span class="text-gray-500 text-[0.85rem]">
+              <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]">
                 {{ entry.wins }}W / {{ entry.losses }}L
               </span>
               <span
@@ -207,7 +207,7 @@ function winrateColor(val: number): string {
     </div>
 
     <!-- ═══ SECTION 3: Best / Worst Performers ═══ -->
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-podium class="text-green-400" />
         <span>{{ t('summaryWinLoss.bestPerformer') }} / {{ t('summaryWinLoss.worstPerformer') }}</span>
@@ -217,14 +217,14 @@ function winrateColor(val: number): string {
           <span class="stat-label">{{ t('summaryWinLoss.bestPerformer') }}</span>
           <span class="stat-value">
             <span class="text-green-400 font-bold">{{ bestBot.name }}</span>
-            <span class="text-gray-500 ml-1">{{ bestBot.winrate.toFixed(1) }}%</span>
+            <span class="text-gray-600 dark:text-gray-500 ml-1">{{ bestBot.winrate.toFixed(1) }}%</span>
           </span>
         </div>
         <div v-if="worstBot" class="stat-row">
           <span class="stat-label">{{ t('summaryWinLoss.worstPerformer') }}</span>
           <span class="stat-value">
             <span :class="worstBot.winrate < 45 ? 'text-red-400' : 'text-amber-400'" class="font-bold">{{ worstBot.name }}</span>
-            <span class="text-gray-500 ml-1">{{ worstBot.winrate.toFixed(1) }}%</span>
+            <span class="text-gray-600 dark:text-gray-500 ml-1">{{ worstBot.winrate.toFixed(1) }}%</span>
           </span>
         </div>
       </div>

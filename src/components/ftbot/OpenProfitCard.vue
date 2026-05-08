@@ -216,7 +216,7 @@ function profitColor(val: number | null | undefined): string {
   if (val === undefined || val === null) return '';
   if (val > 0) return 'text-green-400';
   if (val < 0) return 'text-red-400';
-  return 'text-gray-400';
+  return 'text-gray-600 dark:text-gray-400';
 }
 </script>
 
@@ -227,7 +227,7 @@ function profitColor(val: number | null | undefined): string {
     <div v-if="openTrades.length === 0" class="flex flex-col items-center justify-center py-8 gap-2">
       <i-mdi-check-circle class="text-3xl text-green-400/50" />
       <div class="text-sm text-gray-200">{{ t('emptyStates.noOpenPositions') }}</div>
-      <div class="text-xs text-gray-400 text-center">{{ t('emptyStates.noOpenPositionsDesc') }}</div>
+      <div class="text-xs text-gray-600 dark:text-gray-400 text-center">{{ t('emptyStates.noOpenPositionsDesc') }}</div>
     </div>
 
     <template v-else>
@@ -236,7 +236,7 @@ function profitColor(val: number | null | undefined): string {
       <i-mdi-chart-line class="text-blue-400" />
       <span>{{ t('openProfitCard.unrealizedPnl') }}</span>
     </div>
-    <div class="flex items-center justify-around mb-3 pb-3 border-b border-white/5">
+    <div class="flex items-center justify-around mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <!-- Large PnL number -->
       <div class="flex flex-col items-center">
         <div class="text-2xl font-bold" :class="profitColor(totalUnrealizedPnl)">
@@ -272,7 +272,7 @@ function profitColor(val: number | null | undefined): string {
     </div>
 
     <!-- ═══ SECTION 2: Position Details ═══ -->
-    <div v-if="openTrades.length > 0" class="mb-3 pb-3 border-b border-white/5">
+    <div v-if="openTrades.length > 0" class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-format-list-bulleted class="text-blue-400" />
         <span>{{ t('openProfitCard.positionDetails') }}</span>
@@ -297,7 +297,7 @@ function profitColor(val: number | null | undefined): string {
             {{ trade.leverage }}x
           </span>
           <!-- Entry → Current -->
-          <span class="text-[0.8rem] text-gray-500">
+          <span class="text-[0.8rem] text-gray-600 dark:text-gray-500">
             {{ formatNumber(trade.open_rate, 2) }}
             <span class="text-gray-600">-></span>
             {{ formatNumber(trade.current_rate ?? trade.open_rate, 2) }}
@@ -308,7 +308,7 @@ function profitColor(val: number | null | undefined): string {
             {{ formatPercent(trade.profit_ratio ?? 0, 1) }}
           </span>
           <!-- Profit abs -->
-          <span class="text-gray-500 text-[0.85rem]" style="min-width: 48px; text-align: right">
+          <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]" style="min-width: 48px; text-align: right">
             {{ formatPriceCurrency(trade.total_profit_abs ?? trade.profit_abs ?? 0, currency, 2) }}
           </span>
           <!-- Exit value -->
@@ -325,7 +325,7 @@ function profitColor(val: number | null | undefined): string {
                 'duration-dot--red': tradeDurationStatus(trade) === 'red',
               }"
             />
-            <span class="text-gray-500 text-[0.85rem]" style="min-width: 36px; text-align: right">
+            <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]" style="min-width: 36px; text-align: right">
               {{ humanDuration(tradeDurationMs(trade)) }}
             </span>
           </span>
@@ -343,12 +343,12 @@ function profitColor(val: number | null | undefined): string {
         </div>
       </div>
     </div>
-    <div v-else class="mb-3 pb-3 border-b border-white/5 text-center text-gray-500 py-3 text-[0.8rem]">
+    <div v-else class="mb-3 pb-3 border-b border-black/5 dark:border-white/5 text-center text-gray-600 dark:text-gray-500 py-3 text-[0.8rem]">
       {{ t('openProfitCard.noOpenTrades') }}
     </div>
 
     <!-- ═══ SECTION 3: Risk Analysis ═══ -->
-    <div v-if="openTrades.length > 0" class="mb-3 pb-3 border-b border-white/5">
+    <div v-if="openTrades.length > 0" class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-shield-alert class="text-amber-400" />
         <span>{{ t('openProfitCard.riskAnalysis') }}</span>
@@ -402,7 +402,7 @@ function profitColor(val: number | null | undefined): string {
             v-tooltip.top="`${seg.pair}: ${formatPercent(seg.profitRatio, 1)}`"
           />
         </div>
-        <div class="flex justify-between mt-0.5 text-[0.8rem] text-gray-500">
+        <div class="flex justify-between mt-0.5 text-[0.8rem] text-gray-600 dark:text-gray-500">
           <span>{{ t('openProfitCard.mostLoss') }}</span>
           <span>{{ t('openProfitCard.mostGain') }}</span>
         </div>
@@ -439,7 +439,7 @@ function profitColor(val: number | null | undefined): string {
           </div>
           <!-- Mini bar chart for each open trade -->
           <div v-for="trade in sortedTrades" :key="'hist-' + trade.trade_id" class="flex items-center gap-1.5 mt-1">
-            <span class="text-[0.85rem] text-gray-400 truncate" style="min-width: 50px; max-width: 60px">
+            <span class="text-[0.85rem] text-gray-600 dark:text-gray-400 truncate" style="min-width: 50px; max-width: 60px">
               {{ trade.pair.replace(/\/.*/, '') }}
             </span>
             <div class="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden relative">
@@ -455,7 +455,7 @@ function profitColor(val: number | null | undefined): string {
                 :style="{ left: `${((historicalDurations.median - historicalDurations.min) / (historicalDurations.max - historicalDurations.min)) * 100}%` }"
               />
             </div>
-            <span class="text-[0.8rem] text-gray-500" style="min-width: 32px; text-align: right">
+            <span class="text-[0.8rem] text-gray-600 dark:text-gray-500" style="min-width: 32px; text-align: right">
               {{ humanDuration(tradeDurationMs(trade)) }}
             </span>
           </div>
