@@ -32,6 +32,7 @@
     "favico.js": "^0.3.10",
     "html-to-image": "^1.11.13",
     "humanize-duration": "^3.33.2",
+    "monaco-editor": "^0.55.1",
     "pinia": "3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "primevue": "^4.5.5",
