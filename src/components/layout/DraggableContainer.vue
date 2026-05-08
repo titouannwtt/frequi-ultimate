@@ -55,9 +55,17 @@ const effectiveZoom = computed(() => {
   return Math.round(currentZoom.value * viewportScale.value);
 });
 
-const zoomStyle = computed(() =>
-  effectiveZoom.value !== 100 ? { zoom: `${effectiveZoom.value}%` } : undefined,
-);
+const zoomStyle = computed(() => {
+  if (effectiveZoom.value === 100) return undefined;
+  const s = effectiveZoom.value / 100;
+  const pct = (100 / s).toFixed(4);
+  return {
+    transform: `scale(${s})`,
+    transformOrigin: 'top left',
+    width: `${pct}%`,
+    height: `${pct}%`,
+  };
+});
 </script>
 
 <template>
