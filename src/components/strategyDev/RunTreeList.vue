@@ -16,17 +16,19 @@ interface RunGroup {
   loading: boolean;
 }
 
-const typeOrder = [RunType.hyperopt, RunType.wfa, RunType.backtest];
+const typeOrder = [RunType.live, RunType.hyperopt, RunType.wfa, RunType.backtest];
 const typeLabels: Record<RunType, string> = {
   [RunType.hyperopt]: 'Hyperopt',
   [RunType.wfa]: 'Walk-Forward',
   [RunType.backtest]: 'Backtest',
+  [RunType.live]: 'Live Bots',
 };
 
 const typeToParam: Record<RunType, string> = {
   [RunType.hyperopt]: 'hyperopt',
   [RunType.wfa]: 'wfa',
   [RunType.backtest]: 'backtest',
+  [RunType.live]: 'live',
 };
 
 const groups = computed<RunGroup[]>(() => {

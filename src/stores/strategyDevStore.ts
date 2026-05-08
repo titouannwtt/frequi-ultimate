@@ -7,6 +7,8 @@ import type {
   SnapshotDiffResponse,
 } from '@/types';
 import { RunType } from '@/types';
+import { buildLiveBotAnalytics } from '@/utils/liveBotAnalytics';
+import type { LiveBotInput } from '@/utils/liveBotAnalytics';
 
 interface CachedRunData {
   detail: Record<string, unknown> | null;
@@ -58,9 +60,36 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     return useApi(loginInfo, botStore.selectedBot).api;
   }
 
+  const liveBotEntries = computed<RunListEntry[]>(() => {
+    const entries: RunListEntry[] = [];
+    for (const [botId, subStore] of Object.entries(botStore.botStores)) {
+      if (!subStore.isBotOnline || !subStore.isTrading) continue;
+      const state = subStore.botState;
+      const desc = botStore.availableBots[botId];
+      const profit = subStore.profitAll?.all;
+      const firstTradeTs = profit?.first_trade_timestamp;
+      entries.push({
+        run_type: RunType.live,
+        filename: `live:${botId}`,
+        strategy: state?.strategy || desc?.botName || botId,
+        timestamp: firstTradeTs ? firstTradeTs / 1000 : 9999999999,
+        has_metadata: false,
+        total_profit_pct: profit?.profit_all_percent,
+        total_trades: (subStore.trades?.length ?? 0) + (subStore.openTrades?.length ?? 0),
+        botId,
+        exchange: state?.exchange || '',
+        dry_run: state?.dry_run ?? false,
+        open_trades_count: subStore.openTrades?.length ?? 0,
+      });
+    }
+    return entries;
+  });
+
   const allRunsFlat = computed<RunListEntry[]>(() => {
-    if (!allRuns.value) return [];
-    return [...allRuns.value.backtests, ...allRuns.value.hyperopts, ...allRuns.value.wfa_runs].sort(
+    const serverRuns = allRuns.value
+      ? [...allRuns.value.backtests, ...allRuns.value.hyperopts, ...allRuns.value.wfa_runs]
+      : [];
+    return [...serverRuns, ...liveBotEntries.value].sort(
       (a, b) => b.timestamp - a.timestamp,
     );
   });
@@ -436,14 +465,24 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     selectedRun.value = run;
     diffResult.value = null;
     if (run) {
-      const cached = runCache.get(run.filename);
-      hyperoptDetail.value = cached?.detail && run.run_type === RunType.hyperopt ? cached.detail : null;
-      hyperoptAnalysis.value = cached?.analysis ?? null;
-      wfaDetail.value = cached?.detail && run.run_type === RunType.wfa ? cached.detail : null;
-      backtestSnapshot.value = cached?.snapshot ?? null;
-      backtestAnalysis.value = null;
-      compareRun.value = null;
-      compareDetail.value = null;
+      if (run.run_type === RunType.live && run.botId) {
+        hyperoptDetail.value = null;
+        hyperoptAnalysis.value = null;
+        wfaDetail.value = null;
+        backtestSnapshot.value = null;
+        compareRun.value = null;
+        compareDetail.value = null;
+        buildLiveBotAnalyticsForRun(run.botId);
+      } else {
+        const cached = runCache.get(run.filename);
+        hyperoptDetail.value = cached?.detail && run.run_type === RunType.hyperopt ? cached.detail : null;
+        hyperoptAnalysis.value = cached?.analysis ?? null;
+        wfaDetail.value = cached?.detail && run.run_type === RunType.wfa ? cached.detail : null;
+        backtestSnapshot.value = cached?.snapshot ?? null;
+        backtestAnalysis.value = null;
+        compareRun.value = null;
+        compareDetail.value = null;
+      }
     } else {
       hyperoptDetail.value = null;
       hyperoptAnalysis.value = null;
@@ -457,6 +496,37 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
       compareRun.value = null;
       compareDetail.value = null;
     }
+  }
+
+  function buildLiveBotAnalyticsForRun(botId: string) {
+    const subStore = botStore.botStores[botId];
+    if (!subStore) {
+      backtestAnalysis.value = null;
+      return;
+    }
+    const desc = botStore.availableBots[botId];
+    const input: LiveBotInput = {
+      botId,
+      botName: desc?.botName || botId,
+      closedTrades: subStore.trades?.filter((t) => !t.is_open) ?? [],
+      openTrades: subStore.openTrades ?? [],
+      profitAll: subStore.profitAll,
+      performanceStats: subStore.performanceStats ?? [],
+      entryStats: subStore.entryStats ?? [],
+      exitStats: subStore.exitStats ?? [],
+      mixTagStats: subStore.mixTagStats ?? [],
+      dailyStats: subStore.dailyStats,
+      weeklyStats: subStore.weeklyStats,
+      monthlyStats: subStore.monthlyStats,
+      balanceHistory: subStore.balanceHistory,
+      botState: subStore.botState,
+      balance: {
+        total: subStore.balance?.total,
+        starting_capital: subStore.balance?.starting_capital,
+        stake: subStore.botState?.stake_currency,
+      },
+    };
+    backtestAnalysis.value = buildLiveBotAnalytics(input);
   }
 
   async function fetchAdvancedAnalytics(filename: string) {
@@ -578,6 +648,7 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     groupBy,
     sidebarWidth,
     allRunsFlat,
+    liveBotEntries,
     filteredRuns,
     favoriteRuns,
     strategies,
@@ -594,6 +665,7 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     updateMetadata,
     fetchGlossary,
     selectRun,
+    buildLiveBotAnalyticsForRun,
     compareRun,
     compareDetail,
     setCompareRun,

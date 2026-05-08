@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import { RunType } from '@/types';
 import { useBtcBenchmark } from '@/composables/useBtcBenchmark';
 
 const { t } = useI18n();
 const store = useStrategyDevStore();
 const loading = ref(false);
 
+const isLiveBot = computed(() => store.selectedRun?.run_type === RunType.live);
+
 onMounted(async () => {
   const run = store.selectedRun;
   if (!run || store.backtestAnalysis) return;
+  if (run.run_type === RunType.live) return;
   loading.value = true;
   try {
     await store.fetchBacktestAnalysis(run.filename, run.strategy);
@@ -30,16 +34,20 @@ const regimeTimeline = computed(() => {
 });
 
 const activeSection = ref('summary');
-const sections = computed(() => [
-  { id: 'summary', label: t('strategyDev.btNavSummary'), icon: 'i-mdi-view-dashboard' },
-  { id: 'equity', label: t('strategyDev.btNavEquity'), icon: 'i-mdi-chart-line' },
-  { id: 'performance', label: t('strategyDev.btNavPerformance'), icon: 'i-mdi-chart-bar' },
-  { id: 'trades', label: t('strategyDev.btNavTrades'), icon: 'i-mdi-swap-horizontal' },
-  { id: 'risk', label: t('strategyDev.btNavRisk'), icon: 'i-mdi-shield-alert' },
-  { id: 'consistency', label: t('strategyDev.btNavConsistency'), icon: 'i-mdi-pulse' },
-  { id: 'pairs', label: t('strategyDev.btNavPairs'), icon: 'i-mdi-chart-donut' },
-  { id: 'config', label: t('strategyDev.btNavConfig'), icon: 'i-mdi-cog' },
-]);
+const sections = computed(() => {
+  const all = [
+    { id: 'summary', label: t('strategyDev.btNavSummary'), icon: 'i-mdi-view-dashboard' },
+    { id: 'equity', label: t('strategyDev.btNavEquity'), icon: 'i-mdi-chart-line' },
+    { id: 'performance', label: t('strategyDev.btNavPerformance'), icon: 'i-mdi-chart-bar' },
+    { id: 'trades', label: t('strategyDev.btNavTrades'), icon: 'i-mdi-swap-horizontal' },
+    { id: 'risk', label: t('strategyDev.btNavRisk'), icon: 'i-mdi-shield-alert' },
+    { id: 'consistency', label: t('strategyDev.btNavConsistency'), icon: 'i-mdi-pulse' },
+    { id: 'pairs', label: t('strategyDev.btNavPairs'), icon: 'i-mdi-chart-donut' },
+    { id: 'config', label: t('strategyDev.btNavConfig'), icon: 'i-mdi-cog' },
+  ];
+  if (isLiveBot.value) return all.filter((s) => s.id !== 'config');
+  return all;
+});
 
 function scrollToSection(id: string) {
   activeSection.value = id;
@@ -92,45 +100,49 @@ function fmtNum(v: unknown, decimals = 2): string {
       <!-- SCORECARD -->
       <div v-if="summary" class="scorecard">
         <div class="scorecard-badge">
-          <i-mdi-test-tube class="w-3.5 h-3.5" />
-          {{ t('strategyDev.btScorecardTitle') }}
+          <i-mdi-access-point v-if="isLiveBot" class="w-3.5 h-3.5" />
+          <i-mdi-test-tube v-else class="w-3.5 h-3.5" />
+          {{ isLiveBot ? t('strategyDev.liveScorecardTitle') : t('strategyDev.btScorecardTitle') }}
           <span v-if="summary.timeframe" class="scorecard-tag">{{ summary.timeframe }}</span>
           <span v-if="summary.backtest_days" class="scorecard-tag">{{ summary.backtest_days }}d</span>
+          <span v-if="isLiveBot && data?.simulated_close_count" class="scorecard-tag scorecard-tag--sim">
+            {{ data.simulated_close_count }} simulated
+          </span>
         </div>
         <div class="scorecard-metrics">
           <div class="sc-metric">
             <span class="sc-label">Profit</span>
-            <span class="sc-value" :class="Number(summary.profit_total ?? data.epoch_info?.total_profit) >= 0 ? 'sc-pos' : 'sc-neg'">
+            <span class="sc-value" :class="Number(summary.profit_total ?? (data.epoch_info as any)?.total_profit) >= 0 ? 'sc-pos' : 'sc-neg'">
               {{ fmtPct(summary.profit_total ?? (data.epoch_info as any)?.total_profit) }}
             </span>
           </div>
           <div class="sc-metric">
             <span class="sc-label">Trades</span>
-            <span class="sc-value">{{ (data.epoch_info as any)?.total_trades ?? '—' }}</span>
+            <span class="sc-value">{{ summary.total_trades ?? (data.epoch_info as any)?.total_trades ?? '—' }}</span>
           </div>
           <div class="sc-metric">
             <span class="sc-label">Drawdown</span>
-            <span class="sc-value sc-neg">{{ fmtPct((data.epoch_info as any)?.max_drawdown) }}</span>
+            <span class="sc-value sc-neg">{{ fmtPct(summary.max_drawdown_account ?? (data.epoch_info as any)?.max_drawdown) }}</span>
           </div>
           <div class="sc-metric">
             <span class="sc-label">Sharpe</span>
-            <span class="sc-value">{{ fmtNum((data.epoch_info as any)?.sharpe) }}</span>
+            <span class="sc-value">{{ fmtNum(summary.sharpe ?? (data.epoch_info as any)?.sharpe) }}</span>
           </div>
           <div class="sc-metric">
             <span class="sc-label">Sortino</span>
-            <span class="sc-value">{{ fmtNum((data.epoch_info as any)?.sortino) }}</span>
+            <span class="sc-value">{{ fmtNum(summary.sortino ?? (data.epoch_info as any)?.sortino) }}</span>
           </div>
           <div class="sc-metric">
             <span class="sc-label">Win Rate</span>
             <span class="sc-value">
-              {{ typeof (data.epoch_info as any)?.winrate === 'number' && (data.epoch_info as any).winrate <= 1
-                ? ((data.epoch_info as any).winrate * 100).toFixed(1)
-                : fmtNum((data.epoch_info as any)?.winrate, 1) }}%
+              {{ typeof (summary.winrate ?? (data.epoch_info as any)?.winrate) === 'number' && (summary.winrate ?? (data.epoch_info as any)?.winrate) <= 1
+                ? (((summary.winrate ?? (data.epoch_info as any)?.winrate) as number) * 100).toFixed(1)
+                : fmtNum(summary.winrate ?? (data.epoch_info as any)?.winrate, 1) }}%
             </span>
           </div>
           <div class="sc-metric">
             <span class="sc-label">PF</span>
-            <span class="sc-value">{{ fmtNum((data.epoch_info as any)?.profit_factor) }}</span>
+            <span class="sc-value">{{ fmtNum(summary.profit_factor ?? (data.epoch_info as any)?.profit_factor) }}</span>
           </div>
           <div v-if="summary.final_balance" class="sc-metric">
             <span class="sc-label">Balance</span>
@@ -672,8 +684,8 @@ function fmtNum(v: unknown, decimals = 2): string {
         <ChartEmptyState v-else />
       </section>
 
-      <!-- SECTION 8: CONFIG -->
-      <section id="bt-analyse-config" class="analyse-section">
+      <!-- SECTION 8: CONFIG (hidden for live bots) -->
+      <section v-if="!isLiveBot" id="bt-analyse-config" class="analyse-section">
         <div class="section-header">
           <span class="section-num">8</span>
           <h3>{{ t('strategyDev.btNavConfig') }}</h3>
@@ -722,6 +734,11 @@ function fmtNum(v: unknown, decimals = 2): string {
   background: rgba(137, 180, 250, 0.12);
   padding: 0.0625rem 0.375rem;
   border-radius: 0.25rem;
+}
+
+.scorecard-tag--sim {
+  color: var(--sd-warning);
+  background: rgba(249, 226, 175, 0.12);
 }
 
 .scorecard-metrics {

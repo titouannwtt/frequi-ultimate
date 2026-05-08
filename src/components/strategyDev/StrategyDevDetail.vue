@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { RunType } from '@/types';
+import type { JobStartRequest } from '@/types';
 
 const { t } = useI18n();
 const store = useStrategyDevStore();
+
+const emit = defineEmits<{
+  reconstitute: [prefill: Partial<JobStartRequest>];
+}>();
 
 const activeTab = ref('overview');
 const detailLoading = ref(false);
@@ -11,6 +16,7 @@ const detailLoading = ref(false);
 const isHyperopt = computed(() => store.selectedRun?.run_type === RunType.hyperopt);
 const isWfa = computed(() => store.selectedRun?.run_type === RunType.wfa);
 const isBacktest = computed(() => store.selectedRun?.run_type === RunType.backtest);
+const isLive = computed(() => store.selectedRun?.run_type === RunType.live);
 
 // ── Scroll container (.sd-main) ──
 const scrollEl = ref<HTMLElement | null>(null);
@@ -21,6 +27,7 @@ onMounted(() => {
 });
 
 function validTabsForType(type: RunType | undefined): string[] {
+  if (type === RunType.live) return ['overview', 'analyse'];
   const common = ['overview', 'params', 'config', 'source', 'command', 'compare'];
   if (type === RunType.hyperopt) return [...common, 'analyse'];
   if (type === RunType.backtest) return [...common, 'analyse', 'graphiques'];
@@ -69,18 +76,22 @@ watch(
     const restoredTab = saved?.tab && validTabs.includes(saved.tab) ? saved.tab : 'overview';
     activeTab.value = restoredTab;
 
-    const isCached = store.runCache.has(run.filename);
-    if (!isCached) detailLoading.value = true;
-    try {
-      if (run.run_type === RunType.hyperopt) {
-        await store.fetchHyperoptDetail(run.filename);
-      } else if (run.run_type === RunType.wfa) {
-        await store.fetchWfaDetail(run.filename);
-      } else if (run.run_type === RunType.backtest) {
-        await store.fetchBacktestSnapshot(run.filename, run.strategy);
-      }
-    } finally {
+    if (run.run_type === RunType.live) {
       detailLoading.value = false;
+    } else {
+      const isCached = store.runCache.has(run.filename);
+      if (!isCached) detailLoading.value = true;
+      try {
+        if (run.run_type === RunType.hyperopt) {
+          await store.fetchHyperoptDetail(run.filename);
+        } else if (run.run_type === RunType.wfa) {
+          await store.fetchWfaDetail(run.filename);
+        } else if (run.run_type === RunType.backtest) {
+          await store.fetchBacktestSnapshot(run.filename, run.strategy);
+        }
+      } finally {
+        detailLoading.value = false;
+      }
     }
 
     restoreScroll(run.filename, restoredTab);
@@ -106,7 +117,7 @@ watch(
           <i-mdi-information-outline class="w-4 h-4" />
           {{ t('strategyDev.tabOverview') }}
         </Tab>
-        <Tab v-if="isHyperopt || isBacktest" value="analyse" class="sd-tab">
+        <Tab v-if="isHyperopt || isBacktest || isLive" value="analyse" class="sd-tab">
           <i-mdi-chart-areaspline class="w-4 h-4" />
           {{ t('strategyDev.tabAnalyse') }}
         </Tab>
@@ -118,23 +129,23 @@ watch(
           <i-mdi-chart-line class="w-4 h-4" />
           {{ t('strategyDev.tabCharts') }}
         </Tab>
-        <Tab value="params" class="sd-tab">
+        <Tab v-if="!isLive" value="params" class="sd-tab">
           <i-mdi-tune class="w-4 h-4" />
           {{ t('strategyDev.tabParameters') }}
         </Tab>
-        <Tab value="config" class="sd-tab">
+        <Tab v-if="!isLive" value="config" class="sd-tab">
           <i-mdi-cog class="w-4 h-4" />
           {{ t('strategyDev.tabConfig') }}
         </Tab>
-        <Tab value="source" class="sd-tab">
+        <Tab v-if="!isLive" value="source" class="sd-tab">
           <i-mdi-code-braces class="w-4 h-4" />
           {{ t('strategyDev.tabSourceCode') }}
         </Tab>
-        <Tab value="command" class="sd-tab">
+        <Tab v-if="!isLive" value="command" class="sd-tab">
           <i-mdi-console class="w-4 h-4" />
           {{ t('strategyDev.tabCommand') }}
         </Tab>
-        <Tab value="compare" class="sd-tab">
+        <Tab v-if="!isLive" value="compare" class="sd-tab">
           <i-mdi-compare-horizontal class="w-4 h-4" />
           {{ t('strategyDev.tabCompare') }}
         </Tab>
@@ -146,15 +157,16 @@ watch(
             <div key="overview" class="sd-panel-enter">
               <HyperoptOverviewPanel v-if="isHyperopt" />
               <WfaOverviewPanel v-else-if="isWfa" />
+              <LiveBotOverviewPanel v-else-if="isLive" @reconstitute="(p) => emit('reconstitute', p)" />
               <OverviewPanel v-else />
             </div>
           </Transition>
         </TabPanel>
-        <TabPanel v-if="isHyperopt || isBacktest" value="analyse">
+        <TabPanel v-if="isHyperopt || isBacktest || isLive" value="analyse">
           <Transition name="sd-tab" mode="out-in">
             <div key="analyse" class="sd-panel-enter">
               <HyperoptAnalysePanel v-if="isHyperopt" />
-              <BacktestAnalysePanel v-else-if="isBacktest" />
+              <BacktestAnalysePanel v-else-if="isBacktest || isLive" />
             </div>
           </Transition>
         </TabPanel>
@@ -172,35 +184,35 @@ watch(
             </div>
           </Transition>
         </TabPanel>
-        <TabPanel value="params">
+        <TabPanel v-if="!isLive" value="params">
           <Transition name="sd-tab" mode="out-in">
             <div key="params" class="sd-panel-enter">
               <ParamPanel />
             </div>
           </Transition>
         </TabPanel>
-        <TabPanel value="config">
+        <TabPanel v-if="!isLive" value="config">
           <Transition name="sd-tab" mode="out-in">
             <div key="config" class="sd-panel-enter">
               <ConfigPanel />
             </div>
           </Transition>
         </TabPanel>
-        <TabPanel value="source">
+        <TabPanel v-if="!isLive" value="source">
           <Transition name="sd-tab" mode="out-in">
             <div key="source" class="sd-panel-enter">
               <SourcePanel />
             </div>
           </Transition>
         </TabPanel>
-        <TabPanel value="command">
+        <TabPanel v-if="!isLive" value="command">
           <Transition name="sd-tab" mode="out-in">
             <div key="command" class="sd-panel-enter">
-              <CommandPanel />
+              <CommandPanel @reconstitute="(p) => emit('reconstitute', p)" />
             </div>
           </Transition>
         </TabPanel>
-        <TabPanel value="compare">
+        <TabPanel v-if="!isLive" value="compare">
           <Transition name="sd-tab" mode="out-in">
             <div key="compare" class="sd-panel-enter">
               <ComparePanel />

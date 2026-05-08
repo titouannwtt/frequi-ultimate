@@ -91,6 +91,10 @@ const chartOptions = computed(() => {
         },
         splitLine: { show: false },
       },
+      {
+        type: 'value',
+        show: false,
+      },
     ],
     series: [
       {
@@ -120,13 +124,12 @@ const chartOptions = computed(() => {
         name: t('strategyDev.metricTrades'),
         type: 'bar',
         data: tradeCount,
-        yAxisIndex: 0,
+        yAxisIndex: 2,
         itemStyle: {
           color: 'rgba(137, 180, 250, 0.15)',
           borderRadius: [2, 2, 0, 0],
         },
         barMaxWidth: 8,
-        show: false,
       },
     ],
   };
