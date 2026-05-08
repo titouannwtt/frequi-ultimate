@@ -111,40 +111,62 @@ onMounted(() => {
       <p v-if="botStore.activeBot.balance.note">
         <strong>{{ botStore.activeBot.balance.note }}</strong>
       </p>
-      <DataTable :value="balanceCurrencies" footer>
+      <DataTable size="small" :value="balanceCurrencies" scrollable scroll-height="flex" footer>
+        <Column field="currency" :header="t('balance.currency')" sortable>
+          <template #body="{ data }">
+            <span class="font-semibold text-xs">{{ data.currency }}</span>
+          </template>
+        </Column>
         <Column
-          v-for="field in tableFields"
-          :key="field.field"
-          :field="field.field"
-          :header="field.header"
-          ><template v-if="field.asCurrency" #body="{ data }">
-            {{ formatCurrency(data[field.field]) }}
-          </template></Column
+          :field="showBotOnly && canUseBotBalance ? 'bot_owned' : 'free'"
+          :header="t('balance.available')"
+          sortable
         >
+          <template #body="{ data }">
+            <span class="font-mono text-xs">
+              {{ formatCurrency(data[showBotOnly && canUseBotBalance ? 'bot_owned' : 'free']) }}
+            </span>
+          </template>
+        </Column>
+        <Column
+          :field="showBotOnly && canUseBotBalance ? 'est_stake_bot' : 'est_stake'"
+          :header="`${t('balance.in')} ${botStore.activeBot.balance.stake}`"
+          sortable
+        >
+          <template #body="{ data }">
+            <span
+              class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold"
+              :class="balanceValueBgClass(data[showBotOnly && canUseBotBalance ? 'est_stake_bot' : 'est_stake'])"
+            >
+              {{ formatCurrency(data[showBotOnly && canUseBotBalance ? 'est_stake_bot' : 'est_stake']) }}
+            </span>
+          </template>
+        </Column>
         <ColumnGroup type="footer">
           <Row>
-            <Column :footer="t('balance.total')" f />
+            <Column :footer="t('balance.total')" />
             <Column>
               <template #footer>
                 <span
-                  class="font-italic"
+                  class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold"
+                  :class="botStore.activeBot.balance.starting_capital_ratio >= 0 ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'"
                   :title="`${t('balance.increaseOverCapital')} ${formatCurrency(
                     botStore.activeBot.balance.starting_capital,
                   )} ${botStore.activeBot.balance.stake}`"
                 >
-                  {{ formatPercent(botStore.activeBot.balance.starting_capital_ratio) }}
+                  {{ botStore.activeBot.balance.starting_capital_ratio >= 0 ? '+' : '' }}{{ formatPercent(botStore.activeBot.balance.starting_capital_ratio) }}
                 </span>
               </template>
             </Column>
             <Column>
               <template #footer>
-                <strong>
+                <span class="font-mono text-xs font-bold">
                   {{
                     showBotOnly && canUseBotBalance
                       ? formatCurrency(botStore.activeBot.balance.total_bot)
                       : formatCurrency(botStore.activeBot.balance.total)
                   }}
-                </strong>
+                </span>
               </template>
             </Column>
           </Row>
@@ -153,3 +175,12 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<script lang="ts">
+function balanceValueBgClass(val: number): string {
+  if (val > 100) return 'bg-green-500/15';
+  if (val > 10) return 'bg-green-500/10';
+  if (val > 0) return 'bg-green-500/5';
+  return 'bg-surface-500/10';
+}
+</script>
