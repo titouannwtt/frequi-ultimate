@@ -1,9 +1,20 @@
 <script setup lang="ts">
 import { RunType } from '@/types';
+import type { JobStartRequest } from '@/types';
 import { useI18n } from 'vue-i18n';
+import {
+  runTypeToJobType,
+  buildPrefillFromBacktest,
+  buildPrefillFromHyperopt,
+  buildPrefillFromWfa,
+} from '@/utils/reconstitute';
 
 const { t } = useI18n();
 const store = useStrategyDevStore();
+
+const emit = defineEmits<{
+  reconstitute: [prefill: Partial<JobStartRequest>];
+}>();
 
 const run = computed(() => store.selectedRun);
 const copied = ref(false);
@@ -169,6 +180,32 @@ async function copySegment(idx: number, text: string) {
   copiedSegment.value = idx;
   setTimeout(() => (copiedSegment.value = null), 1500);
 }
+
+const reconstitutionJobType = computed(() =>
+  run.value ? runTypeToJobType(run.value.run_type) : null,
+);
+
+const reconstitutionLabel = computed(() => {
+  if (run.value?.run_type === RunType.backtest) return t('strategyDev.reconstitute_backtest');
+  if (run.value?.run_type === RunType.hyperopt) return t('strategyDev.reconstitute_hyperopt');
+  if (run.value?.run_type === RunType.wfa) return t('strategyDev.reconstitute_wfa');
+  return '';
+});
+
+function handleReconstitute() {
+  if (!run.value || !reconstitutionJobType.value) return;
+
+  let prefill: Partial<JobStartRequest>;
+  if (run.value.run_type === RunType.backtest) {
+    prefill = buildPrefillFromBacktest(run.value, store.backtestSnapshot);
+  } else if (run.value.run_type === RunType.hyperopt) {
+    prefill = buildPrefillFromHyperopt(run.value, store.hyperoptDetail);
+  } else {
+    prefill = buildPrefillFromWfa(run.value, store.wfaDetail);
+  }
+
+  emit('reconstitute', prefill);
+}
 </script>
 
 <template>
@@ -261,6 +298,15 @@ async function copySegment(idx: number, text: string) {
 
     <div v-else class="cmd-empty">
       {{ t('strategyDev.noCommandAvailable') }}
+    </div>
+
+    <!-- Reconstitute button -->
+    <div v-if="reconstitutionJobType && (segments.length > 0 || displayCommand)" class="cmd-reconstitute">
+      <button class="cmd-reconstitute-btn" @click="handleReconstitute">
+        <i-mdi-replay class="w-4 h-4" />
+        {{ reconstitutionLabel }}
+      </button>
+      <span class="cmd-reconstitute-hint">{{ t('strategyDev.reconstitute_hint') }}</span>
     </div>
   </div>
 </template>
@@ -482,6 +528,41 @@ async function copySegment(idx: number, text: string) {
   font-size: var(--sd-text-sm);
   padding: 16px 0;
   text-align: center;
+}
+
+/* ── Reconstitute ── */
+.cmd-reconstitute {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 6px;
+  border-top: 1px solid var(--sd-border-subtle);
+}
+
+.cmd-reconstitute-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--sd-radius-md);
+  border: 1px solid rgba(137, 180, 250, 0.25);
+  background: rgba(137, 180, 250, 0.08);
+  color: #89b4fa;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.cmd-reconstitute-btn:hover {
+  background: rgba(137, 180, 250, 0.15);
+  border-color: rgba(137, 180, 250, 0.4);
+}
+
+.cmd-reconstitute-hint {
+  font-size: 11px;
+  color: var(--sd-overlay);
 }
 
 /* ── Transition reuse ── */
