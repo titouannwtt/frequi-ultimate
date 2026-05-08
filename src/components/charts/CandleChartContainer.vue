@@ -46,20 +46,24 @@ const datasetColumns = computed(() =>
 const strategyName = computed(() => props.strategy || dataset.value?.strategy || '');
 
 const showPlotConfigModal = ref(false);
+const focusSubplot = ref('');
+
 function showConfigurator() {
+  focusSubplot.value = '';
   showPlotConfigModal.value = !showPlotConfigModal.value;
+}
+
+function openConfiguratorOnSubplot(name: string) {
+  focusSubplot.value = name;
+  showPlotConfigModal.value = true;
 }
 
 const showSettingsPanel = ref(false);
 
-const isSinglePairView = computed(() => botStore.activeBot.plotMultiPairs.length === 1);
-
 watch(
   () => botStore.activeBot.selectedPair,
   () => {
-    if (!settingsStore.multiPairSelection) {
-      botStore.activeBot.plotMultiPairs = [botStore.activeBot.selectedPair];
-    }
+    botStore.activeBot.plotMultiPairs = [botStore.activeBot.selectedPair];
   },
 );
 
@@ -116,19 +120,6 @@ watch(
   { immediate: true },
 );
 
-watch(
-  () => settingsStore.multiPairSelection,
-  () => {
-    if (
-      !settingsStore.multiPairSelection &&
-      botStore.activeBot.plotMultiPairs.length > 1 &&
-      botStore.activeBot.plotMultiPairs[0]
-    ) {
-      botStore.activeBot.plotMultiPairs = [botStore.activeBot.plotMultiPairs[0]];
-    }
-  },
-);
-
 const filteredTrades = computed(() => {
   return props.trades;
 });
@@ -142,13 +133,14 @@ const singlePairSelection = computed({
   },
 });
 
-// Active toggle count for badge
 const activeOptionsCount = computed(() => {
   let count = 0;
   if (settingsStore.useHeikinAshiCandles) count++;
   if (settingsStore.showMarkArea) count++;
   if (settingsStore.hideSimultaneousEntryExit) count++;
-  if (settingsStore.multiPairSelection) count++;
+  if (!settingsStore.chartVolumeVisible) count++;
+  if (settingsStore.chartShowLiquidation) count++;
+  if (settingsStore.chartShowInitialStoploss) count++;
   return count;
 });
 </script>
@@ -165,18 +157,7 @@ const activeOptionsCount = computed(() => {
         </span>
         <span class="tf-badge">{{ timeframe || '' }}</span>
 
-        <MultiSelect
-          v-if="settingsStore.multiPairSelection"
-          v-model="botStore.activeBot.plotMultiPairs"
-          class="chart-pair-select"
-          :options="availablePairs"
-          optionlabel=""
-          :placeholder="t('charts.selectPairs')"
-          size="small"
-          filter
-        />
         <Select
-          v-else
           v-model="singlePairSelection"
           class="chart-pair-select"
           :options="availablePairs"
@@ -224,41 +205,89 @@ const activeOptionsCount = computed(() => {
 
     <!-- ── Settings panel (collapsible) ── -->
     <Transition name="settings-slide">
-      <div v-if="showSettingsPanel" class="settings-panel">
-        <label class="toggle-option">
-          <span class="toggle-track" :class="{ on: settingsStore.multiPairSelection }" @click="settingsStore.multiPairSelection = !settingsStore.multiPairSelection">
-            <span class="toggle-thumb" />
-          </span>
-          <span>{{ t('charts.multiPair') }}</span>
-        </label>
-        <label class="toggle-option">
-          <span class="toggle-track" :class="{ on: settingsStore.hideSimultaneousEntryExit }" @click="settingsStore.hideSimultaneousEntryExit = !settingsStore.hideSimultaneousEntryExit">
-            <span class="toggle-thumb" />
-          </span>
-          <span>{{ t('charts.hideSimultaneous') }}</span>
-        </label>
-        <label class="toggle-option">
-          <span class="toggle-track" :class="{ on: settingsStore.showMarkArea }" @click="settingsStore.showMarkArea = !settingsStore.showMarkArea">
-            <span class="toggle-thumb" />
-          </span>
-          <span>{{ t('charts.showChartAreas') }}</span>
-        </label>
-        <label class="toggle-option">
-          <span class="toggle-track" :class="{ on: settingsStore.useHeikinAshiCandles }" @click="settingsStore.useHeikinAshiCandles = !settingsStore.useHeikinAshiCandles">
-            <span class="toggle-thumb" />
-          </span>
-          <span>{{ t('charts.heikinAshi') }}</span>
-        </label>
+      <div v-if="showSettingsPanel" class="settings-panel-wrap">
+        <div class="settings-panel">
+          <label class="toggle-option">
+            <span class="toggle-track" :class="{ on: settingsStore.hideSimultaneousEntryExit }" @click="settingsStore.hideSimultaneousEntryExit = !settingsStore.hideSimultaneousEntryExit">
+              <span class="toggle-thumb" />
+            </span>
+            <span>{{ t('charts.hideSimultaneous') }}</span>
+          </label>
+          <label class="toggle-option">
+            <span class="toggle-track" :class="{ on: settingsStore.showMarkArea }" @click="settingsStore.showMarkArea = !settingsStore.showMarkArea">
+              <span class="toggle-thumb" />
+            </span>
+            <span>{{ t('charts.showChartAreas') }}</span>
+          </label>
+          <label class="toggle-option">
+            <span class="toggle-track" :class="{ on: settingsStore.useHeikinAshiCandles }" @click="settingsStore.useHeikinAshiCandles = !settingsStore.useHeikinAshiCandles">
+              <span class="toggle-thumb" />
+            </span>
+            <span>{{ t('charts.heikinAshi') }}</span>
+          </label>
+        </div>
+        <div class="settings-panel">
+          <label class="toggle-option">
+            <span class="toggle-track" :class="{ on: settingsStore.chartLegendVisible }" @click="settingsStore.chartLegendVisible = !settingsStore.chartLegendVisible">
+              <span class="toggle-thumb" />
+            </span>
+            <span>Légende</span>
+          </label>
+          <label class="toggle-option">
+            <span class="toggle-track" :class="{ on: settingsStore.chartLegendRealtimeValues }" @click="settingsStore.chartLegendRealtimeValues = !settingsStore.chartLegendRealtimeValues">
+              <span class="toggle-thumb" />
+            </span>
+            <span>Valeurs temps réel</span>
+          </label>
+          <label class="toggle-option">
+            <span class="toggle-track" :class="{ on: settingsStore.chartVolumeVisible }" @click="settingsStore.chartVolumeVisible = !settingsStore.chartVolumeVisible">
+              <span class="toggle-thumb" />
+            </span>
+            <span>Volume</span>
+          </label>
+          <label class="toggle-option">
+            <span class="toggle-track" :class="{ on: settingsStore.chartShowLiquidation }" @click="settingsStore.chartShowLiquidation = !settingsStore.chartShowLiquidation">
+              <span class="toggle-thumb" />
+            </span>
+            <span>Zone liquidation</span>
+          </label>
+          <label class="toggle-option">
+            <span class="toggle-track" :class="{ on: settingsStore.chartShowLeverage }" @click="settingsStore.chartShowLeverage = !settingsStore.chartShowLeverage">
+              <span class="toggle-thumb" />
+            </span>
+            <span>Levier</span>
+          </label>
+          <label class="toggle-option">
+            <span class="toggle-track" :class="{ on: settingsStore.chartShowInitialStoploss }" @click="settingsStore.chartShowInitialStoploss = !settingsStore.chartShowInitialStoploss">
+              <span class="toggle-thumb" />
+            </span>
+            <span>SL initial</span>
+          </label>
+          <label class="toggle-option">
+            <span class="toggle-track" :class="{ on: settingsStore.chartKeyboardShortcuts }" @click="settingsStore.chartKeyboardShortcuts = !settingsStore.chartKeyboardShortcuts">
+              <span class="toggle-thumb" />
+            </span>
+            <span>Raccourcis clavier</span>
+          </label>
+        </div>
+        <div class="settings-panel">
+          <div class="settings-inline-select">
+            <span class="settings-select-label">Crosshair</span>
+            <Select
+              v-model="settingsStore.chartCrosshairStyle"
+              :options="['cross', 'vertical', 'horizontal', 'none']"
+              size="small"
+              class="settings-select"
+            />
+          </div>
+        </div>
       </div>
     </Transition>
 
     <!-- ── Chart area ── -->
     <div
       v-if="botStore.activeBot.plotMultiPairs?.length > 0"
-      :class="{
-        'chart-area-single': isSinglePairView,
-        'chart-area-multi': !isSinglePairView,
-      }"
+      class="chart-area-single"
     >
       <SingleCandleChartContainer
         v-for="pair in botStore.activeBot.plotMultiPairs"
@@ -269,8 +298,9 @@ const activeOptionsCount = computed(() => {
         :timeframe="timeframe"
         :trades="filteredTrades"
         :slider-position="props.sliderPosition"
-        :is-single-pair-view="isSinglePairView"
+        :is-single-pair-view="true"
         @refresh-data="refresh()"
+        @subplot-click="openConfiguratorOnSubplot"
       />
     </div>
     <div v-else class="chart-empty">
@@ -286,7 +316,7 @@ const activeOptionsCount = computed(() => {
       ok-only
       hide-backdrop
     >
-      <PlotConfigurator :is-visible="showPlotConfigModal" :columns="datasetColumns" />
+      <PlotConfigurator :is-visible="showPlotConfigModal" :columns="datasetColumns" :focus-subplot="focusSubplot" />
     </Dialog>
   </div>
 </template>
@@ -440,6 +470,33 @@ const activeOptionsCount = computed(() => {
   background: rgba(255, 255, 255, 0.015);
 }
 
+.settings-panel-wrap {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  background: rgba(0, 0, 0, 0.015);
+}
+.ft-dark-theme .settings-panel-wrap {
+  border-bottom-color: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.settings-inline-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  color: #6b6560;
+}
+.ft-dark-theme .settings-inline-select {
+  color: rgba(255, 255, 255, 0.55);
+}
+.settings-select-label {
+  font-weight: 500;
+}
+.settings-select {
+  max-width: 120px;
+}
+
 .settings-slide-enter-active,
 .settings-slide-leave-active {
   transition: all 0.2s ease;
@@ -454,7 +511,7 @@ const activeOptionsCount = computed(() => {
 }
 .settings-slide-enter-to,
 .settings-slide-leave-from {
-  max-height: 3rem;
+  max-height: 10rem;
   opacity: 1;
 }
 
@@ -515,18 +572,6 @@ const activeOptionsCount = computed(() => {
   min-height: 0;
   width: 100%;
 }
-.chart-area-multi {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-}
-@media (min-width: 1024px) {
-  .chart-area-multi {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 .chart-empty {
   flex: 1;
   display: flex;
