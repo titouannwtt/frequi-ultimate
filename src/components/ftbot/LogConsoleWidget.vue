@@ -506,7 +506,7 @@ onUnmounted(() => resizeObserver.value?.disconnect());
             >
               <span
                 class="inline-block w-1.5 h-1.5 rounded-full mr-0.5"
-                :class="bot.online ? 'bg-green-500' : 'bg-gray-500'"
+                :class="bot.online ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-500'"
               />
               {{ bot.name }}
             </button>
@@ -791,7 +791,7 @@ onUnmounted(() => resizeObserver.value?.disconnect());
           :key="status.botId"
           class="flex items-center gap-2 py-0.5 text-[10px]"
         >
-          <span class="w-2 h-2 rounded-full bg-gray-500 animate-pulse flex-shrink-0" />
+          <span class="w-2 h-2 rounded-full bg-gray-200 dark:bg-gray-500 animate-pulse flex-shrink-0" />
           <span class="text-surface-300">{{ status.botName }}</span>
           <span class="text-surface-600 text-[9px] ml-auto truncate max-w-[200px]" :title="status.lastError ?? undefined">{{ status.lastError }}</span>
         </div>

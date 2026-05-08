@@ -152,7 +152,7 @@ function barColor(index: number): { from: string; to: string } {
 function profitColor(val: number): string {
   if (val > 0) return 'text-green-400';
   if (val < 0) return 'text-red-400';
-  return 'text-gray-400';
+  return 'text-gray-600 dark:text-gray-400';
 }
 
 function barGradientClass(val: number): string {
@@ -168,7 +168,7 @@ function barWidthPercent(val: number): number {
 <template>
   <div class="glass-card" style="width: 560px">
     <!-- ═══ HEADER ═══ -->
-    <div class="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
+    <div class="flex items-center justify-between mb-3 pb-2 border-b border-black/5 dark:border-white/5">
       <div class="flex items-center gap-2">
         <i-mdi-chart-box v-if="mode === 'open'" class="text-blue-400 text-base" />
         <i-mdi-chart-line v-else class="text-green-400 text-base" />
@@ -185,7 +185,7 @@ function barWidthPercent(val: number): number {
     </div>
 
     <!-- ═══ BOT RANKING (horizontal bars) ═══ -->
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-sort-descending class="text-blue-400" />
         <span>{{ t('summaryCard.botRanking') }}</span>
@@ -197,20 +197,20 @@ function barWidthPercent(val: number): number {
           class="bot-bar-row"
         >
           <div class="flex items-center justify-between mb-0.5">
-            <span class="text-gray-300 text-[0.85rem] font-medium truncate" style="max-width: 140px">
+            <span class="text-gray-700 dark:text-gray-300 text-[0.85rem] font-medium truncate" style="max-width: 140px">
               {{ entry.name }}
             </span>
             <div class="flex items-center gap-2">
               <span
                 v-if="mode === 'closed' && totalProfit !== 0"
-                class="text-gray-500 text-[0.85rem]"
+                class="text-gray-600 dark:text-gray-500 text-[0.85rem]"
               >
                 {{ formatPercent(Math.abs(entry.profit) / Math.abs(totalProfit), 0) }}
                 {{ t('summaryCard.ofTotal') }}
               </span>
               <span
                 v-if="mode === 'closed'"
-                class="text-gray-400 text-[0.85rem]"
+                class="text-gray-600 dark:text-gray-400 text-[0.85rem]"
               >
                 ROI {{ formatPercent(entry.roi, 1) }}
               </span>
@@ -239,7 +239,7 @@ function barWidthPercent(val: number): number {
         <div class="section-header">
           <i-mdi-shield-alert class="text-amber-400" />
           <span>{{ t('summaryCard.capitalAtRisk') }}</span>
-          <span class="ml-auto text-gray-200 font-bold text-[0.8rem]">
+          <span class="ml-auto text-gray-800 dark:text-gray-200 font-bold text-[0.8rem]">
             {{ formatPriceCurrency(totalStakeAtRisk, currency, 0) }}
           </span>
         </div>
@@ -265,7 +265,7 @@ function barWidthPercent(val: number): number {
             <text x="40" y="38" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 0.95rem">
               {{ sortedEntries.length }}
             </text>
-            <text x="40" y="48" text-anchor="middle" class="fill-gray-500" style="font-size: 0.4rem">
+            <text x="40" y="48" text-anchor="middle" class="fill-gray-600 dark:fill-gray-500" style="font-size: 0.4rem">
               {{ t('summaryCards.bots') }}
             </text>
           </svg>
@@ -280,8 +280,8 @@ function barWidthPercent(val: number): number {
                 class="w-2 h-2 rounded-full flex-shrink-0"
                 :style="{ background: barColor(idx).from }"
               />
-              <span class="text-gray-400 truncate" style="max-width: 100px">{{ entry.name }}</span>
-              <span class="ml-auto text-gray-200">
+              <span class="text-gray-600 dark:text-gray-400 truncate" style="max-width: 100px">{{ entry.name }}</span>
+              <span class="ml-auto text-gray-800 dark:text-gray-200">
                 {{ formatPriceCurrency(entry.stakeInOpenTrades, entry.stakeCurrency, 0) }}
               </span>
             </div>
@@ -292,7 +292,7 @@ function barWidthPercent(val: number): number {
 
     <!-- ═══ CLOSED MODE: Performance Comparison ═══ -->
     <template v-if="mode === 'closed'">
-      <div class="mb-3 pb-3 border-b border-white/5">
+      <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
         <div class="section-header">
           <i-mdi-podium class="text-green-400" />
           <span>{{ t('summaryCard.performanceComparison') }}</span>
@@ -302,14 +302,14 @@ function barWidthPercent(val: number): number {
             <span class="stat-label" v-tooltip.top="t('tooltips.bestBot')">{{ t('summaryCard.bestBot') }}</span>
             <span class="stat-value">
               <span class="text-green-400 font-bold">{{ bestBot.name }}</span>
-              <span class="text-gray-500 ml-1">{{ formatPercent(bestBot.roi, 1) }}</span>
+              <span class="text-gray-600 dark:text-gray-500 ml-1">{{ formatPercent(bestBot.roi, 1) }}</span>
             </span>
           </div>
           <div v-if="worstBot" class="stat-row">
             <span class="stat-label" v-tooltip.top="t('tooltips.worstBot')">{{ t('summaryCard.worstBot') }}</span>
             <span class="stat-value">
               <span class="text-red-400 font-bold">{{ worstBot.name }}</span>
-              <span class="text-gray-500 ml-1">{{ formatPercent(worstBot.roi, 1) }}</span>
+              <span class="text-gray-600 dark:text-gray-500 ml-1">{{ formatPercent(worstBot.roi, 1) }}</span>
             </span>
           </div>
           <div class="stat-row">
@@ -339,7 +339,7 @@ function barWidthPercent(val: number): number {
             :key="'wr-' + entry.botId"
             class="flex items-center gap-2"
           >
-            <span class="text-[0.8rem] text-gray-400 truncate" style="min-width: 70px; max-width: 100px">
+            <span class="text-[0.8rem] text-gray-600 dark:text-gray-400 truncate" style="min-width: 70px; max-width: 100px">
               {{ entry.name }}
             </span>
             <div class="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
@@ -348,7 +348,7 @@ function barWidthPercent(val: number): number {
                 :style="{ width: `${entry.winrate}%` }"
               />
             </div>
-            <span class="text-[0.8rem] text-gray-200 font-bold" style="min-width: 32px; text-align: right">
+            <span class="text-[0.8rem] text-gray-800 dark:text-gray-200 font-bold" style="min-width: 32px; text-align: right">
               {{ entry.winrate.toFixed(0) }}%
             </span>
           </div>

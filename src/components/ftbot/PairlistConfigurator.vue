@@ -87,7 +87,7 @@ if (pairlistStore.whitelist.length > 0) {
         v-for="pairlist in availablePairlists"
         :key="pairlist.name"
         :class="{
-          'no-drag text-gray-500 hover:cursor-default':
+          'no-drag text-gray-600 dark:text-gray-500 hover:cursor-default':
             pairlistStore.config.pairlists.length === 0 && !pairlist.is_pairlist_generator,
         }"
         class="pairlist flex text-start items-center py-2 px-3 hover:cursor-grab"

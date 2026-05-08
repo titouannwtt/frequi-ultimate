@@ -209,7 +209,7 @@ function profitColor(val: number | null | undefined): string {
   if (val === undefined || val === null) return '';
   if (val > 0) return 'text-green-400';
   if (val < 0) return 'text-red-400';
-  return 'text-gray-400';
+  return 'text-gray-600 dark:text-gray-400';
 }
 
 const tradesInDrawdown = computed(() => {
@@ -228,8 +228,8 @@ const sortedTrades = computed(() => {
     <!-- Empty state: no trading activity at all -->
     <div v-if="!hasAnyTradingActivity" class="flex flex-col items-center justify-center py-8 gap-2">
       <i-mdi-chart-line class="text-3xl text-blue-400/40" />
-      <div class="text-sm text-gray-200">{{ t('emptyStates.noTradingActivity') }}</div>
-      <div class="text-xs text-gray-400 text-center">{{ t('emptyStates.noTradingActivityDesc') }}</div>
+      <div class="text-sm text-gray-800 dark:text-gray-200">{{ t('emptyStates.noTradingActivity') }}</div>
+      <div class="text-xs text-gray-600 dark:text-gray-400 text-center">{{ t('emptyStates.noTradingActivityDesc') }}</div>
     </div>
 
     <template v-else>
@@ -238,7 +238,7 @@ const sortedTrades = computed(() => {
       <i-mdi-view-dashboard class="text-blue-400" />
       <span>{{ t('tradesInfoCard.positionOverview') }}</span>
     </div>
-    <div class="flex items-center justify-around mb-3 pb-3 border-b border-white/5">
+    <div class="flex items-center justify-around mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <!-- Capacity Ring -->
       <div class="flex flex-col items-center">
         <svg width="116" height="116" viewBox="0 0 116 116">
@@ -260,7 +260,7 @@ const sortedTrades = computed(() => {
           <text x="58" y="54" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 0.85rem">
             {{ capacityLabel }}
           </text>
-          <text x="58" y="66" text-anchor="middle" class="fill-gray-500" style="font-size: 0.7rem">
+          <text x="58" y="66" text-anchor="middle" class="fill-gray-600 dark:fill-gray-500" style="font-size: 0.7rem">
             {{ t('tradesInfoCard.slots') }}
           </text>
         </svg>
@@ -287,7 +287,7 @@ const sortedTrades = computed(() => {
           <text x="58" y="54" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 0.8rem">
             {{ formatNumber(totalStakeAllocated, 0) }}
           </text>
-          <text x="58" y="66" text-anchor="middle" class="fill-gray-500" style="font-size: 0.6rem">
+          <text x="58" y="66" text-anchor="middle" class="fill-gray-600 dark:fill-gray-500" style="font-size: 0.6rem">
             {{ currency }}
           </text>
         </svg>
@@ -295,7 +295,7 @@ const sortedTrades = computed(() => {
     </div>
 
     <!-- ═══ SECTION 2: Current Positions ═══ -->
-    <div v-if="openTrades.length > 0" class="mb-3 pb-3 border-b border-white/5">
+    <div v-if="openTrades.length > 0" class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-format-list-bulleted class="text-blue-400" />
         <span>{{ t('tradesInfoCard.currentPositions') }}</span>
@@ -321,7 +321,7 @@ const sortedTrades = computed(() => {
             v-tooltip.top="tradeDurationTooltip(trade)"
           />
           <!-- Pair -->
-          <span class="font-semibold text-gray-200 truncate" style="min-width: 60px; max-width: 75px">
+          <span class="font-semibold text-gray-800 dark:text-gray-200 truncate" style="min-width: 60px; max-width: 75px">
             {{ trade.pair.replace(/\/.*/, '') }}
           </span>
           <!-- Direction badge -->
@@ -334,11 +334,11 @@ const sortedTrades = computed(() => {
             {{ formatPercent(trade.profit_ratio ?? 0, 1) }}
           </span>
           <!-- Profit abs -->
-          <span class="text-gray-500 text-[0.85rem]" style="min-width: 50px; text-align: right">
+          <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]" style="min-width: 50px; text-align: right">
             {{ formatPriceCurrency(trade.total_profit_abs ?? trade.profit_abs ?? 0, currency, 2) }}
           </span>
           <!-- Duration -->
-          <span class="text-gray-500 text-[0.85rem]" style="min-width: 42px; text-align: right">
+          <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]" style="min-width: 42px; text-align: right">
             {{ humanDuration(tradeDurationMs(trade)) }}
           </span>
           <!-- Stake -->
@@ -348,12 +348,12 @@ const sortedTrades = computed(() => {
         </div>
       </div>
     </div>
-    <div v-else class="mb-3 pb-3 border-b border-white/5 text-center text-gray-500 py-3 text-[0.8rem]">
+    <div v-else class="mb-3 pb-3 border-b border-black/5 dark:border-white/5 text-center text-gray-600 dark:text-gray-500 py-3 text-[0.8rem]">
       {{ t('tradesInfoCard.noOpenPositions') }}
     </div>
 
     <!-- ═══ SECTION 3: Duration Analysis ═══ -->
-    <div v-if="openTrades.length > 0" class="mb-3 pb-3 border-b border-white/5">
+    <div v-if="openTrades.length > 0" class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-timer-sand class="text-amber-400" />
         <span>{{ t('tradesInfoCard.durationAnalysis') }}</span>
@@ -389,7 +389,7 @@ const sortedTrades = computed(() => {
           :key="'bar-' + trade.trade_id"
           class="flex items-center gap-1.5"
         >
-          <span class="text-[0.8rem] text-gray-500 truncate" style="min-width: 42px; max-width: 50px">
+          <span class="text-[0.8rem] text-gray-600 dark:text-gray-500 truncate" style="min-width: 42px; max-width: 50px">
             {{ trade.pair.replace(/\/.*/, '') }}
           </span>
           <div class="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden relative">
@@ -414,7 +414,7 @@ const sortedTrades = computed(() => {
     </div>
 
     <!-- ═══ SECTION 4: Capital Exposure ═══ -->
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-wallet class="text-green-400" />
         <span>{{ t('tradesInfoCard.capitalExposure') }}</span>
@@ -437,17 +437,17 @@ const sortedTrades = computed(() => {
       <div class="flex gap-3 mb-2 text-[0.85rem]">
         <div class="flex items-center gap-1">
           <span class="w-2 h-2 rounded-full bg-green-500" />
-          <span class="text-gray-400">{{ t('tradesInfoCard.winning') }}</span>
-          <span class="text-gray-200">{{ formatPriceCurrency(winningStake, currency, 0) }}</span>
+          <span class="text-gray-600 dark:text-gray-400">{{ t('tradesInfoCard.winning') }}</span>
+          <span class="text-gray-800 dark:text-gray-200">{{ formatPriceCurrency(winningStake, currency, 0) }}</span>
         </div>
         <div class="flex items-center gap-1">
           <span class="w-2 h-2 rounded-full bg-red-500" />
-          <span class="text-gray-400">{{ t('tradesInfoCard.losing') }}</span>
-          <span class="text-gray-200">{{ formatPriceCurrency(losingStake, currency, 0) }}</span>
+          <span class="text-gray-600 dark:text-gray-400">{{ t('tradesInfoCard.losing') }}</span>
+          <span class="text-gray-800 dark:text-gray-200">{{ formatPriceCurrency(losingStake, currency, 0) }}</span>
         </div>
         <div class="flex items-center gap-1">
           <span class="w-2 h-2 rounded-full bg-gray-600" />
-          <span class="text-gray-400">{{ t('tradesInfoCard.free') }}</span>
+          <span class="text-gray-600 dark:text-gray-400">{{ t('tradesInfoCard.free') }}</span>
         </div>
       </div>
       <div class="space-y-0.5">
@@ -463,14 +463,14 @@ const sortedTrades = computed(() => {
           <span class="stat-label" v-tooltip="t('tooltips.totalStakeLocked')">{{ t('tradesInfoCard.largestPosition') }}</span>
           <span class="stat-value">
             {{ largestPosition.pair.replace(/\/.*/, '') }}
-            <span class="text-gray-500 ml-1">{{ formatPriceCurrency(largestPosition.stake_amount, currency, 0) }}</span>
+            <span class="text-gray-600 dark:text-gray-500 ml-1">{{ formatPriceCurrency(largestPosition.stake_amount, currency, 0) }}</span>
           </span>
         </div>
       </div>
     </div>
 
     <!-- ═══ SECTION 5: Trading Rhythm ═══ -->
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-metronome class="text-purple-400" />
         <span>{{ t('tradesInfoCard.tradingRhythm') }}</span>
@@ -526,13 +526,13 @@ const sortedTrades = computed(() => {
       <div class="flex justify-between">
         <span class="text-[0.85rem]">
           <span class="text-green-400 font-bold">{{ wins }}</span>
-          <span class="text-gray-500 ml-0.5">{{ t('tradesInfoCard.wins') }}</span>
+          <span class="text-gray-600 dark:text-gray-500 ml-0.5">{{ t('tradesInfoCard.wins') }}</span>
         </span>
         <span class="text-[0.85rem]">
           <span class="text-red-400 font-bold">{{ losses }}</span>
-          <span class="text-gray-500 ml-0.5">{{ t('tradesInfoCard.losses') }}</span>
+          <span class="text-gray-600 dark:text-gray-500 ml-0.5">{{ t('tradesInfoCard.losses') }}</span>
         </span>
-        <span class="text-[0.85rem] text-gray-500">
+        <span class="text-[0.85rem] text-gray-600 dark:text-gray-500">
           {{ totalClosed }} {{ t('tradesInfoCard.total') }}
         </span>
       </div>

@@ -78,7 +78,7 @@ function profitColor(val: number | undefined | null): string {
   if (val === undefined || val === null) return '';
   if (val > 0) return 'text-green-400';
   if (val < 0) return 'text-red-400';
-  return 'text-gray-400';
+  return 'text-gray-600 dark:text-gray-400';
 }
 </script>
 
@@ -87,9 +87,9 @@ function profitColor(val: number | undefined | null): string {
 
     <!-- Empty state: no balance data -->
     <div v-if="!hasBalanceData" class="flex flex-col items-center justify-center py-8 gap-2">
-      <i-mdi-cloud-off class="text-3xl text-gray-500/40" />
-      <div class="text-sm text-gray-200">{{ t('emptyStates.balanceUnavailable') }}</div>
-      <div class="text-xs text-gray-400 text-center">{{ t('emptyStates.balanceUnavailableDesc') }}</div>
+      <i-mdi-cloud-off class="text-3xl text-gray-600 dark:text-gray-500/40" />
+      <div class="text-sm text-gray-800 dark:text-gray-200">{{ t('emptyStates.balanceUnavailable') }}</div>
+      <div class="text-xs text-gray-600 dark:text-gray-400 text-center">{{ t('emptyStates.balanceUnavailableDesc') }}</div>
     </div>
 
     <template v-else>
@@ -98,7 +98,7 @@ function profitColor(val: number | undefined | null): string {
       <i-mdi-wallet class="text-green-400" />
       <span>{{ t('balanceCard.title') }}</span>
     </div>
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="text-2xl font-bold text-gray-100 mb-1">
         {{ formatPriceCurrency(currentBalance, currency, 2) }}
       </div>
@@ -107,7 +107,7 @@ function profitColor(val: number | undefined | null): string {
       <!-- Starting capital → Current balance progress -->
       <div class="mb-2">
         <div class="flex justify-between text-[0.85rem] mb-1">
-          <span class="text-gray-500" v-tooltip.top="t('tooltips.startingCapital')">{{ t('balanceCard.startingCapital') }}: {{ formatPriceCurrency(startingCapital, currency, 0) }}</span>
+          <span class="text-gray-600 dark:text-gray-500" v-tooltip.top="t('tooltips.startingCapital')">{{ t('balanceCard.startingCapital') }}: {{ formatPriceCurrency(startingCapital, currency, 0) }}</span>
           <span :class="profitColor(growthPct)" v-tooltip.top="t('tooltips.balanceGrowth')">{{ growthPct >= 0 ? '+' : '' }}{{ formatNumber(growthPct, 1) }}%</span>
         </div>
         <div class="h-2.5 rounded-full bg-white/5 overflow-hidden">
@@ -132,7 +132,7 @@ function profitColor(val: number | undefined | null): string {
     </div>
 
     <!-- ═══ SECTION 2: Capital Allocation ═══ -->
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-chart-donut class="text-blue-400" />
         <span>{{ t('balanceCard.capitalAllocation') }}</span>
@@ -154,13 +154,13 @@ function profitColor(val: number | undefined | null): string {
       <div class="flex gap-3 text-[0.85rem]">
         <div class="flex items-center gap-1">
           <span class="w-2 h-2 rounded-full bg-blue-500" />
-          <span class="text-gray-400">{{ t('balanceCard.inTrades') }}</span>
-          <span class="text-gray-200">{{ formatPriceCurrency(stakeInOpenTrades, currency, 2) }}</span>
+          <span class="text-gray-600 dark:text-gray-400">{{ t('balanceCard.inTrades') }}</span>
+          <span class="text-gray-800 dark:text-gray-200">{{ formatPriceCurrency(stakeInOpenTrades, currency, 2) }}</span>
         </div>
         <div class="flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full bg-gray-500" />
-          <span class="text-gray-400">{{ t('balanceCard.free') }}</span>
-          <span class="text-gray-200">{{ formatPriceCurrency(freeCapital, currency, 2) }}</span>
+          <span class="w-2 h-2 rounded-full bg-gray-200 dark:bg-gray-500" />
+          <span class="text-gray-600 dark:text-gray-400">{{ t('balanceCard.free') }}</span>
+          <span class="text-gray-800 dark:text-gray-200">{{ formatPriceCurrency(freeCapital, currency, 2) }}</span>
         </div>
       </div>
       <div class="stat-row mt-1">
@@ -194,7 +194,7 @@ function profitColor(val: number | undefined | null): string {
     <!-- No withdrawal section: just show simple stats -->
     <div v-else>
       <div class="section-header">
-        <i-mdi-information-outline class="text-gray-500" />
+        <i-mdi-information-outline class="text-gray-600 dark:text-gray-500" />
         <span>{{ t('balanceCard.summary') }}</span>
       </div>
       <div class="space-y-0.5">
@@ -206,7 +206,7 @@ function profitColor(val: number | undefined | null): string {
         </div>
         <div class="stat-row">
           <span class="stat-label">{{ t('balanceCard.noWithdrawals') }}</span>
-          <span class="stat-value text-gray-500">-</span>
+          <span class="stat-value text-gray-600 dark:text-gray-500">-</span>
         </div>
       </div>
     </div>

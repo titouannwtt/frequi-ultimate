@@ -94,7 +94,7 @@ function barColor(index: number): { from: string; to: string } {
 <template>
   <div class="glass-card" style="width: 540px">
     <!-- ═══ HEADER ═══ -->
-    <div class="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
+    <div class="flex items-center justify-between mb-3 pb-2 border-b border-black/5 dark:border-white/5">
       <div class="flex items-center gap-2">
         <i-mdi-chart-box class="text-blue-400 text-base" />
         <span class="font-semibold text-gray-100 text-sm">
@@ -107,11 +107,11 @@ function barColor(index: number): { from: string; to: string } {
     </div>
 
     <!-- ═══ CAPACITY BAR ═══ -->
-    <div v-if="totalMaxOpen > 0" class="mb-3 pb-3 border-b border-white/5">
+    <div v-if="totalMaxOpen > 0" class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-gauge class="text-blue-400" />
         <span>{{ t('summaryTrades.capacity') }}</span>
-        <span class="ml-auto text-gray-200 font-bold text-[0.8rem]">
+        <span class="ml-auto text-gray-800 dark:text-gray-200 font-bold text-[0.8rem]">
           {{ totalOpenCount }} / {{ totalMaxOpen }}
         </span>
       </div>
@@ -125,7 +125,7 @@ function barColor(index: number): { from: string; to: string } {
     </div>
 
     <!-- ═══ PER-BOT POSITIONS ═══ -->
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-robot class="text-blue-400" />
         <span>{{ t('summaryTrades.perBot') }}</span>
@@ -140,13 +140,13 @@ function barColor(index: number): { from: string; to: string } {
             class="w-2 h-2 rounded-full flex-shrink-0"
             :style="{ background: barColor(idx).from }"
           />
-          <span class="text-gray-300 text-[0.85rem] truncate" style="max-width: 120px">
+          <span class="text-gray-700 dark:text-gray-300 text-[0.85rem] truncate" style="max-width: 120px">
             {{ entry.name }}
           </span>
-          <span class="ml-auto text-gray-200 text-[0.85rem] font-bold">
+          <span class="ml-auto text-gray-800 dark:text-gray-200 text-[0.85rem] font-bold">
             {{ entry.openCount }}{{ entry.maxOpen > 0 ? ` / ${entry.maxOpen}` : '' }}
           </span>
-          <span v-if="entry.pairs.length > 0" class="text-gray-500 text-[0.85rem] truncate" style="max-width: 140px">
+          <span v-if="entry.pairs.length > 0" class="text-gray-600 dark:text-gray-500 text-[0.85rem] truncate" style="max-width: 140px">
             {{ entry.pairs.join(', ') }}
           </span>
         </div>
@@ -154,11 +154,11 @@ function barColor(index: number): { from: string; to: string } {
     </div>
 
     <!-- ═══ CAPITAL EXPOSURE ═══ -->
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-shield-alert class="text-amber-400" />
         <span>{{ t('summaryTrades.capitalExposure') }}</span>
-        <span v-if="!isMultiCurrency" class="ml-auto text-gray-200 font-bold text-[0.8rem]">
+        <span v-if="!isMultiCurrency" class="ml-auto text-gray-800 dark:text-gray-200 font-bold text-[0.8rem]">
           {{ formatPriceCurrency(totalStakeAtRisk, botEntries[0]?.stakeCurrency ?? 'USDC', 2) }}
         </span>
       </div>
@@ -203,7 +203,7 @@ function barColor(index: number): { from: string; to: string } {
           :key="'wr-' + entry.botId"
           class="flex items-center gap-2"
         >
-          <span class="text-[0.8rem] text-gray-400 truncate" style="min-width: 70px; max-width: 100px">
+          <span class="text-[0.8rem] text-gray-600 dark:text-gray-400 truncate" style="min-width: 70px; max-width: 100px">
             {{ entry.name }}
           </span>
           <div class="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
@@ -212,7 +212,7 @@ function barColor(index: number): { from: string; to: string } {
               :style="{ width: `${entry.winrate}%` }"
             />
           </div>
-          <span class="text-[0.8rem] text-gray-200 font-bold" style="min-width: 32px; text-align: right">
+          <span class="text-[0.8rem] text-gray-800 dark:text-gray-200 font-bold" style="min-width: 32px; text-align: right">
             {{ entry.winrate.toFixed(0) }}%
           </span>
         </div>

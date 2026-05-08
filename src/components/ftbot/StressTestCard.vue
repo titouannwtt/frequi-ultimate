@@ -165,7 +165,7 @@ const stakeCurrency = computed(() => {
     <!-- Per-bot results -->
     <div v-for="result in stressResults" :key="result.botId" class="space-y-1">
       <div class="flex items-center justify-between">
-        <span class="text-xs font-semibold text-gray-200">{{ result.botName }}</span>
+        <span class="text-xs font-semibold text-gray-800 dark:text-gray-200">{{ result.botName }}</span>
         <span
           class="text-xs font-bold"
           :class="result.totalImpact >= 0 ? 'text-green-400' : 'text-red-400'"
@@ -185,7 +185,7 @@ const stakeCurrency = computed(() => {
         }"
       >
         <div class="flex items-center gap-1">
-          <span class="text-gray-300">{{ pos.pair.replace(/\/.*/, '') }}</span>
+          <span class="text-gray-700 dark:text-gray-300">{{ pos.pair.replace(/\/.*/, '') }}</span>
           <span
             class="text-[0.5rem] font-bold px-1 rounded"
             :class="pos.isShort ? 'text-red-300 bg-red-900/30' : 'text-green-300 bg-green-900/30'"

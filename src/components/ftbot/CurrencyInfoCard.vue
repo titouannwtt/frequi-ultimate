@@ -281,17 +281,17 @@ const typeBadgeStyle = computed(() => {
     <!-- Unknown currency fallback -->
     <template v-if="!info">
       <div class="flex items-center gap-2 py-4">
-        <i-mdi-help-circle class="text-gray-400" style="font-size: 1.5rem" />
+        <i-mdi-help-circle class="text-gray-600 dark:text-gray-400" style="font-size: 1.5rem" />
         <div>
-          <div class="text-sm font-bold text-gray-200">{{ currency || 'Unknown' }}</div>
-          <div class="text-gray-400 mt-1">{{ t('currencyCard.currencyInfoUnavailable') }}</div>
+          <div class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ currency || 'Unknown' }}</div>
+          <div class="text-gray-600 dark:text-gray-400 mt-1">{{ t('currencyCard.currencyInfoUnavailable') }}</div>
         </div>
       </div>
     </template>
 
     <template v-else>
       <!-- Header -->
-      <div class="flex items-center justify-between mb-2.5 pb-2 border-b border-gray-700">
+      <div class="flex items-center justify-between mb-2.5 pb-2 border-b border-gray-300 dark:border-gray-700">
         <div class="flex items-center gap-2">
           <div
             class="flex items-center justify-center rounded-lg font-black text-sm"
@@ -303,7 +303,7 @@ const typeBadgeStyle = computed(() => {
           <div>
             <div class="text-sm font-bold text-gray-100">{{ info.name }}</div>
             <div
-              class="text-[0.8rem] text-gray-400 cursor-pointer hover:text-blue-400 transition-colors"
+              class="text-[0.8rem] text-gray-600 dark:text-gray-400 cursor-pointer hover:text-blue-400 transition-colors"
               v-tooltip.top="t('currencyCard.filterByCurrency', { currency: info.symbol })"
               @click="emit('filter-currency', info.symbol)"
             >{{ info.symbol }}</div>
@@ -316,7 +316,7 @@ const typeBadgeStyle = computed(() => {
       </div>
 
       <!-- Description -->
-      <div class="text-gray-300 mb-2.5 leading-relaxed" style="font-size: 0.95rem">
+      <div class="text-gray-700 dark:text-gray-300 mb-2.5 leading-relaxed" style="font-size: 0.95rem">
         {{ info.description }}
       </div>
 
@@ -329,27 +329,27 @@ const typeBadgeStyle = computed(() => {
         <i-mdi-link-variant class="text-green-400" style="font-size: 1rem" />
         <div>
           <div class="text-green-400 font-bold" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.pegInfo')">{{ t('currencyCard.peggedTo', { peg: info.peg }) }}</div>
-          <div class="text-gray-400" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.backing')">{{ info.backing }}</div>
+          <div class="text-gray-600 dark:text-gray-400" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.backing')">{{ info.backing }}</div>
         </div>
       </div>
 
       <!-- Key info grid -->
-      <div class="space-y-1 mb-2.5 pb-2.5 border-b border-gray-700">
+      <div class="space-y-1 mb-2.5 pb-2.5 border-b border-gray-300 dark:border-gray-700">
         <div class="flex justify-between">
-          <span class="text-gray-400">{{ t('currencyCard.issuer') }}</span>
-          <span class="text-gray-200 font-semibold">{{ info.issuer }}</span>
+          <span class="text-gray-600 dark:text-gray-400">{{ t('currencyCard.issuer') }}</span>
+          <span class="text-gray-800 dark:text-gray-200 font-semibold">{{ info.issuer }}</span>
         </div>
         <div v-if="info.type !== 'Stablecoin'" class="flex justify-between">
-          <span class="text-gray-400" v-tooltip.top="t('tooltips.pegInfo')">{{ t('currencyCard.peg') }}</span>
-          <span class="text-gray-200">{{ info.peg }}</span>
+          <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.pegInfo')">{{ t('currencyCard.peg') }}</span>
+          <span class="text-gray-800 dark:text-gray-200">{{ info.peg }}</span>
         </div>
         <div v-if="info.type !== 'Stablecoin'" class="flex justify-between">
-          <span class="text-gray-400" v-tooltip.top="t('tooltips.backing')">{{ t('currencyCard.backing') }}</span>
-          <span class="text-gray-200">{{ info.backing }}</span>
+          <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.backing')">{{ t('currencyCard.backing') }}</span>
+          <span class="text-gray-800 dark:text-gray-200">{{ info.backing }}</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-gray-400">{{ t('currencyCard.chain') }}</span>
-          <span class="text-gray-200">{{ info.chain }}</span>
+          <span class="text-gray-600 dark:text-gray-400">{{ t('currencyCard.chain') }}</span>
+          <span class="text-gray-800 dark:text-gray-200">{{ info.chain }}</span>
         </div>
       </div>
 
@@ -360,7 +360,7 @@ const typeBadgeStyle = computed(() => {
       </div>
 
       <!-- Risks note -->
-      <div class="flex items-start gap-1.5 text-gray-500" style="font-size: 0.95rem">
+      <div class="flex items-start gap-1.5 text-gray-600 dark:text-gray-500" style="font-size: 0.95rem">
         <i-mdi-alert-circle-outline class="mt-0.5 flex-shrink-0" style="font-size: 0.95rem" />
         <span>{{ info.risks }}</span>
       </div>

@@ -137,7 +137,7 @@ function winrateColor(val: number): string {
           <text x="55" y="50" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 1.4rem">
             {{ overallWinrate.toFixed(1) }}%
           </text>
-          <text x="55" y="66" text-anchor="middle" class="fill-gray-500" style="font-size: 0.9rem">
+          <text x="55" y="66" text-anchor="middle" class="fill-gray-600 dark:fill-gray-500" style="font-size: 0.9rem">
             {{ t('summaryWinLoss.overallWinrate') }}
           </text>
         </svg>

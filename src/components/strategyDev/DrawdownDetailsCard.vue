@@ -132,6 +132,9 @@ function fmtDays(d: number | undefined): string {
 .dd-table tbody tr:hover {
   background: rgba(255, 255, 255, 0.03);
 }
+:root:not(.ft-dark-theme) .dd-table tbody tr:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
 
 .dd-table td {
   padding: 8px 12px;

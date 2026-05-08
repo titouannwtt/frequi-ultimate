@@ -72,7 +72,7 @@ const eventTypeConfig: Record<EventType, { icon: string; color: string; dotClass
   trade_opened: { icon: 'i-mdi-plus-circle', color: 'text-blue-400', dotClass: 'bg-blue-400 shadow-blue-400/40' },
   trade_closed_profit: { icon: 'i-mdi-check-circle', color: 'text-green-400', dotClass: 'bg-green-400 shadow-green-400/40' },
   trade_closed_loss: { icon: 'i-mdi-close-circle', color: 'text-red-400', dotClass: 'bg-red-400 shadow-red-400/40' },
-  bot_status: { icon: 'i-mdi-power', color: 'text-gray-400', dotClass: 'bg-gray-400 shadow-gray-400/40' },
+  bot_status: { icon: 'i-mdi-power', color: 'text-gray-600 dark:text-gray-400', dotClass: 'bg-gray-400 shadow-gray-400/40' },
   alert: { icon: 'i-mdi-bell-alert', color: 'text-amber-400', dotClass: 'bg-amber-400 shadow-amber-400/40' },
   dca: { icon: 'i-mdi-layers', color: 'text-purple-400', dotClass: 'bg-purple-400 shadow-purple-400/40' },
 };

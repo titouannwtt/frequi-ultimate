@@ -226,7 +226,7 @@ function profitColor(val: number | null | undefined): string {
     <!-- Empty state: no open positions -->
     <div v-if="openTrades.length === 0" class="flex flex-col items-center justify-center py-8 gap-2">
       <i-mdi-check-circle class="text-3xl text-green-400/50" />
-      <div class="text-sm text-gray-200">{{ t('emptyStates.noOpenPositions') }}</div>
+      <div class="text-sm text-gray-800 dark:text-gray-200">{{ t('emptyStates.noOpenPositions') }}</div>
       <div class="text-xs text-gray-600 dark:text-gray-400 text-center">{{ t('emptyStates.noOpenPositionsDesc') }}</div>
     </div>
 
@@ -264,7 +264,7 @@ function profitColor(val: number | null | undefined): string {
           <text x="58" y="54" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 0.95rem">
             {{ openTrades.length }}
           </text>
-          <text x="58" y="68" text-anchor="middle" class="fill-gray-500" style="font-size: 0.8rem">
+          <text x="58" y="68" text-anchor="middle" class="fill-gray-600 dark:fill-gray-500" style="font-size: 0.8rem">
             {{ t('openProfitCard.positions') }}
           </text>
         </svg>
@@ -285,7 +285,7 @@ function profitColor(val: number | null | undefined): string {
           :class="(trade.profit_ratio ?? 0) < 0 ? 'trade-row--loss' : 'trade-row--win'"
         >
           <!-- Pair name -->
-          <span class="font-semibold text-gray-200 truncate" style="min-width: 55px; max-width: 70px">
+          <span class="font-semibold text-gray-800 dark:text-gray-200 truncate" style="min-width: 55px; max-width: 70px">
             {{ trade.pair.replace(/\/.*/, '') }}
           </span>
           <!-- Direction badge -->

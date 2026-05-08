@@ -314,7 +314,7 @@ watch(() => route?.fullPath, () => {
 
 <template>
   <header>
-    <div class="navbar-glass flex border-b border-white/10">
+    <div class="navbar-glass flex border-b border-black/10 dark:border-white/10">
       <RouterLink class="ms-2 flex flex-row items-center pe-2 gap-2" exact to="/">
         <img class="h-[30px] align-middle" src="@/assets/freqtrade-logo.png" alt="Home Logo" />
         <span class="text-slate-200 text-xl md:hidden lg:inline text-nowrap font-semibold">Freqtrade Ultimate</span>
@@ -331,7 +331,7 @@ watch(() => route?.fullPath, () => {
             )"
             :key="index"
             :to="item.to"
-            class="nav-link text-surface-300 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 hover:text-white hover:bg-white/10"
+            class="nav-link text-surface-300 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 hover:text-white hover:bg-black/10 dark:hover:bg-white/10"
             active-class="nav-link-active"
           >
             <i-mdi-swap-horizontal v-if="item.icon === 'i-mdi-swap-horizontal'" class="w-4 h-4" />
@@ -362,7 +362,7 @@ watch(() => route?.fullPath, () => {
           <!-- Language selector -->
           <select
             :value="locale"
-            class="bg-transparent text-surface-400 text-xs border border-white/10 rounded px-1.5 py-1 cursor-pointer hover:text-white focus:outline-none"
+            class="bg-transparent text-surface-400 text-xs border border-black/10 dark:border-white/10 rounded px-1.5 py-1 cursor-pointer hover:text-white focus:outline-none"
             @change="changeLocale(($event.target as HTMLSelectElement).value)"
           >
             <option
@@ -381,7 +381,7 @@ watch(() => route?.fullPath, () => {
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 cursor-pointer"
             :class="layoutStore.editMode
               ? 'bg-indigo-500/30 text-indigo-300 border border-indigo-400/40'
-              : 'text-surface-300 hover:text-white hover:bg-white/10'"
+              : 'text-surface-300 hover:text-white hover:bg-black/10 dark:hover:bg-white/10'"
             @click="layoutStore.toggleEditMode()"
           >
             <i-mdi-pencil-ruler class="w-4 h-4" />
@@ -391,7 +391,7 @@ watch(() => route?.fullPath, () => {
           <!-- Page config button (export/import) — dashboard only -->
           <div v-if="isDashboard" class="relative">
             <button
-              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all duration-200 cursor-pointer"
               @click.stop="configMenuOpen = !configMenuOpen"
             >
               <i-mdi-cog-transfer class="w-4 h-4" />
@@ -428,7 +428,7 @@ watch(() => route?.fullPath, () => {
 
           <!-- Settings button -->
           <button
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all duration-200 cursor-pointer"
             @click="router.push('/settings')"
           >
             <i-mdi-cog class="w-4 h-4" />
@@ -455,7 +455,7 @@ watch(() => route?.fullPath, () => {
           <!-- Logout -->
           <button
             v-if="botStore.hasBots && botStore.botCount === 1"
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-surface-300 hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-all duration-200 cursor-pointer"
             @click="clickLogout"
           >
             <i-mdi-logout class="w-4 h-4" />
@@ -524,7 +524,7 @@ watch(() => route?.fullPath, () => {
                   <ThemeSelect show-text />
                   <select
                     :value="locale"
-                    class="bg-transparent text-surface-300 text-xs border border-white/10 rounded px-1.5 py-1"
+                    class="bg-transparent text-surface-300 text-xs border border-black/10 dark:border-white/10 rounded px-1.5 py-1"
                     @change="changeLocale(($event.target as HTMLSelectElement).value)"
                   >
                     <option
@@ -971,6 +971,11 @@ watch(() => route?.fullPath, () => {
   z-index: 9999;
   pointer-events: none;
 }
+:root:not(.ft-dark-theme) .az-popover {
+  background: rgba(245, 242, 238, 0.97);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
 .adaptive-zoom-wrapper:hover .az-popover {
   display: block;
 }
@@ -980,11 +985,17 @@ watch(() => route?.fullPath, () => {
   color: #e0e0e0;
   margin-bottom: 4px;
 }
+:root:not(.ft-dark-theme) .az-popover-title {
+  color: #1a1a1a;
+}
 .az-popover-desc {
   font-size: 0.6875rem;
   color: rgba(255, 255, 255, 0.55);
   line-height: 1.4;
   margin-bottom: 10px;
+}
+:root:not(.ft-dark-theme) .az-popover-desc {
+  color: rgba(0, 0, 0, 0.6);
 }
 .az-demo {
   display: flex;
@@ -1002,6 +1013,9 @@ watch(() => route?.fullPath, () => {
   color: rgba(255, 255, 255, 0.7);
   width: 56px;
   flex-shrink: 0;
+}
+:root:not(.ft-dark-theme) .az-demo-label {
+  color: rgba(0, 0, 0, 0.7);
 }
 .az-demo-viz {
   display: flex;
@@ -1037,6 +1051,9 @@ watch(() => route?.fullPath, () => {
   font-size: 0.5625rem;
   color: rgba(255, 255, 255, 0.4);
   flex: 1;
+}
+:root:not(.ft-dark-theme) .az-demo-hint {
+  color: rgba(0, 0, 0, 0.45);
 }
 @keyframes az-breathe {
   0%, 100% { transform: scale(1); }
@@ -1077,6 +1094,10 @@ watch(() => route?.fullPath, () => {
   background: rgba(40, 40, 60, 0.6);
   border: 1px solid rgba(100, 100, 140, 0.2);
   border-radius: 4px;
+}
+:root:not(.ft-dark-theme) .anim-demo-off .anim-demo-blob {
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.12);
 }
 @keyframes anim-gradient-move {
   0%, 100% { background-position: 0% 50%; }

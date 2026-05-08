@@ -132,7 +132,7 @@ function donutDash(value: number, total: number): string {
 <template>
   <div class="glass-card" style="width: 380px">
     <!-- ═══ HEADER ═══ -->
-    <div class="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
+    <div class="flex items-center justify-between mb-3 pb-2 border-b border-black/5 dark:border-white/5">
       <div class="flex items-center gap-2">
         <i-mdi-wallet class="text-blue-400 text-base" />
         <span class="font-semibold text-gray-100 text-sm">
@@ -142,7 +142,7 @@ function donutDash(value: number, total: number): string {
     </div>
 
     <!-- ═══ TOTAL PER CURRENCY ═══ -->
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-sigma class="text-blue-400" />
         <span>{{ t('summaryTrades.totalPerCurrency') }}</span>
@@ -152,19 +152,19 @@ function donutDash(value: number, total: number): string {
         <span class="stat-value font-bold text-sm text-blue-400">{{ formatPriceCurrency(amt, cur as string, 2) }}</span>
       </div>
       <!-- Converted total when multi-currency -->
-      <div v-if="convertedTotal" class="mt-2 pt-2 border-t border-white/5">
+      <div v-if="convertedTotal" class="mt-2 pt-2 border-t border-black/5 dark:border-white/5">
         <div class="stat-row">
           <span class="stat-label text-sm">{{ t('summaryTrades.convertedTotal') }} ({{ convertedTotal.currency }})</span>
           <span class="stat-value font-bold text-sm text-purple-400">&#8776; {{ formatPriceCurrency(convertedTotal.total, convertedTotal.currency, 2) }}</span>
         </div>
-        <div v-for="r in convertedTotal.rates" :key="r.from" class="text-[0.85rem] text-gray-500 text-right">
+        <div v-for="r in convertedTotal.rates" :key="r.from" class="text-[0.85rem] text-gray-600 dark:text-gray-500 text-right">
           {{ t('summaryTrades.conversionRate') }}: 1 {{ r.from }} &#8776; {{ r.rate < 1 ? r.rate.toFixed(6) : r.rate.toFixed(2) }} {{ convertedTotal.currency }}
         </div>
       </div>
     </div>
 
     <!-- ═══ DONUT + LEGEND ═══ -->
-    <div class="mb-3 pb-3 border-b border-white/5">
+    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="flex items-center gap-4">
         <!-- Donut chart -->
         <svg width="80" height="80" viewBox="0 0 80 80" class="flex-shrink-0">
@@ -187,7 +187,7 @@ function donutDash(value: number, total: number): string {
           <text x="40" y="38" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 0.95rem">
             {{ botEntries.length }}
           </text>
-          <text x="40" y="48" text-anchor="middle" class="fill-gray-500" style="font-size: 0.4rem">
+          <text x="40" y="48" text-anchor="middle" class="fill-gray-600 dark:fill-gray-500" style="font-size: 0.4rem">
             {{ t('summaryCards.bots') }}
           </text>
         </svg>
@@ -202,8 +202,8 @@ function donutDash(value: number, total: number): string {
               class="w-2 h-2 rounded-full flex-shrink-0"
               :style="{ background: barColor(idx).from }"
             />
-            <span class="text-gray-400 truncate" style="max-width: 100px">{{ entry.label }}</span>
-            <span class="ml-auto text-gray-200">
+            <span class="text-gray-600 dark:text-gray-400 truncate" style="max-width: 100px">{{ entry.label }}</span>
+            <span class="ml-auto text-gray-800 dark:text-gray-200">
               {{ donutTotal > 0 ? ((entry.value / donutTotal) * 100).toFixed(1) : 0 }}%
             </span>
           </div>
@@ -228,11 +228,11 @@ function donutDash(value: number, total: number): string {
                 class="w-2 h-2 rounded-full flex-shrink-0"
                 :style="{ background: barColor(idx).from }"
               />
-              <span class="text-gray-300 text-[0.85rem] truncate" style="max-width: 120px">{{ entry.name }}</span>
+              <span class="text-gray-700 dark:text-gray-300 text-[0.85rem] truncate" style="max-width: 120px">{{ entry.name }}</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-gray-500 text-[0.85rem]">{{ botPercentOfCurrency(entry).toFixed(1) }}%</span>
-              <span class="text-gray-200 text-[0.85rem] font-bold">
+              <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]">{{ botPercentOfCurrency(entry).toFixed(1) }}%</span>
+              <span class="text-gray-800 dark:text-gray-200 text-[0.85rem] font-bold">
                 {{ formatPriceCurrency(entry.balance, entry.stakeCurrency, 2) }}
               </span>
             </div>
