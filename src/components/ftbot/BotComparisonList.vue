@@ -14,6 +14,7 @@ const router = useRouter();
 const { t, locale } = useI18n();
 const botStore = useBotStore();
 const compStore = useBotComparisonStore();
+const stratDevStore = useStrategyDevStore();
 
 // Migrate legacy localStorage data on first load
 compStore.migrateFromLocalStorage();
@@ -1433,6 +1434,16 @@ function confirmAndExecute() {
 const botActionMenuRef = ref<Record<string, InstanceType<typeof Popover>>>({});
 function showBotActionMenu(event: MouseEvent, botId: string) {
   botActionMenuRef.value[botId]?.toggle(event);
+}
+
+function openStrategyAnalysis(botId: string) {
+  const filename = `live:${botId}`;
+  stratDevStore.saveRunViewState(filename, 'analyse', {});
+  const liveRun = stratDevStore.allRunsFlat.find((r) => r.filename === filename);
+  if (liveRun) {
+    stratDevStore.selectRun(liveRun);
+  }
+  router.push('/strategy-dev');
 }
 
 // --- Keyboard shortcuts ---
@@ -4423,6 +4434,12 @@ const correlatedPairs = computed(() => {
             @click="router.push({ path: '/journal', query: { bot: item.botName } }); botActionMenuRef[item.botId!]?.hide()"
           >
             <i-mdi-book-open-variant class="text-surface-500" /> {{ t('botComparison.viewJournal') }}
+          </button>
+          <button
+            class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
+            @click="openStrategyAnalysis(item.botId!); botActionMenuRef[item.botId!]?.hide()"
+          >
+            <i-mdi-flask-outline class="text-purple-400" /> {{ t('botComparison.analyzeStrategy') }}
           </button>
           <!-- Action feedback -->
           <div v-if="botActionFeedback[item.botId!]" class="text-center py-1">
