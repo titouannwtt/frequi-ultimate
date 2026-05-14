@@ -75,7 +75,7 @@ function concurrentPositions(trade: ClosedTrade): number {
 
 function exportCSV() {
   const sorted = [...allTrades.value].sort((a, b) => (a.close_timestamp ?? 0) - (b.close_timestamp ?? 0));
-  const headers = ['Trade ID', 'Mode', 'Bot', 'Exchange', 'Pair', 'Direction', 'Open Date', 'Close Date', 'Duration', 'Entry Price', 'Exit Price', 'Fees', 'Profit', 'Profit %', 'DCA', 'Exit Reason', 'Stake', 'Concurrent'];
+  const headers = ['Trade ID', 'Mode', 'Bot', 'Exchange', 'Pair', 'Direction', 'Leverage', 'Open Date', 'Close Date', 'Duration', 'Entry Price', 'Exit Price', 'Fees', 'Profit', 'Profit %', 'DCA', 'Exit Reason', 'Stake', 'Concurrent'];
   const rows = sorted.map(t => [
     (t.trade_id ?? '').toString(),
     t.botMode ?? '',
@@ -83,6 +83,7 @@ function exportCSV() {
     t.exchange ?? '',
     t.pair,
     t.is_short ? 'Short' : 'Long',
+    t.leverage?.toString() ?? '',
     t.open_date ?? '',
     t.close_date ?? '',
     tradeDuration(t),
@@ -110,7 +111,7 @@ function exportCSV() {
 async function exportExcel() {
   const xlsx = await import('xlsx');
   const sorted = [...allTrades.value].sort((a, b) => (a.close_timestamp ?? 0) - (b.close_timestamp ?? 0));
-  const headers = ['Trade ID', 'Mode', 'Bot', 'Exchange', 'Pair', 'Direction', 'Open Date', 'Close Date', 'Duration', 'Entry Price', 'Exit Price', 'Fees', 'Profit', 'Profit %', 'DCA', 'Exit Reason', 'Stake', 'Concurrent'];
+  const headers = ['Trade ID', 'Mode', 'Bot', 'Exchange', 'Pair', 'Direction', 'Leverage', 'Open Date', 'Close Date', 'Duration', 'Entry Price', 'Exit Price', 'Fees', 'Profit', 'Profit %', 'DCA', 'Exit Reason', 'Stake', 'Concurrent'];
   const rows = sorted.map(t => [
     t.trade_id ?? '',
     t.botMode ?? '',
@@ -118,6 +119,7 @@ async function exportExcel() {
     t.exchange ?? '',
     t.pair,
     t.is_short ? 'Short' : 'Long',
+    t.leverage ?? '',
     t.open_date ?? '',
     t.close_date ?? '',
     tradeDuration(t),
@@ -237,6 +239,9 @@ async function exportExcel() {
             {{ data.is_short ? 'S' : 'L' }}
           </span>
         </template>
+      </Column>
+      <Column field="leverage" header="Lev" sortable style="max-width: 4rem">
+        <template #body="{ data }">{{ data.leverage ? `${data.leverage}x` : '-' }}</template>
       </Column>
       <Column field="open_timestamp" header="Opened" sortable>
         <template #body="{ data }">{{ formatDate(data.open_timestamp) }}</template>
