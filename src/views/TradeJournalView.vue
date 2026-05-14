@@ -41,6 +41,49 @@ const uniqueExitReasons = computed(() => [...new Set(allTrades.value.map(t => t.
 
 const rowsPerPage = ref(100);
 
+type TimeFilter = 'all' | 'today' | '24h' | 'this_week' | '7d' | 'this_month' | '30d' | 'this_year' | '1y';
+const activeTimeFilter = ref<TimeFilter>('all');
+
+const timeFilterOptions: { key: TimeFilter; label: string }[] = [
+  { key: 'all', label: 'Tous' },
+  { key: 'today', label: "Aujourd'hui" },
+  { key: '24h', label: '24h' },
+  { key: 'this_week', label: 'Cette semaine' },
+  { key: '7d', label: '7 jours' },
+  { key: 'this_month', label: 'Ce mois-ci' },
+  { key: '30d', label: '30 jours' },
+  { key: 'this_year', label: 'Cette année' },
+  { key: '1y', label: '1 an' },
+];
+
+function getTimeFilterCutoff(filter: TimeFilter): number {
+  if (filter === 'all') return 0;
+  const now = new Date();
+  switch (filter) {
+    case 'today': {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return d.getTime();
+    }
+    case '24h': return now.getTime() - 24 * 3600_000;
+    case 'this_week': {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+      return d.getTime();
+    }
+    case '7d': return now.getTime() - 7 * 24 * 3600_000;
+    case 'this_month': return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    case '30d': return now.getTime() - 30 * 24 * 3600_000;
+    case 'this_year': return new Date(now.getFullYear(), 0, 1).getTime();
+    case '1y': return now.getTime() - 365 * 24 * 3600_000;
+  }
+}
+
+const filteredTrades = computed(() => {
+  const cutoff = getTimeFilterCutoff(activeTimeFilter.value);
+  if (cutoff === 0) return allTrades.value;
+  return allTrades.value.filter(t => (t.close_timestamp ?? 0) >= cutoff);
+});
+
 function formatDate(ts?: number): string {
   if (!ts) return '-';
   return new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -74,7 +117,7 @@ function concurrentPositions(trade: ClosedTrade): number {
 }
 
 function exportCSV() {
-  const sorted = [...allTrades.value].sort((a, b) => (a.close_timestamp ?? 0) - (b.close_timestamp ?? 0));
+  const sorted = [...filteredTrades.value].sort((a, b) => (a.close_timestamp ?? 0) - (b.close_timestamp ?? 0));
   const headers = ['Trade ID', 'Mode', 'Bot', 'Exchange', 'Pair', 'Direction', 'Leverage', 'Open Date', 'Close Date', 'Duration', 'Entry Price', 'Exit Price', 'Fees', 'Profit', 'Profit %', 'DCA', 'Exit Reason', 'Stake', 'Concurrent'];
   const rows = sorted.map(t => [
     (t.trade_id ?? '').toString(),
@@ -110,7 +153,7 @@ function exportCSV() {
 
 async function exportExcel() {
   const xlsx = await import('xlsx');
-  const sorted = [...allTrades.value].sort((a, b) => (a.close_timestamp ?? 0) - (b.close_timestamp ?? 0));
+  const sorted = [...filteredTrades.value].sort((a, b) => (a.close_timestamp ?? 0) - (b.close_timestamp ?? 0));
   const headers = ['Trade ID', 'Mode', 'Bot', 'Exchange', 'Pair', 'Direction', 'Leverage', 'Open Date', 'Close Date', 'Duration', 'Entry Price', 'Exit Price', 'Fees', 'Profit', 'Profit %', 'DCA', 'Exit Reason', 'Stake', 'Concurrent'];
   const rows = sorted.map(t => [
     t.trade_id ?? '',
@@ -142,21 +185,36 @@ async function exportExcel() {
 
 <template>
   <div class="p-4 h-full flex flex-col gap-4" style="animation: ft-fade-in 300ms ease-out">
-    <div class="flex items-center justify-between flex-wrap gap-2">
-      <h2 class="text-lg font-semibold">{{ t('nav.journal') }}</h2>
-      <div class="flex items-center gap-2">
-        <span class="text-xs text-surface-400">{{ allTrades.length }} trades</span>
-        <Button size="small" severity="secondary" @click="exportCSV">
-          <i-mdi-file-delimited class="mr-1" /> CSV
-        </Button>
-        <Button size="small" severity="secondary" @click="exportExcel">
-          <i-mdi-file-excel class="mr-1" /> Excel
+    <div class="flex flex-col gap-2">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h2 class="text-lg font-semibold">{{ t('nav.journal') }}</h2>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-surface-400">{{ filteredTrades.length }} trades</span>
+          <Button size="small" severity="secondary" @click="exportCSV">
+            <i-mdi-file-delimited class="mr-1" /> CSV
+          </Button>
+          <Button size="small" severity="secondary" @click="exportExcel">
+            <i-mdi-file-excel class="mr-1" /> Excel
+          </Button>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-1">
+        <Button
+          v-for="opt in timeFilterOptions"
+          :key="opt.key"
+          size="small"
+          :severity="activeTimeFilter === opt.key ? 'primary' : 'secondary'"
+          :outlined="activeTimeFilter !== opt.key"
+          class="text-xs"
+          @click="activeTimeFilter = opt.key"
+        >
+          {{ opt.label }}
         </Button>
       </div>
     </div>
 
     <DataTable
-      :value="allTrades"
+      :value="filteredTrades"
       v-model:filters="filters"
       :paginator="true"
       :rows="rowsPerPage"
