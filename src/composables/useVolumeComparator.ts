@@ -197,7 +197,7 @@ export function useVolumeComparator(opts: UseVolumeComparatorOptions) {
 
   function startRefresh() {
     stopRefresh();
-    fetchData();
+    setTimeout(fetchData, 3000);
     const ms = opts.refreshMs ?? 300000;
     refreshInterval.value = setInterval(fetchData, ms);
   }

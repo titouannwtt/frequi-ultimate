@@ -30,8 +30,16 @@ watch(
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
 }
+</style>
 
-/* * {
-  outline: 1px solid #f00 !important;
-} */
+<style>
+/* Toast container must not intercept clicks on elements below it (navbar).
+   PrimeVue sets position:fixed + high z-index on .p-toast, which can cover
+   the navbar and swallow click events even when no messages are visible. */
+.p-toast {
+  pointer-events: none !important;
+}
+.p-toast-message {
+  pointer-events: auto;
+}
 </style>
