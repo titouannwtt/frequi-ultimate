@@ -324,27 +324,35 @@ watch(() => route?.fullPath, () => {
           <!-- Theme (left side) -->
           <ThemeSelect />
           <div class="w-px h-5 bg-white/10 mx-2" />
-          <!-- Nav links -->
+          <!-- Nav links — uses custom slot to bypass RouterLink's guardEvent
+               which can silently bail out when defaultPrevented is set -->
           <RouterLink
             v-for="(item, index) in navItems.filter(
               (item) => (item.visible ?? true) && !item.mobileOnly,
             )"
             :key="index"
+            v-slot="{ href, isActive }"
             :to="item.to"
-            class="nav-link text-surface-300 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 hover:text-white hover:bg-black/10 dark:hover:bg-white/10"
-            active-class="nav-link-active"
+            custom
           >
-            <i-mdi-swap-horizontal v-if="item.icon === 'i-mdi-swap-horizontal'" class="w-4 h-4" />
-            <i-mdi-view-dashboard v-else-if="item.icon === 'i-mdi-view-dashboard'" class="w-4 h-4" />
-            <i-mdi-notebook v-else-if="item.icon === 'i-mdi-notebook'" class="w-4 h-4" />
-            <i-mdi-chart-line v-else-if="item.icon === 'i-mdi-chart-line'" class="w-4 h-4" />
-            <i-mdi-text-box v-else-if="item.icon === 'i-mdi-text-box'" class="w-4 h-4" />
-            <i-mdi-cog v-else-if="item.icon === 'i-mdi-cog'" class="w-4 h-4" />
-            <i-mdi-flask v-else-if="item.icon === 'i-mdi-flask'" class="w-4 h-4" />
-            <i-mdi-download v-else-if="item.icon === 'i-mdi-download'" class="w-4 h-4" />
-            <i-mdi-format-list-numbered-rtl v-else-if="item.icon === 'i-mdi-format-list-numbered-rtl'" class="w-4 h-4" />
-            <i-mdi-flask-outline v-else-if="item.icon === 'i-mdi-flask-outline'" class="w-4 h-4" />
-            {{ item.label }}
+            <a
+              :href="href"
+              class="nav-link text-surface-300 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 hover:text-white hover:bg-black/10 dark:hover:bg-white/10"
+              :class="{ 'nav-link-active': isActive }"
+              @click.prevent="router.push(item.to)"
+            >
+              <i-mdi-swap-horizontal v-if="item.icon === 'i-mdi-swap-horizontal'" class="w-4 h-4" />
+              <i-mdi-view-dashboard v-else-if="item.icon === 'i-mdi-view-dashboard'" class="w-4 h-4" />
+              <i-mdi-notebook v-else-if="item.icon === 'i-mdi-notebook'" class="w-4 h-4" />
+              <i-mdi-chart-line v-else-if="item.icon === 'i-mdi-chart-line'" class="w-4 h-4" />
+              <i-mdi-text-box v-else-if="item.icon === 'i-mdi-text-box'" class="w-4 h-4" />
+              <i-mdi-cog v-else-if="item.icon === 'i-mdi-cog'" class="w-4 h-4" />
+              <i-mdi-flask v-else-if="item.icon === 'i-mdi-flask'" class="w-4 h-4" />
+              <i-mdi-download v-else-if="item.icon === 'i-mdi-download'" class="w-4 h-4" />
+              <i-mdi-format-list-numbered-rtl v-else-if="item.icon === 'i-mdi-format-list-numbered-rtl'" class="w-4 h-4" />
+              <i-mdi-flask-outline v-else-if="item.icon === 'i-mdi-flask-outline'" class="w-4 h-4" />
+              {{ item.label }}
+            </a>
           </RouterLink>
         </div>
 
