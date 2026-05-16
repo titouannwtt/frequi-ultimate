@@ -59,7 +59,9 @@ const paneTabs = computed(() => [
 // Bot state
 const botState = computed(() => botStore.activeBot.botState);
 const isRunning = computed(() => botState.value?.state === 'running');
+const isBotStarting = computed(() => botStore.activeBot.isBotStarting);
 const botStateColor = computed(() => {
+  if (isBotStarting.value) return 'bg-amber-500 animate-pulse';
   if (!botState.value) return 'bg-surface-400';
   return isRunning.value ? 'bg-emerald-500' : 'bg-amber-500';
 });
@@ -107,7 +109,7 @@ function refreshOHLCV(pair: string, columns: string[]) {
                   <span class="font-medium">{{ t('trading.multiPane') }}</span>
                   <span class="flex items-center gap-1.5 text-surface-500 dark:text-surface-400" style="font-size: 0.8125rem">
                     <span class="w-2 h-2 rounded-full inline-block" :class="botStateColor" />
-                    {{ botState?.state ?? 'offline' }}
+                    {{ isBotStarting ? $t('general.starting') : (botState?.state ?? 'offline') }}
                   </span>
                 </div>
                 <Select

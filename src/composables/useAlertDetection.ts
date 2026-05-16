@@ -37,6 +37,7 @@ interface BotAlertContext {
   profit: ProfitStats | undefined;
   lastLogs: any[];
   isBotOnline: boolean;
+  isBotStarting: boolean;
 }
 
 function detectBotAlerts(
@@ -44,7 +45,7 @@ function detectBotAlerts(
   ctx: BotAlertContext,
 ): DetectedAlert[] {
   const alerts: DetectedAlert[] = [];
-  const { state, openTrades, profit, lastLogs: logs, isBotOnline } = ctx;
+  const { state, openTrades, profit, lastLogs: logs, isBotOnline, isBotStarting } = ctx;
   const isFutures = (state?.trading_mode as string)?.toLowerCase() === 'futures';
 
   if (config.positionLoss?.enabled) {
@@ -143,8 +144,10 @@ function detectBotAlerts(
   }
 
   if (config.botOffline?.enabled) {
-    if (!isBotOnline) {
+    if (!isBotOnline && !isBotStarting) {
       alerts.push({ typeId: 'botOffline', severity: 'critical', message: 'Bot is offline' });
+    } else if (isBotStarting) {
+      alerts.push({ typeId: 'botOffline', severity: 'info', message: 'Bot is starting up' });
     }
   }
 
@@ -223,6 +226,7 @@ export function useAlertDetection() {
         profit: botStore.allProfit[botId],
         lastLogs: store?.lastLogs || [],
         isBotOnline: store?.isBotOnline ?? false,
+        isBotStarting: store?.isBotStarting ?? false,
       });
       // Warn if data is stale (no update for > 2 minutes while bot claims online)
       if (store?.isBotOnline && store?.lastSeenOnline) {
@@ -261,8 +265,9 @@ export function useAlertDetection() {
   }
 
   function hasBotOfflineAlert(botId: string): boolean {
-    if (!botStore.botStores[botId]) return false;
-    return !botStore.botStores[botId].isBotOnline && compStore.alertConfig.global.botOffline?.enabled !== false;
+    const store = botStore.botStores[botId];
+    if (!store) return false;
+    return !store.isBotOnline && !store.isBotStarting && compStore.alertConfig.global.botOffline?.enabled !== false;
   }
 
   function getAlertTooltip(alertId: string, t: (key: string) => string): string {
