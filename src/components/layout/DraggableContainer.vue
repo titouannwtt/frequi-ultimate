@@ -60,8 +60,7 @@ const zoomStyle = computed(() => {
   const s = effectiveZoom.value / 100;
   const pct = (100 / s).toFixed(4);
   return {
-    transform: `scale(${s})`,
-    transformOrigin: 'top left',
+    zoom: s,
     width: `${pct}%`,
     height: `${pct}%`,
   };
