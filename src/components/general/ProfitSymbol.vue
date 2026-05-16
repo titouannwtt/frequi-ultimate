@@ -4,7 +4,7 @@ const props = defineProps<{
 }>();
 
 const isProfitable = computed<boolean | null>(() => {
-  if (!isDefined(props.profit)) {
+  if (!isDefined(props.profit) || props.profit === 0) {
     return null;
   }
   return props.profit > 0;
