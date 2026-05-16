@@ -213,11 +213,8 @@ export const useLayoutStore = defineStore('layoutStore', {
       editMode: false,
       hiddenWidgets: [] as number[],
       widgetOpacity: 1,
-      widgetZooms: JSON.parse(JSON.stringify(DEFAULT_WIDGET_ZOOMS)) as Record<number, number>,
-      widgetDefaults: JSON.parse(JSON.stringify(DEFAULT_WIDGET_DEFAULTS)) as Record<
-        number,
-        Record<string, unknown>
-      >,
+      widgetZooms: {} as Record<number, number>,
+      widgetDefaults: {} as Record<number, Record<string, unknown>>,
       backgroundAnimation: true,
       adaptiveZoom: true,
     };
@@ -263,10 +260,10 @@ export const useLayoutStore = defineStore('layoutStore', {
       this.widgetOpacity = Math.max(0.3, Math.min(1, v));
     },
     getWidgetZoom(id: number): number {
-      return this.widgetZooms[id] ?? 100;
+      return this.widgetZooms[id] ?? DEFAULT_WIDGET_ZOOMS[id] ?? 100;
     },
     getWidgetDefaults(id: number): Record<string, unknown> | undefined {
-      return this.widgetDefaults[id];
+      return this.widgetDefaults[id] ?? DEFAULT_WIDGET_DEFAULTS[id];
     },
     setWidgetDefaults(id: number, defaults: Record<string, unknown>) {
       this.widgetDefaults[id] = defaults;
@@ -318,12 +315,7 @@ export const useLayoutStore = defineStore('layoutStore', {
       this.tradingLayout = this.compactLayout(this.tradingLayout, 12);
     },
     setWidgetZoom(id: number, v: number) {
-      const clamped = Math.max(60, Math.min(120, Math.round(v)));
-      if (clamped === 100) {
-        delete this.widgetZooms[id];
-      } else {
-        this.widgetZooms[id] = clamped;
-      }
+      this.widgetZooms[id] = Math.max(60, Math.min(120, Math.round(v)));
     },
   },
   persist: {
@@ -335,18 +327,22 @@ export const useLayoutStore = defineStore('layoutStore', {
           ? context.store.dashboardLayout.map((item: GridItemData) => item.i)
           : [],
       );
-      const needsReset =
+      const isCorrupt =
         context.store.dashboardLayout === null ||
         typeof context.store.dashboardLayout === 'string' ||
         !Array.isArray(context.store.dashboardLayout) ||
         context.store.dashboardLayout.length === 0 ||
-        typeof context.store.dashboardLayout[0]['i'] === 'string' ||
-        [...expectedIds].some((id) => !storedIds.has(id));
+        typeof context.store.dashboardLayout[0]['i'] === 'string';
 
-      if (needsReset) {
+      if (isCorrupt) {
         console.log('loading dashboard Layout from default.');
         context.store.dashboardLayout = JSON.parse(JSON.stringify(DEFAULT_DASHBOARD_LAYOUT));
       } else {
+        const missingIds = [...expectedIds].filter((id) => !storedIds.has(id));
+        if (missingIds.length > 0) {
+          const defaults = DEFAULT_DASHBOARD_LAYOUT.filter((item) => missingIds.includes(item.i));
+          context.store.dashboardLayout.push(...JSON.parse(JSON.stringify(defaults)));
+        }
         // Migrate from old grid to 48-col grid
         const maxRight = Math.max(...context.store.dashboardLayout.map((item: GridItemData) => item.w + item.x));
         if (maxRight > 0 && maxRight <= 12) {
