@@ -36,10 +36,11 @@ const hasBalanceData = computed(() => {
   return !!balance.value && currentBalance.value > 0;
 });
 
-// Starting capital estimate: current balance - total profit
+// Starting capital estimate: current balance - total profit + withdrawals
 const startingCapital = computed(() => {
   const totalProfit = profit.value?.profit_all_coin ?? 0;
-  return currentBalance.value - totalProfit;
+  const withdrawal = profit.value?.capital_withdrawal ?? 0;
+  return currentBalance.value - totalProfit + withdrawal;
 });
 
 // Growth percentage
