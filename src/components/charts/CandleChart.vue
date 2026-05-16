@@ -140,13 +140,6 @@ usePercentageTool(
   toRef(() => props.dataset.timeframe_ms),
 );
 
-const crosshairType = computed(() => {
-  const style = props.crosshairStyle ?? 'cross';
-  if (style === 'none') return 'none';
-  if (style === 'vertical') return 'shadow';
-  if (style === 'horizontal') return 'line';
-  return 'cross';
-});
 
 function registerSeries(
   name: string,
@@ -511,8 +504,8 @@ function updateChart(initial = false) {
     yAxis: [
       {
         scale: true,
-        max: (value) => formatDecimal(value.max + (value.max - value.min) * 0.02),
-        min: (value) => formatDecimal(value.min - (value.max - value.min) * 0.04),
+        max: (value) => value.max + (value.max - value.min) * 0.02,
+        min: (value) => value.min - (value.max - value.min) * 0.04,
         name: ' ',
         nameLocation: 'middle',
         nameGap: NAMEGAP,
@@ -522,6 +515,16 @@ function updateChart(initial = false) {
           overflow: 'truncate',
           color: props.theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)',
           fontSize: 10,
+        },
+        axisPointer: {
+          show: true,
+          label: {
+            show: true,
+            backgroundColor: props.theme === 'dark' ? 'rgba(99, 102, 241, 0.85)' : 'rgba(99, 102, 241, 0.9)',
+            color: '#fff',
+            fontSize: 10,
+            padding: [4, 6],
+          },
         },
         splitLine: {
           show: true,
@@ -544,6 +547,15 @@ function updateChart(initial = false) {
         axisLine: { show: showAxisLine },
         axisTick: { show: false },
         splitLine: { show: false },
+        axisPointer: {
+          show: true,
+          label: {
+            show: true,
+            backgroundColor: props.theme === 'dark' ? 'rgba(99, 102, 241, 0.7)' : 'rgba(99, 102, 241, 0.8)',
+            fontSize: 9,
+            padding: [3, 5],
+          },
+        },
       },
     ],
   };
@@ -682,6 +694,15 @@ function updateChart(initial = false) {
           axisLine: { show: showAxisLine },
           axisTick: { show: false },
           splitLine: { show: false },
+          axisPointer: {
+            show: true,
+            label: {
+              show: true,
+              backgroundColor: props.theme === 'dark' ? 'rgba(99, 102, 241, 0.7)' : 'rgba(99, 102, 241, 0.8)',
+              fontSize: 9,
+              padding: [3, 5],
+            },
+          },
         });
       }
       if (Array.isArray(options.xAxis) && options.xAxis.length <= plotIndex) {
@@ -774,8 +795,6 @@ function updateChart(initial = false) {
 function initializeChartOptions() {
   candleChart.value?.setOption({}, { notMerge: true });
 
-  const apType = crosshairType.value === 'none' ? 'line' : crosshairType.value;
-
   chartOptions.value = {
     title: [{ show: false }],
     backgroundColor: 'rgba(0, 0, 0, 0)',
@@ -804,11 +823,14 @@ function initializeChartOptions() {
         fontSize: 12,
       },
       axisPointer: {
-        type: apType as any,
+        type: 'cross',
+        crossStyle: {
+          color: props.theme === 'dark' ? 'rgba(165, 180, 252, 0.3)' : 'rgba(99, 102, 241, 0.2)',
+          width: 1,
+        },
         lineStyle: {
           color: props.theme === 'dark' ? 'rgba(165, 180, 252, 0.3)' : 'rgba(99, 102, 241, 0.2)',
           width: 1,
-          opacity: crosshairType.value === 'none' ? 0 : 1,
         },
       },
       position(pos, params, dom, rect, size) {
@@ -821,6 +843,7 @@ function initializeChartOptions() {
     axisPointer: {
       link: [{ xAxisIndex: 'all' }],
       label: { backgroundColor: '#777' },
+      triggerOn: 'mousemove',
     },
     dataZoom: [
       { type: 'inside', xAxisIndex: [0, 1], start: 80, end: 100 },
