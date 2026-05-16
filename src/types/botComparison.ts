@@ -18,6 +18,9 @@ export interface ComparisonTableItems {
   lastSeenOnline?: number;
   balanceAppendix: string;
   capitalWithdrawal?: number;
+  availableCapital?: number;
+  tradableBalanceRatio?: number;
+  availableFunds?: number;
   exchange?: string;
   tradingMode?: string;
   stakeAmount?: string;

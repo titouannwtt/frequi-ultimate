@@ -26,6 +26,17 @@ const {
 } = useAlertDetection();
 function getAlertTooltip(alertId: string) { return _getAlertTooltip(alertId, t); }
 
+function isHostBot(botId: string): boolean {
+  const descriptor = botStore.availableBots[botId];
+  if (!descriptor?.botUrl) return false;
+  try {
+    const botOrigin = new URL(descriptor.botUrl).origin;
+    return botOrigin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 // Ensure all bot stake currencies are tracked
 const allStakeCurrencies = computed(() => {
   const currencies = new Set<string>();
@@ -81,6 +92,8 @@ function closeAllPopovers() {
   hoveredWinLossBotId.value = null;
   balancePopover.value?.hide();
   hoveredBalanceBotId.value = null;
+  availableFundsPopover.value?.hide();
+  hoveredAvailableFundsBotId.value = null;
   periodProfitPopover.value?.hide();
   hoveredPeriodProfitBotId.value = null;
   summaryOpenPopover.value?.hide();
@@ -544,6 +557,39 @@ function cancelBalanceHoverKeepPopover() {
   if (balanceHoverTimeout.value) { clearTimeout(balanceHoverTimeout.value); balanceHoverTimeout.value = null; }
 }
 
+// --- Available Funds popover ---
+const hoveredAvailableFundsBotId = ref<string | null>(null);
+const availableFundsPopover = ref<InstanceType<typeof Popover>>();
+const availableFundsHoverTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+
+function startAvailableFundsHover(event: MouseEvent, botId: string) {
+  trackMouse(event);
+  const target = event.currentTarget as HTMLElement;
+  cancelDelayedHide();
+  if (hoveredAvailableFundsBotId.value && hoveredAvailableFundsBotId.value !== botId) {
+    hoveredAvailableFundsBotId.value = botId;
+    availableFundsPopover.value?.hide();
+    showAtTarget(availableFundsPopover.value, target);
+    return;
+  }
+  if (availableFundsHoverTimeout.value) clearTimeout(availableFundsHoverTimeout.value);
+  availableFundsHoverTimeout.value = setTimeout(() => {
+    closeAllPopovers();
+    hoveredAvailableFundsBotId.value = botId;
+    showAtTarget(availableFundsPopover.value, target);
+  }, 400);
+}
+
+function cancelAvailableFundsHover() {
+  if (availableFundsHoverTimeout.value) { clearTimeout(availableFundsHoverTimeout.value); availableFundsHoverTimeout.value = null; }
+  delayedHide(availableFundsPopover.value, () => { hoveredAvailableFundsBotId.value = null; });
+}
+
+function cancelAvailableFundsHoverKeepPopover() {
+  cancelDelayedHide();
+  if (availableFundsHoverTimeout.value) { clearTimeout(availableFundsHoverTimeout.value); availableFundsHoverTimeout.value = null; }
+}
+
 // --- Period Profit popover (shared for weekly and monthly) ---
 const hoveredPeriodProfitBotId = ref<string | null>(null);
 const periodProfitPopover = ref<InstanceType<typeof Popover>>();
@@ -912,6 +958,24 @@ const allColumns: ColumnDefinition[] = [
     removable: true,
   },
   {
+    id: 'availableCapital',
+    labelKey: 'botComparison.availableCapital', icon: 'i-mdi-bank',
+    default: false,
+    removable: true,
+  },
+  {
+    id: 'tradableBalanceRatio',
+    labelKey: 'botComparison.tradableBalanceRatio', icon: 'i-mdi-percent',
+    default: false,
+    removable: true,
+  },
+  {
+    id: 'availableFunds',
+    labelKey: 'botComparison.availableFunds', icon: 'i-mdi-cash-multiple',
+    default: false,
+    removable: true,
+  },
+  {
     id: 'monthlyProfit',
     labelKey: 'botComparison.monthlyProfit', icon: 'i-mdi-calendar-month',
     default: false,
@@ -1141,7 +1205,6 @@ const sortFields = [
   { id: 'exchange', labelKey: 'botComparison.sortByExchange' },
   { id: 'status', labelKey: 'botComparison.sortByStatus' },
   { id: 'strategy', labelKey: 'botComparison.sortByStrategy' },
-  { id: 'weekly', labelKey: 'botComparison.sortByWeekly' },
   { id: 'monthly', labelKey: 'botComparison.sortByMonthly' },
   { id: 'drawdown', labelKey: 'botComparison.sortByDrawdown' },
   { id: 'winrate', labelKey: 'botComparison.sortByWinrate' },
@@ -2095,9 +2158,6 @@ function comparatorForField(items: ComparisonTableItems[], field: string, direct
       case 'pairCount':
         cmp = (a.pairCount ?? 0) - (b.pairCount ?? 0);
         break;
-      case 'weekly':
-        cmp = (a.weeklyProfit ?? 0) - (b.weeklyProfit ?? 0);
-        break;
       case 'monthly':
         cmp = (a.monthlyProfit ?? 0) - (b.monthlyProfit ?? 0);
         break;
@@ -2195,11 +2255,12 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
     const allOpenTrades = botStore.allOpenTrades[k];
     if (!allOpenTrades) return;
     const allStakes = allOpenTrades.reduce((a, b) => a + b.stake_amount, 0);
-    const profitOpenRatio =
-      allOpenTrades.reduce(
-        (a, b) => a + (b.total_profit_ratio ?? b.profit_ratio ?? 0) * b.stake_amount,
-        0,
-      ) / allStakes;
+    const profitOpenRatio = allStakes > 0
+      ? allOpenTrades.reduce(
+          (a, b) => a + (b.total_profit_ratio ?? b.profit_ratio ?? 0) * b.stake_amount,
+          0,
+        ) / allStakes
+      : 0;
     const profitOpen = allOpenTrades.reduce(
       (a, b) => a + (b.total_profit_abs ?? b.profit_abs ?? 0),
       0,
@@ -2227,7 +2288,13 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
           : '∞'
       }`,
       profitClosed: v?.profit_closed_coin ?? 0,
-      profitClosedRatio: v?.profit_closed_ratio || 0,
+      profitClosedRatio: (() => {
+        const ac = botStore.allBotState[k]?.available_capital;
+        if (ac && ac > 0) {
+          return (v?.profit_closed_coin ?? 0) / ac;
+        }
+        return v?.profit_closed_ratio ?? 0;
+      })(),
       capitalWithdrawal: v?.capital_withdrawal ?? 0,
       stakeCurrency: botStore.allBotState[k]?.stake_currency || '',
       profitOpenRatio,
@@ -2247,6 +2314,15 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       strategy: botStore.allBotState[k]?.strategy || '',
       pairCount: botStore.botStores[k]?.whitelist?.length ?? 0,
       tradingMode: (botStore.allBotState[k]?.trading_mode as string) || 'spot',
+      availableCapital: botStore.allBotState[k]?.available_capital,
+      tradableBalanceRatio: botStore.allBotState[k]?.tradable_balance_ratio,
+      availableFunds: (() => {
+        const ac = botStore.allBotState[k]?.available_capital;
+        if (ac === undefined || ac === null) return undefined;
+        const gain = v?.profit_closed_coin ?? 0;
+        const withdraw = v?.capital_withdrawal ?? 0;
+        return ac + gain - withdraw;
+      })(),
       yearlyProfit: calculatePeriodProfit(v, 365)?.abs,
       monthlyProfit: calculateMonthlyProfit(v),
     });
@@ -2278,6 +2354,14 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
         if (yp !== undefined) {
           summary.yearlyProfit = (summary.yearlyProfit ?? 0) + yp;
           summary.perCurrencyYearlyProfit![cur] = (summary.perCurrencyYearlyProfit![cur] ?? 0) + yp;
+        }
+
+        // Available funds
+        const ac = botStore.allBotState[k]?.available_capital;
+        if (ac !== undefined && ac !== null) {
+          const gain = v.profit_closed_coin ?? 0;
+          const withdraw = v.capital_withdrawal ?? 0;
+          summary.availableFunds = (summary.availableFunds ?? 0) + ac + gain - withdraw;
         }
 
         // Per-currency profit tracking
@@ -2406,9 +2490,6 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
         case 'pairCount':
           cmp = (a.pairCount ?? 0) - (b.pairCount ?? 0);
           break;
-        case 'weekly':
-          cmp = (a.weeklyProfit ?? 0) - (b.weeklyProfit ?? 0);
-          break;
         case 'monthly':
           cmp = (a.monthlyProfit ?? 0) - (b.monthlyProfit ?? 0);
           break;
@@ -2467,9 +2548,19 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
     // Hide groups whose bots are all filtered out, but show truly empty groups
     if (group.botIds.length > 0 && memberItems.length === 0) continue;
     // Group header row
+    const groupOpenCount = memberItems.reduce((s, i) => {
+      const id = i.botId;
+      return s + (id ? (botStore.allOpenTradeCount[id] ?? 0) : 0);
+    }, 0);
+    const groupMaxTrades = memberItems.reduce((s, i) => {
+      const id = i.botId;
+      const mot = id ? (botStore.allBotState[id]?.max_open_trades as number) ?? 0 : 0;
+      return mot > 0 ? s + mot : s;
+    }, 0);
     const groupSummary: ComparisonTableItems = {
       botId: undefined,
       botName: group.name,
+      trades: `${groupOpenCount} / ${groupMaxTrades > 0 ? groupMaxTrades : '∞'}`,
       profitClosed: memberItems.reduce((s, i) => s + (i.profitClosed ?? 0), 0),
       profitOpen: memberItems.reduce((s, i) => s + (i.profitOpen ?? 0), 0),
       profitOpenRatio: undefined,
@@ -2484,6 +2575,11 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       groupIcon: group.icon,
       groupCollapsed: group.collapsed,
       groupBotCount: memberItems.length,
+      yearlyProfit: memberItems.reduce((s, i) => s + (i.yearlyProfit ?? 0), 0),
+      monthlyProfit: memberItems.reduce((s, i) => s + (i.monthlyProfit ?? 0), 0),
+      availableFunds: memberItems.some(i => i.availableFunds != null)
+        ? memberItems.reduce((s, i) => s + (i.availableFunds ?? 0), 0)
+        : undefined,
     };
     groupedResult.push(groupSummary);
     if (!group.collapsed) {
@@ -3080,6 +3176,46 @@ const correlatedPairs = computed(() => {
       </div>
     </Popover>
 
+    <!-- Available Funds popover -->
+    <Popover ref="availableFundsPopover" class="p-0">
+      <div @mouseenter="cancelAvailableFundsHoverKeepPopover()" @mouseleave="cancelAvailableFundsHover()">
+        <div v-if="hoveredAvailableFundsBotId" class="glass-card" style="width: 320px">
+          <div class="flex items-center gap-2 mb-3 pb-2 border-b border-black/10 dark:border-white/10">
+            <i-mdi-cash-multiple class="text-green-400" />
+            <span class="text-sm font-bold text-gray-100">{{ t('botComparison.availableFunds') }}</span>
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-gray-500">{{ t('botComparison.availableCapital') }}</span>
+              <span class="text-sm font-mono text-gray-200">
+                {{ formatPriceCurrency(botStore.allBotState[hoveredAvailableFundsBotId]?.available_capital ?? 0, botStore.allBotState[hoveredAvailableFundsBotId]?.stake_currency as string, 2) }}
+              </span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs" :class="(botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0) >= 0 ? 'text-green-400/70' : 'text-red-400/70'">
+                {{ (botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0) >= 0 ? '+' : '−' }} {{ t('botComparison.fundsGain') }}
+              </span>
+              <span class="text-sm font-mono" :class="(botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'">
+                {{ (botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0) >= 0 ? '+' : '' }}{{ formatPriceCurrency(botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0, botStore.allBotState[hoveredAvailableFundsBotId]?.stake_currency as string, 2) }}
+              </span>
+            </div>
+            <div v-if="(botStore.allProfit[hoveredAvailableFundsBotId]?.capital_withdrawal ?? 0) > 0" class="flex justify-between items-center">
+              <span class="text-xs text-yellow-400/70">− {{ t('botComparison.fundsWithdraw') }}</span>
+              <span class="text-sm font-mono text-yellow-400">
+                −{{ formatPriceCurrency(botStore.allProfit[hoveredAvailableFundsBotId]?.capital_withdrawal ?? 0, botStore.allBotState[hoveredAvailableFundsBotId]?.stake_currency as string, 2) }}
+              </span>
+            </div>
+            <div class="flex justify-between items-center pt-2 mt-1 border-t border-white/10">
+              <span class="text-xs font-bold text-gray-300">= {{ t('botComparison.fundsTotal') }}</span>
+              <span class="text-sm font-bold font-mono" :class="(() => { const ac = botStore.allBotState[hoveredAvailableFundsBotId]?.available_capital ?? 0; const g = botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0; const w = botStore.allProfit[hoveredAvailableFundsBotId]?.capital_withdrawal ?? 0; const v = ac + g - w; return v > 0 ? 'text-green-400' : v < 0 ? 'text-red-400' : 'text-gray-300'; })()">
+                {{ formatPriceCurrency((() => { const ac = botStore.allBotState[hoveredAvailableFundsBotId]?.available_capital ?? 0; const g = botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0; const w = botStore.allProfit[hoveredAvailableFundsBotId]?.capital_withdrawal ?? 0; return ac + g - w; })(), botStore.allBotState[hoveredAvailableFundsBotId]?.stake_currency as string, 2) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Popover>
+
     <!-- Period Profit popover -->
     <Popover ref="periodProfitPopover" class="p-0">
       <div @mouseenter="cancelPeriodProfitHoverKeepPopover()" @mouseleave="cancelPeriodProfitHover()">
@@ -3639,6 +3775,9 @@ const correlatedPairs = computed(() => {
             <i-mdi-cog v-else-if="col.id === 'strategy'" class="text-xs opacity-50" />
             <i-mdi-format-list-numbered v-else-if="col.id === 'pairCount'" class="text-xs opacity-50" />
             <i-mdi-currency-usd v-else-if="col.id === 'stakeCurrency'" class="text-xs opacity-50" />
+            <i-mdi-bank v-else-if="col.id === 'availableCapital'" class="text-xs opacity-50" />
+            <i-mdi-percent v-else-if="col.id === 'tradableBalanceRatio'" class="text-xs opacity-50" />
+            <i-mdi-cash-multiple v-else-if="col.id === 'availableFunds'" class="text-xs opacity-50" />
             <i-mdi-calendar-month v-else-if="col.id === 'monthlyProfit'" class="text-xs opacity-50" />
             <i-mdi-calendar v-else-if="col.id === 'yearlyProfit'" class="text-xs opacity-50" />
             <span>{{ t(col.labelKey) }}</span>
@@ -3753,7 +3892,12 @@ const correlatedPairs = computed(() => {
                   @mouseenter="startHoverInfo($event, data.botId)"
                   @mouseleave="cancelHoverInfo()"
                 >{{ data[field as string] }}</span>
-                <span v-else class="font-bold">{{ data[field as string] }}</span>
+                <span
+                  v-if="data.botId && isHostBot(data.botId)"
+                  class="ml-1 text-[0.6rem] px-1.5 py-0.5 rounded-sm bg-blue-500/15 text-blue-400 border border-blue-500/30 font-medium whitespace-nowrap"
+                  :title="t('botComparison.hostBotTooltip')"
+                >{{ t('botComparison.hostBotBadge') }}</span>
+                <span v-else-if="!data.botId" class="font-bold">{{ data[field as string] }}</span>
                 <!-- Currency selector for Summary row (with CoinGecko tooltip) -->
                 <span
                   v-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && summaryUniqueCurrencies.length > 1"
@@ -3915,13 +4059,20 @@ const correlatedPairs = computed(() => {
               ></span>
               <span v-else-if="data.botId && data.isOnline === false" class="inline-block w-2 h-2 rounded-full bg-surface-400 flex-shrink-0"></span>
               <Badge
-                v-if="!data.botId"
+                v-if="!data.botId && !(data as ComparisonTableItems).isGroupRow"
                 class="items-center text-slate-200 bg-slate-800 cursor-pointer"
                 severity="contrast"
                 :title="t('botComparison.selectAllBots')"
                 @click="botStore.toggleBotsByState('all')"
               >
                 {{ t('botComparison.all') }}
+              </Badge>
+              <Badge
+                v-else-if="data.isStarting"
+                class="items-center animate-pulse"
+                severity="info"
+              >
+                {{ t('general.starting') }}
               </Badge>
               <Badge
                 v-else-if="data.isOnline && data.isDryRun"
@@ -4039,7 +4190,7 @@ const correlatedPairs = computed(() => {
           <template v-else-if="col.id === 'openProfit'">
             <!-- Group header row: hover shows SummaryProfitCard filtered by group -->
             <div
-              v-if="(data as ComparisonTableItems).isGroupRow && data.profitOpen"
+              v-if="(data as ComparisonTableItems).isGroupRow && data.profitOpen != null"
               @mouseenter="startGroupOpenHover($event, getGroupBotIds((data as ComparisonTableItems).groupId))"
               @mouseleave="cancelGroupOpenHover()"
             >
@@ -4050,7 +4201,7 @@ const correlatedPairs = computed(() => {
             </div>
             <!-- Summary row: hover shows SummaryProfitCard -->
             <div
-              v-else-if="data.profitOpen && !data.botId"
+              v-else-if="data.profitOpen != null && !data.botId"
               @mouseenter="startSummaryOpenHover($event)"
               @mouseleave="cancelSummaryOpenHover()"
             >
@@ -4075,7 +4226,7 @@ const correlatedPairs = computed(() => {
             </div>
             <!-- Bot row: hover shows OpenProfitCard -->
             <div
-              v-else-if="data.profitOpen && data.botId"
+              v-else-if="data.botId && (botStore.allOpenTradeCount[data.botId] ?? 0) > 0"
               @mouseenter="startOpenProfitHover($event, data.botId)"
               @mouseleave="cancelOpenProfitHover()"
             >
@@ -4094,7 +4245,7 @@ const correlatedPairs = computed(() => {
           <template v-else-if="col.id === 'closedProfit'">
             <!-- Group header row: hover shows SummaryProfitCard filtered by group -->
             <div
-              v-if="(data as ComparisonTableItems).isGroupRow && data.profitClosed"
+              v-if="(data as ComparisonTableItems).isGroupRow && data.profitClosed != null"
               @mouseenter="startGroupClosedHover($event, getGroupBotIds((data as ComparisonTableItems).groupId))"
               @mouseleave="cancelGroupClosedHover()"
             >
@@ -4105,7 +4256,7 @@ const correlatedPairs = computed(() => {
             </div>
             <!-- Summary row: hover shows SummaryProfitCard -->
             <div
-              v-else-if="data.profitClosed && !data.botId"
+              v-else-if="data.profitClosed != null && !data.botId"
               @mouseenter="startSummaryClosedHover($event)"
               @mouseleave="cancelSummaryClosedHover()"
             >
@@ -4127,7 +4278,7 @@ const correlatedPairs = computed(() => {
             </div>
             <!-- Bot row: hover shows ClosedProfitCard -->
             <div
-              v-else-if="data.profitClosed && data.botId"
+              v-else-if="data.botId && ((data.wins ?? 0) + (data.losses ?? 0)) > 0"
               @mouseenter="startClosedProfitHover($event, data.botId)"
               @mouseleave="cancelClosedProfitHover()"
             >
@@ -4139,7 +4290,7 @@ const correlatedPairs = computed(() => {
               <!-- Sparkline removed -->
             </div>
             <div
-              v-if="(data as ComparisonTableItems).capitalWithdrawal && data.botId"
+              v-if="(data as ComparisonTableItems).capitalWithdrawal != null && (data as ComparisonTableItems).capitalWithdrawal! > 0 && data.botId"
               class="text-xs text-center opacity-70 mt-0.5"
               :title="
                 t('botComparison.netAfterWithdrawals', {
@@ -4294,11 +4445,68 @@ const correlatedPairs = computed(() => {
             </span>
           </template>
 
-          <!-- yearlyProfit -->
-          <template v-else-if="col.id === 'yearlyProfit'">
+          <!-- availableCapital (config) -->
+          <template v-else-if="col.id === 'availableCapital'">
+            <span v-if="data.botId !== undefined && (data as ComparisonTableItems).availableCapital != null" class="text-xs">
+              {{ formatPrice((data as ComparisonTableItems).availableCapital!, (data as ComparisonTableItems).stakeCurrencyDecimals) }}
+              <span class="opacity-60">{{ (data as ComparisonTableItems).stakeCurrency }}</span>
+            </span>
+            <span v-else-if="data.botId !== undefined" class="text-xs opacity-40">—</span>
+          </template>
+
+          <!-- tradableBalanceRatio (config) -->
+          <template v-else-if="col.id === 'tradableBalanceRatio'">
+            <span v-if="data.botId !== undefined && (data as ComparisonTableItems).tradableBalanceRatio != null" class="text-xs">
+              {{ ((data as ComparisonTableItems).tradableBalanceRatio! * 100).toFixed(0) }}%
+            </span>
+            <span v-else-if="data.botId !== undefined" class="text-xs opacity-40">—</span>
+          </template>
+
+          <!-- availableFunds (computed: available_capital + gain - withdrawals) -->
+          <template v-else-if="col.id === 'availableFunds'">
+            <!-- Group row -->
+            <div
+              v-if="(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).availableFunds != null"
+              class="text-center font-bold"
+              :class="(data as ComparisonTableItems).availableFunds! > 0 ? 'text-profit' : (data as ComparisonTableItems).availableFunds! < 0 ? 'text-loss' : ''"
+            >
+              {{ formatPriceCurrency((data as ComparisonTableItems).availableFunds ?? 0, (data as ComparisonTableItems).stakeCurrency, 2) }}
+            </div>
             <!-- Summary row -->
             <div
-              v-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).yearlyProfit !== undefined"
+              v-else-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).availableFunds != null"
+              class="text-center font-bold"
+              :class="(data as ComparisonTableItems).availableFunds! > 0 ? 'text-profit' : (data as ComparisonTableItems).availableFunds! < 0 ? 'text-loss' : ''"
+            >
+              {{ formatPriceCurrency((data as ComparisonTableItems).availableFunds ?? 0, (data as ComparisonTableItems).stakeCurrency, 2) }}
+            </div>
+            <!-- Bot row -->
+            <div
+              v-else-if="data.botId !== undefined && (data as ComparisonTableItems).availableFunds != null"
+              @mouseenter="startAvailableFundsHover($event, data.botId!)"
+              @mouseleave="cancelAvailableFundsHover()"
+            >
+              <span class="font-bold" :class="(data as ComparisonTableItems).availableFunds! > 0 ? 'text-profit' : (data as ComparisonTableItems).availableFunds! < 0 ? 'text-loss' : ''">
+                {{ formatPrice((data as ComparisonTableItems).availableFunds!, (data as ComparisonTableItems).stakeCurrencyDecimals) }}
+              </span>
+              <span class="text-xs opacity-60 ml-0.5">{{ (data as ComparisonTableItems).stakeCurrency }}</span>
+            </div>
+            <span v-else-if="data.botId !== undefined" class="text-xs opacity-40">—</span>
+          </template>
+
+          <!-- yearlyProfit -->
+          <template v-else-if="col.id === 'yearlyProfit'">
+            <!-- Group row -->
+            <div
+              v-if="(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).yearlyProfit != null"
+              class="text-center font-bold"
+              :class="(data as ComparisonTableItems).yearlyProfit! > 0 ? 'text-profit' : (data as ComparisonTableItems).yearlyProfit! < 0 ? 'text-loss' : ''"
+            >
+              {{ formatPriceCurrency((data as ComparisonTableItems).yearlyProfit ?? 0, (data as ComparisonTableItems).stakeCurrency, 2) }}
+            </div>
+            <!-- Summary row -->
+            <div
+              v-else-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).yearlyProfit !== undefined"
               @mouseenter="startSummaryPeriodHover($event, 'yearly')"
               @mouseleave="cancelSummaryPeriodHover()"
             >
@@ -4332,9 +4540,17 @@ const correlatedPairs = computed(() => {
 
           <!-- monthlyProfit -->
           <template v-else-if="col.id === 'monthlyProfit'">
+            <!-- Group row -->
+            <div
+              v-if="(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).monthlyProfit != null"
+              class="text-center font-bold"
+              :class="(data as ComparisonTableItems).monthlyProfit! > 0 ? 'text-profit' : (data as ComparisonTableItems).monthlyProfit! < 0 ? 'text-loss' : ''"
+            >
+              {{ formatPriceCurrency((data as ComparisonTableItems).monthlyProfit ?? 0, (data as ComparisonTableItems).stakeCurrency, 2) }}
+            </div>
             <!-- Summary row -->
             <div
-              v-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).monthlyProfit !== undefined"
+              v-else-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).monthlyProfit !== undefined"
               @mouseenter="startSummaryPeriodHover($event, 'monthly')"
               @mouseleave="cancelSummaryPeriodHover()"
             >

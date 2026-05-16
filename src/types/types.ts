@@ -158,6 +158,8 @@ export interface BotState {
   stake_currency: string;
   stake_currency_decimals?: number;
   available_balance?: number;
+  available_capital?: number;
+  tradable_balance_ratio?: number;
   strategy: string;
   /** Timeframe in readable form (e.g. 5m) */
   timeframe: string;
