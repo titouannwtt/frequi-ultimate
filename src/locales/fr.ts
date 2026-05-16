@@ -1302,6 +1302,8 @@ export default {
     noData: 'Aucune donnée disponible',
     loadError: 'Erreur de chargement',
     takingLonger: 'Le chargement prend plus de temps que prévu...',
+    loadStrategyIndicators: 'Charger les indicateurs de la stratégie',
+    strategyIndicatorsLoaded: 'Indicateurs chargés',
   },
 
   // Empty states

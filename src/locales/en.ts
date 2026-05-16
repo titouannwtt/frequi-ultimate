@@ -1342,6 +1342,8 @@ export default {
     noData: 'No data available',
     loadError: 'Failed to load data',
     takingLonger: 'This is taking longer than expected...',
+    loadStrategyIndicators: 'Load strategy indicators',
+    strategyIndicatorsLoaded: 'Indicators loaded',
   },
 
 

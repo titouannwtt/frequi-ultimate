@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ChartSliderPosition, PairHistory, Trade } from '@/types';
+import type { ChartSliderPosition, PairHistory, PlotConfig, Trade } from '@/types';
 import type { TradeSeriesOptions } from '@/utils/charts/tradeChartData';
 import type { SeriesInfo, AxisPointerValues } from './CandleChart.vue';
 import CandleChart from './CandleChart.vue';
@@ -39,15 +39,50 @@ const plotStore = usePlotConfigStore();
 
 const chartRef = ref<InstanceType<typeof CandleChart> | null>(null);
 const chartContainerRef = ref<HTMLElement | null>(null);
-const loadingStrategyIndicators = ref(false);
 
-async function importIndicatorsFromStrategy() {
+// ── Strategy indicators button ──
+const strategyPlotConfig = ref<PlotConfig | undefined>(undefined);
+const loadingStrategyIndicators = ref(false);
+const strategyIndicatorsLoaded = ref(false);
+let hideSuccessTimer: ReturnType<typeof setTimeout> | undefined;
+
+function plotConfigFingerprint(cfg: PlotConfig | undefined): string {
+  if (!cfg) return '';
+  const mainKeys = Object.keys(cfg.main_plot ?? {}).sort();
+  const subKeys = Object.keys(cfg.subplots ?? {}).sort();
+  const subIndicators = subKeys.map(k => Object.keys(cfg.subplots[k] ?? {}).sort().join(',')).join('|');
+  return `${mainKeys.join(',')}::${subIndicators}`;
+}
+
+const showStrategyButton = computed(() => {
+  if (botStore.activeBot.isWebserverMode) return false;
+  if (!strategyPlotConfig.value) return false;
+  if (strategyIndicatorsLoaded.value) return true;
+  const currentFp = plotConfigFingerprint(plotStore.plotConfig as PlotConfig);
+  const stratFp = plotConfigFingerprint(strategyPlotConfig.value);
+  return stratFp !== '' && currentFp !== stratFp;
+});
+
+async function fetchStrategyPlotConfig() {
+  strategyIndicatorsLoaded.value = false;
+  try {
+    strategyPlotConfig.value = await botStore.activeBot.getStrategyPlotConfig();
+  } catch {
+    strategyPlotConfig.value = undefined;
+  }
+}
+
+async function loadStrategyIndicators() {
   loadingStrategyIndicators.value = true;
   try {
-    const config = await botStore.activeBot.getStrategyPlotConfig();
+    const config = strategyPlotConfig.value ?? await botStore.activeBot.getStrategyPlotConfig();
     if (config) {
       plotStore.saveCustomPlotConfig(plotStore.plotConfigName, config);
       plotStore.plotConfigChanged();
+      strategyPlotConfig.value = config;
+      strategyIndicatorsLoaded.value = true;
+      if (hideSuccessTimer) clearTimeout(hideSuccessTimer);
+      hideSuccessTimer = setTimeout(() => { strategyIndicatorsLoaded.value = false; }, 5000);
     }
   } catch {
     // silently fail
@@ -56,7 +91,19 @@ async function importIndicatorsFromStrategy() {
   }
 }
 
-const hasStrategyPlotConfig = computed(() => !botStore.activeBot.isWebserverMode);
+watch(() => botStore.activeBot.strategy?.strategy, () => {
+  fetchStrategyPlotConfig();
+});
+
+watch(() => plotStore.plotConfig, () => {
+  if (strategyIndicatorsLoaded.value) return;
+}, { deep: true });
+
+onMounted(() => {
+  if (!botStore.activeBot.isWebserverMode) {
+    fetchStrategyPlotConfig();
+  }
+});
 
 const seriesList = ref<SeriesInfo[]>([]);
 const axisValues = ref<AxisPointerValues | undefined>(undefined);
@@ -220,15 +267,19 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
         </template>
       </div>
       <span class="pair-label">{{ pair || 'Pair' }}</span>
-      <button
-        v-if="hasStrategyPlotConfig"
-        class="import-strat-btn"
-        :disabled="loadingStrategyIndicators"
-        title="Importer les indicateurs depuis la stratégie"
-        @click="importIndicatorsFromStrategy"
-      >
-        <i-mdi-chart-line-variant class="w-3.5 h-3.5" />
-      </button>
+      <Transition name="strat-btn">
+        <button
+          v-if="showStrategyButton"
+          class="load-strat-btn"
+          :class="{ 'load-strat-btn--success': strategyIndicatorsLoaded }"
+          :disabled="loadingStrategyIndicators"
+          @click="loadStrategyIndicators"
+        >
+          <i-mdi-check v-if="strategyIndicatorsLoaded" class="w-3.5 h-3.5" />
+          <i-mdi-chart-line-variant v-else class="w-3.5 h-3.5" />
+          <span>{{ strategyIndicatorsLoaded ? t('charts.strategyIndicatorsLoaded') : t('charts.loadStrategyIndicators') }}</span>
+        </button>
+      </Transition>
       <div class="signal-bar-right">
         <ProgressSpinner v-if="isLoadingDataset" class="w-3.5 h-3.5" stroke-width="4" />
       </div>
@@ -369,27 +420,44 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
   color: rgba(255, 255, 255, 0.7);
 }
 
-.import-strat-btn {
-  display: flex;
+.load-strat-btn {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
   border-radius: 0.25rem;
-  border: none;
-  background: transparent;
-  color: rgba(99, 102, 241, 0.6);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.08);
+  color: rgba(99, 102, 241, 0.9);
+  font-size: 0.6875rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
   flex-shrink: 0;
+  white-space: nowrap;
 }
-.import-strat-btn:hover {
-  background: rgba(99, 102, 241, 0.1);
-  color: rgba(99, 102, 241, 1);
+.load-strat-btn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.5);
 }
-.import-strat-btn:disabled {
-  opacity: 0.3;
+.load-strat-btn:disabled {
+  opacity: 0.5;
   cursor: default;
+}
+.load-strat-btn--success {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.1);
+  color: rgba(34, 197, 94, 0.9);
+  cursor: default;
+}
+.strat-btn-enter-active,
+.strat-btn-leave-active {
+  transition: opacity 0.3s, transform 0.3s;
+}
+.strat-btn-enter-from,
+.strat-btn-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
 }
 
 .signal-bar-right {
