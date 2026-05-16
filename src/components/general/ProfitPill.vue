@@ -9,9 +9,14 @@ const isProfitable = computed<boolean | null>(() => {
   if (!isDefined(props.profitRatio) && !isDefined(props.profitAbs)) {
     return null;
   }
+  const ratio = props.profitRatio;
+  const abs = props.profitAbs;
+  if ((ratio !== undefined && ratio !== null && ratio === 0) || (ratio === undefined && abs === 0)) {
+    return null;
+  }
   return (
-    (isDefined(props.profitRatio) && props.profitRatio > 0) ||
-    (props.profitRatio === undefined && props.profitAbs !== undefined && props.profitAbs > 0)
+    (isDefined(ratio) && ratio > 0) ||
+    (ratio === undefined && abs !== undefined && abs > 0)
   );
 });
 
