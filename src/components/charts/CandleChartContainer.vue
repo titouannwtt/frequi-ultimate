@@ -157,13 +157,9 @@ const activeOptionsCount = computed(() => {
         </span>
         <span class="tf-badge">{{ timeframe || '' }}</span>
 
-        <Select
+        <PairSelectorAdvanced
           v-model="singlePairSelection"
-          class="chart-pair-select"
-          :options="availablePairs"
-          size="small"
-          :clearable="false"
-          @input="refresh"
+          :available-pairs="availablePairs"
         />
 
         <button
@@ -385,18 +381,6 @@ const activeOptionsCount = computed(() => {
 .ft-dark-theme .tf-badge {
   color: rgb(165, 180, 252);
   background: rgba(99, 102, 241, 0.12);
-}
-
-/* ── Pair selector ── */
-.chart-pair-select {
-  min-width: 140px;
-  max-width: 220px;
-}
-.chart-pair-select :deep(.p-select),
-.chart-pair-select :deep(.p-multiselect) {
-  font-size: 0.75rem;
-  height: 1.625rem;
-  border-radius: 0.375rem;
 }
 
 /* ── Toolbar buttons ── */
