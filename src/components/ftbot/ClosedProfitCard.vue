@@ -32,6 +32,15 @@ const roiPercent = computed(() => profit.value?.profit_closed_ratio ?? 0);
 const capitalWithdrawal = computed(() => profit.value?.capital_withdrawal ?? 0);
 const netProfit = computed(() => totalRealizedProfit.value - capitalWithdrawal.value);
 
+const estimatedStartingCapital = computed(() => {
+  if (!roiPercent.value || Math.abs(roiPercent.value) < 1e-9) return 0;
+  return totalRealizedProfit.value / roiPercent.value;
+});
+const effectiveRoi = computed(() => {
+  if (estimatedStartingCapital.value <= 0) return 0;
+  return netProfit.value / estimatedStartingCapital.value;
+});
+
 // % of this bot's profit vs total profit of all selected bots
 const totalAllBotsProfit = computed(() => {
   let total = 0;
@@ -58,23 +67,6 @@ const avgProfitPerWeek = computed(() => {
 });
 
 // Sparkline bars (approximated weekly average for last 4 "weeks")
-const weeklyBars = computed(() => {
-  if (!avgProfitPerWeek.value) return [];
-  const avg = avgProfitPerWeek.value;
-  // Show 4 bars representing estimated weekly performance
-  // Since we only have aggregate data, we show the average with slight variation
-  return [
-    { value: avg * 0.85, label: '4w ago' },
-    { value: avg * 1.1, label: '3w ago' },
-    { value: avg * 0.95, label: '2w ago' },
-    { value: avg * 1.1, label: '1w ago' },
-  ];
-});
-
-const maxBarValue = computed(() => {
-  if (weeklyBars.value.length === 0) return 1;
-  return Math.max(...weeklyBars.value.map((b) => Math.abs(b.value)));
-});
 
 // ── Section 2: Win Rate Donut ──
 const wins = computed(() => profit.value?.winning_trades ?? 0);
@@ -110,26 +102,26 @@ const performanceMetrics = computed(() => {
     },
     {
       label: t('profit.cagr'),
-      value: profit.value.cagr !== undefined ? formatPercent(profit.value.cagr, 1) : 'N/A',
-      color: metricColor(profit.value.cagr, 0.2, 0),
+      value: profit.value.cagr !== undefined && Math.abs(profit.value.cagr) < 100 ? formatPercent(profit.value.cagr, 1) : 'N/A',
+      color: profit.value.cagr !== undefined && Math.abs(profit.value.cagr) < 100 ? metricColor(profit.value.cagr, 0.2, 0) : '',
       tooltip: t('tooltips.cagr'),
     },
     {
       label: t('profit.sharpe'),
-      value: profit.value.sharpe !== undefined ? formatNumber(profit.value.sharpe, 2) : 'N/A',
-      color: metricColor(profit.value.sharpe, 1, 0),
+      value: profit.value.sharpe !== undefined && Math.abs(profit.value.sharpe) < 1000 ? formatNumber(profit.value.sharpe, 2) : 'N/A',
+      color: profit.value.sharpe !== undefined && Math.abs(profit.value.sharpe) < 1000 ? metricColor(profit.value.sharpe, 1, 0) : '',
       tooltip: t('tooltips.sharpe'),
     },
     {
       label: t('profit.sortino'),
-      value: profit.value.sortino !== undefined ? formatNumber(profit.value.sortino, 2) : 'N/A',
-      color: metricColor(profit.value.sortino, 1.5, 0),
+      value: profit.value.sortino !== undefined && Math.abs(profit.value.sortino) < 1000 ? formatNumber(profit.value.sortino, 2) : 'N/A',
+      color: profit.value.sortino !== undefined && Math.abs(profit.value.sortino) < 1000 ? metricColor(profit.value.sortino, 1.5, 0) : '',
       tooltip: t('tooltips.sortino'),
     },
     {
       label: t('profit.sqn'),
-      value: profit.value.sqn !== undefined ? formatNumber(profit.value.sqn, 2) : 'N/A',
-      color: metricColor(profit.value.sqn, 2, 0),
+      value: profit.value.sqn !== undefined && Math.abs(profit.value.sqn) < 1000 ? formatNumber(profit.value.sqn, 2) : 'N/A',
+      color: profit.value.sqn !== undefined && Math.abs(profit.value.sqn) < 1000 ? metricColor(profit.value.sqn, 2, 0) : '',
       tooltip: t('tooltips.sqn'),
     },
     {
@@ -209,17 +201,6 @@ function profitColor(val: number | undefined | null): string {
           <div class="text-[0.85rem] mt-0.5" :class="profitColor(roiPercent)" v-tooltip.top="t('tooltips.roi')">
             ROI {{ formatPercent(roiPercent, 2) }}
           </div>
-        </div>
-        <!-- Mini sparkline bars -->
-        <div v-if="weeklyBars.length > 0" class="flex items-end gap-1 h-8">
-          <div
-            v-for="(bar, i) in weeklyBars"
-            :key="i"
-            class="w-3 rounded-sm transition-all duration-500"
-            :class="bar.value >= 0 ? 'bg-green-500/60' : 'bg-red-500/60'"
-            :style="{ height: `${Math.max((Math.abs(bar.value) / maxBarValue) * 100, 10)}%` }"
-            v-tooltip.top="bar.label"
-          />
         </div>
       </div>
       <div v-if="capitalWithdrawal > 0" class="text-[0.8rem] text-gray-600 dark:text-gray-500 mt-1">
@@ -402,8 +383,8 @@ function profitColor(val: number | undefined | null): string {
           </div>
           <div v-if="roiPercent" class="stat-row">
             <span class="stat-label" v-tooltip="t('tooltips.roi')">{{ t('closedProfitCard.effectiveRoi') }}</span>
-            <span class="stat-value" :class="profitColor(netProfit)">
-              {{ formatPercent(netProfit / (totalRealizedProfit / (roiPercent || 1)), 2) }}
+            <span class="stat-value" :class="profitColor(effectiveRoi)">
+              {{ formatPercent(effectiveRoi, 2) }}
             </span>
           </div>
         </div>

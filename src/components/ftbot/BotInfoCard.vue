@@ -76,8 +76,8 @@ const hasTradeData = computed(() => {
 });
 
 const winrate = computed(() => {
-  if (!props.profit?.winrate) return 0;
-  return props.profit.winrate * 100;
+  if (totalTrades.value <= 0) return 0;
+  return (wins.value / totalTrades.value) * 100;
 });
 
 const wins = computed(() => props.profit?.winning_trades ?? 0);
@@ -278,19 +278,19 @@ function metricColor(val: number | undefined): string {
       <div class="grid grid-cols-3 gap-x-3 gap-y-0.5">
         <div class="flex flex-col items-center">
           <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.cagr')">{{ t('profit.cagr') }}</span>
-          <span class="font-bold" :class="metricColor(profit?.cagr)">{{ profit?.cagr ? formatPercent(profit.cagr, 1) : 'N/A' }}</span>
+          <span class="font-bold" :class="metricColor(profit?.cagr)">{{ profit?.cagr && Math.abs(profit.cagr) < 100 ? formatPercent(profit.cagr, 1) : 'N/A' }}</span>
         </div>
         <div class="flex flex-col items-center">
           <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.sharpe')">{{ t('profit.sharpe') }}</span>
-          <span class="font-bold" :class="metricColor(profit?.sharpe)">{{ formatNumber(profit?.sharpe, 2) }}</span>
+          <span class="font-bold" :class="metricColor(profit?.sharpe)">{{ profit?.sharpe != null && Math.abs(profit.sharpe) < 1000 ? formatNumber(profit.sharpe, 2) : 'N/A' }}</span>
         </div>
         <div class="flex flex-col items-center">
           <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.sortino')">{{ t('profit.sortino') }}</span>
-          <span class="font-bold" :class="metricColor(profit?.sortino)">{{ formatNumber(profit?.sortino, 2) }}</span>
+          <span class="font-bold" :class="metricColor(profit?.sortino)">{{ profit?.sortino != null && Math.abs(profit.sortino) < 1000 ? formatNumber(profit.sortino, 2) : 'N/A' }}</span>
         </div>
         <div class="flex flex-col items-center">
           <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.sqn')">{{ t('profit.sqn') }}</span>
-          <span class="font-bold" :class="metricColor(profit?.sqn)">{{ formatNumber(profit?.sqn, 2) }}</span>
+          <span class="font-bold" :class="metricColor(profit?.sqn)">{{ profit?.sqn != null && Math.abs(profit.sqn) < 1000 ? formatNumber(profit.sqn, 2) : 'N/A' }}</span>
         </div>
         <div class="flex flex-col items-center">
           <span class="text-gray-600 dark:text-gray-500" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.expectancy')">{{ t('profit.expectancy') }}</span>
