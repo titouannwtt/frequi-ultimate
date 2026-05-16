@@ -135,9 +135,10 @@ export const useBotComparisonStore = defineStore('botComparison', {
       if (this.visibleColumnIds.length === 0) {
         this.visibleColumnIds = defaultColumnIds;
       } else {
-        // Ensure new default columns are included if missing from saved config
+        // Only add columns that are genuinely new (not in columnOrder yet).
+        // If a column is in columnOrder but not visibleColumnIds, the user removed it.
         for (const id of defaultColumnIds) {
-          if (!this.visibleColumnIds.includes(id)) {
+          if (!this.visibleColumnIds.includes(id) && !this.columnOrder.includes(id)) {
             const lastIdx = Math.max(
               ...defaultColumnIds.map((d) => this.visibleColumnIds.indexOf(d)).filter((i) => i >= 0),
               0,
