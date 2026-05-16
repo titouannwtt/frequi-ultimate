@@ -55,9 +55,11 @@ const avgWinrate = computed(() => {
 });
 
 const avgProfitFactor = computed(() => {
-  const entries = botEntries.value.filter((e) => e.profitFactor !== undefined && e.profitFactor !== null);
+  const entries = botEntries.value.filter((e) => e.profitFactor !== undefined && e.profitFactor !== null && e.totalTrades > 0);
   if (entries.length === 0) return undefined;
-  return entries.reduce((sum, e) => sum + (e.profitFactor ?? 0), 0) / entries.length;
+  const totalWeight = entries.reduce((sum, e) => sum + e.totalTrades, 0);
+  if (totalWeight <= 0) return undefined;
+  return entries.reduce((sum, e) => sum + (e.profitFactor ?? 0) * e.totalTrades, 0) / totalWeight;
 });
 
 const bestBot = computed(() => {

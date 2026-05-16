@@ -131,8 +131,9 @@ const yearlyProjectedEnd = computed(() => {
 });
 
 // Yearly compound projection: if profits compound, remaining days grow exponentially
+// Requires 30+ days of data to avoid wild extrapolation early in the year
 const yearlyProjectedEndCompound = computed(() => {
-  if (todayDayOfYear <= 0 || yearlyCurrentProfit.value <= 0 || !profit.value?.profit_closed_ratio) return yearlyProjectedEnd.value;
+  if (todayDayOfYear < 30 || yearlyCurrentProfit.value <= 0 || !profit.value?.profit_closed_ratio) return yearlyProjectedEnd.value;
   const ratio = profit.value.profit_closed_ratio;
   if (ratio <= 0) return yearlyProjectedEnd.value;
   const capitalInitial = totalProfit.value / ratio;
@@ -140,9 +141,9 @@ const yearlyProjectedEndCompound = computed(() => {
   const capitalNow = capitalInitial + yearlyCurrentProfit.value;
   const dailyRate = Math.pow(capitalNow / capitalInitial, 1 / todayDayOfYear) - 1;
   if (dailyRate <= 0) return yearlyProjectedEnd.value;
-  // Project remaining days with compounding
   const projected = capitalNow * Math.pow(1 + dailyRate, daysInYear - todayDayOfYear) - capitalInitial;
-  return projected;
+  const maxProjection = capitalInitial * 10;
+  return Math.min(projected, maxProjection);
 });
 
 // Monthly target = monthlyAvgProfit (the average monthly profit from period averages)
@@ -321,18 +322,17 @@ const annualizedReturn = computed(() => {
 });
 
 // Annualized return (compound — snowball effect for stake_amount: "unlimited")
+// Requires 30+ days to avoid wild extrapolation
 const annualizedCompound = computed(() => {
-  if (tradingPeriodDays.value < 1 || !profit.value?.profit_closed_ratio) return undefined;
+  if (tradingPeriodDays.value < 30 || !profit.value?.profit_closed_ratio) return undefined;
   const ratio = profit.value.profit_closed_ratio;
   if (ratio <= 0) return undefined;
-  // Reconstruct starting capital: profit / ratio = capital
   const capitalInitial = totalProfit.value / ratio;
   if (capitalInitial <= 0) return undefined;
   const capitalFinal = capitalInitial + totalProfit.value;
-  // Daily compound rate
   const dailyRate = Math.pow(capitalFinal / capitalInitial, 1 / tradingPeriodDays.value) - 1;
-  // Projected compound profit over 1 year
-  return capitalInitial * (Math.pow(1 + dailyRate, 365) - 1);
+  const result = capitalInitial * (Math.pow(1 + dailyRate, 365) - 1);
+  return Math.min(result, capitalInitial * 10);
 });
 
 // Projections at current rate
@@ -453,7 +453,7 @@ function profitColor(val: number | undefined | null): string {
               {{ formatPriceCurrency(annualizedCompound, currency, 0) }}
             </span>
           </div>
-          <div v-if="profit.cagr !== undefined" class="stat-row">
+          <div v-if="profit.cagr !== undefined && Math.abs(profit.cagr) < 100" class="stat-row">
             <span class="stat-label" v-tooltip.top="t('tooltips.cagr')">{{ t('profit.cagr') }}</span>
             <span class="stat-value" :class="profitColor(profit.cagr)">
               {{ formatPercent(profit.cagr, 2) }}
