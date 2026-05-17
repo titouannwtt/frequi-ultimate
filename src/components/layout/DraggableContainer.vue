@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { useWindowSize } from '@vueuse/core';
 
 defineOptions({
   inheritAttrs: false,
 });
 
 const { t } = useI18n();
-const REFERENCE_WIDTH = 1920;
-const { width: viewportWidth } = useWindowSize();
 
 const props = withDefaults(
   defineProps<{
@@ -39,37 +36,11 @@ const layoutStore = useLayoutStore();
 const isHidden = computed(() =>
   props.widgetId >= 0 && !layoutStore.isWidgetVisible(props.widgetId),
 );
-
-const currentZoom = computed(() =>
-  props.widgetId >= 0 ? layoutStore.getWidgetZoom(props.widgetId) : 100,
-);
-
-const viewportScale = computed(() =>
-  layoutStore.adaptiveZoom
-    ? Math.max(0.6, Math.min(1.5, viewportWidth.value / REFERENCE_WIDTH))
-    : 1,
-);
-
-const effectiveZoom = computed(() => {
-  if (props.widgetId < 0) return 100;
-  return Math.round(currentZoom.value * viewportScale.value);
-});
-
-const zoomStyle = computed(() => {
-  if (effectiveZoom.value === 100) return undefined;
-  const s = effectiveZoom.value / 100;
-  const pct = (100 / s).toFixed(4);
-  return {
-    zoom: s,
-    width: `${pct}%`,
-    height: `${pct}%`,
-  };
-});
 </script>
 
 <template>
   <div
-    class="ft-widget flex flex-col h-full w-full rounded-lg overflow-hidden"
+    class="ft-widget flex flex-col h-full w-full rounded-lg"
     :class="{
       'ft-widget-edit': layoutStore.editMode && !isHidden,
       'ft-widget-hidden-border': isHidden && layoutStore.editMode,
@@ -105,26 +76,6 @@ const zoomStyle = computed(() => {
           @touchstart.stop
           @pointerdown.stop
         >
-          <div class="flex items-center gap-1.5">
-            <i-mdi-magnify class="w-4 h-4 text-surface-400" />
-            <input
-              type="range"
-              :value="currentZoom"
-              min="60"
-              max="120"
-              step="5"
-              class="w-20 h-1.5 accent-indigo-500 cursor-pointer"
-              @input="layoutStore.setWidgetZoom(widgetId, parseInt(($event.target as HTMLInputElement).value))"
-            />
-            <span class="text-[11px] text-surface-400 w-7 text-right font-mono">{{ currentZoom }}%</span>
-            <button
-              v-if="currentZoom !== 100"
-              class="text-indigo-400 hover:text-indigo-300 cursor-pointer"
-              @click.stop="layoutStore.setWidgetZoom(widgetId, 100)"
-            >
-              <i-mdi-refresh class="w-3.5 h-3.5" />
-            </button>
-          </div>
           <button
             v-if="hasColumnSettings"
             class="flex items-center gap-1 px-2 py-1 rounded-md transition-colors cursor-pointer hover:bg-black/10 dark:hover:bg-white/10"
@@ -172,7 +123,6 @@ const zoomStyle = computed(() => {
     <div
       class="p-0 h-full w-full overflow-auto bg-surface-50 dark:bg-transparent"
       :class="{ 'ft-widget-hidden-content': isHidden && layoutStore.editMode }"
-      :style="zoomStyle"
       v-bind="$attrs"
     >
       <slot></slot>
@@ -182,6 +132,7 @@ const zoomStyle = computed(() => {
 
 <style scoped>
 .ft-widget {
+  clip-path: inset(0 round 0.5rem);
   animation: ft-fade-in 300ms ease-out;
   transition: border 300ms ease, box-shadow 300ms ease;
 }

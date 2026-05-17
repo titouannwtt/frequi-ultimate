@@ -74,23 +74,6 @@ const DEFAULT_DASHBOARD_LAYOUT: GridItemData[] = [
   { i: DashboardLayout.cacheHealth, x: 0, y: 400, w: 0, h: 0 },
 ];
 
-const DEFAULT_WIDGET_ZOOMS: Record<number, number> = {
-  [DashboardLayout.dailyChart]: 75,
-  [DashboardLayout.botComparison]: 60,
-  [DashboardLayout.allOpenTrades]: 75,
-  [DashboardLayout.allClosedTrades]: 75,
-  [DashboardLayout.profitDistributionChart]: 80,
-  [DashboardLayout.activityTimeline]: 75,
-  [DashboardLayout.marketPulse]: 75,
-  [DashboardLayout.riskOverview]: 120,
-  [DashboardLayout.stressTest]: 85,
-  [DashboardLayout.logConsole]: 90,
-  [DashboardLayout.rateBudget]: 90,
-  [DashboardLayout.ratePulse]: 90,
-  [DashboardLayout.fleetOverview]: 90,
-  [DashboardLayout.volumeComparator]: 90,
-};
-
 const DEFAULT_WIDGET_DEFAULTS: Record<number, Record<string, unknown>> = {
   [DashboardLayout.dailyChart]: {
     activeTab: 'combined',
@@ -213,10 +196,8 @@ export const useLayoutStore = defineStore('layoutStore', {
       editMode: false,
       hiddenWidgets: [] as number[],
       widgetOpacity: 1,
-      widgetZooms: {} as Record<number, number>,
       widgetDefaults: {} as Record<number, Record<string, unknown>>,
       backgroundAnimation: true,
-      adaptiveZoom: true,
     };
   },
   getters: {
@@ -230,11 +211,9 @@ export const useLayoutStore = defineStore('layoutStore', {
     resetDashboardLayout() {
       this.dashboardLayout = JSON.parse(JSON.stringify(DEFAULT_DASHBOARD_LAYOUT));
       this.hiddenWidgets = [];
-      this.widgetZooms = JSON.parse(JSON.stringify(DEFAULT_WIDGET_ZOOMS));
       this.widgetDefaults = JSON.parse(JSON.stringify(DEFAULT_WIDGET_DEFAULTS));
       this.widgetOpacity = 1;
       this.backgroundAnimation = true;
-      this.adaptiveZoom = true;
       localStorage.removeItem('enhancedOpenTradeColumns');
       localStorage.removeItem('enhancedClosedTradeColumns');
       localStorage.removeItem('enhancedOpenTradeColumnOrder');
@@ -258,9 +237,6 @@ export const useLayoutStore = defineStore('layoutStore', {
     },
     setWidgetOpacity(v: number) {
       this.widgetOpacity = Math.max(0.3, Math.min(1, v));
-    },
-    getWidgetZoom(id: number): number {
-      return this.widgetZooms[id] ?? DEFAULT_WIDGET_ZOOMS[id] ?? 100;
     },
     getWidgetDefaults(id: number): Record<string, unknown> | undefined {
       return this.widgetDefaults[id] ?? DEFAULT_WIDGET_DEFAULTS[id];
@@ -313,9 +289,6 @@ export const useLayoutStore = defineStore('layoutStore', {
     },
     compactTradingLayout() {
       this.tradingLayout = this.compactLayout(this.tradingLayout, 12);
-    },
-    setWidgetZoom(id: number, v: number) {
-      this.widgetZooms[id] = Math.max(60, Math.min(120, Math.round(v)));
     },
   },
   persist: {
