@@ -622,41 +622,6 @@ watch(() => route?.fullPath, () => {
           </div>
         </div>
         <div class="w-px h-4 bg-white/10" />
-        <div class="relative adaptive-zoom-wrapper">
-          <button
-            class="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border transition-colors cursor-pointer"
-            :class="layoutStore.adaptiveZoom
-              ? 'text-indigo-300 bg-indigo-500/15 border-indigo-400/30 hover:bg-indigo-500/25'
-              : 'text-surface-500 border-surface-600 hover:text-surface-300 hover:border-surface-500'"
-            @click="layoutStore.adaptiveZoom = !layoutStore.adaptiveZoom"
-          >
-            <i-mdi-fit-to-screen class="w-3.5 h-3.5" />
-            {{ t('nav.adaptiveZoom') }}
-          </button>
-          <div class="az-popover">
-            <div class="az-popover-title">{{ t('nav.adaptiveZoom') }}</div>
-            <p class="az-popover-desc">{{ t('nav.adaptiveZoomDesc') }}</p>
-            <div class="az-demo">
-              <div class="az-demo-row">
-                <span class="az-demo-label">Activé</span>
-                <div class="az-demo-viz az-demo-on">
-                  <div class="az-demo-widget" />
-                  <div class="az-demo-widget" />
-                </div>
-                <span class="az-demo-hint">Les widgets s'adaptent à la fenêtre</span>
-              </div>
-              <div class="az-demo-row">
-                <span class="az-demo-label">Désactivé</span>
-                <div class="az-demo-viz az-demo-off">
-                  <div class="az-demo-widget" />
-                  <div class="az-demo-widget" />
-                </div>
-                <span class="az-demo-hint">Taille fixe, identique sur tous les écrans</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="w-px h-4 bg-white/10" />
         <button
           class="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md text-blue-300 bg-blue-500/10 border border-blue-400/20 hover:bg-blue-500/20 transition-colors cursor-pointer"
           @click="confirmOptimizeLayout"
@@ -974,10 +939,7 @@ watch(() => route?.fullPath, () => {
   50% { opacity: 0.65; }
 }
 
-/* ── Adaptive-zoom popover ── */
-.adaptive-zoom-wrapper {
-  position: relative;
-}
+/* ── Hover popover ── */
 .az-popover {
   display: none;
   position: absolute;
@@ -998,9 +960,6 @@ watch(() => route?.fullPath, () => {
   background: rgba(245, 242, 238, 0.97);
   border: 1px solid rgba(99, 102, 241, 0.2);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-}
-.adaptive-zoom-wrapper:hover .az-popover {
-  display: block;
 }
 .az-popover-title {
   font-size: 0.8125rem;
@@ -1047,29 +1006,6 @@ watch(() => route?.fullPath, () => {
   height: 28px;
   flex-shrink: 0;
 }
-.az-demo-widget {
-  border-radius: 3px;
-  background: rgba(99, 102, 241, 0.3);
-  border: 1px solid rgba(99, 102, 241, 0.5);
-}
-.az-demo-on .az-demo-widget:first-child {
-  width: 32px;
-  height: 20px;
-  animation: az-breathe 2.5s ease-in-out infinite;
-}
-.az-demo-on .az-demo-widget:last-child {
-  width: 24px;
-  height: 16px;
-  animation: az-breathe 2.5s ease-in-out 0.3s infinite;
-}
-.az-demo-off .az-demo-widget:first-child {
-  width: 28px;
-  height: 18px;
-}
-.az-demo-off .az-demo-widget:last-child {
-  width: 28px;
-  height: 18px;
-}
 .az-demo-hint {
   font-size: 0.5625rem;
   color: rgba(255, 255, 255, 0.4);
@@ -1078,11 +1014,6 @@ watch(() => route?.fullPath, () => {
 :root:not(.ft-dark-theme) .az-demo-hint {
   color: rgba(0, 0, 0, 0.45);
 }
-@keyframes az-breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-}
-
 /* ── Animation popover ── */
 .anim-popover-wrapper {
   position: relative;
