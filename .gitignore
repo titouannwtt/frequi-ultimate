@@ -32,9 +32,18 @@ yarn-error.log*
 
 # === Fork custom: never commit these ===
 
-# Local docs and notes (only README.md is shared)
+# Local docs and notes (only project-meta .md files are shared)
 *.md
 !README.md
+!CHANGELOG.md
+!CHANGELOG_FORK.md
+!CODE_OF_CONDUCT.md
+!CONTRIBUTING.md
+!.github/**/*.md
+
+# Build artifacts (built locally, attached to GitHub Releases instead)
+frequi-dist.tar.gz
+frequi-dist.zip
 
 # Extra safety for secrets
 .env
