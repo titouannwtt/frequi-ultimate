@@ -34,6 +34,7 @@ A fork of [FreqUI](https://github.com/freqtrade/frequi) rebuilt around two needs
 - **DashboardViewCustom** — Glassmorphism redesign with persistent layouts (Pinia store).
 - **Enhanced widgets** — MarketPulse, ActivityTimeline, PerformanceHeatmap, RiskOverview, StressTestCard, TradesLogEnhanced, LogViewerEnhanced.
 - **Enhanced charts** — ProfitBenchmarkChart, ProfitDistributionEnhanced, ProfitOverTimeEnhanced, CumulativeProfitEnhanced, OpenTradesEnhanced, ClosedTradesEnhanced.
+- **BotProfitComparisonChart** — Per-bot realized P&L as a bar chart to compare bots head-to-head over a chosen window. Period selector (24h, today, 48h, 7d, 14d, 1/2/3/6 months, 1 year, All), live/all/dry filter, value in the summary currency or in % of allocated capital, sortable, with the fleet total. Honors the bots selected in *Bot comparison* intersected with its own live/dry filter. Profit is summed from each bot's cached closed trades (no extra API calls) and currencies are normalized via the dashboard's exchange rates.
 
 ### Multi-bot fleet management
 - **BotComparisonList** — Custom columns, tags, filters, sorting, groups, **13 alert types**, drag-drop reordering, CSV export, keyboard shortcuts (+4 530 lines over upstream).
