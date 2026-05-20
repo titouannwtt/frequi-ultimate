@@ -3,7 +3,7 @@ import { TimeSummaryCols, TimeSummaryOptions } from '@/types';
 import type { ThemeName, UiVersion } from '@/types';
 import { FtWsMessageTypes } from '@/types/wsMessageTypes';
 
-const FORK_REPO = 'titouannwtt/frequi-fork';
+const FORK_REPO = 'titouannwtt/frequi-ultimate';
 const UPDATE_CHECK_KEY = 'ftForkUpdateCheck';
 const UPDATE_CHECK_TTL = 3600_000; // 1 hour
 

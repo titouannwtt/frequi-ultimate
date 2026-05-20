@@ -466,7 +466,7 @@ watch(() => route?.fullPath, () => {
             >v{{ settingsStore.forkVersion }}</span>
             <a
               v-if="settingsStore.forkUpdateAvailable"
-              href="https://github.com/titouannwtt/frequi-fork/releases/latest"
+              href="https://github.com/titouannwtt/frequi-ultimate/releases/latest"
               target="_blank"
               rel="noopener"
               class="fork-update-badge text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap"
@@ -536,7 +536,7 @@ watch(() => route?.fullPath, () => {
                 >v{{ settingsStore.forkVersion }}</span>
                 <a
                   v-if="settingsStore.forkUpdateAvailable"
-                  href="https://github.com/titouannwtt/frequi-fork/releases/latest"
+                  href="https://github.com/titouannwtt/frequi-ultimate/releases/latest"
                   target="_blank"
                   rel="noopener"
                   class="fork-update-badge text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap"
