@@ -24,6 +24,8 @@ export interface AuthStorage {
   accessToken: string;
   autoRefresh: boolean;
   sortId?: number;
+  /** Epoch ms when this bot was first added to FreqUI. Used for "oldest → newest" sorting. */
+  createdAt?: number;
 }
 
 export interface AuthStorageWithBotId extends AuthStorage {
@@ -41,6 +43,8 @@ export interface BotDescriptor {
   botId: string;
   botUrl: string;
   sortId: number;
+  /** Epoch ms when this bot was first added to FreqUI. Used for "oldest → newest" sorting. */
+  createdAt?: number;
 }
 
 export interface BotDescriptors {

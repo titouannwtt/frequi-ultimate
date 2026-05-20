@@ -33,6 +33,7 @@ export const loggedInBots = computed<BotDescriptors>(() => {
         botIcon: bot.botIcon,
         botUrl: bot.apiUrl,
         sortId: bot.sortId ?? idx,
+        createdAt: bot.createdAt,
       };
     });
 
@@ -134,7 +135,15 @@ export function useLoginInfo(botId: string) {
 
   async function login(auth: AuthPayload) {
     const loginInfo = await loginCall(auth);
-    currentInfo.value = loginInfo;
+    // Preserve UI-side metadata across re-login (edit bot) so we don't wipe the
+    // bot's icon, manual sort position or original add date when the token is renewed.
+    const existing = allLoginInfos.value[botId];
+    currentInfo.value = {
+      ...loginInfo,
+      botIcon: existing?.botIcon ?? loginInfo.botIcon,
+      sortId: existing?.sortId,
+      createdAt: existing?.createdAt ?? Date.now(),
+    };
   }
 
   function refreshToken(): Promise<string> {
