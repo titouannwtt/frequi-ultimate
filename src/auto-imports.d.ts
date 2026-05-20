@@ -15,6 +15,7 @@ declare global {
   const EffectScope: typeof import('vue').EffectScope
   const KNOWN_BENCHMARKS: typeof import('./utils/benchmarkData').KNOWN_BENCHMARKS
   const OpenTradeVizOptions: typeof import('./stores/settings').OpenTradeVizOptions
+  const PROFIT_PERIODS: typeof import('./utils/botProfit').PROFIT_PERIODS
   const REGIME_COLORS: typeof import('./composables/useRegimeOverlay').REGIME_COLORS
   const REGIME_LABEL_KEYS: typeof import('./composables/useRegimeOverlay').REGIME_LABEL_KEYS
   const ROUND_CLOSER: typeof import('./utils/roundTimeframe').ROUND_CLOSER
@@ -22,6 +23,7 @@ declare global {
   const ROUND_UP: typeof import('./utils/roundTimeframe').ROUND_UP
   const TradeLayout: typeof import('./stores/layout').TradeLayout
   const acceptHMRUpdate: typeof import('pinia').acceptHMRUpdate
+  const aggregateProfitByBot: typeof import('./utils/botProfit').aggregateProfitByBot
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
   const availableBacktestMetrics: typeof import('./utils/backtestMetrics').availableBacktestMetrics
@@ -105,6 +107,7 @@ declare global {
   const getCurrentWatcher: typeof import('vue').getCurrentWatcher
   const getDiffColumnsFromPlotConfig: typeof import('./utils/charts/areaPlotDataset').getDiffColumnsFromPlotConfig
   const getOpenTradeColumns: typeof import('./composables/tradeColumns').getOpenTradeColumns
+  const getProfitPeriodCutoff: typeof import('./utils/botProfit').getProfitPeriodCutoff
   const h: typeof import('vue').h
   const hasConfiguredBots: typeof import('./composables/useConfigExport').hasConfiguredBots
   const hasFeature: typeof import('./utils/features').hasFeature
@@ -512,6 +515,9 @@ declare global {
   export type { PricePoint, FetchResult, BenchmarkCoin } from './utils/benchmarkData'
   import('./utils/benchmarkData')
   // @ts-ignore
+  export type { ProfitPeriodKey, ProfitPeriodOption, TradeProfitInput, BotProfitEntry } from './utils/botProfit'
+  import('./utils/botProfit')
+  // @ts-ignore
   export type { SupportedSeriesTypes } from './utils/charts/candleChartSeries'
   import('./utils/charts/candleChartSeries')
   // @ts-ignore
@@ -539,6 +545,7 @@ declare module 'vue' {
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly KNOWN_BENCHMARKS: UnwrapRef<typeof import('./utils/benchmarkData')['KNOWN_BENCHMARKS']>
     readonly OpenTradeVizOptions: UnwrapRef<typeof import('./stores/settings')['OpenTradeVizOptions']>
+    readonly PROFIT_PERIODS: UnwrapRef<typeof import('./utils/botProfit')['PROFIT_PERIODS']>
     readonly REGIME_COLORS: UnwrapRef<typeof import('./composables/useRegimeOverlay')['REGIME_COLORS']>
     readonly REGIME_LABEL_KEYS: UnwrapRef<typeof import('./composables/useRegimeOverlay')['REGIME_LABEL_KEYS']>
     readonly ROUND_CLOSER: UnwrapRef<typeof import('./utils/roundTimeframe')['ROUND_CLOSER']>
@@ -546,6 +553,7 @@ declare module 'vue' {
     readonly ROUND_UP: UnwrapRef<typeof import('./utils/roundTimeframe')['ROUND_UP']>
     readonly TradeLayout: UnwrapRef<typeof import('./stores/layout')['TradeLayout']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
+    readonly aggregateProfitByBot: UnwrapRef<typeof import('./utils/botProfit')['aggregateProfitByBot']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly availableBacktestMetrics: UnwrapRef<typeof import('./utils/backtestMetrics')['availableBacktestMetrics']>
@@ -629,6 +637,7 @@ declare module 'vue' {
     readonly getCurrentWatcher: UnwrapRef<typeof import('vue')['getCurrentWatcher']>
     readonly getDiffColumnsFromPlotConfig: UnwrapRef<typeof import('./utils/charts/areaPlotDataset')['getDiffColumnsFromPlotConfig']>
     readonly getOpenTradeColumns: UnwrapRef<typeof import('./composables/tradeColumns')['getOpenTradeColumns']>
+    readonly getProfitPeriodCutoff: UnwrapRef<typeof import('./utils/botProfit')['getProfitPeriodCutoff']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly hasConfiguredBots: UnwrapRef<typeof import('./composables/useConfigExport')['hasConfiguredBots']>
     readonly hasFeature: UnwrapRef<typeof import('./utils/features')['hasFeature']>

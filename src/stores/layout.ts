@@ -30,6 +30,7 @@ export enum DashboardLayout {
   walletHistoryChart = 18,
   volumeComparator = 19,
   periodBreakdown = 20,
+  botProfitComparison = 21,
 }
 
 // Define default layouts
@@ -68,6 +69,7 @@ const DEFAULT_DASHBOARD_LAYOUT: GridItemData[] = [
   { i: DashboardLayout.fleetOverview, x: 32, y: 183, w: 16, h: 39 },
   { i: DashboardLayout.cumChartChart, x: 0, y: 222, w: 16, h: 24 },
   { i: DashboardLayout.walletHistoryChart, x: 16, y: 222, w: 16, h: 24 },
+  { i: DashboardLayout.botProfitComparison, x: 0, y: 246, w: 48, h: 24 },
   { i: DashboardLayout.tradesLogChart, x: 0, y: 400, w: 0, h: 0 },
   { i: DashboardLayout.performanceHeatmap, x: 0, y: 400, w: 0, h: 0 },
   { i: DashboardLayout.requestFlow, x: 0, y: 400, w: 0, h: 0 },
@@ -120,6 +122,12 @@ const DEFAULT_WIDGET_DEFAULTS: Record<number, Record<string, unknown>> = {
     timeProfitPreference: 'abs_profit',
     tradingMode: 'all',
   },
+  [DashboardLayout.botProfitComparison]: {
+    selectedPeriod: '7d',
+    valueMode: 'abs',
+    sortMode: 'profit',
+    tradingMode: 'all',
+  },
 };
 
 const DEFAULT_DASHBOARD_LAYOUT_SM: GridItemData[] = [
@@ -144,6 +152,7 @@ const DEFAULT_DASHBOARD_LAYOUT_SM: GridItemData[] = [
   { i: DashboardLayout.walletHistoryChart, x: 0, y: 388, w: 48, h: 24 },
   { i: DashboardLayout.volumeComparator, x: 0, y: 412, w: 48, h: 28 },
   { i: DashboardLayout.periodBreakdown, x: 0, y: 440, w: 48, h: 24 },
+  { i: DashboardLayout.botProfitComparison, x: 0, y: 464, w: 48, h: 24 },
 ];
 
 const STORE_LAYOUTS = 'ftLayoutSettings';

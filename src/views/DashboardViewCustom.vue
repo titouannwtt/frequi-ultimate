@@ -14,6 +14,7 @@ const activityTimelineRef = ref<any>();
 const requestTimelineRef = ref<any>();
 const volumeComparatorRef = ref<any>();
 const periodBreakdownRef = ref<any>();
+const botProfitRef = ref<any>();
 
 const layoutStore = useLayoutStore();
 const currentBreakpoint = ref('');
@@ -101,6 +102,10 @@ const gridLayoutVolumeComparator = computed((): GridItemData => {
 
 const gridLayoutPeriodBreakdown = computed((): GridItemData => {
   return findGridLayout(gridLayoutData.value, DashboardLayout.periodBreakdown);
+});
+
+const gridLayoutBotProfit = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.botProfitComparison);
 });
 
 const responsiveGridLayouts = computed(() => {
@@ -506,6 +511,29 @@ onMounted(async () => {
           @save-filter-defaults="periodBreakdownRef?.saveCurrentAsDefault()"
         >
           <PeriodBreakdown ref="periodBreakdownRef" multi-bot-view />
+        </DraggableContainer>
+      </GridItem>
+      <GridItem
+        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.botProfitComparison)"
+        v-bind="gridItemProps"
+        :i="gridLayoutBotProfit.i"
+        :x="gridLayoutBotProfit.x"
+        :y="gridLayoutBotProfit.y"
+        :w="gridLayoutBotProfit.w"
+        :h="gridLayoutBotProfit.h"
+        :min-w="12"
+        :min-h="16"
+        drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
+      >
+        <DraggableContainer
+          :header="t('dashboard.botProfitComparison')"
+          :widget-id="DashboardLayout.botProfitComparison"
+          has-filter-defaults
+          :filters-changed="botProfitRef?.filtersChanged ?? false"
+          @save-filter-defaults="botProfitRef?.saveCurrentAsDefault()"
+        >
+          <BotProfitComparisonChart ref="botProfitRef" :trades="botStore.allTradesSelectedBots" />
         </DraggableContainer>
       </GridItem>
     </template>
