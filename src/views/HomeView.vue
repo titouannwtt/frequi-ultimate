@@ -1,7 +1,7 @@
 <template>
   <div class="mt-5">
     <div class="flex justify-center">
-      <BotList class="max-w-xl" />
+      <BotList class="w-full max-w-3xl" />
     </div>
     <Divider />
     <div
