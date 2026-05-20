@@ -945,6 +945,7 @@ const allColumns: ColumnDefinition[] = [
   { id: 'trades', labelKey: 'botComparison.trades', icon: 'i-mdi-chart-box', default: true, removable: true },
   { id: 'openProfit', labelKey: 'botComparison.openProfit', icon: 'i-mdi-trending-up', default: true, removable: true },
   { id: 'closedProfit', labelKey: 'botComparison.closedProfit', icon: 'i-mdi-cash-check', default: true, removable: true },
+  { id: 'profitCurrent', labelKey: 'botComparison.currentProfit', icon: 'i-mdi-sigma', default: true, removable: true },
   { id: 'balance', labelKey: 'botComparison.balance', icon: 'i-mdi-wallet', default: true, removable: true },
   { id: 'winLoss', labelKey: 'botComparison.winLoss', icon: 'i-mdi-trophy', default: true, removable: true },
   { id: 'stakeAmount', labelKey: 'botComparison.stakeAmount', icon: 'i-mdi-cash', default: false, removable: true },
@@ -1200,6 +1201,7 @@ const sortFields = [
   { id: 'name', labelKey: 'botComparison.sortByName' },
   { id: 'startDate', labelKey: 'botComparison.sortByStartDate' },
   { id: 'profit', labelKey: 'botComparison.sortByProfit' },
+  { id: 'currentProfit', labelKey: 'botComparison.sortByCurrentProfit' },
   { id: 'balance', labelKey: 'botComparison.sortByBalance' },
   { id: 'currency', labelKey: 'botComparison.sortByCurrency' },
   { id: 'exchange', labelKey: 'botComparison.sortByExchange' },
@@ -2136,6 +2138,9 @@ function comparatorForField(items: ComparisonTableItems[], field: string, direct
       case 'profit':
         cmp = (a.profitClosed ?? 0) - (b.profitClosed ?? 0);
         break;
+      case 'currentProfit':
+        cmp = ((a.profitOpen ?? 0) + (a.profitClosed ?? 0)) - ((b.profitOpen ?? 0) + (b.profitClosed ?? 0));
+        break;
       case 'balance':
         cmp = (a.balance ?? 0) - (b.balance ?? 0);
         break;
@@ -2248,6 +2253,8 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
     perCurrencyYearlyProfit: {},
     isMultiCurrency: false,
   };
+  // Sum of allocated capital across selected bots (denominator for current-profit ratio)
+  let summaryAvailableCapital = 0;
   Object.entries(botStore.allProfit).forEach(([k, v]) => {
     const thisBotStore = botStore.botStores[k];
     if (!thisBotStore) return;
@@ -2299,6 +2306,14 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       stakeCurrency: botStore.allBotState[k]?.stake_currency || '',
       profitOpenRatio,
       profitOpen,
+      profitCurrent: profitOpen + (v?.profit_closed_coin ?? 0),
+      profitCurrentRatio: (() => {
+        const ac = botStore.allBotState[k]?.available_capital;
+        if (ac && ac > 0) {
+          return (profitOpen + (v?.profit_closed_coin ?? 0)) / ac;
+        }
+        return undefined;
+      })(),
       wins: v?.winning_trades ?? 0,
       losses: v?.losing_trades ?? 0,
       balance: botStore.allBalance[k]?.total_bot ?? botStore.allBalance[k]?.total ?? 0,
@@ -2362,6 +2377,7 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
           const gain = v.profit_closed_coin ?? 0;
           const withdraw = v.capital_withdrawal ?? 0;
           summary.availableFunds = (summary.availableFunds ?? 0) + ac + gain - withdraw;
+          if (ac > 0) summaryAvailableCapital += ac;
         }
 
         // Per-currency profit tracking
@@ -2393,6 +2409,11 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
     // Multi-currency: sum balance per currency for display
     summary.balance = 0; // cannot sum different currencies
   }
+  // Current profit = open + closed; ratio over allocated capital when known
+  summary.profitCurrent = (summary.profitOpen ?? 0) + (summary.profitClosed ?? 0);
+  summary.profitCurrentRatio = summaryAvailableCapital > 0
+    ? summary.profitCurrent / summaryAvailableCapital
+    : undefined;
 
   // Exchange rate conversion for summary row
   if (selectedSummaryCurrency.value && selectedSummaryCurrency.value !== 'auto' && hasRates.value) {
@@ -2402,6 +2423,7 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
     let totalBalance = 0;
     let totalMonthly = 0;
     let totalYearly = 0;
+    let totalAvailableCapital = 0;
     let allConverted = true;
 
     for (const item of val) {
@@ -2422,6 +2444,13 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       if (convBalance !== null) totalBalance += convBalance; else allConverted = false;
       if (convMonthly !== null) totalMonthly += convMonthly; else allConverted = false;
       if (convYearly !== null) totalYearly += convYearly; else allConverted = false;
+
+      // Capital is only used for the ratio denominator — never gate allConverted on it
+      const ac = item.availableCapital;
+      if (ac && ac > 0) {
+        const convAc = convert(ac, from, target);
+        if (convAc !== null) totalAvailableCapital += convAc;
+      }
     }
 
     if (allConverted) {
@@ -2433,6 +2462,10 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       summary.stakeCurrency = target;
       summary.isMultiCurrency = false;
       summary.isConverted = true;
+      summary.profitCurrent = totalProfitOpen + totalProfitClosed;
+      summary.profitCurrentRatio = totalAvailableCapital > 0
+        ? summary.profitCurrent / totalAvailableCapital
+        : undefined;
     }
   }
 
@@ -2565,6 +2598,15 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       profitOpen: memberItems.reduce((s, i) => s + (i.profitOpen ?? 0), 0),
       profitOpenRatio: undefined,
       profitClosedRatio: undefined,
+      profitCurrent: memberItems.reduce((s, i) => s + ((i.profitOpen ?? 0) + (i.profitClosed ?? 0)), 0),
+      profitCurrentRatio: (() => {
+        const acSum = memberItems.reduce((s, i) => s + (i.availableCapital ?? 0), 0);
+        if (acSum > 0) {
+          const pc = memberItems.reduce((s, i) => s + ((i.profitOpen ?? 0) + (i.profitClosed ?? 0)), 0);
+          return pc / acSum;
+        }
+        return undefined;
+      })(),
       stakeCurrency: memberItems[0]?.stakeCurrency || summary.stakeCurrency || '',
       wins: memberItems.reduce((s, i) => s + (i.wins ?? 0), 0),
       losses: memberItems.reduce((s, i) => s + (i.losses ?? 0), 0),
@@ -3759,7 +3801,7 @@ const correlatedPairs = computed(() => {
           </div>
         </template>
       </Column>
-      <Column v-for="col in visibleOrderedColumns" :key="col.id" :field="col.id === 'winLoss' ? 'winVsLoss' : (['status', 'exchange', 'openProfit', 'closedProfit', 'stakeCurrency', 'weeklyProfit', 'monthlyProfit'].includes(col.id) ? undefined : col.id)">
+      <Column v-for="col in visibleOrderedColumns" :key="col.id" :field="col.id === 'winLoss' ? 'winVsLoss' : (['status', 'exchange', 'openProfit', 'closedProfit', 'profitCurrent', 'stakeCurrency', 'weeklyProfit', 'monthlyProfit'].includes(col.id) ? undefined : col.id)">
         <template #header>
           <div class="col-header-removable group">
             <i-mdi-robot v-if="col.id === 'botName'" class="text-xs opacity-50" />
@@ -3768,6 +3810,7 @@ const correlatedPairs = computed(() => {
             <i-mdi-chart-box v-else-if="col.id === 'trades'" class="text-xs opacity-50" />
             <i-mdi-trending-up v-else-if="col.id === 'openProfit'" class="text-xs opacity-50" />
             <i-mdi-cash-check v-else-if="col.id === 'closedProfit'" class="text-xs opacity-50" />
+            <i-mdi-sigma v-else-if="col.id === 'profitCurrent'" class="text-xs opacity-50" />
             <i-mdi-wallet v-else-if="col.id === 'balance'" class="text-xs opacity-50" />
             <i-mdi-trophy v-else-if="col.id === 'winLoss'" class="text-xs opacity-50" />
             <i-mdi-cash v-else-if="col.id === 'stakeAmount'" class="text-xs opacity-50" />
@@ -4312,6 +4355,44 @@ const correlatedPairs = computed(() => {
                   ),
                 })
               }}
+            </div>
+          </template>
+
+          <!-- profitCurrent (open + closed) -->
+          <template v-else-if="col.id === 'profitCurrent'">
+            <!-- Group header row -->
+            <div v-if="(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).profitCurrent != null">
+              <ProfitPill
+                :profit-ratio="(data as ComparisonTableItems).profitCurrentRatio"
+                :profit-abs="(data as ComparisonTableItems).profitCurrent"
+                :profit-desc="`${t('botComparison.openProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitOpen ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)} + ${t('botComparison.closedProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitClosed ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)}`"
+                :stake-currency="(data as ComparisonTableItems).stakeCurrency"
+              />
+            </div>
+            <!-- Summary row -->
+            <div v-else-if="(data as ComparisonTableItems).profitCurrent != null && !data.botId">
+              <div class="inline-flex items-center gap-0.5">
+                <span v-if="(data as ComparisonTableItems).isConverted" class="text-xs opacity-50" :title="t('summaryTrades.approximateConversion')">&#8776;</span>
+                <ProfitPill
+                  :profit-ratio="(data as ComparisonTableItems).profitCurrentRatio"
+                  :profit-abs="(data as ComparisonTableItems).profitCurrent"
+                  :profit-desc="`${t('botComparison.openProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitOpen ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)} + ${t('botComparison.closedProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitClosed ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)}`"
+                  :stake-currency="(data as ComparisonTableItems).stakeCurrency"
+                />
+              </div>
+            </div>
+            <!-- Bot starting -->
+            <div v-else-if="data.isStarting && data.botId" class="text-center">
+              <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
+            </div>
+            <!-- Bot row -->
+            <div v-else-if="data.botId && ((botStore.allOpenTradeCount[data.botId] ?? 0) > 0 || ((data.wins ?? 0) + (data.losses ?? 0)) > 0)">
+              <ProfitPill
+                :profit-ratio="(data as ComparisonTableItems).profitCurrentRatio"
+                :profit-abs="(data as ComparisonTableItems).profitCurrent"
+                :profit-desc="`${t('botComparison.openProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitOpen ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)} + ${t('botComparison.closedProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitClosed ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)}`"
+                :stake-currency="(data as ComparisonTableItems).stakeCurrency"
+              />
             </div>
           </template>
 

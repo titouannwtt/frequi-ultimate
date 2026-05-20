@@ -150,9 +150,22 @@ export const useBotComparisonStore = defineStore('botComparison', {
       if (this.columnOrder.length === 0) {
         this.columnOrder = allColumnIds;
       } else {
-        // Merge new columns
+        // Merge new columns at their natural position — right after the nearest
+        // preceding column that already exists in the user's order — instead of
+        // appending to the end. Keeps e.g. profitCurrent next to closedProfit.
         const missing = allColumnIds.filter((id) => !this.columnOrder.includes(id));
-        this.columnOrder.push(...missing);
+        for (const id of missing) {
+          const idxInAll = allColumnIds.indexOf(id);
+          let insertAt = this.columnOrder.length;
+          for (let i = idxInAll - 1; i >= 0; i--) {
+            const prevPos = this.columnOrder.indexOf(allColumnIds[i]!);
+            if (prevPos >= 0) {
+              insertAt = prevPos + 1;
+              break;
+            }
+          }
+          this.columnOrder.splice(insertAt, 0, id);
+        }
         // Remove stale columns
         this.columnOrder = this.columnOrder.filter((id) => allColumnIds.includes(id));
       }
