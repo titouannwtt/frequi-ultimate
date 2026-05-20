@@ -7,6 +7,10 @@ export interface ComparisonTableItems {
   profitClosedRatio?: number;
   profitOpen: number;
   profitOpenRatio?: number;
+  /** Open + closed profit (absolute). Derived from profitOpen + profitClosed. */
+  profitCurrent?: number;
+  /** Current profit as a ratio of allocated capital (undefined when capital unknown). */
+  profitCurrentRatio?: number;
   stakeCurrency: string;
   wins: number;
   losses: number;
