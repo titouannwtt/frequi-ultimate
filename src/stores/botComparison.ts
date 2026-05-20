@@ -196,6 +196,58 @@ export const useBotComparisonStore = defineStore('botComparison', {
       if (!this.botFilters.customTags) this.botFilters.customTags = {};
     },
 
+    // ── Groups / Folders ──
+    // Shared between the comparison table and the "Available bots" list so a bot's
+    // folder membership stays consistent across both views (single source of truth).
+    createGroup(name: string, icon = ''): BotGroup | undefined {
+      const trimmed = name.trim();
+      if (!trimmed) return undefined;
+      const group: BotGroup = {
+        id: `group_${Date.now()}`,
+        name: trimmed,
+        icon: icon.trim(),
+        collapsed: false,
+        botIds: [],
+      };
+      this.botGroups.push(group);
+      return group;
+    },
+    deleteGroup(groupId: string) {
+      this.botGroups = this.botGroups.filter((g) => g.id !== groupId);
+    },
+    renameGroup(groupId: string, name: string, icon?: string) {
+      const group = this.botGroups.find((g) => g.id === groupId);
+      if (!group) return;
+      const trimmed = name.trim();
+      if (trimmed) group.name = trimmed;
+      if (icon !== undefined) group.icon = icon.trim();
+    },
+    toggleGroupCollapse(groupId: string) {
+      const group = this.botGroups.find((g) => g.id === groupId);
+      if (group) group.collapsed = !group.collapsed;
+    },
+    addBotToGroup(botId: string, groupId: string) {
+      // A bot belongs to at most one group — remove from any other first.
+      for (const g of this.botGroups) {
+        g.botIds = g.botIds.filter((id) => id !== botId);
+      }
+      const group = this.botGroups.find((g) => g.id === groupId);
+      if (group && !group.botIds.includes(botId)) {
+        group.botIds.push(botId);
+      }
+    },
+    removeBotFromGroup(botId: string) {
+      for (const g of this.botGroups) {
+        g.botIds = g.botIds.filter((id) => id !== botId);
+      }
+    },
+    getBotGroupId(botId: string): string | undefined {
+      return this.botGroups.find((g) => g.botIds.includes(botId))?.id;
+    },
+    getGroupForBot(botId: string): BotGroup | undefined {
+      return this.botGroups.find((g) => g.botIds.includes(botId));
+    },
+
     // ── Migration from old localStorage keys ──
     migrateFromLocalStorage() {
       // Only migrate if the new store key doesn't exist yet
