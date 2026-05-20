@@ -10,6 +10,7 @@ declare global {
   const ALERT_TYPES: typeof import('./stores/botComparison').ALERT_TYPES
   const BENCHMARK_CATEGORIES: typeof import('./utils/benchmarkData').BENCHMARK_CATEGORIES
   const BENCHMARK_TICKERS: typeof import('./utils/benchmarkData').BENCHMARK_TICKERS
+  const BOT_SORT_MODES: typeof import('./composables/useBotListSort').BOT_SORT_MODES
   const ColorPreferences: typeof import('./stores/colors').ColorPreferences
   const DashboardLayout: typeof import('./stores/layout').DashboardLayout
   const EffectScope: typeof import('vue').EffectScope
@@ -35,6 +36,7 @@ declare global {
   const buildPrefillFromWfa: typeof import('./utils/reconstitute').buildPrefillFromWfa
   const calculateDiff: typeof import('./utils/charts/areaPlotDataset').calculateDiff
   const cancelDelayedHide: typeof import('./composables/usePopoverHover').cancelDelayedHide
+  const capitalizeExchange: typeof import('./utils/botPresentation').capitalizeExchange
   const checkAndNotifyAlerts: typeof import('./utils/browserNotifications').checkAndNotifyAlerts
   const cleanupAllTimeouts: typeof import('./composables/usePopoverHover').cleanupAllTimeouts
   const clearBenchmarkCache: typeof import('./utils/benchmarkData').clearBenchmarkCache
@@ -57,6 +59,7 @@ declare global {
   const createSharedComposable: typeof import('@vueuse/core').createSharedComposable
   const createTemplatePromise: typeof import('@vueuse/core').createTemplatePromise
   const createUnrefFn: typeof import('@vueuse/core').createUnrefFn
+  const currencyStyles: typeof import('./utils/botPresentation').currencyStyles
   const customRef: typeof import('vue').customRef
   const dataZoomPartial: typeof import('./utils/charts/chartZoom').dataZoomPartial
   const dateFromString: typeof import('./utils/formatters/timeformat').dateFromString
@@ -76,6 +79,7 @@ declare global {
   const echartsGridDefault: typeof import('./utils/charts/chartZoom').echartsGridDefault
   const effectScope: typeof import('vue').effectScope
   const evaluateFeatures: typeof import('./utils/features').evaluateFeatures
+  const exchangeStyles: typeof import('./utils/botPresentation').exchangeStyles
   const exitReasonColor: typeof import('./composables/tradeColumns').exitReasonColor
   const exportConfig: typeof import('./composables/useConfigExport').exportConfig
   const exportForTesting: typeof import('./utils/formatters/timeformat').exportForTesting
@@ -102,10 +106,12 @@ declare global {
   const generateTradeSeries: typeof import('./utils/charts/tradeChartData').generateTradeSeries
   const getActivePinia: typeof import('pinia').getActivePinia
   const getClosedTradeColumns: typeof import('./composables/tradeColumns').getClosedTradeColumns
+  const getCurrencyStyle: typeof import('./utils/botPresentation').getCurrencyStyle
   const getCurrentInstance: typeof import('vue').getCurrentInstance
   const getCurrentScope: typeof import('vue').getCurrentScope
   const getCurrentWatcher: typeof import('vue').getCurrentWatcher
   const getDiffColumnsFromPlotConfig: typeof import('./utils/charts/areaPlotDataset').getDiffColumnsFromPlotConfig
+  const getExchangeStyle: typeof import('./utils/botPresentation').getExchangeStyle
   const getOpenTradeColumns: typeof import('./composables/tradeColumns').getOpenTradeColumns
   const getProfitPeriodCutoff: typeof import('./utils/botProfit').getProfitPeriodCutoff
   const h: typeof import('vue').h
@@ -254,6 +260,7 @@ declare global {
   const useBattery: typeof import('@vueuse/core').useBattery
   const useBluetooth: typeof import('@vueuse/core').useBluetooth
   const useBotComparisonStore: typeof import('./stores/botComparison').useBotComparisonStore
+  const useBotListSort: typeof import('./composables/useBotListSort').useBotListSort
   const useBotStore: typeof import('./stores/ftbotwrapper').useBotStore
   const useBreakpoints: typeof import('@vueuse/core').useBreakpoints
   const useBroadcastChannel: typeof import('@vueuse/core').useBroadcastChannel
@@ -461,6 +468,9 @@ declare global {
   export type { TradeColumnDef } from './composables/tradeColumns'
   import('./composables/tradeColumns')
   // @ts-ignore
+  export type { BotSortMode } from './composables/useBotListSort'
+  import('./composables/useBotListSort')
+  // @ts-ignore
   export type { BenchmarkPoint } from './composables/useBtcBenchmark'
   import('./composables/useBtcBenchmark')
   // @ts-ignore
@@ -540,6 +550,7 @@ declare module 'vue' {
     readonly ALERT_TYPES: UnwrapRef<typeof import('./stores/botComparison')['ALERT_TYPES']>
     readonly BENCHMARK_CATEGORIES: UnwrapRef<typeof import('./utils/benchmarkData')['BENCHMARK_CATEGORIES']>
     readonly BENCHMARK_TICKERS: UnwrapRef<typeof import('./utils/benchmarkData')['BENCHMARK_TICKERS']>
+    readonly BOT_SORT_MODES: UnwrapRef<typeof import('./composables/useBotListSort')['BOT_SORT_MODES']>
     readonly ColorPreferences: UnwrapRef<typeof import('./stores/colors')['ColorPreferences']>
     readonly DashboardLayout: UnwrapRef<typeof import('./stores/layout')['DashboardLayout']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
@@ -565,6 +576,7 @@ declare module 'vue' {
     readonly buildPrefillFromWfa: UnwrapRef<typeof import('./utils/reconstitute')['buildPrefillFromWfa']>
     readonly calculateDiff: UnwrapRef<typeof import('./utils/charts/areaPlotDataset')['calculateDiff']>
     readonly cancelDelayedHide: UnwrapRef<typeof import('./composables/usePopoverHover')['cancelDelayedHide']>
+    readonly capitalizeExchange: UnwrapRef<typeof import('./utils/botPresentation')['capitalizeExchange']>
     readonly checkAndNotifyAlerts: UnwrapRef<typeof import('./utils/browserNotifications')['checkAndNotifyAlerts']>
     readonly cleanupAllTimeouts: UnwrapRef<typeof import('./composables/usePopoverHover')['cleanupAllTimeouts']>
     readonly clearBenchmarkCache: UnwrapRef<typeof import('./utils/benchmarkData')['clearBenchmarkCache']>
@@ -587,6 +599,7 @@ declare module 'vue' {
     readonly createSharedComposable: UnwrapRef<typeof import('@vueuse/core')['createSharedComposable']>
     readonly createTemplatePromise: UnwrapRef<typeof import('@vueuse/core')['createTemplatePromise']>
     readonly createUnrefFn: UnwrapRef<typeof import('@vueuse/core')['createUnrefFn']>
+    readonly currencyStyles: UnwrapRef<typeof import('./utils/botPresentation')['currencyStyles']>
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>
     readonly dataZoomPartial: UnwrapRef<typeof import('./utils/charts/chartZoom')['dataZoomPartial']>
     readonly dateFromString: UnwrapRef<typeof import('./utils/formatters/timeformat')['dateFromString']>
@@ -606,6 +619,7 @@ declare module 'vue' {
     readonly echartsGridDefault: UnwrapRef<typeof import('./utils/charts/chartZoom')['echartsGridDefault']>
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
     readonly evaluateFeatures: UnwrapRef<typeof import('./utils/features')['evaluateFeatures']>
+    readonly exchangeStyles: UnwrapRef<typeof import('./utils/botPresentation')['exchangeStyles']>
     readonly exitReasonColor: UnwrapRef<typeof import('./composables/tradeColumns')['exitReasonColor']>
     readonly exportConfig: UnwrapRef<typeof import('./composables/useConfigExport')['exportConfig']>
     readonly exportForTesting: UnwrapRef<typeof import('./utils/formatters/timeformat')['exportForTesting']>
@@ -632,10 +646,12 @@ declare module 'vue' {
     readonly generateTradeSeries: UnwrapRef<typeof import('./utils/charts/tradeChartData')['generateTradeSeries']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
     readonly getClosedTradeColumns: UnwrapRef<typeof import('./composables/tradeColumns')['getClosedTradeColumns']>
+    readonly getCurrencyStyle: UnwrapRef<typeof import('./utils/botPresentation')['getCurrencyStyle']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
     readonly getCurrentWatcher: UnwrapRef<typeof import('vue')['getCurrentWatcher']>
     readonly getDiffColumnsFromPlotConfig: UnwrapRef<typeof import('./utils/charts/areaPlotDataset')['getDiffColumnsFromPlotConfig']>
+    readonly getExchangeStyle: UnwrapRef<typeof import('./utils/botPresentation')['getExchangeStyle']>
     readonly getOpenTradeColumns: UnwrapRef<typeof import('./composables/tradeColumns')['getOpenTradeColumns']>
     readonly getProfitPeriodCutoff: UnwrapRef<typeof import('./utils/botProfit')['getProfitPeriodCutoff']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
@@ -784,6 +800,7 @@ declare module 'vue' {
     readonly useBattery: UnwrapRef<typeof import('@vueuse/core')['useBattery']>
     readonly useBluetooth: UnwrapRef<typeof import('@vueuse/core')['useBluetooth']>
     readonly useBotComparisonStore: UnwrapRef<typeof import('./stores/botComparison')['useBotComparisonStore']>
+    readonly useBotListSort: UnwrapRef<typeof import('./composables/useBotListSort')['useBotListSort']>
     readonly useBotStore: UnwrapRef<typeof import('./stores/ftbotwrapper')['useBotStore']>
     readonly useBreakpoints: UnwrapRef<typeof import('@vueuse/core')['useBreakpoints']>
     readonly useBroadcastChannel: UnwrapRef<typeof import('@vueuse/core')['useBroadcastChannel']>
