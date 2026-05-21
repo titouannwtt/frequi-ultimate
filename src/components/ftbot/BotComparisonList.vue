@@ -9,12 +9,14 @@ import type { BotTagVisibility, BotFilters, ActiveSort, SortDirection, TagId } f
 import { useAlertDetection } from '@/composables/useAlertDetection';
 import { trackMouse, fakeEventAtMouse, fakeEvent, delayedHide, cancelDelayedHide, cleanupAllTimeouts } from '@/composables/usePopoverHover';
 import { computePosition, flip, shift, offset, arrow as arrowMiddleware } from '@floating-ui/dom';
+import BotConfigEditorModal from './configEditor/BotConfigEditorModal.vue';
 
 const router = useRouter();
 const { t, locale } = useI18n();
 const botStore = useBotStore();
 const compStore = useBotComparisonStore();
 const stratDevStore = useStrategyDevStore();
+const configEditorStore = useBotConfigEditorStore();
 
 // Migrate legacy localStorage data on first load
 compStore.migrateFromLocalStorage();
@@ -4738,6 +4740,12 @@ const correlatedPairs = computed(() => {
           >
             <i-mdi-flask-outline class="text-purple-400" /> {{ t('botComparison.analyzeStrategy') }}
           </button>
+          <button
+            class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
+            @click="configEditorStore.open(item.botId!); botActionMenuRef[item.botId!]?.hide()"
+          >
+            <i-mdi-tune-vertical class="text-teal-400" /> {{ t('botComparison.editConfig') }}
+          </button>
           <!-- Action feedback -->
           <div v-if="botActionFeedback[item.botId!]" class="text-center py-1">
             <i-mdi-check-circle v-if="botActionFeedback[item.botId!] === 'success'" class="text-green-500 text-lg" />
@@ -4764,6 +4772,9 @@ const correlatedPairs = computed(() => {
         <Button label="Confirm" severity="danger" size="small" @click="confirmAndExecute" />
       </template>
     </Dialog>
+
+    <!-- Per-bot configuration editor -->
+    <BotConfigEditorModal />
   </div>
 </template>
 
