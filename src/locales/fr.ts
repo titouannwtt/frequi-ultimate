@@ -7,6 +7,7 @@ export default {
     logs: 'Logs',
     settings: 'Paramètres',
     backtest: 'Backtest',
+    replay: 'Replay',
     downloadData: 'Télécharger les données',
     pairlistConfig: 'Config Pairlist',
     lockLayout: 'Verrouiller la disposition',
@@ -20,25 +21,32 @@ export default {
     editModeDone: 'Terminé',
     opacity: 'Opacité',
     bgAnimation: 'Animation',
-    bgAnimationDesc: 'Active ou désactive le fond animé avec dégradés sur le dashboard. Désactiver réduit l\'utilisation GPU et améliore les performances sur les machines moins puissantes.',
+    bgAnimationDesc:
+      "Active ou désactive le fond animé avec dégradés sur le dashboard. Désactiver réduit l'utilisation GPU et améliore les performances sur les machines moins puissantes.",
     exportConfig: 'Exporter la config',
     importConfig: 'Importer une config',
     pageConfig: 'Config de la page',
-    configDesc: 'Sauvegardez et restaurez la disposition du dashboard et vos préférences d\'affichage.',
+    configDesc:
+      "Sauvegardez et restaurez la disposition du dashboard et vos préférences d'affichage.",
     resetLayout: 'Réinitialiser la disposition',
-    resetLayoutConfirm: 'Êtes-vous sûr de vouloir réinitialiser la disposition du dashboard par défaut ? Vous perdrez tous vos ajustements de fenêtres, de colonnes, de placement, de taille, etc.',
+    resetLayoutConfirm:
+      'Êtes-vous sûr de vouloir réinitialiser la disposition du dashboard par défaut ? Vous perdrez tous vos ajustements de fenêtres, de colonnes, de placement, de taille, etc.',
     optimizeLayout: 'Optimiser la fenêtre',
-    optimizeLayoutConfirm: 'Tous les widgets visibles seront déplacés le plus en haut à gauche possible, en conservant leur taille actuelle. Les widgets masqués ne sont pas affectés.',
+    optimizeLayoutConfirm:
+      'Tous les widgets visibles seront déplacés le plus en haut à gauche possible, en conservant leur taille actuelle. Les widgets masqués ne sont pas affectés.',
     newVersionAvailable: 'Nouvelle version disponible',
-    includeAuth: 'Inclure les tokens d\'authentification',
-    authPasswordRequired: 'Les tokens donnent un contrôle total sur vos bots. Un mot de passe est requis pour chiffrer le fichier.',
-    layoutOnlyDesc: 'Disposition, thèmes et préférences d\'affichage uniquement — aucune donnée sensible.',
-    authIncludedDesc: 'Inclut les tokens de connexion aux bots. Le fichier sera chiffré avec votre mot de passe.',
+    includeAuth: "Inclure les tokens d'authentification",
+    authPasswordRequired:
+      'Les tokens donnent un contrôle total sur vos bots. Un mot de passe est requis pour chiffrer le fichier.',
+    layoutOnlyDesc:
+      "Disposition, thèmes et préférences d'affichage uniquement — aucune donnée sensible.",
+    authIncludedDesc:
+      'Inclut les tokens de connexion aux bots. Le fichier sera chiffré avec votre mot de passe.',
     encryptionPassword: 'Mot de passe de chiffrement',
     passwordMinChars: 'Minimum 8 caractères',
     export: 'Exporter',
     cancel: 'Annuler',
-    importPreview: 'Aperçu de l\'import',
+    importPreview: "Aperçu de l'import",
     exportDate: 'Exporté le',
     fileAge: 'Âge du fichier',
     daysUnit: 'jours',
@@ -52,17 +60,21 @@ export default {
     integrityValid: 'Valide',
     integrityFailed: 'Échouée',
     integrityNA: 'N/A',
-    expiredWarning: 'Ce fichier a plus de 7 jours. Les tokens d\'authentification peuvent être compromis ou expirés.',
-    integrityFailedDetail: 'Le fichier a été modifié depuis l\'export. Il a peut-être été falsifié. L\'import est bloqué.',
+    expiredWarning:
+      "Ce fichier a plus de 7 jours. Les tokens d'authentification peuvent être compromis ou expirés.",
+    integrityFailedDetail:
+      "Le fichier a été modifié depuis l'export. Il a peut-être été falsifié. L'import est bloqué.",
     enterPassword: 'Entrez le mot de passe de chiffrement',
     wrongPassword: 'Mot de passe incorrect — veuillez réessayer.',
-    integrityFailedImport: 'Vérification d\'intégrité échouée — le fichier a peut-être été falsifié.',
+    integrityFailedImport:
+      "Vérification d'intégrité échouée — le fichier a peut-être été falsifié.",
     passwordNeeded: 'Ce fichier est chiffré — un mot de passe est requis.',
     invalidFile: 'Fichier de configuration invalide ou corrompu.',
     importSuccess: 'Configuration restaurée',
     reloading: 'Rechargement de la page...',
     applyConfig: 'Appliquer la configuration',
-    encryptionUnavailable: 'Le chiffrement nécessite HTTPS. Utilisez une connexion sécurisée ou exportez sans les tokens.',
+    encryptionUnavailable:
+      'Le chiffrement nécessite HTTPS. Utilisez une connexion sécurisée ou exportez sans les tokens.',
   },
 
   // Dashboard
@@ -79,7 +91,7 @@ export default {
     cumulativeProfit: 'Profit cumulé',
     profitDistribution: 'Distribution des profits',
     tradesLog: 'Journal des trades',
-    activityTimeline: 'Historique d\'activité',
+    activityTimeline: "Historique d'activité",
     marketOverview: 'Tableau de bord marché',
     performanceHeatmap: 'Carte thermique des performances',
     riskOverview: 'Aperçu des risques',
@@ -119,7 +131,8 @@ export default {
     volumeRatio: 'Ratio Vol',
     coverage: 'couverture pairs',
     correlation: 'Corrélation',
-    noData: 'Données OHLCV non disponibles. Lancez freqtrade download-data pour les pairs whitelist.',
+    noData:
+      'Données OHLCV non disponibles. Lancez freqtrade download-data pour les pairs whitelist.',
     loading: 'Chargement des données de volume...',
     profitPerVol: 'Profit/Vol',
   },
@@ -223,7 +236,8 @@ export default {
     benchmarks: 'Benchmarks',
     normalization: 'Normalisation',
     normExplain: 'Comment ça marche',
-    normExplainDetail: 'En mode "% depuis le début", votre profit et les benchmarks partent tous de 0% et montrent le changement en pourcentage. Cela permet de comparer directement : vos bots ont-ils surperformé le BTC ?',
+    normExplainDetail:
+      'En mode "% depuis le début", votre profit et les benchmarks partent tous de 0% et montrent le changement en pourcentage. Cela permet de comparer directement : vos bots ont-ils surperformé le BTC ?',
     altProxy: 'proxy marché alt',
     solLabel: 'Solana',
     bnbLabel: 'BNB Chain',
@@ -233,7 +247,7 @@ export default {
     exportPNG: 'Exporter le graphique en PNG',
     loadingBenchmarks: 'Chargement des données de benchmark...',
     noData: 'Aucune donnée de trade pour cette période',
-    currencySelector: 'Devise d\'affichage',
+    currencySelector: "Devise d'affichage",
     currencyAuto: 'Auto',
     addBenchmark: 'Ajouter un benchmark',
     removeBenchmark: 'Retirer le benchmark {coin}',
@@ -244,15 +258,18 @@ export default {
     outperforming: 'Surperformance',
     underperforming: 'Sous-performance',
     by: 'de',
-    descCombined: 'Ce graphique montre le profit combiné de tous vos bots sélectionnés (somme des profits des trades fermés sur tous les exchanges et toutes les devises, convertis si nécessaire)',
+    descCombined:
+      'Ce graphique montre le profit combiné de tous vos bots sélectionnés (somme des profits des trades fermés sur tous les exchanges et toutes les devises, convertis si nécessaire)',
     descPerBot: 'Ce graphique montre le profit individuel de chaque bot',
-    descCumulative: 'Ce graphique montre le total cumulé de tous les profits des trades fermés (chaque profit de trade est ajouté chronologiquement pour former la courbe de capital)',
+    descCumulative:
+      'Ce graphique montre le total cumulé de tous les profits des trades fermés (chaque profit de trade est ajouté chronologiquement pour former la courbe de capital)',
     descOverPeriod: 'sur les derniers {period}',
     descNormPctStart: 'exprimé en pourcentage de variation depuis le début de la période',
     descNormAbsolute: 'en {currency}',
     descNormPctCapital: 'en pourcentage du capital initial',
     descBenchmarks: 'Comparaison benchmark : {list}',
-    descBenchmarkHint: 'Si votre ligne de profit est AU-DESSUS d\'un benchmark, vous le surperformez.',
+    descBenchmarkHint:
+      "Si votre ligne de profit est AU-DESSUS d'un benchmark, vous le surperformez.",
   },
 
   // Bot comparison table
@@ -324,7 +341,8 @@ export default {
     byCurrency: 'Par devise',
     botsHidden: '{count} bot masqué | {count} bots masqués',
     allBotsVisible: 'Tous les bots sont visibles',
-    botsHiddenByFilters: '{count} bot masqué par les filtres | {count} bots masqués par les filtres',
+    botsHiddenByFilters:
+      '{count} bot masqué par les filtres | {count} bots masqués par les filtres',
     showAllBots: 'Cliquez pour afficher tous les bots',
     sortCustom: 'Ordre personnalisé',
     sortByName: 'Nom du bot',
@@ -370,12 +388,12 @@ export default {
     alertNearLiquidationDesc: 'À moins de X% du prix de liquidation (futures)',
     alertLogErrors: 'Erreurs dans les logs',
     alertLogErrorsDesc: 'Erreurs détectées dans les logs récents',
-    alertOrderFailed: 'Échec d\'ordre',
-    alertOrderFailedDesc: 'Impossible d\'ouvrir ou fermer une position',
+    alertOrderFailed: "Échec d'ordre",
+    alertOrderFailedDesc: "Impossible d'ouvrir ou fermer une position",
     alertInsufficientFunds: 'Fonds insuffisants',
     alertInsufficientFundsDesc: 'Pas assez de fonds pour ouvrir une position',
     alertExchangeError: 'Erreur exchange',
-    alertExchangeErrorDesc: 'Problèmes de connectivité avec l\'exchange',
+    alertExchangeErrorDesc: "Problèmes de connectivité avec l'exchange",
     alertWalletMismatch: 'Désync wallet',
     alertWalletMismatchDesc: 'Décalage de balance du wallet détecté',
     alertNoTradeActivity: 'Pas de trade',
@@ -387,15 +405,17 @@ export default {
     alertCapacityFull: 'Capacité pleine',
     alertCapacityFullDesc: 'Tous les slots de trade sont occupés',
     alertAllFundsExposed: 'Totalité des fonds exposés',
-    alertAllFundsExposedDesc: 'La quasi-totalité du capital est bloquée dans les positions ouvertes',
+    alertAllFundsExposedDesc:
+      'La quasi-totalité du capital est bloquée dans les positions ouvertes',
     alertLiquidationBeforeStoploss: 'Liquidation avant stoploss',
-    alertLiquidationBeforeStoplossDesc: 'Le prix de liquidation est plus proche que le stoploss (futures)',
+    alertLiquidationBeforeStoplossDesc:
+      'Le prix de liquidation est plus proche que le stoploss (futures)',
     alertIncludeLeverage: 'Inclure le levier',
     alertPerBot: 'Par bot',
     alertAllConfigured: '{count} alerte configurée | {count} alertes configurées',
     alertToggleAllOn: 'Tout ON',
     alertToggleAllOff: 'Tout OFF',
-    alertGlobalApply: 'Les réglages s\'appliquent à tous les bots. Désactivez par bot ci-dessous.',
+    alertGlobalApply: "Les réglages s'appliquent à tous les bots. Désactivez par bot ci-dessous.",
     alertActiveCount: '{count} alerte active | {count} alertes actives',
     alertViewLogs: 'Voir les logs',
     // Bot Groups
@@ -408,16 +428,16 @@ export default {
     addToGroup: 'Ajouter au groupe',
     removeFromGroup: 'Retirer du groupe',
     createGroupInline: 'Créer un groupe',
-    changeIcon: 'Changer l\'icône',
-    clearIcon: 'Retirer l\'icône',
-    resetIcon: 'Réinitialiser l\'icône',
+    changeIcon: "Changer l'icône",
+    clearIcon: "Retirer l'icône",
+    resetIcon: "Réinitialiser l'icône",
     searchIcon: 'Rechercher un emoji…',
     recentIcons: 'Récemment utilisés',
     noIconResults: 'Aucun emoji ne correspond à votre recherche',
     editGroup: 'Modifier le groupe',
     moveToFolder: 'Déplacer dans un dossier',
     currentFolder: 'actuel',
-    noGroupsAvailable: 'Aucun dossier disponible. Créez-en un d\'abord.',
+    noGroupsAvailable: "Aucun dossier disponible. Créez-en un d'abord.",
     alertsTitle: 'Configuration des alertes',
     groupsTitle: 'Groupes de bots',
     noAlerts: 'Aucune alerte',
@@ -433,7 +453,8 @@ export default {
     editTag: 'Modifier le tag',
     filterByTag: 'Cliquer pour sélectionner les bots avec ce tag',
     byCustomTag: 'Par tag personnalisé',
-    keyboardShortcuts: 'Raccourcis clavier : Échap=fermer, 1-9=basculer bot, F=filtrer, S=trier, Ctrl+A=tout sélectionner',
+    keyboardShortcuts:
+      'Raccourcis clavier : Échap=fermer, 1-9=basculer bot, F=filtrer, S=trier, Ctrl+A=tout sélectionner',
     botActions: 'Actions du bot',
     actionStart: 'Démarrer',
     actionPause: 'Pause (arrêter les achats)',
@@ -444,8 +465,150 @@ export default {
     viewTrades: 'Voir les trades',
     viewJournal: 'Voir le journal de trades',
     analyzeStrategy: 'Analyser la stratégie',
-    confirmAction: 'Confirmer l\'action',
+    editConfig: 'Modifier la configuration',
+    confirmAction: "Confirmer l'action",
     confirmActionMsg: 'Êtes-vous sûr de vouloir {action} sur {bot} ?',
+  },
+
+  configEditor: {
+    title: 'Modifier la configuration',
+    loading: 'Chargement de la configuration…',
+    unsupportedTitle: 'Backend non compatible',
+    unsupportedMsg:
+      "Ce bot n'expose pas les endpoints d'édition de configuration. Mets à jour le backend freqtrade du bot pour activer cette fonctionnalité.",
+    readOnlyFile:
+      "Le fichier de configuration de ce bot n'est pas dans un dossier modifiable — édition désactivée.",
+    loadIncomplete:
+      "Impossible de lire le fichier de configuration de ce bot — édition désactivée pour éviter de l'écraser. Ferme et rouvre le popup.",
+    help: 'Voir la documentation freqtrade',
+    lockedHint: 'Verrouillé : à modifier manuellement dans le fichier (risqué à chaud).',
+    restartHint: 'Nécessite un redémarrage du bot, pas seulement un rechargement.',
+    restart: 'redémarrage',
+    revert: 'Revenir à la valeur héritée',
+    overrideFromConfig: 'Surcharger dans la config',
+    unlimited: 'illimité',
+    none: '(aucun)',
+    choose: 'Choisir…',
+    source: {
+      own: 'défini ici',
+      inherited: 'hérité',
+      strategy: 'stratégie',
+      default: 'défaut',
+    },
+    sections: {
+      capital: 'Capital & Sizing',
+      trading: 'Trading',
+      risk: 'Risque & Sorties',
+      orders: 'Ordres & Timeouts',
+      pricing: 'Pricing',
+      pairlists: 'Pairlists',
+      notifications: 'Notifications',
+      system: 'Système (verrouillé)',
+      add: 'Ajouter un paramètre',
+      raw: 'JSON brut',
+    },
+    fields: {
+      max_open_trades: 'Trades simultanés max',
+      stake_amount: 'Mise par trade',
+      tradable_balance_ratio: 'Ratio de capital tradable',
+      capital_withdrawal: 'Capital retiré',
+      available_capital: 'Capital initial de référence',
+      last_stake_amount_min_ratio: 'Ratio min. dernière mise',
+      amount_reserve_percent: 'Réserve de montant (%)',
+      amend_last_stake_amount: 'Ajuster la dernière mise',
+      position_adjustment_enable: "Activer l'ajustement de position (DCA)",
+      max_entry_position_adjustment: "Ajustements d'entrée max",
+      bot_name: 'Nom du bot',
+      strategy: 'Stratégie',
+      process_throttle_secs: 'Throttle de la boucle (s)',
+      process_only_new_candles: 'Traiter uniquement les nouvelles bougies',
+      force_entry_enable: "Autoriser l'entrée forcée",
+      cancel_open_orders_on_exit: "Annuler les ordres ouverts à l'arrêt",
+      initial_state: 'État initial',
+      fiat_display_currency: "Devise fiat d'affichage",
+      stoploss: 'Stop-loss',
+      minimal_roi: 'ROI minimal',
+      trailing_stop: 'Trailing stop',
+      trailing_stop_positive: 'Trailing stop positif',
+      trailing_stop_positive_offset: 'Offset trailing stop positif',
+      trailing_only_offset_is_reached: "Trailing seulement après l'offset",
+      use_exit_signal: 'Utiliser le signal de sortie',
+      exit_profit_only: 'Sortir uniquement en profit',
+      ignore_roi_if_entry_signal: "Ignorer le ROI si signal d'entrée",
+      order_types_entry: "Type d'ordre — entrée",
+      order_types_exit: "Type d'ordre — sortie",
+      order_types_stoploss: "Type d'ordre — stop-loss",
+      stoploss_on_exchange: "Stop-loss sur l'exchange",
+      stoploss_price_type: 'Type de prix du stop-loss',
+      tif_entry: 'Time-in-force — entrée',
+      tif_exit: 'Time-in-force — sortie',
+      unfilledtimeout_entry: 'Timeout entrée non remplie',
+      unfilledtimeout_exit: 'Timeout sortie non remplie',
+      unfilledtimeout_unit: 'Unité de timeout',
+      entry_price_side: 'Côté du prix — entrée',
+      entry_price_last_balance: 'Balance dernier prix — entrée',
+      entry_use_order_book: "Utiliser le carnet d'ordres — entrée",
+      entry_order_book_top: 'Profondeur carnet — entrée',
+      exit_price_side: 'Côté du prix — sortie',
+      exit_price_last_balance: 'Balance dernier prix — sortie',
+      exit_use_order_book: "Utiliser le carnet d'ordres — sortie",
+      exit_order_book_top: 'Profondeur carnet — sortie',
+      pairlists: 'Handlers de pairlist',
+      pair_blacklist: 'Liste noire de paires',
+      pair_whitelist: 'Liste blanche de paires',
+      telegram_enabled: 'Telegram activé',
+      notify_status: 'Notif. statut',
+      notify_entry: 'Notif. entrée',
+      notify_exit: 'Notif. sortie',
+      notify_protection: 'Notif. protection',
+      db_url: 'URL de la base de données',
+      trading_mode: 'Mode de trading',
+      margin_mode: 'Mode de marge',
+      stake_currency: 'Devise de mise',
+      dry_run: 'Dry-run',
+      dry_run_wallet: 'Wallet dry-run',
+      exchange_name: 'Exchange',
+      api_listen_port: "Port de l'API",
+    },
+    tagPlaceholder: 'Une paire par ligne, ex. BTC/USDC:USDC',
+    addRoi: 'Ajouter un palier ROI',
+    addIntro: 'Ajoute un paramètre connu de freqtrade absent de ta configuration actuelle.',
+    addedFields: 'Paramètres ajoutés',
+    searchParam: 'Rechercher un paramètre…',
+    removeParam: 'Supprimer',
+    rawIntro: 'Édition directe du JSON écrit dans {file}. Validé en temps réel.',
+    schemaWarnings: '{n} avertissement(s) de schéma',
+    nChanges: '{n} changement(s)',
+    noChanges: 'Aucun changement',
+    restartNeeded: 'redémarrage requis',
+    cancel: 'Annuler',
+    save: 'Enregistrer',
+    savedTitle: 'Configuration enregistrée',
+    savedMsg:
+      'Les modifications ont été écrites dans le fichier du bot (une sauvegarde .bak a été créée).',
+    savedRestartMsg:
+      'Un des changements nécessite un redémarrage complet : le rechargement à chaud ne suffira pas.',
+    savedChoose: 'Que souhaites-tu faire maintenant ?',
+    reloadNow: 'Recharger la config',
+    stopNow: 'Arrêter le bot',
+    later: 'Plus tard',
+    savedTo: 'Configuration enregistrée dans {file}',
+    saveFailed: "Échec de l'enregistrement : {detail}",
+    reloadTriggered: 'Rechargement de la configuration demandé',
+    stopTriggered: 'Arrêt du bot demandé',
+    errRequired: 'Champ requis',
+    errNumber: 'Doit être un nombre',
+    errInteger: 'Doit être un entier',
+    errMin: 'Minimum {min}',
+    errMax: 'Maximum {max}',
+    errPattern: 'Format invalide',
+    errBothUnlimited: 'max_open_trades et stake_amount ne peuvent pas être tous deux illimités',
+    moveUp: 'Monter',
+    moveDown: 'Descendre',
+    removeHandler: 'Supprimer le handler',
+    addParam: 'Ajouter un paramètre',
+    addHandler: 'Ajouter un handler',
+    noPairlist: 'Aucun handler de pairlist défini.',
   },
 
   // Alert Detail Card
@@ -554,7 +717,7 @@ export default {
   periodProfitCard: {
     title: 'Analyse de profit périodique',
     loadingBenchmarks: 'Chargement des données de benchmark...',
-    noData: 'Pas assez de données pour l\'analyse périodique',
+    noData: "Pas assez de données pour l'analyse périodique",
     weeklyAvg: 'Moyenne hebdomadaire',
     monthlyAvg: 'Moyenne mensuelle',
     week: 'semaine',
@@ -570,7 +733,8 @@ export default {
     days: 'jours',
     totalRealized: 'Total réalisé',
     belowAverage: 'Sous la moy.',
-    belowAverageWarning: 'La performance récente pourrait être inférieure à la moyenne historique. Le CAGR suggère des rendements en décélération.',
+    belowAverageWarning:
+      'La performance récente pourrait être inférieure à la moyenne historique. Le CAGR suggère des rendements en décélération.',
     currentMonth: 'Mois en cours',
     currentYear: 'Année en cours',
     actual: 'Réel',
@@ -586,7 +750,7 @@ export default {
 
   // Trades Info Card
   tradesInfoCard: {
-    positionOverview: 'Vue d\'ensemble',
+    positionOverview: "Vue d'ensemble",
     slots: 'SLOTS',
     allocated: 'alloué',
     currentPositions: 'Positions ouvertes',
@@ -595,7 +759,7 @@ export default {
     durationAnalysis: 'Analyse de durée',
     avgClosedDuration: 'Durée moy. fermés',
     longestOpen: 'Plus longue ouverte',
-    anomalyScore: 'Score d\'anomalie',
+    anomalyScore: "Score d'anomalie",
     stuck: 'Position potentiellement bloquée',
     avgDurationLine: 'Durée moyenne des trades fermés',
     durationTooltip: 'Maintenue {ratio}x plus longtemps que la moyenne',
@@ -765,7 +929,7 @@ export default {
     cancel: 'Annuler',
     confirm: 'Confirmer',
     confirmExit:
-      "Voulez-vous vraiment fermer le trade {id} (Paire {pair}) avec un ordre {orderType} ?",
+      'Voulez-vous vraiment fermer le trade {id} (Paire {pair}) avec un ordre {orderType} ?',
     confirmDelete: 'Voulez-vous vraiment supprimer le trade {id} (Paire {pair}) ?',
     cancelOpenOrder: "Annuler l'ordre ouvert pour le trade {id} (Paire {pair}) ?",
     currentlyNoOpen: 'Aucun trade ouvert actuellement.',
@@ -817,7 +981,7 @@ export default {
     actionsFor: 'Actions pour {pair}',
     closeActionsMenu: 'Fermer le menu Actions',
     viewChart: 'Voir le graphique',
-    viewOnExchange: 'Voir sur l\'exchange',
+    viewOnExchange: "Voir sur l'exchange",
   },
 
   // Visualiseur de logs amélioré
@@ -827,9 +991,11 @@ export default {
     levelWarning: 'Avertissement',
     levelError: 'Erreur',
     hideHeartbeat: 'Masquer heartbeat',
-    hideHeartbeatTooltip: 'Masque les messages periodiques de verification de sante du bot (Bot heartbeat PID=..., state=RUNNING). Ce sont des messages normaux qui n\'indiquent aucun probleme.',
+    hideHeartbeatTooltip:
+      "Masque les messages periodiques de verification de sante du bot (Bot heartbeat PID=..., state=RUNNING). Ce sont des messages normaux qui n'indiquent aucun probleme.",
     hideWebSocket: 'Masquer WebSocket',
-    hideWebSocketTooltip: 'Masque les messages de connexion/deconnexion WebSocket du serveur API. Ceux-ci se produisent lorsque l\'onglet FreqUI se connecte ou se deconnecte.',
+    hideWebSocketTooltip:
+      "Masque les messages de connexion/deconnexion WebSocket du serveur API. Ceux-ci se produisent lorsque l'onglet FreqUI se connecte ou se deconnecte.",
     search: 'Rechercher dans les logs...',
     compact: 'Compact',
     autoScroll: 'Défilement auto',
@@ -888,10 +1054,12 @@ export default {
     trades: 'trades',
     fast: 'Rapide',
     slow: 'Lent',
-    explainClosed: 'Ce trade est fermé. La durée affichée correspond au temps de détention de la position.',
+    explainClosed:
+      'Ce trade est fermé. La durée affichée correspond au temps de détention de la position.',
     explainOk: 'La durée de ce trade est dans la plage normale.',
     explainWarn: 'Ce trade prend plus de temps que la plupart. Surveillez-le de près.',
-    explainDanger: 'Ce trade est ouvert depuis bien plus longtemps que la moyenne. Il est peut-être bloqué.',
+    explainDanger:
+      'Ce trade est ouvert depuis bien plus longtemps que la moyenne. Il est peut-être bloqué.',
     loadingBenchmarks: 'Chargement des données de benchmark...',
     noData: "Pas de données de trades fermés disponibles pour l'analyse.",
   },
@@ -917,9 +1085,9 @@ export default {
   exitReasonStats: {
     title: 'Analyse des raisons de sortie',
     exitReason: 'Raison de sortie',
-    entryTag: 'Tag d\'entrée',
+    entryTag: "Tag d'entrée",
     reasonDistribution: 'Raisons de sortie (tous les trades)',
-    tagDistribution: 'Tags d\'entrée (tous les trades)',
+    tagDistribution: "Tags d'entrée (tous les trades)",
   },
 
   // Type Stats Popover
@@ -989,17 +1157,15 @@ export default {
   // Bot controls
   controls: {
     startTrading: 'Démarrer le trading',
-    stopTrading: "Arrêter le trading - Arrête aussi la gestion des trades ouverts.",
+    stopTrading: 'Arrêter le trading - Arrête aussi la gestion des trades ouverts.',
     pause:
       "Pause (StopBuy) - Freqtrade continuera à gérer les trades ouverts, mais n'ouvrira pas de nouveaux trades.",
-    reloadConfig:
-      'Recharger la config - recharge la configuration y compris la stratégie.',
+    reloadConfig: 'Recharger la config - recharge la configuration y compris la stratégie.',
     forceExitAll: 'Forcer la sortie de tous',
-    forceEnter:
-      "Forcer l'entrée - Entrer immédiatement dans un trade à un prix optionnel.",
+    forceEnter: "Forcer l'entrée - Entrer immédiatement dans un trade à un prix optionnel.",
     stopBot: 'Arrêter le bot',
     stopBotConfirm: "Arrêter la boucle d'exécution du bot ?",
-    pauseStopEntering: "Pause - Arrêter les entrées",
+    pauseStopEntering: 'Pause - Arrêter les entrées',
     reload: 'Recharger',
     reloadConfirm: 'Recharger la configuration (y compris la stratégie) ?',
     forceExitAllConfirm: 'Voulez-vous vraiment forcer la sortie de TOUS les trades ?',
@@ -1042,8 +1208,7 @@ export default {
     uiSettings: "Paramètres de l'interface",
     language: 'Langue',
     lockLayouts: 'Verrouiller les dispositions',
-    lockLayoutsDesc:
-      'Verrouiller les dispositions dynamiques pour empêcher tout déplacement.',
+    lockLayoutsDesc: 'Verrouiller les dispositions dynamiques pour empêcher tout déplacement.',
     resetLayout: 'Réinitialiser la disposition',
     resetLayoutDesc: "Réinitialiser les dispositions à leur état d'origine.",
     showOpenTrades: "Afficher les trades ouverts dans l'en-tête",
@@ -1068,8 +1233,7 @@ export default {
     heikinAshi: 'Utiliser les bougies Heikin Ashi',
     heikinAshiDesc: 'Utiliser les bougies Heikin Ashi dans vos graphiques',
     onlyNecessaryColumns: 'Demander uniquement les colonnes nécessaires',
-    onlyNecessaryColumnsDesc:
-      'Peut réduire la taille du transfert pour les grands DataFrames.',
+    onlyNecessaryColumnsDesc: 'Peut réduire la taille du transfert pour les grands DataFrames.',
     defaultCandles: 'Nombre de bougies par défaut (250 par défaut)',
     candleColorPref: 'Préférence de couleur des bougies',
     greenUpRedDown: 'Vert haut / Rouge bas',
@@ -1082,15 +1246,16 @@ export default {
     // Browser notifications
     browserNotifications: 'Notifications navigateur',
     enableBrowserNotifications: 'Activer les notifications navigateur',
-    enableBrowserNotificationsDesc: "Recevoir des notifications navigateur lors du déclenchement d'alertes (perte de position, bot hors ligne, erreurs).",
-    notificationsDenied: 'Les notifications sont bloquées. Veuillez les autoriser dans les paramètres du navigateur.',
+    enableBrowserNotificationsDesc:
+      "Recevoir des notifications navigateur lors du déclenchement d'alertes (perte de position, bot hors ligne, erreurs).",
+    notificationsDenied:
+      'Les notifications sont bloquées. Veuillez les autoriser dans les paramètres du navigateur.',
     notifyPositionLoss: 'Perte de position dépasse le seuil',
     notifyBotOffline: 'Bot hors ligne',
     notifyLogErrors: 'Erreurs détectées dans les logs',
     backtestSettings: 'Paramètres de backtest',
     backtestMetrics: 'Métriques de backtest',
-    backtestMetricsDesc:
-      'Sélectionner les métriques à afficher par paire / tag.',
+    backtestMetricsDesc: 'Sélectionner les métriques à afficher par paire / tag.',
     // Dashboard section
     dashboardSettings: 'Tableau de bord',
     // About section
@@ -1120,8 +1285,7 @@ export default {
     listUnavailable:
       'Liste indisponible. Veuillez vous connecter et vérifier que le serveur fonctionne.',
     blacklist: 'Liste noire',
-    blacklistDesc:
-      "Liste noire - Sélectionnez puis cliquez sur '-' pour retirer des paires",
+    blacklistDesc: "Liste noire - Sélectionnez puis cliquez sur '-' pour retirer des paires",
     addToBlacklist: 'Ajouter une paire à la liste noire',
     selectToDelete: 'Sélectionnez les paires à supprimer de votre liste noire.',
     pair: 'Paire',
@@ -1140,8 +1304,7 @@ export default {
   // Backtesting
   backtest: {
     title: 'Backtesting',
-    mustBeWebserver:
-      'Le bot doit être en mode webserver pour activer le backtesting.',
+    mustBeWebserver: 'Le bot doit être en mode webserver pour activer le backtesting.',
     loadResults: 'Charger les résultats',
     runBacktest: 'Lancer le backtest',
     analyzeResult: 'Analyser le résultat',
@@ -1152,8 +1315,7 @@ export default {
     params: 'Paramètres du backtest',
     timeframe: 'Timeframe',
     detailTimeframe: 'Timeframe détaillé',
-    detailTimeframeDesc:
-      'Timeframe détaillé pour simuler les résultats intra-bougie.',
+    detailTimeframeDesc: 'Timeframe détaillé pour simuler les résultats intra-bougie.',
     maxOpenTrades: 'Trades ouverts max',
     useStrategyDefault: 'Utiliser la valeur de la stratégie',
     startingCapital: 'Capital initial',
@@ -1164,7 +1326,7 @@ export default {
     cacheResults: 'Mettre en cache les résultats',
     enableFreqAI: 'Activer FreqAI',
     enableFreqAIDesc:
-      "Suppose que FreqAI est configuré et que la stratégie est une stratégie FreqAI.",
+      'Suppose que FreqAI est configuré et que la stratégie est une stratégie FreqAI.',
     freqAIIdentifier: 'Identifiant FreqAI',
     freqAIModel: 'Modèle FreqAI',
     summary: 'Résumé du backtest',
@@ -1218,8 +1380,7 @@ export default {
     title: 'Téléchargement des données',
     selectPairs: 'Sélectionner les paires',
     pairsFromTemplate: 'Paires depuis le modèle',
-    addAllPairs:
-      'Ajouter toutes les paires depuis la config Pairlist.',
+    addAllPairs: 'Ajouter toutes les paires depuis la config Pairlist.',
     selectTimeframes: 'Sélectionner les timeframes',
     timeSelection: 'Sélection de la période',
     daysToDownload: 'Jours à télécharger',
@@ -1241,7 +1402,7 @@ export default {
     dryRun: 'Dry-Run',
     live: 'Live',
     avgProfit: 'Profit moyen',
-    tradesAvgDuration: "Trades, avec une durée moyenne de",
+    tradesAvgDuration: 'Trades, avec une durée moyenne de',
     bestPair: 'Meilleure paire',
     botStartDate: 'Date de démarrage',
     firstTradeOpened: 'Premier trade ouvert',
@@ -1302,12 +1463,13 @@ export default {
     heikinAshi: 'Heikin Ashi',
     noPairSelected: 'Aucune paire sélectionnée',
     plotConfigurator: 'Configurateur de graphique',
-    useLiveDataHint: 'Utiliser les données en direct de l\'exchange. A n\'utiliser que si vous n\'avez pas de données téléchargées localement.',
+    useLiveDataHint:
+      "Utiliser les données en direct de l'exchange. A n'utiliser que si vous n'avez pas de données téléchargées localement.",
     longEntries: 'Entrées long',
     longExits: 'Sorties long',
     shortEntries: 'Entrées short',
     shortExits: 'Sorties short',
-    longEntrySignals: 'Signaux d\'entrée long',
+    longEntrySignals: "Signaux d'entrée long",
     longExitSignals: 'Signaux de sortie long',
     chartOptions: 'Options du graphique',
     notLoadedYet: 'Pas encore chargé.',
@@ -1322,19 +1484,23 @@ export default {
   // Empty states
   emptyStates: {
     noTradesYet: 'Aucun trade',
-    noTradesDesc: "Ce bot n'a exécuté aucun trade pour le moment. Les statistiques apparaîtront après le premier trade.",
+    noTradesDesc:
+      "Ce bot n'a exécuté aucun trade pour le moment. Les statistiques apparaîtront après le premier trade.",
     noOpenPositions: 'Aucune position ouverte',
     noOpenPositionsDesc: 'Tout va bien — aucun capital actuellement à risque.',
     noClosedTrades: 'Aucun trade fermé',
-    noClosedTradesDesc: 'Les statistiques de profit apparaîtront après la fermeture du premier trade.',
-    noTradingActivity: "Aucune activité de trading",
+    noClosedTradesDesc:
+      'Les statistiques de profit apparaîtront après la fermeture du premier trade.',
+    noTradingActivity: 'Aucune activité de trading',
     noTradingActivityDesc: "Ce bot n'a enregistré aucune activité de trading pour le moment.",
     noWinLossData: 'Aucune donnée W/L',
-    noWinLossDataDesc: "Les statistiques de taux de réussite nécessitent au moins un trade complété.",
+    noWinLossDataDesc:
+      'Les statistiques de taux de réussite nécessitent au moins un trade complété.',
     balanceUnavailable: 'Solde indisponible',
-    balanceUnavailableDesc: "Les données de solde ne sont pas disponibles pour ce bot.",
+    balanceUnavailableDesc: 'Les données de solde ne sont pas disponibles pour ce bot.',
     insufficientHistory: 'Historique insuffisant',
-    insufficientHistoryDesc: "L'analyse par période nécessite au moins quelques jours d'historique de trading.",
+    insufficientHistoryDesc:
+      "L'analyse par période nécessite au moins quelques jours d'historique de trading.",
   },
 
   // Time durations
@@ -1351,11 +1517,13 @@ export default {
     roi: 'Retour sur investissement - Profit total en % du capital initial',
     winrate: 'Pourcentage de trades profitables',
     cagr: 'Taux de croissance annuel composé - Rendement annualisé avec effet de compounding',
-    sharpe: 'Ratio de Sharpe - Rendement ajusté au risque. Au-dessus de 1 = bon, au-dessus de 2 = excellent',
+    sharpe:
+      'Ratio de Sharpe - Rendement ajusté au risque. Au-dessus de 1 = bon, au-dessus de 2 = excellent',
     sortino: 'Ratio de Sortino - Comme Sharpe mais ne pénalise que la volatilité baissière',
     sqn: 'System Quality Number - Mesure la qualité du système. Au-dessus de 2 = bon, au-dessus de 3 = excellent',
     expectancy: 'Profit moyen attendu par trade',
-    profitFactor: 'Ratio profit brut / perte brute. Au-dessus de 1 = profitable, au-dessus de 2 = bon',
+    profitFactor:
+      'Ratio profit brut / perte brute. Au-dessus de 1 = profitable, au-dessus de 2 = bon',
     maxDrawdown: 'Plus grande baisse entre un pic et un creux. Plus bas = mieux',
     currentDrawdown: 'Baisse actuelle depuis le dernier pic',
     avgDuration: "Durée moyenne de détention d'un trade",
@@ -1364,14 +1532,16 @@ export default {
     calmar: 'Ratio de Calmar - CAGR divisé par le drawdown max',
     weightedAvgProfit: 'Profit moyen pondéré par la taille des positions',
     annualizedReturn: 'Rendement annuel projeté basé sur la performance actuelle',
-    vsBtc: 'Compare votre profit total % avec la variation du prix BTC % sur la même période. Positif = vous avez surperformé le simple achat de BTC.',
-    periodReturn: 'Profit total réalisé pendant la période sélectionnée, en montant absolu et en pourcentage du capital initial.',
+    vsBtc:
+      'Compare votre profit total % avec la variation du prix BTC % sur la même période. Positif = vous avez surperformé le simple achat de BTC.',
+    periodReturn:
+      'Profit total réalisé pendant la période sélectionnée, en montant absolu et en pourcentage du capital initial.',
     capacityUtilization: 'Pourcentage des positions max actuellement utilisées',
     avgWinLossRatio: 'Taille moyenne des gains divisée par la taille moyenne des pertes',
     avgProfitPerTrade: 'Profit moyen en pourcentage sur tous les trades fermés',
     // BotInfoCard
     roiAll: 'Retour incluant les trades ouverts et fermés',
-    totalTradeCount: "Nombre total de trades exécutés depuis le démarrage du bot",
+    totalTradeCount: 'Nombre total de trades exécutés depuis le démarrage du bot',
     botStarted: 'Date et heure du premier démarrage du bot',
     firstTrade: 'Date du tout premier trade exécuté',
     latestTrade: 'Date du trade le plus récent',
@@ -1385,9 +1555,10 @@ export default {
     highestGain: 'Position ouverte avec le plus grand gain non réalisé',
     avgPositionProfit: 'Moyenne simple du profit sur toutes les positions ouvertes',
     totalStakeLocked: 'Capital total actuellement alloué aux positions ouvertes',
-    pctOfBotBalance: "Pourcentage du solde total de ce bot en positions ouvertes",
+    pctOfBotBalance: 'Pourcentage du solde total de ce bot en positions ouvertes',
     pctOfAllBots: 'Mise ouverte de ce bot en part de tous les bots combinés',
-    durationAnomaly: 'Compare la durée actuelle à la durée moyenne des trades fermés. Jaune >1.5x, Rouge >2x',
+    durationAnomaly:
+      'Compare la durée actuelle à la durée moyenne des trades fermés. Jaune >1.5x, Rouge >2x',
     // ClosedProfitCard
     realizedProfit: 'Profit total de tous les trades fermés',
     weeklyTrend: 'Tendance de profit hebdomadaire sur la période récente',
@@ -1397,14 +1568,15 @@ export default {
     avgProfitMonth: 'Profit moyen gagné par mois',
     pctOfTotal: 'Part de ce bot dans le profit total de tous les bots sélectionnés',
     // TradesInfoCard
-    capacity: "Nombre de slots de trades utilisés vs maximum autorisé",
+    capacity: 'Nombre de slots de trades utilisés vs maximum autorisé',
     capitalAllocation: 'Total de la devise de mise allouée aux positions ouvertes',
     avgClosedDuration: "Durée moyenne de détention d'un trade fermé",
     tradesPerDay: 'Nombre moyen de trades ouverts par jour',
     tradesPerWeek: 'Nombre moyen de trades ouverts par semaine',
     timeBetweenTrades: 'Temps moyen entre les trades consécutifs',
     timeSinceLastTrade: 'Temps écoulé depuis le dernier trade ouvert',
-    unusuallyQuiet: "L'activité de trading est significativement en dessous de la fréquence moyenne",
+    unusuallyQuiet:
+      "L'activité de trading est significativement en dessous de la fréquence moyenne",
     // BalanceCard
     startingCapital: 'Capital initial configuré pour ce bot',
     balanceGrowth: 'Croissance totale du capital initial au solde actuel',
@@ -1428,24 +1600,37 @@ export default {
     riskNote: 'Risques connus associés à cette devise',
     botImpact: 'Comment cette devise affecte les calculs de profit de votre bot',
     // Alert detailed tooltips
-    alertTooltipPositionLoss: "Se déclenche quand une position ouverte a une perte non réalisée dépassant le seuil configuré.",
-    alertTooltipPositionStuck: "Se déclenche quand une position est détenue beaucoup plus longtemps que la durée moyenne des trades.",
-    alertTooltipNearLiquidation: "Se déclenche quand une position futures s'approche de son prix de liquidation.",
-    alertTooltipLogErrors: "Se déclenche quand des messages ERROR ou CRITICAL apparaissent dans les logs du bot.",
-    alertTooltipOrderFailed: "Se déclenche quand le bot échoue à placer un ordre. Souvent dû à des problèmes d'exchange.",
-    alertTooltipInsufficientFunds: "Se déclenche quand le bot ne peut pas ouvrir de position par manque de fonds.",
-    alertTooltipExchangeError: "Se déclenche sur les problèmes de connectivité exchange : timeouts, rate limits.",
-    alertTooltipWalletMismatch: "Se déclenche quand le bot détecte un écart entre son suivi interne et le wallet.",
-    alertTooltipNoTradeActivity: "Se déclenche quand aucun nouveau trade n'est ouvert dans le temps configuré.",
-    alertTooltipBotOffline: "Se déclenche immédiatement quand un bot ne répond plus.",
-    alertTooltipHighDrawdown: "Se déclenche quand le drawdown actuel depuis le pic dépasse le seuil.",
-    alertTooltipCapacityFull: "Se déclenche quand tous les slots de trades sont occupés.",
-    alertTooltipAllFundsExposed: "Se déclenche quand 95% ou plus du solde est bloqué dans les positions ouvertes.",
-    alertTooltipLiquidationBeforeStoploss: "Se déclenche quand le prix de liquidation est plus proche que le stoploss. La position serait liquidée avant que le stoploss ne se déclenche.",
+    alertTooltipPositionLoss:
+      'Se déclenche quand une position ouverte a une perte non réalisée dépassant le seuil configuré.',
+    alertTooltipPositionStuck:
+      'Se déclenche quand une position est détenue beaucoup plus longtemps que la durée moyenne des trades.',
+    alertTooltipNearLiquidation:
+      "Se déclenche quand une position futures s'approche de son prix de liquidation.",
+    alertTooltipLogErrors:
+      'Se déclenche quand des messages ERROR ou CRITICAL apparaissent dans les logs du bot.',
+    alertTooltipOrderFailed:
+      "Se déclenche quand le bot échoue à placer un ordre. Souvent dû à des problèmes d'exchange.",
+    alertTooltipInsufficientFunds:
+      'Se déclenche quand le bot ne peut pas ouvrir de position par manque de fonds.',
+    alertTooltipExchangeError:
+      'Se déclenche sur les problèmes de connectivité exchange : timeouts, rate limits.',
+    alertTooltipWalletMismatch:
+      'Se déclenche quand le bot détecte un écart entre son suivi interne et le wallet.',
+    alertTooltipNoTradeActivity:
+      "Se déclenche quand aucun nouveau trade n'est ouvert dans le temps configuré.",
+    alertTooltipBotOffline: 'Se déclenche immédiatement quand un bot ne répond plus.',
+    alertTooltipHighDrawdown:
+      'Se déclenche quand le drawdown actuel depuis le pic dépasse le seuil.',
+    alertTooltipCapacityFull: 'Se déclenche quand tous les slots de trades sont occupés.',
+    alertTooltipAllFundsExposed:
+      'Se déclenche quand 95% ou plus du solde est bloqué dans les positions ouvertes.',
+    alertTooltipLiquidationBeforeStoploss:
+      'Se déclenche quand le prix de liquidation est plus proche que le stoploss. La position serait liquidée avant que le stoploss ne se déclenche.',
     // Additional metric tooltips
     currentStreak: 'Nombre de gains ou pertes consécutifs',
     historicalRange: 'Plage de durée du trade le plus court au plus long',
-    medianDuration: 'Valeur médiane de toutes les durées de trades fermés, moins sensible aux valeurs extrêmes',
+    medianDuration:
+      'Valeur médiane de toutes les durées de trades fermés, moins sensible aux valeurs extrêmes',
     currentBalance: 'Solde total actuel de ce bot',
     bestBot: 'Bot avec le meilleur retour sur investissement',
     worstBot: 'Bot avec le plus faible retour sur investissement',
@@ -1459,7 +1644,8 @@ export default {
     estimatedGain: 'Gain total estimé',
     crash: 'crash',
     pump: 'hausse',
-    scenarioDesc: "En cas de mouvement soudain et instantané du marché, voici ce qu'il adviendrait de vos positions ouvertes actuelles. On part du principe que c'est un mouvement généralisé et que toutes les crypto-monnaies subissent la même fluctuation.",
+    scenarioDesc:
+      "En cas de mouvement soudain et instantané du marché, voici ce qu'il adviendrait de vos positions ouvertes actuelles. On part du principe que c'est un mouvement généralisé et que toutes les crypto-monnaies subissent la même fluctuation.",
     estimatedImpact: 'Impact estimé',
     estimatedTotalLoss: 'Perte totale estimée',
     crashScenario: 'Scénario de crash',
@@ -1468,7 +1654,8 @@ export default {
     noOpenPositions: 'Aucune position ouverte à tester.',
     liquidation: 'LIQUIDATION',
     liquidationWarning: '{count} position(s) serai(en)t liquidée(s)',
-    isolatedOnly: 'Marge isolée uniquement. Ne prend pas en compte les frais de financement, le slippage ou la marge croisée.',
+    isolatedOnly:
+      'Marge isolée uniquement. Ne prend pas en compte les frais de financement, le slippage ou la marge croisée.',
   },
 
   // Profit Goal
@@ -1512,7 +1699,7 @@ export default {
   // ActivityTimeline
   activityTimeline: {
     ago: 'il y a {time}',
-    justNow: 'à l\'instant',
+    justNow: "à l'instant",
     agoSeconds: 'il y a {n}s',
     agoMinutes: 'il y a {n}m',
     agoHours: 'il y a {n}h',
@@ -1556,7 +1743,7 @@ export default {
     dryOnly: 'Dry uniquement',
     compactLabel: 'Compact',
     group: {
-      today: 'Aujourd\'hui',
+      today: "Aujourd'hui",
       yesterday: 'Hier',
       thisWeek: 'Cette semaine',
       earlier: 'Plus ancien',
@@ -1579,7 +1766,7 @@ export default {
 
   // Tableau de bord marché
   marketPulse: {
-    tf_today: 'Aujourd\'hui',
+    tf_today: "Aujourd'hui",
     tf_24h: '24h',
     tf_7d: '7 jours',
     tf_thisWeek: 'Cette semaine',
@@ -1620,21 +1807,29 @@ export default {
     popover7dChange: 'Variation 7j',
     popoverSource: 'Source',
     popoverFgTitle: 'Indice Peur & Cupidité',
-    popoverFgDescription: 'Mesure le sentiment du marché de 0 (peur extrême) à 100 (cupidité extrême). Basé sur la volatilité, le volume, les réseaux sociaux, les sondages, la dominance et les tendances.',
+    popoverFgDescription:
+      'Mesure le sentiment du marché de 0 (peur extrême) à 100 (cupidité extrême). Basé sur la volatilité, le volume, les réseaux sociaux, les sondages, la dominance et les tendances.',
     popoverPerf_totalProfit: 'Profit total',
-    popoverPerfDesc_totalProfit: 'Somme des profits de tous les trades clôturés sur la période sélectionnée, convertis dans la devise de synthèse.',
+    popoverPerfDesc_totalProfit:
+      'Somme des profits de tous les trades clôturés sur la période sélectionnée, convertis dans la devise de synthèse.',
     popoverPerf_trades: 'Nombre de trades',
-    popoverPerfDesc_trades: 'Nombre total de trades clôturés sur la période sélectionnée pour tous les bots sélectionnés.',
+    popoverPerfDesc_trades:
+      'Nombre total de trades clôturés sur la période sélectionnée pour tous les bots sélectionnés.',
     popoverPerf_winRate: 'Taux de réussite',
-    popoverPerfDesc_winRate: 'Pourcentage de trades rentables (profit > 0) parmi tous les trades clôturés sur la période.',
+    popoverPerfDesc_winRate:
+      'Pourcentage de trades rentables (profit > 0) parmi tous les trades clôturés sur la période.',
     popoverPerf_bestTrade: 'Meilleur trade',
-    popoverPerfDesc_bestTrade: 'Le trade avec le ratio de profit le plus élevé sur la période sélectionnée.',
+    popoverPerfDesc_bestTrade:
+      'Le trade avec le ratio de profit le plus élevé sur la période sélectionnée.',
     popoverPerf_worstTrade: 'Pire trade',
-    popoverPerfDesc_worstTrade: 'Le trade avec le ratio de profit le plus bas sur la période sélectionnée.',
+    popoverPerfDesc_worstTrade:
+      'Le trade avec le ratio de profit le plus bas sur la période sélectionnée.',
     popoverPerf_bestBot: 'Meilleur bot',
-    popoverPerfDesc_bestBot: 'Le bot avec le profit absolu total le plus élevé sur la période sélectionnée.',
+    popoverPerfDesc_bestBot:
+      'Le bot avec le profit absolu total le plus élevé sur la période sélectionnée.',
     popoverPerf_worstBot: 'Pire bot',
-    popoverPerfDesc_worstBot: 'Le bot avec le profit absolu total le plus bas sur la période sélectionnée.',
+    popoverPerfDesc_worstBot:
+      'Le bot avec le profit absolu total le plus bas sur la période sélectionnée.',
   },
 
   // Performance Heatmap
@@ -1664,7 +1859,7 @@ export default {
     overallPnl: 'PnL ouvert global',
     correlationWarnings: 'Alertes de corrélation',
     // Popovers
-    popoverExposureTitle: 'Détail de l\'exposition',
+    popoverExposureTitle: "Détail de l'exposition",
     popoverExposureDesc: 'Capital actuellement déployé en positions ouvertes, ventilé par bot.',
     popoverDrawdownTitle: 'Pire drawdown',
     popoverDrawdownDesc: 'La position ouverte avec la plus grande perte latente en pourcentage.',
@@ -1676,7 +1871,8 @@ export default {
     popoverLeverageTitle: 'Détail du levier',
     popoverLeverageDesc: 'Levier moyen utilisé par chaque bot sur les positions ouvertes.',
     popoverCorrelationTitle: 'Alertes de corrélation',
-    popoverCorrelationDesc: 'Paires tradées simultanément par plusieurs bots, augmentant le risque corrélé.',
+    popoverCorrelationDesc:
+      'Paires tradées simultanément par plusieurs bots, augmentant le risque corrélé.',
     popoverCorrelationNone: 'Aucune paire corrélée détectée.',
     totalBalanceTooltip: 'Solde total de tous les bots sélectionnés',
     riskLow: 'Risque Faible',
@@ -1731,8 +1927,10 @@ export default {
     direction: 'Direction',
     sameDirection: 'Même (risque amplifié)',
     oppositeDirection: 'Opposée (couverture)',
-    warningSame: 'Les deux bots tradent dans la même direction. Un mouvement de prix défavorable affecte toutes les positions simultanément — votre risque réel est la somme de toutes les marges, pas ce que chaque bot calcule individuellement.',
-    warningOpposite: 'Les bots tradent dans des directions opposées (un long, un short). Cela couvre partiellement le risque mais vous payez des frais des deux côtés.',
+    warningSame:
+      'Les deux bots tradent dans la même direction. Un mouvement de prix défavorable affecte toutes les positions simultanément — votre risque réel est la somme de toutes les marges, pas ce que chaque bot calcule individuellement.',
+    warningOpposite:
+      'Les bots tradent dans des directions opposées (un long, un short). Cela couvre partiellement le risque mais vous payez des frais des deux côtés.',
     dismiss: 'Ignorer',
     tradedBy: 'tradé par {bots} (double exposition)',
     notFilterable: 'Non filtrable par date',
@@ -1745,7 +1943,8 @@ export default {
     importing: 'Importation...',
     restored: '{keys} paramètres restaurés, {bots} bots',
     reloading: 'Rechargement...',
-    importDesc: 'Vous avez une configuration FreqUI sauvegardée ? Importez-la pour retrouver vos bots, disposition et préférences.',
+    importDesc:
+      'Vous avez une configuration FreqUI sauvegardée ? Importez-la pour retrouver vos bots, disposition et préférences.',
     saves: 'Sauvegarde : bots, disposition, filtres, thème, alertes, benchmarks',
     exportPng: 'Exporter en PNG',
   },
@@ -1801,54 +2000,65 @@ export default {
   // Widgets de monitoring des taux
   rateMonitor: {
     rateBudget: 'Budget de taux',
-    rateBudgetDesc: 'Budget de limitation de taux — indique combien de jetons sont disponibles pour les appels API. 100% = budget complet, chaque requête consomme des jetons qui se rechargent au fil du temps. En dessous de 30% = risque de blocage 429.',
+    rateBudgetDesc:
+      'Budget de limitation de taux — indique combien de jetons sont disponibles pour les appels API. 100% = budget complet, chaque requête consomme des jetons qui se rechargent au fil du temps. En dessous de 30% = risque de blocage 429.',
     tokenBucket: 'Token Bucket — Budget de limitation',
     tokenBucketAvail: 'Disponible : {avail} / {max} jetons',
     tokenBucketFill: 'Niveau de remplissage : {pct}%',
-    tokenBucketExplain: 'Chaque appel API consomme des jetons. Ils se rechargent automatiquement. Quand ils sont épuisés, les requêtes sont mises en file d\'attente pour éviter les erreurs 429.',
+    tokenBucketExplain:
+      "Chaque appel API consomme des jetons. Ils se rechargent automatiquement. Quand ils sont épuisés, les requêtes sont mises en file d'attente pour éviter les erreurs 429.",
     tokenBucketLow: 'Budget faible — risque de limitation',
     requests: 'Requêtes',
-    requestsDesc: 'Total des appels API envoyés à l\'exchange dans la fenêtre actuelle (directs + en cache)',
+    requestsDesc:
+      "Total des appels API envoyés à l'exchange dans la fenêtre actuelle (directs + en cache)",
     errors: 'Erreurs',
-    errorsDesc: 'Requêtes échouées — inclut timeouts, erreurs serveur et réseau (hors 429 comptés séparément)',
+    errorsDesc:
+      'Requêtes échouées — inclut timeouts, erreurs serveur et réseau (hors 429 comptés séparément)',
     avgResponse: 'Moy.',
-    avgResponseDesc: 'Temps de réponse API moyen — durée de réponse de l\'exchange pour les requêtes directes (non-cachées)',
+    avgResponseDesc:
+      "Temps de réponse API moyen — durée de réponse de l'exchange pour les requêtes directes (non-cachées)",
     p95Response: 'P95',
-    p95ResponseDesc: 'Temps de réponse au 95ème percentile — 95% des requêtes sont plus rapides. Des valeurs élevées indiquent des réponses lentes occasionnelles de l\'exchange.',
-    queue: 'File d\'attente',
-    queueDesc: 'Requêtes en attente dans la file du limiteur de taux — des valeurs élevées signifient que le bot envoie plus de requêtes que l\'exchange ne l\'autorise',
+    p95ResponseDesc:
+      "Temps de réponse au 95ème percentile — 95% des requêtes sont plus rapides. Des valeurs élevées indiquent des réponses lentes occasionnelles de l'exchange.",
+    queue: "File d'attente",
+    queueDesc:
+      "Requêtes en attente dans la file du limiteur de taux — des valeurs élevées signifient que le bot envoie plus de requêtes que l'exchange ne l'autorise",
     exchange: 'Exchange',
-    exchangeDesc: 'L\'exchange auquel ce bot est connecté',
+    exchangeDesc: "L'exchange auquel ce bot est connecté",
     rateLimitHits: '{count} blocage de taux | {count} blocages de taux',
     backoff: 'Backoff x{factor} — {remaining}s restantes',
-    backoffDesc: 'Le backoff exponentiel est actif — les requêtes sont ralenties pour récupérer du blocage de taux',
+    backoffDesc:
+      'Le backoff exponentiel est actif — les requêtes sont ralenties pour récupérer du blocage de taux',
     cacheHitRates: 'Taux de cache',
-    cacheHitRatesDesc: 'Pourcentage de requêtes servies depuis le cache local au lieu de l\'API exchange. Plus c\'est élevé = moins d\'appels exchange = moins de pression sur les limites.',
-    ohlcvDesc: 'Données de bougies (OHLCV) servies depuis le cache vs récupérées de l\'exchange',
-    tickersDesc: 'Tickers de prix en temps réel servis depuis le cache vs récupérés de l\'exchange',
-    positionsDesc: 'Données de positions ouvertes servies depuis le cache vs récupérées de l\'exchange',
-    lowCacheEfficiency: 'Faible efficacité du cache — plus d\'appels directs à l\'exchange',
+    cacheHitRatesDesc:
+      "Pourcentage de requêtes servies depuis le cache local au lieu de l'API exchange. Plus c'est élevé = moins d'appels exchange = moins de pression sur les limites.",
+    ohlcvDesc: "Données de bougies (OHLCV) servies depuis le cache vs récupérées de l'exchange",
+    tickersDesc: "Tickers de prix en temps réel servis depuis le cache vs récupérés de l'exchange",
+    positionsDesc:
+      "Données de positions ouvertes servies depuis le cache vs récupérées de l'exchange",
+    lowCacheEfficiency: "Faible efficacité du cache — plus d'appels directs à l'exchange",
     topMethods: 'Méthodes principales',
-    topMethodsDesc: 'Méthodes API les plus appelées — montre quels endpoints de l\'exchange sont les plus sollicités',
+    topMethodsDesc:
+      "Méthodes API les plus appelées — montre quels endpoints de l'exchange sont les plus sollicités",
     method: 'Méthode',
     count: 'Nombre',
     cached: 'En cache',
     perBot: 'Par bot',
     noMetrics: 'Aucune métrique de taux disponible',
-    noMetricsHint: 'Le bot doit être en cours d\'exécution pour collecter les données',
+    noMetricsHint: "Le bot doit être en cours d'exécution pour collecter les données",
     window: 'Fenêtre',
     methods: '{count} méthodes',
     flow: 'Flux',
     table: 'Tableau',
     noFlowData: 'Pas assez de données pour le diagramme de flux',
     noMethodData: 'Aucune donnée de méthode disponible',
-    waitingActivity: 'En attente d\'activité API',
+    waitingActivity: "En attente d'activité API",
     noTimeline: 'Pas de données temporelles',
     responseTime: 'Temps de réponse',
     avgResponseTime: 'Temps de réponse API moyen sur toutes les méthodes',
     direct: 'Direct (API)',
-    directDesc: 'Requêtes envoyées directement à l\'API de l\'exchange',
-    cachedDesc: 'Requêtes servies depuis le cache local sans appeler l\'exchange',
+    directDesc: "Requêtes envoyées directement à l'API de l'exchange",
+    cachedDesc: "Requêtes servies depuis le cache local sans appeler l'exchange",
     errorsChartDesc: 'Requêtes échouées affichées en barres',
     req: 'req',
     '429s': '429s',
@@ -1869,21 +2079,26 @@ export default {
     cached: 'En cache',
     cachedFtcache: 'Cache ftcache',
     cachedFtpairlist: 'Cache ftpairlist',
-    directToExchange: 'Direct à l\'exchange',
+    directToExchange: "Direct à l'exchange",
     breakdown: 'Répartition des requêtes',
-    breakdownDesc: 'Comment les requêtes sont réparties entre les couches de cache et les appels directs à l\'exchange',
+    breakdownDesc:
+      "Comment les requêtes sont réparties entre les couches de cache et les appels directs à l'exchange",
     exchangeCapacity: 'Capacité exchange',
-    capacityDesc: 'Appels API directs vs capacité de l\'exchange. Des valeurs élevées indiquent que le bot est proche de la limite.',
+    capacityDesc:
+      "Appels API directs vs capacité de l'exchange. Des valeurs élevées indiquent que le bot est proche de la limite.",
     directLoad: 'Charge API directe',
     exchangeMax: 'Max exchange',
-    ftcacheExplain: 'ftcache : daemon de cache OHLCV/ticker/position local qui réduit les appels API en servant les données répétées depuis la mémoire',
-    ftpairlistExplain: 'ftpairlist : daemon de cache de pairlist partagé qui évite les récupérations redondantes entre plusieurs instances de bots',
-    entriesDesc: 'Nombre d\'entrées de pairlist actuellement stockées dans le cache',
-    clientsDesc: 'Nombre d\'instances de bots connectées au cache de pairlist',
-    gaugeExplain0: '0% = aucune requête servie depuis le cache (tout va directement à l\'exchange)',
-    gaugeExplain100: '100% = toutes les requêtes servies depuis le cache (aucun appel direct à l\'exchange)',
+    ftcacheExplain:
+      'ftcache : daemon de cache OHLCV/ticker/position local qui réduit les appels API en servant les données répétées depuis la mémoire',
+    ftpairlistExplain:
+      'ftpairlist : daemon de cache de pairlist partagé qui évite les récupérations redondantes entre plusieurs instances de bots',
+    entriesDesc: "Nombre d'entrées de pairlist actuellement stockées dans le cache",
+    clientsDesc: "Nombre d'instances de bots connectées au cache de pairlist",
+    gaugeExplain0: "0% = aucune requête servie depuis le cache (tout va directement à l'exchange)",
+    gaugeExplain100:
+      "100% = toutes les requêtes servies depuis le cache (aucun appel direct à l'exchange)",
     noData: 'Aucune donnée de cache disponible',
-    noDataHint: 'Les daemons de cache doivent être en cours d\'exécution',
+    noDataHint: "Les daemons de cache doivent être en cours d'exécution",
   },
 
   // Infrastructure Health widget
@@ -1957,86 +2172,122 @@ export default {
     jobDateTo: 'Date de fin',
     jobTimerange: 'Période',
     jobTimeframe: 'Timeframe',
-    jobTimeframeDesc: 'Timeframe des bougies pour la stratégie. Remplace la valeur de la config. Ex : 15m pour du scalping, 1h pour du swing. La stratégie doit avoir été conçue pour ce timeframe.',
+    jobTimeframeDesc:
+      'Timeframe des bougies pour la stratégie. Remplace la valeur de la config. Ex : 15m pour du scalping, 1h pour du swing. La stratégie doit avoir été conçue pour ce timeframe.',
     jobMaxOpenTrades: 'Max Open Trades',
-    jobMaxOpenTradesDesc: 'Nombre max de positions ouvertes simultanément. Remplace la config. Ex : 3 = max 3 trades à la fois. Impact direct sur le capital engagé (stake × MOT).',
+    jobMaxOpenTradesDesc:
+      'Nombre max de positions ouvertes simultanément. Remplace la config. Ex : 3 = max 3 trades à la fois. Impact direct sur le capital engagé (stake × MOT).',
     jobStakeAmount: 'Stake Amount',
-    jobStakeAmountDesc: 'Montant misé par trade en devise de stake. Valeurs possibles : nombre (ex : 100), "unlimited" (sizing dynamique via custom_stake_amount). Remplace la config.',
+    jobStakeAmountDesc:
+      'Montant misé par trade en devise de stake. Valeurs possibles : nombre (ex : 100), "unlimited" (sizing dynamique via custom_stake_amount). Remplace la config.',
     jobDryRunWallet: 'Dry Run Wallet',
-    jobDryRunWalletDesc: 'Capital de départ simulé en USDT. Ex : 1000 = simulation avec 1000 USDT. Définit la taille du portefeuille pour le calcul des positions et du drawdown.',
+    jobDryRunWalletDesc:
+      'Capital de départ simulé en USDT. Ex : 1000 = simulation avec 1000 USDT. Définit la taille du portefeuille pour le calcul des positions et du drawdown.',
     jobEnableProtections: 'Protections',
-    jobEnableProtectionsDesc: 'Active les protections configurées dans la stratégie (CooldownPeriod, StoplossGuard, MaxDrawdown, etc.). Ralentit le backtest mais simule le comportement réel du bot.',
+    jobEnableProtectionsDesc:
+      'Active les protections configurées dans la stratégie (CooldownPeriod, StoplossGuard, MaxDrawdown, etc.). Ralentit le backtest mais simule le comportement réel du bot.',
     // Common advanced
     jobAdvancedParams: 'Paramètres avancés',
     jobDataFormat: 'Format données',
-    jobDataFormatDesc: 'Format de stockage des données OHLCV sur disque. feather (défaut) = rapide et compact. parquet = compatible Spark/BigQuery. json/jsongz = lisible humainement.',
+    jobDataFormatDesc:
+      'Format de stockage des données OHLCV sur disque. feather (défaut) = rapide et compact. parquet = compatible Spark/BigQuery. json/jsongz = lisible humainement.',
     jobFee: 'Frais (fee)',
-    jobFeeDesc: 'Ratio de frais appliqué à l\'entrée ET à la sortie. Ex : 0.001 = 0.1% par trade (0.2% aller-retour). Laisser vide = utilise les frais de l\'exchange (recommandé).',
+    jobFeeDesc:
+      "Ratio de frais appliqué à l'entrée ET à la sortie. Ex : 0.001 = 0.1% par trade (0.2% aller-retour). Laisser vide = utilise les frais de l'exchange (recommandé).",
     jobPairs: 'Paires',
-    jobPairsDesc: 'Limiter à des paires spécifiques, séparées par virgule. Ex : BTC/USDT:USDT, ETH/USDT:USDT. Ignore la pairlist de la config. Utile pour tester une stratégie sur une seule paire.',
+    jobPairsDesc:
+      'Limiter à des paires spécifiques, séparées par virgule. Ex : BTC/USDT:USDT, ETH/USDT:USDT. Ignore la pairlist de la config. Utile pour tester une stratégie sur une seule paire.',
     jobPositionStacking: 'Position Stacking',
-    jobPositionStackingDesc: 'Permet d\'ouvrir plusieurs positions sur la même paire (DCA). Attention : les résultats ne sont pas reproductibles en live si le bot ne supporte pas le stacking.',
+    jobPositionStackingDesc:
+      "Permet d'ouvrir plusieurs positions sur la même paire (DCA). Attention : les résultats ne sont pas reproductibles en live si le bot ne supporte pas le stacking.",
     jobTimeframeDetail: 'Timeframe détail',
-    jobTimeframeDetailDesc: 'Sous-résolution pour simuler les entrées/sorties intra-bougie. Ex : timeframe=1h + detail=5m → simule le mouvement de prix en 5m à l\'intérieur de chaque bougie 1h. Plus lent mais plus précis.',
+    jobTimeframeDetailDesc:
+      "Sous-résolution pour simuler les entrées/sorties intra-bougie. Ex : timeframe=1h + detail=5m → simule le mouvement de prix en 5m à l'intérieur de chaque bougie 1h. Plus lent mais plus précis.",
     // Backtest-only
     jobBacktestParams: 'Paramètres Backtest',
     jobExportType: 'Export',
-    jobExportTypeDesc: 'Données exportées dans le fichier résultat. trades (défaut) = liste des trades. signals = trades + signaux buy/sell sur chaque bougie. none = pas d\'export.',
+    jobExportTypeDesc:
+      "Données exportées dans le fichier résultat. trades (défaut) = liste des trades. signals = trades + signaux buy/sell sur chaque bougie. none = pas d'export.",
     jobBreakdown: 'Ventilation',
-    jobBreakdownDesc: 'Découpe les résultats par période temporelle. day = profit/jour, week = profit/semaine, month = profit/mois. Permet d\'identifier les périodes de sous-performance.',
+    jobBreakdownDesc:
+      "Découpe les résultats par période temporelle. day = profit/jour, week = profit/semaine, month = profit/mois. Permet d'identifier les périodes de sous-performance.",
     jobCache: 'Cache',
-    jobCacheDesc: 'Réutilise un résultat en cache si le dernier run date de moins de N. day (défaut) = 24h. none = force le recalcul. Utile pour itérer rapidement sans relancer le backtest.',
+    jobCacheDesc:
+      'Réutilise un résultat en cache si le dernier run date de moins de N. day (défaut) = 24h. none = force le recalcul. Utile pour itérer rapidement sans relancer le backtest.',
     jobDynamicPairlist: 'Pairlist dynamique',
-    jobDynamicPairlistDesc: 'Rafraîchit la pairlist à chaque nouvelle bougie (ex : VolumePairList recalculé). Plus réaliste mais beaucoup plus lent. Nécessaire si votre pairlist filtre par volume récent.',
+    jobDynamicPairlistDesc:
+      'Rafraîchit la pairlist à chaque nouvelle bougie (ex : VolumePairList recalculé). Plus réaliste mais beaucoup plus lent. Nécessaire si votre pairlist filtre par volume récent.',
     jobNotes: 'Notes',
-    jobNotesDesc: 'Texte libre sauvegardé dans le fichier résultat. Ex : "Test sans SL avec nouveau DCA". Visible dans l\'historique des runs.',
+    jobNotesDesc:
+      'Texte libre sauvegardé dans le fichier résultat. Ex : "Test sans SL avec nouveau DCA". Visible dans l\'historique des runs.',
     // Hyperopt params
     jobHyperoptParams: 'Paramètres Hyperopt',
     jobEpochs: 'Époques',
-    jobEpochsDesc: 'Nombre de combinaisons de paramètres testées. 300-500 = exploration initiale. 1000+ = optimisation fine. Plus d\'epochs = meilleur résultat mais plus long. Temps ≈ epochs × durée_backtest / workers.',
+    jobEpochsDesc:
+      "Nombre de combinaisons de paramètres testées. 300-500 = exploration initiale. 1000+ = optimisation fine. Plus d'epochs = meilleur résultat mais plus long. Temps ≈ epochs × durée_backtest / workers.",
     jobLoss: 'Fonction de perte',
-    jobLossDesc: 'Définit ce que "meilleur" signifie. CalmarHyperOptLoss = profit/max drawdown (DCA). SharpeHyperOptLoss = rendement ajusté risque (momentum). MoutonMeanRev = custom DCA/mean-reversion. SortinoHyperOptLoss = pénalise uniquement la volatilité baissière.',
+    jobLossDesc:
+      'Définit ce que "meilleur" signifie. CalmarHyperOptLoss = profit/max drawdown (DCA). SharpeHyperOptLoss = rendement ajusté risque (momentum). MoutonMeanRev = custom DCA/mean-reversion. SortinoHyperOptLoss = pénalise uniquement la volatilité baissière.',
     jobSampler: 'Sampler',
     jobSamplerAuto: 'Auto (défaut)',
-    jobSamplerDesc: 'Algorithme d\'exploration. NSGA-III (défaut) = génétique, bonne diversité, idéal multi-metric. TPE = bayésien, convergence rapide, idéal 300-500 epochs + loss simple. CMA-ES = gradient-free pour paramètres continus. GP = gaussien, lent si >10 params.',
+    jobSamplerDesc:
+      "Algorithme d'exploration. NSGA-III (défaut) = génétique, bonne diversité, idéal multi-metric. TPE = bayésien, convergence rapide, idéal 300-500 epochs + loss simple. CMA-ES = gradient-free pour paramètres continus. GP = gaussien, lent si >10 params.",
     jobSpaces: 'Espaces',
-    jobSpacesDesc: 'Espaces de paramètres à optimiser. default = buy+sell+roi+stoploss. all = tout. Sélection multiple possible. buy/sell = signaux d\'entrée/sortie. roi/stoploss/trailing = table ROI et stops.',
+    jobSpacesDesc:
+      "Espaces de paramètres à optimiser. default = buy+sell+roi+stoploss. all = tout. Sélection multiple possible. buy/sell = signaux d'entrée/sortie. roi/stoploss/trailing = table ROI et stops.",
     jobEarlyStop: 'Arrêt anticipé',
-    jobEarlyStopDesc: 'Arrête si aucune amélioration après N époques. Ex : 150 = stop après 150 epochs sans progrès. Bonne valeur : 20-30% du total epochs. 0 = désactivé. Trop bas = arrêt prématuré.',
+    jobEarlyStopDesc:
+      'Arrête si aucune amélioration après N époques. Ex : 150 = stop après 150 epochs sans progrès. Bonne valeur : 20-30% du total epochs. 0 = désactivé. Trop bas = arrêt prématuré.',
     jobMinTrades: 'Trades minimum',
-    jobMinTradesDesc: 'Époques avec moins de N trades reçoivent le score max (pire). Ex : 30 = minimum 30 trades pour être évalué. < 30 = statistiquement non fiable. Monter à 50-100 pour des résultats robustes.',
+    jobMinTradesDesc:
+      'Époques avec moins de N trades reçoivent le score max (pire). Ex : 30 = minimum 30 trades pour être évalué. < 30 = statistiquement non fiable. Monter à 50-100 pour des résultats robustes.',
     jobWorkers: 'Workers',
-    jobWorkersDesc: 'Processus parallèles. -1 = tous les CPUs (plus rapide, RAM élevée). -2 = tous sauf un (laisse le système respirer). 1 = séquentiel (debug/faible RAM). Chaque worker charge une copie des données → RAM × workers.',
+    jobWorkersDesc:
+      'Processus parallèles. -1 = tous les CPUs (plus rapide, RAM élevée). -2 = tous sauf un (laisse le système respirer). 1 = séquentiel (debug/faible RAM). Chaque worker charge une copie des données → RAM × workers.',
     jobRandomState: 'Random State',
-    jobRandomStateDesc: 'Fixe la graine aléatoire pour des résultats reproductibles. Ex : 42. Sans seed, chaque run explore des combinaisons différentes. Utile pour comparer des loss functions ou samplers entre eux.',
+    jobRandomStateDesc:
+      'Fixe la graine aléatoire pour des résultats reproductibles. Ex : 42. Sans seed, chaque run explore des combinaisons différentes. Utile pour comparer des loss functions ou samplers entre eux.',
     jobPrintAll: 'Afficher tout',
-    jobPrintAllDesc: 'Affiche tous les résultats dans les logs, pas seulement les meilleurs. Utile pour analyser la distribution des résultats et détecter l\'overfitting.',
+    jobPrintAllDesc:
+      "Affiche tous les résultats dans les logs, pas seulement les meilleurs. Utile pour analyser la distribution des résultats et détecter l'overfitting.",
     jobDisableParamExport: 'Désactiver export params',
-    jobDisableParamExportDesc: 'Ne pas créer automatiquement le fichier Strategy.json avec les meilleurs paramètres. Utile si vous voulez comparer avant d\'écraser les params existants.',
+    jobDisableParamExportDesc:
+      "Ne pas créer automatiquement le fichier Strategy.json avec les meilleurs paramètres. Utile si vous voulez comparer avant d'écraser les params existants.",
     jobIgnoreMissingSpaces: 'Ignorer espaces vides',
-    jobIgnoreMissingSpacesDesc: 'Supprime les erreurs si un espace demandé ne contient aucun paramètre optimisable. Ex : --spaces trailing mais la stratégie n\'a pas de trailing params.',
+    jobIgnoreMissingSpacesDesc:
+      "Supprime les erreurs si un espace demandé ne contient aucun paramètre optimisable. Ex : --spaces trailing mais la stratégie n'a pas de trailing params.",
     jobAnalyzePerEpoch: 'Analyse par epoch',
-    jobAnalyzePerEpochDesc: 'Relance populate_indicators() à chaque epoch au lieu d\'une seule fois. Nécessaire si vos indicateurs dépendent des hyperparamètres. Beaucoup plus lent.',
+    jobAnalyzePerEpochDesc:
+      "Relance populate_indicators() à chaque epoch au lieu d'une seule fois. Nécessaire si vos indicateurs dépendent des hyperparamètres. Beaucoup plus lent.",
     // WFA params
     jobWfaParams: 'Paramètres Walk-Forward',
     jobWfWindows: 'Fenêtres',
-    jobWfWindowsDesc: 'Nombre de fenêtres train/test. 3-5 pour 1-2 ans de données, 5-8 pour 3+ ans. Plus de fenêtres = validation plus robuste mais périodes test plus courtes.',
+    jobWfWindowsDesc:
+      'Nombre de fenêtres train/test. 3-5 pour 1-2 ans de données, 5-8 pour 3+ ans. Plus de fenêtres = validation plus robuste mais périodes test plus courtes.',
     jobWfTrainRatio: 'Ratio train',
-    jobWfTrainRatioDesc: 'Fraction des données utilisée pour l\'entraînement. 0.75 = 75% train, 25% test. Ex : sur 1 an, 9 mois train + 3 mois test par fenêtre. Plage : 0.5 → 0.9.',
+    jobWfTrainRatioDesc:
+      "Fraction des données utilisée pour l'entraînement. 0.75 = 75% train, 25% test. Ex : sur 1 an, 9 mois train + 3 mois test par fenêtre. Plage : 0.5 → 0.9.",
     jobWfEmbargo: 'Embargo (jours)',
-    jobWfEmbargoDesc: 'Gap en jours entre données train et test pour éviter le lookahead bias via les indicateurs retardés. 7 jours = safe pour timeframes daily. 1-2 jours pour intraday.',
+    jobWfEmbargoDesc:
+      'Gap en jours entre données train et test pour éviter le lookahead bias via les indicateurs retardés. 7 jours = safe pour timeframes daily. 1-2 jours pour intraday.',
     jobWfHoldout: 'Holdout (mois)',
-    jobWfHoldoutDesc: 'Réserve N mois à la fin comme validation finale indépendante, jamais touchée par l\'optimiseur. 2-3 mois recommandés. 0 = désactivé.',
+    jobWfHoldoutDesc:
+      "Réserve N mois à la fin comme validation finale indépendante, jamais touchée par l'optimiseur. 2-3 mois recommandés. 0 = désactivé.",
     jobWfMinTrades: 'Trades min test',
-    jobWfMinTradesDesc: 'Minimum de trades par fenêtre test pour significativité statistique. < 30 = non fiable. La fenêtre est marquée comme invalide si le seuil n\'est pas atteint.',
+    jobWfMinTradesDesc:
+      "Minimum de trades par fenêtre test pour significativité statistique. < 30 = non fiable. La fenêtre est marquée comme invalide si le seuil n'est pas atteint.",
     jobWfMode: 'Mode',
-    jobWfModeDesc: 'rolling (défaut) = fenêtres glissantes de taille fixe. anchored = le train commence toujours au début (plus de données, moins de stationnarité). cpcv = Combinatorial Purged CV, teste toutes les combinaisons possibles.',
+    jobWfModeDesc:
+      'rolling (défaut) = fenêtres glissantes de taille fixe. anchored = le train commence toujours au début (plus de données, moins de stationnarité). cpcv = Combinatorial Purged CV, teste toutes les combinaisons possibles.',
     jobWfMultiSeed: 'Multi-Seed',
-    jobWfMultiSeedDesc: 'Lance N hyperopts avec des seeds différents sur la dernière fenêtre. Si les résultats divergent beaucoup, l\'espace d\'optimisation est bruité → résultats fragiles. 0 = désactivé.',
+    jobWfMultiSeedDesc:
+      "Lance N hyperopts avec des seeds différents sur la dernière fenêtre. Si les résultats divergent beaucoup, l'espace d'optimisation est bruité → résultats fragiles. 0 = désactivé.",
     jobWfCpcvGroups: 'Groupes CPCV',
-    jobWfCpcvGroupsDesc: 'Nombre de blocs temporels pour le mode CPCV. C(N,K) combinaisons. Ex : N=6, K=2 → C(6,2)=15 combinaisons. Plus de groupes = plus de combinaisons mais blocs plus courts.',
+    jobWfCpcvGroupsDesc:
+      'Nombre de blocs temporels pour le mode CPCV. C(N,K) combinaisons. Ex : N=6, K=2 → C(6,2)=15 combinaisons. Plus de groupes = plus de combinaisons mais blocs plus courts.',
     jobWfCpcvTestGroups: 'Groupes test CPCV',
-    jobWfCpcvTestGroupsDesc: 'Blocs test retenus par combinaison CPCV. K=2 avec N=6 → 15 combinaisons et 5 chemins de backtest. Seulement utilisé avec mode=cpcv.',
+    jobWfCpcvTestGroupsDesc:
+      'Blocs test retenus par combinaison CPCV. K=2 avec N=6 → 15 combinaisons et 5 chemins de backtest. Seulement utilisé avec mode=cpcv.',
     // Job actions & status
     jobStart: 'Lancer',
     jobAbort: 'Annuler',
@@ -2047,7 +2298,7 @@ export default {
     jobHistory: 'Jobs récents',
     jobTabConfig: 'Configuration',
     jobTabConsole: 'Console',
-    jobConsoleEmpty: 'Aucun job en cours. Lancez un job depuis l\'onglet Configuration.',
+    jobConsoleEmpty: "Aucun job en cours. Lancez un job depuis l'onglet Configuration.",
     jobConsoleDuration: 'Durée',
     jobConsoleFinished: 'Terminé',
     editorSave: 'Sauvegarder',
@@ -2110,7 +2361,7 @@ export default {
     aaSectionReturns: 'Analyse des Rendements',
     aaSectionTradeAnalysis: 'Analyse des Trades',
     aaSectionRisk: 'Évaluation des Risques',
-    aaEquityCurve: 'Courbe d\'Équité',
+    aaEquityCurve: "Courbe d'Équité",
     aaUnderwaterPlot: 'Graphique Underwater',
     aaMonthlyReturns: 'Rendements Mensuels',
     aaRollingMetrics: 'Métriques Glissantes',
@@ -2119,16 +2370,24 @@ export default {
     aaDrawdownDetails: 'Analyse des Drawdowns',
     aaStreaks: 'Séries Gains/Pertes',
     aaPairProfit: 'Distribution des Profits par Paire',
-    hintEquityCurve: 'Balance du portefeuille dans le temps. Montre l\'évolution de la valeur du compte durant la période de backtest. Les chutes abruptes indiquent des drawdowns.',
+    hintEquityCurve:
+      "Balance du portefeuille dans le temps. Montre l'évolution de la valeur du compte durant la période de backtest. Les chutes abruptes indiquent des drawdowns.",
     eqStrategy: 'Stratégie',
     eqBtcBenchmark: 'Benchmark BTC',
-    hintUnderwater: 'Drawdown continu sous le plus haut historique. Montre le pourcentage de baisse depuis le pic de balance. Plus le rouge est profond, plus la stratégie est en difficulté.',
-    hintMonthlyReturns: 'Heatmap calendaire des rendements mensuels. Vert = positif, rouge = négatif. Aide à identifier les patterns saisonniers et la régularité entre les mois.',
-    hintRollingMetrics: 'Sharpe, Sortino et volatilité calculés sur une fenêtre glissante de 30 jours. Révèle comment la performance ajustée au risque évolue dans le temps — un Sharpe stable est plus fiable qu\'un Sharpe erratique.',
-    hintTradePnl: 'Distribution des rendements individuels par trade. Une distribution asymétrique à droite avec une longue queue positive est idéale. La séparation rouge/vert montre l\'équilibre gains/pertes.',
-    hintRiskMetrics: 'Métriques de risque avancées inspirées de VectorBT Pro. VaR = pire perte journalière attendue à 95% de confiance. CVaR = perte moyenne au-delà du VaR. Omega = ratio gains/pertes pondéré par probabilité. Kelly = fraction de mise optimale.',
-    hintDrawdownDetails: 'Top 5 des drawdowns les plus profonds avec durée de déclin/récupération. Des temps de récupération longs indiquent que la stratégie peine à rebondir. Les drawdowns actifs n\'ont pas encore de récupération.',
-    hintStreaks: 'Plus longues séries consécutives de gains et de pertes. Les longues séries de pertes testent la gestion du risque et l\'endurance psychologique. La distribution montre la fréquence de chaque longueur de série.',
+    hintUnderwater:
+      'Drawdown continu sous le plus haut historique. Montre le pourcentage de baisse depuis le pic de balance. Plus le rouge est profond, plus la stratégie est en difficulté.',
+    hintMonthlyReturns:
+      'Heatmap calendaire des rendements mensuels. Vert = positif, rouge = négatif. Aide à identifier les patterns saisonniers et la régularité entre les mois.',
+    hintRollingMetrics:
+      "Sharpe, Sortino et volatilité calculés sur une fenêtre glissante de 30 jours. Révèle comment la performance ajustée au risque évolue dans le temps — un Sharpe stable est plus fiable qu'un Sharpe erratique.",
+    hintTradePnl:
+      "Distribution des rendements individuels par trade. Une distribution asymétrique à droite avec une longue queue positive est idéale. La séparation rouge/vert montre l'équilibre gains/pertes.",
+    hintRiskMetrics:
+      'Métriques de risque avancées inspirées de VectorBT Pro. VaR = pire perte journalière attendue à 95% de confiance. CVaR = perte moyenne au-delà du VaR. Omega = ratio gains/pertes pondéré par probabilité. Kelly = fraction de mise optimale.',
+    hintDrawdownDetails:
+      "Top 5 des drawdowns les plus profonds avec durée de déclin/récupération. Des temps de récupération longs indiquent que la stratégie peine à rebondir. Les drawdowns actifs n'ont pas encore de récupération.",
+    hintStreaks:
+      "Plus longues séries consécutives de gains et de pertes. Les longues séries de pertes testent la gestion du risque et l'endurance psychologique. La distribution montre la fréquence de chaque longueur de série.",
 
     // Descriptions métriques de risque
     descVar95: 'Pire perte journalière attendue à 95% de confiance',
@@ -2146,10 +2405,14 @@ export default {
     aaWeekdayPattern: 'Pattern Jour de la Semaine',
     aaCumulativeTrades: 'Rendements Cumulés',
     aaSectionTiming: 'Timing & Patterns',
-    hintDurationScatter: 'Chaque point est un trade. X = durée, Y = profit. Révèle si les trades longs sont plus rentables ou si les sorties rapides dominent.',
-    hintExitReasons: 'Comment les trades se clôturent et le profit moyen par type de sortie. Une bonne stratégie a des sorties diversifiées et profitables.',
-    hintWeekdayPattern: 'Performance par jour de la semaine. Révèle si la stratégie a un biais journalier. Le crypto trade 24/7 mais les patterns de liquidité créent des effets.',
-    hintCumulativeTrades: 'Profit cumulé par trade. Une courbe ascendante régulière = edge constant. Les chutes brutales indiquent des pertes groupées.',
+    hintDurationScatter:
+      'Chaque point est un trade. X = durée, Y = profit. Révèle si les trades longs sont plus rentables ou si les sorties rapides dominent.',
+    hintExitReasons:
+      'Comment les trades se clôturent et le profit moyen par type de sortie. Une bonne stratégie a des sorties diversifiées et profitables.',
+    hintWeekdayPattern:
+      'Performance par jour de la semaine. Révèle si la stratégie a un biais journalier. Le crypto trade 24/7 mais les patterns de liquidité créent des effets.',
+    hintCumulativeTrades:
+      'Profit cumulé par trade. Une courbe ascendante régulière = edge constant. Les chutes brutales indiquent des pertes groupées.',
 
     // Tier 3
     aaRollingWinrate: 'Win Rate Glissant',
@@ -2160,11 +2423,16 @@ export default {
     aaExpectancy: 'Espérance de Trade',
     aaSectionRollingPerf: 'Performance Glissante',
     aaSectionStructure: 'Structure de la Stratégie',
-    hintRollingWinrate: 'Win rate calculé sur une fenêtre glissante de 50 trades. Une ligne stable au-dessus de 50% = edge constant. Les chutes signalent des changements de régime.',
-    hintRollingProfitFactor: 'Profit factor (gains bruts / pertes brutes) sur fenêtre de 50 trades. Au-dessus de 1.0 = profitable. Plus stable = plus robuste.',
-    hintLongShort: 'Compare la performance des trades long et short. Pour les stratégies directionnelles, un côté domine souvent. Grande asymétrie = stratégie unidirectionnelle.',
-    hintExposure: 'Nombre de positions ouvertes simultanément. Les pics = concentration du capital. Exposition stable = utilisation prévisible du capital.',
-    hintExpectancy: 'Profit attendu par trade avec intervalle de confiance. SQN mesure la fiabilité de l\'edge. Kelly % suggère le sizing optimal.',
+    hintRollingWinrate:
+      'Win rate calculé sur une fenêtre glissante de 50 trades. Une ligne stable au-dessus de 50% = edge constant. Les chutes signalent des changements de régime.',
+    hintRollingProfitFactor:
+      'Profit factor (gains bruts / pertes brutes) sur fenêtre de 50 trades. Au-dessus de 1.0 = profitable. Plus stable = plus robuste.',
+    hintLongShort:
+      'Compare la performance des trades long et short. Pour les stratégies directionnelles, un côté domine souvent. Grande asymétrie = stratégie unidirectionnelle.',
+    hintExposure:
+      'Nombre de positions ouvertes simultanément. Les pics = concentration du capital. Exposition stable = utilisation prévisible du capital.',
+    hintExpectancy:
+      "Profit attendu par trade avec intervalle de confiance. SQN mesure la fiabilité de l'edge. Kelly % suggère le sizing optimal.",
 
     // Mode toggle
     modeGlobal: 'Analyse Globale',
@@ -2187,9 +2455,12 @@ export default {
     aaReturnDistribution: 'Distribution des Rendements',
     aaDrawdownCalendar: 'Calendrier de Drawdown',
     aaMaeMfe: 'MAE / MFE Scatter',
-    hintReturnDistribution: 'Histogramme des rendements par trade superposé à une distribution normale. Les écarts à la normalité (skew, queues épaisses) révèlent des risques cachés.',
-    hintDrawdownCalendar: 'Intensité du drawdown journalier en heatmap calendrier. Cellules foncées = drawdown profond. Aide à identifier les patterns saisonniers et les périodes de pertes prolongées.',
-    hintMaeMfe: 'Maximum Adverse Excursion (MAE) et Maximum Favorable Excursion (MFE) vs PnL final. MAE = pire drawdown intra-trade ; MFE = meilleur gain non-réalisé. Aide à optimiser le stop-loss et take-profit.',
+    hintReturnDistribution:
+      'Histogramme des rendements par trade superposé à une distribution normale. Les écarts à la normalité (skew, queues épaisses) révèlent des risques cachés.',
+    hintDrawdownCalendar:
+      'Intensité du drawdown journalier en heatmap calendrier. Cellules foncées = drawdown profond. Aide à identifier les patterns saisonniers et les périodes de pertes prolongées.',
+    hintMaeMfe:
+      'Maximum Adverse Excursion (MAE) et Maximum Favorable Excursion (MFE) vs PnL final. MAE = pire drawdown intra-trade ; MFE = meilleur gain non-réalisé. Aide à optimiser le stop-loss et take-profit.',
 
     // Sections analyse backtest
     btNavSummary: 'Résumé',
@@ -2205,13 +2476,17 @@ export default {
     btScorecardWinrate: 'Taux de Réussite',
 
     btHourlyPattern: 'Pattern Horaire',
-    hintBtHourlyPattern: 'Profit moyen et winrate par heure (0-23). Révèle les patterns intra-journaliers — quelles heures génèrent le plus d\'alpha.',
+    hintBtHourlyPattern:
+      "Profit moyen et winrate par heure (0-23). Révèle les patterns intra-journaliers — quelles heures génèrent le plus d'alpha.",
     btCapitalUtilization: 'Utilisation du Capital',
-    hintBtCapitalUtilization: 'Pourcentage du capital disponible déployé dans le temps. Faible utilisation = capital dormant ; très haute = opportunités potentiellement manquées.',
+    hintBtCapitalUtilization:
+      'Pourcentage du capital disponible déployé dans le temps. Faible utilisation = capital dormant ; très haute = opportunités potentiellement manquées.',
     btPairHeatmap: 'Matrice de Performance par Paire',
-    hintBtPairHeatmap: 'Tableau triable des métriques par paire. Cellules colorées pour identifier les meilleurs et pires performers.',
+    hintBtPairHeatmap:
+      'Tableau triable des métriques par paire. Cellules colorées pour identifier les meilleurs et pires performers.',
     btBenchmark: 'Stratégie vs Buy & Hold',
-    hintBtBenchmark: 'Comparaison d\'equity entre la stratégie et un simple buy-and-hold. Alpha = surperformance de la stratégie par rapport au benchmark.',
+    hintBtBenchmark:
+      "Comparaison d'equity entre la stratégie et un simple buy-and-hold. Alpha = surperformance de la stratégie par rapport au benchmark.",
 
     btBestPair: 'Meilleure Paire',
     btWorstPair: 'Pire Paire',
@@ -2222,10 +2497,10 @@ export default {
     btWinnerHolding: 'Holding Gagnants',
     btLoserHolding: 'Holding Perdants',
     btExpectancy: 'Espérance',
-    btExpectancyRatio: 'Ratio d\'Espérance',
+    btExpectancyRatio: "Ratio d'Espérance",
     btFinalBalance: 'Solde Final',
 
-    btOrderStats: 'Statistiques d\'Ordres',
+    btOrderStats: "Statistiques d'Ordres",
     btRejectedSignals: 'Signaux Rejetés',
     btTimedoutEntry: 'Entrées Expirées',
     btTimedoutExit: 'Sorties Expirées',
@@ -2269,8 +2544,8 @@ export default {
     erTotalProfit: 'Profit Total',
 
     // Convergence chart
-    convEpochLoss: 'Loss de l\'epoch',
-    convBestSoFar: 'Meilleur jusqu\'ici',
+    convEpochLoss: "Loss de l'epoch",
+    convBestSoFar: "Meilleur jusqu'ici",
     convEpoch: 'Epoch',
     convLoss: 'Loss',
 
@@ -2285,8 +2560,10 @@ export default {
     skBarTooltip: '{count} occurrence(s) de {length} {type} consécutifs',
     skBarWinType: 'gains',
     skBarLossType: 'pertes',
-    skWinStreakDistDesc: 'Nombre de fois où chaque longueur de série gagnante est apparue. Une série de 3 = 3 trades gagnants consécutifs.',
-    skLossStreakDistDesc: 'Nombre de fois où chaque longueur de série perdante est apparue. Les longues séries indiquent une sensibilité au régime de marché.',
+    skWinStreakDistDesc:
+      'Nombre de fois où chaque longueur de série gagnante est apparue. Une série de 3 = 3 trades gagnants consécutifs.',
+    skLossStreakDistDesc:
+      'Nombre de fois où chaque longueur de série perdante est apparue. Les longues séries indiquent une sensibilité au régime de marché.',
     skAxisStreakLength: 'Longueur de série',
     skAxisOccurrences: 'Occurrences',
 
@@ -2303,7 +2580,7 @@ export default {
     verdictGood: 'Bon',
     verdictCaution: 'Prudence',
     verdictDanger: 'Danger',
-    summaryTitle: 'Résumé d\'analyse',
+    summaryTitle: "Résumé d'analyse",
     validationChecklist: 'Checklist de validation',
     copyCommand: 'Copier la commande',
     commandCopied: 'Commande copiée',
@@ -2319,7 +2596,8 @@ export default {
     bestLoss: 'Meilleur Loss',
     hintTotalProfit: 'Profit total de la meilleure epoch en pourcentage du capital initial.',
     hintTotalTrades: 'Nombre total de trades exécutés pendant la meilleure epoch.',
-    hintBestSharpe: 'Ratio de Sharpe de la meilleure epoch. Au-dessus de 1.0 c\'est bien, au-dessus de 2.0 c\'est excellent.',
+    hintBestSharpe:
+      "Ratio de Sharpe de la meilleure epoch. Au-dessus de 1.0 c'est bien, au-dessus de 2.0 c'est excellent.",
     hintBestLoss: 'Valeur de la fonction de perte de la meilleure epoch. Plus négatif = meilleur.',
     bestEpochResults: 'Résultats de la meilleure epoch :',
     epochsCompleted: 'Époques',
@@ -2332,7 +2610,7 @@ export default {
     sourceSaved: 'Code Stratégie Sauvegardé',
     sourceCurrent: 'Code Stratégie Actuel',
     sourceChanged: 'La stratégie a été modifiée depuis ce run',
-    fileDeleted: 'Le fichier n\'existe plus',
+    fileDeleted: "Le fichier n'existe plus",
     noDiff: 'Aucun changement détecté',
     showDiff: 'Afficher le diff',
 
@@ -2347,17 +2625,18 @@ export default {
 
     // Bot hors ligne
     botOfflineTitle: 'Bot hors ligne',
-    botOfflineDesc: 'Le bot principal doit être en cours d\'exécution pour afficher les backtests, hyperopts et walk-forward. Démarrez le bot et cette page se chargera automatiquement.',
+    botOfflineDesc:
+      "Le bot principal doit être en cours d'exécution pour afficher les backtests, hyperopts et walk-forward. Démarrez le bot et cette page se chargera automatiquement.",
 
     authRequired: 'Authentification requise',
     authRequiredDesc:
-      'Vous devez vous connecter pour accéder au Développement Stratégie. Cette page affiche le code source de vos stratégies, configs et résultats d\'optimisation — elle est protégée par le mot de passe de votre bot.',
+      "Vous devez vous connecter pour accéder au Développement Stratégie. Cette page affiche le code source de vos stratégies, configs et résultats d'optimisation — elle est protégée par le mot de passe de votre bot.",
     authStep1Title: '1. Configurer les identifiants API',
     authStep1Desc:
       'Vérifiez que le fichier de config de votre bot contient une section api_server avec un username et un password :',
     authStep2Title: '2. Se connecter via FreqUI',
     authStep2Desc:
-      'Allez dans Paramètres (icône engrenage) et ajoutez votre bot avec l\'URL, le nom d\'utilisateur et le mot de passe configurés. FreqUI obtient automatiquement un token JWT à la connexion.',
+      "Allez dans Paramètres (icône engrenage) et ajoutez votre bot avec l'URL, le nom d'utilisateur et le mot de passe configurés. FreqUI obtient automatiquement un token JWT à la connexion.",
     authStep3Title: '3. Revenir ici',
     authStep3Desc:
       'Une fois connecté, revenez sur cette page. Vos runs se chargeront automatiquement. Si ce message réapparaît, votre session a peut-être expiré — reconnectez-vous.',
@@ -2366,21 +2645,21 @@ export default {
       'Les endpoints Strategy Development ne sont pas disponibles sur ce bot. Vérifiez que vous utilisez une version de Freqtrade qui inclut le module API stratdev.',
     endpointNotFound: 'Endpoint introuvable',
     endpointNotFoundDesc:
-      'Les endpoints /stratdev n\'ont pas été trouvés sur ce bot. Cela signifie généralement que le bot utilise une version ancienne de Freqtrade sans le module Strategy Development. Mettez à jour votre installation et redémarrez le bot.',
+      "Les endpoints /stratdev n'ont pas été trouvés sur ce bot. Cela signifie généralement que le bot utilise une version ancienne de Freqtrade sans le module Strategy Development. Mettez à jour votre installation et redémarrez le bot.",
     connectionError: 'Connexion échouée',
     connectionErrorDesc:
-      'Impossible de se connecter à l\'API du bot. Vérifiez que le bot tourne et que FreqUI est configuré avec la bonne URL.',
+      "Impossible de se connecter à l'API du bot. Vérifiez que le bot tourne et que FreqUI est configuré avec la bonne URL.",
     errorDetail: 'Erreur {code} : {message}',
     retry: 'Réessayer',
 
     // Fallbacks sans snapshot
     noSnapshotWarningTitle: 'Snapshot non disponible',
     noSnapshotSourceDesc:
-      'Le code source exact utilisé lors de ce run n\'a pas été sauvegardé. Le code actuel de la stratégie est affiché à la place.',
+      "Le code source exact utilisé lors de ce run n'a pas été sauvegardé. Le code actuel de la stratégie est affiché à la place.",
     noSnapshotConfigDesc:
-      'La config exacte utilisée lors de ce run n\'a pas été sauvegardée. La config actuelle du bot est affichée à la place.',
+      "La config exacte utilisée lors de ce run n'a pas été sauvegardée. La config actuelle du bot est affichée à la place.",
     noSnapshotCommandDesc:
-      'La commande exacte n\'a pas été sauvegardée. Ceci est une approximation reconstruite à partir des métadonnées disponibles.',
+      "La commande exacte n'a pas été sauvegardée. Ceci est une approximation reconstruite à partir des métadonnées disponibles.",
     noSourceAvailable: 'Aucun code source disponible pour ce run.',
     noConfigAvailable: 'Aucune config disponible pour ce run.',
     noCommandAvailable: 'Aucune commande disponible pour ce type de run.',
@@ -2407,10 +2686,13 @@ export default {
 
     // Alerte aucun trade négatif
     noLosingTradesTitle: 'Aucun trade perdant détecté',
-    noLosingTradesDesc: 'C\'est extrêmement inhabituel et indique presque certainement un surapprentissage. Une vraie stratégie de trading aura toujours des trades perdants. L\'optimiseur a probablement trouvé des paramètres qui s\'ajustent parfaitement au bruit historique plutôt qu\'à un véritable avantage. Traitez ces résultats avec une extrême prudence.',
+    noLosingTradesDesc:
+      "C'est extrêmement inhabituel et indique presque certainement un surapprentissage. Une vraie stratégie de trading aura toujours des trades perdants. L'optimiseur a probablement trouvé des paramètres qui s'ajustent parfaitement au bruit historique plutôt qu'à un véritable avantage. Traitez ces résultats avec une extrême prudence.",
     noLosingTradesAction1: 'Augmenter --hyperopt-min-trades pour exiger plus de trades',
-    noLosingTradesAction2: 'Élargir la plage temporelle pour inclure différentes conditions de marché',
-    noLosingTradesAction3: 'Utiliser la validation walk-forward pour vérifier la performance hors-échantillon',
+    noLosingTradesAction2:
+      'Élargir la plage temporelle pour inclure différentes conditions de marché',
+    noLosingTradesAction3:
+      'Utiliser la validation walk-forward pour vérifier la performance hors-échantillon',
     noLosingTradesAction4: 'Envisager CalmarHyperOptLoss qui pénalise le drawdown',
 
     // Titres des graphiques
@@ -2420,21 +2702,35 @@ export default {
     chartPairProfitDistribution: 'Distribution du Profit par Paire',
     chartParallelCoords: 'Coordonnées Parallèles (Top 10)',
     chartParameterCorrelation: 'Corrélation des Paramètres',
-    chartMonteCarloTitle: 'Monte Carlo — Robustesse à l\'ordre des trades',
-    hintConvergence: 'Chaque point est une époque. La ligne verte suit la meilleure loss. Plate à la fin = convergé. En baisse = essayez plus d\'époques.',
-    hintLossHistogram: 'Distribution des losses. Vert = top 25%, jaune = milieu, rouge = bas 25%. Votre meilleure loss devrait être dans la zone verte.',
-    hintReturnVsDd: 'Chaque point montre le compromis profit/drawdown d\'une époque. Zone verte = profit > 0 et DD < 25%. Plus de points = espace robuste.',
-    hintMonteCarlo: 'Mélange l\'ordre des trades pour tester si l\'edge dépend de la séquence. P5 positif = rentable dans 95% des ordres (robuste).',
-    hintPairProfit: 'Contribution de chaque paire au profit de la meilleure époque. Une bonne stratégie profite de plusieurs paires, pas une seule.',
-    hintParallelCoords: 'Chaque ligne est une époque. Vert = faible loss, rouge = forte loss. Là où le vert se concentre = zone optimale pour ce paramètre.',
-    hintCorrelation: 'Corrélations entre paramètres sur les meilleurs résultats. Gris (≈0) = indépendants (idéal). Fort rouge/bleu = potentiellement redondants.',
-    hintSensitivity: 'Heatmap de la loss pour deux paramètres. Couleur uniforme = pas d\'interaction (robuste). Fort gradient = zone optimale étroite.',
-    hintBvm: 'Compare le profit du meilleur epoch à la médiane du top-10. ≤ 1.5x = cohérent. > 2x = le meilleur epoch est probablement aberrant.',
-    hintPrt: 'Meilleur = valeur du meilleur epoch. Recommandé = médiane du top-5 (plus robuste). Plage top-10 étroite = l\'optimiseur converge.',
-    hintDispersion: 'Dispersion des métriques clés sur les top-10 époques. Bande étroite = résultats concordants (robuste). Large = le meilleur epoch peut être aberrant.',
-    hintWfe: 'Efficacité Walk-Forward par fenêtre. > 50% = l\'edge se conserve hors échantillon. < 30% = probablement surappris.',
-    hintTrainVsTest: 'Compare le profit in-sample (train) vs out-of-sample (test) par fenêtre. Ratio constant = robuste. Gros écarts = surapprentissage.',
-    hintMarketContext: 'Régime de marché par fenêtre (haussier/baissier/latéral). Explique les variations de performance selon les conditions.',
+    chartMonteCarloTitle: "Monte Carlo — Robustesse à l'ordre des trades",
+    hintConvergence:
+      "Chaque point est une époque. La ligne verte suit la meilleure loss. Plate à la fin = convergé. En baisse = essayez plus d'époques.",
+    hintLossHistogram:
+      'Distribution des losses. Vert = top 25%, jaune = milieu, rouge = bas 25%. Votre meilleure loss devrait être dans la zone verte.',
+    hintReturnVsDd:
+      "Chaque point montre le compromis profit/drawdown d'une époque. Zone verte = profit > 0 et DD < 25%. Plus de points = espace robuste.",
+    hintMonteCarlo:
+      "Mélange l'ordre des trades pour tester si l'edge dépend de la séquence. P5 positif = rentable dans 95% des ordres (robuste).",
+    hintPairProfit:
+      'Contribution de chaque paire au profit de la meilleure époque. Une bonne stratégie profite de plusieurs paires, pas une seule.',
+    hintParallelCoords:
+      'Chaque ligne est une époque. Vert = faible loss, rouge = forte loss. Là où le vert se concentre = zone optimale pour ce paramètre.',
+    hintCorrelation:
+      'Corrélations entre paramètres sur les meilleurs résultats. Gris (≈0) = indépendants (idéal). Fort rouge/bleu = potentiellement redondants.',
+    hintSensitivity:
+      "Heatmap de la loss pour deux paramètres. Couleur uniforme = pas d'interaction (robuste). Fort gradient = zone optimale étroite.",
+    hintBvm:
+      'Compare le profit du meilleur epoch à la médiane du top-10. ≤ 1.5x = cohérent. > 2x = le meilleur epoch est probablement aberrant.',
+    hintPrt:
+      "Meilleur = valeur du meilleur epoch. Recommandé = médiane du top-5 (plus robuste). Plage top-10 étroite = l'optimiseur converge.",
+    hintDispersion:
+      'Dispersion des métriques clés sur les top-10 époques. Bande étroite = résultats concordants (robuste). Large = le meilleur epoch peut être aberrant.',
+    hintWfe:
+      "Efficacité Walk-Forward par fenêtre. > 50% = l'edge se conserve hors échantillon. < 30% = probablement surappris.",
+    hintTrainVsTest:
+      'Compare le profit in-sample (train) vs out-of-sample (test) par fenêtre. Ratio constant = robuste. Gros écarts = surapprentissage.',
+    hintMarketContext:
+      'Régime de marché par fenêtre (haussier/baissier/latéral). Explique les variations de performance selon les conditions.',
     chartExportPng: 'Exporter en PNG',
     chartFullscreen: 'Plein écran',
     chartWfe: 'Efficacité Walk-Forward',
@@ -2448,37 +2744,46 @@ export default {
     mcProbPositive: 'P(profit > 0)',
     mcRobust: 'Robuste',
     mcMarginal: 'Marginal',
-    mcNoEdge: 'Pas d\'avantage',
+    mcNoEdge: "Pas d'avantage",
     mcSimulations: '{n} simulations',
     mcTrades: '{n} trades',
     mcMedian: 'Médiane (P50)',
     mcMean: 'Moyenne',
     mcIqr: 'IQR (P25-P75)',
     mcWhiskers: 'Moustaches (P5-P95)',
-    mcClampWarning: 'Axe plafonné à ±2000% pour la lisibilité. Les étiquettes montrent les valeurs réelles.',
+    mcClampWarning:
+      'Axe plafonné à ±2000% pour la lisibilité. Les étiquettes montrent les valeurs réelles.',
     mcHowToReadTitle: 'Comment lire ce graphique',
-    mcWhatItDoes: 'Ce qu\'il fait',
-    mcWhatItDoesDesc: 'Mélange l\'ordre de vos {trades} trades {sims} fois et calcule le profit final composé à chaque fois. Cela teste si l\'avantage de votre stratégie dépend d\'une séquence chanceuse de trades ou s\'il est véritablement robuste.',
+    mcWhatItDoes: "Ce qu'il fait",
+    mcWhatItDoesDesc:
+      "Mélange l'ordre de vos {trades} trades {sims} fois et calcule le profit final composé à chaque fois. Cela teste si l'avantage de votre stratégie dépend d'une séquence chanceuse de trades ou s'il est véritablement robuste.",
     mcHowToReadBoxPlot: 'Comment lire la boîte à moustaches',
-    mcBoxDesc: 'Les 50% centraux des résultats. Une boîte étroite signifie des résultats constants quel que soit l\'ordre des trades.',
-    mcMedianDesc: 'La moitié des simulations se terminent au-dessus de cette valeur, l\'autre moitié en dessous. C\'est votre résultat « typique ».',
-    mcMeanDesc: 'La moyenne de toutes les simulations. Si bien supérieure à la médiane, quelques ordres chanceux la tirent vers le haut (asymétrie droite).',
+    mcBoxDesc:
+      "Les 50% centraux des résultats. Une boîte étroite signifie des résultats constants quel que soit l'ordre des trades.",
+    mcMedianDesc:
+      "La moitié des simulations se terminent au-dessus de cette valeur, l'autre moitié en dessous. C'est votre résultat « typique ».",
+    mcMeanDesc:
+      'La moyenne de toutes les simulations. Si bien supérieure à la médiane, quelques ordres chanceux la tirent vers le haut (asymétrie droite).',
     mcWhiskersDesc: 'La plage couvrant 90% des résultats. P5 est votre pire scénario réaliste.',
     mcKeyInsight: 'Point clé : le P5 est ce qui compte le plus',
-    mcKeyInsightDesc: 'Si P5 est positif, votre stratégie est rentable dans 95% des ordres de trades — l\'avantage est robuste. Si P5 est négatif mais P50 positif, vous avez un avantage mais il dépend d\'un séquencement favorable.',
+    mcKeyInsightDesc:
+      "Si P5 est positif, votre stratégie est rentable dans 95% des ordres de trades — l'avantage est robuste. Si P5 est négatif mais P50 positif, vous avez un avantage mais il dépend d'un séquencement favorable.",
     mcThresholdTitle: 'Interprétation de P(profit > 0)',
-    mcThresholdRobust: '≥ 80% — Avantage robuste. Votre stratégie est rentable dans la grande majorité des ordres de trades. L\'avantage est réel et ne dépend pas de la chance.',
-    mcThresholdMarginal: '60% - 80% — Marginal. Il y a probablement un avantage, mais il est sensible à l\'ordre des trades. Évaluez si la stratégie a suffisamment de trades ou si l\'avantage pourrait être surappris.',
-    mcThresholdNoEdge: '< 60% — Pas d\'avantage fiable. La rentabilité dépend largement de l\'ordre des trades. Traitez tout profit de backtest comme du bruit.',
+    mcThresholdRobust:
+      "≥ 80% — Avantage robuste. Votre stratégie est rentable dans la grande majorité des ordres de trades. L'avantage est réel et ne dépend pas de la chance.",
+    mcThresholdMarginal:
+      "60% - 80% — Marginal. Il y a probablement un avantage, mais il est sensible à l'ordre des trades. Évaluez si la stratégie a suffisamment de trades ou si l'avantage pourrait être surappris.",
+    mcThresholdNoEdge:
+      "< 60% — Pas d'avantage fiable. La rentabilité dépend largement de l'ordre des trades. Traitez tout profit de backtest comme du bruit.",
 
     // Histogramme de Loss
     lhBestLoss: 'Meilleur loss : {value} — bat {pct}% des époques',
     lhSubtitle: 'Votre meilleure loss ({loss}) surpasse {pct}% de toutes les epochs',
     lhExceptional: 'Exceptionnel — top {pct}%',
     lhDecent: 'Correct — mais beaucoup de résultats similaires',
-    lhStruggled: 'L\'optimiseur a eu du mal',
+    lhStruggled: "L'optimiseur a eu du mal",
     lhHowToRead: 'Comment lire',
-    lhDesc1: 'Chaque barre montre combien d\'époques sont dans cette plage de loss',
+    lhDesc1: "Chaque barre montre combien d'époques sont dans cette plage de loss",
     lhDesc2Green: 'Zone verte',
     lhDesc2Text: ' = top 25% des résultats, ',
     lhDesc2Yellow: 'Jaune',
@@ -2486,13 +2791,20 @@ export default {
     lhDesc2Red: 'Rouge',
     lhDesc2End: ' = 25% inférieurs',
     lhDesc3: 'Votre meilleur loss (ligne cyan pointillée) devrait être au fond de la zone verte',
-    lhDesc4: 'Si le percentile ≥ 90% : exceptionnel. 50–90% : correct mais commun. < 50% : l\'optimiseur a eu du mal',
-    lhInsightConcentrated: '{pct}% des epochs sont dans le meilleur quartile — l\'optimiseur converge bien vers de bonnes solutions',
-    lhInsightSparse: 'Très peu d\'epochs dans la meilleure zone — possible suroptimisation. Le meilleur résultat est peut-être un coup de chance',
-    lhInsightOverfit: 'Seulement 1–2 epochs proches du meilleur loss sur 50+ au total — risque élevé de suroptimisation. Ce résultat est probablement une anomalie',
-    lhInsightExcellent: 'Excellente distribution : le meilleur loss est dans le top 5% ET beaucoup d\'epochs sont proches — optimisation robuste',
-    lhInsightPeakLow: 'La concentration maximale est dans la zone de faible loss — l\'optimiseur gravite naturellement vers de bonnes solutions',
-    lhInsightPeakHigh: 'La majorité des epochs sont dans la zone de loss élevé — l\'espace de recherche est peut-être trop large ou la stratégie est fragile',
+    lhDesc4:
+      "Si le percentile ≥ 90% : exceptionnel. 50–90% : correct mais commun. < 50% : l'optimiseur a eu du mal",
+    lhInsightConcentrated:
+      "{pct}% des epochs sont dans le meilleur quartile — l'optimiseur converge bien vers de bonnes solutions",
+    lhInsightSparse:
+      "Très peu d'epochs dans la meilleure zone — possible suroptimisation. Le meilleur résultat est peut-être un coup de chance",
+    lhInsightOverfit:
+      'Seulement 1–2 epochs proches du meilleur loss sur 50+ au total — risque élevé de suroptimisation. Ce résultat est probablement une anomalie',
+    lhInsightExcellent:
+      "Excellente distribution : le meilleur loss est dans le top 5% ET beaucoup d'epochs sont proches — optimisation robuste",
+    lhInsightPeakLow:
+      "La concentration maximale est dans la zone de faible loss — l'optimiseur gravite naturellement vers de bonnes solutions",
+    lhInsightPeakHigh:
+      "La majorité des epochs sont dans la zone de loss élevé — l'espace de recherche est peut-être trop large ou la stratégie est fragile",
 
     // Analyse de durée
     durAll: 'Tous',
@@ -2508,24 +2820,29 @@ export default {
     durAvgStake: 'Stake moyen',
     durBestBucket: 'Meilleure fenêtre : {label} (moy. {profit}%)',
     durWorstBucket: 'Pire durée : {label} (moy. {profit}%) — envisager un exit forcé temporel',
-    durLongNegShortPos: 'Les positions courtes sont rentables mais les longues perdent — les exits devraient être plus rapides',
+    durLongNegShortPos:
+      'Les positions courtes sont rentables mais les longues perdent — les exits devraient être plus rapides',
     durAllPairs: 'Toutes les paires',
     durDangerZone: '{count} trades ({pct}%) dans la zone de danger : longue durée + grosse perte',
     aaDurationBoxplot: 'Distribution des Durées',
     aaDurationBuckets: 'Performance par Durée',
     aaStuckTrades: 'Analyse des Trades Bloqués',
     aaDurationProfitHeatmap: 'Durée × Profit',
-    hintDurationBoxplot: 'Boîtes à moustaches des durées pour gagnants vs perdants. Les points sont des outliers (positions tenues beaucoup plus longtemps que la normale).',
-    hintDurationBuckets: 'Regroupe les trades par durée de détention. Si les longues durées perdent de l\'argent, envisager un exit forcé temporel.',
-    hintStuckTrades: 'Trades détenus >2x la durée médiane. Montre le capital bloqué et les pires cas.',
-    hintDurationProfitHeatmap: 'Croisement durée × profit. Idéalement, la majorité des trades sont dans la zone courte durée + profit positif.',
+    hintDurationBoxplot:
+      'Boîtes à moustaches des durées pour gagnants vs perdants. Les points sont des outliers (positions tenues beaucoup plus longtemps que la normale).',
+    hintDurationBuckets:
+      "Regroupe les trades par durée de détention. Si les longues durées perdent de l'argent, envisager un exit forcé temporel.",
+    hintStuckTrades:
+      'Trades détenus >2x la durée médiane. Montre le capital bloqué et les pires cas.',
+    hintDurationProfitHeatmap:
+      'Croisement durée × profit. Idéalement, la majorité des trades sont dans la zone courte durée + profit positif.',
     stuckCount: 'Trades bloqués',
     stuckPctTrades: '% des trades',
     stuckAvgProfit: 'Profit moyen',
     stuckCapitalBlocked: 'Capital bloqué',
     stuckThreshold: 'Seuil',
     stuckMedian: 'Durée médiane',
-    stuckOppCost: 'Coût d\'opportunité',
+    stuckOppCost: "Coût d'opportunité",
     stuckFundingCost: 'Coût funding (est.)',
     stuckPair: 'Paire',
     stuckDuration: 'Durée',
@@ -2666,9 +2983,12 @@ export default {
     aaPairCorrelation: 'Matrice de Corrélation des Paires',
     aaConcentrationRisk: 'Risque de Concentration',
     aaMaxSimultaneousLoss: 'Perte Simultanée Max',
-    hintPairCorrelation: 'Corrélation entre les P&L quotidiens de chaque paire. Une forte corrélation signifie que les paires évoluent ensemble — le bénéfice de diversification est limité.',
-    hintConcentrationRisk: 'Mesure la concentration des profits sur les paires. L\'indice HHI quantifie la diversification (plus bas = plus diversifié).',
-    hintMaxSimultaneousLoss: 'Pire scénario : la perte maximale survenant sur plusieurs positions simultanément.',
+    hintPairCorrelation:
+      'Corrélation entre les P&L quotidiens de chaque paire. Une forte corrélation signifie que les paires évoluent ensemble — le bénéfice de diversification est limité.',
+    hintConcentrationRisk:
+      "Mesure la concentration des profits sur les paires. L'indice HHI quantifie la diversification (plus bas = plus diversifié).",
+    hintMaxSimultaneousLoss:
+      'Pire scénario : la perte maximale survenant sur plusieurs positions simultanément.',
     corrHighlyCorrelated: 'Paires Fortement Corrélées',
     corrAvgCorrelation: 'Corrélation Moy.',
     corrHhi: 'Indice HHI',
@@ -2696,9 +3016,12 @@ export default {
     aaDcaDistribution: 'Distribution des Niveaux DCA',
     aaDcaProfitContribution: 'Contribution DCA au Profit',
     aaDcaRecovery: 'Analyse de Récupération DCA',
-    hintDcaDistribution: 'Combien de trades atteignent chaque niveau DCA (Base, SO1, SO2...). Coloré par taux de réussite. Une stratégie DCA saine a la majorité des trades se fermant à la base ou SO1.',
-    hintDcaProfitContribution: 'Compare le profit des trades à entrée unique vs les trades DCA multi-entrées. Montre si le DCA améliore réellement les résultats.',
-    hintDcaRecovery: 'Taux de récupération des trades DCA — quel pourcentage de trades ayant nécessité des ordres de sécurité ont fini rentables.',
+    hintDcaDistribution:
+      'Combien de trades atteignent chaque niveau DCA (Base, SO1, SO2...). Coloré par taux de réussite. Une stratégie DCA saine a la majorité des trades se fermant à la base ou SO1.',
+    hintDcaProfitContribution:
+      'Compare le profit des trades à entrée unique vs les trades DCA multi-entrées. Montre si le DCA améliore réellement les résultats.',
+    hintDcaRecovery:
+      'Taux de récupération des trades DCA — quel pourcentage de trades ayant nécessité des ordres de sécurité ont fini rentables.',
     dcaNoDca: 'Pas de DCA détecté — tous les trades ont utilisé une seule entrée',
     dcaAvgEntries: 'Entrées Moy.',
     dcaRecoveryRate: 'Taux de Récupération',
@@ -2713,7 +3036,7 @@ export default {
     dcaAvgEntriesCol: 'Entrées Moy.',
     dcaTrades: 'Trades',
     dcaHighRecovery: 'Récupération DCA efficace (>{pct}%)',
-    dcaLowRecovery: 'Faible récupération DCA — les ordres de sécurité n\'aident pas',
+    dcaLowRecovery: "Faible récupération DCA — les ordres de sécurité n'aident pas",
     dcaImprovesProfit: 'Le DCA améliore le profit moyen',
     dcaDegradesProfit: 'Le DCA dégrade le profit moyen',
     dcaDeepLosing: 'Les niveaux DCA profonds (6+) sont majoritairement perdants',
@@ -2729,9 +3052,12 @@ export default {
     aaRegimePerformance: 'Performance par Régime',
     aaRegimeTimeline: 'Timeline des Régimes',
     aaRegimeTransitions: 'Transitions de Régime',
-    hintRegimePerformance: 'Performance de la stratégie par régime de marché. Révèle si la stratégie est « tout-temps » ou dépendante de conditions spécifiques.',
-    hintRegimeTimeline: 'Timeline montrant quel régime était actif à chaque moment. Les couleurs de fond indiquent le régime détecté, la ligne montre la volatilité.',
-    hintRegimeTransitions: 'Probabilité de transition d\'un régime à un autre. Aide à anticiper les conditions de marché à venir.',
+    hintRegimePerformance:
+      'Performance de la stratégie par régime de marché. Révèle si la stratégie est « tout-temps » ou dépendante de conditions spécifiques.',
+    hintRegimeTimeline:
+      'Timeline montrant quel régime était actif à chaque moment. Les couleurs de fond indiquent le régime détecté, la ligne montre la volatilité.',
+    hintRegimeTransitions:
+      "Probabilité de transition d'un régime à un autre. Aide à anticiper les conditions de marché à venir.",
     regimeBullQuiet: 'Hausse Calme',
     regimeBullVolatile: 'Hausse Volatile',
     regimeBearQuiet: 'Baisse Calme',
@@ -2767,20 +3093,23 @@ export default {
     dispersionModerate: 'modérée',
     dispersionWide: 'large',
     dispersionConsistent: 'Consistant — les résultats du top-10 sont serrés. Optimisation robuste.',
-    dispersionModerateAdvisory: 'Dispersion modérée — vos résultats varient selon l\'époque choisie',
-    dispersionHighVariance: 'Forte variance — les résultats sont très sensibles au choix d\'époque. Privilégiez la médiane plutôt que le meilleur.',
-    dispersionHowToRead: 'Montre la dispersion des métriques clés sur vos 10 meilleures époques. Une bande étroite signifie que tous les top résultats concordent (robuste). Une bande large signifie que la « meilleure » époque peut être aberrante — la médiane est plus fiable.',
+    dispersionModerateAdvisory: "Dispersion modérée — vos résultats varient selon l'époque choisie",
+    dispersionHighVariance:
+      "Forte variance — les résultats sont très sensibles au choix d'époque. Privilégiez la médiane plutôt que le meilleur.",
+    dispersionHowToRead:
+      'Montre la dispersion des métriques clés sur vos 10 meilleures époques. Une bande étroite signifie que tous les top résultats concordent (robuste). Une bande large signifie que la « meilleure » époque peut être aberrante — la médiane est plus fiable.',
 
     // Profit par paire
     pairProfitPairsWithTrades: '{traded}/{total} paires avec des trades',
     pairProfitShowAll: 'Afficher toutes les paires',
-    pairProfitSingleInstrument: 'La stratégie ne fonctionne que sur un seul instrument ({pair}). Très fragile.',
+    pairProfitSingleInstrument:
+      'La stratégie ne fonctionne que sur un seul instrument ({pair}). Très fragile.',
     pairProfitConcentration: 'Forte concentration : {pair} représente {pct}% du profit total.',
     pairProfitHowToReadTitle: 'Comment lire ce graphique',
     pairProfitDesc1: 'Montre la contribution au profit par paire de la meilleure époque',
     pairProfitDesc2: 'Vert = profit positif, Rouge = profit négatif',
     pairProfitDesc3: 'Le nombre entre parenthèses = nombre de trades pour cette paire',
-    pairProfitDesc4: 'Une bonne stratégie profite de plusieurs paires, pas d\'une seule',
+    pairProfitDesc4: "Une bonne stratégie profite de plusieurs paires, pas d'une seule",
 
     // Coordonnées parallèles
     pcBestEpoch: 'Meilleure époque (loss : {loss}) :',
@@ -2788,10 +3117,11 @@ export default {
     pcWorstHighLoss: 'Pire (loss élevé)',
     pcHowToReadTitle: 'Comment lire ce graphique',
     pcDesc1: 'Chaque axe vertical = un paramètre (bas = minimum, haut = maximum)',
-    pcDesc2: 'Chaque ligne = la combinaison de paramètres d\'une époque',
+    pcDesc2: "Chaque ligne = la combinaison de paramètres d'une époque",
     pcDesc3: 'Lignes vertes = loss faible (bon), Lignes rouges = loss élevé (mauvais)',
     pcDesc4: 'Là où les lignes vertes se regroupent = zone optimale pour ce paramètre',
-    pcDesc5: 'Si les lignes vertes et rouges se chevauchent sur un axe, ce paramètre a peu d\'impact',
+    pcDesc5:
+      "Si les lignes vertes et rouges se chevauchent sur un axe, ce paramètre a peu d'impact",
     pcQualityMap: 'Carte de qualité des paramètres',
     pcQualityGood: 'Bon (loss faible)',
     pcQualityMedium: 'Moyen',
@@ -2801,7 +3131,8 @@ export default {
     pcQualityMedian: 'Médiane',
 
     // Heatmap de corrélation
-    corrRedundant: 'Certains paramètres ont |r| > 0.7 — envisagez de fusionner ou supprimer les paramètres redondants',
+    corrRedundant:
+      'Certains paramètres ont |r| > 0.7 — envisagez de fusionner ou supprimer les paramètres redondants',
     corrIndependent: 'Toutes les corrélations < 0.3 — chaque paramètre contribue indépendamment',
     corrModerate: 'Max |r| = {val} — corrélations modérées, généralement acceptable',
     corrCoeff: 'Corrélation',
@@ -2810,19 +3141,21 @@ export default {
     corrMod: 'Modérée',
     corrStrong: 'Forte',
     corrHowToReadTitle: 'Comment lire ce graphique',
-    corrDesc: 'Montre comment les paramètres sont liés entre eux à travers les meilleurs résultats d\'optimisation.',
+    corrDesc:
+      "Montre comment les paramètres sont liés entre eux à travers les meilleurs résultats d'optimisation.",
     corrGray: 'Gris (proche de 0)',
     corrGrayDesc: ' = idéal — paramètres indépendants.',
     corrBlue: 'Bleu (négatif, |r| > 0.7)',
-    corrBlueDesc: ' = relation inverse — quand l\'un monte, l\'autre descend.',
+    corrBlueDesc: " = relation inverse — quand l'un monte, l'autre descend.",
     corrRed: 'Rouge (positif, |r| > 0.7)',
     corrRedDesc: ' = évoluent ensemble — potentiellement redondants.',
 
     // Grille de sensibilité
     sensWeakInteraction: 'Interaction faible — le loss est stable entre les combinaisons (robuste)',
-    sensStrongInteraction: 'Interaction forte — la zone optimale peut être étroite, ajustez-les ensemble',
+    sensStrongInteraction:
+      'Interaction forte — la zone optimale peut être étroite, ajustez-les ensemble',
     sensModerateInteraction: 'Interaction modérée (CV = {cv}%)',
-    sensNotEnoughData: 'Pas assez de données pour évaluer la force d\'interaction',
+    sensNotEnoughData: "Pas assez de données pour évaluer la force d'interaction",
     sensHowToReadTitle: 'Comment lire ce graphique',
     sensDesc1: 'Montre comment le loss change quand deux paramètres varient simultanément.',
     sensGreen: 'Cellules vertes',
@@ -2830,47 +3163,54 @@ export default {
     sensRed: 'Cellules rouges',
     sensRedDesc: ' = loss élevé (mauvaises combinaisons de paramètres).',
     sensFlat: 'Couleur uniforme',
-    sensFlatDesc: ' = les paramètres n\'interagissent pas (robuste).',
+    sensFlatDesc: " = les paramètres n'interagissent pas (robuste).",
     sensGradient: 'Motif/gradient marqué',
-    sensGradientDesc: ' = les paramètres interagissent fortement — la zone optimale peut être étroite.',
+    sensGradientDesc:
+      ' = les paramètres interagissent fortement — la zone optimale peut être étroite.',
     sensPattern: 'Motif/gradient fort',
-    sensPatternDesc: ' = les paramètres interagissent fortement — la zone optimale peut être étroite.',
+    sensPatternDesc:
+      ' = les paramètres interagissent fortement — la zone optimale peut être étroite.',
     sensEmpty: 'Cellules vides',
-    sensEmptyDesc: ' = aucune époque n\'a testé cette combinaison.',
+    sensEmptyDesc: " = aucune époque n'a testé cette combinaison.",
 
     // Convergence
-    convConverged: 'Plateau de loss atteint — l\'optimiseur a convergé.',
-    convNotConverged: 'Encore en amélioration dans les derniers 30%. Envisagez de lancer plus d\'époques.',
+    convConverged: "Plateau de loss atteint — l'optimiseur a convergé.",
+    convNotConverged:
+      "Encore en amélioration dans les derniers 30%. Envisagez de lancer plus d'époques.",
     convHowToReadTitle: 'Comment lire ce graphique',
-    convDesc1: 'Chaque point gris = la loss d\'un epoch, affiché dans l\'ordre chronologique',
-    convDesc2: 'La ligne verte suit la meilleure loss observée jusqu\'ici — elle ne peut que descendre',
-    convDesc3: 'Une ligne verte plate à la fin = l\'optimiseur a convergé (bien)',
-    convDesc4: 'Si la ligne verte descend encore à la fin, vous pourriez bénéficier de plus d\'époques',
+    convDesc1: "Chaque point gris = la loss d'un epoch, affiché dans l'ordre chronologique",
+    convDesc2:
+      "La ligne verte suit la meilleure loss observée jusqu'ici — elle ne peut que descendre",
+    convDesc3: "Une ligne verte plate à la fin = l'optimiseur a convergé (bien)",
+    convDesc4:
+      "Si la ligne verte descend encore à la fin, vous pourriez bénéficier de plus d'époques",
     convDesc5: 'Le losange cyan marque le meilleur epoch global',
 
     // Rendement vs DD
     rvddIdealZone: '{count}/{total} époques dans la zone idéale (profit > 0, DD < 25%)',
     rvddBest: 'Meilleur : {profit}% profit, {dd}% DD',
     rvddHowToReadTitle: 'Comment lire ce graphique',
-    rvddDesc1: 'Chaque point = le compromis rendement/drawdown d\'une époque',
+    rvddDesc1: "Chaque point = le compromis rendement/drawdown d'une époque",
     rvddDesc2: 'Zone verte = zone idéale (profit > 0, DD < 25%)',
     rvddDesc3: 'Point cyan = meilleure époque (loss le plus bas)',
     rvddDesc4: 'Beaucoup de points dans la zone verte = espace paramétrique robuste',
-    rvddDesc5: 'Peu de points dans la zone verte = zone viable étroite, risque de surapprentissage accru',
+    rvddDesc5:
+      'Peu de points dans la zone verte = zone viable étroite, risque de surapprentissage accru',
 
     // Best vs Median
     bvmTitle: 'Meilleur vs. Médiane Top-10',
     bvmBestEpoch: 'Meilleure Époque',
     bvmMedianTop10: 'Médiane Top-10',
-    bvmGapRatio: 'Ratio d\'écart',
+    bvmGapRatio: "Ratio d'écart",
     bvmConsistent: 'Consistant',
     bvmModerateGap: 'Écart modéré',
     bvmOutlier: 'Aberrant — chance, pas compétence',
     bvmHowToRead: 'Comment lire',
     bvmDesc1: 'Compare le profit de votre meilleure époque à la médiane des 10 meilleures.',
     bvmDesc2: '≤ 1.5x = consistant — le meilleur est proche du groupe (vert).',
-    bvmDesc3: '1.5x - 2x = écart modéré — certaine dépendance à l\'époque (jaune).',
-    bvmDesc4: '> 2x = aberrant — la meilleure époque est un accident statistique. Faites confiance à la médiane (rouge).',
+    bvmDesc3: "1.5x - 2x = écart modéré — certaine dépendance à l'époque (jaune).",
+    bvmDesc4:
+      '> 2x = aberrant — la meilleure époque est un accident statistique. Faites confiance à la médiane (rouge).',
 
     // Carte DSR
     dsrTitle: 'Ratio de Sharpe Déflaté',
@@ -2880,7 +3220,8 @@ export default {
     dsrNTrials: 'N Essais',
     dsrGenuine: 'Authentique',
     dsrOverfitted: 'Surappris',
-    hintDsr: 'Le Deflated Sharpe Ratio (DSR) teste si le Sharpe observé est statistiquement significatif étant donné le nombre d\'essais. Si le DSR indique "Overfitted", le Sharpe pourrait être dû au hasard.',
+    hintDsr:
+      'Le Deflated Sharpe Ratio (DSR) teste si le Sharpe observé est statistiquement significatif étant donné le nombre d\'essais. Si le DSR indique "Overfitted", le Sharpe pourrait être dû au hasard.',
 
     // Carte DOF
     dofTitle: 'Degrés de Liberté',
@@ -2889,7 +3230,8 @@ export default {
     dofTradesLabel: 'trades',
     dofTradesParams: '{trades} trades / {params} params',
     dofParamsLabel: 'params',
-    hintDof: 'Les degrés de liberté mesurent le ratio trades/paramètres optimisés. Plus de trades par paramètre = optimisation plus fiable. En dessous de 10:1 est préoccupant, au-dessus de 20:1 est excellent.',
+    hintDof:
+      'Les degrés de liberté mesurent le ratio trades/paramètres optimisés. Plus de trades par paramètre = optimisation plus fiable. En dessous de 10:1 est préoccupant, au-dessus de 20:1 est excellent.',
 
     // Carte Distribution
     distTitle: 'Distribution des Rendements',
@@ -2990,7 +3332,7 @@ export default {
     t10WinRate: 'Gain %',
     t10Parameters: 'Paramètres',
     t10ViewMetrics: 'Voir les métriques du backtest',
-    t10EpochMetrics: 'Métriques du Backtest de l\'Époque',
+    t10EpochMetrics: "Métriques du Backtest de l'Époque",
 
     // WFA Aperçu
     wfaVerdict: 'Verdict Walk-Forward',
@@ -3000,7 +3342,7 @@ export default {
     wfaNoData: 'Aucune donnée WFA disponible.',
 
     // WFA Cartes
-    wfaOosEquity: 'Courbe d\'Équité OOS',
+    wfaOosEquity: "Courbe d'Équité OOS",
     wfaTotalReturn: 'Rendement Total',
     wfaMaxDD: 'Max DD',
     wfaKRatio: 'K-Ratio',
@@ -3091,24 +3433,34 @@ export default {
     prtSensHigh: 'Haute',
     prtSensMedium: 'Moyenne',
     prtSensLow: 'Basse',
-    prtReasonConverging: 'Les valeurs top-10 convergent vers une plage étroite — zone optimale claire',
-    prtReasonBoundary: 'Les valeurs se regroupent en bordure de plage — envisagez d\'étendre l\'espace de recherche',
-    prtReasonSpread: 'Les valeurs top-10 sont dispersées sur toute la plage — pas d\'optimum clair',
+    prtReasonConverging:
+      'Les valeurs top-10 convergent vers une plage étroite — zone optimale claire',
+    prtReasonBoundary:
+      "Les valeurs se regroupent en bordure de plage — envisagez d'étendre l'espace de recherche",
+    prtReasonSpread: "Les valeurs top-10 sont dispersées sur toute la plage — pas d'optimum clair",
     prtReasonHighSens: 'La loss est très sensible à ce paramètre — ajustez avec précaution',
     prtReasonLowSens: 'La loss varie à peine avec ce paramètre — envisagez de le fixer',
     prtReasonStable: 'Stable dans les meilleurs epochs — valeur fiable',
     prtReasonUnstable: 'Varie fortement entre les meilleurs epochs — peu fiable',
-    prtSummaryAllClear: 'Tous les paramètres convergent — optimisation robuste. Les valeurs recommandées sont fiables.',
-    prtSummaryMostSpread: 'La plupart des paramètres sont dispersés — l\'optimiseur n\'a pas trouvé d\'optimum clair. Envisagez de réduire l\'espace de recherche ou d\'ajouter plus d\'epochs.',
-    prtSummaryMixed: '{converging}/{total} paramètres convergent, {spread} sont dispersés — examinez attentivement les paramètres dispersés.',
+    prtSummaryAllClear:
+      'Tous les paramètres convergent — optimisation robuste. Les valeurs recommandées sont fiables.',
+    prtSummaryMostSpread:
+      "La plupart des paramètres sont dispersés — l'optimiseur n'a pas trouvé d'optimum clair. Envisagez de réduire l'espace de recherche ou d'ajouter plus d'epochs.",
+    prtSummaryMixed:
+      '{converging}/{total} paramètres convergent, {spread} sont dispersés — examinez attentivement les paramètres dispersés.',
     prtHowToReadTitle: 'Comment lire ce tableau',
-    prtHowToRead1: '"Meilleur" est la valeur du meilleur epoch. "Rec." est la médiane des top-5 epochs — plus robuste que le seul meilleur.',
-    prtHowToRead2: '"Plage Top-10" montre combien ce paramètre varie dans les meilleurs résultats. Une plage étroite signifie que l\'optimiseur s\'accorde sur une valeur.',
-    prtHowToRead3: '"Tendance: Convergent" signifie que les valeurs top-10 se regroupent étroitement (bien). "Cluster en bordure" signifie qu\'elles atteignent une limite de l\'espace de recherche — essayez de l\'élargir.',
-    prtHowToRead4: '"Sensibilité: Haute" signifie que de petits changements de ce paramètre affectent significativement la loss — il compte beaucoup. "Basse" signifie qu\'il compte à peine — vous pourriez le fixer à n\'importe quelle valeur raisonnable.',
+    prtHowToRead1:
+      '"Meilleur" est la valeur du meilleur epoch. "Rec." est la médiane des top-5 epochs — plus robuste que le seul meilleur.',
+    prtHowToRead2:
+      '"Plage Top-10" montre combien ce paramètre varie dans les meilleurs résultats. Une plage étroite signifie que l\'optimiseur s\'accorde sur une valeur.',
+    prtHowToRead3:
+      '"Tendance: Convergent" signifie que les valeurs top-10 se regroupent étroitement (bien). "Cluster en bordure" signifie qu\'elles atteignent une limite de l\'espace de recherche — essayez de l\'élargir.',
+    prtHowToRead4:
+      '"Sensibilité: Haute" signifie que de petits changements de ce paramètre affectent significativement la loss — il compte beaucoup. "Basse" signifie qu\'il compte à peine — vous pourriez le fixer à n\'importe quelle valeur raisonnable.',
 
     // Pas d'analyse
-    noAnalysisData: 'Aucune donnée d\'analyse disponible. Le fichier .fthypt n\'existe peut-être pas.',
+    noAnalysisData:
+      "Aucune donnée d'analyse disponible. Le fichier .fthypt n'existe peut-être pas.",
 
     // Étiquettes
     median: 'Médiane',

@@ -6,6 +6,7 @@ export * from './blacklist';
 export * from './botComparison';
 export * from './candleTypes';
 export * from './chart';
+export * from './configEditor';
 export * from './daily';
 export * from './downloadData';
 export * from './exchange';
