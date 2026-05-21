@@ -1,15 +1,43 @@
 <script setup lang="ts">
-import type { ComparisonTableItems, ColumnDefinition, BotGroup, CustomTag, AlertTypeDefinition, AlertConfigV2, AlertSettingConfig, DetectedAlert } from '@/types';
+import type {
+  ComparisonTableItems,
+  ColumnDefinition,
+  BotGroup,
+  CustomTag,
+  AlertTypeDefinition,
+  AlertConfigV2,
+  AlertSettingConfig,
+  DetectedAlert,
+} from '@/types';
 import type Popover from 'primevue/popover';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useExchangeRates } from '@/composables/exchangeRates';
 import { useBotComparisonStore, ALERT_TYPES, ALERT_CATEGORIES } from '@/stores/botComparison';
-import type { BotTagVisibility, BotFilters, ActiveSort, SortDirection, TagId } from '@/stores/botComparison';
+import type {
+  BotTagVisibility,
+  BotFilters,
+  ActiveSort,
+  SortDirection,
+  TagId,
+} from '@/stores/botComparison';
 import { useAlertDetection } from '@/composables/useAlertDetection';
-import { trackMouse, fakeEventAtMouse, fakeEvent, delayedHide, cancelDelayedHide, cleanupAllTimeouts } from '@/composables/usePopoverHover';
+import {
+  trackMouse,
+  fakeEventAtMouse,
+  fakeEvent,
+  delayedHide,
+  cancelDelayedHide,
+  cleanupAllTimeouts,
+} from '@/composables/usePopoverHover';
 import { computePosition, flip, shift, offset, arrow as arrowMiddleware } from '@floating-ui/dom';
 import BotConfigEditorModal from './configEditor/BotConfigEditorModal.vue';
+import {
+  computeMaxDrawdown,
+  computeAggregateDrawdown,
+  accountBaseFromProfit,
+  type MaxDrawdownResult,
+} from '@/utils/maxDrawdown';
 
 const router = useRouter();
 const { t, locale } = useI18n();
@@ -20,13 +48,29 @@ const configEditorStore = useBotConfigEditorStore();
 
 // Migrate legacy localStorage data on first load
 compStore.migrateFromLocalStorage();
-const { convert, getRate, hasRates, isLoading: ratesLoading, fetchError: ratesFetchError, lastFetchTime: ratesLastFetchTime } = useExchangeRates();
 const {
-  allBotAlerts, totalAlertCount, isBotAlertEnabled,
-  hasBotAlert, getBotAlertCount, getMaxSeverity, hasBotOfflineAlert,
-  getAlertTooltip: _getAlertTooltip, getAlertTypeIcon, enabledAlertCount,
+  convert,
+  getRate,
+  hasRates,
+  isLoading: ratesLoading,
+  fetchError: ratesFetchError,
+  lastFetchTime: ratesLastFetchTime,
+} = useExchangeRates();
+const {
+  allBotAlerts,
+  totalAlertCount,
+  isBotAlertEnabled,
+  hasBotAlert,
+  getBotAlertCount,
+  getMaxSeverity,
+  hasBotOfflineAlert,
+  getAlertTooltip: _getAlertTooltip,
+  getAlertTypeIcon,
+  enabledAlertCount,
 } = useAlertDetection();
-function getAlertTooltip(alertId: string) { return _getAlertTooltip(alertId, t); }
+function getAlertTooltip(alertId: string) {
+  return _getAlertTooltip(alertId, t);
+}
 
 function isHostBot(botId: string): boolean {
   const descriptor = botStore.availableBots[botId];
@@ -88,6 +132,8 @@ function closeAllPopovers() {
   hoveredOpenProfitBotId.value = null;
   closedProfitPopover.value?.hide();
   hoveredClosedProfitBotId.value = null;
+  maxDrawdownPopover.value?.hide();
+  hoveredMaxDrawdownBotIds.value = [];
   tradesPopover.value?.hide();
   hoveredTradesBotId.value = null;
   winLossPopover.value?.hide();
@@ -139,7 +185,10 @@ const currencyHoverTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 // (trackMouse, fakeEventAtMouse, fakeEvent, delayedHide, cancelDelayedHide, cleanupAllTimeouts)
 
 /** Show a PrimeVue Popover anchored to a real DOM element, then reposition with Floating UI */
-function showAtTarget(popover: { show: (event: Event) => void; $el?: HTMLElement } | undefined, target: HTMLElement) {
+function showAtTarget(
+  popover: { show: (event: Event) => void; $el?: HTMLElement } | undefined,
+  target: HTMLElement,
+) {
   if (!popover) return;
   popover.show({ currentTarget: target } as unknown as Event);
   // Immediately hide the panel visually while Floating UI calculates position
@@ -200,10 +249,7 @@ function ensureArrowElement(panel: HTMLElement): HTMLElement {
 }
 
 /** Reposition a PrimeVue Popover using Floating UI with arrow */
-async function repositionPrimePopover(
-  reference: HTMLElement,
-  popoverInstance: any,
-) {
+async function repositionPrimePopover(reference: HTMLElement, popoverInstance: any) {
   const panel = findPopoverPanel(popoverInstance);
   if (!panel || !reference) return;
 
@@ -235,8 +281,18 @@ async function repositionPrimePopover(
 
   // Position + rotate the arrow
   const side = result.placement.split('-')[0]!;
-  const staticSide: Record<string, string> = { top: 'bottom', right: 'left', bottom: 'top', left: 'right' };
-  const rotation: Record<string, string> = { top: '225deg', right: '315deg', bottom: '45deg', left: '135deg' };
+  const staticSide: Record<string, string> = {
+    top: 'bottom',
+    right: 'left',
+    bottom: 'top',
+    left: 'right',
+  };
+  const rotation: Record<string, string> = {
+    top: '225deg',
+    right: '315deg',
+    bottom: '45deg',
+    left: '135deg',
+  };
   const { x: ax, y: ay } = result.middlewareData.arrow ?? {};
 
   Object.assign(arrowEl.style, {
@@ -251,8 +307,13 @@ async function repositionPrimePopover(
 
 // --- Bot info popover ---
 function hideInfoPopover() {
-  if (hoverTimeout.value) { clearTimeout(hoverTimeout.value); hoverTimeout.value = null; }
-  delayedHide(infoPopover.value, () => { hoveredBotId.value = null; });
+  if (hoverTimeout.value) {
+    clearTimeout(hoverTimeout.value);
+    hoverTimeout.value = null;
+  }
+  delayedHide(infoPopover.value, () => {
+    hoveredBotId.value = null;
+  });
 }
 
 function startHoverInfo(event: MouseEvent, botId: string) {
@@ -301,13 +362,21 @@ function showInfoPopover(event: MouseEvent, botId: string) {
 }
 
 function cancelHoverInfo() {
-  if (hoverTimeout.value) { clearTimeout(hoverTimeout.value); hoverTimeout.value = null; }
-  delayedHide(infoPopover.value, () => { hoveredBotId.value = null; });
+  if (hoverTimeout.value) {
+    clearTimeout(hoverTimeout.value);
+    hoverTimeout.value = null;
+  }
+  delayedHide(infoPopover.value, () => {
+    hoveredBotId.value = null;
+  });
 }
 
 function cancelHoverInfoKeepPopover() {
   cancelDelayedHide();
-  if (hoverTimeout.value) { clearTimeout(hoverTimeout.value); hoverTimeout.value = null; }
+  if (hoverTimeout.value) {
+    clearTimeout(hoverTimeout.value);
+    hoverTimeout.value = null;
+  }
 }
 
 // --- Exchange info popover ---
@@ -324,13 +393,21 @@ function startExchangeHover(event: MouseEvent, exchange: string) {
 }
 
 function cancelExchangeHover() {
-  if (exchangeHoverTimeout.value) { clearTimeout(exchangeHoverTimeout.value); exchangeHoverTimeout.value = null; }
-  delayedHide(exchangeInfoPopover.value, () => { hoveredExchange.value = null; });
+  if (exchangeHoverTimeout.value) {
+    clearTimeout(exchangeHoverTimeout.value);
+    exchangeHoverTimeout.value = null;
+  }
+  delayedHide(exchangeInfoPopover.value, () => {
+    hoveredExchange.value = null;
+  });
 }
 
 function cancelExchangeHoverKeepPopover() {
   cancelDelayedHide();
-  if (exchangeHoverTimeout.value) { clearTimeout(exchangeHoverTimeout.value); exchangeHoverTimeout.value = null; }
+  if (exchangeHoverTimeout.value) {
+    clearTimeout(exchangeHoverTimeout.value);
+    exchangeHoverTimeout.value = null;
+  }
 }
 
 // --- Currency info popover ---
@@ -347,13 +424,21 @@ function startCurrencyHover(event: MouseEvent, currency: string) {
 }
 
 function cancelCurrencyHover() {
-  if (currencyHoverTimeout.value) { clearTimeout(currencyHoverTimeout.value); currencyHoverTimeout.value = null; }
-  delayedHide(currencyInfoPopover.value, () => { hoveredCurrency.value = null; });
+  if (currencyHoverTimeout.value) {
+    clearTimeout(currencyHoverTimeout.value);
+    currencyHoverTimeout.value = null;
+  }
+  delayedHide(currencyInfoPopover.value, () => {
+    hoveredCurrency.value = null;
+  });
 }
 
 function cancelCurrencyHoverKeepPopover() {
   cancelDelayedHide();
-  if (currencyHoverTimeout.value) { clearTimeout(currencyHoverTimeout.value); currencyHoverTimeout.value = null; }
+  if (currencyHoverTimeout.value) {
+    clearTimeout(currencyHoverTimeout.value);
+    currencyHoverTimeout.value = null;
+  }
 }
 
 // --- Pairlist info popover ---
@@ -380,13 +465,21 @@ function startPairlistHover(event: MouseEvent, botId: string) {
 }
 
 function cancelPairlistHover() {
-  if (pairlistHoverTimeout.value) { clearTimeout(pairlistHoverTimeout.value); pairlistHoverTimeout.value = null; }
-  delayedHide(pairlistInfoPopover.value, () => { hoveredPairlistBotId.value = null; });
+  if (pairlistHoverTimeout.value) {
+    clearTimeout(pairlistHoverTimeout.value);
+    pairlistHoverTimeout.value = null;
+  }
+  delayedHide(pairlistInfoPopover.value, () => {
+    hoveredPairlistBotId.value = null;
+  });
 }
 
 function cancelPairlistHoverKeepPopover() {
   cancelDelayedHide();
-  if (pairlistHoverTimeout.value) { clearTimeout(pairlistHoverTimeout.value); pairlistHoverTimeout.value = null; }
+  if (pairlistHoverTimeout.value) {
+    clearTimeout(pairlistHoverTimeout.value);
+    pairlistHoverTimeout.value = null;
+  }
 }
 
 // --- Open Profit popover ---
@@ -414,13 +507,21 @@ function startOpenProfitHover(event: MouseEvent, botId: string) {
 }
 
 function cancelOpenProfitHover() {
-  if (openProfitHoverTimeout.value) { clearTimeout(openProfitHoverTimeout.value); openProfitHoverTimeout.value = null; }
-  delayedHide(openProfitPopover.value, () => { hoveredOpenProfitBotId.value = null; });
+  if (openProfitHoverTimeout.value) {
+    clearTimeout(openProfitHoverTimeout.value);
+    openProfitHoverTimeout.value = null;
+  }
+  delayedHide(openProfitPopover.value, () => {
+    hoveredOpenProfitBotId.value = null;
+  });
 }
 
 function cancelOpenProfitHoverKeepPopover() {
   cancelDelayedHide();
-  if (openProfitHoverTimeout.value) { clearTimeout(openProfitHoverTimeout.value); openProfitHoverTimeout.value = null; }
+  if (openProfitHoverTimeout.value) {
+    clearTimeout(openProfitHoverTimeout.value);
+    openProfitHoverTimeout.value = null;
+  }
 }
 
 // --- Closed Profit popover ---
@@ -448,13 +549,117 @@ function startClosedProfitHover(event: MouseEvent, botId: string) {
 }
 
 function cancelClosedProfitHover() {
-  if (closedProfitHoverTimeout.value) { clearTimeout(closedProfitHoverTimeout.value); closedProfitHoverTimeout.value = null; }
-  delayedHide(closedProfitPopover.value, () => { hoveredClosedProfitBotId.value = null; });
+  if (closedProfitHoverTimeout.value) {
+    clearTimeout(closedProfitHoverTimeout.value);
+    closedProfitHoverTimeout.value = null;
+  }
+  delayedHide(closedProfitPopover.value, () => {
+    hoveredClosedProfitBotId.value = null;
+  });
 }
 
 function cancelClosedProfitHoverKeepPopover() {
   cancelDelayedHide();
-  if (closedProfitHoverTimeout.value) { clearTimeout(closedProfitHoverTimeout.value); closedProfitHoverTimeout.value = null; }
+  if (closedProfitHoverTimeout.value) {
+    clearTimeout(closedProfitHoverTimeout.value);
+    closedProfitHoverTimeout.value = null;
+  }
+}
+
+// --- Max Drawdown popover (keyed by a list of bot ids: 1 bot, a group, or Summary) ---
+const hoveredMaxDrawdownBotIds = ref<string[]>([]);
+const hoveredMaxDrawdownTitle = ref('');
+const maxDrawdownPopover = ref<InstanceType<typeof Popover>>();
+const maxDrawdownHoverTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+
+function startMaxDrawdownHover(event: MouseEvent, botIds: string[], title: string) {
+  trackMouse(event);
+  const target = event.currentTarget as HTMLElement;
+  cancelDelayedHide();
+  const key = botIds.join(',');
+  if (hoveredMaxDrawdownBotIds.value.length && hoveredMaxDrawdownBotIds.value.join(',') !== key) {
+    hoveredMaxDrawdownBotIds.value = botIds;
+    hoveredMaxDrawdownTitle.value = title;
+    maxDrawdownPopover.value?.hide();
+    showAtTarget(maxDrawdownPopover.value, target);
+    return;
+  }
+  if (maxDrawdownHoverTimeout.value) clearTimeout(maxDrawdownHoverTimeout.value);
+  maxDrawdownHoverTimeout.value = setTimeout(() => {
+    closeAllPopovers();
+    hoveredMaxDrawdownBotIds.value = botIds;
+    hoveredMaxDrawdownTitle.value = title;
+    showAtTarget(maxDrawdownPopover.value, target);
+  }, 400);
+}
+
+function cancelMaxDrawdownHover() {
+  if (maxDrawdownHoverTimeout.value) {
+    clearTimeout(maxDrawdownHoverTimeout.value);
+    maxDrawdownHoverTimeout.value = null;
+  }
+  delayedHide(maxDrawdownPopover.value, () => {
+    hoveredMaxDrawdownBotIds.value = [];
+  });
+}
+
+function cancelMaxDrawdownHoverKeepPopover() {
+  cancelDelayedHide();
+  if (maxDrawdownHoverTimeout.value) {
+    clearTimeout(maxDrawdownHoverTimeout.value);
+    maxDrawdownHoverTimeout.value = null;
+  }
+}
+
+// Per-bot drawdown: realized from /profit, open extended by open positions at their lows.
+const drawdownByBot = computed<Record<string, MaxDrawdownResult>>(() => {
+  const out: Record<string, MaxDrawdownResult> = {};
+  for (const [id, sub] of Object.entries(botStore.botStores)) {
+    out[id] = computeMaxDrawdown(botStore.allProfit[id], sub.trades ?? [], sub.openTrades ?? []);
+  }
+  return out;
+});
+
+const EMPTY_DD: MaxDrawdownResult = {
+  realizedRatio: 0,
+  realizedAbs: 0,
+  openRatio: 0,
+  openAbs: 0,
+  openWorstSum: 0,
+  hasOpen: false,
+};
+
+// Drawdown for an arbitrary set of bots (single bot → /profit; group/Summary → aggregate).
+function ddForBots(botIds: string[]): MaxDrawdownResult {
+  if (botIds.length === 0) return EMPTY_DD;
+  if (botIds.length === 1) return drawdownByBot.value[botIds[0]] ?? EMPTY_DD;
+  const closed = botIds.flatMap((id) => botStore.botStores[id]?.trades ?? []);
+  const open = botIds.flatMap((id) => botStore.botStores[id]?.openTrades ?? []);
+  const base = botIds.reduce((s, id) => s + accountBaseFromProfit(botStore.allProfit[id]), 0);
+  return computeAggregateDrawdown(closed, open, base);
+}
+
+function ddColor(ratio: number): string {
+  if (ratio >= 0.2) return 'text-red-400';
+  if (ratio >= 0.1) return 'text-orange-400';
+  if (ratio > 0) return 'text-amber-400';
+  return 'text-surface-400';
+}
+
+// Bots aggregated by the Summary row: selected bots (or all if none selected).
+const summaryBotIds = computed(() => {
+  const sel = Object.keys(botStore.botStores).filter((id) => botStore.botStores[id]?.isSelected);
+  return sel.length ? sel : Object.keys(botStore.botStores);
+});
+function mddBotIds(data: ComparisonTableItems): string[] {
+  if (data.isGroupRow) return getGroupBotIds(data.groupId);
+  if (data.botId) return [data.botId];
+  return summaryBotIds.value;
+}
+function mddTitle(data: ComparisonTableItems): string {
+  if (data.isGroupRow) return data.botName ?? t('maxDrawdownCard.group');
+  if (data.botId) return data.botName ?? data.botId;
+  return t('maxDrawdownCard.summary');
 }
 
 // --- Trades popover ---
@@ -482,13 +687,21 @@ function startTradesHover(event: MouseEvent, botId: string) {
 }
 
 function cancelTradesHover() {
-  if (tradesHoverTimeout.value) { clearTimeout(tradesHoverTimeout.value); tradesHoverTimeout.value = null; }
-  delayedHide(tradesPopover.value, () => { hoveredTradesBotId.value = null; });
+  if (tradesHoverTimeout.value) {
+    clearTimeout(tradesHoverTimeout.value);
+    tradesHoverTimeout.value = null;
+  }
+  delayedHide(tradesPopover.value, () => {
+    hoveredTradesBotId.value = null;
+  });
 }
 
 function cancelTradesHoverKeepPopover() {
   cancelDelayedHide();
-  if (tradesHoverTimeout.value) { clearTimeout(tradesHoverTimeout.value); tradesHoverTimeout.value = null; }
+  if (tradesHoverTimeout.value) {
+    clearTimeout(tradesHoverTimeout.value);
+    tradesHoverTimeout.value = null;
+  }
 }
 
 // --- Win/Loss popover ---
@@ -516,13 +729,21 @@ function startWinLossHover(event: MouseEvent, botId: string) {
 }
 
 function cancelWinLossHover() {
-  if (winLossHoverTimeout.value) { clearTimeout(winLossHoverTimeout.value); winLossHoverTimeout.value = null; }
-  delayedHide(winLossPopover.value, () => { hoveredWinLossBotId.value = null; });
+  if (winLossHoverTimeout.value) {
+    clearTimeout(winLossHoverTimeout.value);
+    winLossHoverTimeout.value = null;
+  }
+  delayedHide(winLossPopover.value, () => {
+    hoveredWinLossBotId.value = null;
+  });
 }
 
 function cancelWinLossHoverKeepPopover() {
   cancelDelayedHide();
-  if (winLossHoverTimeout.value) { clearTimeout(winLossHoverTimeout.value); winLossHoverTimeout.value = null; }
+  if (winLossHoverTimeout.value) {
+    clearTimeout(winLossHoverTimeout.value);
+    winLossHoverTimeout.value = null;
+  }
 }
 
 // --- Balance popover ---
@@ -550,13 +771,21 @@ function startBalanceHover(event: MouseEvent, botId: string) {
 }
 
 function cancelBalanceHover() {
-  if (balanceHoverTimeout.value) { clearTimeout(balanceHoverTimeout.value); balanceHoverTimeout.value = null; }
-  delayedHide(balancePopover.value, () => { hoveredBalanceBotId.value = null; });
+  if (balanceHoverTimeout.value) {
+    clearTimeout(balanceHoverTimeout.value);
+    balanceHoverTimeout.value = null;
+  }
+  delayedHide(balancePopover.value, () => {
+    hoveredBalanceBotId.value = null;
+  });
 }
 
 function cancelBalanceHoverKeepPopover() {
   cancelDelayedHide();
-  if (balanceHoverTimeout.value) { clearTimeout(balanceHoverTimeout.value); balanceHoverTimeout.value = null; }
+  if (balanceHoverTimeout.value) {
+    clearTimeout(balanceHoverTimeout.value);
+    balanceHoverTimeout.value = null;
+  }
 }
 
 // --- Available Funds popover ---
@@ -583,13 +812,21 @@ function startAvailableFundsHover(event: MouseEvent, botId: string) {
 }
 
 function cancelAvailableFundsHover() {
-  if (availableFundsHoverTimeout.value) { clearTimeout(availableFundsHoverTimeout.value); availableFundsHoverTimeout.value = null; }
-  delayedHide(availableFundsPopover.value, () => { hoveredAvailableFundsBotId.value = null; });
+  if (availableFundsHoverTimeout.value) {
+    clearTimeout(availableFundsHoverTimeout.value);
+    availableFundsHoverTimeout.value = null;
+  }
+  delayedHide(availableFundsPopover.value, () => {
+    hoveredAvailableFundsBotId.value = null;
+  });
 }
 
 function cancelAvailableFundsHoverKeepPopover() {
   cancelDelayedHide();
-  if (availableFundsHoverTimeout.value) { clearTimeout(availableFundsHoverTimeout.value); availableFundsHoverTimeout.value = null; }
+  if (availableFundsHoverTimeout.value) {
+    clearTimeout(availableFundsHoverTimeout.value);
+    availableFundsHoverTimeout.value = null;
+  }
 }
 
 // --- Period Profit popover (shared for weekly and monthly) ---
@@ -617,13 +854,21 @@ function startPeriodProfitHover(event: MouseEvent, botId: string) {
 }
 
 function cancelPeriodProfitHover() {
-  if (periodProfitHoverTimeout.value) { clearTimeout(periodProfitHoverTimeout.value); periodProfitHoverTimeout.value = null; }
-  delayedHide(periodProfitPopover.value, () => { hoveredPeriodProfitBotId.value = null; });
+  if (periodProfitHoverTimeout.value) {
+    clearTimeout(periodProfitHoverTimeout.value);
+    periodProfitHoverTimeout.value = null;
+  }
+  delayedHide(periodProfitPopover.value, () => {
+    hoveredPeriodProfitBotId.value = null;
+  });
 }
 
 function cancelPeriodProfitHoverKeepPopover() {
   cancelDelayedHide();
-  if (periodProfitHoverTimeout.value) { clearTimeout(periodProfitHoverTimeout.value); periodProfitHoverTimeout.value = null; }
+  if (periodProfitHoverTimeout.value) {
+    clearTimeout(periodProfitHoverTimeout.value);
+    periodProfitHoverTimeout.value = null;
+  }
 }
 
 // --- Summary Open Profit popover ---
@@ -644,13 +889,21 @@ function startSummaryOpenHover(event: MouseEvent) {
 }
 
 function cancelSummaryOpenHover() {
-  if (summaryOpenHoverTimeout.value) { clearTimeout(summaryOpenHoverTimeout.value); summaryOpenHoverTimeout.value = null; }
-  delayedHide(summaryOpenPopover.value, () => { summaryOpenVisible.value = false; });
+  if (summaryOpenHoverTimeout.value) {
+    clearTimeout(summaryOpenHoverTimeout.value);
+    summaryOpenHoverTimeout.value = null;
+  }
+  delayedHide(summaryOpenPopover.value, () => {
+    summaryOpenVisible.value = false;
+  });
 }
 
 function cancelSummaryOpenHoverKeepPopover() {
   cancelDelayedHide();
-  if (summaryOpenHoverTimeout.value) { clearTimeout(summaryOpenHoverTimeout.value); summaryOpenHoverTimeout.value = null; }
+  if (summaryOpenHoverTimeout.value) {
+    clearTimeout(summaryOpenHoverTimeout.value);
+    summaryOpenHoverTimeout.value = null;
+  }
 }
 
 // --- Summary Closed Profit popover ---
@@ -671,13 +924,21 @@ function startSummaryClosedHover(event: MouseEvent) {
 }
 
 function cancelSummaryClosedHover() {
-  if (summaryClosedHoverTimeout.value) { clearTimeout(summaryClosedHoverTimeout.value); summaryClosedHoverTimeout.value = null; }
-  delayedHide(summaryClosedPopover.value, () => { summaryClosedVisible.value = false; });
+  if (summaryClosedHoverTimeout.value) {
+    clearTimeout(summaryClosedHoverTimeout.value);
+    summaryClosedHoverTimeout.value = null;
+  }
+  delayedHide(summaryClosedPopover.value, () => {
+    summaryClosedVisible.value = false;
+  });
 }
 
 function cancelSummaryClosedHoverKeepPopover() {
   cancelDelayedHide();
-  if (summaryClosedHoverTimeout.value) { clearTimeout(summaryClosedHoverTimeout.value); summaryClosedHoverTimeout.value = null; }
+  if (summaryClosedHoverTimeout.value) {
+    clearTimeout(summaryClosedHoverTimeout.value);
+    summaryClosedHoverTimeout.value = null;
+  }
 }
 
 // --- Summary Trades popover ---
@@ -698,13 +959,21 @@ function startSummaryTradesHover(event: MouseEvent) {
 }
 
 function cancelSummaryTradesHover() {
-  if (summaryTradesHoverTimeout.value) { clearTimeout(summaryTradesHoverTimeout.value); summaryTradesHoverTimeout.value = null; }
-  delayedHide(summaryTradesPopover.value, () => { summaryTradesVisible.value = false; });
+  if (summaryTradesHoverTimeout.value) {
+    clearTimeout(summaryTradesHoverTimeout.value);
+    summaryTradesHoverTimeout.value = null;
+  }
+  delayedHide(summaryTradesPopover.value, () => {
+    summaryTradesVisible.value = false;
+  });
 }
 
 function cancelSummaryTradesHoverKeepPopover() {
   cancelDelayedHide();
-  if (summaryTradesHoverTimeout.value) { clearTimeout(summaryTradesHoverTimeout.value); summaryTradesHoverTimeout.value = null; }
+  if (summaryTradesHoverTimeout.value) {
+    clearTimeout(summaryTradesHoverTimeout.value);
+    summaryTradesHoverTimeout.value = null;
+  }
 }
 
 // --- Summary Balance popover ---
@@ -725,13 +994,21 @@ function startSummaryBalanceHover(event: MouseEvent) {
 }
 
 function cancelSummaryBalanceHover() {
-  if (summaryBalanceHoverTimeout.value) { clearTimeout(summaryBalanceHoverTimeout.value); summaryBalanceHoverTimeout.value = null; }
-  delayedHide(summaryBalancePopover.value, () => { summaryBalanceVisible.value = false; });
+  if (summaryBalanceHoverTimeout.value) {
+    clearTimeout(summaryBalanceHoverTimeout.value);
+    summaryBalanceHoverTimeout.value = null;
+  }
+  delayedHide(summaryBalancePopover.value, () => {
+    summaryBalanceVisible.value = false;
+  });
 }
 
 function cancelSummaryBalanceHoverKeepPopover() {
   cancelDelayedHide();
-  if (summaryBalanceHoverTimeout.value) { clearTimeout(summaryBalanceHoverTimeout.value); summaryBalanceHoverTimeout.value = null; }
+  if (summaryBalanceHoverTimeout.value) {
+    clearTimeout(summaryBalanceHoverTimeout.value);
+    summaryBalanceHoverTimeout.value = null;
+  }
 }
 
 // --- Summary W/L popover ---
@@ -752,13 +1029,21 @@ function startSummaryWinLossHover(event: MouseEvent) {
 }
 
 function cancelSummaryWinLossHover() {
-  if (summaryWinLossHoverTimeout.value) { clearTimeout(summaryWinLossHoverTimeout.value); summaryWinLossHoverTimeout.value = null; }
-  delayedHide(summaryWinLossPopover.value, () => { summaryWinLossVisible.value = false; });
+  if (summaryWinLossHoverTimeout.value) {
+    clearTimeout(summaryWinLossHoverTimeout.value);
+    summaryWinLossHoverTimeout.value = null;
+  }
+  delayedHide(summaryWinLossPopover.value, () => {
+    summaryWinLossVisible.value = false;
+  });
 }
 
 function cancelSummaryWinLossHoverKeepPopover() {
   cancelDelayedHide();
-  if (summaryWinLossHoverTimeout.value) { clearTimeout(summaryWinLossHoverTimeout.value); summaryWinLossHoverTimeout.value = null; }
+  if (summaryWinLossHoverTimeout.value) {
+    clearTimeout(summaryWinLossHoverTimeout.value);
+    summaryWinLossHoverTimeout.value = null;
+  }
 }
 
 // --- Summary Period Profit popover (for monthly/yearly) ---
@@ -781,13 +1066,21 @@ function startSummaryPeriodHover(event: MouseEvent, mode: 'monthly' | 'yearly') 
 }
 
 function cancelSummaryPeriodHover() {
-  if (summaryPeriodHoverTimeout.value) { clearTimeout(summaryPeriodHoverTimeout.value); summaryPeriodHoverTimeout.value = null; }
-  delayedHide(summaryPeriodPopover.value, () => { summaryPeriodVisible.value = false; });
+  if (summaryPeriodHoverTimeout.value) {
+    clearTimeout(summaryPeriodHoverTimeout.value);
+    summaryPeriodHoverTimeout.value = null;
+  }
+  delayedHide(summaryPeriodPopover.value, () => {
+    summaryPeriodVisible.value = false;
+  });
 }
 
 function cancelSummaryPeriodHoverKeepPopover() {
   cancelDelayedHide();
-  if (summaryPeriodHoverTimeout.value) { clearTimeout(summaryPeriodHoverTimeout.value); summaryPeriodHoverTimeout.value = null; }
+  if (summaryPeriodHoverTimeout.value) {
+    clearTimeout(summaryPeriodHoverTimeout.value);
+    summaryPeriodHoverTimeout.value = null;
+  }
 }
 
 // --- Currency selector for Summary row ---
@@ -801,7 +1094,8 @@ const defaultCurrency = computed(() => {
   return sorted[0]?.[0] || 'USDC';
 });
 const selectedSummaryCurrency = computed({
-  get: () => compStore.summaryCurrency === 'auto' ? defaultCurrency.value : compStore.summaryCurrency,
+  get: () =>
+    compStore.summaryCurrency === 'auto' ? defaultCurrency.value : compStore.summaryCurrency,
   set: (val: string) => compStore.setSummaryCurrency(val),
 });
 
@@ -834,13 +1128,22 @@ function startGroupOpenHover(event: MouseEvent, groupBotIds: string[]) {
 }
 
 function cancelGroupOpenHover() {
-  if (groupOpenHoverTimeout.value) { clearTimeout(groupOpenHoverTimeout.value); groupOpenHoverTimeout.value = null; }
-  delayedHide(groupOpenPopover.value, () => { groupOpenVisible.value = false; groupOpenBotIds.value = []; });
+  if (groupOpenHoverTimeout.value) {
+    clearTimeout(groupOpenHoverTimeout.value);
+    groupOpenHoverTimeout.value = null;
+  }
+  delayedHide(groupOpenPopover.value, () => {
+    groupOpenVisible.value = false;
+    groupOpenBotIds.value = [];
+  });
 }
 
 function cancelGroupOpenHoverKeepPopover() {
   cancelDelayedHide();
-  if (groupOpenHoverTimeout.value) { clearTimeout(groupOpenHoverTimeout.value); groupOpenHoverTimeout.value = null; }
+  if (groupOpenHoverTimeout.value) {
+    clearTimeout(groupOpenHoverTimeout.value);
+    groupOpenHoverTimeout.value = null;
+  }
 }
 
 // --- Group Closed Profit popover ---
@@ -863,26 +1166,35 @@ function startGroupClosedHover(event: MouseEvent, groupBotIds: string[]) {
 }
 
 function cancelGroupClosedHover() {
-  if (groupClosedHoverTimeout.value) { clearTimeout(groupClosedHoverTimeout.value); groupClosedHoverTimeout.value = null; }
-  delayedHide(groupClosedPopover.value, () => { groupClosedVisible.value = false; groupClosedBotIds.value = []; });
+  if (groupClosedHoverTimeout.value) {
+    clearTimeout(groupClosedHoverTimeout.value);
+    groupClosedHoverTimeout.value = null;
+  }
+  delayedHide(groupClosedPopover.value, () => {
+    groupClosedVisible.value = false;
+    groupClosedBotIds.value = [];
+  });
 }
 
 function cancelGroupClosedHoverKeepPopover() {
   cancelDelayedHide();
-  if (groupClosedHoverTimeout.value) { clearTimeout(groupClosedHoverTimeout.value); groupClosedHoverTimeout.value = null; }
+  if (groupClosedHoverTimeout.value) {
+    clearTimeout(groupClosedHoverTimeout.value);
+    groupClosedHoverTimeout.value = null;
+  }
 }
 
 // Helper to get bot IDs for a group
 function getGroupBotIds(groupId: string | undefined): string[] {
   if (!groupId) return [];
-  const group = botGroups.value.find(g => g.id === groupId);
+  const group = botGroups.value.find((g) => g.id === groupId);
   return group ? group.botIds : [];
 }
 
 function getRowClass(data: ComparisonTableItems) {
   if (data.isGroupRow) {
-    const group = botGroups.value.find(g => g.id === data.groupId);
-    if (group && group.botIds.every(id => !botStore.botStores[id]?.isSelected)) {
+    const group = botGroups.value.find((g) => g.id === data.groupId);
+    if (group && group.botIds.every((id) => !botStore.botStores[id]?.isSelected)) {
       return 'bot-row-unselected';
     }
     return 'bot-row-group';
@@ -941,52 +1253,143 @@ function getBotStartDate(botId: string): string {
 
 // --- Column definitions ---
 const allColumns: ColumnDefinition[] = [
-  { id: 'botName', labelKey: 'botComparison.botName', icon: 'i-mdi-robot', default: true, removable: false },
-  { id: 'status', labelKey: 'botComparison.statusLabel', icon: 'i-mdi-circle', default: false, removable: true },
-  { id: 'exchange', labelKey: 'botComparison.exchange', icon: 'i-mdi-swap-horizontal', default: false, removable: true },
-  { id: 'trades', labelKey: 'botComparison.trades', icon: 'i-mdi-chart-box', default: true, removable: true },
-  { id: 'openProfit', labelKey: 'botComparison.openProfit', icon: 'i-mdi-trending-up', default: true, removable: true },
-  { id: 'closedProfit', labelKey: 'botComparison.closedProfit', icon: 'i-mdi-cash-check', default: true, removable: true },
-  { id: 'profitCurrent', labelKey: 'botComparison.currentProfit', icon: 'i-mdi-sigma', default: true, removable: true },
-  { id: 'balance', labelKey: 'botComparison.balance', icon: 'i-mdi-wallet', default: true, removable: true },
-  { id: 'winLoss', labelKey: 'botComparison.winLoss', icon: 'i-mdi-trophy', default: true, removable: true },
-  { id: 'stakeAmount', labelKey: 'botComparison.stakeAmount', icon: 'i-mdi-cash', default: false, removable: true },
-  { id: 'port', labelKey: 'botComparison.port', icon: 'i-mdi-lan', default: false, removable: true },
-  { id: 'strategy', labelKey: 'botComparison.strategy', icon: 'i-mdi-cog', default: false, removable: true },
-  { id: 'pairCount', labelKey: 'botComparison.pairCount', icon: 'i-mdi-format-list-numbered', default: false, removable: true },
+  {
+    id: 'botName',
+    labelKey: 'botComparison.botName',
+    icon: 'i-mdi-robot',
+    default: true,
+    removable: false,
+  },
+  {
+    id: 'status',
+    labelKey: 'botComparison.statusLabel',
+    icon: 'i-mdi-circle',
+    default: false,
+    removable: true,
+  },
+  {
+    id: 'exchange',
+    labelKey: 'botComparison.exchange',
+    icon: 'i-mdi-swap-horizontal',
+    default: false,
+    removable: true,
+  },
+  {
+    id: 'trades',
+    labelKey: 'botComparison.trades',
+    icon: 'i-mdi-chart-box',
+    default: true,
+    removable: true,
+  },
+  {
+    id: 'openProfit',
+    labelKey: 'botComparison.openProfit',
+    icon: 'i-mdi-trending-up',
+    default: true,
+    removable: true,
+  },
+  {
+    id: 'closedProfit',
+    labelKey: 'botComparison.closedProfit',
+    icon: 'i-mdi-cash-check',
+    default: true,
+    removable: true,
+  },
+  {
+    id: 'profitCurrent',
+    labelKey: 'botComparison.currentProfit',
+    icon: 'i-mdi-sigma',
+    default: true,
+    removable: true,
+  },
+  {
+    id: 'maxDrawdown',
+    labelKey: 'botComparison.maxDrawdown',
+    icon: 'i-mdi-trending-down',
+    default: false,
+    removable: true,
+  },
+  {
+    id: 'balance',
+    labelKey: 'botComparison.balance',
+    icon: 'i-mdi-wallet',
+    default: true,
+    removable: true,
+  },
+  {
+    id: 'winLoss',
+    labelKey: 'botComparison.winLoss',
+    icon: 'i-mdi-trophy',
+    default: true,
+    removable: true,
+  },
+  {
+    id: 'stakeAmount',
+    labelKey: 'botComparison.stakeAmount',
+    icon: 'i-mdi-cash',
+    default: false,
+    removable: true,
+  },
+  {
+    id: 'port',
+    labelKey: 'botComparison.port',
+    icon: 'i-mdi-lan',
+    default: false,
+    removable: true,
+  },
+  {
+    id: 'strategy',
+    labelKey: 'botComparison.strategy',
+    icon: 'i-mdi-cog',
+    default: false,
+    removable: true,
+  },
+  {
+    id: 'pairCount',
+    labelKey: 'botComparison.pairCount',
+    icon: 'i-mdi-format-list-numbered',
+    default: false,
+    removable: true,
+  },
   {
     id: 'stakeCurrency',
-    labelKey: 'botComparison.stakeCurrencyLabel', icon: 'i-mdi-currency-usd',
+    labelKey: 'botComparison.stakeCurrencyLabel',
+    icon: 'i-mdi-currency-usd',
     default: false,
     removable: true,
   },
   {
     id: 'availableCapital',
-    labelKey: 'botComparison.availableCapital', icon: 'i-mdi-bank',
+    labelKey: 'botComparison.availableCapital',
+    icon: 'i-mdi-bank',
     default: false,
     removable: true,
   },
   {
     id: 'tradableBalanceRatio',
-    labelKey: 'botComparison.tradableBalanceRatio', icon: 'i-mdi-percent',
+    labelKey: 'botComparison.tradableBalanceRatio',
+    icon: 'i-mdi-percent',
     default: false,
     removable: true,
   },
   {
     id: 'availableFunds',
-    labelKey: 'botComparison.availableFunds', icon: 'i-mdi-cash-multiple',
+    labelKey: 'botComparison.availableFunds',
+    icon: 'i-mdi-cash-multiple',
     default: false,
     removable: true,
   },
   {
     id: 'monthlyProfit',
-    labelKey: 'botComparison.monthlyProfit', icon: 'i-mdi-calendar-month',
+    labelKey: 'botComparison.monthlyProfit',
+    icon: 'i-mdi-calendar-month',
     default: false,
     removable: true,
   },
   {
     id: 'yearlyProfit',
-    labelKey: 'botComparison.yearlyProfit', icon: 'i-mdi-calendar',
+    labelKey: 'botComparison.yearlyProfit',
+    icon: 'i-mdi-calendar',
     default: false,
     removable: true,
   },
@@ -1000,7 +1403,9 @@ compStore.initColumns(
 
 const visibleColumnIds = computed({
   get: () => compStore.visibleColumnIds,
-  set: (val: string[]) => { compStore.visibleColumnIds = val; },
+  set: (val: string[]) => {
+    compStore.visibleColumnIds = val;
+  },
 });
 
 function isColumnVisible(id: string): boolean {
@@ -1037,17 +1442,23 @@ function showColumnPopover(event: MouseEvent) {
 // --- Bot tag visibility (from store) ---
 const botTagVisibility = computed({
   get: () => compStore.botTagVisibility,
-  set: (val: BotTagVisibility) => { compStore.botTagVisibility = val; },
+  set: (val: BotTagVisibility) => {
+    compStore.botTagVisibility = val;
+  },
 });
 
 // --- Custom Tags (from store) ---
 const customTags = computed({
   get: () => compStore.customTags,
-  set: (val: CustomTag[]) => { compStore.customTags = val; },
+  set: (val: CustomTag[]) => {
+    compStore.customTags = val;
+  },
 });
 const botCustomTags = computed({
   get: () => compStore.botCustomTags,
-  set: (val: Record<string, string[]>) => { compStore.botCustomTags = val; },
+  set: (val: Record<string, string[]>) => {
+    compStore.botCustomTags = val;
+  },
 });
 
 const tagPickerPopover = ref<InstanceType<typeof Popover>>();
@@ -1059,9 +1470,18 @@ const editTagName = ref('');
 const editTagColor = ref('');
 
 const tagColors = [
-  '#3b82f6', '#22c55e', '#ef4444', '#f59e0b',
-  '#8b5cf6', '#ec4899', '#06b6d4', '#f97316',
-  '#14b8a6', '#6366f1', '#84cc16', '#a855f7',
+  '#3b82f6',
+  '#22c55e',
+  '#ef4444',
+  '#f59e0b',
+  '#8b5cf6',
+  '#ec4899',
+  '#06b6d4',
+  '#f97316',
+  '#14b8a6',
+  '#6366f1',
+  '#84cc16',
+  '#a855f7',
 ];
 
 function getBotCustomTags(botId: string): string[] {
@@ -1069,7 +1489,7 @@ function getBotCustomTags(botId: string): string[] {
 }
 
 function getCustomTag(tagId: string): CustomTag | undefined {
-  return customTags.value.find(t => t.id === tagId);
+  return customTags.value.find((t) => t.id === tagId);
 }
 
 function toggleBotTag(botId: string, tagId: string) {
@@ -1082,7 +1502,7 @@ function toggleBotTag(botId: string, tagId: string) {
 function createCustomTag(name: string, color: string) {
   // Check if a tag with same name and color already exists
   const existing = customTags.value.find(
-    t => t.name.toLowerCase() === name.toLowerCase() && t.color === color
+    (t) => t.name.toLowerCase() === name.toLowerCase() && t.color === color,
   );
   const id = existing ? existing.id : `tag_${Date.now()}`;
   if (!existing) {
@@ -1101,9 +1521,9 @@ function createCustomTag(name: string, color: string) {
 }
 
 function deleteCustomTag(tagId: string) {
-  customTags.value = customTags.value.filter(t => t.id !== tagId);
+  customTags.value = customTags.value.filter((t) => t.id !== tagId);
   for (const botId of Object.keys(botCustomTags.value)) {
-    botCustomTags.value[botId] = botCustomTags.value[botId].filter(id => id !== tagId);
+    botCustomTags.value[botId] = botCustomTags.value[botId].filter((id) => id !== tagId);
   }
 }
 
@@ -1117,7 +1537,7 @@ function startEditTag(tagId: string) {
 
 function saveEditTag() {
   if (!editingTagId.value) return;
-  const tag = customTags.value.find(t => t.id === editingTagId.value);
+  const tag = customTags.value.find((t) => t.id === editingTagId.value);
   if (tag) {
     tag.name = editTagName.value;
     tag.color = editTagColor.value;
@@ -1165,7 +1585,9 @@ compStore.ensureTagOrder();
 
 const tagOrder = computed({
   get: () => compStore.tagOrder,
-  set: (val: TagId[]) => { compStore.tagOrder = val; },
+  set: (val: TagId[]) => {
+    compStore.tagOrder = val;
+  },
 });
 
 const orderedVisibleTags = computed<TagId[]>(() => compStore.orderedVisibleTags);
@@ -1218,7 +1640,9 @@ const sortFields = [
 
 const activeSort = computed({
   get: () => compStore.activeSort,
-  set: (val: ActiveSort | null) => { compStore.activeSort = val; },
+  set: (val: ActiveSort | null) => {
+    compStore.activeSort = val;
+  },
 });
 
 function cycleSortField(fieldId: string) {
@@ -1250,7 +1674,9 @@ compStore.ensureFilterFields();
 
 const botFilters = computed({
   get: () => compStore.botFilters,
-  set: (val: BotFilters) => { compStore.botFilters = val; },
+  set: (val: BotFilters) => {
+    compStore.botFilters = val;
+  },
 });
 
 // Scan all bots to populate filter options
@@ -1282,48 +1708,66 @@ const allTradingModes = computed(() => {
 });
 
 // Ensure new exchanges/currencies/tradingModes default to true
-watch(allTradingModes, (modes) => {
-  for (const key of Object.keys(modes)) {
-    if (botFilters.value.tradingMode[key] === undefined) {
-      botFilters.value.tradingMode[key] = true;
+watch(
+  allTradingModes,
+  (modes) => {
+    for (const key of Object.keys(modes)) {
+      if (botFilters.value.tradingMode[key] === undefined) {
+        botFilters.value.tradingMode[key] = true;
+      }
     }
-  }
-}, { immediate: true });
+  },
+  { immediate: true },
+);
 
-watch(allExchanges, (ex) => {
-  for (const key of Object.keys(ex)) {
-    if (botFilters.value.exchanges[key] === undefined) {
-      botFilters.value.exchanges[key] = true;
+watch(
+  allExchanges,
+  (ex) => {
+    for (const key of Object.keys(ex)) {
+      if (botFilters.value.exchanges[key] === undefined) {
+        botFilters.value.exchanges[key] = true;
+      }
     }
-  }
-}, { immediate: true });
+  },
+  { immediate: true },
+);
 
-watch(allCurrencies, (cur) => {
-  for (const key of Object.keys(cur)) {
-    if (botFilters.value.currencies[key] === undefined) {
-      botFilters.value.currencies[key] = true;
+watch(
+  allCurrencies,
+  (cur) => {
+    for (const key of Object.keys(cur)) {
+      if (botFilters.value.currencies[key] === undefined) {
+        botFilters.value.currencies[key] = true;
+      }
     }
-  }
-}, { immediate: true });
+  },
+  { immediate: true },
+);
 
 // Auto-add new custom tags to filters with default true
-watch(customTags, (tags) => {
-  for (const tag of tags) {
-    if (botFilters.value.customTags[tag.id] === undefined) {
-      botFilters.value.customTags[tag.id] = true;
+watch(
+  customTags,
+  (tags) => {
+    for (const tag of tags) {
+      if (botFilters.value.customTags[tag.id] === undefined) {
+        botFilters.value.customTags[tag.id] = true;
+      }
     }
-  }
-  // Clean up deleted tags
-  for (const id of Object.keys(botFilters.value.customTags)) {
-    if (!tags.some(t => t.id === id)) {
-      delete botFilters.value.customTags[id];
+    // Clean up deleted tags
+    for (const id of Object.keys(botFilters.value.customTags)) {
+      if (!tags.some((t) => t.id === id)) {
+        delete botFilters.value.customTags[id];
+      }
     }
-  }
-}, { immediate: true, deep: true });
+  },
+  { immediate: true, deep: true },
+);
 
 // Status counts
 const statusCounts = computed(() => {
-  let live = 0, dry = 0, offline = 0;
+  let live = 0,
+    dry = 0,
+    offline = 0;
   Object.entries(botStore.botStores).forEach(([, store]) => {
     if (!store.isBotOnline) offline++;
     else if (botStore.allBotState[store.botId]?.dry_run) dry++;
@@ -1347,7 +1791,9 @@ function isBotVisibleByFilter(botId: string): boolean {
   if (exchange && botFilters.value.exchanges[exchange] === false) return false;
   const currency = botStore.allBotState[botId]?.stake_currency || '';
   if (currency && botFilters.value.currencies[currency] === false) return false;
-  const tradingMode = ((botStore.allBotState[botId]?.trading_mode as string) || 'spot').toLowerCase();
+  const tradingMode = (
+    (botStore.allBotState[botId]?.trading_mode as string) || 'spot'
+  ).toLowerCase();
   if (tradingMode && botFilters.value.tradingMode[tradingMode] === false) return false;
   // Custom tag filter: if any custom tag filter is unchecked, hide bots with that tag
   // A bot with no tags is visible unless all tags are unchecked
@@ -1356,7 +1802,7 @@ function isBotVisibleByFilter(botId: string): boolean {
   const anyTagFilterDisabled = activeTagFilters.some(([, v]) => !v);
   if (anyTagFilterDisabled && botTags.length > 0) {
     // Bot must have at least one enabled tag to be visible
-    const hasEnabledTag = botTags.some(tagId => botFilters.value.customTags[tagId] !== false);
+    const hasEnabledTag = botTags.some((tagId) => botFilters.value.customTags[tagId] !== false);
     if (!hasEnabledTag) return false;
   }
   return true;
@@ -1364,22 +1810,22 @@ function isBotVisibleByFilter(botId: string): boolean {
 
 function isTagActive(tagType: string, value: string): boolean {
   if (tagType === 'stakeCurrency') {
-    if (Object.values(botFilters.value.currencies).every(v => v)) return true;
+    if (Object.values(botFilters.value.currencies).every((v) => v)) return true;
     return botFilters.value.currencies[value] !== false;
   }
   if (tagType === 'exchange') {
-    if (Object.values(botFilters.value.exchanges).every(v => v)) return true;
+    if (Object.values(botFilters.value.exchanges).every((v) => v)) return true;
     return botFilters.value.exchanges[value.toLowerCase()] !== false;
   }
   if (tagType === 'status') {
-    const allStatus = Object.values(botFilters.value.status).every(v => v);
+    const allStatus = Object.values(botFilters.value.status).every((v) => v);
     if (allStatus) return true;
     if (value === 'live') return botFilters.value.status.live;
     if (value === 'dry') return botFilters.value.status.dry;
     if (value === 'offline') return botFilters.value.status.offline;
   }
   if (tagType === 'tradingMode') {
-    if (Object.values(botFilters.value.tradingMode).every(v => v)) return true;
+    if (Object.values(botFilters.value.tradingMode).every((v) => v)) return true;
     return botFilters.value.tradingMode[value.toLowerCase()] !== false;
   }
   return true;
@@ -1395,14 +1841,14 @@ const hiddenBotCount = computed(() => {
 
 function filterByTradingMode(mode: string) {
   for (const key of Object.keys(botFilters.value.tradingMode)) {
-    botFilters.value.tradingMode[key] = (key.toLowerCase() === mode.toLowerCase());
+    botFilters.value.tradingMode[key] = key.toLowerCase() === mode.toLowerCase();
   }
   closeAllPopovers();
 }
 
 function filterByCurrency(currency: string) {
   for (const key of Object.keys(botFilters.value.currencies)) {
-    botFilters.value.currencies[key] = (key === currency);
+    botFilters.value.currencies[key] = key === currency;
   }
   closeAllPopovers();
 }
@@ -1467,18 +1913,30 @@ async function executeBotAction(botId: string, action: string) {
   botActionPending.value[botId] = action;
   try {
     switch (action) {
-      case 'start': await store.startBot(); break;
-      case 'stop': await store.stopBot(); break;
-      case 'pause': await store.stopBuy(); break;
-      case 'reload': await store.reloadConfig(); break;
-      case 'forceExitAll': await store.forceexit({ tradeid: 'all' }); break;
+      case 'start':
+        await store.startBot();
+        break;
+      case 'stop':
+        await store.stopBot();
+        break;
+      case 'pause':
+        await store.stopBuy();
+        break;
+      case 'reload':
+        await store.reloadConfig();
+        break;
+      case 'forceExitAll':
+        await store.forceexit({ tradeid: 'all' });
+        break;
     }
     botActionFeedback.value[botId] = 'success';
   } catch {
     botActionFeedback.value[botId] = 'error';
   }
   delete botActionPending.value[botId];
-  setTimeout(() => { delete botActionFeedback.value[botId]; }, 2000);
+  setTimeout(() => {
+    delete botActionFeedback.value[botId];
+  }, 2000);
 }
 
 const botActionFeedback = ref<Record<string, 'success' | 'error'>>({});
@@ -1559,12 +2017,20 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyboard);
 });
 
-defineExpose({ showColumnPopover, showSortPopover, showFilterPopover, showAlertsPopover, showGroupsPopover });
+defineExpose({
+  showColumnPopover,
+  showSortPopover,
+  showFilterPopover,
+  showAlertsPopover,
+  showGroupsPopover,
+});
 
 // --- Column ordering (from store) ---
 const columnOrder = computed({
   get: () => compStore.columnOrder,
-  set: (val: string[]) => { compStore.columnOrder = val; },
+  set: (val: string[]) => {
+    compStore.columnOrder = val;
+  },
 });
 
 const orderedColumns = computed(() => {
@@ -1709,9 +2175,7 @@ function calculatePeriodProfit(
   const periods = daysDiff / periodDays;
   const abs = profitStats.profit_closed_coin / periods;
   // Use profit_closed_ratio (vs starting capital) per period
-  const ratio = profitStats.profit_closed_ratio
-    ? profitStats.profit_closed_ratio / periods
-    : 0;
+  const ratio = profitStats.profit_closed_ratio ? profitStats.profit_closed_ratio / periods : 0;
 
   // Compound projection (snowball effect for stake_amount: "unlimited")
   // If profit_closed_ratio is available, we can compute daily growth rate
@@ -1743,15 +2207,11 @@ function calculateMonthlyProfit(
   return calculatePeriodProfit(profitStats, 30)?.abs;
 }
 
-function calculateWeeklyProfitData(
-  profitStats: import('@/types').ProfitStats | undefined,
-) {
+function calculateWeeklyProfitData(profitStats: import('@/types').ProfitStats | undefined) {
   return calculatePeriodProfit(profitStats, 7);
 }
 
-function calculateMonthlyProfitData(
-  profitStats: import('@/types').ProfitStats | undefined,
-) {
+function calculateMonthlyProfitData(profitStats: import('@/types').ProfitStats | undefined) {
   return calculatePeriodProfit(profitStats, 30);
 }
 
@@ -1803,16 +2263,16 @@ function cancelRename() {
 
 // --- Group toggle (only toggles bots within this group) ---
 function isGroupAllSelected(groupId: string): boolean {
-  const group = botGroups.value.find(g => g.id === groupId);
+  const group = botGroups.value.find((g) => g.id === groupId);
   if (!group) return false;
-  return group.botIds.every(id => botStore.botStores[id]?.isSelected);
+  return group.botIds.every((id) => botStore.botStores[id]?.isSelected);
 }
 
 function toggleGroup(groupId: string) {
-  const group = botGroups.value.find(g => g.id === groupId);
+  const group = botGroups.value.find((g) => g.id === groupId);
   if (!group) return;
-  const allSelected = group.botIds.every(id => botStore.botStores[id]?.isSelected);
-  group.botIds.forEach(id => {
+  const allSelected = group.botIds.every((id) => botStore.botStores[id]?.isSelected);
+  group.botIds.forEach((id) => {
     if (botStore.botStores[id]) {
       botStore.botStores[id].isSelected = !allSelected;
     }
@@ -1830,7 +2290,7 @@ function startGroupRename(groupId: string, currentName: string) {
 
 function saveGroupRename() {
   if (editingGroupId.value && editingGroupName.value.trim()) {
-    const group = botGroups.value.find(g => g.id === editingGroupId.value);
+    const group = botGroups.value.find((g) => g.id === editingGroupId.value);
     if (group) group.name = editingGroupName.value.trim();
   }
   editingGroupId.value = null;
@@ -1874,7 +2334,7 @@ function setIcon(icon: string) {
   const target = iconPickerTarget.value;
   if (!target) return;
   if (target.type === 'group') {
-    const group = botGroups.value.find(g => g.id === target.id);
+    const group = botGroups.value.find((g) => g.id === target.id);
     if (group) group.icon = icon;
   } else {
     botStore.updateBot(target.id, { botIcon: icon });
@@ -1890,7 +2350,7 @@ function clearIcon() {
   if (target.type === 'bot') {
     botStore.updateBot(target.id, { botIcon: '' });
   } else {
-    const group = botGroups.value.find(g => g.id === target.id);
+    const group = botGroups.value.find((g) => g.id === target.id);
     if (group) group.icon = '📁';
   }
   iconPickerPopover.value?.hide();
@@ -1923,7 +2383,7 @@ const groupEditTargetId = ref<string | null>(null);
 const groupEditName = ref('');
 
 function showGroupEditPopover(event: MouseEvent, groupId: string) {
-  const group = botGroups.value.find(g => g.id === groupId);
+  const group = botGroups.value.find((g) => g.id === groupId);
   if (!group) return;
   groupEditTargetId.value = groupId;
   groupEditName.value = group.name;
@@ -1932,16 +2392,16 @@ function showGroupEditPopover(event: MouseEvent, groupId: string) {
 
 function saveGroupEditName() {
   if (groupEditTargetId.value && groupEditName.value.trim()) {
-    const group = botGroups.value.find(g => g.id === groupEditTargetId.value);
+    const group = botGroups.value.find((g) => g.id === groupEditTargetId.value);
     if (group) group.name = groupEditName.value.trim();
   }
 }
 
 function removeGroupEditBot(botId: string) {
   if (!groupEditTargetId.value) return;
-  const group = botGroups.value.find(g => g.id === groupEditTargetId.value);
+  const group = botGroups.value.find((g) => g.id === groupEditTargetId.value);
   if (group) {
-    group.botIds = group.botIds.filter(id => id !== botId);
+    group.botIds = group.botIds.filter((id) => id !== botId);
   }
 }
 
@@ -1949,9 +2409,9 @@ function addGroupEditBot(botId: string) {
   if (!groupEditTargetId.value || !botId) return;
   // Remove from any other group first
   for (const g of botGroups.value) {
-    g.botIds = g.botIds.filter(id => id !== botId);
+    g.botIds = g.botIds.filter((id) => id !== botId);
   }
-  const group = botGroups.value.find(g => g.id === groupEditTargetId.value);
+  const group = botGroups.value.find((g) => g.id === groupEditTargetId.value);
   if (group && !group.botIds.includes(botId)) {
     group.botIds.push(botId);
   }
@@ -1965,7 +2425,7 @@ function getBotGroupName(botId: string): string | null {
 }
 
 function getBotGroup(botId: string): BotGroup | null {
-  return botGroups.value.find(g => g.botIds.includes(botId)) ?? null;
+  return botGroups.value.find((g) => g.botIds.includes(botId)) ?? null;
 }
 
 // --- Bot move-to-folder popover ---
@@ -1979,9 +2439,9 @@ function showBotMovePopover(event: MouseEvent, botId: string) {
 
 function moveBotToGroup(botId: string, groupId: string) {
   for (const g of botGroups.value) {
-    g.botIds = g.botIds.filter(id => id !== botId);
+    g.botIds = g.botIds.filter((id) => id !== botId);
   }
-  const group = botGroups.value.find(g => g.id === groupId);
+  const group = botGroups.value.find((g) => g.id === groupId);
   if (group && !group.botIds.includes(botId)) {
     group.botIds.push(botId);
   }
@@ -1991,7 +2451,7 @@ function moveBotToGroup(botId: string, groupId: string) {
 
 function moveBotOutOfGroup(botId: string) {
   for (const g of botGroups.value) {
-    g.botIds = g.botIds.filter(id => id !== botId);
+    g.botIds = g.botIds.filter((id) => id !== botId);
   }
   botMovePopover.value?.hide();
   botMoveTargetId.value = null;
@@ -2011,8 +2471,8 @@ function onGroupDragStart(event: DragEvent, groupId: string) {
 function onGroupDrop(targetGroupId: string) {
   if (!draggedGroupId || draggedGroupId === targetGroupId) return;
   const groups = [...botGroups.value];
-  const fromIdx = groups.findIndex(g => g.id === draggedGroupId);
-  const toIdx = groups.findIndex(g => g.id === targetGroupId);
+  const fromIdx = groups.findIndex((g) => g.id === draggedGroupId);
+  const toIdx = groups.findIndex((g) => g.id === targetGroupId);
   if (fromIdx === -1 || toIdx === -1) return;
   const [moved] = groups.splice(fromIdx, 1);
   groups.splice(toIdx, 0, moved);
@@ -2023,7 +2483,9 @@ function onGroupDrop(targetGroupId: string) {
 // --- Bot row reorder (from store) ---
 const botOrder = computed({
   get: () => compStore.botOrder,
-  set: (val: string[]) => { compStore.botOrder = val; },
+  set: (val: string[]) => {
+    compStore.botOrder = val;
+  },
 });
 
 let draggedRowBotId = '';
@@ -2043,15 +2505,13 @@ function onRowDrop(targetId: string) {
   }
   if (!draggedRowBotId || draggedRowBotId === targetId) return;
   // Check if target is a group row - add bot to that group
-  const targetItem = tableItems.value.find(i =>
-    i.isGroupRow && i.groupId === targetId
-  );
+  const targetItem = tableItems.value.find((i) => i.isGroupRow && i.groupId === targetId);
   if (targetItem?.isGroupRow && draggedRowBotId) {
-    const group = botGroups.value.find(g => g.id === targetId);
+    const group = botGroups.value.find((g) => g.id === targetId);
     if (group && !group.botIds.includes(draggedRowBotId)) {
       // Remove from other groups first
-      botGroups.value.forEach(g => {
-        g.botIds = g.botIds.filter(id => id !== draggedRowBotId);
+      botGroups.value.forEach((g) => {
+        g.botIds = g.botIds.filter((id) => id !== draggedRowBotId);
       });
       group.botIds.push(draggedRowBotId);
     }
@@ -2059,7 +2519,7 @@ function onRowDrop(targetId: string) {
     return;
   }
   // Normal bot reorder logic
-  const currentIds = tableItems.value.filter(i => i.botId).map(i => i.botId!);
+  const currentIds = tableItems.value.filter((i) => i.botId).map((i) => i.botId!);
   const order = botOrder.value.length > 0 ? [...botOrder.value] : currentIds;
   // Ensure all bots are in the order
   for (const id of currentIds) {
@@ -2074,7 +2534,7 @@ function onRowDrop(targetId: string) {
   // Switch to custom sort, then check if the new order matches any sort criteria
   activeSort.value = { field: 'custom', direction: 'asc' };
   nextTick(() => {
-    const matchedSort = detectMatchingSort(tableItems.value.filter(i => i.botId));
+    const matchedSort = detectMatchingSort(tableItems.value.filter((i) => i.botId));
     if (matchedSort) {
       activeSort.value = matchedSort;
     }
@@ -2084,9 +2544,11 @@ function onRowDrop(targetId: string) {
 
 // Move bot up/down in the order
 function moveBotUp(botId: string) {
-  const currentIds = tableItems.value.filter(i => i.botId && !i.isGroupRow).map(i => i.botId!);
+  const currentIds = tableItems.value.filter((i) => i.botId && !i.isGroupRow).map((i) => i.botId!);
   const order = botOrder.value.length > 0 ? [...botOrder.value] : currentIds;
-  for (const id of currentIds) { if (!order.includes(id)) order.push(id); }
+  for (const id of currentIds) {
+    if (!order.includes(id)) order.push(id);
+  }
   const idx = order.indexOf(botId);
   if (idx <= 0) return;
   [order[idx - 1], order[idx]] = [order[idx], order[idx - 1]];
@@ -2095,9 +2557,11 @@ function moveBotUp(botId: string) {
 }
 
 function moveBotDown(botId: string) {
-  const currentIds = tableItems.value.filter(i => i.botId && !i.isGroupRow).map(i => i.botId!);
+  const currentIds = tableItems.value.filter((i) => i.botId && !i.isGroupRow).map((i) => i.botId!);
   const order = botOrder.value.length > 0 ? [...botOrder.value] : currentIds;
-  for (const id of currentIds) { if (!order.includes(id)) order.push(id); }
+  for (const id of currentIds) {
+    if (!order.includes(id)) order.push(id);
+  }
   const idx = order.indexOf(botId);
   if (idx < 0 || idx >= order.length - 1) return;
   [order[idx], order[idx + 1]] = [order[idx + 1], order[idx]];
@@ -2106,7 +2570,7 @@ function moveBotDown(botId: string) {
 }
 
 function moveGroupUp(groupId: string) {
-  const idx = botGroups.value.findIndex(g => g.id === groupId);
+  const idx = botGroups.value.findIndex((g) => g.id === groupId);
   if (idx <= 0) return;
   const groups = [...botGroups.value];
   [groups[idx - 1], groups[idx]] = [groups[idx], groups[idx - 1]];
@@ -2114,7 +2578,7 @@ function moveGroupUp(groupId: string) {
 }
 
 function moveGroupDown(groupId: string) {
-  const idx = botGroups.value.findIndex(g => g.id === groupId);
+  const idx = botGroups.value.findIndex((g) => g.id === groupId);
   if (idx < 0 || idx >= botGroups.value.length - 1) return;
   const groups = [...botGroups.value];
   [groups[idx], groups[idx + 1]] = [groups[idx + 1], groups[idx]];
@@ -2122,7 +2586,11 @@ function moveGroupDown(groupId: string) {
 }
 
 // Smart detection: check if current order matches any sort criteria
-function comparatorForField(items: ComparisonTableItems[], field: string, direction: SortDirection): ComparisonTableItems[] {
+function comparatorForField(
+  items: ComparisonTableItems[],
+  field: string,
+  direction: SortDirection,
+): ComparisonTableItems[] {
   const dir = direction === 'asc' ? 1 : -1;
   return [...items].sort((a, b) => {
     if (!a.botId || !b.botId) return 0;
@@ -2141,7 +2609,10 @@ function comparatorForField(items: ComparisonTableItems[], field: string, direct
         cmp = (a.profitClosed ?? 0) - (b.profitClosed ?? 0);
         break;
       case 'currentProfit':
-        cmp = ((a.profitOpen ?? 0) + (a.profitClosed ?? 0)) - ((b.profitOpen ?? 0) + (b.profitClosed ?? 0));
+        cmp =
+          (a.profitOpen ?? 0) +
+          (a.profitClosed ?? 0) -
+          ((b.profitOpen ?? 0) + (b.profitClosed ?? 0));
         break;
       case 'balance':
         cmp = (a.balance ?? 0) - (b.balance ?? 0);
@@ -2224,9 +2695,9 @@ function onColumnReorder(event: { dragIndex: number; dropIndex: number }) {
   const [moved] = cols.splice(event.dragIndex, 1);
   cols.splice(event.dropIndex, 0, moved);
   // Update columnOrder to reflect the new order
-  const newOrder = cols.map(c => c.id);
+  const newOrder = cols.map((c) => c.id);
   // Keep hidden columns in their relative positions
-  const hidden = columnOrder.value.filter(id => !visibleColumnIds.value.includes(id));
+  const hidden = columnOrder.value.filter((id) => !visibleColumnIds.value.includes(id));
   columnOrder.value = [...newOrder, ...hidden];
 }
 
@@ -2264,12 +2735,13 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
     const allOpenTrades = botStore.allOpenTrades[k];
     if (!allOpenTrades) return;
     const allStakes = allOpenTrades.reduce((a, b) => a + b.stake_amount, 0);
-    const profitOpenRatio = allStakes > 0
-      ? allOpenTrades.reduce(
-          (a, b) => a + (b.total_profit_ratio ?? b.profit_ratio ?? 0) * b.stake_amount,
-          0,
-        ) / allStakes
-      : 0;
+    const profitOpenRatio =
+      allStakes > 0
+        ? allOpenTrades.reduce(
+            (a, b) => a + (b.total_profit_ratio ?? b.profit_ratio ?? 0) * b.stake_amount,
+            0,
+          ) / allStakes
+        : 0;
     const profitOpen = allOpenTrades.reduce(
       (a, b) => a + (b.total_profit_abs ?? b.profit_abs ?? 0),
       0,
@@ -2363,7 +2835,8 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
         const mp = calculateMonthlyProfit(v);
         if (mp !== undefined) {
           summary.monthlyProfit = (summary.monthlyProfit ?? 0) + mp;
-          summary.perCurrencyMonthlyProfit![cur] = (summary.perCurrencyMonthlyProfit![cur] ?? 0) + mp;
+          summary.perCurrencyMonthlyProfit![cur] =
+            (summary.perCurrencyMonthlyProfit![cur] ?? 0) + mp;
         }
 
         // Yearly profit
@@ -2383,8 +2856,10 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
         }
 
         // Per-currency profit tracking
-        summary.perCurrencyProfitOpen![cur] = (summary.perCurrencyProfitOpen![cur] ?? 0) + profitOpen;
-        summary.perCurrencyProfitClosed![cur] = (summary.perCurrencyProfitClosed![cur] ?? 0) + v.profit_closed_coin;
+        summary.perCurrencyProfitOpen![cur] =
+          (summary.perCurrencyProfitOpen![cur] ?? 0) + profitOpen;
+        summary.perCurrencyProfitClosed![cur] =
+          (summary.perCurrencyProfitClosed![cur] ?? 0) + v.profit_closed_coin;
 
         // Balance (always accumulate per-currency)
         const botBal = botStore.allBalance[k]?.total_bot ?? botStore.allBalance[k]?.total ?? 0;
@@ -2413,9 +2888,8 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
   }
   // Current profit = open + closed; ratio over allocated capital when known
   summary.profitCurrent = (summary.profitOpen ?? 0) + (summary.profitClosed ?? 0);
-  summary.profitCurrentRatio = summaryAvailableCapital > 0
-    ? summary.profitCurrent / summaryAvailableCapital
-    : undefined;
+  summary.profitCurrentRatio =
+    summaryAvailableCapital > 0 ? summary.profitCurrent / summaryAvailableCapital : undefined;
 
   // Exchange rate conversion for summary row
   if (selectedSummaryCurrency.value && selectedSummaryCurrency.value !== 'auto' && hasRates.value) {
@@ -2438,14 +2912,21 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       const convClosed = convert(item.profitClosed ?? 0, from, target);
       const convOpen = convert(item.profitOpen ?? 0, from, target);
       const convBalance = convert(item.balance ?? 0, from, target);
-      const convMonthly = item.monthlyProfit !== undefined ? convert(item.monthlyProfit, from, target) : 0;
-      const convYearly = item.yearlyProfit !== undefined ? convert(item.yearlyProfit, from, target) : 0;
+      const convMonthly =
+        item.monthlyProfit !== undefined ? convert(item.monthlyProfit, from, target) : 0;
+      const convYearly =
+        item.yearlyProfit !== undefined ? convert(item.yearlyProfit, from, target) : 0;
 
-      if (convClosed !== null) totalProfitClosed += convClosed; else allConverted = false;
-      if (convOpen !== null) totalProfitOpen += convOpen; else allConverted = false;
-      if (convBalance !== null) totalBalance += convBalance; else allConverted = false;
-      if (convMonthly !== null) totalMonthly += convMonthly; else allConverted = false;
-      if (convYearly !== null) totalYearly += convYearly; else allConverted = false;
+      if (convClosed !== null) totalProfitClosed += convClosed;
+      else allConverted = false;
+      if (convOpen !== null) totalProfitOpen += convOpen;
+      else allConverted = false;
+      if (convBalance !== null) totalBalance += convBalance;
+      else allConverted = false;
+      if (convMonthly !== null) totalMonthly += convMonthly;
+      else allConverted = false;
+      if (convYearly !== null) totalYearly += convYearly;
+      else allConverted = false;
 
       // Capital is only used for the ratio denominator — never gate allConverted on it
       const ac = item.availableCapital;
@@ -2465,9 +2946,8 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       summary.isMultiCurrency = false;
       summary.isConverted = true;
       summary.profitCurrent = totalProfitOpen + totalProfitClosed;
-      summary.profitCurrentRatio = totalAvailableCapital > 0
-        ? summary.profitCurrent / totalAvailableCapital
-        : undefined;
+      summary.profitCurrentRatio =
+        totalAvailableCapital > 0 ? summary.profitCurrent / totalAvailableCapital : undefined;
     }
   }
 
@@ -2589,7 +3069,7 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
     }, 0);
     const groupMaxTrades = memberItems.reduce((s, i) => {
       const id = i.botId;
-      const mot = id ? (botStore.allBotState[id]?.max_open_trades as number) ?? 0 : 0;
+      const mot = id ? ((botStore.allBotState[id]?.max_open_trades as number) ?? 0) : 0;
       return mot > 0 ? s + mot : s;
     }, 0);
     const groupSummary: ComparisonTableItems = {
@@ -2600,11 +3080,17 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       profitOpen: memberItems.reduce((s, i) => s + (i.profitOpen ?? 0), 0),
       profitOpenRatio: undefined,
       profitClosedRatio: undefined,
-      profitCurrent: memberItems.reduce((s, i) => s + ((i.profitOpen ?? 0) + (i.profitClosed ?? 0)), 0),
+      profitCurrent: memberItems.reduce(
+        (s, i) => s + ((i.profitOpen ?? 0) + (i.profitClosed ?? 0)),
+        0,
+      ),
       profitCurrentRatio: (() => {
         const acSum = memberItems.reduce((s, i) => s + (i.availableCapital ?? 0), 0);
         if (acSum > 0) {
-          const pc = memberItems.reduce((s, i) => s + ((i.profitOpen ?? 0) + (i.profitClosed ?? 0)), 0);
+          const pc = memberItems.reduce(
+            (s, i) => s + ((i.profitOpen ?? 0) + (i.profitClosed ?? 0)),
+            0,
+          );
           return pc / acSum;
         }
         return undefined;
@@ -2621,7 +3107,7 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       groupBotCount: memberItems.length,
       yearlyProfit: memberItems.reduce((s, i) => s + (i.yearlyProfit ?? 0), 0),
       monthlyProfit: memberItems.reduce((s, i) => s + (i.monthlyProfit ?? 0), 0),
-      availableFunds: memberItems.some(i => i.availableFunds != null)
+      availableFunds: memberItems.some((i) => i.availableFunds != null)
         ? memberItems.reduce((s, i) => s + (i.availableFunds ?? 0), 0)
         : undefined,
     };
@@ -2668,18 +3154,27 @@ function sparklineSum(data: number[]): number {
 // ===== Feature 2: Alert System V2 — config accessors (detection logic in useAlertDetection) =====
 const alertConfigV2 = computed({
   get: () => compStore.alertConfig,
-  set: (val: AlertConfigV2) => { compStore.alertConfig = val; },
+  set: (val: AlertConfigV2) => {
+    compStore.alertConfig = val;
+  },
 });
 
-function resetAlertConfig() { compStore.resetAlertConfig(); }
-function getGlobalAlertSetting(alertId: string): AlertSettingConfig { return compStore.getGlobalAlertSetting(alertId); }
-function setGlobalAlertEnabled(alertId: string, enabled: boolean) { compStore.setGlobalAlertEnabled(alertId, enabled); }
+function resetAlertConfig() {
+  compStore.resetAlertConfig();
+}
+function getGlobalAlertSetting(alertId: string): AlertSettingConfig {
+  return compStore.getGlobalAlertSetting(alertId);
+}
+function setGlobalAlertEnabled(alertId: string, enabled: boolean) {
+  compStore.setGlobalAlertEnabled(alertId, enabled);
+}
 
 function setGlobalAlertThreshold(alertId: string, value: number) {
   if (alertConfigV2.value.global[alertId]) alertConfigV2.value.global[alertId].threshold = value;
 }
 function setGlobalAlertLeverage(alertId: string, value: boolean) {
-  if (alertConfigV2.value.global[alertId]) alertConfigV2.value.global[alertId].includeLeverage = value;
+  if (alertConfigV2.value.global[alertId])
+    alertConfigV2.value.global[alertId].includeLeverage = value;
 }
 function setBotAlertEnabled(botId: string, enabled: boolean) {
   alertConfigV2.value.perBotEnabled[botId] = enabled;
@@ -2703,18 +3198,28 @@ function startAlertHover(event: MouseEvent, botId: string) {
   }, 300);
 }
 function cancelAlertHover() {
-  if (alertHoverTimeout.value) { clearTimeout(alertHoverTimeout.value); alertHoverTimeout.value = null; }
-  delayedHide(alertHoverPopover.value, () => { alertHoverBotId.value = null; });
+  if (alertHoverTimeout.value) {
+    clearTimeout(alertHoverTimeout.value);
+    alertHoverTimeout.value = null;
+  }
+  delayedHide(alertHoverPopover.value, () => {
+    alertHoverBotId.value = null;
+  });
 }
 function cancelAlertHoverKeepPopover() {
   cancelDelayedHide();
-  if (alertHoverTimeout.value) { clearTimeout(alertHoverTimeout.value); alertHoverTimeout.value = null; }
+  if (alertHoverTimeout.value) {
+    clearTimeout(alertHoverTimeout.value);
+    alertHoverTimeout.value = null;
+  }
 }
 
 // ===== Feature 3: Bot Groups (from store) =====
 const botGroups = computed({
   get: () => compStore.botGroups,
-  set: (val: BotGroup[]) => { compStore.botGroups = val; },
+  set: (val: BotGroup[]) => {
+    compStore.botGroups = val;
+  },
 });
 
 const newGroupName = ref('');
@@ -2793,19 +3298,27 @@ const correlatedPairs = computed(() => {
 <template>
   <div>
     <Popover ref="columnPopover" class="p-0" style="min-width: 240px">
-      <div class="p-3" style="background: rgba(15,17,23,0.96); backdrop-filter: blur(16px)">
+      <div class="p-3" style="background: rgba(15, 17, 23, 0.96); backdrop-filter: blur(16px)">
         <ColumnEditorPanel
-          :columns="orderedColumns.map(c => ({ id: c.id, labelKey: c.labelKey, removable: c.removable }))"
+          :columns="
+            orderedColumns.map((c) => ({ id: c.id, labelKey: c.labelKey, removable: c.removable }))
+          "
           :visible-ids="visibleColumnIds"
           @toggle="toggleColumn"
-          @reorder="(newOrder) => { columnOrder = newOrder; }"
+          @reorder="
+            (newOrder) => {
+              columnOrder = newOrder;
+            }
+          "
           @reset="resetColumns"
         />
         <!-- Bot tags section -->
         <div class="mt-3 pt-3 border-t border-black/10 dark:border-white/8">
           <div class="flex items-center gap-1 mb-2">
             <i-mdi-tag-outline class="text-sm opacity-60" />
-            <span class="text-xs font-semibold text-surface-300 uppercase tracking-wide">{{ t('botComparison.botTags') }}</span>
+            <span class="text-xs font-semibold text-surface-300 uppercase tracking-wide">{{
+              t('botComparison.botTags')
+            }}</span>
           </div>
           <div class="space-y-0.5">
             <div
@@ -2828,7 +3341,9 @@ const correlatedPairs = computed(() => {
         <div class="mt-3 pt-3 border-t border-black/10 dark:border-white/8">
           <div class="flex items-center gap-1 mb-2">
             <i-mdi-eye-outline class="text-sm opacity-60" />
-            <span class="text-xs font-semibold text-surface-300 uppercase tracking-wide">{{ t('botComparison.visibility') }}</span>
+            <span class="text-xs font-semibold text-surface-300 uppercase tracking-wide">{{
+              t('botComparison.visibility')
+            }}</span>
           </div>
           <div class="space-y-0.5">
             <BaseCheckbox v-model="botTagVisibility.onlineSince" class="text-xs px-2 py-1">
@@ -2840,7 +3355,11 @@ const correlatedPairs = computed(() => {
     </Popover>
 
     <!-- Sort popover -->
-    <Popover ref="sortPopover" class="p-3" style="min-width: 260px; max-height: 80vh; overflow-y: auto">
+    <Popover
+      ref="sortPopover"
+      class="p-3"
+      style="min-width: 260px; max-height: 80vh; overflow-y: auto"
+    >
       <div class="flex justify-between items-center mb-2">
         <div class="flex items-center gap-1">
           <i-mdi-sort-variant class="text-sm opacity-60" />
@@ -2872,7 +3391,10 @@ const correlatedPairs = computed(() => {
             </template>
             <template v-else>
               <i-mdi-arrow-up v-if="getSortDirection(sf.id) === 'asc'" class="text-blue-500" />
-              <i-mdi-arrow-down v-else-if="getSortDirection(sf.id) === 'desc'" class="text-blue-500" />
+              <i-mdi-arrow-down
+                v-else-if="getSortDirection(sf.id) === 'desc'"
+                class="text-blue-500"
+              />
               <i-mdi-minus v-else class="opacity-20" />
             </template>
           </span>
@@ -2881,7 +3403,11 @@ const correlatedPairs = computed(() => {
     </Popover>
 
     <!-- Filter popover -->
-    <Popover ref="filterPopover" class="p-3" style="min-width: 260px; max-height: 80vh; overflow-y: auto">
+    <Popover
+      ref="filterPopover"
+      class="p-3"
+      style="min-width: 260px; max-height: 80vh; overflow-y: auto"
+    >
       <div class="flex justify-between items-center mb-2">
         <div class="flex items-center gap-1">
           <i-mdi-filter-variant class="text-sm opacity-60" />
@@ -2922,7 +3448,11 @@ const correlatedPairs = computed(() => {
       <div v-if="Object.keys(allExchanges).length > 0" class="mb-2">
         <div class="text-xs font-semibold opacity-60 mb-1">{{ t('botComparison.byExchange') }}</div>
         <div class="space-y-0.5">
-          <div v-for="(count, ex) in allExchanges" :key="ex" class="flex items-center gap-2 p-1 text-sm">
+          <div
+            v-for="(count, ex) in allExchanges"
+            :key="ex"
+            class="flex items-center gap-2 p-1 text-sm"
+          >
             <BaseCheckbox v-model="botFilters.exchanges[ex]">
               {{ capitalizeExchange(String(ex)) }} ({{ count }})
             </BaseCheckbox>
@@ -2934,7 +3464,11 @@ const correlatedPairs = computed(() => {
       <div v-if="Object.keys(allCurrencies).length > 0" class="mb-2">
         <div class="text-xs font-semibold opacity-60 mb-1">{{ t('botComparison.byCurrency') }}</div>
         <div class="space-y-0.5">
-          <div v-for="(count, cur) in allCurrencies" :key="cur" class="flex items-center gap-2 p-1 text-sm">
+          <div
+            v-for="(count, cur) in allCurrencies"
+            :key="cur"
+            class="flex items-center gap-2 p-1 text-sm"
+          >
             <BaseCheckbox v-model="botFilters.currencies[cur]">
               {{ cur }} ({{ count }})
             </BaseCheckbox>
@@ -2944,9 +3478,15 @@ const correlatedPairs = computed(() => {
 
       <!-- By Trading Mode -->
       <div v-if="Object.keys(allTradingModes).length > 0" class="mb-2">
-        <div class="text-xs font-semibold opacity-60 mb-1">{{ t('botComparison.byTradingMode') }}</div>
+        <div class="text-xs font-semibold opacity-60 mb-1">
+          {{ t('botComparison.byTradingMode') }}
+        </div>
         <div class="space-y-0.5">
-          <div v-for="(count, mode) in allTradingModes" :key="mode" class="flex items-center gap-2 p-1 text-sm">
+          <div
+            v-for="(count, mode) in allTradingModes"
+            :key="mode"
+            class="flex items-center gap-2 p-1 text-sm"
+          >
             <BaseCheckbox v-model="botFilters.tradingMode[mode]">
               {{ String(mode) === 'futures' ? 'Futures' : 'Spot' }} ({{ count }})
             </BaseCheckbox>
@@ -2956,7 +3496,9 @@ const correlatedPairs = computed(() => {
 
       <!-- By Custom Tag -->
       <div v-if="customTags.length > 0" class="mb-2">
-        <div class="text-xs font-semibold opacity-60 mb-1">{{ t('botComparison.byCustomTag') }}</div>
+        <div class="text-xs font-semibold opacity-60 mb-1">
+          {{ t('botComparison.byCustomTag') }}
+        </div>
         <div class="space-y-0.5">
           <div v-for="tag in customTags" :key="tag.id" class="flex items-center gap-2 p-1 text-sm">
             <BaseCheckbox v-model="botFilters.customTags[tag.id]">
@@ -2964,7 +3506,8 @@ const correlatedPairs = computed(() => {
                 class="inline-flex items-center rounded-sm text-[0.55rem] font-bold"
                 style="padding: 1px 5px; line-height: 1.2"
                 :style="{ background: tag.color, color: '#fff' }"
-              >{{ tag.name }}</span>
+                >{{ tag.name }}</span
+              >
               <span class="opacity-50 text-xs ml-1">({{ getCustomTagBotCount(tag.id) }})</span>
             </BaseCheckbox>
           </div>
@@ -2972,7 +3515,9 @@ const correlatedPairs = computed(() => {
       </div>
 
       <!-- Footer -->
-      <div class="mt-2 pt-2 border-t border-surface-300 dark:border-surface-600 flex items-center justify-between text-xs opacity-70">
+      <div
+        class="mt-2 pt-2 border-t border-surface-300 dark:border-surface-600 flex items-center justify-between text-xs opacity-70"
+      >
         <span v-if="hiddenBotCount > 0">
           {{ t('botComparison.botsHidden', { count: hiddenBotCount }, hiddenBotCount) }}
         </span>
@@ -3016,20 +3561,29 @@ const correlatedPairs = computed(() => {
                 @click="editTagColor = color"
               ></span>
             </div>
-            <i-mdi-check class="text-xs cursor-pointer text-green-500 hover:text-green-400" @click="saveEditTag()" />
-            <i-mdi-close class="text-xs cursor-pointer opacity-50 hover:opacity-100" @click="cancelEditTag()" />
+            <i-mdi-check
+              class="text-xs cursor-pointer text-green-500 hover:text-green-400"
+              @click="saveEditTag()"
+            />
+            <i-mdi-close
+              class="text-xs cursor-pointer opacity-50 hover:opacity-100"
+              @click="cancelEditTag()"
+            />
           </template>
           <!-- Normal mode -->
           <template v-else>
             <BaseCheckbox
-              :model-value="tagPickerBotId ? getBotCustomTags(tagPickerBotId).includes(tag.id) : false"
+              :model-value="
+                tagPickerBotId ? getBotCustomTags(tagPickerBotId).includes(tag.id) : false
+              "
               @update:model-value="tagPickerBotId && toggleBotTag(tagPickerBotId, tag.id)"
             >
               <span
                 class="inline-flex items-center rounded-sm text-[0.55rem] font-bold"
                 style="padding: 1px 5px; line-height: 1.2"
                 :style="{ background: tag.color, color: '#fff' }"
-              >{{ tag.name }}</span>
+                >{{ tag.name }}</span
+              >
             </BaseCheckbox>
             <span class="flex-1"></span>
             <i-mdi-pencil
@@ -3070,7 +3624,9 @@ const correlatedPairs = computed(() => {
           class="w-full text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
           :disabled="!newTagName.trim()"
           @click="newTagName.trim() && createCustomTag(newTagName.trim(), newTagColor)"
-        >{{ t('botComparison.createTag') }}</button>
+        >
+          {{ t('botComparison.createTag') }}
+        </button>
       </div>
     </Popover>
 
@@ -3078,181 +3634,266 @@ const correlatedPairs = computed(() => {
 
     <Popover ref="infoPopover" class="p-0">
       <div @mouseenter="cancelHoverInfoKeepPopover()" @mouseleave="cancelHoverInfo()">
-      <BotInfoCard
-        v-if="hoveredBotId"
-        :profit="hoveredProfit"
-        :bot-state="hoveredBotState as Record<string, unknown>"
-        :port="hoveredBotPort"
-        :stake-currency="(hoveredBotState?.stake_currency as string)"
-        :is-online="hoveredBotId ? botStore.botStores[hoveredBotId]?.isBotOnline : undefined"
-        :last-seen-online="hoveredBotId ? botStore.botStores[hoveredBotId]?.lastSeenOnline : undefined"
-        :bot-id="hoveredBotId"
-      />
+        <BotInfoCard
+          v-if="hoveredBotId"
+          :profit="hoveredProfit"
+          :bot-state="hoveredBotState as Record<string, unknown>"
+          :port="hoveredBotPort"
+          :stake-currency="hoveredBotState?.stake_currency as string"
+          :is-online="hoveredBotId ? botStore.botStores[hoveredBotId]?.isBotOnline : undefined"
+          :last-seen-online="
+            hoveredBotId ? botStore.botStores[hoveredBotId]?.lastSeenOnline : undefined
+          "
+          :bot-id="hoveredBotId"
+        />
       </div>
     </Popover>
 
     <!-- Exchange info popover -->
     <Popover ref="exchangeInfoPopover" class="p-0">
       <div @mouseenter="cancelExchangeHoverKeepPopover()" @mouseleave="cancelExchangeHover()">
-      <ExchangeInfoCard
-        v-if="hoveredExchange"
-        :exchange="hoveredExchange"
-        @filter-trading-mode="filterByTradingMode"
-      />
+        <ExchangeInfoCard
+          v-if="hoveredExchange"
+          :exchange="hoveredExchange"
+          @filter-trading-mode="filterByTradingMode"
+        />
       </div>
     </Popover>
 
     <!-- Pairlist info popover -->
     <Popover ref="pairlistInfoPopover" class="p-0">
       <div @mouseenter="cancelPairlistHoverKeepPopover()" @mouseleave="cancelPairlistHover()">
-        <PairlistInfoCard
-          v-if="hoveredPairlistBotId"
-          :bot-id="hoveredPairlistBotId"
-        />
+        <PairlistInfoCard v-if="hoveredPairlistBotId" :bot-id="hoveredPairlistBotId" />
       </div>
     </Popover>
 
     <!-- Currency info popover -->
     <Popover ref="currencyInfoPopover" class="p-0">
       <div @mouseenter="cancelCurrencyHoverKeepPopover()" @mouseleave="cancelCurrencyHover()">
-      <CurrencyInfoCard
-        v-if="hoveredCurrency"
-        :currency="hoveredCurrency"
-        @filter-currency="filterByCurrency"
-      />
+        <CurrencyInfoCard
+          v-if="hoveredCurrency"
+          :currency="hoveredCurrency"
+          @filter-currency="filterByCurrency"
+        />
       </div>
     </Popover>
 
     <!-- Open Profit popover -->
     <Popover ref="openProfitPopover" class="p-0">
       <div @mouseenter="cancelOpenProfitHoverKeepPopover()" @mouseleave="cancelOpenProfitHover()">
-      <OpenProfitCard
-        v-if="hoveredOpenProfitBotId"
-        :bot-id="hoveredOpenProfitBotId"
-        :stake-currency="(botStore.allBotState[hoveredOpenProfitBotId]?.stake_currency as string)"
-      />
+        <OpenProfitCard
+          v-if="hoveredOpenProfitBotId"
+          :bot-id="hoveredOpenProfitBotId"
+          :stake-currency="botStore.allBotState[hoveredOpenProfitBotId]?.stake_currency as string"
+        />
       </div>
     </Popover>
 
     <!-- Closed Profit popover -->
     <Popover ref="closedProfitPopover" class="p-0">
-      <div @mouseenter="cancelClosedProfitHoverKeepPopover()" @mouseleave="cancelClosedProfitHover()">
-      <ClosedProfitCard
-        v-if="hoveredClosedProfitBotId"
-        :bot-id="hoveredClosedProfitBotId"
-        :stake-currency="(botStore.allBotState[hoveredClosedProfitBotId]?.stake_currency as string)"
-      />
+      <div
+        @mouseenter="cancelClosedProfitHoverKeepPopover()"
+        @mouseleave="cancelClosedProfitHover()"
+      >
+        <ClosedProfitCard
+          v-if="hoveredClosedProfitBotId"
+          :bot-id="hoveredClosedProfitBotId"
+          :stake-currency="botStore.allBotState[hoveredClosedProfitBotId]?.stake_currency as string"
+        />
+      </div>
+    </Popover>
+
+    <!-- Max Drawdown popover -->
+    <Popover ref="maxDrawdownPopover" class="p-0">
+      <div @mouseenter="cancelMaxDrawdownHoverKeepPopover()" @mouseleave="cancelMaxDrawdownHover()">
+        <BotMaxDrawdownCard
+          v-if="hoveredMaxDrawdownBotIds.length"
+          :bot-ids="hoveredMaxDrawdownBotIds"
+          :title="hoveredMaxDrawdownTitle"
+        />
       </div>
     </Popover>
 
     <!-- Summary Open Profit popover -->
     <Popover ref="summaryOpenPopover" class="p-0">
       <div @mouseenter="cancelSummaryOpenHoverKeepPopover()" @mouseleave="cancelSummaryOpenHover()">
-      <SummaryProfitCard
-        v-if="summaryOpenVisible"
-        mode="open"
-      />
+        <SummaryProfitCard v-if="summaryOpenVisible" mode="open" />
       </div>
     </Popover>
 
     <!-- Summary Closed Profit popover -->
     <Popover ref="summaryClosedPopover" class="p-0">
-      <div @mouseenter="cancelSummaryClosedHoverKeepPopover()" @mouseleave="cancelSummaryClosedHover()">
-      <SummaryProfitCard
-        v-if="summaryClosedVisible"
-        mode="closed"
-      />
+      <div
+        @mouseenter="cancelSummaryClosedHoverKeepPopover()"
+        @mouseleave="cancelSummaryClosedHover()"
+      >
+        <SummaryProfitCard v-if="summaryClosedVisible" mode="closed" />
       </div>
     </Popover>
 
     <!-- Group Open Profit popover -->
     <Popover ref="groupOpenPopover" class="p-0">
       <div @mouseenter="cancelGroupOpenHoverKeepPopover()" @mouseleave="cancelGroupOpenHover()">
-      <SummaryProfitCard
-        v-if="groupOpenVisible"
-        mode="open"
-        :bot-ids="groupOpenBotIds"
-      />
+        <SummaryProfitCard v-if="groupOpenVisible" mode="open" :bot-ids="groupOpenBotIds" />
       </div>
     </Popover>
 
     <!-- Group Closed Profit popover -->
     <Popover ref="groupClosedPopover" class="p-0">
       <div @mouseenter="cancelGroupClosedHoverKeepPopover()" @mouseleave="cancelGroupClosedHover()">
-      <SummaryProfitCard
-        v-if="groupClosedVisible"
-        mode="closed"
-        :bot-ids="groupClosedBotIds"
-      />
+        <SummaryProfitCard v-if="groupClosedVisible" mode="closed" :bot-ids="groupClosedBotIds" />
       </div>
     </Popover>
 
     <!-- Trades info popover -->
     <Popover ref="tradesPopover" class="p-0">
       <div @mouseenter="cancelTradesHoverKeepPopover()" @mouseleave="cancelTradesHover()">
-      <TradesInfoCard
-        v-if="hoveredTradesBotId"
-        :bot-id="hoveredTradesBotId"
-        :stake-currency="(botStore.allBotState[hoveredTradesBotId]?.stake_currency as string)"
-      />
+        <TradesInfoCard
+          v-if="hoveredTradesBotId"
+          :bot-id="hoveredTradesBotId"
+          :stake-currency="botStore.allBotState[hoveredTradesBotId]?.stake_currency as string"
+        />
       </div>
     </Popover>
 
     <!-- Win/Loss popover -->
     <Popover ref="winLossPopover" class="p-0">
       <div @mouseenter="cancelWinLossHoverKeepPopover()" @mouseleave="cancelWinLossHover()">
-      <WinLossCard
-        v-if="hoveredWinLossBotId"
-        :bot-id="hoveredWinLossBotId"
-        :stake-currency="(botStore.allBotState[hoveredWinLossBotId]?.stake_currency as string)"
-      />
+        <WinLossCard
+          v-if="hoveredWinLossBotId"
+          :bot-id="hoveredWinLossBotId"
+          :stake-currency="botStore.allBotState[hoveredWinLossBotId]?.stake_currency as string"
+        />
       </div>
     </Popover>
 
     <!-- Balance popover -->
     <Popover ref="balancePopover" class="p-0">
       <div @mouseenter="cancelBalanceHoverKeepPopover()" @mouseleave="cancelBalanceHover()">
-      <BalanceCard
-        v-if="hoveredBalanceBotId"
-        :bot-id="hoveredBalanceBotId"
-        :stake-currency="(botStore.allBotState[hoveredBalanceBotId]?.stake_currency as string)"
-      />
+        <BalanceCard
+          v-if="hoveredBalanceBotId"
+          :bot-id="hoveredBalanceBotId"
+          :stake-currency="botStore.allBotState[hoveredBalanceBotId]?.stake_currency as string"
+        />
       </div>
     </Popover>
 
     <!-- Available Funds popover -->
     <Popover ref="availableFundsPopover" class="p-0">
-      <div @mouseenter="cancelAvailableFundsHoverKeepPopover()" @mouseleave="cancelAvailableFundsHover()">
+      <div
+        @mouseenter="cancelAvailableFundsHoverKeepPopover()"
+        @mouseleave="cancelAvailableFundsHover()"
+      >
         <div v-if="hoveredAvailableFundsBotId" class="glass-card" style="width: 320px">
-          <div class="flex items-center gap-2 mb-3 pb-2 border-b border-black/10 dark:border-white/10">
+          <div
+            class="flex items-center gap-2 mb-3 pb-2 border-b border-black/10 dark:border-white/10"
+          >
             <i-mdi-cash-multiple class="text-green-400" />
-            <span class="text-sm font-bold text-gray-100">{{ t('botComparison.availableFunds') }}</span>
+            <span class="text-sm font-bold text-gray-100">{{
+              t('botComparison.availableFunds')
+            }}</span>
           </div>
           <div class="space-y-1.5">
             <div class="flex justify-between items-center">
               <span class="text-xs text-gray-500">{{ t('botComparison.availableCapital') }}</span>
               <span class="text-sm font-mono text-gray-200">
-                {{ formatPriceCurrency(botStore.allBotState[hoveredAvailableFundsBotId]?.available_capital ?? 0, botStore.allBotState[hoveredAvailableFundsBotId]?.stake_currency as string, 2) }}
+                {{
+                  formatPriceCurrency(
+                    botStore.allBotState[hoveredAvailableFundsBotId]?.available_capital ?? 0,
+                    botStore.allBotState[hoveredAvailableFundsBotId]?.stake_currency as string,
+                    2,
+                  )
+                }}
               </span>
             </div>
             <div class="flex justify-between items-center">
-              <span class="text-xs" :class="(botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0) >= 0 ? 'text-green-400/70' : 'text-red-400/70'">
-                {{ (botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0) >= 0 ? '+' : '−' }} {{ t('botComparison.fundsGain') }}
+              <span
+                class="text-xs"
+                :class="
+                  (botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0) >= 0
+                    ? 'text-green-400/70'
+                    : 'text-red-400/70'
+                "
+              >
+                {{
+                  (botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0) >= 0
+                    ? '+'
+                    : '−'
+                }}
+                {{ t('botComparison.fundsGain') }}
               </span>
-              <span class="text-sm font-mono" :class="(botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'">
-                {{ (botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0) >= 0 ? '+' : '' }}{{ formatPriceCurrency(botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0, botStore.allBotState[hoveredAvailableFundsBotId]?.stake_currency as string, 2) }}
+              <span
+                class="text-sm font-mono"
+                :class="
+                  (botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0) >= 0
+                    ? 'text-green-400'
+                    : 'text-red-400'
+                "
+              >
+                {{
+                  (botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0) >= 0
+                    ? '+'
+                    : ''
+                }}{{
+                  formatPriceCurrency(
+                    botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0,
+                    botStore.allBotState[hoveredAvailableFundsBotId]?.stake_currency as string,
+                    2,
+                  )
+                }}
               </span>
             </div>
-            <div v-if="(botStore.allProfit[hoveredAvailableFundsBotId]?.capital_withdrawal ?? 0) > 0" class="flex justify-between items-center">
-              <span class="text-xs text-yellow-400/70">− {{ t('botComparison.fundsWithdraw') }}</span>
+            <div
+              v-if="(botStore.allProfit[hoveredAvailableFundsBotId]?.capital_withdrawal ?? 0) > 0"
+              class="flex justify-between items-center"
+            >
+              <span class="text-xs text-yellow-400/70"
+                >− {{ t('botComparison.fundsWithdraw') }}</span
+              >
               <span class="text-sm font-mono text-yellow-400">
-                −{{ formatPriceCurrency(botStore.allProfit[hoveredAvailableFundsBotId]?.capital_withdrawal ?? 0, botStore.allBotState[hoveredAvailableFundsBotId]?.stake_currency as string, 2) }}
+                −{{
+                  formatPriceCurrency(
+                    botStore.allProfit[hoveredAvailableFundsBotId]?.capital_withdrawal ?? 0,
+                    botStore.allBotState[hoveredAvailableFundsBotId]?.stake_currency as string,
+                    2,
+                  )
+                }}
               </span>
             </div>
             <div class="flex justify-between items-center pt-2 mt-1 border-t border-white/10">
-              <span class="text-xs font-bold text-gray-300">= {{ t('botComparison.fundsTotal') }}</span>
-              <span class="text-sm font-bold font-mono" :class="(() => { const ac = botStore.allBotState[hoveredAvailableFundsBotId]?.available_capital ?? 0; const g = botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0; const w = botStore.allProfit[hoveredAvailableFundsBotId]?.capital_withdrawal ?? 0; const v = ac + g - w; return v > 0 ? 'text-green-400' : v < 0 ? 'text-red-400' : 'text-gray-300'; })()">
-                {{ formatPriceCurrency((() => { const ac = botStore.allBotState[hoveredAvailableFundsBotId]?.available_capital ?? 0; const g = botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0; const w = botStore.allProfit[hoveredAvailableFundsBotId]?.capital_withdrawal ?? 0; return ac + g - w; })(), botStore.allBotState[hoveredAvailableFundsBotId]?.stake_currency as string, 2) }}
+              <span class="text-xs font-bold text-gray-300"
+                >= {{ t('botComparison.fundsTotal') }}</span
+              >
+              <span
+                class="text-sm font-bold font-mono"
+                :class="
+                  (() => {
+                    const ac =
+                      botStore.allBotState[hoveredAvailableFundsBotId]?.available_capital ?? 0;
+                    const g =
+                      botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0;
+                    const w =
+                      botStore.allProfit[hoveredAvailableFundsBotId]?.capital_withdrawal ?? 0;
+                    const v = ac + g - w;
+                    return v > 0 ? 'text-green-400' : v < 0 ? 'text-red-400' : 'text-gray-300';
+                  })()
+                "
+              >
+                {{
+                  formatPriceCurrency(
+                    (() => {
+                      const ac =
+                        botStore.allBotState[hoveredAvailableFundsBotId]?.available_capital ?? 0;
+                      const g =
+                        botStore.allProfit[hoveredAvailableFundsBotId]?.profit_closed_coin ?? 0;
+                      const w =
+                        botStore.allProfit[hoveredAvailableFundsBotId]?.capital_withdrawal ?? 0;
+                      return ac + g - w;
+                    })(),
+                    botStore.allBotState[hoveredAvailableFundsBotId]?.stake_currency as string,
+                    2,
+                  )
+                }}
               </span>
             </div>
           </div>
@@ -3262,77 +3903,141 @@ const correlatedPairs = computed(() => {
 
     <!-- Period Profit popover -->
     <Popover ref="periodProfitPopover" class="p-0">
-      <div @mouseenter="cancelPeriodProfitHoverKeepPopover()" @mouseleave="cancelPeriodProfitHover()">
-      <PeriodProfitCard
-        v-if="hoveredPeriodProfitBotId"
-        :bot-id="hoveredPeriodProfitBotId"
-        :stake-currency="(botStore.allBotState[hoveredPeriodProfitBotId]?.stake_currency as string)"
-      />
+      <div
+        @mouseenter="cancelPeriodProfitHoverKeepPopover()"
+        @mouseleave="cancelPeriodProfitHover()"
+      >
+        <PeriodProfitCard
+          v-if="hoveredPeriodProfitBotId"
+          :bot-id="hoveredPeriodProfitBotId"
+          :stake-currency="botStore.allBotState[hoveredPeriodProfitBotId]?.stake_currency as string"
+        />
       </div>
     </Popover>
 
     <!-- Summary Trades popover -->
     <Popover ref="summaryTradesPopover" class="p-0">
-      <div @mouseenter="cancelSummaryTradesHoverKeepPopover()" @mouseleave="cancelSummaryTradesHover()">
-      <SummaryTradesCard
-        v-if="summaryTradesVisible"
-      />
+      <div
+        @mouseenter="cancelSummaryTradesHoverKeepPopover()"
+        @mouseleave="cancelSummaryTradesHover()"
+      >
+        <SummaryTradesCard v-if="summaryTradesVisible" />
       </div>
     </Popover>
 
     <!-- Summary Balance popover -->
     <Popover ref="summaryBalancePopover" class="p-0">
-      <div @mouseenter="cancelSummaryBalanceHoverKeepPopover()" @mouseleave="cancelSummaryBalanceHover()">
-      <SummaryBalanceCard
-        v-if="summaryBalanceVisible"
-      />
+      <div
+        @mouseenter="cancelSummaryBalanceHoverKeepPopover()"
+        @mouseleave="cancelSummaryBalanceHover()"
+      >
+        <SummaryBalanceCard v-if="summaryBalanceVisible" />
       </div>
     </Popover>
 
     <!-- Summary Win/Loss popover -->
     <Popover ref="summaryWinLossPopover" class="p-0">
-      <div @mouseenter="cancelSummaryWinLossHoverKeepPopover()" @mouseleave="cancelSummaryWinLossHover()">
-      <SummaryWinLossCard
-        v-if="summaryWinLossVisible"
-      />
+      <div
+        @mouseenter="cancelSummaryWinLossHoverKeepPopover()"
+        @mouseleave="cancelSummaryWinLossHover()"
+      >
+        <SummaryWinLossCard v-if="summaryWinLossVisible" />
       </div>
     </Popover>
 
     <!-- Summary Period Profit popover -->
     <Popover ref="summaryPeriodPopover" class="p-0">
-      <div @mouseenter="cancelSummaryPeriodHoverKeepPopover()" @mouseleave="cancelSummaryPeriodHover()">
-      <div v-if="summaryPeriodVisible" class="glass-card p-4" style="width: 380px">
-        <div class="flex items-center gap-2 mb-3 pb-2 border-b border-black/10 dark:border-white/10">
-          <i-mdi-calendar-month v-if="summaryPeriodMode === 'monthly'" class="text-blue-400" />
-          <i-mdi-calendar v-else class="text-green-400" />
-          <span class="text-sm font-bold text-gray-100">
-            {{ summaryPeriodMode === 'monthly' ? t('botComparison.monthlyProfit') : t('botComparison.yearlyProfit') }} — {{ t('botComparison.all') }}
-          </span>
-        </div>
-        <div class="space-y-1">
+      <div
+        @mouseenter="cancelSummaryPeriodHoverKeepPopover()"
+        @mouseleave="cancelSummaryPeriodHover()"
+      >
+        <div v-if="summaryPeriodVisible" class="glass-card p-4" style="width: 380px">
           <div
-            v-for="[botId, store] in Object.entries(botStore.botStores).filter(([id]) => store => store.isSelected)"
-            :key="botId"
+            class="flex items-center gap-2 mb-3 pb-2 border-b border-black/10 dark:border-white/10"
           >
-          </div>
-          <!-- Per-bot breakdown -->
-          <template v-for="item in tableItems.filter(i => i.botId)" :key="'period-' + item.botId">
-            <div class="flex items-center justify-between py-0.5">
-              <span class="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[180px]">{{ item.botName }}</span>
-              <span class="text-xs font-bold" :class="(summaryPeriodMode === 'monthly' ? (item.monthlyProfit ?? 0) : (item.yearlyProfit ?? 0)) > 0 ? 'text-green-400' : (summaryPeriodMode === 'monthly' ? (item.monthlyProfit ?? 0) : (item.yearlyProfit ?? 0)) < 0 ? 'text-red-400' : 'text-gray-600 dark:text-gray-400'">
-                {{ formatPriceCurrency(summaryPeriodMode === 'monthly' ? (item.monthlyProfit ?? 0) : (item.yearlyProfit ?? 0), item.stakeCurrency, 2) }}
-              </span>
-            </div>
-          </template>
-          <!-- Total -->
-          <div class="flex items-center justify-between pt-2 mt-1 border-t border-black/10 dark:border-white/10 font-bold">
-            <span class="text-xs text-gray-800 dark:text-gray-200">Total</span>
-            <span class="text-sm" :class="tableItems.filter(i => !i.botId && !i.isGroupRow)[0]?.[summaryPeriodMode === 'monthly' ? 'monthlyProfit' : 'yearlyProfit'] > 0 ? 'text-green-400' : 'text-red-400'">
-              {{ formatPriceCurrency(tableItems.filter(i => !i.botId && !i.isGroupRow)[0]?.[summaryPeriodMode === 'monthly' ? 'monthlyProfit' : 'yearlyProfit'] ?? 0, tableItems.filter(i => !i.botId && !i.isGroupRow)[0]?.stakeCurrency || '', 2) }}
+            <i-mdi-calendar-month v-if="summaryPeriodMode === 'monthly'" class="text-blue-400" />
+            <i-mdi-calendar v-else class="text-green-400" />
+            <span class="text-sm font-bold text-gray-100">
+              {{
+                summaryPeriodMode === 'monthly'
+                  ? t('botComparison.monthlyProfit')
+                  : t('botComparison.yearlyProfit')
+              }}
+              — {{ t('botComparison.all') }}
             </span>
           </div>
+          <div class="space-y-1">
+            <div
+              v-for="[botId, store] in Object.entries(botStore.botStores).filter(
+                ([id]) =>
+                  (store) =>
+                    store.isSelected,
+              )"
+              :key="botId"
+            ></div>
+            <!-- Per-bot breakdown -->
+            <template
+              v-for="item in tableItems.filter((i) => i.botId)"
+              :key="'period-' + item.botId"
+            >
+              <div class="flex items-center justify-between py-0.5">
+                <span class="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[180px]">{{
+                  item.botName
+                }}</span>
+                <span
+                  class="text-xs font-bold"
+                  :class="
+                    (summaryPeriodMode === 'monthly'
+                      ? (item.monthlyProfit ?? 0)
+                      : (item.yearlyProfit ?? 0)) > 0
+                      ? 'text-green-400'
+                      : (summaryPeriodMode === 'monthly'
+                            ? (item.monthlyProfit ?? 0)
+                            : (item.yearlyProfit ?? 0)) < 0
+                        ? 'text-red-400'
+                        : 'text-gray-600 dark:text-gray-400'
+                  "
+                >
+                  {{
+                    formatPriceCurrency(
+                      summaryPeriodMode === 'monthly'
+                        ? (item.monthlyProfit ?? 0)
+                        : (item.yearlyProfit ?? 0),
+                      item.stakeCurrency,
+                      2,
+                    )
+                  }}
+                </span>
+              </div>
+            </template>
+            <!-- Total -->
+            <div
+              class="flex items-center justify-between pt-2 mt-1 border-t border-black/10 dark:border-white/10 font-bold"
+            >
+              <span class="text-xs text-gray-800 dark:text-gray-200">Total</span>
+              <span
+                class="text-sm"
+                :class="
+                  tableItems.filter((i) => !i.botId && !i.isGroupRow)[0]?.[
+                    summaryPeriodMode === 'monthly' ? 'monthlyProfit' : 'yearlyProfit'
+                  ] > 0
+                    ? 'text-green-400'
+                    : 'text-red-400'
+                "
+              >
+                {{
+                  formatPriceCurrency(
+                    tableItems.filter((i) => !i.botId && !i.isGroupRow)[0]?.[
+                      summaryPeriodMode === 'monthly' ? 'monthlyProfit' : 'yearlyProfit'
+                    ] ?? 0,
+                    tableItems.filter((i) => !i.botId && !i.isGroupRow)[0]?.stakeCurrency || '',
+                    2,
+                  )
+                }}
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
       </div>
     </Popover>
 
@@ -3340,7 +4045,9 @@ const correlatedPairs = computed(() => {
     <Popover ref="iconPickerPopover" class="p-0" style="width: 360px">
       <div class="flex flex-col" style="max-height: 480px">
         <!-- Sticky search -->
-        <div class="p-2 border-b border-surface-200 dark:border-surface-600 bg-surface-0 dark:bg-surface-800">
+        <div
+          class="p-2 border-b border-surface-200 dark:border-surface-600 bg-surface-0 dark:bg-surface-800"
+        >
           <InputText
             v-model="iconSearch"
             size="small"
@@ -3369,19 +4076,23 @@ const correlatedPairs = computed(() => {
                 :title="emoji.label"
                 class="text-center text-lg cursor-pointer p-1 rounded hover:bg-surface-200 dark:hover:bg-surface-600"
                 @click="setIcon(emoji.unicode)"
-              >{{ emoji.unicode }}</span>
+                >{{ emoji.unicode }}</span
+              >
             </div>
           </template>
           <template v-else>
             <div v-if="recentIcons.length" class="mb-3">
-              <div class="text-xs font-semibold opacity-60 mb-1">{{ t('botComparison.recentIcons') }}</div>
+              <div class="text-xs font-semibold opacity-60 mb-1">
+                {{ t('botComparison.recentIcons') }}
+              </div>
               <div class="grid grid-cols-8 gap-1">
                 <span
                   v-for="icon in recentIcons"
                   :key="`recent-${icon}`"
                   class="text-center text-lg cursor-pointer p-1 rounded hover:bg-surface-200 dark:hover:bg-surface-600"
                   @click="setIcon(icon)"
-                >{{ icon }}</span>
+                  >{{ icon }}</span
+                >
               </div>
             </div>
             <div v-for="grp in emojiCatalog.groups.value" :key="grp.id" class="mb-3">
@@ -3393,31 +4104,43 @@ const correlatedPairs = computed(() => {
                   :title="emoji.label"
                   class="text-center text-lg cursor-pointer p-1 rounded hover:bg-surface-200 dark:hover:bg-surface-600"
                   @click="setIcon(emoji.unicode)"
-                >{{ emoji.unicode }}</span>
+                  >{{ emoji.unicode }}</span
+                >
               </div>
             </div>
           </template>
         </div>
         <!-- Sticky bottom -->
-        <div class="p-2 border-t border-surface-200 dark:border-surface-600 bg-surface-0 dark:bg-surface-800 text-center">
+        <div
+          class="p-2 border-t border-surface-200 dark:border-surface-600 bg-surface-0 dark:bg-surface-800 text-center"
+        >
           <button
             class="text-xs px-2 py-1 rounded bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 cursor-pointer"
             @click="clearIcon()"
           >
-            {{ iconPickerTarget?.type === 'bot' ? t('botComparison.clearIcon') : t('botComparison.resetIcon') }}
+            {{
+              iconPickerTarget?.type === 'bot'
+                ? t('botComparison.clearIcon')
+                : t('botComparison.resetIcon')
+            }}
           </button>
         </div>
       </div>
     </Popover>
 
     <!-- Group edit popover (from pencil on group row) -->
-    <Popover ref="groupEditPopover" class="p-0" style="min-width: 280px; max-height: 60vh; overflow-y: auto">
+    <Popover
+      ref="groupEditPopover"
+      class="p-0"
+      style="min-width: 280px; max-height: 60vh; overflow-y: auto"
+    >
       <div v-if="groupEditTargetId" class="p-3">
         <div class="flex items-center gap-2 mb-2">
           <span
             class="text-base cursor-pointer hover:opacity-70"
             @click.stop="groupEditTargetId && showIconPicker($event, groupEditTargetId)"
-          >{{ botGroups.find(g => g.id === groupEditTargetId)?.icon || '📁' }}</span>
+            >{{ botGroups.find((g) => g.id === groupEditTargetId)?.icon || '📁' }}</span
+          >
           <InputText
             v-model="groupEditName"
             size="small"
@@ -3429,11 +4152,13 @@ const correlatedPairs = computed(() => {
         <div class="text-xs font-semibold opacity-60 mb-1">Bots</div>
         <div class="space-y-0.5 mb-2">
           <div
-            v-for="bId in botGroups.find(g => g.id === groupEditTargetId)?.botIds || []"
+            v-for="bId in botGroups.find((g) => g.id === groupEditTargetId)?.botIds || []"
             :key="bId"
             class="flex items-center justify-between text-xs p-1 rounded hover:bg-surface-100 dark:hover:bg-surface-700"
           >
-            <span class="truncate max-w-[180px]">{{ botStore.botStores[bId]?.uiBotName || bId }}</span>
+            <span class="truncate max-w-[180px]">{{
+              botStore.botStores[bId]?.uiBotName || bId
+            }}</span>
             <button
               class="p-0.5 rounded hover:bg-surface-200 dark:hover:bg-surface-600 cursor-pointer"
               @click="removeGroupEditBot(bId)"
@@ -3441,27 +4166,50 @@ const correlatedPairs = computed(() => {
               <i-mdi-close class="text-xs opacity-60 hover:text-red-400" />
             </button>
           </div>
-          <div v-if="(botGroups.find(g => g.id === groupEditTargetId)?.botIds || []).length === 0" class="text-xs opacity-40 italic p-1">
+          <div
+            v-if="(botGroups.find((g) => g.id === groupEditTargetId)?.botIds || []).length === 0"
+            class="text-xs opacity-40 italic p-1"
+          >
             No bots in this group
           </div>
         </div>
         <!-- Add bot dropdown -->
         <select
           class="w-full text-xs p-1 rounded border border-surface-300 dark:border-surface-500 bg-surface-50 dark:bg-surface-800"
-          @change="(e: Event) => { const v = (e.target as HTMLSelectElement).value; if (v) { addGroupEditBot(v); (e.target as HTMLSelectElement).value = ''; } }"
+          @change="
+            (e: Event) => {
+              const v = (e.target as HTMLSelectElement).value;
+              if (v) {
+                addGroupEditBot(v);
+                (e.target as HTMLSelectElement).value = '';
+              }
+            }
+          "
         >
           <option value="">{{ t('botComparison.addToGroup') }}...</option>
           <option
-            v-for="bId in allBotIds.filter(id => !(botGroups.find(g => g.id === groupEditTargetId)?.botIds || []).includes(id))"
+            v-for="bId in allBotIds.filter(
+              (id) =>
+                !(botGroups.find((g) => g.id === groupEditTargetId)?.botIds || []).includes(id),
+            )"
             :key="bId"
             :value="bId"
-          >{{ botStore.botStores[bId]?.uiBotName || bId }}{{ getBotGroupName(bId) ? ` (currently in: ${getBotGroupName(bId)})` : ' (ungrouped)' }}</option>
+          >
+            {{ botStore.botStores[bId]?.uiBotName || bId
+            }}{{
+              getBotGroupName(bId) ? ` (currently in: ${getBotGroupName(bId)})` : ' (ungrouped)'
+            }}
+          </option>
         </select>
       </div>
     </Popover>
 
     <!-- Bot move-to-folder popover -->
-    <Popover ref="botMovePopover" class="p-0" style="min-width: 240px; max-height: 50vh; overflow-y: auto">
+    <Popover
+      ref="botMovePopover"
+      class="p-0"
+      style="min-width: 240px; max-height: 50vh; overflow-y: auto"
+    >
       <div v-if="botMoveTargetId" class="p-2.5">
         <div class="text-xs font-semibold opacity-60 mb-2 flex items-center gap-1.5">
           <i-mdi-folder-arrow-right class="text-sm" />
@@ -3480,12 +4228,14 @@ const correlatedPairs = computed(() => {
           <button
             class="ml-2 px-1.5 py-0.5 rounded text-[0.65rem] bg-red-500/10 text-red-500 hover:bg-red-500/20 cursor-pointer transition-colors"
             @click="moveBotOutOfGroup(botMoveTargetId!)"
-          >{{ t('botComparison.removeFromGroup') }}</button>
+          >
+            {{ t('botComparison.removeFromGroup') }}
+          </button>
         </div>
         <!-- Available groups -->
         <div class="space-y-0.5">
           <div
-            v-for="group in botGroups.filter(g => !g.botIds.includes(botMoveTargetId!))"
+            v-for="group in botGroups.filter((g) => !g.botIds.includes(botMoveTargetId!))"
             :key="group.id"
             class="flex items-center justify-between text-xs p-2 rounded-md cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
             @click="moveBotToGroup(botMoveTargetId!, group.id)"
@@ -3494,17 +4244,29 @@ const correlatedPairs = computed(() => {
               <span>{{ group.icon || '📁' }}</span>
               <span>{{ group.name }}</span>
             </span>
-            <span class="opacity-40 text-[0.65rem]">{{ group.botIds.length }} {{ group.botIds.length === 1 ? 'bot' : 'bots' }}</span>
+            <span class="opacity-40 text-[0.65rem]"
+              >{{ group.botIds.length }} {{ group.botIds.length === 1 ? 'bot' : 'bots' }}</span
+            >
           </div>
         </div>
-        <div v-if="botGroups.filter(g => !g.botIds.includes(botMoveTargetId!)).length === 0 && !getBotGroup(botMoveTargetId)" class="text-xs opacity-40 italic p-1">
+        <div
+          v-if="
+            botGroups.filter((g) => !g.botIds.includes(botMoveTargetId!)).length === 0 &&
+            !getBotGroup(botMoveTargetId)
+          "
+          class="text-xs opacity-40 italic p-1"
+        >
           {{ t('botComparison.noGroupsAvailable') }}
         </div>
       </div>
     </Popover>
 
     <!-- Alerts popover V2 -->
-    <Popover ref="alertsPopover" class="p-0" style="min-width: 400px; max-width: 460px; max-height: 80vh; overflow-y: auto">
+    <Popover
+      ref="alertsPopover"
+      class="p-0"
+      style="min-width: 400px; max-width: 460px; max-height: 80vh; overflow-y: auto"
+    >
       <div class="p-3">
         <!-- Header -->
         <div class="flex items-center justify-between mb-3">
@@ -3528,37 +4290,68 @@ const correlatedPairs = computed(() => {
           </div>
           <div class="space-y-1">
             <div
-              v-for="alertType in ALERT_TYPES.filter(a => a.category === cat.id)"
+              v-for="alertType in ALERT_TYPES.filter((a) => a.category === cat.id)"
               :key="alertType.id"
               class="flex items-center gap-2 px-2 py-1.5 rounded bg-surface-50 dark:bg-surface-700/50"
             >
               <!-- Severity icon -->
-              <i-mdi-alert-octagon v-if="alertType.severity === 'critical'" class="text-sm flex-shrink-0 text-red-500" />
-              <i-mdi-alert v-else-if="alertType.severity === 'warning'" class="text-sm flex-shrink-0 text-amber-400" />
+              <i-mdi-alert-octagon
+                v-if="alertType.severity === 'critical'"
+                class="text-sm flex-shrink-0 text-red-500"
+              />
+              <i-mdi-alert
+                v-else-if="alertType.severity === 'warning'"
+                class="text-sm flex-shrink-0 text-amber-400"
+              />
               <i-mdi-information v-else class="text-sm flex-shrink-0 text-blue-400" />
               <!-- Label + description -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5">
-                  <span class="text-xs font-medium" v-tooltip.right="getAlertTooltip(alertType.id)">{{ t(alertType.labelKey) }}</span>
-                  <span class="text-[0.55rem] opacity-40 truncate">{{ t(alertType.descriptionKey) }}</span>
+                  <span
+                    class="text-xs font-medium"
+                    v-tooltip.right="getAlertTooltip(alertType.id)"
+                    >{{ t(alertType.labelKey) }}</span
+                  >
+                  <span class="text-[0.55rem] opacity-40 truncate">{{
+                    t(alertType.descriptionKey)
+                  }}</span>
                 </div>
                 <!-- Threshold slider row -->
-                <div v-if="alertType.hasThreshold && getGlobalAlertSetting(alertType.id).enabled" class="flex items-center gap-2 mt-1">
+                <div
+                  v-if="alertType.hasThreshold && getGlobalAlertSetting(alertType.id).enabled"
+                  class="flex items-center gap-2 mt-1"
+                >
                   <input
                     type="range"
                     :min="alertType.thresholdMin"
                     :max="alertType.thresholdMax"
                     :step="alertType.thresholdStep"
-                    :value="getGlobalAlertSetting(alertType.id).threshold ?? alertType.thresholdDefault"
+                    :value="
+                      getGlobalAlertSetting(alertType.id).threshold ?? alertType.thresholdDefault
+                    "
                     class="flex-1 h-2 accent-amber-500"
-                    @input="(e: Event) => setGlobalAlertThreshold(alertType.id, parseFloat((e.target as HTMLInputElement).value))"
+                    @input="
+                      (e: Event) =>
+                        setGlobalAlertThreshold(
+                          alertType.id,
+                          parseFloat((e.target as HTMLInputElement).value),
+                        )
+                    "
                   />
                   <span class="text-[0.65rem] font-mono opacity-60 min-w-[36px] text-right">
-                    {{ alertType.id === 'noTradeActivity'
-                      ? ((getGlobalAlertSetting(alertType.id).threshold ?? alertType.thresholdDefault) >= 48
-                        ? Math.floor((getGlobalAlertSetting(alertType.id).threshold ?? alertType.thresholdDefault) / 24) + 'd'
-                        : (getGlobalAlertSetting(alertType.id).threshold ?? alertType.thresholdDefault) + 'h')
-                      : (getGlobalAlertSetting(alertType.id).threshold ?? alertType.thresholdDefault) + alertType.thresholdUnit }}
+                    {{
+                      alertType.id === 'noTradeActivity'
+                        ? (getGlobalAlertSetting(alertType.id).threshold ??
+                            alertType.thresholdDefault) >= 48
+                          ? Math.floor(
+                              (getGlobalAlertSetting(alertType.id).threshold ??
+                                alertType.thresholdDefault) / 24,
+                            ) + 'd'
+                          : (getGlobalAlertSetting(alertType.id).threshold ??
+                              alertType.thresholdDefault) + 'h'
+                        : (getGlobalAlertSetting(alertType.id).threshold ??
+                            alertType.thresholdDefault) + alertType.thresholdUnit
+                    }}
                   </span>
                 </div>
                 <!-- Leverage checkbox for positionLoss -->
@@ -3584,11 +4377,32 @@ const correlatedPairs = computed(() => {
               class="flex items-center justify-between w-full px-2 py-1 rounded bg-surface-50 dark:bg-surface-700/50"
             >
               <div class="flex items-center gap-2 min-w-0">
-                <span class="text-xs font-medium truncate max-w-[180px]">{{ botStore.botStores[botId]?.uiBotName || botId }}</span>
-                <span v-if="getBotAlertCount(botId) > 0" class="text-[0.55rem] font-bold whitespace-nowrap" :class="getMaxSeverity(allBotAlerts[botId] || []) === 'critical' ? 'text-red-400' : getMaxSeverity(allBotAlerts[botId] || []) === 'warning' ? 'text-amber-400' : 'text-blue-400'">
-                  {{ t('botComparison.alertActiveCount', { count: getBotAlertCount(botId) }, getBotAlertCount(botId)) }}
+                <span class="text-xs font-medium truncate max-w-[180px]">{{
+                  botStore.botStores[botId]?.uiBotName || botId
+                }}</span>
+                <span
+                  v-if="getBotAlertCount(botId) > 0"
+                  class="text-[0.55rem] font-bold whitespace-nowrap"
+                  :class="
+                    getMaxSeverity(allBotAlerts[botId] || []) === 'critical'
+                      ? 'text-red-400'
+                      : getMaxSeverity(allBotAlerts[botId] || []) === 'warning'
+                        ? 'text-amber-400'
+                        : 'text-blue-400'
+                  "
+                >
+                  {{
+                    t(
+                      'botComparison.alertActiveCount',
+                      { count: getBotAlertCount(botId) },
+                      getBotAlertCount(botId),
+                    )
+                  }}
                 </span>
-                <span v-else-if="isBotAlertEnabled(botId)" class="text-[0.55rem] text-green-400 whitespace-nowrap">
+                <span
+                  v-else-if="isBotAlertEnabled(botId)"
+                  class="text-[0.55rem] text-green-400 whitespace-nowrap"
+                >
                   {{ t('botComparison.noAlerts') }}
                 </span>
               </div>
@@ -3607,7 +4421,13 @@ const correlatedPairs = computed(() => {
     </Popover>
 
     <!-- Alert detail hover popover (on bot name alert icon) -->
-    <Popover ref="alertHoverPopover" class="p-0" style="min-width: 560px; max-width: 580px" @mouseenter="cancelAlertHoverKeepPopover()" @mouseleave="cancelAlertHover()">
+    <Popover
+      ref="alertHoverPopover"
+      class="p-0"
+      style="min-width: 560px; max-width: 580px"
+      @mouseenter="cancelAlertHoverKeepPopover()"
+      @mouseleave="cancelAlertHover()"
+    >
       <AlertDetailCard
         v-if="alertHoverBotId && allBotAlerts[alertHoverBotId]?.length"
         :bot-id="alertHoverBotId"
@@ -3616,7 +4436,11 @@ const correlatedPairs = computed(() => {
     </Popover>
 
     <!-- Groups popover -->
-    <Popover ref="groupsPopover" class="p-0" style="min-width: 300px; max-height: 80vh; overflow-y: auto">
+    <Popover
+      ref="groupsPopover"
+      class="p-0"
+      style="min-width: 300px; max-height: 80vh; overflow-y: auto"
+    >
       <div class="p-3">
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
@@ -3644,7 +4468,8 @@ const correlatedPairs = computed(() => {
                   class="text-sm cursor-pointer hover:opacity-70"
                   :title="t('botComparison.changeIcon')"
                   @click.stop="showIconPicker($event, group.id)"
-                >{{ group.icon || '📁' }}</span>
+                  >{{ group.icon || '📁' }}</span
+                >
                 <!-- Inline rename in groups popover -->
                 <template v-if="editingGroupId === group.id">
                   <form class="flex items-center gap-1" @submit.prevent="saveGroupRename">
@@ -3662,8 +4487,13 @@ const correlatedPairs = computed(() => {
                   v-else
                   class="text-sm font-bold cursor-pointer hover:underline"
                   @click.stop="startGroupRename(group.id, group.name)"
-                >{{ group.name }}</span>
-                <Badge class="text-[0.55rem]" style="padding: 1px 5px; line-height: 1.2" severity="secondary">
+                  >{{ group.name }}</span
+                >
+                <Badge
+                  class="text-[0.55rem]"
+                  style="padding: 1px 5px; line-height: 1.2"
+                  severity="secondary"
+                >
                   {{ group.botIds.length }}
                 </Badge>
               </div>
@@ -3686,8 +4516,14 @@ const correlatedPairs = computed(() => {
             </div>
             <!-- Bots in group -->
             <div v-if="!group.collapsed" class="space-y-0.5 mt-1">
-              <div v-for="bId in group.botIds" :key="bId" class="flex items-center justify-between text-xs pl-4">
-                <span class="truncate max-w-[160px]">{{ botStore.botStores[bId]?.uiBotName || bId }}</span>
+              <div
+                v-for="bId in group.botIds"
+                :key="bId"
+                class="flex items-center justify-between text-xs pl-4"
+              >
+                <span class="truncate max-w-[160px]">{{
+                  botStore.botStores[bId]?.uiBotName || bId
+                }}</span>
                 <button
                   class="p-0.5 rounded hover:bg-surface-200 dark:hover:bg-surface-600 cursor-pointer"
                   :title="t('botComparison.removeFromGroup')"
@@ -3700,37 +4536,60 @@ const correlatedPairs = computed(() => {
             <!-- Add bot to group -->
             <select
               class="mt-1 w-full text-xs p-0.5 rounded border border-surface-300 dark:border-surface-500 bg-surface-50 dark:bg-surface-800"
-              @change="(e: Event) => { const v = (e.target as HTMLSelectElement).value; if (v) { addBotToGroup(v, group.id); (e.target as HTMLSelectElement).value = ''; } }"
+              @change="
+                (e: Event) => {
+                  const v = (e.target as HTMLSelectElement).value;
+                  if (v) {
+                    addBotToGroup(v, group.id);
+                    (e.target as HTMLSelectElement).value = '';
+                  }
+                }
+              "
             >
               <option value="">{{ t('botComparison.addToGroup') }}...</option>
               <option
-                v-for="bId in allBotIds.filter(id => !group.botIds.includes(id))"
+                v-for="bId in allBotIds.filter((id) => !group.botIds.includes(id))"
                 :key="bId"
                 :value="bId"
-              >{{ botStore.botStores[bId]?.uiBotName || bId }}{{ getBotGroupName(bId) ? ` (currently in: ${getBotGroupName(bId)})` : ' (ungrouped)' }}</option>
+              >
+                {{ botStore.botStores[bId]?.uiBotName || bId
+                }}{{
+                  getBotGroupName(bId) ? ` (currently in: ${getBotGroupName(bId)})` : ' (ungrouped)'
+                }}
+              </option>
             </select>
           </div>
         </div>
         <!-- Ungrouped bots -->
         <div class="mt-3 pt-2 border-t border-surface-300 dark:border-surface-600">
-          <div class="text-xs font-semibold opacity-60 mb-1">{{ t('botComparison.ungroupedBots') }}</div>
+          <div class="text-xs font-semibold opacity-60 mb-1">
+            {{ t('botComparison.ungroupedBots') }}
+          </div>
           <div class="space-y-0.5">
             <div
-              v-for="bId in allBotIds.filter(id => !botGroups.some(g => g.botIds.includes(id)))"
+              v-for="bId in allBotIds.filter((id) => !botGroups.some((g) => g.botIds.includes(id)))"
               :key="bId"
               class="flex items-center justify-between text-xs p-1 rounded hover:bg-surface-100 dark:hover:bg-surface-700"
             >
-              <span class="truncate max-w-[160px]">{{ botStore.botStores[bId]?.uiBotName || bId }}</span>
+              <span class="truncate max-w-[160px]">{{
+                botStore.botStores[bId]?.uiBotName || bId
+              }}</span>
               <select
                 class="text-xs p-0.5 rounded border border-surface-300 dark:border-surface-500 bg-surface-50 dark:bg-surface-800"
-                @change="(e: Event) => { const v = (e.target as HTMLSelectElement).value; if (v) { addBotToGroup(bId, v); (e.target as HTMLSelectElement).value = ''; } }"
+                @change="
+                  (e: Event) => {
+                    const v = (e.target as HTMLSelectElement).value;
+                    if (v) {
+                      addBotToGroup(bId, v);
+                      (e.target as HTMLSelectElement).value = '';
+                    }
+                  }
+                "
               >
                 <option value="">{{ t('botComparison.addToGroup') }}...</option>
-                <option
-                  v-for="group in botGroups"
-                  :key="group.id"
-                  :value="group.id"
-                >{{ group.icon }} {{ group.name }}</option>
+                <option v-for="group in botGroups" :key="group.id" :value="group.id">
+                  {{ group.icon }} {{ group.name }}
+                </option>
               </select>
             </div>
           </div>
@@ -3742,19 +4601,20 @@ const correlatedPairs = computed(() => {
 
     <!-- ProfitGoalBar removed -->
 
-    <DataTable
-      size="small"
-      :value="tableItems"
-      :row-class="getRowClass"
-      class=""
-    >
+    <DataTable size="small" :value="tableItems" :row-class="getRowClass" class="">
       <!-- Fixed checkbox column -->
       <Column style="width: 2rem; min-width: 2rem" :reorderable-column="false" frozen>
         <template #body="{ data }">
           <div
             class="flex items-center gap-0.5 px-1"
             @dragover.prevent
-            @drop="data.botId ? onRowDrop(data.botId) : ((data as ComparisonTableItems).isGroupRow ? onRowDrop((data as ComparisonTableItems).groupId!) : undefined)"
+            @drop="
+              data.botId
+                ? onRowDrop(data.botId)
+                : (data as ComparisonTableItems).isGroupRow
+                  ? onRowDrop((data as ComparisonTableItems).groupId!)
+                  : undefined
+            "
           >
             <!-- Bot row: move up/down buttons -->
             <div v-if="data.botId" class="flex flex-col items-center -my-1" style="min-width: 16px">
@@ -3770,7 +4630,11 @@ const correlatedPairs = computed(() => {
               />
             </div>
             <!-- Group row: move up/down buttons -->
-            <div v-else-if="(data as ComparisonTableItems).isGroupRow" class="flex flex-col items-center -my-1" style="min-width: 16px">
+            <div
+              v-else-if="(data as ComparisonTableItems).isGroupRow"
+              class="flex flex-col items-center -my-1"
+              style="min-width: 16px"
+            >
               <i-mdi-chevron-up
                 class="opacity-20 hover:opacity-80 cursor-pointer"
                 style="font-size: 0.85rem; line-height: 0"
@@ -3784,7 +4648,9 @@ const correlatedPairs = computed(() => {
             </div>
             <BaseCheckbox
               v-if="data.botId && botStore.botCount > 1"
-              v-model="botStore.botStores[(data as unknown as ComparisonTableItems).botId!]!.isSelected"
+              v-model="
+                botStore.botStores[(data as unknown as ComparisonTableItems).botId!]!.isSelected
+              "
               :title="t('botComparison.showInDashboard')"
             />
             <!-- Group row: checkbox toggles only its own bots -->
@@ -3796,14 +4662,36 @@ const correlatedPairs = computed(() => {
             />
             <!-- Summary row: checkbox toggles all bots -->
             <BaseCheckbox
-              v-else-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && botStore.botCount > 1"
+              v-else-if="
+                !data.botId && !(data as ComparisonTableItems).isGroupRow && botStore.botCount > 1
+              "
               v-model="allToggled"
               :title="t('botComparison.toggleAll')"
             />
           </div>
         </template>
       </Column>
-      <Column v-for="col in visibleOrderedColumns" :key="col.id" :field="col.id === 'winLoss' ? 'winVsLoss' : (['status', 'exchange', 'openProfit', 'closedProfit', 'profitCurrent', 'stakeCurrency', 'weeklyProfit', 'monthlyProfit'].includes(col.id) ? undefined : col.id)">
+      <Column
+        v-for="col in visibleOrderedColumns"
+        :key="col.id"
+        :field="
+          col.id === 'winLoss'
+            ? 'winVsLoss'
+            : [
+                  'status',
+                  'exchange',
+                  'openProfit',
+                  'closedProfit',
+                  'profitCurrent',
+                  'maxDrawdown',
+                  'stakeCurrency',
+                  'weeklyProfit',
+                  'monthlyProfit',
+                ].includes(col.id)
+              ? undefined
+              : col.id
+        "
+      >
         <template #header>
           <div class="col-header-removable group">
             <i-mdi-robot v-if="col.id === 'botName'" class="text-xs opacity-50" />
@@ -3813,17 +4701,30 @@ const correlatedPairs = computed(() => {
             <i-mdi-trending-up v-else-if="col.id === 'openProfit'" class="text-xs opacity-50" />
             <i-mdi-cash-check v-else-if="col.id === 'closedProfit'" class="text-xs opacity-50" />
             <i-mdi-sigma v-else-if="col.id === 'profitCurrent'" class="text-xs opacity-50" />
+            <i-mdi-trending-down v-else-if="col.id === 'maxDrawdown'" class="text-xs opacity-50" />
             <i-mdi-wallet v-else-if="col.id === 'balance'" class="text-xs opacity-50" />
             <i-mdi-trophy v-else-if="col.id === 'winLoss'" class="text-xs opacity-50" />
             <i-mdi-cash v-else-if="col.id === 'stakeAmount'" class="text-xs opacity-50" />
             <i-mdi-lan v-else-if="col.id === 'port'" class="text-xs opacity-50" />
             <i-mdi-cog v-else-if="col.id === 'strategy'" class="text-xs opacity-50" />
-            <i-mdi-format-list-numbered v-else-if="col.id === 'pairCount'" class="text-xs opacity-50" />
+            <i-mdi-format-list-numbered
+              v-else-if="col.id === 'pairCount'"
+              class="text-xs opacity-50"
+            />
             <i-mdi-currency-usd v-else-if="col.id === 'stakeCurrency'" class="text-xs opacity-50" />
             <i-mdi-bank v-else-if="col.id === 'availableCapital'" class="text-xs opacity-50" />
-            <i-mdi-percent v-else-if="col.id === 'tradableBalanceRatio'" class="text-xs opacity-50" />
-            <i-mdi-cash-multiple v-else-if="col.id === 'availableFunds'" class="text-xs opacity-50" />
-            <i-mdi-calendar-month v-else-if="col.id === 'monthlyProfit'" class="text-xs opacity-50" />
+            <i-mdi-percent
+              v-else-if="col.id === 'tradableBalanceRatio'"
+              class="text-xs opacity-50"
+            />
+            <i-mdi-cash-multiple
+              v-else-if="col.id === 'availableFunds'"
+              class="text-xs opacity-50"
+            />
+            <i-mdi-calendar-month
+              v-else-if="col.id === 'monthlyProfit'"
+              class="text-xs opacity-50"
+            />
             <i-mdi-calendar v-else-if="col.id === 'yearlyProfit'" class="text-xs opacity-50" />
             <span>{{ t(col.labelKey) }}</span>
             <i-mdi-folder-plus
@@ -3843,415 +4744,650 @@ const correlatedPairs = computed(() => {
         <template #body="{ data, field }">
           <div
             @dragover.prevent
-            @drop="data.botId ? onRowDrop(data.botId) : ((data as ComparisonTableItems).isGroupRow ? onRowDrop((data as ComparisonTableItems).groupId!) : undefined)"
+            @drop="
+              data.botId
+                ? onRowDrop(data.botId)
+                : (data as ComparisonTableItems).isGroupRow
+                  ? onRowDrop((data as ComparisonTableItems).groupId!)
+                  : undefined
+            "
           >
-          <!-- botName -->
-          <template v-if="col.id === 'botName'">
-            <template v-if="editingBotId === data.botId && data.botId">
-              <form class="flex items-center gap-1" @submit.prevent="saveRename">
-                <InputText
-                  v-model="editingName"
-                  size="small"
-                  class="w-full text-sm"
-                  autofocus
-                  @blur="saveRename"
-                  @keydown.escape.prevent="cancelRename"
-                />
-              </form>
-            </template>
-            <template v-else>
-              <!-- Group header row -->
-              <div v-if="(data as ComparisonTableItems).isGroupRow" class="flex items-center gap-1.5 font-bold"
-                   @dragover.prevent
-                   @drop="onRowDrop((data as ComparisonTableItems).groupId!)">
-                <span
-                  v-if="(data as ComparisonTableItems).groupIcon"
-                  class="text-sm cursor-pointer hover:opacity-70"
-                  :title="t('botComparison.changeIcon')"
-                  @click.stop="showIconPicker($event, (data as ComparisonTableItems).groupId!)"
-                >{{ (data as ComparisonTableItems).groupIcon }}</span>
-                <i-mdi-folder v-else class="text-sm opacity-60 cursor-pointer hover:opacity-100" :title="t('botComparison.changeIcon')" @click.stop="showIconPicker($event, (data as ComparisonTableItems).groupId!)" />
-                <i-mdi-chevron-right v-if="(data as ComparisonTableItems).groupCollapsed" class="text-xs opacity-60 cursor-pointer" @click="toggleGroupCollapse((data as ComparisonTableItems).groupId!)" />
-                <i-mdi-chevron-down v-else class="text-xs opacity-60 cursor-pointer" @click="toggleGroupCollapse((data as ComparisonTableItems).groupId!)" />
-                <!-- Inline group rename -->
-                <template v-if="editingGroupId === (data as ComparisonTableItems).groupId">
-                  <form class="flex items-center gap-1" @submit.prevent="saveGroupRename">
-                    <InputText
-                      v-model="editingGroupName"
-                      size="small"
-                      class="w-full text-sm"
-                      autofocus
-                      @blur="saveGroupRename"
-                      @keydown.escape.prevent="cancelGroupRename"
-                    />
-                  </form>
-                </template>
-                <template v-else>
-                  <span class="cursor-pointer hover:underline" @click.stop="startGroupRename((data as ComparisonTableItems).groupId!, data.botName)" @dblclick.stop="toggleGroupCollapse((data as ComparisonTableItems).groupId!)">{{ data.botName }}</span>
-                </template>
-                <span class="text-xs opacity-50 font-normal ml-1">({{ (data as ComparisonTableItems).groupBotCount }})</span>
-                <span
-                  class="rename-icon row-hover-visible inline-flex items-center"
-                  :title="t('botComparison.editGroup')"
-                  @click.stop="showGroupEditPopover($event, (data as ComparisonTableItems).groupId!)"
-                ><i-mdi-pencil /></span>
-              </div>
-              <!-- Normal bot / summary row -->
-              <div v-else class="bot-name-block">
-              <div class="inline-flex items-center gap-1">
-                <i-mdi-robot-off v-if="data.botId && hasBotOfflineAlert(data.botId)"
-                  class="text-red-500 animate-pulse ml-0.5"
-                  style="font-size: 0.9rem"
-                  @mouseenter="startAlertHover($event, data.botId)"
-                  @mouseleave="cancelAlertHover()"
-                />
-                <span v-else-if="data.botId && hasBotAlert(data.botId)" class="ml-0.5 relative inline-flex items-center"
-                  @mouseenter="startAlertHover($event, data.botId)"
-                  @mouseleave="cancelAlertHover()"
-                >
-                  <i-mdi-bell-alert
-                    class="animate-pulse"
-                    :class="getMaxSeverity(allBotAlerts[data.botId] || []) === 'critical' ? 'text-red-500' : getMaxSeverity(allBotAlerts[data.botId] || []) === 'warning' ? 'text-amber-400' : 'text-blue-400'"
-                    style="font-size: 0.85rem"
+            <!-- botName -->
+            <template v-if="col.id === 'botName'">
+              <template v-if="editingBotId === data.botId && data.botId">
+                <form class="flex items-center gap-1" @submit.prevent="saveRename">
+                  <InputText
+                    v-model="editingName"
+                    size="small"
+                    class="w-full text-sm"
+                    autofocus
+                    @blur="saveRename"
+                    @keydown.escape.prevent="cancelRename"
                   />
-                  <span v-if="getBotAlertCount(data.botId) > 1"
-                    class="absolute -top-1 -right-2 text-[0.5rem] bg-red-500 text-white rounded-full px-1 leading-tight"
-                  >{{ getBotAlertCount(data.botId) }}</span>
-                </span>
-                <span
-                  v-if="data.botId && (data as ComparisonTableItems).botIcon"
-                  class="text-sm cursor-pointer hover:opacity-70 mr-0.5 inline-flex items-center"
-                  :title="t('botComparison.changeIcon')"
-                  @click.stop="showBotIconPicker($event, data.botId)"
-                >{{ (data as ComparisonTableItems).botIcon }}</span>
-                <span
-                  v-else-if="data.botId"
-                  class="cursor-pointer row-hover-visible mr-0.5 inline-flex items-center"
-                  :title="t('botComparison.changeIcon')"
-                  @click.stop="data.botId && showBotIconPicker($event, data.botId)"
+                </form>
+              </template>
+              <template v-else>
+                <!-- Group header row -->
+                <div
+                  v-if="(data as ComparisonTableItems).isGroupRow"
+                  class="flex items-center gap-1.5 font-bold"
+                  @dragover.prevent
+                  @drop="onRowDrop((data as ComparisonTableItems).groupId!)"
                 >
-                  <i-mdi-robot class="text-sm opacity-50 hover:opacity-100" />
-                </span>
-                <span
-                  v-if="data.botId"
-                  @mouseenter="startHoverInfo($event, data.botId)"
-                  @mouseleave="cancelHoverInfo()"
-                >{{ data[field as string] }}</span>
-                <span
-                  v-if="data.botId && isHostBot(data.botId)"
-                  class="ml-1 text-[0.6rem] px-1.5 py-0.5 rounded-sm bg-blue-500/15 text-blue-400 border border-blue-500/30 font-medium whitespace-nowrap"
-                  :title="t('botComparison.hostBotTooltip')"
-                >{{ t('botComparison.hostBotBadge') }}</span>
-                <span v-else-if="!data.botId" class="font-bold">{{ data[field as string] }}</span>
-                <!-- Currency selector for Summary row (with CoinGecko tooltip) -->
-                <span
-                  v-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && summaryUniqueCurrencies.length > 1"
-                  v-tooltip.top="(data as ComparisonTableItems).isConverted ? `${t('summaryTrades.ratesSource')} · ${t('summaryTrades.ratesUpdated', { duration: ratesUpdatedAgo })}` : ''"
-                >
-                  <select
-                    v-model="selectedSummaryCurrency"
-                    class="ml-2 text-[0.6rem] bg-transparent border border-surface-400 dark:border-surface-600 rounded px-1 py-0 opacity-70 hover:opacity-100 cursor-pointer"
-                    style="max-width: 80px"
-                    @click.stop
+                  <span
+                    v-if="(data as ComparisonTableItems).groupIcon"
+                    class="text-sm cursor-pointer hover:opacity-70"
+                    :title="t('botComparison.changeIcon')"
+                    @click.stop="showIconPicker($event, (data as ComparisonTableItems).groupId!)"
+                    >{{ (data as ComparisonTableItems).groupIcon }}</span
                   >
-                    <option value="auto">{{ t('summaryTrades.allCurrencies') }}</option>
-                    <option v-for="cur in summaryUniqueCurrencies" :key="cur" :value="cur">{{ cur }}</option>
-                  </select>
-                </span>
-                <div
-                  v-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && ratesFetchError && selectedSummaryCurrency !== 'auto' && summaryUniqueCurrencies.length > 1"
-                  class="text-[0.5rem] text-amber-400 opacity-60 ml-2"
-                >
-                  {{ t('summaryTrades.ratesUnavailable') }}
-                </div>
-                <!-- Hidden bots filter indicator in Summary row -->
-                <span
-                  v-if="!data.botId && hiddenBotCount > 0"
-                  class="ml-2 text-xs opacity-60 inline-flex items-center gap-1"
-                >
-                  {{ t('botComparison.botsHiddenByFilters', { count: hiddenBotCount }, hiddenBotCount) }}
-                  <i-mdi-eye
-                    class="cursor-pointer opacity-60 hover:opacity-100"
-                    :title="t('botComparison.showAllBots')"
-                    @click.stop="resetAllFilters()"
+                  <i-mdi-folder
+                    v-else
+                    class="text-sm opacity-60 cursor-pointer hover:opacity-100"
+                    :title="t('botComparison.changeIcon')"
+                    @click.stop="showIconPicker($event, (data as ComparisonTableItems).groupId!)"
                   />
-                </span>
-                <i-mdi-pencil
-                  v-if="data.botId"
-                  class="rename-icon"
-                  :title="t('botComparison.renameBot')"
-                  @click.stop="startRename(data.botId, data[field as string])"
-                />
-                <span
-                  v-if="data.botId && botGroups.length > 0"
-                  class="rename-icon row-hover-visible inline-flex items-center"
-                  :title="t('botComparison.moveToFolder')"
-                  @click.stop="showBotMovePopover($event, data.botId)"
-                ><i-mdi-folder-arrow-right class="text-[0.7rem]" /></span>
-              </div>
-              <!-- Online since info line -->
-              <div
-                v-if="botTagVisibility.onlineSince && data.botId && getBotOnlineSince(data.botId)"
-                class="flex items-center gap-1 mt-0.5 text-[0.6rem] opacity-40"
-              >
-                <span>{{ t('botComparison.onlineSince', { duration: getBotOnlineSince(data.botId) }) }}</span>
-                <span>|</span>
-                <span>{{ getBotStartDate(data.botId) }}</span>
-              </div>
-              <!-- Tags row under bot name -->
-              <div v-if="data.botId && (orderedVisibleTags.length > 0 || getBotCustomTags(data.botId).length > 0)" class="flex flex-wrap gap-1.5 mt-1 opacity-80">
-                <template v-for="tagId in orderedVisibleTags" :key="tagId">
-                  <!-- Status tag -->
-                  <template v-if="tagId === 'status'">
-                    <Badge
-                      v-if="data.isStarting"
-                      class="text-[0.55rem] animate-pulse" style="padding: 1px 5px; line-height: 1.2"
-                      severity="info"
-                    >{{ t('general.starting') }}</Badge>
-                    <Badge
-                      v-else-if="data.isOnline && data.isDryRun"
-                      class="text-[0.55rem] cursor-pointer" style="padding: 1px 5px; line-height: 1.2"
-                      :class="{ 'opacity-30': !isTagActive('status', 'dry') }"
-                      severity="success"
-                      :title="t('botComparison.selectDryBots')"
-                      @click="botStore.toggleBotsByState('dry')"
-                    >Dry</Badge>
-                    <Badge
-                      v-else-if="data.isOnline && !data.isDryRun"
-                      class="text-[0.55rem] cursor-pointer" style="padding: 1px 5px; line-height: 1.2"
-                      :class="{ 'opacity-30': !isTagActive('status', 'live') }"
-                      severity="warning"
-                      :title="t('botComparison.selectLiveBots')"
-                      @click="botStore.toggleBotsByState('live')"
-                    >Live</Badge>
-                    <Badge
-                      v-else-if="data.isOnline === false"
-                      class="text-[0.55rem]" style="padding: 1px 5px; line-height: 1.2"
-                      :class="{ 'opacity-30': !isTagActive('status', 'offline') }"
-                      severity="secondary"
-                    >{{ t('botComparison.offline') }}</Badge>
+                  <i-mdi-chevron-right
+                    v-if="(data as ComparisonTableItems).groupCollapsed"
+                    class="text-xs opacity-60 cursor-pointer"
+                    @click="toggleGroupCollapse((data as ComparisonTableItems).groupId!)"
+                  />
+                  <i-mdi-chevron-down
+                    v-else
+                    class="text-xs opacity-60 cursor-pointer"
+                    @click="toggleGroupCollapse((data as ComparisonTableItems).groupId!)"
+                  />
+                  <!-- Inline group rename -->
+                  <template v-if="editingGroupId === (data as ComparisonTableItems).groupId">
+                    <form class="flex items-center gap-1" @submit.prevent="saveGroupRename">
+                      <InputText
+                        v-model="editingGroupName"
+                        size="small"
+                        class="w-full text-sm"
+                        autofocus
+                        @blur="saveGroupRename"
+                        @keydown.escape.prevent="cancelGroupRename"
+                      />
+                    </form>
                   </template>
-                  <!-- Trading mode tag -->
+                  <template v-else>
+                    <span
+                      class="cursor-pointer hover:underline"
+                      @click.stop="
+                        startGroupRename((data as ComparisonTableItems).groupId!, data.botName)
+                      "
+                      @dblclick.stop="toggleGroupCollapse((data as ComparisonTableItems).groupId!)"
+                      >{{ data.botName }}</span
+                    >
+                  </template>
+                  <span class="text-xs opacity-50 font-normal ml-1"
+                    >({{ (data as ComparisonTableItems).groupBotCount }})</span
+                  >
                   <span
-                    v-else-if="tagId === 'tradingMode' && (data as ComparisonTableItems).tradingMode"
-                    class="inline-flex items-center rounded-sm text-[0.55rem] font-bold"
-                    :class="{ 'opacity-30': !isTagActive('tradingMode', (data as ComparisonTableItems).tradingMode ?? '') }"
-                    style="padding: 1px 5px; line-height: 1.2"
-                    :style="(data as ComparisonTableItems).tradingMode === 'futures'
-                      ? { background: '#1a1a2e', color: '#e94560' }
-                      : { background: '#1a2e1a', color: '#4ade80' }"
-                    :title="(data as ComparisonTableItems).tradingMode === 'futures'
-                      ? 'Futures: supports short, long, and leverage trading'
-                      : 'Spot: buy and sell only, no leverage or shorting'"
-                  >{{ (data as ComparisonTableItems).tradingMode === 'futures' ? 'Futures' : 'Spot' }}</span>
-                  <!-- Exchange tag -->
-                  <span
-                    v-else-if="tagId === 'exchange' && (data as ComparisonTableItems).exchange"
-                    class="inline-flex items-center rounded-sm text-[0.55rem] font-bold cursor-pointer"
-                    :class="{ 'opacity-30': !isTagActive('exchange', (data as ComparisonTableItems).exchange ?? '') }"
-                    style="padding: 1px 5px; line-height: 1.2"
-                    :style="getExchangeStyle((data as ComparisonTableItems).exchange ?? '')"
-                    :title="t('botComparison.selectByExchange', { exchange: (data as ComparisonTableItems).exchange })"
-                    @click="botStore.toggleBotsByExchange((data as ComparisonTableItems).exchange ?? '')"
-                    @mouseenter="startExchangeHover($event, (data as ComparisonTableItems).exchange ?? '')"
-                    @mouseleave="cancelExchangeHover()"
-                  >{{ capitalizeExchange((data as ComparisonTableItems).exchange ?? '') }}</span>
-                  <!-- Currency tag -->
-                  <span
-                    v-else-if="tagId === 'stakeCurrency' && (data as ComparisonTableItems).stakeCurrency"
-                    class="inline-flex items-center px-1 rounded-sm text-[0.55rem] font-bold cursor-pointer"
-                    :class="{ 'opacity-30': !isTagActive('stakeCurrency', (data as ComparisonTableItems).stakeCurrency ?? '') }"
-                    style="padding: 1px 5px; line-height: 1.2"
-                    :style="getCurrencyStyle((data as ComparisonTableItems).stakeCurrency ?? '') || { background: 'var(--p-surface-200)', color: 'var(--p-surface-700)' }"
-                    @click="botStore.toggleBotsByStakeCurrency((data as ComparisonTableItems).stakeCurrency ?? '')"
-                    @mouseenter="startCurrencyHover($event, (data as ComparisonTableItems).stakeCurrency ?? '')"
-                    @mouseleave="cancelCurrencyHover()"
-                  >{{ (data as ComparisonTableItems).stakeCurrency }}</span>
-                  <!-- Port tag -->
-                  <span
-                    v-else-if="tagId === 'port' && (data as ComparisonTableItems).port"
-                    class="inline-flex items-center px-1 rounded-sm text-[0.55rem]"
-                    style="padding: 1px 5px; line-height: 1.2; background: var(--p-surface-200); color: var(--p-surface-500)"
-                  >:{{ (data as ComparisonTableItems).port }}</span>
-                </template>
-                <!-- Custom tags -->
-                <span
-                  v-for="ctId in getBotCustomTags(data.botId)"
-                  :key="ctId"
-                  class="inline-flex items-center rounded-sm text-[0.55rem] font-bold cursor-pointer"
-                  style="padding: 1px 5px; line-height: 1.2"
-                  :style="{ background: getCustomTag(ctId)?.color || '#666', color: '#fff' }"
-                  :title="t('botComparison.filterByTag')"
-                  @click="selectBotsByCustomTag(ctId)"
-                >{{ getCustomTag(ctId)?.name || '' }}</span>
-                <!-- Add/edit tag button (visible on row hover) -->
-                <span
-                  class="inline-flex items-center rounded-sm text-[0.55rem] row-hover-visible cursor-pointer border border-dashed border-gray-500"
-                  style="padding: 0px 4px; line-height: 1.2"
-                  @click.stop="showTagPicker($event, data.botId)"
-                >{{ getBotCustomTags(data.botId).length > 0 ? '✏' : '+' }}</span>
-              </div>
-              </div><!-- /bot-name-block -->
+                    class="rename-icon row-hover-visible inline-flex items-center"
+                    :title="t('botComparison.editGroup')"
+                    @click.stop="
+                      showGroupEditPopover($event, (data as ComparisonTableItems).groupId!)
+                    "
+                    ><i-mdi-pencil
+                  /></span>
+                </div>
+                <!-- Normal bot / summary row -->
+                <div v-else class="bot-name-block">
+                  <div class="inline-flex items-center gap-1">
+                    <i-mdi-robot-off
+                      v-if="data.botId && hasBotOfflineAlert(data.botId)"
+                      class="text-red-500 animate-pulse ml-0.5"
+                      style="font-size: 0.9rem"
+                      @mouseenter="startAlertHover($event, data.botId)"
+                      @mouseleave="cancelAlertHover()"
+                    />
+                    <span
+                      v-else-if="data.botId && hasBotAlert(data.botId)"
+                      class="ml-0.5 relative inline-flex items-center"
+                      @mouseenter="startAlertHover($event, data.botId)"
+                      @mouseleave="cancelAlertHover()"
+                    >
+                      <i-mdi-bell-alert
+                        class="animate-pulse"
+                        :class="
+                          getMaxSeverity(allBotAlerts[data.botId] || []) === 'critical'
+                            ? 'text-red-500'
+                            : getMaxSeverity(allBotAlerts[data.botId] || []) === 'warning'
+                              ? 'text-amber-400'
+                              : 'text-blue-400'
+                        "
+                        style="font-size: 0.85rem"
+                      />
+                      <span
+                        v-if="getBotAlertCount(data.botId) > 1"
+                        class="absolute -top-1 -right-2 text-[0.5rem] bg-red-500 text-white rounded-full px-1 leading-tight"
+                        >{{ getBotAlertCount(data.botId) }}</span
+                      >
+                    </span>
+                    <span
+                      v-if="data.botId && (data as ComparisonTableItems).botIcon"
+                      class="text-sm cursor-pointer hover:opacity-70 mr-0.5 inline-flex items-center"
+                      :title="t('botComparison.changeIcon')"
+                      @click.stop="showBotIconPicker($event, data.botId)"
+                      >{{ (data as ComparisonTableItems).botIcon }}</span
+                    >
+                    <span
+                      v-else-if="data.botId"
+                      class="cursor-pointer row-hover-visible mr-0.5 inline-flex items-center"
+                      :title="t('botComparison.changeIcon')"
+                      @click.stop="data.botId && showBotIconPicker($event, data.botId)"
+                    >
+                      <i-mdi-robot class="text-sm opacity-50 hover:opacity-100" />
+                    </span>
+                    <span
+                      v-if="data.botId"
+                      @mouseenter="startHoverInfo($event, data.botId)"
+                      @mouseleave="cancelHoverInfo()"
+                      >{{ data[field as string] }}</span
+                    >
+                    <span
+                      v-if="data.botId && isHostBot(data.botId)"
+                      class="ml-1 text-[0.6rem] px-1.5 py-0.5 rounded-sm bg-blue-500/15 text-blue-400 border border-blue-500/30 font-medium whitespace-nowrap"
+                      :title="t('botComparison.hostBotTooltip')"
+                      >{{ t('botComparison.hostBotBadge') }}</span
+                    >
+                    <span v-else-if="!data.botId" class="font-bold">{{
+                      data[field as string]
+                    }}</span>
+                    <!-- Currency selector for Summary row (with CoinGecko tooltip) -->
+                    <span
+                      v-if="
+                        !data.botId &&
+                        !(data as ComparisonTableItems).isGroupRow &&
+                        summaryUniqueCurrencies.length > 1
+                      "
+                      v-tooltip.top="
+                        (data as ComparisonTableItems).isConverted
+                          ? `${t('summaryTrades.ratesSource')} · ${t('summaryTrades.ratesUpdated', { duration: ratesUpdatedAgo })}`
+                          : ''
+                      "
+                    >
+                      <select
+                        v-model="selectedSummaryCurrency"
+                        class="ml-2 text-[0.6rem] bg-transparent border border-surface-400 dark:border-surface-600 rounded px-1 py-0 opacity-70 hover:opacity-100 cursor-pointer"
+                        style="max-width: 80px"
+                        @click.stop
+                      >
+                        <option value="auto">{{ t('summaryTrades.allCurrencies') }}</option>
+                        <option v-for="cur in summaryUniqueCurrencies" :key="cur" :value="cur">
+                          {{ cur }}
+                        </option>
+                      </select>
+                    </span>
+                    <div
+                      v-if="
+                        !data.botId &&
+                        !(data as ComparisonTableItems).isGroupRow &&
+                        ratesFetchError &&
+                        selectedSummaryCurrency !== 'auto' &&
+                        summaryUniqueCurrencies.length > 1
+                      "
+                      class="text-[0.5rem] text-amber-400 opacity-60 ml-2"
+                    >
+                      {{ t('summaryTrades.ratesUnavailable') }}
+                    </div>
+                    <!-- Hidden bots filter indicator in Summary row -->
+                    <span
+                      v-if="!data.botId && hiddenBotCount > 0"
+                      class="ml-2 text-xs opacity-60 inline-flex items-center gap-1"
+                    >
+                      {{
+                        t(
+                          'botComparison.botsHiddenByFilters',
+                          { count: hiddenBotCount },
+                          hiddenBotCount,
+                        )
+                      }}
+                      <i-mdi-eye
+                        class="cursor-pointer opacity-60 hover:opacity-100"
+                        :title="t('botComparison.showAllBots')"
+                        @click.stop="resetAllFilters()"
+                      />
+                    </span>
+                    <i-mdi-pencil
+                      v-if="data.botId"
+                      class="rename-icon"
+                      :title="t('botComparison.renameBot')"
+                      @click.stop="startRename(data.botId, data[field as string])"
+                    />
+                    <span
+                      v-if="data.botId && botGroups.length > 0"
+                      class="rename-icon row-hover-visible inline-flex items-center"
+                      :title="t('botComparison.moveToFolder')"
+                      @click.stop="showBotMovePopover($event, data.botId)"
+                      ><i-mdi-folder-arrow-right class="text-[0.7rem]"
+                    /></span>
+                  </div>
+                  <!-- Online since info line -->
+                  <div
+                    v-if="
+                      botTagVisibility.onlineSince && data.botId && getBotOnlineSince(data.botId)
+                    "
+                    class="flex items-center gap-1 mt-0.5 text-[0.6rem] opacity-40"
+                  >
+                    <span>{{
+                      t('botComparison.onlineSince', { duration: getBotOnlineSince(data.botId) })
+                    }}</span>
+                    <span>|</span>
+                    <span>{{ getBotStartDate(data.botId) }}</span>
+                  </div>
+                  <!-- Tags row under bot name -->
+                  <div
+                    v-if="
+                      data.botId &&
+                      (orderedVisibleTags.length > 0 || getBotCustomTags(data.botId).length > 0)
+                    "
+                    class="flex flex-wrap gap-1.5 mt-1 opacity-80"
+                  >
+                    <template v-for="tagId in orderedVisibleTags" :key="tagId">
+                      <!-- Status tag -->
+                      <template v-if="tagId === 'status'">
+                        <Badge
+                          v-if="data.isStarting"
+                          class="text-[0.55rem] animate-pulse"
+                          style="padding: 1px 5px; line-height: 1.2"
+                          severity="info"
+                          >{{ t('general.starting') }}</Badge
+                        >
+                        <Badge
+                          v-else-if="data.isOnline && data.isDryRun"
+                          class="text-[0.55rem] cursor-pointer"
+                          style="padding: 1px 5px; line-height: 1.2"
+                          :class="{ 'opacity-30': !isTagActive('status', 'dry') }"
+                          severity="success"
+                          :title="t('botComparison.selectDryBots')"
+                          @click="botStore.toggleBotsByState('dry')"
+                          >Dry</Badge
+                        >
+                        <Badge
+                          v-else-if="data.isOnline && !data.isDryRun"
+                          class="text-[0.55rem] cursor-pointer"
+                          style="padding: 1px 5px; line-height: 1.2"
+                          :class="{ 'opacity-30': !isTagActive('status', 'live') }"
+                          severity="warning"
+                          :title="t('botComparison.selectLiveBots')"
+                          @click="botStore.toggleBotsByState('live')"
+                          >Live</Badge
+                        >
+                        <Badge
+                          v-else-if="data.isOnline === false"
+                          class="text-[0.55rem]"
+                          style="padding: 1px 5px; line-height: 1.2"
+                          :class="{ 'opacity-30': !isTagActive('status', 'offline') }"
+                          severity="secondary"
+                          >{{ t('botComparison.offline') }}</Badge
+                        >
+                      </template>
+                      <!-- Trading mode tag -->
+                      <span
+                        v-else-if="
+                          tagId === 'tradingMode' && (data as ComparisonTableItems).tradingMode
+                        "
+                        class="inline-flex items-center rounded-sm text-[0.55rem] font-bold"
+                        :class="{
+                          'opacity-30': !isTagActive(
+                            'tradingMode',
+                            (data as ComparisonTableItems).tradingMode ?? '',
+                          ),
+                        }"
+                        style="padding: 1px 5px; line-height: 1.2"
+                        :style="
+                          (data as ComparisonTableItems).tradingMode === 'futures'
+                            ? { background: '#1a1a2e', color: '#e94560' }
+                            : { background: '#1a2e1a', color: '#4ade80' }
+                        "
+                        :title="
+                          (data as ComparisonTableItems).tradingMode === 'futures'
+                            ? 'Futures: supports short, long, and leverage trading'
+                            : 'Spot: buy and sell only, no leverage or shorting'
+                        "
+                        >{{
+                          (data as ComparisonTableItems).tradingMode === 'futures'
+                            ? 'Futures'
+                            : 'Spot'
+                        }}</span
+                      >
+                      <!-- Exchange tag -->
+                      <span
+                        v-else-if="tagId === 'exchange' && (data as ComparisonTableItems).exchange"
+                        class="inline-flex items-center rounded-sm text-[0.55rem] font-bold cursor-pointer"
+                        :class="{
+                          'opacity-30': !isTagActive(
+                            'exchange',
+                            (data as ComparisonTableItems).exchange ?? '',
+                          ),
+                        }"
+                        style="padding: 1px 5px; line-height: 1.2"
+                        :style="getExchangeStyle((data as ComparisonTableItems).exchange ?? '')"
+                        :title="
+                          t('botComparison.selectByExchange', {
+                            exchange: (data as ComparisonTableItems).exchange,
+                          })
+                        "
+                        @click="
+                          botStore.toggleBotsByExchange(
+                            (data as ComparisonTableItems).exchange ?? '',
+                          )
+                        "
+                        @mouseenter="
+                          startExchangeHover($event, (data as ComparisonTableItems).exchange ?? '')
+                        "
+                        @mouseleave="cancelExchangeHover()"
+                        >{{
+                          capitalizeExchange((data as ComparisonTableItems).exchange ?? '')
+                        }}</span
+                      >
+                      <!-- Currency tag -->
+                      <span
+                        v-else-if="
+                          tagId === 'stakeCurrency' && (data as ComparisonTableItems).stakeCurrency
+                        "
+                        class="inline-flex items-center px-1 rounded-sm text-[0.55rem] font-bold cursor-pointer"
+                        :class="{
+                          'opacity-30': !isTagActive(
+                            'stakeCurrency',
+                            (data as ComparisonTableItems).stakeCurrency ?? '',
+                          ),
+                        }"
+                        style="padding: 1px 5px; line-height: 1.2"
+                        :style="
+                          getCurrencyStyle((data as ComparisonTableItems).stakeCurrency ?? '') || {
+                            background: 'var(--p-surface-200)',
+                            color: 'var(--p-surface-700)',
+                          }
+                        "
+                        @click="
+                          botStore.toggleBotsByStakeCurrency(
+                            (data as ComparisonTableItems).stakeCurrency ?? '',
+                          )
+                        "
+                        @mouseenter="
+                          startCurrencyHover(
+                            $event,
+                            (data as ComparisonTableItems).stakeCurrency ?? '',
+                          )
+                        "
+                        @mouseleave="cancelCurrencyHover()"
+                        >{{ (data as ComparisonTableItems).stakeCurrency }}</span
+                      >
+                      <!-- Port tag -->
+                      <span
+                        v-else-if="tagId === 'port' && (data as ComparisonTableItems).port"
+                        class="inline-flex items-center px-1 rounded-sm text-[0.55rem]"
+                        style="
+                          padding: 1px 5px;
+                          line-height: 1.2;
+                          background: var(--p-surface-200);
+                          color: var(--p-surface-500);
+                        "
+                        >:{{ (data as ComparisonTableItems).port }}</span
+                      >
+                    </template>
+                    <!-- Custom tags -->
+                    <span
+                      v-for="ctId in getBotCustomTags(data.botId)"
+                      :key="ctId"
+                      class="inline-flex items-center rounded-sm text-[0.55rem] font-bold cursor-pointer"
+                      style="padding: 1px 5px; line-height: 1.2"
+                      :style="{ background: getCustomTag(ctId)?.color || '#666', color: '#fff' }"
+                      :title="t('botComparison.filterByTag')"
+                      @click="selectBotsByCustomTag(ctId)"
+                      >{{ getCustomTag(ctId)?.name || '' }}</span
+                    >
+                    <!-- Add/edit tag button (visible on row hover) -->
+                    <span
+                      class="inline-flex items-center rounded-sm text-[0.55rem] row-hover-visible cursor-pointer border border-dashed border-gray-500"
+                      style="padding: 0px 4px; line-height: 1.2"
+                      @click.stop="showTagPicker($event, data.botId)"
+                      >{{ getBotCustomTags(data.botId).length > 0 ? '✏' : '+' }}</span
+                    >
+                  </div>
+                </div>
+                <!-- /bot-name-block -->
+              </template>
             </template>
-          </template>
 
-          <!-- status -->
-          <template v-else-if="col.id === 'status'">
-            <div class="flex items-center gap-1.5">
-              <!-- State indicator dot -->
-              <span v-if="data.botId && data.isOnline" class="inline-block w-2 h-2 rounded-full flex-shrink-0"
-                :class="botStore.allBotState[data.botId]?.state === 'running' ? 'bg-green-500 ft-live-dot' : 'bg-amber-400'"
-              ></span>
-              <span v-else-if="data.botId && data.isOnline === false" class="inline-block w-2 h-2 rounded-full bg-surface-400 flex-shrink-0"></span>
-              <Badge
-                v-if="!data.botId && !(data as ComparisonTableItems).isGroupRow"
-                class="items-center text-slate-200 bg-slate-800 cursor-pointer"
-                severity="contrast"
-                :title="t('botComparison.selectAllBots')"
-                @click="botStore.toggleBotsByState('all')"
-              >
-                {{ t('botComparison.all') }}
-              </Badge>
-              <Badge
-                v-else-if="data.isStarting"
-                class="items-center animate-pulse"
-                severity="info"
-              >
-                {{ t('general.starting') }}
-              </Badge>
-              <Badge
-                v-else-if="data.isOnline && data.isDryRun"
-                class="items-center bg-green-800 text-slate-200 cursor-pointer"
-                severity="success"
-                :title="t('botComparison.selectDryBots')"
-                @click="botStore.toggleBotsByState('dry')"
-              >
-                {{ t('botComparison.dry') }}
-              </Badge>
-              <Badge
-                v-else-if="data.isOnline && !data.isDryRun"
-                class="items-center cursor-pointer"
-                severity="warning"
-                :title="t('botComparison.selectLiveBots')"
-                @click="botStore.toggleBotsByState('live')"
-              >
-                {{ t('botComparison.live') }}
-              </Badge>
-              <div v-else-if="data.isOnline === false" class="text-center">
-                <Badge class="items-center" severity="secondary">
-                  {{ t('botComparison.offline') }}
-                </Badge>
-                <div
-                  v-if="(data as ComparisonTableItems).lastSeenOnline"
-                  class="text-xs opacity-60 mt-0.5"
+            <!-- status -->
+            <template v-else-if="col.id === 'status'">
+              <div class="flex items-center gap-1.5">
+                <!-- State indicator dot -->
+                <span
+                  v-if="data.botId && data.isOnline"
+                  class="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                  :class="
+                    botStore.allBotState[data.botId]?.state === 'running'
+                      ? 'bg-green-500 ft-live-dot'
+                      : 'bg-amber-400'
+                  "
+                ></span>
+                <span
+                  v-else-if="data.botId && data.isOnline === false"
+                  class="inline-block w-2 h-2 rounded-full bg-surface-400 flex-shrink-0"
+                ></span>
+                <Badge
+                  v-if="!data.botId && !(data as ComparisonTableItems).isGroupRow"
+                  class="items-center text-slate-200 bg-slate-800 cursor-pointer"
+                  severity="contrast"
+                  :title="t('botComparison.selectAllBots')"
+                  @click="botStore.toggleBotsByState('all')"
                 >
+                  {{ t('botComparison.all') }}
+                </Badge>
+                <Badge
+                  v-else-if="data.isStarting"
+                  class="items-center animate-pulse"
+                  severity="info"
+                >
+                  {{ t('general.starting') }}
+                </Badge>
+                <Badge
+                  v-else-if="data.isOnline && data.isDryRun"
+                  class="items-center bg-green-800 text-slate-200 cursor-pointer"
+                  severity="success"
+                  :title="t('botComparison.selectDryBots')"
+                  @click="botStore.toggleBotsByState('dry')"
+                >
+                  {{ t('botComparison.dry') }}
+                </Badge>
+                <Badge
+                  v-else-if="data.isOnline && !data.isDryRun"
+                  class="items-center cursor-pointer"
+                  severity="warning"
+                  :title="t('botComparison.selectLiveBots')"
+                  @click="botStore.toggleBotsByState('live')"
+                >
+                  {{ t('botComparison.live') }}
+                </Badge>
+                <div v-else-if="data.isOnline === false" class="text-center">
+                  <Badge class="items-center" severity="secondary">
+                    {{ t('botComparison.offline') }}
+                  </Badge>
+                  <div
+                    v-if="(data as ComparisonTableItems).lastSeenOnline"
+                    class="text-xs opacity-60 mt-0.5"
+                  >
+                    {{
+                      t('botComparison.offlineSince', {
+                        duration: humanizeDuration(
+                          (data as ComparisonTableItems).lastSeenOnline ?? 0,
+                        ),
+                      })
+                    }}
+                  </div>
+                </div>
+                <!-- Bot action menu trigger -->
+                <button
+                  v-if="data.botId && !(data as ComparisonTableItems).isGroupRow"
+                  class="p-0.5 rounded transition-opacity flex-shrink-0"
+                  :class="
+                    data.isOnline === false
+                      ? 'opacity-20 cursor-not-allowed'
+                      : 'hover:bg-surface-200 dark:hover:bg-surface-700 cursor-pointer opacity-50 hover:opacity-100'
+                  "
+                  :title="
+                    data.isOnline === false
+                      ? t('botComparison.offline')
+                      : t('botComparison.botActions')
+                  "
+                  :disabled="data.isOnline === false"
+                  @click.stop="data.isOnline !== false && showBotActionMenu($event, data.botId!)"
+                >
+                  <i-mdi-dots-vertical class="text-sm" />
+                </button>
+              </div>
+            </template>
+
+            <!-- exchange -->
+            <template v-else-if="col.id === 'exchange'">
+              <span
+                v-if="(data as ComparisonTableItems).exchange && data.botId != undefined"
+                class="inline-flex items-center rounded-sm text-xs font-bold cursor-pointer px-2 py-0.5"
+                :style="getExchangeStyle((data as ComparisonTableItems).exchange ?? '')"
+                :title="
+                  t('botComparison.selectByExchange', {
+                    exchange: (data as ComparisonTableItems).exchange,
+                  })
+                "
+                @click="
+                  botStore.toggleBotsByExchange((data as ComparisonTableItems).exchange ?? '')
+                "
+                @mouseenter="
+                  startExchangeHover($event, (data as ComparisonTableItems).exchange ?? '')
+                "
+                @mouseleave="cancelExchangeHover()"
+              >
+                {{ capitalizeExchange((data as ComparisonTableItems).exchange ?? '') }}
+              </span>
+            </template>
+
+            <!-- trades -->
+            <template v-else-if="col.id === 'trades'">
+              <!-- Summary row: total positions with hover -->
+              <div
+                v-if="
+                  !data.botId &&
+                  !(data as ComparisonTableItems).isGroupRow &&
+                  (data as ComparisonTableItems).summaryTradesCount !== undefined
+                "
+                class="text-center"
+                @mouseenter="startSummaryTradesHover($event)"
+                @mouseleave="cancelSummaryTradesHover()"
+              >
+                <div class="font-bold">
+                  {{ (data as ComparisonTableItems).summaryTradesCount }}
+                  {{ t('summaryTrades.positions') }}
+                </div>
+                <div
+                  v-if="(data as ComparisonTableItems).summaryTradesMax! > 0"
+                  class="flex h-1.5 rounded-full overflow-hidden mt-1 bg-surface-300 dark:bg-surface-600"
+                  style="min-width: 50px"
+                >
+                  <div
+                    class="bg-blue-500"
+                    :style="{
+                      width: `${Math.min(((data as ComparisonTableItems).summaryTradesCount! / (data as ComparisonTableItems).summaryTradesMax!) * 100, 100)}%`,
+                    }"
+                  />
+                </div>
+              </div>
+              <!-- Bot starting -->
+              <div v-else-if="data.isStarting && data.botId" class="text-center">
+                <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
+              </div>
+              <!-- Bot row -->
+              <div
+                v-else-if="data.trades"
+                class="text-center"
+                @mouseenter="data.botId ? startTradesHover($event, data.botId) : undefined"
+                @mouseleave="data.botId ? cancelTradesHover() : undefined"
+              >
+                <div>{{ data.trades }}</div>
+                <div
+                  v-if="data.botId && data.trades?.includes('/') && !data.trades?.includes('∞')"
+                  class="flex h-1.5 rounded-full overflow-hidden mt-1 bg-surface-300 dark:bg-surface-600"
+                  style="min-width: 50px"
+                >
+                  <div
+                    class="bg-blue-500"
+                    :style="{ width: `${parseTradesPercent(data.trades)}%` }"
+                  />
+                </div>
+              </div>
+            </template>
+
+            <!-- openProfit -->
+            <template v-else-if="col.id === 'openProfit'">
+              <!-- Group header row: hover shows SummaryProfitCard filtered by group -->
+              <div
+                v-if="(data as ComparisonTableItems).isGroupRow && data.profitOpen != null"
+                @mouseenter="
+                  startGroupOpenHover(
+                    $event,
+                    getGroupBotIds((data as ComparisonTableItems).groupId),
+                  )
+                "
+                @mouseleave="cancelGroupOpenHover()"
+              >
+                <ProfitPill
+                  :profit-abs="(data as ComparisonTableItems).profitOpen"
+                  :stake-currency="(data as ComparisonTableItems).stakeCurrency"
+                />
+              </div>
+              <!-- Summary row: hover shows SummaryProfitCard -->
+              <div
+                v-else-if="data.profitOpen != null && !data.botId"
+                @mouseenter="startSummaryOpenHover($event)"
+                @mouseleave="cancelSummaryOpenHover()"
+              >
+                <div class="inline-flex items-center gap-0.5">
+                  <span
+                    v-if="(data as ComparisonTableItems).isConverted"
+                    class="text-xs opacity-50"
+                    :title="t('summaryTrades.approximateConversion')"
+                    >&#8776;</span
+                  >
+                  <ProfitPill
+                    :profit-ratio="(data as unknown as ComparisonTableItems).profitOpenRatio"
+                    :profit-abs="(data as unknown as ComparisonTableItems).profitOpen"
+                    :profit-desc="`${t('botComparison.totalProfit')} ${formatPercent(
+                      (data as ComparisonTableItems).profitOpenRatio ?? 0.0,
+                    )}`"
+                    :stake-currency="(data as ComparisonTableItems).stakeCurrency"
+                  />
+                </div>
+                <div
+                  v-if="
+                    (data as ComparisonTableItems).isConverted &&
+                    Object.keys((data as ComparisonTableItems).perCurrencyProfitOpen ?? {}).length >
+                      1
+                  "
+                  class="text-[0.5rem] opacity-40 mt-0.5 leading-tight"
+                >
+                  dont
                   {{
-                    t('botComparison.offlineSince', {
-                      duration: humanizeDuration(
-                        (data as ComparisonTableItems).lastSeenOnline ?? 0,
-                      ),
-                    })
+                    Object.entries((data as ComparisonTableItems).perCurrencyProfitOpen ?? {})
+                      .filter(([cur]) => cur !== (data as ComparisonTableItems).stakeCurrency)
+                      .map(([cur, amt]) => formatPriceCurrency(amt as number, cur, 4))
+                      .join(' et ')
                   }}
                 </div>
               </div>
-              <!-- Bot action menu trigger -->
-              <button
-                v-if="data.botId && !(data as ComparisonTableItems).isGroupRow"
-                class="p-0.5 rounded transition-opacity flex-shrink-0"
-                :class="data.isOnline === false
-                  ? 'opacity-20 cursor-not-allowed'
-                  : 'hover:bg-surface-200 dark:hover:bg-surface-700 cursor-pointer opacity-50 hover:opacity-100'"
-                :title="data.isOnline === false ? t('botComparison.offline') : t('botComparison.botActions')"
-                :disabled="data.isOnline === false"
-                @click.stop="data.isOnline !== false && showBotActionMenu($event, data.botId!)"
-              >
-                <i-mdi-dots-vertical class="text-sm" />
-              </button>
-            </div>
-          </template>
-
-          <!-- exchange -->
-          <template v-else-if="col.id === 'exchange'">
-            <span
-              v-if="(data as ComparisonTableItems).exchange && data.botId != undefined"
-              class="inline-flex items-center rounded-sm text-xs font-bold cursor-pointer px-2 py-0.5"
-              :style="getExchangeStyle((data as ComparisonTableItems).exchange ?? '')"
-              :title="t('botComparison.selectByExchange', { exchange: (data as ComparisonTableItems).exchange })"
-              @click="botStore.toggleBotsByExchange((data as ComparisonTableItems).exchange ?? '')"
-              @mouseenter="startExchangeHover($event, (data as ComparisonTableItems).exchange ?? '')"
-              @mouseleave="cancelExchangeHover()"
-            >
-              {{ capitalizeExchange((data as ComparisonTableItems).exchange ?? '') }}
-            </span>
-          </template>
-
-          <!-- trades -->
-          <template v-else-if="col.id === 'trades'">
-            <!-- Summary row: total positions with hover -->
-            <div
-              v-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).summaryTradesCount !== undefined"
-              class="text-center"
-              @mouseenter="startSummaryTradesHover($event)"
-              @mouseleave="cancelSummaryTradesHover()"
-            >
-              <div class="font-bold">{{ (data as ComparisonTableItems).summaryTradesCount }} {{ t('summaryTrades.positions') }}</div>
-              <div
-                v-if="(data as ComparisonTableItems).summaryTradesMax! > 0"
-                class="flex h-1.5 rounded-full overflow-hidden mt-1 bg-surface-300 dark:bg-surface-600"
-                style="min-width: 50px"
-              >
-                <div
-                  class="bg-blue-500"
-                  :style="{ width: `${Math.min(((data as ComparisonTableItems).summaryTradesCount! / (data as ComparisonTableItems).summaryTradesMax!) * 100, 100)}%` }"
-                />
+              <!-- Bot starting -->
+              <div v-else-if="data.isStarting && data.botId" class="text-center">
+                <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
               </div>
-            </div>
-            <!-- Bot starting -->
-            <div v-else-if="data.isStarting && data.botId" class="text-center">
-              <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
-            </div>
-            <!-- Bot row -->
-            <div
-              v-else-if="data.trades"
-              class="text-center"
-              @mouseenter="data.botId ? startTradesHover($event, data.botId) : undefined"
-              @mouseleave="data.botId ? cancelTradesHover() : undefined"
-            >
-              <div>{{ data.trades }}</div>
+              <!-- Bot row: hover shows OpenProfitCard -->
               <div
-                v-if="data.botId && data.trades?.includes('/') && !data.trades?.includes('∞')"
-                class="flex h-1.5 rounded-full overflow-hidden mt-1 bg-surface-300 dark:bg-surface-600"
-                style="min-width: 50px"
+                v-else-if="data.botId && (botStore.allOpenTradeCount[data.botId] ?? 0) > 0"
+                @mouseenter="startOpenProfitHover($event, data.botId)"
+                @mouseleave="cancelOpenProfitHover()"
               >
-                <div
-                  class="bg-blue-500"
-                  :style="{ width: `${parseTradesPercent(data.trades)}%` }"
-                />
-              </div>
-            </div>
-          </template>
-
-          <!-- openProfit -->
-          <template v-else-if="col.id === 'openProfit'">
-            <!-- Group header row: hover shows SummaryProfitCard filtered by group -->
-            <div
-              v-if="(data as ComparisonTableItems).isGroupRow && data.profitOpen != null"
-              @mouseenter="startGroupOpenHover($event, getGroupBotIds((data as ComparisonTableItems).groupId))"
-              @mouseleave="cancelGroupOpenHover()"
-            >
-              <ProfitPill
-                :profit-abs="(data as ComparisonTableItems).profitOpen"
-                :stake-currency="(data as ComparisonTableItems).stakeCurrency"
-              />
-            </div>
-            <!-- Summary row: hover shows SummaryProfitCard -->
-            <div
-              v-else-if="data.profitOpen != null && !data.botId"
-              @mouseenter="startSummaryOpenHover($event)"
-              @mouseleave="cancelSummaryOpenHover()"
-            >
-              <div class="inline-flex items-center gap-0.5">
-                <span v-if="(data as ComparisonTableItems).isConverted" class="text-xs opacity-50" :title="t('summaryTrades.approximateConversion')">&#8776;</span>
                 <ProfitPill
                   :profit-ratio="(data as unknown as ComparisonTableItems).profitOpenRatio"
                   :profit-abs="(data as unknown as ComparisonTableItems).profitOpen"
@@ -4261,120 +5397,118 @@ const correlatedPairs = computed(() => {
                   :stake-currency="(data as ComparisonTableItems).stakeCurrency"
                 />
               </div>
-              <div v-if="(data as ComparisonTableItems).isConverted && Object.keys((data as ComparisonTableItems).perCurrencyProfitOpen ?? {}).length > 1" class="text-[0.5rem] opacity-40 mt-0.5 leading-tight">
-                dont {{ Object.entries((data as ComparisonTableItems).perCurrencyProfitOpen ?? {}).filter(([cur]) => cur !== (data as ComparisonTableItems).stakeCurrency).map(([cur, amt]) => formatPriceCurrency(amt as number, cur, 4)).join(' et ') }}
-              </div>
-            </div>
-            <!-- Bot starting -->
-            <div v-else-if="data.isStarting && data.botId" class="text-center">
-              <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
-            </div>
-            <!-- Bot row: hover shows OpenProfitCard -->
-            <div
-              v-else-if="data.botId && (botStore.allOpenTradeCount[data.botId] ?? 0) > 0"
-              @mouseenter="startOpenProfitHover($event, data.botId)"
-              @mouseleave="cancelOpenProfitHover()"
-            >
-              <ProfitPill
-                :profit-ratio="(data as unknown as ComparisonTableItems).profitOpenRatio"
-                :profit-abs="(data as unknown as ComparisonTableItems).profitOpen"
-                :profit-desc="`${t('botComparison.totalProfit')} ${formatPercent(
-                  (data as ComparisonTableItems).profitOpenRatio ?? 0.0,
-                )}`"
-                :stake-currency="(data as ComparisonTableItems).stakeCurrency"
-              />
-            </div>
-          </template>
+            </template>
 
-          <!-- closedProfit -->
-          <template v-else-if="col.id === 'closedProfit'">
-            <!-- Group header row: hover shows SummaryProfitCard filtered by group -->
-            <div
-              v-if="(data as ComparisonTableItems).isGroupRow && data.profitClosed != null"
-              @mouseenter="startGroupClosedHover($event, getGroupBotIds((data as ComparisonTableItems).groupId))"
-              @mouseleave="cancelGroupClosedHover()"
-            >
-              <ProfitPill
-                :profit-abs="(data as ComparisonTableItems).profitClosed"
-                :stake-currency="(data as ComparisonTableItems).stakeCurrency"
-              />
-            </div>
-            <!-- Summary row: hover shows SummaryProfitCard -->
-            <div
-              v-else-if="data.profitClosed != null && !data.botId"
-              @mouseenter="startSummaryClosedHover($event)"
-              @mouseleave="cancelSummaryClosedHover()"
-            >
-              <div class="inline-flex items-center gap-0.5">
-                <span v-if="(data as ComparisonTableItems).isConverted" class="text-xs opacity-50" :title="t('summaryTrades.approximateConversion')">&#8776;</span>
+            <!-- closedProfit -->
+            <template v-else-if="col.id === 'closedProfit'">
+              <!-- Group header row: hover shows SummaryProfitCard filtered by group -->
+              <div
+                v-if="(data as ComparisonTableItems).isGroupRow && data.profitClosed != null"
+                @mouseenter="
+                  startGroupClosedHover(
+                    $event,
+                    getGroupBotIds((data as ComparisonTableItems).groupId),
+                  )
+                "
+                @mouseleave="cancelGroupClosedHover()"
+              >
+                <ProfitPill
+                  :profit-abs="(data as ComparisonTableItems).profitClosed"
+                  :stake-currency="(data as ComparisonTableItems).stakeCurrency"
+                />
+              </div>
+              <!-- Summary row: hover shows SummaryProfitCard -->
+              <div
+                v-else-if="data.profitClosed != null && !data.botId"
+                @mouseenter="startSummaryClosedHover($event)"
+                @mouseleave="cancelSummaryClosedHover()"
+              >
+                <div class="inline-flex items-center gap-0.5">
+                  <span
+                    v-if="(data as ComparisonTableItems).isConverted"
+                    class="text-xs opacity-50"
+                    :title="t('summaryTrades.approximateConversion')"
+                    >&#8776;</span
+                  >
+                  <ProfitPill
+                    :profit-ratio="(data as ComparisonTableItems).profitClosedRatio"
+                    :profit-abs="(data as ComparisonTableItems).profitClosed"
+                    :stake-currency="(data as unknown as ComparisonTableItems).stakeCurrency"
+                  />
+                </div>
+                <div
+                  v-if="
+                    (data as ComparisonTableItems).isConverted &&
+                    Object.keys((data as ComparisonTableItems).perCurrencyProfitClosed ?? {})
+                      .length > 1
+                  "
+                  class="text-[0.5rem] opacity-40 mt-0.5 leading-tight"
+                >
+                  dont
+                  {{
+                    Object.entries((data as ComparisonTableItems).perCurrencyProfitClosed ?? {})
+                      .filter(([cur]) => cur !== (data as ComparisonTableItems).stakeCurrency)
+                      .map(([cur, amt]) => formatPriceCurrency(amt as number, cur, 4))
+                      .join(' et ')
+                  }}
+                </div>
+              </div>
+              <!-- Bot starting -->
+              <div v-else-if="data.isStarting && data.botId" class="text-center">
+                <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
+              </div>
+              <!-- Bot row: hover shows ClosedProfitCard -->
+              <div
+                v-else-if="data.botId && (data.wins ?? 0) + (data.losses ?? 0) > 0"
+                @mouseenter="startClosedProfitHover($event, data.botId)"
+                @mouseleave="cancelClosedProfitHover()"
+              >
                 <ProfitPill
                   :profit-ratio="(data as ComparisonTableItems).profitClosedRatio"
                   :profit-abs="(data as ComparisonTableItems).profitClosed"
                   :stake-currency="(data as unknown as ComparisonTableItems).stakeCurrency"
                 />
+                <!-- Sparkline removed -->
               </div>
-              <div v-if="(data as ComparisonTableItems).isConverted && Object.keys((data as ComparisonTableItems).perCurrencyProfitClosed ?? {}).length > 1" class="text-[0.5rem] opacity-40 mt-0.5 leading-tight">
-                dont {{ Object.entries((data as ComparisonTableItems).perCurrencyProfitClosed ?? {}).filter(([cur]) => cur !== (data as ComparisonTableItems).stakeCurrency).map(([cur, amt]) => formatPriceCurrency(amt as number, cur, 4)).join(' et ') }}
+              <div
+                v-if="
+                  (data as ComparisonTableItems).capitalWithdrawal != null &&
+                  (data as ComparisonTableItems).capitalWithdrawal! > 0 &&
+                  data.botId
+                "
+                class="text-xs text-center opacity-70 mt-0.5"
+                :title="
+                  t('botComparison.netAfterWithdrawals', {
+                    amount: formatPriceCurrency(
+                      (data as ComparisonTableItems).profitClosed -
+                        ((data as ComparisonTableItems).capitalWithdrawal ?? 0),
+                      (data as ComparisonTableItems).stakeCurrency,
+                      2,
+                    ),
+                  })
+                "
+              >
+                {{
+                  t('botComparison.withdrawnLabel', {
+                    amount: formatPriceCurrency(
+                      (data as ComparisonTableItems).capitalWithdrawal ?? 0,
+                      (data as ComparisonTableItems).stakeCurrency,
+                      2,
+                    ),
+                  })
+                }}
               </div>
-            </div>
-            <!-- Bot starting -->
-            <div v-else-if="data.isStarting && data.botId" class="text-center">
-              <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
-            </div>
-            <!-- Bot row: hover shows ClosedProfitCard -->
-            <div
-              v-else-if="data.botId && ((data.wins ?? 0) + (data.losses ?? 0)) > 0"
-              @mouseenter="startClosedProfitHover($event, data.botId)"
-              @mouseleave="cancelClosedProfitHover()"
-            >
-              <ProfitPill
-                :profit-ratio="(data as ComparisonTableItems).profitClosedRatio"
-                :profit-abs="(data as ComparisonTableItems).profitClosed"
-                :stake-currency="(data as unknown as ComparisonTableItems).stakeCurrency"
-              />
-              <!-- Sparkline removed -->
-            </div>
-            <div
-              v-if="(data as ComparisonTableItems).capitalWithdrawal != null && (data as ComparisonTableItems).capitalWithdrawal! > 0 && data.botId"
-              class="text-xs text-center opacity-70 mt-0.5"
-              :title="
-                t('botComparison.netAfterWithdrawals', {
-                  amount: formatPriceCurrency(
-                    (data as ComparisonTableItems).profitClosed -
-                      ((data as ComparisonTableItems).capitalWithdrawal ?? 0),
-                    (data as ComparisonTableItems).stakeCurrency,
-                    2,
-                  ),
-                })
-              "
-            >
-              {{
-                t('botComparison.withdrawnLabel', {
-                  amount: formatPriceCurrency(
-                    (data as ComparisonTableItems).capitalWithdrawal ?? 0,
-                    (data as ComparisonTableItems).stakeCurrency,
-                    2,
-                  ),
-                })
-              }}
-            </div>
-          </template>
+            </template>
 
-          <!-- profitCurrent (open + closed) -->
-          <template v-else-if="col.id === 'profitCurrent'">
-            <!-- Group header row -->
-            <div v-if="(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).profitCurrent != null">
-              <ProfitPill
-                :profit-ratio="(data as ComparisonTableItems).profitCurrentRatio"
-                :profit-abs="(data as ComparisonTableItems).profitCurrent"
-                :profit-desc="`${t('botComparison.openProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitOpen ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)} + ${t('botComparison.closedProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitClosed ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)}`"
-                :stake-currency="(data as ComparisonTableItems).stakeCurrency"
-              />
-            </div>
-            <!-- Summary row -->
-            <div v-else-if="(data as ComparisonTableItems).profitCurrent != null && !data.botId">
-              <div class="inline-flex items-center gap-0.5">
-                <span v-if="(data as ComparisonTableItems).isConverted" class="text-xs opacity-50" :title="t('summaryTrades.approximateConversion')">&#8776;</span>
+            <!-- profitCurrent (open + closed) -->
+            <template v-else-if="col.id === 'profitCurrent'">
+              <!-- Group header row -->
+              <div
+                v-if="
+                  (data as ComparisonTableItems).isGroupRow &&
+                  (data as ComparisonTableItems).profitCurrent != null
+                "
+              >
                 <ProfitPill
                   :profit-ratio="(data as ComparisonTableItems).profitCurrentRatio"
                   :profit-abs="(data as ComparisonTableItems).profitCurrent"
@@ -4382,319 +5516,640 @@ const correlatedPairs = computed(() => {
                   :stake-currency="(data as ComparisonTableItems).stakeCurrency"
                 />
               </div>
-            </div>
-            <!-- Bot starting -->
-            <div v-else-if="data.isStarting && data.botId" class="text-center">
-              <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
-            </div>
-            <!-- Bot row -->
-            <div v-else-if="data.botId && ((botStore.allOpenTradeCount[data.botId] ?? 0) > 0 || ((data.wins ?? 0) + (data.losses ?? 0)) > 0)">
-              <ProfitPill
-                :profit-ratio="(data as ComparisonTableItems).profitCurrentRatio"
-                :profit-abs="(data as ComparisonTableItems).profitCurrent"
-                :profit-desc="`${t('botComparison.openProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitOpen ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)} + ${t('botComparison.closedProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitClosed ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)}`"
-                :stake-currency="(data as ComparisonTableItems).stakeCurrency"
-              />
-            </div>
-          </template>
-
-          <!-- balance -->
-          <template v-else-if="col.id === 'balance'">
-            <!-- Summary row: multi-currency or single -->
-            <div
-              v-if="!data.botId && !(data as ComparisonTableItems).isGroupRow"
-              @mouseenter="startSummaryBalanceHover($event)"
-              @mouseleave="cancelSummaryBalanceHover()"
-            >
-              <template v-if="(data as ComparisonTableItems).isMultiCurrency">
-                <div v-for="(amt, cur) in (data as ComparisonTableItems).perCurrencyBalances" :key="cur" class="text-sm">
-                  <span class="font-bold">{{ formatPrice(amt, 2) }}</span>
-                  <span class="text-xs ml-0.5">{{ cur }}</span>
+              <!-- Summary row -->
+              <div v-else-if="(data as ComparisonTableItems).profitCurrent != null && !data.botId">
+                <div class="inline-flex items-center gap-0.5">
+                  <span
+                    v-if="(data as ComparisonTableItems).isConverted"
+                    class="text-xs opacity-50"
+                    :title="t('summaryTrades.approximateConversion')"
+                    >&#8776;</span
+                  >
+                  <ProfitPill
+                    :profit-ratio="(data as ComparisonTableItems).profitCurrentRatio"
+                    :profit-abs="(data as ComparisonTableItems).profitCurrent"
+                    :profit-desc="`${t('botComparison.openProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitOpen ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)} + ${t('botComparison.closedProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitClosed ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)}`"
+                    :stake-currency="(data as ComparisonTableItems).stakeCurrency"
+                  />
                 </div>
-                <span class="text-[0.6rem] opacity-50">({{ t('summaryTrades.multiCurrency') }})</span>
+              </div>
+              <!-- Bot starting -->
+              <div v-else-if="data.isStarting && data.botId" class="text-center">
+                <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
+              </div>
+              <!-- Bot row -->
+              <div
+                v-else-if="
+                  data.botId &&
+                  ((botStore.allOpenTradeCount[data.botId] ?? 0) > 0 ||
+                    (data.wins ?? 0) + (data.losses ?? 0) > 0)
+                "
+              >
+                <ProfitPill
+                  :profit-ratio="(data as ComparisonTableItems).profitCurrentRatio"
+                  :profit-abs="(data as ComparisonTableItems).profitCurrent"
+                  :profit-desc="`${t('botComparison.openProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitOpen ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)} + ${t('botComparison.closedProfit')}: ${formatPriceCurrency((data as ComparisonTableItems).profitClosed ?? 0, (data as ComparisonTableItems).stakeCurrency, 2)}`"
+                  :stake-currency="(data as ComparisonTableItems).stakeCurrency"
+                />
+              </div>
+            </template>
+
+            <!-- max drawdown (hidden by default; both realized + open. hover = BotMaxDrawdownCard) -->
+            <template v-else-if="col.id === 'maxDrawdown'">
+              <template v-for="mdd in [ddForBots(mddBotIds(data))]" :key="'mdd'">
+                <i-mdi-loading
+                  v-if="data.isStarting && data.botId"
+                  class="animate-spin text-amber-500 text-sm"
+                />
+                <div
+                  v-else-if="mdd.realizedRatio > 0 || mdd.openRatio > 0"
+                  class="cursor-help inline-flex flex-col leading-tight gap-0.5"
+                  @mouseenter="startMaxDrawdownHover($event, mddBotIds(data), mddTitle(data))"
+                  @mouseleave="cancelMaxDrawdownHover()"
+                >
+                  <div class="flex items-center gap-1">
+                    <span class="text-[0.6rem] uppercase text-surface-500 w-9 shrink-0">{{
+                      t('maxDrawdownCard.realizedShort')
+                    }}</span>
+                    <span class="font-semibold text-xs" :class="ddColor(mdd.realizedRatio)"
+                      >-{{ formatPercent(mdd.realizedRatio, 1) }}</span
+                    >
+                    <span class="text-[0.65rem] text-surface-500"
+                      >-{{ Math.round(mdd.realizedAbs) }}</span
+                    >
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <span class="text-[0.6rem] uppercase text-surface-500 w-9 shrink-0">{{
+                      t('maxDrawdownCard.openShort')
+                    }}</span>
+                    <span class="font-semibold text-xs" :class="ddColor(mdd.openRatio)"
+                      >-{{ formatPercent(mdd.openRatio, 1) }}</span
+                    >
+                    <span class="text-[0.65rem] text-surface-500"
+                      >-{{ Math.round(mdd.openAbs) }}</span
+                    >
+                  </div>
+                </div>
+                <span v-else class="text-surface-500 text-xs">—</span>
               </template>
-              <template v-else-if="data.balance">
-                <span v-if="(data as ComparisonTableItems).isConverted" class="text-xs opacity-50" :title="t('summaryTrades.approximateConversion')">&#8776; </span>
+            </template>
+
+            <!-- balance -->
+            <template v-else-if="col.id === 'balance'">
+              <!-- Summary row: multi-currency or single -->
+              <div
+                v-if="!data.botId && !(data as ComparisonTableItems).isGroupRow"
+                @mouseenter="startSummaryBalanceHover($event)"
+                @mouseleave="cancelSummaryBalanceHover()"
+              >
+                <template v-if="(data as ComparisonTableItems).isMultiCurrency">
+                  <div
+                    v-for="(amt, cur) in (data as ComparisonTableItems).perCurrencyBalances"
+                    :key="cur"
+                    class="text-sm"
+                  >
+                    <span class="font-bold">{{ formatPrice(amt, 2) }}</span>
+                    <span class="text-xs ml-0.5">{{ cur }}</span>
+                  </div>
+                  <span class="text-[0.6rem] opacity-50"
+                    >({{ t('summaryTrades.multiCurrency') }})</span
+                  >
+                </template>
+                <template v-else-if="data.balance">
+                  <span
+                    v-if="(data as ComparisonTableItems).isConverted"
+                    class="text-xs opacity-50"
+                    :title="t('summaryTrades.approximateConversion')"
+                    >&#8776;
+                  </span>
+                  <span :title="(data as ComparisonTableItems).stakeCurrency">
+                    {{
+                      formatPrice(
+                        (data as ComparisonTableItems).balance ?? 0,
+                        (data as ComparisonTableItems).stakeCurrencyDecimals,
+                      )
+                    }}
+                  </span>
+                  <span class="text-sm">{{ ` ${data.stakeCurrency}${data.balanceAppendix}` }}</span>
+                  <div
+                    v-if="
+                      (data as ComparisonTableItems).isConverted &&
+                      Object.keys((data as ComparisonTableItems).perCurrencyBalances ?? {}).length >
+                        1
+                    "
+                    class="text-[0.5rem] opacity-40 mt-0.5 leading-tight"
+                  >
+                    dont
+                    {{
+                      Object.entries((data as ComparisonTableItems).perCurrencyBalances ?? {})
+                        .filter(([cur]) => cur !== (data as ComparisonTableItems).stakeCurrency)
+                        .map(([cur, amt]) => formatPriceCurrency(amt as number, cur, 4))
+                        .join(' et ')
+                    }}
+                  </div>
+                </template>
+              </div>
+              <!-- Bot starting -->
+              <div v-else-if="data.isStarting && data.botId" class="text-center">
+                <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
+              </div>
+              <!-- Bot row -->
+              <div
+                v-else-if="data.balance"
+                @mouseenter="data.botId ? startBalanceHover($event, data.botId) : undefined"
+                @mouseleave="data.botId ? cancelBalanceHover() : undefined"
+              >
                 <span :title="(data as ComparisonTableItems).stakeCurrency">
-                  {{ formatPrice((data as ComparisonTableItems).balance ?? 0, (data as ComparisonTableItems).stakeCurrencyDecimals) }}
+                  {{
+                    formatPrice(
+                      (data as ComparisonTableItems).balance ?? 0,
+                      (data as ComparisonTableItems).stakeCurrencyDecimals,
+                    )
+                  }}
                 </span>
                 <span class="text-sm">{{ ` ${data.stakeCurrency}${data.balanceAppendix}` }}</span>
-                <div v-if="(data as ComparisonTableItems).isConverted && Object.keys((data as ComparisonTableItems).perCurrencyBalances ?? {}).length > 1" class="text-[0.5rem] opacity-40 mt-0.5 leading-tight">
-                  dont {{ Object.entries((data as ComparisonTableItems).perCurrencyBalances ?? {}).filter(([cur]) => cur !== (data as ComparisonTableItems).stakeCurrency).map(([cur, amt]) => formatPriceCurrency(amt as number, cur, 4)).join(' et ') }}
+              </div>
+            </template>
+
+            <!-- winLoss -->
+            <template v-else-if="col.id === 'winLoss'">
+              <!-- Bot starting -->
+              <div v-if="data.isStarting && data.botId" class="text-center">
+                <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
+              </div>
+              <div
+                v-else-if="data.losses !== undefined"
+                class="text-center"
+                @mouseenter="
+                  !data.botId && !(data as ComparisonTableItems).isGroupRow
+                    ? startSummaryWinLossHover($event)
+                    : data.botId
+                      ? startWinLossHover($event, data.botId)
+                      : undefined
+                "
+                @mouseleave="
+                  !data.botId && !(data as ComparisonTableItems).isGroupRow
+                    ? cancelSummaryWinLossHover()
+                    : data.botId
+                      ? cancelWinLossHover()
+                      : undefined
+                "
+              >
+                <div>
+                  <span class="text-profit">{{ data.wins }}</span> /
+                  <span class="text-loss">{{ data.losses }}</span>
                 </div>
-              </template>
-            </div>
-            <!-- Bot starting -->
-            <div v-else-if="data.isStarting && data.botId" class="text-center">
-              <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
-            </div>
-            <!-- Bot row -->
-            <div
-              v-else-if="data.balance"
-              @mouseenter="data.botId ? startBalanceHover($event, data.botId) : undefined"
-              @mouseleave="data.botId ? cancelBalanceHover() : undefined"
-            >
-              <span :title="(data as ComparisonTableItems).stakeCurrency">
+                <div
+                  v-if="data.wins + data.losses > 0"
+                  class="flex h-1.5 rounded-full overflow-hidden mt-1"
+                  style="min-width: 50px"
+                  :title="`${((data.wins / (data.wins + data.losses)) * 100).toFixed(1)}% winrate`"
+                >
+                  <div
+                    class="bg-green-500"
+                    :style="{ width: `${(data.wins / (data.wins + data.losses)) * 100}%` }"
+                  />
+                  <div
+                    class="bg-red-500"
+                    :style="{ width: `${(data.losses / (data.wins + data.losses)) * 100}%` }"
+                  />
+                </div>
+              </div>
+            </template>
+
+            <!-- stakeAmount -->
+            <template v-else-if="col.id === 'stakeAmount'">
+              <span v-if="data.botId !== undefined">{{
+                (data as ComparisonTableItems).stakeAmount
+              }}</span>
+            </template>
+
+            <!-- port -->
+            <template v-else-if="col.id === 'port'">
+              <span v-if="(data as ComparisonTableItems).port">{{
+                (data as ComparisonTableItems).port
+              }}</span>
+            </template>
+
+            <!-- strategy -->
+            <template v-else-if="col.id === 'strategy'">
+              <span v-if="data.botId !== undefined" class="text-xs">{{
+                (data as ComparisonTableItems).strategy
+              }}</span>
+            </template>
+
+            <!-- pairCount -->
+            <template v-else-if="col.id === 'pairCount'">
+              <span
+                v-if="data.botId !== undefined"
+                class="text-xs cursor-pointer hover:text-blue-400 transition-colors"
+                @mouseenter="startPairlistHover($event, data.botId!)"
+                @mouseleave="cancelPairlistHover()"
+                >{{ (data as ComparisonTableItems).pairCount }}</span
+              >
+            </template>
+
+            <!-- stakeCurrency -->
+            <template v-else-if="col.id === 'stakeCurrency'">
+              <span
+                v-if="(data as ComparisonTableItems).stakeCurrency && data.botId != undefined"
+                class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-bold cursor-pointer border border-transparent hover:border-current"
+                :style="
+                  getCurrencyStyle((data as ComparisonTableItems).stakeCurrency ?? '') || {
+                    background: 'var(--p-surface-200)',
+                    color: 'var(--p-surface-700)',
+                  }
+                "
+                :title="
+                  t('botComparison.selectByCurrency', {
+                    currency: (data as ComparisonTableItems).stakeCurrency,
+                  })
+                "
+                @click="
+                  botStore.toggleBotsByStakeCurrency(
+                    (data as ComparisonTableItems).stakeCurrency ?? '',
+                  )
+                "
+                @mouseenter="
+                  startCurrencyHover($event, (data as ComparisonTableItems).stakeCurrency ?? '')
+                "
+                @mouseleave="cancelCurrencyHover()"
+              >
+                {{ (data as ComparisonTableItems).stakeCurrency }}
+              </span>
+            </template>
+
+            <!-- availableCapital (config) -->
+            <template v-else-if="col.id === 'availableCapital'">
+              <span
+                v-if="
+                  data.botId !== undefined &&
+                  (data as ComparisonTableItems).availableCapital != null
+                "
+                class="text-xs"
+              >
                 {{
                   formatPrice(
-                    (data as ComparisonTableItems).balance ?? 0,
+                    (data as ComparisonTableItems).availableCapital!,
                     (data as ComparisonTableItems).stakeCurrencyDecimals,
                   )
                 }}
+                <span class="opacity-60">{{ (data as ComparisonTableItems).stakeCurrency }}</span>
               </span>
-              <span class="text-sm">{{ ` ${data.stakeCurrency}${data.balanceAppendix}` }}</span>
-            </div>
-          </template>
+              <span v-else-if="data.botId !== undefined" class="text-xs opacity-40">—</span>
+            </template>
 
-          <!-- winLoss -->
-          <template v-else-if="col.id === 'winLoss'">
-            <!-- Bot starting -->
-            <div v-if="data.isStarting && data.botId" class="text-center">
-              <i-mdi-loading class="animate-spin text-amber-500 text-sm" />
-            </div>
-            <div
-              v-else-if="data.losses !== undefined"
-              class="text-center"
-              @mouseenter="!data.botId && !(data as ComparisonTableItems).isGroupRow ? startSummaryWinLossHover($event) : (data.botId ? startWinLossHover($event, data.botId) : undefined)"
-              @mouseleave="!data.botId && !(data as ComparisonTableItems).isGroupRow ? cancelSummaryWinLossHover() : (data.botId ? cancelWinLossHover() : undefined)"
-            >
-              <div>
-                <span class="text-profit">{{ data.wins }}</span> /
-                <span class="text-loss">{{ data.losses }}</span>
-              </div>
-              <div
-                v-if="(data.wins + data.losses) > 0"
-                class="flex h-1.5 rounded-full overflow-hidden mt-1"
-                style="min-width: 50px"
-                :title="`${((data.wins / (data.wins + data.losses)) * 100).toFixed(1)}% winrate`"
+            <!-- tradableBalanceRatio (config) -->
+            <template v-else-if="col.id === 'tradableBalanceRatio'">
+              <span
+                v-if="
+                  data.botId !== undefined &&
+                  (data as ComparisonTableItems).tradableBalanceRatio != null
+                "
+                class="text-xs"
               >
-                <div
-                  class="bg-green-500"
-                  :style="{ width: `${(data.wins / (data.wins + data.losses)) * 100}%` }"
-                />
-                <div
-                  class="bg-red-500"
-                  :style="{ width: `${(data.losses / (data.wins + data.losses)) * 100}%` }"
-                />
-              </div>
-            </div>
-          </template>
-
-          <!-- stakeAmount -->
-          <template v-else-if="col.id === 'stakeAmount'">
-            <span v-if="data.botId !== undefined">{{ (data as ComparisonTableItems).stakeAmount }}</span>
-          </template>
-
-          <!-- port -->
-          <template v-else-if="col.id === 'port'">
-            <span v-if="(data as ComparisonTableItems).port">{{ (data as ComparisonTableItems).port }}</span>
-          </template>
-
-          <!-- strategy -->
-          <template v-else-if="col.id === 'strategy'">
-            <span v-if="data.botId !== undefined" class="text-xs">{{ (data as ComparisonTableItems).strategy }}</span>
-          </template>
-
-          <!-- pairCount -->
-          <template v-else-if="col.id === 'pairCount'">
-            <span
-              v-if="data.botId !== undefined"
-              class="text-xs cursor-pointer hover:text-blue-400 transition-colors"
-              @mouseenter="startPairlistHover($event, data.botId!)"
-              @mouseleave="cancelPairlistHover()"
-            >{{ (data as ComparisonTableItems).pairCount }}</span>
-          </template>
-
-          <!-- stakeCurrency -->
-          <template v-else-if="col.id === 'stakeCurrency'">
-            <span
-              v-if="(data as ComparisonTableItems).stakeCurrency && data.botId != undefined"
-              class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-bold cursor-pointer border border-transparent hover:border-current"
-              :style="getCurrencyStyle((data as ComparisonTableItems).stakeCurrency ?? '') || { background: 'var(--p-surface-200)', color: 'var(--p-surface-700)' }"
-              :title="
-                t('botComparison.selectByCurrency', {
-                  currency: (data as ComparisonTableItems).stakeCurrency,
-                })
-              "
-              @click="
-                botStore.toggleBotsByStakeCurrency(
-                  (data as ComparisonTableItems).stakeCurrency ?? '',
-                )
-              "
-              @mouseenter="startCurrencyHover($event, (data as ComparisonTableItems).stakeCurrency ?? '')"
-              @mouseleave="cancelCurrencyHover()"
-            >
-              {{ (data as ComparisonTableItems).stakeCurrency }}
-            </span>
-          </template>
-
-          <!-- availableCapital (config) -->
-          <template v-else-if="col.id === 'availableCapital'">
-            <span v-if="data.botId !== undefined && (data as ComparisonTableItems).availableCapital != null" class="text-xs">
-              {{ formatPrice((data as ComparisonTableItems).availableCapital!, (data as ComparisonTableItems).stakeCurrencyDecimals) }}
-              <span class="opacity-60">{{ (data as ComparisonTableItems).stakeCurrency }}</span>
-            </span>
-            <span v-else-if="data.botId !== undefined" class="text-xs opacity-40">—</span>
-          </template>
-
-          <!-- tradableBalanceRatio (config) -->
-          <template v-else-if="col.id === 'tradableBalanceRatio'">
-            <span v-if="data.botId !== undefined && (data as ComparisonTableItems).tradableBalanceRatio != null" class="text-xs">
-              {{ ((data as ComparisonTableItems).tradableBalanceRatio! * 100).toFixed(0) }}%
-            </span>
-            <span v-else-if="data.botId !== undefined" class="text-xs opacity-40">—</span>
-          </template>
-
-          <!-- availableFunds (computed: available_capital + gain - withdrawals) -->
-          <template v-else-if="col.id === 'availableFunds'">
-            <!-- Group row -->
-            <div
-              v-if="(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).availableFunds != null"
-              class="text-center font-bold"
-              :class="(data as ComparisonTableItems).availableFunds! > 0 ? 'text-profit' : (data as ComparisonTableItems).availableFunds! < 0 ? 'text-loss' : ''"
-            >
-              {{ formatPriceCurrency((data as ComparisonTableItems).availableFunds ?? 0, (data as ComparisonTableItems).stakeCurrency, 2) }}
-            </div>
-            <!-- Summary row -->
-            <div
-              v-else-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).availableFunds != null"
-              class="text-center font-bold"
-              :class="(data as ComparisonTableItems).availableFunds! > 0 ? 'text-profit' : (data as ComparisonTableItems).availableFunds! < 0 ? 'text-loss' : ''"
-            >
-              {{ formatPriceCurrency((data as ComparisonTableItems).availableFunds ?? 0, (data as ComparisonTableItems).stakeCurrency, 2) }}
-            </div>
-            <!-- Bot row -->
-            <div
-              v-else-if="data.botId !== undefined && (data as ComparisonTableItems).availableFunds != null"
-              @mouseenter="startAvailableFundsHover($event, data.botId!)"
-              @mouseleave="cancelAvailableFundsHover()"
-            >
-              <span class="font-bold" :class="(data as ComparisonTableItems).availableFunds! > 0 ? 'text-profit' : (data as ComparisonTableItems).availableFunds! < 0 ? 'text-loss' : ''">
-                {{ formatPrice((data as ComparisonTableItems).availableFunds!, (data as ComparisonTableItems).stakeCurrencyDecimals) }}
+                {{ ((data as ComparisonTableItems).tradableBalanceRatio! * 100).toFixed(0) }}%
               </span>
-              <span class="text-xs opacity-60 ml-0.5">{{ (data as ComparisonTableItems).stakeCurrency }}</span>
-            </div>
-            <span v-else-if="data.botId !== undefined" class="text-xs opacity-40">—</span>
-          </template>
+              <span v-else-if="data.botId !== undefined" class="text-xs opacity-40">—</span>
+            </template>
 
-          <!-- yearlyProfit -->
-          <template v-else-if="col.id === 'yearlyProfit'">
-            <!-- Group row -->
-            <div
-              v-if="(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).yearlyProfit != null"
-              class="text-center font-bold"
-              :class="(data as ComparisonTableItems).yearlyProfit! > 0 ? 'text-profit' : (data as ComparisonTableItems).yearlyProfit! < 0 ? 'text-loss' : ''"
-            >
-              {{ formatPriceCurrency((data as ComparisonTableItems).yearlyProfit ?? 0, (data as ComparisonTableItems).stakeCurrency, 2) }}
-            </div>
-            <!-- Summary row -->
-            <div
-              v-else-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).yearlyProfit !== undefined"
-              @mouseenter="startSummaryPeriodHover($event, 'yearly')"
-              @mouseleave="cancelSummaryPeriodHover()"
-            >
-              <template v-if="(data as ComparisonTableItems).isMultiCurrency">
-                <div v-for="(amt, cur) in (data as ComparisonTableItems).perCurrencyYearlyProfit" :key="cur" class="text-sm text-center">
-                  <span :class="amt > 0 ? 'text-profit' : amt < 0 ? 'text-loss' : ''">{{ formatPriceCurrency(amt, cur as string, 2) }}</span>
-                </div>
-              </template>
-              <template v-else>
-                <div class="text-center font-bold" :class="(data as ComparisonTableItems).yearlyProfit! > 0 ? 'text-profit' : (data as ComparisonTableItems).yearlyProfit! < 0 ? 'text-loss' : ''">
-                  <span v-if="(data as ComparisonTableItems).isConverted" class="opacity-50" :title="t('summaryTrades.approximateConversion')">&#8776; </span>
-                  {{ formatPriceCurrency((data as ComparisonTableItems).yearlyProfit ?? 0, (data as ComparisonTableItems).stakeCurrency, 2) }}
-                </div>
-              </template>
-            </div>
-            <!-- Bot row -->
-            <div
-              v-else-if="(data as ComparisonTableItems).yearlyProfit !== undefined && data.botId !== undefined"
-              @mouseenter="startPeriodProfitHover($event, data.botId)"
-              @mouseleave="cancelPeriodProfitHover()"
-            >
-              <ProfitPill
-                :profit-ratio="calculatePeriodProfit(botStore.allProfit[(data as ComparisonTableItems).botId!], 365)?.ratio"
-                :stake-currency="(data as ComparisonTableItems).stakeCurrency"
-              />
-              <div class="text-xs text-center opacity-60 mt-0.5">
-                {{ formatPriceCurrency((data as ComparisonTableItems).yearlyProfit ?? 0, (data as ComparisonTableItems).stakeCurrency, 2) }}
+            <!-- availableFunds (computed: available_capital + gain - withdrawals) -->
+            <template v-else-if="col.id === 'availableFunds'">
+              <!-- Group row -->
+              <div
+                v-if="
+                  (data as ComparisonTableItems).isGroupRow &&
+                  (data as ComparisonTableItems).availableFunds != null
+                "
+                class="text-center font-bold"
+                :class="
+                  (data as ComparisonTableItems).availableFunds! > 0
+                    ? 'text-profit'
+                    : (data as ComparisonTableItems).availableFunds! < 0
+                      ? 'text-loss'
+                      : ''
+                "
+              >
+                {{
+                  formatPriceCurrency(
+                    (data as ComparisonTableItems).availableFunds ?? 0,
+                    (data as ComparisonTableItems).stakeCurrency,
+                    2,
+                  )
+                }}
               </div>
-            </div>
-          </template>
+              <!-- Summary row -->
+              <div
+                v-else-if="
+                  !data.botId &&
+                  !(data as ComparisonTableItems).isGroupRow &&
+                  (data as ComparisonTableItems).availableFunds != null
+                "
+                class="text-center font-bold"
+                :class="
+                  (data as ComparisonTableItems).availableFunds! > 0
+                    ? 'text-profit'
+                    : (data as ComparisonTableItems).availableFunds! < 0
+                      ? 'text-loss'
+                      : ''
+                "
+              >
+                {{
+                  formatPriceCurrency(
+                    (data as ComparisonTableItems).availableFunds ?? 0,
+                    (data as ComparisonTableItems).stakeCurrency,
+                    2,
+                  )
+                }}
+              </div>
+              <!-- Bot row -->
+              <div
+                v-else-if="
+                  data.botId !== undefined && (data as ComparisonTableItems).availableFunds != null
+                "
+                @mouseenter="startAvailableFundsHover($event, data.botId!)"
+                @mouseleave="cancelAvailableFundsHover()"
+              >
+                <span
+                  class="font-bold"
+                  :class="
+                    (data as ComparisonTableItems).availableFunds! > 0
+                      ? 'text-profit'
+                      : (data as ComparisonTableItems).availableFunds! < 0
+                        ? 'text-loss'
+                        : ''
+                  "
+                >
+                  {{
+                    formatPrice(
+                      (data as ComparisonTableItems).availableFunds!,
+                      (data as ComparisonTableItems).stakeCurrencyDecimals,
+                    )
+                  }}
+                </span>
+                <span class="text-xs opacity-60 ml-0.5">{{
+                  (data as ComparisonTableItems).stakeCurrency
+                }}</span>
+              </div>
+              <span v-else-if="data.botId !== undefined" class="text-xs opacity-40">—</span>
+            </template>
 
-          <!-- monthlyProfit -->
-          <template v-else-if="col.id === 'monthlyProfit'">
-            <!-- Group row -->
-            <div
-              v-if="(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).monthlyProfit != null"
-              class="text-center font-bold"
-              :class="(data as ComparisonTableItems).monthlyProfit! > 0 ? 'text-profit' : (data as ComparisonTableItems).monthlyProfit! < 0 ? 'text-loss' : ''"
-            >
-              {{ formatPriceCurrency((data as ComparisonTableItems).monthlyProfit ?? 0, (data as ComparisonTableItems).stakeCurrency, 2) }}
-            </div>
-            <!-- Summary row -->
-            <div
-              v-else-if="!data.botId && !(data as ComparisonTableItems).isGroupRow && (data as ComparisonTableItems).monthlyProfit !== undefined"
-              @mouseenter="startSummaryPeriodHover($event, 'monthly')"
-              @mouseleave="cancelSummaryPeriodHover()"
-            >
-              <template v-if="(data as ComparisonTableItems).isMultiCurrency">
-                <div v-for="(amt, cur) in (data as ComparisonTableItems).perCurrencyMonthlyProfit" :key="cur" class="text-sm text-center">
-                  <span :class="amt > 0 ? 'text-profit' : amt < 0 ? 'text-loss' : ''">{{ formatPriceCurrency(amt, cur as string, 2) }}</span>
-                </div>
-              </template>
-              <template v-else>
-                <div class="text-center font-bold" :class="(data as ComparisonTableItems).monthlyProfit! > 0 ? 'text-profit' : (data as ComparisonTableItems).monthlyProfit! < 0 ? 'text-loss' : ''">
-                  <span v-if="(data as ComparisonTableItems).isConverted" class="opacity-50" :title="t('summaryTrades.approximateConversion')">&#8776; </span>
-                  {{ formatPriceCurrency((data as ComparisonTableItems).monthlyProfit ?? 0, (data as ComparisonTableItems).stakeCurrency, 2) }}
-                </div>
-              </template>
-            </div>
-            <!-- Bot row -->
-            <div
-              v-else-if="(data as ComparisonTableItems).monthlyProfit !== undefined && data.botId !== undefined"
-              @mouseenter="startPeriodProfitHover($event, data.botId)"
-              @mouseleave="cancelPeriodProfitHover()"
-            >
-              <ProfitPill
-                :profit-ratio="calculateMonthlyProfitData(botStore.allProfit[(data as ComparisonTableItems).botId!])?.ratio"
-                :stake-currency="(data as ComparisonTableItems).stakeCurrency"
-              />
-              <div class="text-xs text-center opacity-60 mt-0.5">
-                {{ formatPriceCurrency((data as ComparisonTableItems).monthlyProfit ?? 0, (data as ComparisonTableItems).stakeCurrency, 2) }}
+            <!-- yearlyProfit -->
+            <template v-else-if="col.id === 'yearlyProfit'">
+              <!-- Group row -->
+              <div
+                v-if="
+                  (data as ComparisonTableItems).isGroupRow &&
+                  (data as ComparisonTableItems).yearlyProfit != null
+                "
+                class="text-center font-bold"
+                :class="
+                  (data as ComparisonTableItems).yearlyProfit! > 0
+                    ? 'text-profit'
+                    : (data as ComparisonTableItems).yearlyProfit! < 0
+                      ? 'text-loss'
+                      : ''
+                "
+              >
+                {{
+                  formatPriceCurrency(
+                    (data as ComparisonTableItems).yearlyProfit ?? 0,
+                    (data as ComparisonTableItems).stakeCurrency,
+                    2,
+                  )
+                }}
               </div>
-            </div>
-          </template>
+              <!-- Summary row -->
+              <div
+                v-else-if="
+                  !data.botId &&
+                  !(data as ComparisonTableItems).isGroupRow &&
+                  (data as ComparisonTableItems).yearlyProfit !== undefined
+                "
+                @mouseenter="startSummaryPeriodHover($event, 'yearly')"
+                @mouseleave="cancelSummaryPeriodHover()"
+              >
+                <template v-if="(data as ComparisonTableItems).isMultiCurrency">
+                  <div
+                    v-for="(amt, cur) in (data as ComparisonTableItems).perCurrencyYearlyProfit"
+                    :key="cur"
+                    class="text-sm text-center"
+                  >
+                    <span :class="amt > 0 ? 'text-profit' : amt < 0 ? 'text-loss' : ''">{{
+                      formatPriceCurrency(amt, cur as string, 2)
+                    }}</span>
+                  </div>
+                </template>
+                <template v-else>
+                  <div
+                    class="text-center font-bold"
+                    :class="
+                      (data as ComparisonTableItems).yearlyProfit! > 0
+                        ? 'text-profit'
+                        : (data as ComparisonTableItems).yearlyProfit! < 0
+                          ? 'text-loss'
+                          : ''
+                    "
+                  >
+                    <span
+                      v-if="(data as ComparisonTableItems).isConverted"
+                      class="opacity-50"
+                      :title="t('summaryTrades.approximateConversion')"
+                      >&#8776;
+                    </span>
+                    {{
+                      formatPriceCurrency(
+                        (data as ComparisonTableItems).yearlyProfit ?? 0,
+                        (data as ComparisonTableItems).stakeCurrency,
+                        2,
+                      )
+                    }}
+                  </div>
+                </template>
+              </div>
+              <!-- Bot row -->
+              <div
+                v-else-if="
+                  (data as ComparisonTableItems).yearlyProfit !== undefined &&
+                  data.botId !== undefined
+                "
+                @mouseenter="startPeriodProfitHover($event, data.botId)"
+                @mouseleave="cancelPeriodProfitHover()"
+              >
+                <ProfitPill
+                  :profit-ratio="
+                    calculatePeriodProfit(
+                      botStore.allProfit[(data as ComparisonTableItems).botId!],
+                      365,
+                    )?.ratio
+                  "
+                  :stake-currency="(data as ComparisonTableItems).stakeCurrency"
+                />
+                <div class="text-xs text-center opacity-60 mt-0.5">
+                  {{
+                    formatPriceCurrency(
+                      (data as ComparisonTableItems).yearlyProfit ?? 0,
+                      (data as ComparisonTableItems).stakeCurrency,
+                      2,
+                    )
+                  }}
+                </div>
+              </div>
+            </template>
+
+            <!-- monthlyProfit -->
+            <template v-else-if="col.id === 'monthlyProfit'">
+              <!-- Group row -->
+              <div
+                v-if="
+                  (data as ComparisonTableItems).isGroupRow &&
+                  (data as ComparisonTableItems).monthlyProfit != null
+                "
+                class="text-center font-bold"
+                :class="
+                  (data as ComparisonTableItems).monthlyProfit! > 0
+                    ? 'text-profit'
+                    : (data as ComparisonTableItems).monthlyProfit! < 0
+                      ? 'text-loss'
+                      : ''
+                "
+              >
+                {{
+                  formatPriceCurrency(
+                    (data as ComparisonTableItems).monthlyProfit ?? 0,
+                    (data as ComparisonTableItems).stakeCurrency,
+                    2,
+                  )
+                }}
+              </div>
+              <!-- Summary row -->
+              <div
+                v-else-if="
+                  !data.botId &&
+                  !(data as ComparisonTableItems).isGroupRow &&
+                  (data as ComparisonTableItems).monthlyProfit !== undefined
+                "
+                @mouseenter="startSummaryPeriodHover($event, 'monthly')"
+                @mouseleave="cancelSummaryPeriodHover()"
+              >
+                <template v-if="(data as ComparisonTableItems).isMultiCurrency">
+                  <div
+                    v-for="(amt, cur) in (data as ComparisonTableItems).perCurrencyMonthlyProfit"
+                    :key="cur"
+                    class="text-sm text-center"
+                  >
+                    <span :class="amt > 0 ? 'text-profit' : amt < 0 ? 'text-loss' : ''">{{
+                      formatPriceCurrency(amt, cur as string, 2)
+                    }}</span>
+                  </div>
+                </template>
+                <template v-else>
+                  <div
+                    class="text-center font-bold"
+                    :class="
+                      (data as ComparisonTableItems).monthlyProfit! > 0
+                        ? 'text-profit'
+                        : (data as ComparisonTableItems).monthlyProfit! < 0
+                          ? 'text-loss'
+                          : ''
+                    "
+                  >
+                    <span
+                      v-if="(data as ComparisonTableItems).isConverted"
+                      class="opacity-50"
+                      :title="t('summaryTrades.approximateConversion')"
+                      >&#8776;
+                    </span>
+                    {{
+                      formatPriceCurrency(
+                        (data as ComparisonTableItems).monthlyProfit ?? 0,
+                        (data as ComparisonTableItems).stakeCurrency,
+                        2,
+                      )
+                    }}
+                  </div>
+                </template>
+              </div>
+              <!-- Bot row -->
+              <div
+                v-else-if="
+                  (data as ComparisonTableItems).monthlyProfit !== undefined &&
+                  data.botId !== undefined
+                "
+                @mouseenter="startPeriodProfitHover($event, data.botId)"
+                @mouseleave="cancelPeriodProfitHover()"
+              >
+                <ProfitPill
+                  :profit-ratio="
+                    calculateMonthlyProfitData(
+                      botStore.allProfit[(data as ComparisonTableItems).botId!],
+                    )?.ratio
+                  "
+                  :stake-currency="(data as ComparisonTableItems).stakeCurrency"
+                />
+                <div class="text-xs text-center opacity-60 mt-0.5">
+                  {{
+                    formatPriceCurrency(
+                      (data as ComparisonTableItems).monthlyProfit ?? 0,
+                      (data as ComparisonTableItems).stakeCurrency,
+                      2,
+                    )
+                  }}
+                </div>
+              </div>
+            </template>
           </div>
         </template>
       </Column>
     </DataTable>
 
     <!-- Bot action menu popovers -->
-    <template v-for="item in tableItems.filter(i => i.botId && !i.isGroupRow)" :key="'action-' + item.botId">
-      <Popover :ref="(el: any) => { if (el) botActionMenuRef[item.botId!] = el; }">
+    <template
+      v-for="item in tableItems.filter((i) => i.botId && !i.isGroupRow)"
+      :key="'action-' + item.botId"
+    >
+      <Popover
+        :ref="
+          (el: any) => {
+            if (el) botActionMenuRef[item.botId!] = el;
+          }
+        "
+      >
         <div class="flex flex-col gap-0.5 p-1 min-w-[160px]">
-          <div v-if="item.isOnline === false" class="text-xs text-surface-400 px-2 py-1.5 text-center italic">
+          <div
+            v-if="item.isOnline === false"
+            class="text-xs text-surface-400 px-2 py-1.5 text-center italic"
+          >
             {{ t('botComparison.offline') }}
           </div>
           <template v-else>
             <button
               class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
               :disabled="!!botActionPending[item.botId!]"
-              @click="requestBotAction(item.botId!, 'start', item.botName); botActionMenuRef[item.botId!]?.hide()"
+              @click="
+                requestBotAction(item.botId!, 'start', item.botName);
+                botActionMenuRef[item.botId!]?.hide();
+              "
             >
               <i-mdi-play class="text-green-500" /> {{ t('botComparison.actionStart') }}
             </button>
             <button
               class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
               :disabled="!!botActionPending[item.botId!]"
-              @click="requestBotAction(item.botId!, 'pause', item.botName); botActionMenuRef[item.botId!]?.hide()"
+              @click="
+                requestBotAction(item.botId!, 'pause', item.botName);
+                botActionMenuRef[item.botId!]?.hide();
+              "
             >
               <i-mdi-pause class="text-amber-400" /> {{ t('botComparison.actionPause') }}
             </button>
             <button
               class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
               :disabled="!!botActionPending[item.botId!]"
-              @click="requestBotAction(item.botId!, 'reload', item.botName); botActionMenuRef[item.botId!]?.hide()"
+              @click="
+                requestBotAction(item.botId!, 'reload', item.botName);
+                botActionMenuRef[item.botId!]?.hide();
+              "
             >
               <i-mdi-refresh class="text-blue-400" /> {{ t('botComparison.actionReload') }}
             </button>
@@ -4702,53 +6157,81 @@ const correlatedPairs = computed(() => {
             <button
               class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-red-500/10 w-full text-left cursor-pointer transition-colors text-red-400"
               :disabled="!!botActionPending[item.botId!]"
-              @click="requestBotAction(item.botId!, 'stop', item.botName); botActionMenuRef[item.botId!]?.hide()"
+              @click="
+                requestBotAction(item.botId!, 'stop', item.botName);
+                botActionMenuRef[item.botId!]?.hide();
+              "
             >
               <i-mdi-stop class="text-red-500" /> {{ t('botComparison.actionStop') }}
             </button>
             <button
               class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-red-500/10 w-full text-left cursor-pointer transition-colors text-red-400"
               :disabled="!!botActionPending[item.botId!]"
-              @click="requestBotAction(item.botId!, 'forceExitAll', item.botName); botActionMenuRef[item.botId!]?.hide()"
+              @click="
+                requestBotAction(item.botId!, 'forceExitAll', item.botName);
+                botActionMenuRef[item.botId!]?.hide();
+              "
             >
-              <i-mdi-close-circle class="text-red-500" /> {{ t('botComparison.actionForceExitAll') }}
+              <i-mdi-close-circle class="text-red-500" />
+              {{ t('botComparison.actionForceExitAll') }}
             </button>
           </template>
           <!-- Navigation actions (always visible, even when offline) -->
           <div class="border-t border-surface-200 dark:border-surface-700 my-0.5"></div>
           <button
             class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
-            @click="botStore.selectBot(item.botId!); router.push({ path: '/logs', query: { bot: item.botId } }); botActionMenuRef[item.botId!]?.hide()"
+            @click="
+              botStore.selectBot(item.botId!);
+              router.push({ path: '/logs', query: { bot: item.botId } });
+              botActionMenuRef[item.botId!]?.hide();
+            "
           >
             <i-mdi-console class="text-surface-500" /> {{ t('botComparison.viewLogs') }}
           </button>
           <button
             class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
-            @click="botStore.selectBot(item.botId!); router.push('/trade'); botActionMenuRef[item.botId!]?.hide()"
+            @click="
+              botStore.selectBot(item.botId!);
+              router.push('/trade');
+              botActionMenuRef[item.botId!]?.hide();
+            "
           >
             <i-mdi-swap-horizontal class="text-surface-500" /> {{ t('botComparison.viewTrades') }}
           </button>
           <button
             class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
-            @click="router.push({ path: '/journal', query: { bot: item.botName } }); botActionMenuRef[item.botId!]?.hide()"
+            @click="
+              router.push({ path: '/journal', query: { bot: item.botName } });
+              botActionMenuRef[item.botId!]?.hide();
+            "
           >
-            <i-mdi-book-open-variant class="text-surface-500" /> {{ t('botComparison.viewJournal') }}
+            <i-mdi-book-open-variant class="text-surface-500" />
+            {{ t('botComparison.viewJournal') }}
           </button>
           <button
             class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
-            @click="openStrategyAnalysis(item.botId!); botActionMenuRef[item.botId!]?.hide()"
+            @click="
+              openStrategyAnalysis(item.botId!);
+              botActionMenuRef[item.botId!]?.hide();
+            "
           >
             <i-mdi-flask-outline class="text-purple-400" /> {{ t('botComparison.analyzeStrategy') }}
           </button>
           <button
             class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
-            @click="configEditorStore.open(item.botId!); botActionMenuRef[item.botId!]?.hide()"
+            @click="
+              configEditorStore.open(item.botId!);
+              botActionMenuRef[item.botId!]?.hide();
+            "
           >
             <i-mdi-tune-vertical class="text-teal-400" /> {{ t('botComparison.editConfig') }}
           </button>
           <!-- Action feedback -->
           <div v-if="botActionFeedback[item.botId!]" class="text-center py-1">
-            <i-mdi-check-circle v-if="botActionFeedback[item.botId!] === 'success'" class="text-green-500 text-lg" />
+            <i-mdi-check-circle
+              v-if="botActionFeedback[item.botId!] === 'success'"
+              class="text-green-500 text-lg"
+            />
             <i-mdi-close-circle v-else class="text-red-500 text-lg" />
           </div>
         </div>
@@ -4765,7 +6248,12 @@ const correlatedPairs = computed(() => {
       @update:visible="confirmAction = null"
     >
       <p class="text-sm">
-        {{ t('botComparison.confirmActionMsg', { action: confirmAction.label, bot: confirmAction.botId }) }}
+        {{
+          t('botComparison.confirmActionMsg', {
+            action: confirmAction.label,
+            bot: confirmAction.botId,
+          })
+        }}
       </p>
       <template #footer>
         <Button label="Cancel" severity="secondary" size="small" @click="confirmAction = null" />
@@ -4847,7 +6335,9 @@ const correlatedPairs = computed(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
 
