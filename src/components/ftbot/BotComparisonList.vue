@@ -5567,10 +5567,8 @@ const correlatedPairs = computed(() => {
                   @mouseenter="startMaxDrawdownHover($event, mddBotIds(data), mddTitle(data))"
                   @mouseleave="cancelMaxDrawdownHover()"
                 >
-                  <div class="flex items-center gap-1">
-                    <span class="text-[0.6rem] uppercase text-surface-500 w-9 shrink-0">{{
-                      t('maxDrawdownCard.realizedShort')
-                    }}</span>
+                  <!-- single value when open positions don't deepen the drawdown -->
+                  <div v-if="mdd.openAbs - mdd.realizedAbs <= 0.005" class="flex items-center gap-1">
                     <span class="font-semibold text-xs" :class="ddColor(mdd.realizedRatio)"
                       >-{{ formatPercent(mdd.realizedRatio, 1) }}</span
                     >
@@ -5578,17 +5576,31 @@ const correlatedPairs = computed(() => {
                       >-{{ Math.round(mdd.realizedAbs) }}</span
                     >
                   </div>
-                  <div class="flex items-center gap-1">
-                    <span class="text-[0.6rem] uppercase text-surface-500 w-9 shrink-0">{{
-                      t('maxDrawdownCard.openShort')
-                    }}</span>
-                    <span class="font-semibold text-xs" :class="ddColor(mdd.openRatio)"
-                      >-{{ formatPercent(mdd.openRatio, 1) }}</span
-                    >
-                    <span class="text-[0.65rem] text-surface-500"
-                      >-{{ Math.round(mdd.openAbs) }}</span
-                    >
-                  </div>
+                  <!-- both values when open positions go deeper than the realized drawdown -->
+                  <template v-else>
+                    <div class="flex items-center gap-1">
+                      <span class="text-[0.6rem] uppercase text-surface-500 w-9 shrink-0">{{
+                        t('maxDrawdownCard.realizedShort')
+                      }}</span>
+                      <span class="font-semibold text-xs" :class="ddColor(mdd.realizedRatio)"
+                        >-{{ formatPercent(mdd.realizedRatio, 1) }}</span
+                      >
+                      <span class="text-[0.65rem] text-surface-500"
+                        >-{{ Math.round(mdd.realizedAbs) }}</span
+                      >
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <span class="text-[0.6rem] uppercase text-surface-500 w-9 shrink-0">{{
+                        t('maxDrawdownCard.openShort')
+                      }}</span>
+                      <span class="font-semibold text-xs" :class="ddColor(mdd.openRatio)"
+                        >-{{ formatPercent(mdd.openRatio, 1) }}</span
+                      >
+                      <span class="text-[0.65rem] text-surface-500"
+                        >-{{ Math.round(mdd.openAbs) }}</span
+                      >
+                    </div>
+                  </template>
                 </div>
                 <span v-else class="text-surface-500 text-xs">—</span>
               </template>
