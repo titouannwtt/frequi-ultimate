@@ -301,7 +301,7 @@ function filterByType() {
         <span v-if="isLive && run.exchange" class="rdh-meta-item">
           <i-mdi-swap-horizontal class="rdh-meta-icon" /> {{ run.exchange }}
         </span>
-        <span v-if="isLive" class="rdh-meta-item" :style="{ color: run.dry_run ? 'var(--sd-warning)' : 'var(--sd-success)' }">
+        <span v-if="isLive" class="rdh-meta-item" :style="{ color: run.dry_run ? 'var(--sd-success)' : 'var(--sd-info)' }">
           <i-mdi-circle class="rdh-meta-icon" style="width: 8px; height: 8px" />
           {{ run.dry_run ? t('strategyDev.liveDryRun') : t('strategyDev.liveReal') }}
         </span>

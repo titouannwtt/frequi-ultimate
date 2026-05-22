@@ -51,7 +51,7 @@ const botInfo = computed(() => {
   items.push({
     label: t('strategyDev.liveMode'),
     value: s.dry_run ? t('strategyDev.liveDryRun') : t('strategyDev.liveReal'),
-    color: s.dry_run ? 'var(--sd-warning)' : 'var(--sd-success)',
+    color: s.dry_run ? 'var(--sd-success)' : 'var(--sd-info)',
   });
   items.push({ label: t('strategyDev.liveTimeframe'), value: s.timeframe || '—' });
   items.push({ label: t('strategyDev.liveMaxTrades'), value: String(s.max_open_trades ?? '—') });
