@@ -84,7 +84,7 @@ const verdictDot = computed<string | null>(() => {
     <!-- Type tag -->
     <Tag
       :value="isLiveBot ? (run.dry_run ? 'dry' : 'live') : run.run_type"
-      :severity="isLiveBot && run.dry_run ? 'warn' : typeColors[run.run_type]"
+      :severity="isLiveBot ? (run.dry_run ? 'success' : 'info') : typeColors[run.run_type]"
       class="run-type-tag"
     />
 

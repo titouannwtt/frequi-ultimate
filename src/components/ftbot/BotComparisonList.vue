@@ -5010,7 +5010,7 @@ const correlatedPairs = computed(() => {
                           class="text-[0.55rem] cursor-pointer"
                           style="padding: 1px 5px; line-height: 1.2"
                           :class="{ 'opacity-30': !isTagActive('status', 'live') }"
-                          severity="warning"
+                          severity="info"
                           :title="t('botComparison.selectLiveBots')"
                           @click="botStore.toggleBotsByState('live')"
                           >Live</Badge
@@ -5198,7 +5198,7 @@ const correlatedPairs = computed(() => {
                 <Badge
                   v-else-if="data.isOnline && !data.isDryRun"
                   class="items-center cursor-pointer"
-                  severity="warning"
+                  severity="info"
                   :title="t('botComparison.selectLiveBots')"
                   @click="botStore.toggleBotsByState('live')"
                 >

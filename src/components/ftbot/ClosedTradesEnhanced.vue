@@ -174,7 +174,7 @@ watch(
           <template v-if="col.key === 'botState'">
             <span
               class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold"
-              :class="botStore.botStores[data.botId]?.botState?.dry_run ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'"
+              :class="botStore.botStores[data.botId]?.botState?.dry_run ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'"
             >
               {{ botStore.botStores[data.botId]?.botState?.dry_run ? 'Dry' : 'Live' }}
             </span>

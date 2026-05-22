@@ -236,7 +236,7 @@ const refreshProgress = computed(() => {
               >
                 <code class="text-[10px] text-surface-400 mr-1">{{ exchangeShort(bot.exchange, bot.trading_mode) }}</code>
                 <span class="font-medium">{{ bot.bot_id }}</span>
-                <span v-if="bot.dry_run" class="text-[9px] ml-0.5 text-blue-400">DRY</span>
+                <span v-if="bot.dry_run" class="text-[9px] ml-0.5 text-green-400">DRY</span>
               </span>
               <span class="text-center py-0.5">
                 <span

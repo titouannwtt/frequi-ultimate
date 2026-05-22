@@ -233,7 +233,7 @@ onUnmounted(() => {
             <tr v-for="bot in sortedBots" :key="bot.bot_id">
               <td class="text-nowrap">
                 <span class="fw-semibold">{{ bot.bot_id }}</span>
-                <span v-if="bot.dry_run" class="badge bg-info ms-1 small">DRY</span>
+                <span v-if="bot.dry_run" class="badge bg-success ms-1 small">DRY</span>
               </td>
               <td>
                 <code class="small">{{ exchangeShort(bot.exchange, bot.trading_mode) }}</code>
