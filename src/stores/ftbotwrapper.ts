@@ -364,10 +364,14 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       console.log('Starting automatic refresh.');
       this.allRefreshFull();
       if (!this.refreshInterval) {
-        // Set interval for refresh
+        // Set interval for refresh.
+        // 10s (was 5s): with ~30 bots each /status hit calls exchange.get_rate per
+        // open trade (expensive) and every response reassigns openTrades, triggering
+        // the multi-bot dashboard's reactive recompute storm. 10s halves both the
+        // request volume and the churn; imperceptible for 15m-candle strategies.
         const refreshInterval = window.setInterval(() => {
           this.allRefreshFrequent();
-        }, 5000);
+        }, 10000);
         this.refreshInterval = refreshInterval;
       }
       if (!this.refreshIntervalSlow) {
@@ -384,10 +388,13 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       }
       // Fetch trades for all online bots immediately
       this.fetchAllBotsTrades();
-      // Then every 5 minutes
+      // Then every 10 minutes. This is a full-history re-download safety net; the
+      // per-bot refreshSlow already re-fetches trades on change (open-trade id diff),
+      // so this periodic sweep can be infrequent. 10min (was 5min) halves the
+      // redundant full /trades downloads across all bots.
       this.tradesRefreshInterval = window.setInterval(() => {
         this.fetchAllBotsTrades();
-      }, 5 * 60 * 1000);
+      }, 10 * 60 * 1000);
     },
     async fetchAllBotsTrades() {
       const updates: Promise<void>[] = [];

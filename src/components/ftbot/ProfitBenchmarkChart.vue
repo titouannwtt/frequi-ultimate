@@ -65,8 +65,22 @@ const { summaryCurrency } = useSummaryCurrency();
 const { convert } = useExchangeRates();
 const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
 
-const modeFilteredTrades = computed(() => filterTradesByMode(props.trades));
-const modeFilteredOpenTrades = computed(() => filterTradesByMode(props.openTrades ?? []));
+// Debounce the multi-bot trade inputs. With ~30 bots, /status responses arrive
+// staggered on each refresh cycle and each one mutates openTrades, which would
+// otherwise rebuild this whole ECharts option up to ~30x per cycle. Coalesce into
+// a single rebuild — a sub-second chart lag is invisible, the CPU saving is large.
+const debouncedTrades = refDebounced(
+  computed(() => props.trades),
+  500,
+  { maxWait: 2000 },
+);
+const debouncedOpenTrades = refDebounced(
+  computed(() => props.openTrades ?? []),
+  500,
+  { maxWait: 2000 },
+);
+const modeFilteredTrades = computed(() => filterTradesByMode(debouncedTrades.value));
+const modeFilteredOpenTrades = computed(() => filterTradesByMode(debouncedOpenTrades.value));
 
 const chart = ref<InstanceType<typeof ECharts>>();
 

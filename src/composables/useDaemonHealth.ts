@@ -19,7 +19,9 @@ export type HealthLevel = 'healthy' | 'degraded' | 'critical' | 'offline';
 
 export function useDaemonHealth(opts: { refreshMs?: number } = {}) {
   const botStore = useBotStore();
-  const refreshMs = opts.refreshMs ?? 10_000;
+  // 20s (was 10s): infrastructure health is always-rendered and polls 4 endpoints;
+  // 20s is plenty for daemon/fleet health and halves its standing load.
+  const refreshMs = opts.refreshMs ?? 20_000;
 
   const state = reactive<DaemonHealthState>({
     cache: null,
