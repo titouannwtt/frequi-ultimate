@@ -30,7 +30,10 @@ const {
   primaryMetrics,
   hasData,
   secondsSinceRefresh,
-} = useRateMetrics({ multiBotView: props.multiBotView, refreshMs: 2_000 });
+  // 15s (was 2s): at 2s this widget fetched rate metrics from ALL ~30 bots every
+  // 2 seconds (~900 req/min) — by far the highest-cadence fan-out on the dashboard.
+  // 15s keeps the monitor "live enough" while cutting that load ~7.5x.
+} = useRateMetrics({ multiBotView: props.multiBotView, refreshMs: 15_000 });
 
 // --- data ---
 const current = computed(() => primaryMetrics.value?.current);

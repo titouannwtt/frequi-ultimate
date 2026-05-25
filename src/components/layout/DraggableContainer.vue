@@ -15,6 +15,14 @@ const props = withDefaults(
     hasColumnSettings?: boolean;
     hasFilterDefaults?: boolean;
     filtersChanged?: boolean;
+    /**
+     * Lazy-mount the content: only render the default slot while the widget is
+     * in (or near) the viewport, and unmount it when scrolled away. Opt-in so
+     * other views keep their eager behaviour. On a dense dashboard this keeps
+     * the live DOM / canvas count / reactive recompute proportional to what's
+     * actually on screen instead of all widgets at once.
+     */
+    lazy?: boolean;
   }>(),
   {
     header: '',
@@ -23,6 +31,7 @@ const props = withDefaults(
     hasColumnSettings: false,
     hasFilterDefaults: false,
     filtersChanged: false,
+    lazy: false,
   },
 );
 
@@ -36,10 +45,35 @@ const layoutStore = useLayoutStore();
 const isHidden = computed(() =>
   props.widgetId >= 0 && !layoutStore.isWidgetVisible(props.widgetId),
 );
+
+// --- Lazy viewport mounting (opt-in via `lazy`) ---
+const rootEl = ref<HTMLElement | null>(null);
+const isNearViewport = ref(!props.lazy);
+if (props.lazy) {
+  // rootMargin pre-mounts ~400px before the widget scrolls into view (and keeps
+  // it mounted ~400px after it leaves) to avoid blank flashes during scroll.
+  useIntersectionObserver(
+    rootEl,
+    (entries) => {
+      isNearViewport.value = entries[entries.length - 1]?.isIntersecting ?? false;
+    },
+    { rootMargin: '400px 0px' },
+  );
+}
+
+const renderContent = computed(() => {
+  if (!props.lazy) return true;
+  // In edit mode the user is arranging widgets — render everything so the
+  // layout looks complete. Hidden widgets never mount their content.
+  if (layoutStore.editMode) return true;
+  if (isHidden.value) return false;
+  return isNearViewport.value;
+});
 </script>
 
 <template>
   <div
+    ref="rootEl"
     class="ft-widget flex flex-col h-full w-full rounded-lg"
     :class="{
       'ft-widget-edit': layoutStore.editMode && !isHidden,
@@ -125,7 +159,8 @@ const isHidden = computed(() =>
       :class="{ 'ft-widget-hidden-content': isHidden && layoutStore.editMode }"
       v-bind="$attrs"
     >
-      <slot></slot>
+      <slot v-if="renderContent"></slot>
+      <div v-else class="ft-lazy-placeholder w-full h-full" aria-hidden="true"></div>
     </div>
   </div>
 </template>

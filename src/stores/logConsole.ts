@@ -96,7 +96,9 @@ function parseLogLine(
 }
 
 const LOG_LIMIT_PER_BOT = 200;
-const POLL_INTERVAL_MS = 10_000;
+// 20s (was 10s): log fetch fans out to ALL bots; logs are not time-critical on a
+// multi-bot dashboard, so halving the cadence halves this fan-out.
+const POLL_INTERVAL_MS = 20_000;
 const FETCH_TIMEOUT_MS = 3_000;
 
 export const useLogConsoleStore = defineStore('logConsole', {

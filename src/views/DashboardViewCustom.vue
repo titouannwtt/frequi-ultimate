@@ -156,6 +156,7 @@ onMounted(async () => {
         drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer
+          lazy
           :header="t('dashboard.profitBenchmark')"
           :widget-id="DashboardLayout.dailyChart"
           has-filter-defaults
@@ -182,6 +183,7 @@ onMounted(async () => {
         drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer
+          lazy
           :widget-id="DashboardLayout.botComparison"
           :can-hide="false"
           has-column-settings
@@ -225,6 +227,7 @@ onMounted(async () => {
         drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer
+          lazy
           :widget-id="DashboardLayout.allOpenTrades"
           has-column-settings
           @column-settings-click="openTradesRef?.showColumnPopover($event)"
@@ -255,6 +258,7 @@ onMounted(async () => {
         drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer
+          lazy
           :widget-id="DashboardLayout.allClosedTrades"
           has-column-settings
           @column-settings-click="closedTradesRef?.showColumnPopover($event)"
@@ -285,6 +289,7 @@ onMounted(async () => {
         drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer
+          lazy
           :header="t('dashboard.profitDistribution')"
           :widget-id="DashboardLayout.profitDistributionChart"
           has-filter-defaults
@@ -308,6 +313,7 @@ onMounted(async () => {
         drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer
+          lazy
           :header="t('dashboard.activityTimeline')"
           :widget-id="DashboardLayout.activityTimeline"
           has-filter-defaults
@@ -330,7 +336,7 @@ onMounted(async () => {
         drag-allow-from=".drag-header"
         drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :widget-id="DashboardLayout.marketPulse">
+        <DraggableContainer lazy :widget-id="DashboardLayout.marketPulse">
           <template #header>
             <span>{{ t('dashboard.marketOverview') }}</span>
             <span class="ft-live-dot ml-1.5"></span>
@@ -351,7 +357,7 @@ onMounted(async () => {
         drag-allow-from=".drag-header"
         drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :header="t('dashboard.riskOverview')" :widget-id="DashboardLayout.riskOverview">
+        <DraggableContainer lazy :header="t('dashboard.riskOverview')" :widget-id="DashboardLayout.riskOverview">
           <RiskOverview />
         </DraggableContainer>
       </GridItem>
@@ -368,7 +374,7 @@ onMounted(async () => {
         drag-allow-from=".drag-header"
         drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :widget-id="DashboardLayout.stressTest">
+        <DraggableContainer lazy :widget-id="DashboardLayout.stressTest">
           <template #header>
             <span>{{ t('dashboard.stressTest') }}</span>
             <span class="ft-live-dot ml-1.5"></span>
@@ -390,6 +396,7 @@ onMounted(async () => {
         drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer
+          lazy
           :header="t('dashboard.logConsole')"
           :widget-id="DashboardLayout.logConsole"
           has-filter-defaults
@@ -412,7 +419,7 @@ onMounted(async () => {
         drag-allow-from=".drag-header"
         drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :widget-id="DashboardLayout.rateBudget">
+        <DraggableContainer lazy :widget-id="DashboardLayout.rateBudget">
           <template #header>
             <span>{{ t('dashboard.rateMonitor') }}</span>
             <span class="ft-live-dot ml-1.5"></span>
@@ -434,6 +441,7 @@ onMounted(async () => {
         drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer
+          lazy
           :widget-id="DashboardLayout.ratePulse"
           has-filter-defaults
           :filters-changed="requestTimelineRef?.filtersChanged ?? false"
@@ -459,7 +467,7 @@ onMounted(async () => {
         drag-allow-from=".drag-header"
         drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer :widget-id="DashboardLayout.fleetOverview">
+        <DraggableContainer lazy :widget-id="DashboardLayout.fleetOverview">
           <template #header>
             <span>{{ t('dashboard.infraHealth') }}</span>
             <span class="ft-live-dot ml-1.5"></span>
@@ -481,6 +489,7 @@ onMounted(async () => {
         drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer
+          lazy
           :header="t('dashboard.volumeComparator')"
           :widget-id="DashboardLayout.volumeComparator"
           has-filter-defaults
@@ -504,6 +513,7 @@ onMounted(async () => {
         drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer
+          lazy
           :header="t('dashboard.periodBreakdown')"
           :widget-id="DashboardLayout.periodBreakdown"
           has-filter-defaults
@@ -527,6 +537,7 @@ onMounted(async () => {
         drag-ignore-from=".ft-no-drag"
       >
         <DraggableContainer
+          lazy
           :header="t('dashboard.botProfitComparison')"
           :widget-id="DashboardLayout.botProfitComparison"
           has-filter-defaults
@@ -562,7 +573,7 @@ onMounted(async () => {
     radial-gradient(ellipse 800px 600px at 30% 40%, rgba(180, 160, 130, 0.06), transparent 70%),
     radial-gradient(ellipse 600px 800px at 70% 60%, rgba(160, 140, 120, 0.04), transparent 70%);
   background-size: 300% 300%, 250% 250%, 100% 100%, 100% 100%;
-  animation: ft-chaos-1 37s ease-in-out infinite;
+  animation: ft-dash-drift-1 60s ease-in-out infinite;
   transform-origin: center center;
   pointer-events: none;
   z-index: 0;
@@ -576,7 +587,7 @@ onMounted(async () => {
     repeating-linear-gradient(170deg, transparent, transparent 46%, rgba(155, 140, 120, 0.04) 48%, transparent 50%),
     radial-gradient(ellipse 500px 700px at 60% 30%, rgba(170, 150, 120, 0.05), transparent 60%);
   background-size: 200% 200%, 250% 250%, 100% 100%;
-  animation: ft-chaos-2 53s ease-in-out infinite;
+  animation: ft-dash-drift-2 75s ease-in-out infinite;
   transform-origin: center center;
   pointer-events: none;
   z-index: 0;
@@ -597,10 +608,10 @@ onMounted(async () => {
     radial-gradient(ellipse 800px 600px at 30% 40%, rgba(99, 102, 241, 0.06), transparent 70%),
     radial-gradient(ellipse 600px 800px at 70% 60%, rgba(6, 182, 212, 0.04), transparent 70%);
   background-size: 300% 300%, 250% 250%, 100% 100%, 100% 100%;
-  animation: ft-chaos-1 37s ease-in-out infinite;
+  animation: ft-dash-drift-1 60s ease-in-out infinite;
   transform-origin: center center;
   pointer-events: none;
-  will-change: background-position, transform;
+  will-change: transform;
   z-index: 0;
 }
 
@@ -614,10 +625,10 @@ onMounted(async () => {
     radial-gradient(ellipse 500px 700px at 60% 30%, rgba(139, 92, 246, 0.05), transparent 60%),
     radial-gradient(ellipse 700px 500px at 40% 70%, rgba(20, 184, 166, 0.03), transparent 60%);
   background-size: 200% 200%, 250% 250%, 100% 100%, 100% 100%;
-  animation: ft-chaos-2 53s ease-in-out infinite;
+  animation: ft-dash-drift-2 75s ease-in-out infinite;
   transform-origin: center center;
   pointer-events: none;
-  will-change: background-position, transform;
+  will-change: transform;
   z-index: 0;
 }
 
@@ -631,5 +642,37 @@ onMounted(async () => {
 .dashboard-bg > :deep(.vue-grid-layout) {
   position: relative;
   z-index: 1;
+}
+
+/*
+ * Dashboard-local background drift — transform-ONLY (translate/rotate/scale).
+ * The shared ft-chaos-* keyframes animate `background-position` across 4 oversized
+ * gradient layers, which forces a full repaint of the viewport-sized pseudo-element
+ * every frame (a major source of dashboard jank). Transform is composited on the
+ * GPU off the main thread, so the same subtle motion costs ~nothing to paint.
+ * The negative insets on ::before/::after leave enough overflow that the scale/
+ * translate never reveals an edge.
+ */
+@keyframes ft-dash-drift-1 {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1.06);
+  }
+  50% {
+    transform: translate3d(-1.5%, 1.2%, 0) rotate(1.2deg) scale(1.09);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1.06);
+  }
+}
+@keyframes ft-dash-drift-2 {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1.06);
+  }
+  50% {
+    transform: translate3d(1.5%, -1.2%, 0) rotate(-1deg) scale(1.08);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1.06);
+  }
 }
 </style>
