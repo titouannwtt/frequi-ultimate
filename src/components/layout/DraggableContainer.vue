@@ -63,10 +63,17 @@ if (props.lazy) {
 
 const renderContent = computed(() => {
   if (!props.lazy) return true;
-  // In edit mode the user is arranging widgets — render everything so the
-  // layout looks complete. Hidden widgets never mount their content.
-  if (layoutStore.editMode) return true;
-  if (isHidden.value) return false;
+  // Hidden widgets never mount their content in normal mode. In edit mode they're
+  // shown dimmed (so the user can re-enable them) but, like every widget, only the
+  // ones actually on screen mount their heavy content.
+  //
+  // NB: edit mode is viewport-gated too (it does NOT force-mount everything). The
+  // widget chrome — drag handle, visibility toggle, column-settings button — lives
+  // outside this slot and is always rendered, so arranging the layout still works.
+  // Force-mounting all 16 widgets here used to put ~8 ECharts canvases + tables in
+  // the DOM at once; any re-render (e.g. reordering the bot-comparison columns) then
+  // forced a reflow of that entire tree and froze the tab for tens of seconds.
+  if (isHidden.value && !layoutStore.editMode) return false;
   return isNearViewport.value;
 });
 </script>
