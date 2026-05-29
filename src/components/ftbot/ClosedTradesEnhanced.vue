@@ -36,6 +36,7 @@ const props = withDefaults(
 import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 
 const botStore = useBotStore();
+const replayStore = useReplayStore();
 const router = useRouter();
 const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
 
@@ -187,12 +188,20 @@ watch(
 
           <!-- Pair -->
           <template v-else-if="col.key === 'pair'">
-            <span
-              class="cursor-help"
-              @mouseenter="showPopover('tradeDetail', $event, data as Trade)"
-              @mouseleave="hidePopover()"
-            >
-              {{ data.pair }}
+            <span class="inline-flex items-center gap-1">
+              <span
+                class="cursor-help"
+                @mouseenter="showPopover('tradeDetail', $event, data as Trade)"
+                @mouseleave="hidePopover()"
+              >
+                {{ data.pair }}
+              </span>
+              <span
+                v-if="replayStore.isReplayTrade(data.enter_tag)"
+                class="inline-block px-1 py-0.5 rounded text-[8px] font-bold bg-amber-500/20 text-amber-500 flex-shrink-0"
+                :title="t('botComparison.replay.tradeBadgeHint')"
+                >{{ t('botComparison.replay.tradeBadge') }}</span
+              >
             </span>
           </template>
 
@@ -332,6 +341,17 @@ watch(
             >
               {{ data.exit_reason }}
             </span>
+          </template>
+
+          <!-- Replay (optional column) -->
+          <template v-else-if="col.key === 'replay'">
+            <span
+              v-if="replayStore.isReplayTrade(data.enter_tag)"
+              class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-500"
+              :title="t('botComparison.replay.tradeBadgeHint')"
+              >{{ t('botComparison.replay.tradeBadge') }}</span
+            >
+            <span v-else class="text-surface-500">—</span>
           </template>
 
           <!-- Closed Ago -->

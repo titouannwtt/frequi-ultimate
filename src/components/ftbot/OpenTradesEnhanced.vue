@@ -44,6 +44,7 @@ import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 
 const botStore = useBotStore();
 const settingsStore = useSettingsStore();
+const replayStore = useReplayStore();
 const router = useRouter();
 const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
 
@@ -392,6 +393,12 @@ watch(
                 {{ data.pair }}{{ data.has_open_orders ? '*' : '' }}
               </span>
               <span
+                v-if="replayStore.isReplayTrade(data.enter_tag)"
+                class="inline-block px-1 py-0.5 rounded text-[8px] font-bold bg-amber-500/20 text-amber-500 flex-shrink-0"
+                :title="t('botComparison.replay.tradeBadgeHint')"
+                >{{ t('botComparison.replay.tradeBadge') }}</span
+              >
+              <span
                 v-if="correlationBadges[data.pair]"
                 class="inline-flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-bold flex-shrink-0 cursor-help"
                 :style="{
@@ -497,14 +504,25 @@ watch(
           <!-- Open Reason / Entry Tag -->
           <template v-else-if="col.key === 'enter_tag'">
             <span
-              v-if="data.enter_tag"
+              v-if="replayStore.cleanEnterTag(data.enter_tag)"
               class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-500/20 text-indigo-300 cursor-help"
               @mouseenter="showPopover('exitReason', $event, data as Trade)"
               @mouseleave="hidePopover()"
             >
-              {{ data.enter_tag }}
+              {{ replayStore.cleanEnterTag(data.enter_tag) }}
             </span>
             <span v-else class="text-surface-400">-</span>
+          </template>
+
+          <!-- Replay (optional column) -->
+          <template v-else-if="col.key === 'replay'">
+            <span
+              v-if="replayStore.isReplayTrade(data.enter_tag)"
+              class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-500"
+              :title="t('botComparison.replay.tradeBadgeHint')"
+              >{{ t('botComparison.replay.tradeBadge') }}</span
+            >
+            <span v-else class="text-surface-500">—</span>
           </template>
 
           <!-- Stoploss Distance -->

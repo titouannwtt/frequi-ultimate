@@ -7,6 +7,7 @@ export default {
     logs: 'Logs',
     settings: 'Configuración',
     backtest: 'Backtest',
+    replay: 'Replay',
     downloadData: 'Descargar datos',
     pairlistConfig: 'Configuración de pares',
     lockLayout: 'Bloquear diseño dinámico',

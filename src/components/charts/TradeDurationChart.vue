@@ -46,7 +46,7 @@ use([
 const allTrades = computed(() => {
   return props.trades.map((trade) => {
     // Convert timestamp difference to minutes (timestamps are in milliseconds)
-    return (trade.close_timestamp - trade.open_timestamp) / (60 * 1000);
+    return Math.max(0, trade.close_timestamp - trade.open_timestamp) / (60 * 1000);
   });
 });
 
@@ -54,7 +54,7 @@ const winningTrades = computed(() => {
   return props.trades
     .filter((trade) => (trade.profit_ratio ?? 0) > 0)
     .map((trade) => {
-      return (trade.close_timestamp - trade.open_timestamp) / (60 * 1000);
+      return Math.max(0, trade.close_timestamp - trade.open_timestamp) / (60 * 1000);
     });
 });
 
@@ -62,7 +62,7 @@ const losingTrades = computed(() => {
   return props.trades
     .filter((trade) => (trade.profit_ratio ?? 0) <= 0)
     .map((trade) => {
-      return (trade.close_timestamp - trade.open_timestamp) / (60 * 1000);
+      return Math.max(0, trade.close_timestamp - trade.open_timestamp) / (60 * 1000);
     });
 });
 

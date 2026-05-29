@@ -11,6 +11,9 @@ declare global {
   const BENCHMARK_CATEGORIES: typeof import('./utils/benchmarkData').BENCHMARK_CATEGORIES
   const BENCHMARK_TICKERS: typeof import('./utils/benchmarkData').BENCHMARK_TICKERS
   const BOT_SORT_MODES: typeof import('./composables/useBotListSort').BOT_SORT_MODES
+  const CATALOG_BY_PATH: typeof import('./utils/configEditorCatalog').CATALOG_BY_PATH
+  const CATALOG_PATHS: typeof import('./utils/configEditorCatalog').CATALOG_PATHS
+  const CONFIG_CATALOG: typeof import('./utils/configEditorCatalog').CONFIG_CATALOG
   const ColorPreferences: typeof import('./stores/colors').ColorPreferences
   const DashboardLayout: typeof import('./stores/layout').DashboardLayout
   const EffectScope: typeof import('vue').EffectScope
@@ -24,6 +27,7 @@ declare global {
   const ROUND_UP: typeof import('./utils/roundTimeframe').ROUND_UP
   const TradeLayout: typeof import('./stores/layout').TradeLayout
   const acceptHMRUpdate: typeof import('pinia').acceptHMRUpdate
+  const accountBaseFromProfit: typeof import('./utils/maxDrawdown').accountBaseFromProfit
   const aggregateProfitByBot: typeof import('./utils/botProfit').aggregateProfitByBot
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
@@ -40,6 +44,9 @@ declare global {
   const checkAndNotifyAlerts: typeof import('./utils/browserNotifications').checkAndNotifyAlerts
   const cleanupAllTimeouts: typeof import('./composables/usePopoverHover').cleanupAllTimeouts
   const clearBenchmarkCache: typeof import('./utils/benchmarkData').clearBenchmarkCache
+  const clone: typeof import('./utils/configEditorObject').clone
+  const computeAggregateDrawdown: typeof import('./utils/maxDrawdown').computeAggregateDrawdown
+  const computeMaxDrawdown: typeof import('./utils/maxDrawdown').computeMaxDrawdown
   const computed: typeof import('vue').computed
   const computedAsync: typeof import('@vueuse/core').computedAsync
   const computedEager: typeof import('@vueuse/core').computedEager
@@ -67,11 +74,15 @@ declare global {
   const debouncedRef: typeof import('@vueuse/core').debouncedRef
   const debouncedWatch: typeof import('@vueuse/core').debouncedWatch
   const deepClone: typeof import('./utils/deepClone').deepClone
+  const deepDelete: typeof import('./utils/configEditorObject').deepDelete
+  const deepGet: typeof import('./utils/configEditorObject').deepGet
   const deepMerge: typeof import('./utils/deepMerge').deepMerge
+  const deepSet: typeof import('./utils/configEditorObject').deepSet
   const defineAsyncComponent: typeof import('vue').defineAsyncComponent
   const defineComponent: typeof import('vue').defineComponent
   const defineStore: typeof import('pinia').defineStore
   const delayedHide: typeof import('./composables/usePopoverHover').delayedHide
+  const diffConfig: typeof import('./utils/configEditorObject').diffConfig
   const durationAnomalyLevel: typeof import('./composables/tradeColumns').durationAnomalyLevel
   const durationAnomalyLevelFromPct: typeof import('./composables/tradeColumns').durationAnomalyLevelFromPct
   const durationAnomalyPct: typeof import('./composables/tradeColumns').durationAnomalyPct
@@ -117,6 +128,7 @@ declare global {
   const h: typeof import('vue').h
   const hasConfiguredBots: typeof import('./composables/useConfigExport').hasConfiguredBots
   const hasFeature: typeof import('./utils/features').hasFeature
+  const hasPath: typeof import('./utils/configEditorObject').hasPath
   const heikinAshiDataset: typeof import('./utils/charts/heikinAshiDataset').heikinAshiDataset
   const humanizeDurationFromSeconds: typeof import('./utils/formatters/timeformat').humanizeDurationFromSeconds
   const humanizeTradeDuration: typeof import('./composables/tradeColumns').humanizeTradeDuration
@@ -225,6 +237,7 @@ declare global {
   const toValue: typeof import('vue').toValue
   const trackMouse: typeof import('./composables/usePopoverHover').trackMouse
   const tradeDurationMs: typeof import('./composables/tradeColumns').tradeDurationMs
+  const tradeWorstAbs: typeof import('./utils/maxDrawdown').tradeWorstAbs
   const triggerRef: typeof import('vue').triggerRef
   const tryOnBeforeMount: typeof import('@vueuse/core').tryOnBeforeMount
   const tryOnBeforeUnmount: typeof import('@vueuse/core').tryOnBeforeUnmount
@@ -260,6 +273,7 @@ declare global {
   const useBattery: typeof import('@vueuse/core').useBattery
   const useBluetooth: typeof import('@vueuse/core').useBluetooth
   const useBotComparisonStore: typeof import('./stores/botComparison').useBotComparisonStore
+  const useBotConfigEditorStore: typeof import('./stores/botConfigEditorStore').useBotConfigEditorStore
   const useBotListSort: typeof import('./composables/useBotListSort').useBotListSort
   const useBotStore: typeof import('./stores/ftbotwrapper').useBotStore
   const useBreakpoints: typeof import('@vueuse/core').useBreakpoints
@@ -378,6 +392,7 @@ declare global {
   const useRateMetrics: typeof import('./composables/useRateMetrics').useRateMetrics
   const useRefHistory: typeof import('@vueuse/core').useRefHistory
   const useRegimeOverlay: typeof import('./composables/useRegimeOverlay').useRegimeOverlay
+  const useReplayStore: typeof import('./stores/replayStore').useReplayStore
   const useResizeObserver: typeof import('@vueuse/core').useResizeObserver
   const useRoute: typeof import('vue-router').useRoute
   const useRouter: typeof import('vue-router').useRouter
@@ -534,8 +549,14 @@ declare global {
   export type { TradeSeriesOptions } from './utils/charts/tradeChartData'
   import('./utils/charts/tradeChartData')
   // @ts-ignore
+  export type { ConfigDiffEntry } from './utils/configEditorObject'
+  import('./utils/configEditorObject')
+  // @ts-ignore
   export type { LiveBotInput } from './utils/liveBotAnalytics'
   import('./utils/liveBotAnalytics')
+  // @ts-ignore
+  export type { MaxDrawdownResult } from './utils/maxDrawdown'
+  import('./utils/maxDrawdown')
   // @ts-ignore
   export type { LiveBotPrefillInput } from './utils/reconstitute'
   import('./utils/reconstitute')
@@ -551,6 +572,9 @@ declare module 'vue' {
     readonly BENCHMARK_CATEGORIES: UnwrapRef<typeof import('./utils/benchmarkData')['BENCHMARK_CATEGORIES']>
     readonly BENCHMARK_TICKERS: UnwrapRef<typeof import('./utils/benchmarkData')['BENCHMARK_TICKERS']>
     readonly BOT_SORT_MODES: UnwrapRef<typeof import('./composables/useBotListSort')['BOT_SORT_MODES']>
+    readonly CATALOG_BY_PATH: UnwrapRef<typeof import('./utils/configEditorCatalog')['CATALOG_BY_PATH']>
+    readonly CATALOG_PATHS: UnwrapRef<typeof import('./utils/configEditorCatalog')['CATALOG_PATHS']>
+    readonly CONFIG_CATALOG: UnwrapRef<typeof import('./utils/configEditorCatalog')['CONFIG_CATALOG']>
     readonly ColorPreferences: UnwrapRef<typeof import('./stores/colors')['ColorPreferences']>
     readonly DashboardLayout: UnwrapRef<typeof import('./stores/layout')['DashboardLayout']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
@@ -564,6 +588,7 @@ declare module 'vue' {
     readonly ROUND_UP: UnwrapRef<typeof import('./utils/roundTimeframe')['ROUND_UP']>
     readonly TradeLayout: UnwrapRef<typeof import('./stores/layout')['TradeLayout']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
+    readonly accountBaseFromProfit: UnwrapRef<typeof import('./utils/maxDrawdown')['accountBaseFromProfit']>
     readonly aggregateProfitByBot: UnwrapRef<typeof import('./utils/botProfit')['aggregateProfitByBot']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
@@ -580,6 +605,9 @@ declare module 'vue' {
     readonly checkAndNotifyAlerts: UnwrapRef<typeof import('./utils/browserNotifications')['checkAndNotifyAlerts']>
     readonly cleanupAllTimeouts: UnwrapRef<typeof import('./composables/usePopoverHover')['cleanupAllTimeouts']>
     readonly clearBenchmarkCache: UnwrapRef<typeof import('./utils/benchmarkData')['clearBenchmarkCache']>
+    readonly clone: UnwrapRef<typeof import('./utils/configEditorObject')['clone']>
+    readonly computeAggregateDrawdown: UnwrapRef<typeof import('./utils/maxDrawdown')['computeAggregateDrawdown']>
+    readonly computeMaxDrawdown: UnwrapRef<typeof import('./utils/maxDrawdown')['computeMaxDrawdown']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly computedAsync: UnwrapRef<typeof import('@vueuse/core')['computedAsync']>
     readonly computedEager: UnwrapRef<typeof import('@vueuse/core')['computedEager']>
@@ -607,11 +635,15 @@ declare module 'vue' {
     readonly debouncedRef: UnwrapRef<typeof import('@vueuse/core')['debouncedRef']>
     readonly debouncedWatch: UnwrapRef<typeof import('@vueuse/core')['debouncedWatch']>
     readonly deepClone: UnwrapRef<typeof import('./utils/deepClone')['deepClone']>
+    readonly deepDelete: UnwrapRef<typeof import('./utils/configEditorObject')['deepDelete']>
+    readonly deepGet: UnwrapRef<typeof import('./utils/configEditorObject')['deepGet']>
     readonly deepMerge: UnwrapRef<typeof import('./utils/deepMerge')['deepMerge']>
+    readonly deepSet: UnwrapRef<typeof import('./utils/configEditorObject')['deepSet']>
     readonly defineAsyncComponent: UnwrapRef<typeof import('vue')['defineAsyncComponent']>
     readonly defineComponent: UnwrapRef<typeof import('vue')['defineComponent']>
     readonly defineStore: UnwrapRef<typeof import('pinia')['defineStore']>
     readonly delayedHide: UnwrapRef<typeof import('./composables/usePopoverHover')['delayedHide']>
+    readonly diffConfig: UnwrapRef<typeof import('./utils/configEditorObject')['diffConfig']>
     readonly durationAnomalyLevel: UnwrapRef<typeof import('./composables/tradeColumns')['durationAnomalyLevel']>
     readonly durationAnomalyLevelFromPct: UnwrapRef<typeof import('./composables/tradeColumns')['durationAnomalyLevelFromPct']>
     readonly durationAnomalyPct: UnwrapRef<typeof import('./composables/tradeColumns')['durationAnomalyPct']>
@@ -657,6 +689,7 @@ declare module 'vue' {
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly hasConfiguredBots: UnwrapRef<typeof import('./composables/useConfigExport')['hasConfiguredBots']>
     readonly hasFeature: UnwrapRef<typeof import('./utils/features')['hasFeature']>
+    readonly hasPath: UnwrapRef<typeof import('./utils/configEditorObject')['hasPath']>
     readonly heikinAshiDataset: UnwrapRef<typeof import('./utils/charts/heikinAshiDataset')['heikinAshiDataset']>
     readonly humanizeDurationFromSeconds: UnwrapRef<typeof import('./utils/formatters/timeformat')['humanizeDurationFromSeconds']>
     readonly humanizeTradeDuration: UnwrapRef<typeof import('./composables/tradeColumns')['humanizeTradeDuration']>
@@ -765,6 +798,7 @@ declare module 'vue' {
     readonly toValue: UnwrapRef<typeof import('vue')['toValue']>
     readonly trackMouse: UnwrapRef<typeof import('./composables/usePopoverHover')['trackMouse']>
     readonly tradeDurationMs: UnwrapRef<typeof import('./composables/tradeColumns')['tradeDurationMs']>
+    readonly tradeWorstAbs: UnwrapRef<typeof import('./utils/maxDrawdown')['tradeWorstAbs']>
     readonly triggerRef: UnwrapRef<typeof import('vue')['triggerRef']>
     readonly tryOnBeforeMount: UnwrapRef<typeof import('@vueuse/core')['tryOnBeforeMount']>
     readonly tryOnBeforeUnmount: UnwrapRef<typeof import('@vueuse/core')['tryOnBeforeUnmount']>
@@ -800,6 +834,7 @@ declare module 'vue' {
     readonly useBattery: UnwrapRef<typeof import('@vueuse/core')['useBattery']>
     readonly useBluetooth: UnwrapRef<typeof import('@vueuse/core')['useBluetooth']>
     readonly useBotComparisonStore: UnwrapRef<typeof import('./stores/botComparison')['useBotComparisonStore']>
+    readonly useBotConfigEditorStore: UnwrapRef<typeof import('./stores/botConfigEditorStore')['useBotConfigEditorStore']>
     readonly useBotListSort: UnwrapRef<typeof import('./composables/useBotListSort')['useBotListSort']>
     readonly useBotStore: UnwrapRef<typeof import('./stores/ftbotwrapper')['useBotStore']>
     readonly useBreakpoints: UnwrapRef<typeof import('@vueuse/core')['useBreakpoints']>
@@ -918,6 +953,7 @@ declare module 'vue' {
     readonly useRateMetrics: UnwrapRef<typeof import('./composables/useRateMetrics')['useRateMetrics']>
     readonly useRefHistory: UnwrapRef<typeof import('@vueuse/core')['useRefHistory']>
     readonly useRegimeOverlay: UnwrapRef<typeof import('./composables/useRegimeOverlay')['useRegimeOverlay']>
+    readonly useReplayStore: UnwrapRef<typeof import('./stores/replayStore')['useReplayStore']>
     readonly useResizeObserver: UnwrapRef<typeof import('@vueuse/core')['useResizeObserver']>
     readonly useRoute: UnwrapRef<typeof import('vue-router')['useRoute']>
     readonly useRouter: UnwrapRef<typeof import('vue-router')['useRouter']>

@@ -91,10 +91,17 @@ function formatDate(ts?: number): string {
 
 function tradeDuration(trade: ClosedTrade): string {
   if (!trade.open_timestamp || !trade.close_timestamp) return '-';
-  const ms = trade.close_timestamp - trade.open_timestamp;
+  // Clamp: the backend rounds open/close timestamps inconsistently at the millisecond
+  // boundary (open keeps the microsecond, close is floored), so trades that open and
+  // close inside the same millisecond can come back with a -1 or -2 ms diff. That's
+  // a serialization artefact, not real reverse-time — treat any non-positive diff as 0.
+  const ms = Math.max(0, trade.close_timestamp - trade.open_timestamp);
+  // Sub-minute trades (incl. the sub-ms artefact above) deserve their own bucket so
+  // they don't show up as "0h 0m" (which reads as "unknown" to a human).
+  if (ms < 60000) return `${Math.round(ms / 1000)}s`;
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms % 3600000) / 60000);
-  if (hours > 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+  if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`;
   return `${hours}h ${minutes}m`;
 }
 

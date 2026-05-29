@@ -27,6 +27,7 @@ const OPEN_COLUMNS: TradeColumnDef[] = [
   { key: 'profit_abs', labelKey: 'enhancedTrades.colProfitAbs', defaultVisible: true, sortable: true, icon: 'i-mdi-cash' },
   { key: 'stake_amount', labelKey: 'enhancedTrades.colStake', defaultVisible: true, sortable: true, icon: 'i-mdi-wallet' },
   { key: 'enter_tag', labelKey: 'enhancedTrades.colOpenReason', defaultVisible: false, sortable: true, openOnly: true, icon: 'i-mdi-tag' },
+  { key: 'replay', labelKey: 'enhancedTrades.colReplay', defaultVisible: false, sortable: false, icon: 'i-mdi-fast-forward' },
   { key: 'duration', labelKey: 'enhancedTrades.colDuration', defaultVisible: true, sortable: true, icon: 'i-mdi-clock-outline' },
   { key: 'stoploss_dist', labelKey: 'enhancedTrades.colStoplossDist', defaultVisible: false, openOnly: true, sortable: true, icon: 'i-mdi-shield-alert' },
   { key: 'duration_anomaly', labelKey: 'enhancedTrades.colDurationAnomaly', defaultVisible: false, sortable: true, icon: 'i-mdi-alert-circle' },
@@ -155,7 +156,9 @@ export function useTradeColumnVisibility(mode: 'open' | 'closed') {
 export function tradeDurationMs(trade: Trade): number {
   const openTs = trade.open_timestamp;
   const closeTs = trade.close_timestamp ?? Date.now();
-  return closeTs - openTs;
+  // Clamp: backend serializes open_date with µs precision but floors close_date to
+  // ms, so a trade opened+closed within the same ms can read a few ms negative.
+  return Math.max(0, closeTs - openTs);
 }
 
 export function humanizeTradeDuration(trade: Trade): string {

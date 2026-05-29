@@ -7,14 +7,88 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <link rel="icon" href="/favicon.ico">
   <title>FreqUI</title>
-
+  <style>
+    /* ── Boot splash: shown before the JS bundle finishes loading.
+       Removed by the Vue <BootSplash> component once it mounts (seamless handoff). */
+    :root {
+      --ft-boot-bg: #0a1622;
+      --ft-boot-fg: rgba(255, 255, 255, 0.92);
+      --ft-boot-track: rgba(255, 255, 255, 0.08);
+      --ft-boot-primary: #0089A1;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --ft-boot-bg: #f8fafc;
+        --ft-boot-fg: rgba(15, 23, 42, 0.92);
+        --ft-boot-track: rgba(15, 23, 42, 0.08);
+      }
+    }
+    html, body { margin: 0; padding: 0; height: 100%; background: var(--ft-boot-bg); }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+    #ft-boot-splash {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 20px;
+      background: var(--ft-boot-bg);
+      color: var(--ft-boot-fg);
+      z-index: 9998;
+    }
+    #ft-boot-splash .ft-boot-ring { position: relative; width: 88px; height: 88px; }
+    #ft-boot-splash .ft-boot-ring::before {
+      content: ''; position: absolute; inset: 0; border-radius: 50%;
+      background: conic-gradient(from 0deg,
+        rgba(0, 137, 161, 0) 0%, rgba(0, 137, 161, 0) 30%,
+        rgba(0, 137, 161, 0.85) 70%, rgba(0, 137, 161, 1) 100%);
+      -webkit-mask: radial-gradient(circle, transparent 32px, black 33px);
+      mask: radial-gradient(circle, transparent 32px, black 33px);
+      animation: ft-boot-spin 3.6s linear infinite;
+    }
+    #ft-boot-splash .ft-boot-dot {
+      position: absolute; left: 50%; top: 50%;
+      width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%;
+      background: var(--ft-boot-primary);
+      box-shadow: 0 0 20px rgba(0, 137, 161, 0.6);
+      animation: ft-boot-pulse 1.6s ease-in-out infinite;
+    }
+    #ft-boot-splash .ft-boot-wordmark {
+      font-size: 28px; font-weight: 300; letter-spacing: 0.05em; color: var(--ft-boot-fg);
+    }
+    #ft-boot-splash .ft-boot-wordmark > b { color: var(--ft-boot-primary); font-weight: 500; }
+    #ft-boot-splash .ft-boot-status {
+      font-size: 14px; opacity: 0.7; min-height: 20px;
+    }
+    #ft-boot-splash .ft-boot-bar {
+      width: 200px; height: 2px; background: var(--ft-boot-track);
+      border-radius: 1px; overflow: hidden;
+    }
+    #ft-boot-splash .ft-boot-bar > i {
+      display: block; height: 100%; background: var(--ft-boot-primary); width: 8%;
+    }
+    @keyframes ft-boot-spin { to { transform: rotate(360deg); } }
+    @keyframes ft-boot-pulse {
+      0%, 100% { transform: scale(1);    opacity: 0.85; }
+      50%       { transform: scale(1.12); opacity: 1;    }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #ft-boot-splash .ft-boot-ring::before, #ft-boot-splash .ft-boot-dot { animation: none; }
+    }
+  </style>
 </head>
 
-<body >
+<body>
   <noscript>
     <strong>We're sorry but FreqUI doesn't work properly without JavaScript enabled. Please enable it to
       continue.</strong>
   </noscript>
+  <div id="ft-boot-splash" aria-label="Loading FreqUI">
+    <div class="ft-boot-ring">
+      <div class="ft-boot-dot"></div>
+    </div>
+    <div class="ft-boot-wordmark">freq<b>UI</b></div>
+    <div class="ft-boot-status">Démarrage…</div>
+    <div class="ft-boot-bar"><i></i></div>
+  </div>
   <div id="app"></div>
   <script type="module" src="/src/main.ts"></script>
 </body>

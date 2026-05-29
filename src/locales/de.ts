@@ -7,6 +7,7 @@ export default {
     logs: 'Protokolle',
     settings: 'Einstellungen',
     backtest: 'Backtest',
+    replay: 'Replay',
     downloadData: 'Daten herunterladen',
     pairlistConfig: 'Paarlisten-Konfiguration',
     lockLayout: 'Dynamisches Layout sperren',

@@ -21,6 +21,8 @@ watch(
     <BodyLayout class="grow overflow-auto" />
     <NavFooter />
   </div>
+  <!-- Boot splash: covers the brief gap between page navigation and first bot data. -->
+  <BootSplash />
 </template>
 
 <style scoped>
