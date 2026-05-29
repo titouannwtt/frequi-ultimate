@@ -32,6 +32,7 @@ import {
 } from '@/composables/usePopoverHover';
 import { computePosition, flip, shift, offset, arrow as arrowMiddleware } from '@floating-ui/dom';
 import BotConfigEditorModal from './configEditor/BotConfigEditorModal.vue';
+import DryReplayModal from './DryReplayModal.vue';
 import {
   computeMaxDrawdown,
   computeAggregateDrawdown,
@@ -45,6 +46,7 @@ const botStore = useBotStore();
 const compStore = useBotComparisonStore();
 const stratDevStore = useStrategyDevStore();
 const configEditorStore = useBotConfigEditorStore();
+const replayStore = useReplayStore();
 
 // Migrate legacy localStorage data on first load
 compStore.migrateFromLocalStorage();
@@ -1192,17 +1194,24 @@ function getGroupBotIds(groupId: string | undefined): string[] {
 }
 
 function getRowClass(data: ComparisonTableItems) {
+  let base: string;
   if (data.isGroupRow) {
     const group = botGroups.value.find((g) => g.id === data.groupId);
-    if (group && group.botIds.every((id) => !botStore.botStores[id]?.isSelected)) {
-      return 'bot-row-unselected';
-    }
-    return 'bot-row-group';
+    base =
+      group && group.botIds.every((id) => !botStore.botStores[id]?.isSelected)
+        ? 'bot-row-unselected'
+        : 'bot-row-group';
+  } else if (data.botId && !botStore.botStores[data.botId]?.isSelected) {
+    base = 'bot-row-unselected';
+  } else {
+    base = 'bot-row-selected';
   }
-  if (data.botId && !botStore.botStores[data.botId]?.isSelected) {
-    return 'bot-row-unselected';
+  // A running dry-run replay mutes this bot's metrics — the figures are simulated and
+  // changing, not live positions. The amber pulsing indicator stays the visible signal.
+  if (data.botId && replayStore.statusByBot[data.botId]?.running) {
+    base += ' replay-running';
   }
-  return 'bot-row-selected';
+  return base;
 }
 
 const hoveredProfit = computed(() => {
@@ -1957,8 +1966,25 @@ function confirmAndExecute() {
 }
 
 const botActionMenuRef = ref<Record<string, InstanceType<typeof Popover>>>({});
+/** Only one bot action menu may be open at a time. Tracks the open one (if any). */
+const openActionMenuBotId = ref<string | null>(null);
 function showBotActionMenu(event: MouseEvent, botId: string) {
+  // Close any other open action menu first. Clicking a different bot's trigger does
+  // not reach PrimeVue's outside-click listener (the trigger uses @click.stop), so the
+  // single-open invariant has to be enforced explicitly here.
+  if (openActionMenuBotId.value && openActionMenuBotId.value !== botId) {
+    botActionMenuRef.value[openActionMenuBotId.value]?.hide();
+  }
   botActionMenuRef.value[botId]?.toggle(event);
+  // Refresh the "already seeded" state so the dry-run replay entry greys correctly.
+  replayStore.checkSeeded(botId);
+}
+function onBotActionMenuShow(botId: string) {
+  openActionMenuBotId.value = botId;
+}
+function onBotActionMenuHide(botId: string) {
+  // Keep the tracker in sync with PrimeVue's own dismissal (outside click, Esc, item click).
+  if (openActionMenuBotId.value === botId) openActionMenuBotId.value = null;
 }
 
 function openStrategyAnalysis(botId: string) {
@@ -2012,10 +2038,42 @@ function handleKeyboard(e: KeyboardEvent) {
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeyboard);
+  // Discover any dry-run replay already running so its indicator shows immediately,
+  // and whether each dry bot was already seeded (persistent "replay done" flag).
+  for (const [id, st] of Object.entries(botStore.allBotState)) {
+    if (st?.dry_run) {
+      replayStore.pollBot(id);
+      replayStore.checkSeeded(id);
+    }
+  }
 });
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyboard);
 });
+
+function fmtReplayEta(s: number | null | undefined): string {
+  if (s == null) return '?';
+  const sec = Math.max(0, Math.round(s));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return h ? `${h}h${m}m` : `${m}m`;
+}
+
+function replaySeededTitle(botId: string): string {
+  const info = replayStore.seedInfoByBot[botId] as { timerange?: string } | null;
+  return info?.timerange
+    ? t('botComparison.replay.seededTitle', { timerange: info.timerange })
+    : t('botComparison.replay.seededTitleShort');
+}
+
+// "A replay was run here" — seed marker OR any [replay]-tagged trade (robust to a marker
+// that a crashed seed never wrote, as long as the trades themselves were tagged).
+function botWasReplayed(botId: string): boolean {
+  if (replayStore.seededByBot[botId]) return true;
+  const bs = botStore.botStores[botId];
+  const all = [...(bs?.openTrades ?? []), ...(bs?.trades ?? [])];
+  return all.some((tr) => replayStore.isReplayTrade(tr.enter_tag));
+}
 
 defineExpose({
   showColumnPopover,
@@ -5240,6 +5298,43 @@ const correlatedPairs = computed(() => {
                 >
                   <i-mdi-dots-vertical class="text-sm" />
                 </button>
+                <button
+                  v-if="
+                    ['queued', 'running', 'paused'].includes(
+                      replayStore.statusByBot[data.botId!]?.status,
+                    )
+                  "
+                  type="button"
+                  class="ms-1 inline-flex flex-col items-center leading-tight text-[0.7rem] text-amber-500 align-middle cursor-pointer hover:text-amber-400"
+                  :title="t('botComparison.replay.runningTitle')"
+                  @click.stop="replayStore.open(data.botId!)"
+                >
+                  <span class="inline-flex items-center gap-0.5">
+                    <i-mdi-fast-forward
+                      v-if="replayStore.statusByBot[data.botId!]?.status === 'running'"
+                      class="animate-pulse"
+                    />
+                    <i-mdi-pause-circle-outline
+                      v-else-if="replayStore.statusByBot[data.botId!]?.status === 'paused'"
+                    />
+                    <i-mdi-tray-full v-else />
+                    {{ Math.round((replayStore.statusByBot[data.botId!]?.progress ?? 0) * 100) }}%
+                  </span>
+                  <span class="text-[0.6rem] opacity-80">{{
+                    replayStore.statusByBot[data.botId!]?.status === 'paused'
+                      ? t('botComparison.replay.pausedBadge')
+                      : t('botComparison.replay.badge')
+                  }}</span>
+                </button>
+                <button
+                  v-else-if="botWasReplayed(data.botId!)"
+                  type="button"
+                  class="ms-1 inline-flex items-center text-surface-400 hover:text-amber-500 align-middle cursor-help"
+                  :title="replaySeededTitle(data.botId!)"
+                  @click.stop="replayStore.open(data.botId!)"
+                >
+                  <i-mdi-fast-forward class="text-sm" />
+                </button>
               </div>
             </template>
 
@@ -6126,6 +6221,8 @@ const correlatedPairs = computed(() => {
             if (el) botActionMenuRef[item.botId!] = el;
           }
         "
+        @show="onBotActionMenuShow(item.botId!)"
+        @hide="onBotActionMenuHide(item.botId!)"
       >
         <div class="flex flex-col gap-0.5 p-1 min-w-[160px]">
           <div
@@ -6229,6 +6326,38 @@ const correlatedPairs = computed(() => {
           >
             <i-mdi-flask-outline class="text-purple-400" /> {{ t('botComparison.analyzeStrategy') }}
           </button>
+          <!-- Dry-run only: seed this bot's dry-run DB from a historical replay -->
+          <button
+            v-if="item.isDryRun"
+            class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            :class="{
+              'replay-blink text-amber-500 font-semibold':
+                replayStore.statusByBot[item.botId!]?.running,
+            }"
+            :disabled="
+              replayStore.seededByBot[item.botId!] && !replayStore.statusByBot[item.botId!]?.running
+            "
+            :title="
+              replayStore.seededByBot[item.botId!] && !replayStore.statusByBot[item.botId!]?.running
+                ? t('botComparison.dryRunReplayDone')
+                : ''
+            "
+            @click="
+              replayStore.open(item.botId!);
+              botActionMenuRef[item.botId!]?.hide();
+            "
+          >
+            <i-mdi-fast-forward
+              :class="
+                replayStore.statusByBot[item.botId!]?.running ? 'text-amber-500' : 'text-amber-400'
+              "
+            />
+            {{
+              replayStore.statusByBot[item.botId!]?.running
+                ? t('botComparison.dryRunReplayView')
+                : t('botComparison.dryRunReplay')
+            }}
+          </button>
           <button
             class="flex items-center gap-2 px-2 py-1.5 rounded text-xs hover:bg-surface-200 dark:hover:bg-surface-700 w-full text-left cursor-pointer transition-colors"
             @click="
@@ -6275,10 +6404,32 @@ const correlatedPairs = computed(() => {
 
     <!-- Per-bot configuration editor -->
     <BotConfigEditorModal />
+    <DryReplayModal />
   </div>
 </template>
 
 <style scoped>
+/* Very subtle orange blink for the "view running dry-run replay" menu entry. */
+@keyframes replay-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.78;
+  }
+}
+.replay-blink {
+  animation: replay-blink 1.8s ease-in-out infinite;
+}
+
+/* Mute a bot's metric cells while a dry-run replay is seeding it: the figures are
+   simulated and in flux, not live. The pulsing amber replay indicator stays visible. */
+:deep(tr.replay-running) td {
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+
 .bot-name-block {
   display: inline-block;
 }

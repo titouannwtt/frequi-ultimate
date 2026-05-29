@@ -1302,7 +1302,12 @@ export function createBotSubStore(botId: string, botName: string) {
           case FtWsMessageTypes.exitFill:
           case FtWsMessageTypes.exitCancel:
           case FtWsMessageTypes.entryCancel:
-            showNotification(msg, botName);
+            // Stay quiet while a dry-run replay is seeding this bot: the dashboard is
+            // in "replay" mode (greyed metrics + indicator) and these events would be
+            // confusing replay/live churn, not live activity to notify about.
+            if (!useReplayStore().statusByBot[botId]?.running) {
+              showNotification(msg, botName);
+            }
             break;
           case FtWsMessageTypes.newCandle: {
             const [pair, timeframe] = msg.data;

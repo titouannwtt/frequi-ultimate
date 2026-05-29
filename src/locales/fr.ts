@@ -466,9 +466,89 @@ export default {
     viewTrades: 'Voir les trades',
     viewJournal: 'Voir le journal de trades',
     analyzeStrategy: 'Analyser la stratégie',
+    dryRunReplay: 'Simuler un dry-run (replay)',
+    dryRunReplayView: 'Voir le dry-run replay en cours',
+    dryRunReplayDone:
+      'Un dry-run replay a déjà été simulé. Repars d’une DB dry-run vierge pour relancer.',
     editConfig: 'Modifier la configuration',
     confirmAction: "Confirmer l'action",
     confirmActionMsg: 'Êtes-vous sûr de vouloir {action} sur {bot} ?',
+    replay: {
+      title: 'Dry-run replay — {bot}',
+      intro:
+        'Rejoue la vraie boucle live du bot sur l’historique, puis injecte les trades simulés dans la DB dry-run de ce bot — comme s’il tournait depuis la date choisie.',
+      strategy: 'Stratégie',
+      wallet: 'Portefeuille simulé',
+      pairs: 'Paires (filtre actuel)',
+      loading: 'Chargement des paires actuelles…',
+      pairsWarning:
+        'Le replay utilise les {n} paires actuellement sélectionnées par le filtre. Les pairlists dynamiques ne sont pas rejouées historiquement → biais de sélection sur ces paires précises.',
+      noPairs:
+        'Impossible de déterminer les paires du bot (whitelist vide, aucun trade, aucune whitelist dans les logs). Le bot est-il initialisé ? Réessaie quand sa pairlist est prête.',
+      pairsSource_trades:
+        'Whitelist live indisponible — utilisation des paires réellement tradées par ce bot.',
+      pairsSource_logs:
+        'Whitelist live indisponible — utilisation de la dernière whitelist loggée par le bot.',
+      startDate: 'Date de début',
+      endDate: 'Date de fin',
+      fundingHint: 'Le funding n’est fidèle que si tu as les données de funding sur la période.',
+      preventDry: 'Dry-run uniquement — aucun ordre réel.',
+      preventIsolated: 'Tourne dans un processus isolé — le bot continue de trader.',
+      preventOnce: 'Action unique : pour relancer, repars d’une DB dry-run vierge.',
+      alreadyTitle: 'Déjà simulé',
+      alreadyMsg:
+        'Un dry-run replay a déjà été simulé sur ce bot ({timerange}). Pour en relancer un, repars d’une DB dry-run vierge.',
+      resultTitle: 'Résultat (simulé)',
+      closed: 'Trades clôturés',
+      winRate: 'Taux de réussite',
+      pnl: 'P&L total',
+      doneReload: 'Terminé — bot rechargé avec l’historique simulé.',
+      run: 'Lancer le replay',
+      close: 'Fermer',
+      resolution: 'Résolution (sous-pas)',
+      resolutionHint:
+        'Plus le sous-pas est petit, plus c’est long mais plus c’est fidèle (fills intra-candle plus fins). Le 1m nécessite des données 1m téléchargées.',
+      today: 'Aujourd’hui',
+      stop: 'Arrêter',
+      elapsed: 'Écoulé',
+      eta: 'Restant',
+      runningTitle: 'Dry-run replay en cours',
+      seededTitle: 'Semé par un dry-run replay ({timerange}) — cliquer pour voir / re-semer',
+      seededTitleShort: 'Semé par un dry-run replay — cliquer pour voir / re-semer',
+      badge: 'Dry-run replay',
+      pausedBadge: 'Replay en pause',
+      coverageLoading: 'Vérification des données locales…',
+      coverageNone:
+        'Aucune donnée {tf} trouvée localement pour ces paires — pas de fills à cette résolution.',
+      coverageEarliest:
+        'Première donnée {tf} : {date} ({n}/{total} paires). Un dry-run replay avant cette date ne sera pas fidèle à cette résolution.',
+      startBeforeData:
+        'Pas d’historique avant {date} ; le replay ne sera fidèle qu’à partir de cette date.',
+      endFuture:
+        'Date de fin dans le futur — le replay s’arrête aux dernières données dispo (téléchargeables jusqu’à récemment sur Hyperliquid).',
+      closeContinues:
+        'Vous pouvez fermer cette fenêtre — le replay continue en arrière-plan. Un indicateur sur le bot dans « Comparaison des bots » montre sa progression.',
+      restore: 'Restaurer la DB',
+      restoreHint:
+        'Restaure la sauvegarde de la base prise juste avant ce replay (annule un seed planté ou non voulu). Le bot redémarre.',
+      restoreConfirm:
+        'Restaurer la base de ce bot depuis la sauvegarde pré-replay ? La base actuelle (semée) sera écrasée et le bot rechargé.',
+      tradeBadge: 'replay',
+      resetDb: 'Réinitialiser la base d’abord',
+      resetDbHint:
+        'Efface les trades dry-run existants avant le seed. Décoché : les trades existants sont conservés et le replay s’arrête au premier trade réel.',
+      detailPeriod: 'Période',
+      detailDuration: 'Durée',
+      detailPairs: 'Paires',
+      detailReplayResult: 'Résultat du replay',
+      detailCurrent: 'Actuel (replay + dry-run depuis)',
+      detailOutside: 'Trades depuis le replay',
+      queueTitle: 'Coordinateur : {cap} créneaux libres ({cores} cœurs, {hopt} pris par hyperopt)',
+      prioritize: 'Prioriser',
+      stateQueued: 'En file — en attente d’un cœur libre',
+      statePaused: 'En pause — cœurs occupés (hyperopt ou replays plus prioritaires)',
+      tradeBadgeHint: 'Trade simulé issu d’un dry-run replay (pas une activité live).',
+    },
   },
 
   maxDrawdownCard: {
@@ -978,6 +1058,7 @@ export default {
     colDuration: 'Durée',
     colOpenSince: 'Ouvert depuis',
     colOpenReason: 'Raison entrée',
+    colReplay: 'Replay',
     colStoplossDist: 'Dist. Stoploss',
     colDurationAnomaly: 'Santé durée',
     colOpenDate: "Date d'ouverture",
@@ -3511,5 +3592,12 @@ export default {
   widgetDefaults: {
     saveAsDefault: 'Filtre par défaut',
     saved: 'Filtres sauvegardés',
+  },
+
+  // Boot splash (shown briefly between page load and the first paint of the dashboard)
+  boot: {
+    connecting: 'Connexion aux bots…',
+    botsLoaded: '{loaded} / {total} bots chargés…',
+    preparingDashboard: 'Préparation du tableau de bord…',
   },
 };

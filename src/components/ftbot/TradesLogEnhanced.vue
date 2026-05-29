@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const botStore = useBotStore();
+const replayStore = useReplayStore();
 
 const props = withDefaults(
   defineProps<{
@@ -33,6 +34,7 @@ interface LogEntry {
   direction: string;
   profitPct: number | null;
   profitAbs: number | null;
+  replay: boolean;
 }
 
 // --- Build log entries ---
@@ -51,6 +53,7 @@ const logEntries = computed<LogEntry[]>(() => {
       direction: trade.is_short ? 'short' : 'long',
       profitPct: null,
       profitAbs: null,
+      replay: replayStore.isReplayTrade(trade.enter_tag),
     });
   }
 
@@ -70,6 +73,7 @@ const logEntries = computed<LogEntry[]>(() => {
       direction: trade.is_short ? 'short' : 'long',
       profitPct,
       profitAbs,
+      replay: replayStore.isReplayTrade(trade.enter_tag),
     });
   }
 
@@ -263,6 +267,12 @@ function botBadgeColor(botId: string): string {
         <!-- Pair + direction -->
         <span class="font-medium text-surface-200 truncate">
           {{ entry.pair }}
+          <span
+            v-if="entry.replay"
+            class="inline-block px-1 py-0.5 rounded text-[8px] font-bold bg-amber-500/20 text-amber-500 align-middle"
+            :title="t('botComparison.replay.tradeBadgeHint')"
+            >{{ t('botComparison.replay.tradeBadge') }}</span
+          >
           <span
             class="text-[10px] ml-0.5"
             :class="entry.direction === 'short' ? 'text-red-300' : 'text-green-300'"
