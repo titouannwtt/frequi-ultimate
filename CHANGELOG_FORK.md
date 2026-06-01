@@ -4,6 +4,17 @@
 **Fork** : `titouannwtt/frequi`
 **Total** : 98 fichiers, +31 224 / -1 313 lignes
 
+---
+
+## Suivi des releases upstream
+
+| Release upstream | Date | Statut sur le fork |
+|---|---|---|
+| `2.2.5` | 2 mai 2026 | base actuelle du fork (sync historique) |
+| **`3.0.0`** | **29 mai 2026** | **⚠️ NON FUSIONNÉ — requiert un refactor manuel (transition Nuxt UI : suppression de `MessageBox.vue`, `useToast.ts`, `plugins/primevue.ts`, réécriture de `TradingView.vue`, `App.vue`, `main.ts`, `BotEntry.vue`, `BotList.vue` et de tous les widgets ftbot/ que le fork a customisés). Voir la PR de tracking pour la liste complète des 46 hunks en conflit.** |
+
+---
+
 ## Fichiers AJOUTÉS (40 fichiers, ~19 000 lignes)
 
 | Fichier | Lignes | Résumé | Risque |
