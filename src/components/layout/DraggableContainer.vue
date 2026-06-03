@@ -167,7 +167,14 @@ const renderContent = computed(() => {
       v-bind="$attrs"
     >
       <slot v-if="renderContent"></slot>
-      <div v-else class="ft-lazy-placeholder w-full h-full" aria-hidden="true"></div>
+      <div
+        v-else
+        class="ft-lazy-placeholder w-full h-full flex items-center justify-center"
+        role="status"
+        aria-label="Loading"
+      >
+        <span class="ft-spinner" aria-hidden="true"></span>
+      </div>
     </div>
   </div>
 </template>
@@ -194,5 +201,49 @@ const renderContent = computed(() => {
 }
 .ft-drag-handle:active {
   cursor: grabbing;
+}
+
+/* Lazy / loading state — replaces the previously-blank placeholder
+ * (which read as a black square in dark mode) with a small spinner. */
+.ft-lazy-placeholder {
+  /* slight delay so a fast scroll past a widget doesn't flash the spinner */
+  animation: ft-spinner-fade-in 350ms ease-out 120ms both;
+}
+.ft-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(99, 102, 241, 0.18);
+  border-top-color: rgba(99, 102, 241, 0.75);
+  animation: ft-spinner-rotate 0.85s linear infinite;
+}
+/* In dark mode, light-tint the ring so it stays visible on near-black */
+:global(.ft-dark-theme) .ft-spinner {
+  border-color: rgba(165, 180, 252, 0.18);
+  border-top-color: rgba(165, 180, 252, 0.85);
+}
+@keyframes ft-spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ft-spinner-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Respect users who request reduced motion: keep the spinner but make
+ * the rotation slow + the fade-in instant, so it still signals activity
+ * without aggressive motion. */
+@media (prefers-reduced-motion: reduce) {
+  .ft-spinner {
+    animation-duration: 2.2s;
+  }
+  .ft-lazy-placeholder {
+    animation: none;
+  }
 }
 </style>
