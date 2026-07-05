@@ -25,6 +25,7 @@ interface TimelineEvent {
   durationMs?: number;
   dcaCount?: number;
   stakeAmount?: number;
+  currency?: string;
   annotation?: string;
 }
 
@@ -39,6 +40,7 @@ const compactMode = ref(true);
 const searchQuery = ref('');
 const selectedBotFilter = ref<string>('all');
 const { tradingMode: tradingModeFilter, hasMultipleModes } = useTradingModeFilter();
+const { initialLoading } = useInitialBotLoading();
 const enabledEventTypes = ref<Set<EventType>>(new Set(ALL_EVENT_TYPES));
 const maxEvents = ref(100);
 
@@ -144,6 +146,7 @@ const allEvents = computed<TimelineEvent[]>(() => {
     if (!store.isSelected) continue;
     const botName = store.uiBotName || 'Bot';
     const isDryRun = !!store.botState?.dry_run;
+    const currency = store.stakeCurrency || 'USDT';
 
     // Open trades -> trade_opened events + DCA detection
     for (const trade of (store.openTrades as Trade[]) || []) {
@@ -172,6 +175,7 @@ const allEvents = computed<TimelineEvent[]>(() => {
           direction: trade.is_short ? 'short' : 'long',
           dcaCount: trade.nr_of_successful_entries,
           stakeAmount: trade.stake_amount,
+          currency,
         });
       }
     }
@@ -203,6 +207,7 @@ const allEvents = computed<TimelineEvent[]>(() => {
         profitAbs,
         durationMs,
         stakeAmount: trade.stake_amount,
+        currency,
       });
 
       if ((trade.nr_of_successful_entries ?? 1) > 1) {
@@ -217,6 +222,7 @@ const allEvents = computed<TimelineEvent[]>(() => {
           direction: trade.is_short ? 'short' : 'long',
           dcaCount: trade.nr_of_successful_entries,
           stakeAmount: trade.stake_amount,
+          currency,
         });
       }
     }
@@ -369,7 +375,9 @@ function eventDescription(event: TimelineEvent): string {
     }
     case 'dca': {
       const dir = event.direction === 'short' ? t('activityTimeline.short') : t('activityTimeline.long');
-      const stakeStr = event.stakeAmount ? ` +${formatPrice(event.stakeAmount, 2)}` : '';
+      const stakeStr = event.stakeAmount
+        ? ` +${formatPrice(event.stakeAmount, 2)}${event.currency ? ` ${event.currency}` : ''}`
+        : '';
       return `${t('activityTimeline.dcaAdjustment')} ${dir} ${event.pair} (${event.dcaCount ?? 0} ${t('activityTimeline.entries')}${stakeStr})`;
     }
     case 'bot_status':
@@ -472,9 +480,17 @@ function eventDescription(event: TimelineEvent): string {
 
     <!-- Timeline content -->
     <div class="flex-1 overflow-y-auto px-3 pb-2" style="min-height: 0">
+      <!-- Initial loading skeleton -->
+      <div v-if="initialLoading" class="flex flex-col gap-2 py-2">
+        <div v-for="i in 6" :key="i" class="flex items-center gap-3">
+          <Skeleton shape="circle" size="1.125rem" class="flex-shrink-0" />
+          <Skeleton height="1.25rem" class="flex-1" />
+        </div>
+      </div>
+
       <!-- Empty state -->
       <div
-        v-if="filteredEvents.length === 0"
+        v-else-if="filteredEvents.length === 0"
         class="flex flex-col items-center justify-center py-8 text-surface-500"
       >
         <i class="i-mdi-timeline-clock-outline text-3xl mb-2 opacity-40" />
@@ -554,7 +570,7 @@ function eventDescription(event: TimelineEvent): string {
                 :class="(event.profitAbs ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'"
                 style="font-size: 0.65rem"
               >
-                {{ (event.profitAbs ?? 0) >= 0 ? '+' : '' }}{{ (event.profitAbs ?? 0).toFixed(2) }}
+                {{ (event.profitAbs ?? 0) >= 0 ? '+' : '' }}{{ (event.profitAbs ?? 0).toFixed(2) }}<template v-if="event.currency"> {{ event.currency }}</template>
               </span>
             </div>
 
@@ -683,7 +699,7 @@ function eventDescription(event: TimelineEvent): string {
                 <div v-if="event.stakeAmount" class="flex items-center gap-1">
                   <i class="i-mdi-cash-plus text-surface-500" style="font-size: 0.7rem" />
                   <span class="text-xs text-surface-400">
-                    +{{ formatPrice(event.stakeAmount, 2) }}
+                    +{{ formatPrice(event.stakeAmount, 2) }}<template v-if="event.currency"> {{ event.currency }}</template>
                   </span>
                 </div>
               </div>

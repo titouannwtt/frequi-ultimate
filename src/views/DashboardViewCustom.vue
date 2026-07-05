@@ -34,14 +34,14 @@ const gridLayoutData = computed((): GridItemData[] => {
   if (isResizableLayout.value) {
     return layoutStore.dashboardLayout;
   }
-  return [...layoutStore.getDashboardLayoutSm];
+  return layoutStore.dashboardLayoutSm;
 });
 
 function layoutUpdatedEvent(newLayout) {
   if (isResizableLayout.value) {
-    console.log('newlayout', newLayout);
-    console.log('saving dashboard');
     layoutStore.dashboardLayout = newLayout;
+  } else {
+    layoutStore.dashboardLayoutSm = newLayout;
   }
 }
 
@@ -108,6 +108,22 @@ const gridLayoutBotProfit = computed((): GridItemData => {
   return findGridLayout(gridLayoutData.value, DashboardLayout.botProfitComparison);
 });
 
+const gridLayoutFleetReconciliation = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.fleetReconciliation);
+});
+const gridLayoutFleetExposure = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.fleetExposure);
+});
+const gridLayoutFleetPnl = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.fleetPnl);
+});
+const gridLayoutFleetBots = computed((): GridItemData => {
+  return findGridLayout(gridLayoutData.value, DashboardLayout.fleetBots);
+});
+
+// Shared fleetview state (module-level refs); polling is owned by the widgets.
+const { recon: fleetRecon } = useFleetView();
+
 const responsiveGridLayouts = computed(() => {
   return {
     sm: layoutStore.getDashboardLayoutSm,
@@ -136,7 +152,7 @@ onMounted(async () => {
       :is-draggable="!isLayoutLocked"
       :responsive="true"
       :prevent-collision="false"
-      :cols="{ lg: 48, md: 48, sm: 48, xs: 12, xxs: 6 }"
+      :cols="{ lg: 48, md: 48, sm: 48, xs: 48, xxs: 48 }"
       :col-num="48"
       @layout-updated="layoutUpdatedEvent"
       @update:breakpoint="breakpointChanged"
@@ -158,6 +174,8 @@ onMounted(async () => {
         <DraggableContainer
           lazy
           :header="t('dashboard.profitBenchmark')"
+          scope="selection"
+          :hint="t('dashboard.profitBenchmarkDesc')"
           :widget-id="DashboardLayout.dailyChart"
           has-filter-defaults
           :filters-changed="profitBenchmarkRef?.filtersChanged ?? false"
@@ -184,31 +202,29 @@ onMounted(async () => {
       >
         <DraggableContainer
           lazy
+          :header="t('dashboard.botComparison')"
+          scope="all"
+          :hint="t('dashboard.botComparisonDesc')"
           :widget-id="DashboardLayout.botComparison"
           :can-hide="false"
           has-column-settings
           @column-settings-click="botComparisonRef?.showColumnPopover($event)"
         >
-          <template #header>
-            <div class="flex justify-between items-center w-full">
-              <span>{{ t('dashboard.botComparison') }}</span>
-              <div class="flex items-center gap-1">
-                <button
-                  class="p-1 text-xs rounded hover:bg-white/10 cursor-pointer"
-                  :title="t('botComparison.filtersTitle')"
-                  @click="botComparisonRef?.showFilterPopover($event)"
-                >
-                  <i-mdi-filter-variant class="inline" />
-                </button>
-                <button
-                  class="p-1 text-xs rounded hover:bg-white/10 cursor-pointer"
-                  :title="t('botComparison.groupsTitle')"
-                  @click="botComparisonRef?.showGroupsPopover($event)"
-                >
-                  <i-mdi-folder-multiple class="inline" />
-                </button>
-              </div>
-            </div>
+          <template #header-right>
+            <button
+              class="p-1 text-xs rounded hover:bg-white/10 cursor-pointer"
+              :title="t('botComparison.filtersTitle')"
+              @click="botComparisonRef?.showFilterPopover($event)"
+            >
+              <i-mdi-filter-variant class="inline" />
+            </button>
+            <button
+              class="p-1 text-xs rounded hover:bg-white/10 cursor-pointer"
+              :title="t('botComparison.groupsTitle')"
+              @click="botComparisonRef?.showGroupsPopover($event)"
+            >
+              <i-mdi-folder-multiple class="inline" />
+            </button>
           </template>
           <BotComparisonList ref="botComparisonRef" />
         </DraggableContainer>
@@ -228,19 +244,13 @@ onMounted(async () => {
       >
         <DraggableContainer
           lazy
+          :header="t('dashboard.openTrades')"
+          scope="selection"
+          :hint="t('dashboard.openTradesDesc')"
           :widget-id="DashboardLayout.allOpenTrades"
           has-column-settings
           @column-settings-click="openTradesRef?.showColumnPopover($event)"
         >
-          <template #header>
-            <div class="flex items-center">
-              <span>{{ t('dashboard.openTrades') }}</span>
-              <InfoBox
-                class="ms-2"
-                :hint="t('dashboard.openTradesDesc')"
-              />
-            </div>
-          </template>
           <OpenTradesEnhanced ref="openTradesRef" :trades="botStore.allOpenTradesSelectedBots" multi-bot-view />
         </DraggableContainer>
       </GridItem>
@@ -259,19 +269,13 @@ onMounted(async () => {
       >
         <DraggableContainer
           lazy
+          :header="t('dashboard.closedTrades')"
+          scope="selection"
+          :hint="t('dashboard.closedTradesDesc')"
           :widget-id="DashboardLayout.allClosedTrades"
           has-column-settings
           @column-settings-click="closedTradesRef?.showColumnPopover($event)"
         >
-          <template #header>
-            <div class="flex items-center">
-              <span>{{ t('dashboard.closedTrades') }}</span>
-              <InfoBox
-                class="ms-2"
-                :hint="t('dashboard.closedTradesDesc')"
-              />
-            </div>
-          </template>
           <ClosedTradesEnhanced ref="closedTradesRef" :trades="botStore.allClosedTradesSelectedBots" multi-bot-view />
         </DraggableContainer>
       </GridItem>
@@ -291,6 +295,8 @@ onMounted(async () => {
         <DraggableContainer
           lazy
           :header="t('dashboard.profitDistribution')"
+          scope="selection"
+          :hint="t('dashboard.profitDistributionDesc')"
           :widget-id="DashboardLayout.profitDistributionChart"
           has-filter-defaults
           :filters-changed="profitDistRef?.filtersChanged ?? false"
@@ -315,6 +321,8 @@ onMounted(async () => {
         <DraggableContainer
           lazy
           :header="t('dashboard.activityTimeline')"
+          scope="all"
+          :hint="t('dashboard.activityTimelineDesc')"
           :widget-id="DashboardLayout.activityTimeline"
           has-filter-defaults
           :filters-changed="activityTimelineRef?.filtersChanged ?? false"
@@ -336,11 +344,14 @@ onMounted(async () => {
         drag-allow-from=".drag-header"
         drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer lazy :widget-id="DashboardLayout.marketPulse">
-          <template #header>
-            <span>{{ t('dashboard.marketOverview') }}</span>
-            <span class="ft-live-dot ml-1.5"></span>
-          </template>
+        <DraggableContainer
+          lazy
+          :header="t('dashboard.marketOverview')"
+          scope="all"
+          :hint="t('dashboard.marketOverviewDesc')"
+          live
+          :widget-id="DashboardLayout.marketPulse"
+        >
           <MarketPulse />
         </DraggableContainer>
       </GridItem>
@@ -357,7 +368,13 @@ onMounted(async () => {
         drag-allow-from=".drag-header"
         drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer lazy :header="t('dashboard.riskOverview')" :widget-id="DashboardLayout.riskOverview">
+        <DraggableContainer
+          lazy
+          :header="t('dashboard.riskOverview')"
+          scope="all"
+          :hint="t('dashboard.riskOverviewDesc')"
+          :widget-id="DashboardLayout.riskOverview"
+        >
           <RiskOverview />
         </DraggableContainer>
       </GridItem>
@@ -374,11 +391,14 @@ onMounted(async () => {
         drag-allow-from=".drag-header"
         drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer lazy :widget-id="DashboardLayout.stressTest">
-          <template #header>
-            <span>{{ t('dashboard.stressTest') }}</span>
-            <span class="ft-live-dot ml-1.5"></span>
-          </template>
+        <DraggableContainer
+          lazy
+          :header="t('dashboard.stressTest')"
+          scope="all"
+          :hint="t('dashboard.stressTestDesc')"
+          live
+          :widget-id="DashboardLayout.stressTest"
+        >
           <StressTestCard />
         </DraggableContainer>
       </GridItem>
@@ -398,6 +418,9 @@ onMounted(async () => {
         <DraggableContainer
           lazy
           :header="t('dashboard.logConsole')"
+          scope="system"
+          :hint="t('dashboard.logConsoleDesc')"
+          live
           :widget-id="DashboardLayout.logConsole"
           has-filter-defaults
           :filters-changed="logConsoleRef?.filtersChanged ?? false"
@@ -419,11 +442,14 @@ onMounted(async () => {
         drag-allow-from=".drag-header"
         drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer lazy :widget-id="DashboardLayout.rateBudget">
-          <template #header>
-            <span>{{ t('dashboard.rateMonitor') }}</span>
-            <span class="ft-live-dot ml-1.5"></span>
-          </template>
+        <DraggableContainer
+          lazy
+          :header="t('dashboard.rateMonitor')"
+          scope="system"
+          :hint="t('dashboard.rateMonitorDesc')"
+          live
+          :widget-id="DashboardLayout.rateBudget"
+        >
           <CacheRateMonitor multi-bot-view />
         </DraggableContainer>
       </GridItem>
@@ -442,15 +468,15 @@ onMounted(async () => {
       >
         <DraggableContainer
           lazy
+          :header="t('dashboard.requestTimeline')"
+          scope="system"
+          :hint="t('dashboard.requestTimelineDesc')"
+          live
           :widget-id="DashboardLayout.ratePulse"
           has-filter-defaults
           :filters-changed="requestTimelineRef?.filtersChanged ?? false"
           @save-filter-defaults="requestTimelineRef?.saveCurrentAsDefault()"
         >
-          <template #header>
-            <span>{{ t('dashboard.requestTimeline') }}</span>
-            <span class="ft-live-dot ml-1.5"></span>
-          </template>
           <RequestTimeline ref="requestTimelineRef" multi-bot-view />
         </DraggableContainer>
       </GridItem>
@@ -467,11 +493,14 @@ onMounted(async () => {
         drag-allow-from=".drag-header"
         drag-ignore-from=".ft-no-drag"
       >
-        <DraggableContainer lazy :widget-id="DashboardLayout.fleetOverview">
-          <template #header>
-            <span>{{ t('dashboard.infraHealth') }}</span>
-            <span class="ft-live-dot ml-1.5"></span>
-          </template>
+        <DraggableContainer
+          lazy
+          :header="t('dashboard.infraHealth')"
+          scope="system"
+          :hint="t('dashboard.infraHealthDesc')"
+          live
+          :widget-id="DashboardLayout.fleetOverview"
+        >
           <InfrastructureHealth />
         </DraggableContainer>
       </GridItem>
@@ -491,6 +520,8 @@ onMounted(async () => {
         <DraggableContainer
           lazy
           :header="t('dashboard.volumeComparator')"
+          scope="all"
+          :hint="t('dashboard.volumeComparatorDesc')"
           :widget-id="DashboardLayout.volumeComparator"
           has-filter-defaults
           :filters-changed="volumeComparatorRef?.filtersChanged ?? false"
@@ -515,6 +546,8 @@ onMounted(async () => {
         <DraggableContainer
           lazy
           :header="t('dashboard.periodBreakdown')"
+          scope="all"
+          :hint="t('dashboard.periodBreakdownDesc')"
           :widget-id="DashboardLayout.periodBreakdown"
           has-filter-defaults
           :filters-changed="periodBreakdownRef?.filtersChanged ?? false"
@@ -539,12 +572,122 @@ onMounted(async () => {
         <DraggableContainer
           lazy
           :header="t('dashboard.botProfitComparison')"
+          scope="selection"
+          :hint="t('dashboard.botProfitComparisonDesc')"
           :widget-id="DashboardLayout.botProfitComparison"
           has-filter-defaults
           :filters-changed="botProfitRef?.filtersChanged ?? false"
           @save-filter-defaults="botProfitRef?.saveCurrentAsDefault()"
         >
           <BotProfitComparisonChart ref="botProfitRef" :trades="botStore.allTradesSelectedBots" />
+        </DraggableContainer>
+      </GridItem>
+      <GridItem
+        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetReconciliation)"
+        v-bind="gridItemProps"
+        :i="gridLayoutFleetReconciliation.i"
+        :x="gridLayoutFleetReconciliation.x"
+        :y="gridLayoutFleetReconciliation.y"
+        :w="gridLayoutFleetReconciliation.w"
+        :h="gridLayoutFleetReconciliation.h"
+        :min-w="12"
+        :min-h="10"
+        drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
+      >
+        <DraggableContainer
+          lazy
+          :header="t('fleet.walletReconciliation')"
+          scope="fleet"
+          :hint="t('fleet.reconciliationDesc')"
+          live
+          :widget-id="DashboardLayout.fleetReconciliation"
+        >
+          <template #header-extra>
+            <Tag
+              v-if="fleetRecon"
+              :value="
+                fleetRecon.issues === 0
+                  ? t('fleet.allClear')
+                  : t('fleet.issueCount', { count: fleetRecon.issues })
+              "
+              :severity="fleetRecon.issues === 0 ? 'success' : 'danger'"
+              class="!text-[0.65rem]"
+            />
+          </template>
+          <FleetviewReconciliation />
+        </DraggableContainer>
+      </GridItem>
+      <GridItem
+        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetExposure)"
+        v-bind="gridItemProps"
+        :i="gridLayoutFleetExposure.i"
+        :x="gridLayoutFleetExposure.x"
+        :y="gridLayoutFleetExposure.y"
+        :w="gridLayoutFleetExposure.w"
+        :h="gridLayoutFleetExposure.h"
+        :min-w="10"
+        :min-h="12"
+        drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
+      >
+        <DraggableContainer
+          lazy
+          :header="t('fleet.directionalExposure')"
+          scope="fleet"
+          :hint="t('fleet.exposureDesc')"
+          live
+          :widget-id="DashboardLayout.fleetExposure"
+        >
+          <FleetviewExposure />
+        </DraggableContainer>
+      </GridItem>
+      <GridItem
+        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetPnl)"
+        v-bind="gridItemProps"
+        :i="gridLayoutFleetPnl.i"
+        :x="gridLayoutFleetPnl.x"
+        :y="gridLayoutFleetPnl.y"
+        :w="gridLayoutFleetPnl.w"
+        :h="gridLayoutFleetPnl.h"
+        :min-w="10"
+        :min-h="14"
+        drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
+      >
+        <DraggableContainer
+          lazy
+          :header="t('fleet.pnlContribution')"
+          scope="fleet"
+          :hint="t('fleet.pnlDesc')"
+          live
+          :widget-id="DashboardLayout.fleetPnl"
+        >
+          <FleetviewPnlChart />
+        </DraggableContainer>
+      </GridItem>
+      <GridItem
+        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetBots)"
+        v-bind="gridItemProps"
+        :i="gridLayoutFleetBots.i"
+        :x="gridLayoutFleetBots.x"
+        :y="gridLayoutFleetBots.y"
+        :w="gridLayoutFleetBots.w"
+        :h="gridLayoutFleetBots.h"
+        :min-w="12"
+        :min-h="14"
+        drag-allow-from=".drag-header"
+        drag-ignore-from=".ft-no-drag"
+      >
+        <DraggableContainer
+          lazy
+          :header="t('fleet.botsPanel')"
+          scope="fleet"
+          :hint="t('fleet.botsDesc')"
+          live
+          :widget-id="DashboardLayout.fleetBots"
+        >
+          <FleetviewBotsTable />
         </DraggableContainer>
       </GridItem>
     </template>

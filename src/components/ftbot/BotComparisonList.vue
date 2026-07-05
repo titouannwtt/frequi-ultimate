@@ -648,6 +648,79 @@ function ddColor(ratio: number): string {
   return 'text-surface-400';
 }
 
+// --- Last closed trade per bot (for the optional `lastTrade` column) ---
+// Cached computed → only re-evaluates when a bot's trades array reference changes
+// (which only happens when a trade closes). Heavy computation has no impact on
+// the dashboard refresh tick.
+interface LastClosedTradeInfo {
+  pair: string;
+  profitRatio: number;
+  profitAbs: number;
+  closeTimestampMs: number;
+  sameDayCount: number; // trades closed the SAME calendar day, excluding this one
+  stakeCurrency: string;
+}
+
+const lastTradeByBot = computed<Record<string, LastClosedTradeInfo | null>>(() => {
+  const out: Record<string, LastClosedTradeInfo | null> = {};
+  for (const [botId, sub] of Object.entries(botStore.botStores)) {
+    const trades = sub?.trades ?? [];
+    if (trades.length === 0) {
+      out[botId] = null;
+      continue;
+    }
+    // Find latest by close_timestamp (single pass).
+    let latest = null as (typeof trades)[number] | null;
+    for (const t of trades) {
+      // We rely on close_timestamp being set on closed trades (it is in
+      // freqtrade's /trades response). Open trades get filtered out here.
+      const ts = t.close_timestamp ?? 0;
+      if (!ts) continue;
+      if (!latest || ts > (latest.close_timestamp ?? 0)) latest = t;
+    }
+    if (!latest || !latest.close_timestamp) {
+      out[botId] = null;
+      continue;
+    }
+    const latestDay = new Date(latest.close_timestamp).toDateString();
+    let sameDay = 0;
+    for (const t of trades) {
+      if (t === latest) continue;
+      const ts = t.close_timestamp ?? 0;
+      if (!ts) continue;
+      if (new Date(ts).toDateString() === latestDay) sameDay++;
+    }
+    out[botId] = {
+      pair: latest.pair,
+      profitRatio: latest.profit_ratio ?? 0,
+      profitAbs: latest.profit_abs ?? 0,
+      closeTimestampMs: latest.close_timestamp,
+      sameDayCount: sameDay,
+      stakeCurrency: botStore.allBotState[botId]?.stake_currency || '',
+    };
+  }
+  return out;
+});
+
+function lastTradeBasePair(pair: string): string {
+  // ETH/USDC:USDC → ETH ; BTC-USD → BTC
+  return pair.split('/')[0].split('-')[0] || pair;
+}
+
+// Compact relative time ("il y a 5min" / "5m ago") — short form to fit a single
+// table cell. Uses dedicated i18n keys (time.justNow/minutesAgoShort/
+// hoursAgoShort/daysAgoShort) so the format adapts cleanly to each locale.
+function lastTradeAgo(timestampMs: number): string {
+  if (!timestampMs) return '';
+  const diffMin = Math.floor((Date.now() - timestampMs) / 60000);
+  if (diffMin < 1) return t('time.justNow');
+  if (diffMin < 60) return t('time.minutesAgoShort', { n: diffMin });
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 48) return t('time.hoursAgoShort', { n: diffH });
+  const diffD = Math.floor(diffH / 24);
+  return t('time.daysAgoShort', { n: diffD });
+}
+
 // Bots aggregated by the Summary row: selected bots (or all if none selected).
 const summaryBotIds = computed(() => {
   const sel = Object.keys(botStore.botStores).filter((id) => botStore.botStores[id]?.isSelected);
@@ -1330,6 +1403,13 @@ const allColumns: ColumnDefinition[] = [
     labelKey: 'botComparison.winLoss',
     icon: 'i-mdi-trophy',
     default: true,
+    removable: true,
+  },
+  {
+    id: 'lastTrade',
+    labelKey: 'botComparison.lastTrade',
+    icon: 'i-mdi-history',
+    default: false,
     removable: true,
   },
   {
@@ -4762,6 +4842,7 @@ const correlatedPairs = computed(() => {
             <i-mdi-trending-down v-else-if="col.id === 'maxDrawdown'" class="text-xs opacity-50" />
             <i-mdi-wallet v-else-if="col.id === 'balance'" class="text-xs opacity-50" />
             <i-mdi-trophy v-else-if="col.id === 'winLoss'" class="text-xs opacity-50" />
+            <i-mdi-history v-else-if="col.id === 'lastTrade'" class="text-xs opacity-50" />
             <i-mdi-cash v-else-if="col.id === 'stakeAmount'" class="text-xs opacity-50" />
             <i-mdi-lan v-else-if="col.id === 'port'" class="text-xs opacity-50" />
             <i-mdi-cog v-else-if="col.id === 'strategy'" class="text-xs opacity-50" />
@@ -5824,6 +5905,52 @@ const correlatedPairs = computed(() => {
               </div>
             </template>
 
+            <!-- lastTrade -->
+            <template v-else-if="col.id === 'lastTrade'">
+              <div
+                v-if="data.botId && lastTradeByBot[data.botId]"
+                class="ft-last-trade-cell"
+                :title="
+                  `${lastTradeByBot[data.botId]!.pair} · ${formatPercent(lastTradeByBot[data.botId]!.profitRatio, 2)}` +
+                  ` · ${formatPriceCurrency(lastTradeByBot[data.botId]!.profitAbs, lastTradeByBot[data.botId]!.stakeCurrency, 3)}` +
+                  ` · ${new Date(lastTradeByBot[data.botId]!.closeTimestampMs).toLocaleString()}` +
+                  (lastTradeByBot[data.botId]!.sameDayCount > 0
+                    ? ` · +${lastTradeByBot[data.botId]!.sameDayCount} ${t('botComparison.lastTradeOthersToday')}`
+                    : '')
+                "
+              >
+                <div class="ft-last-trade-l1">
+                  <span class="ft-last-trade-pair">{{
+                    lastTradeBasePair(lastTradeByBot[data.botId]!.pair)
+                  }}</span>
+                  <span
+                    :class="
+                      lastTradeByBot[data.botId]!.profitRatio >= 0 ? 'text-profit' : 'text-loss'
+                    "
+                  >{{ formatPercent(lastTradeByBot[data.botId]!.profitRatio, 2) }}</span>
+                </div>
+                <div class="ft-last-trade-l2">
+                  <span class="ft-last-trade-abs">{{
+                    formatPriceCurrency(
+                      lastTradeByBot[data.botId]!.profitAbs,
+                      lastTradeByBot[data.botId]!.stakeCurrency,
+                      2,
+                    )
+                  }}</span>
+                  <span class="ft-last-trade-sep">·</span>
+                  <span class="ft-last-trade-time">{{
+                    lastTradeAgo(lastTradeByBot[data.botId]!.closeTimestampMs)
+                  }}</span>
+                  <span
+                    v-if="lastTradeByBot[data.botId]!.sameDayCount > 0"
+                    class="ft-last-trade-badge"
+                    :title="t('botComparison.lastTradeOthersTodayTooltip', { n: lastTradeByBot[data.botId]!.sameDayCount })"
+                  >+{{ lastTradeByBot[data.botId]!.sameDayCount }}</span>
+                </div>
+              </div>
+              <span v-else-if="data.botId" class="opacity-30">—</span>
+            </template>
+
             <!-- stakeAmount -->
             <template v-else-if="col.id === 'stakeAmount'">
               <span v-if="data.botId !== undefined">{{
@@ -6501,6 +6628,56 @@ const correlatedPairs = computed(() => {
   to {
     transform: rotate(360deg);
   }
+}
+
+/*
+ * "Last trade" column — ultra-compact 2-line cell.
+ * Constraints from spec : must NOT extend the row height or widen the table.
+ * Solution : both lines use tight line-height (1.15), small font sizes (xs / 2xs),
+ * `white-space: nowrap` to prevent wrapping that would push width up. Total cell
+ * height ≈ 26 px — fits within the existing row height set by other 2-line cells
+ * (botName with status badges, balance with multi-currency, etc.).
+ */
+.ft-last-trade-cell {
+  line-height: 1.15;
+  font-feature-settings: 'tnum'; /* tabular numbers so % and abs align across rows */
+  font-variant-numeric: tabular-nums;
+}
+.ft-last-trade-l1 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.ft-last-trade-l1 .ft-last-trade-pair {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.ft-last-trade-l2 {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  opacity: 0.6;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+.ft-last-trade-l2 .ft-last-trade-sep {
+  opacity: 0.5;
+}
+.ft-last-trade-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.3rem;
+  height: 0.85rem;
+  border-radius: 4px;
+  background: rgba(99, 102, 241, 0.18);
+  color: rgb(165, 180, 252);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-left: 0.1rem;
 }
 </style>
 

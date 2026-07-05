@@ -31,6 +31,10 @@ export enum DashboardLayout {
   volumeComparator = 19,
   periodBreakdown = 20,
   botProfitComparison = 21,
+  fleetReconciliation = 22,
+  fleetExposure = 23,
+  fleetPnl = 24,
+  fleetBots = 25,
 }
 
 // Define default layouts
@@ -66,15 +70,23 @@ const DEFAULT_DASHBOARD_LAYOUT: GridItemData[] = [
   { i: DashboardLayout.profitDistributionChart, x: 32, y: 112, w: 16, h: 25 },
   { i: DashboardLayout.rateBudget, x: 32, y: 164, w: 16, h: 27 },
   { i: DashboardLayout.riskOverview, x: 32, y: 191, w: 16, h: 38 },
-  { i: DashboardLayout.walletHistoryChart, x: 0, y: 248, w: 16, h: 24 },
-  { i: DashboardLayout.cumChartChart, x: 16, y: 288, w: 16, h: 24 },
   { i: DashboardLayout.fleetOverview, x: 0, y: 191, w: 32, h: 38 },
   { i: DashboardLayout.volumeComparator, x: 32, y: 84, w: 16, h: 28 },
-  { i: DashboardLayout.tradesLogChart, x: 0, y: 400, w: 0, h: 0 },
-  { i: DashboardLayout.performanceHeatmap, x: 0, y: 400, w: 0, h: 0 },
-  { i: DashboardLayout.requestFlow, x: 0, y: 400, w: 0, h: 0 },
-  { i: DashboardLayout.cacheHealth, x: 0, y: 400, w: 0, h: 0 },
+  { i: DashboardLayout.fleetReconciliation, x: 0, y: 312, w: 32, h: 26 },
+  { i: DashboardLayout.fleetExposure, x: 32, y: 312, w: 16, h: 26 },
+  { i: DashboardLayout.fleetPnl, x: 32, y: 338, w: 16, h: 30 },
+  { i: DashboardLayout.fleetBots, x: 0, y: 338, w: 32, h: 30 },
 ];
+
+// Widget ids with no rendered GridItem — stripped from stored layouts on hydration.
+const PHANTOM_WIDGETS = new Set<number>([
+  DashboardLayout.cumChartChart,
+  DashboardLayout.tradesLogChart,
+  DashboardLayout.performanceHeatmap,
+  DashboardLayout.requestFlow,
+  DashboardLayout.cacheHealth,
+  DashboardLayout.walletHistoryChart,
+]);
 
 const DEFAULT_WIDGET_DEFAULTS: Record<number, Record<string, unknown>> = {
   [DashboardLayout.dailyChart]: {
@@ -134,25 +146,23 @@ const DEFAULT_DASHBOARD_LAYOUT_SM: GridItemData[] = [
   { i: DashboardLayout.botComparison, x: 0, y: 0, w: 48, h: 24 },
   { i: DashboardLayout.allOpenTrades, x: 0, y: 24, w: 48, h: 32 },
   { i: DashboardLayout.dailyChart, x: 0, y: 56, w: 48, h: 24 },
-  { i: DashboardLayout.cumChartChart, x: 0, y: 80, w: 48, h: 24 },
   { i: DashboardLayout.profitDistributionChart, x: 0, y: 104, w: 48, h: 24 },
-  { i: DashboardLayout.tradesLogChart, x: 0, y: 128, w: 48, h: 20 },
   { i: DashboardLayout.allClosedTrades, x: 0, y: 148, w: 48, h: 32 },
   { i: DashboardLayout.activityTimeline, x: 0, y: 180, w: 48, h: 16 },
   { i: DashboardLayout.marketPulse, x: 0, y: 196, w: 48, h: 20 },
-  { i: DashboardLayout.performanceHeatmap, x: 0, y: 216, w: 48, h: 20 },
   { i: DashboardLayout.riskOverview, x: 0, y: 236, w: 48, h: 20 },
   { i: DashboardLayout.stressTest, x: 0, y: 256, w: 48, h: 24 },
   { i: DashboardLayout.logConsole, x: 0, y: 280, w: 48, h: 24 },
   { i: DashboardLayout.rateBudget, x: 0, y: 304, w: 48, h: 28 },
   { i: DashboardLayout.ratePulse, x: 0, y: 332, w: 48, h: 28 },
-  { i: DashboardLayout.requestFlow, x: 0, y: 800, w: 0, h: 0 },
-  { i: DashboardLayout.cacheHealth, x: 0, y: 800, w: 0, h: 0 },
   { i: DashboardLayout.fleetOverview, x: 0, y: 360, w: 48, h: 28 },
-  { i: DashboardLayout.walletHistoryChart, x: 0, y: 388, w: 48, h: 24 },
   { i: DashboardLayout.volumeComparator, x: 0, y: 412, w: 48, h: 28 },
   { i: DashboardLayout.periodBreakdown, x: 0, y: 440, w: 48, h: 24 },
   { i: DashboardLayout.botProfitComparison, x: 0, y: 464, w: 48, h: 24 },
+  { i: DashboardLayout.fleetReconciliation, x: 0, y: 488, w: 48, h: 26 },
+  { i: DashboardLayout.fleetExposure, x: 0, y: 514, w: 48, h: 24 },
+  { i: DashboardLayout.fleetPnl, x: 0, y: 538, w: 48, h: 28 },
+  { i: DashboardLayout.fleetBots, x: 0, y: 566, w: 48, h: 30 },
 ];
 
 const STORE_LAYOUTS = 'ftLayoutSettings';
@@ -200,6 +210,7 @@ export const useLayoutStore = defineStore('layoutStore', {
   state: () => {
     return {
       dashboardLayout: JSON.parse(JSON.stringify(DEFAULT_DASHBOARD_LAYOUT)),
+      dashboardLayoutSm: JSON.parse(JSON.stringify(DEFAULT_DASHBOARD_LAYOUT_SM)),
       tradingLayout: JSON.parse(JSON.stringify(DEFAULT_TRADING_LAYOUT)),
       layoutLocked: true,
       editMode: false,
@@ -210,7 +221,7 @@ export const useLayoutStore = defineStore('layoutStore', {
     };
   },
   getters: {
-    getDashboardLayoutSm: () => [...DEFAULT_DASHBOARD_LAYOUT_SM],
+    getDashboardLayoutSm: (state) => state.dashboardLayoutSm as GridItemData[],
     getTradingLayoutSm: () => [...DEFAULT_TRADING_LAYOUT_SM],
   },
   actions: {
@@ -219,6 +230,7 @@ export const useLayoutStore = defineStore('layoutStore', {
     },
     resetDashboardLayout() {
       this.dashboardLayout = JSON.parse(JSON.stringify(DEFAULT_DASHBOARD_LAYOUT));
+      this.dashboardLayoutSm = JSON.parse(JSON.stringify(DEFAULT_DASHBOARD_LAYOUT_SM));
       this.hiddenWidgets = [];
       this.widgetDefaults = JSON.parse(JSON.stringify(DEFAULT_WIDGET_DEFAULTS));
       this.widgetOpacity = 1;
@@ -320,6 +332,9 @@ export const useLayoutStore = defineStore('layoutStore', {
         console.log('loading dashboard Layout from default.');
         context.store.dashboardLayout = JSON.parse(JSON.stringify(DEFAULT_DASHBOARD_LAYOUT));
       } else {
+        context.store.dashboardLayout = context.store.dashboardLayout.filter(
+          (item: GridItemData) => !PHANTOM_WIDGETS.has(item.i),
+        );
         const missingIds = [...expectedIds].filter((id) => !storedIds.has(id));
         if (missingIds.length > 0) {
           const defaults = DEFAULT_DASHBOARD_LAYOUT.filter((item) => missingIds.includes(item.i));
@@ -347,6 +362,24 @@ export const useLayoutStore = defineStore('layoutStore', {
             w: item.w * 2,
             h: item.h * 2,
           }));
+        }
+      }
+      const smCorrupt =
+        !Array.isArray(context.store.dashboardLayoutSm) ||
+        context.store.dashboardLayoutSm.length === 0 ||
+        typeof context.store.dashboardLayoutSm[0]['i'] === 'string';
+      if (smCorrupt) {
+        context.store.dashboardLayoutSm = JSON.parse(JSON.stringify(DEFAULT_DASHBOARD_LAYOUT_SM));
+      } else {
+        context.store.dashboardLayoutSm = context.store.dashboardLayoutSm.filter(
+          (item: GridItemData) => !PHANTOM_WIDGETS.has(item.i),
+        );
+        const smIds = new Set(
+          context.store.dashboardLayoutSm.map((item: GridItemData) => item.i),
+        );
+        const smMissing = DEFAULT_DASHBOARD_LAYOUT_SM.filter((item) => !smIds.has(item.i));
+        if (smMissing.length > 0) {
+          context.store.dashboardLayoutSm.push(...JSON.parse(JSON.stringify(smMissing)));
         }
       }
       if (

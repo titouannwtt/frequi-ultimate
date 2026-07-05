@@ -65,6 +65,7 @@ export interface ProfitStats {
   sharpe?: number;
   sortino?: number;
   sqn?: number;
+  pvalue?: number;
   /** Total amount withdrawn from bot profits */
   capital_withdrawal?: number;
   /** Net profit after withdrawals (profit_closed_coin - capital_withdrawal) */
