@@ -47,6 +47,7 @@ const settingsStore = useSettingsStore();
 const replayStore = useReplayStore();
 const router = useRouter();
 const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
+const { initialLoading } = useInitialBotLoading();
 
 const {
   visibleColumns, toggleColumn, isVisible,
@@ -349,7 +350,12 @@ watch(
       @row-click="onRowClicked"
     >
       <template #empty>
-        {{ t('tradeList.currentlyNoOpen') }}
+        <div v-if="initialLoading" class="flex flex-col gap-2 py-2">
+          <Skeleton v-for="i in 5" :key="i" height="1.25rem" />
+        </div>
+        <template v-else>
+          {{ t('tradeList.currentlyNoOpen') }}
+        </template>
       </template>
 
       <Column

@@ -361,6 +361,7 @@ export default {
     sharpe: 'Sharpe',
     sortino: 'Sortino',
     sqn: 'SQN',
+    pvalue: 'P-Value',
     avgDuration: 'Durchschn. Dauer',
     bestPerforming: 'Beste Leistung',
     tradingVolume: 'Handelsvolumen',

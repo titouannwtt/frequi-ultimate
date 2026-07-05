@@ -27,6 +27,22 @@ import axios from 'axios';
 
 export type BotSubStore = ReturnType<typeof createBotSubStore>;
 
+const BATCH_SIZE = 6;
+const BATCH_DELAY_MS = 150;
+
+async function batchedAll<T>(tasks: (() => Promise<T>)[]): Promise<T[]> {
+  const results: T[] = [];
+  for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
+    const batch = tasks.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.all(batch.map((fn) => fn()));
+    results.push(...batchResults);
+    if (i + BATCH_SIZE < tasks.length) {
+      await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+    }
+  }
+  return results;
+}
+
 export interface SubStores {
   [key: string]: BotSubStore;
 }
@@ -315,22 +331,18 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       this.globalAutoRefresh = value;
     },
     async allRefreshFrequent(forceUpdate = false) {
-      const updates: Promise<unknown>[] = [];
-      for (const e of this.allBotStores) {
-        if (e.refreshNow && e.botStatusAvailable && (this.globalAutoRefresh || forceUpdate)) {
-          updates.push(e.refreshFrequent());
-        }
-      }
-      await Promise.all(updates);
+      const tasks = this.allBotStores
+        .filter(
+          (e) => e.refreshNow && e.botStatusAvailable && (this.globalAutoRefresh || forceUpdate),
+        )
+        .map((e) => () => e.refreshFrequent());
+      await batchedAll(tasks);
     },
     async allRefreshSlow(forceUpdate = false) {
-      const updates: Promise<unknown>[] = [];
-      for (const e of this.allBotStores) {
-        if (e.refreshNow && (this.globalAutoRefresh || forceUpdate)) {
-          updates.push(e.refreshSlow(forceUpdate));
-        }
-      }
-      await Promise.all(updates);
+      const tasks = this.allBotStores
+        .filter((e) => e.refreshNow && (this.globalAutoRefresh || forceUpdate))
+        .map((e) => () => e.refreshSlow(forceUpdate));
+      await batchedAll(tasks);
     },
     async allRefreshFull() {
       if (this.refreshing) {
@@ -341,13 +353,10 @@ export const useBotStore = defineStore('ftbot-wrapper', {
         // Ensure all bots status is correct.
         await this.pingAll();
 
-        const botStoreUpdates: Promise<BotState>[] = [];
-        this.allBotStores.forEach((bot) => {
-          if (bot.isBotLoggedIn && bot.isBotOnline && !bot.botStatusAvailable) {
-            botStoreUpdates.push(bot.getState());
-          }
-        });
-        await Promise.all(botStoreUpdates);
+        const stateTasks = this.allBotStores
+          .filter((bot) => bot.isBotLoggedIn && bot.isBotOnline && !bot.botStatusAvailable)
+          .map((bot) => () => bot.getState());
+        await batchedAll(stateTasks);
 
         const updates: Promise<void>[] = [];
         updates.push(this.allRefreshFrequent(false));
@@ -397,17 +406,10 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       }, 10 * 60 * 1000);
     },
     async fetchAllBotsTrades() {
-      const updates: Promise<void>[] = [];
-      for (const bot of Object.values(this.botStores)) {
-        if (bot.isBotOnline && bot.isBotLoggedIn) {
-          updates.push(
-            bot.getTrades().catch(() => {
-              // Ignore errors for individual bots
-            }),
-          );
-        }
-      }
-      await Promise.all(updates);
+      const tasks = Object.values(this.botStores)
+        .filter((bot) => bot.isBotOnline && bot.isBotLoggedIn)
+        .map((bot) => () => bot.getTrades().catch(() => {}));
+      await batchedAll(tasks);
     },
     stopRefresh() {
       console.log('Stopping automatic refresh.');
@@ -425,8 +427,9 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       }
     },
     async pingAll() {
-      await Promise.all(
-        Object.values(this.botStores).map(async (v) => {
+      const bots = Object.values(this.botStores);
+      await batchedAll(
+        bots.map((v) => async () => {
           try {
             await v.fetchPing();
           } catch {
@@ -436,8 +439,9 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       );
     },
     async allGetState() {
-      await Promise.all(
-        Object.values(this.botStores).map(async (v) => {
+      const bots = Object.values(this.botStores);
+      await batchedAll(
+        bots.map((v) => async () => {
           try {
             await v.getState();
           } catch {

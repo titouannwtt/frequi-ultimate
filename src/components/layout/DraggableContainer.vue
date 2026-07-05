@@ -15,6 +15,12 @@ const props = withDefaults(
     hasColumnSettings?: boolean;
     hasFilterDefaults?: boolean;
     filtersChanged?: boolean;
+    /** Data scope badge: which universe of bots feeds this widget. */
+    scope?: 'selection' | 'all' | 'fleet' | 'system';
+    /** Show the live auto-refresh dot in the header. */
+    live?: boolean;
+    /** InfoBox hint describing the widget's data source and refresh cadence. */
+    hint?: string;
     /**
      * Lazy-mount the content: only render the default slot while the widget is
      * in (or near) the viewport, and unmount it when scrolled away. Opt-in so
@@ -31,9 +37,21 @@ const props = withDefaults(
     hasColumnSettings: false,
     hasFilterDefaults: false,
     filtersChanged: false,
+    scope: undefined,
+    live: false,
+    hint: '',
     lazy: false,
   },
 );
+
+const SCOPE_CLASSES: Record<string, string> = {
+  selection: 'ft-scope-selection',
+  all: 'ft-scope-all',
+  fleet: 'ft-scope-fleet',
+  system: 'ft-scope-system',
+};
+const scopeLabel = computed(() => (props.scope ? t(`widgetScope.${props.scope}`) : ''));
+const scopeTitle = computed(() => (props.scope ? t(`widgetScope.${props.scope}Title`) : ''));
 
 const emit = defineEmits<{
   'column-settings-click': [event: Event];
@@ -95,7 +113,7 @@ const renderContent = computed(() => {
       style="border-image: linear-gradient(to right, transparent, rgba(99, 102, 241, 0.15), transparent) 1"
     >
       <div class="flex items-center w-full gap-2">
-        <!-- Left: drag icon + title -->
+        <!-- Left: drag icon + title + scope badge + hint + live dot -->
         <div class="flex items-center gap-1.5 shrink-0 text-[#4a4540] dark:text-surface-200 text-sm whitespace-nowrap">
           <i-mdi-drag
             v-if="layoutStore.editMode && !isHidden"
@@ -104,6 +122,15 @@ const renderContent = computed(() => {
           <slot name="header">
             {{ header }}
           </slot>
+          <span
+            v-if="scope"
+            class="ft-scope-badge"
+            :class="SCOPE_CLASSES[scope]"
+            :title="scopeTitle"
+          >{{ scopeLabel }}</span>
+          <InfoBox v-if="hint" :hint="hint" />
+          <span v-if="live" class="ft-live-dot"></span>
+          <slot name="header-extra" />
         </div>
 
         <!-- Left spacer -->
@@ -143,6 +170,18 @@ const renderContent = computed(() => {
 
         <!-- Right spacer -->
         <div v-if="layoutStore.editMode && widgetId >= 0 && !isHidden" class="flex-1 min-w-0" />
+
+        <!-- Right-aligned widget actions (always visible, outside edit mode too) -->
+        <div
+          v-if="$slots['header-right']"
+          class="ft-no-drag flex items-center gap-1 shrink-0"
+          :class="{ 'ms-auto': !layoutStore.editMode }"
+          @mousedown.stop
+          @touchstart.stop
+          @pointerdown.stop
+        >
+          <slot name="header-right" />
+        </div>
 
         <!-- Right: visibility toggle -->
         <div v-if="layoutStore.editMode && widgetId >= 0" class="flex-shrink-0 ms-auto">
@@ -194,6 +233,51 @@ const renderContent = computed(() => {
 .ft-widget-edit:hover {
   border-color: rgba(99, 102, 241, 0.65) !important;
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.12);
+}
+
+.ft-scope-badge {
+  font-size: 0.6rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  cursor: help;
+  flex-shrink: 0;
+}
+.ft-scope-selection {
+  color: rgb(96, 125, 235);
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+.ft-scope-all {
+  color: rgb(120, 120, 130);
+  background: rgba(120, 120, 130, 0.12);
+  border-color: rgba(120, 120, 130, 0.35);
+}
+.ft-scope-fleet {
+  color: rgb(158, 105, 235);
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+.ft-scope-system {
+  color: rgb(200, 145, 50);
+  background: rgba(217, 160, 60, 0.12);
+  border-color: rgba(217, 160, 60, 0.4);
+}
+:global(.ft-dark-theme) .ft-scope-selection {
+  color: rgb(165, 180, 252);
+}
+:global(.ft-dark-theme) .ft-scope-all {
+  color: rgb(170, 170, 180);
+}
+:global(.ft-dark-theme) .ft-scope-fleet {
+  color: rgb(196, 165, 250);
+}
+:global(.ft-dark-theme) .ft-scope-system {
+  color: rgb(240, 190, 100);
 }
 
 .ft-drag-handle {

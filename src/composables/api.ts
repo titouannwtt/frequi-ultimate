@@ -7,7 +7,6 @@ export function useApi(userService: UserServiceType, botId: string) {
   const api = axios.create({
     baseURL: userService.baseUrl.value,
     timeout: 20000,
-    withCredentials: true,
   });
   // Sent auth headers interceptor
   api.interceptors.request.use(

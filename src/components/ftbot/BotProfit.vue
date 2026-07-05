@@ -95,6 +95,10 @@ const profitItems = computed(() => {
       value: `${formatNumber(profit.value.sqn, 2)}`,
     },
     {
+      metric: t('profit.pvalue'),
+      value: `${formatNumber(profit.value.pvalue, 4)}`,
+    },
+    {
       metric: t('profit.avgDuration'),
       value: `${profit.value.avg_duration ?? 'N/A'}`,
     },

@@ -80,35 +80,74 @@ export default {
   // Dashboard
   dashboard: {
     profitOverTime: 'Profit cumulé (combiné)',
-    botComparison: 'Comparaison des bots',
-    openTrades: 'Trades ouverts',
+    botComparison: 'Global · Comparateur de bots',
+    openTrades: 'Bot · Trades ouverts',
     openTradesDesc:
       'Trades ouverts de tous les bots sélectionnés. Cliquez sur un trade pour accéder à la page du trade.',
-    closedTrades: 'Trades fermés',
+    closedTrades: 'Bot · Trades fermés',
     closedTradesDesc:
       'Trades fermés de tous les bots sélectionnés. Cliquez sur un trade pour accéder à la page du trade.',
-    profitBenchmark: 'Profit & Benchmarks',
+    profitBenchmark: 'Bot · Profits et benchmarks',
     cumulativeProfit: 'Profit cumulé',
-    profitDistribution: 'Distribution des profits',
+    profitDistribution: 'Bot · Distribution des profits',
     tradesLog: 'Journal des trades',
-    activityTimeline: "Historique d'activité",
-    marketOverview: 'Tableau de bord marché',
+    activityTimeline: "Global · Fil d'activité",
+    marketOverview: 'Global · Pouls du marché',
     performanceHeatmap: 'Carte thermique des performances',
-    riskOverview: 'Aperçu des risques',
-    stressTest: 'Test de stress',
-    logConsole: 'Console de logs',
+    riskOverview: 'Global · Aperçu des risques',
+    stressTest: 'Global · Test de stress',
+    logConsole: 'Système · Console de logs',
     rateBudget: 'Budget de taux',
     ratePulse: 'Pouls des requêtes',
 
     cacheHealth: 'Santé du cache',
-    rateMonitor: 'Moniteur de taux',
-    requestTimeline: 'Timeline des requêtes',
-    infraHealth: 'Infrastructure',
-    volumeComparator: 'Comparateur de Volume',
-    periodBreakdown: 'Ventilation par période',
-    botProfitComparison: 'Profit par bot',
+    rateMonitor: 'Système · Budget API',
+    requestTimeline: 'Système · Requêtes API',
+    infraHealth: 'Système · Infrastructure',
+    volumeComparator: 'Global · Comparateur de volume',
+    periodBreakdown: 'Global · Ventilation par période',
+    botProfitComparison: 'Bot · Profit par bot',
+    botComparisonDesc:
+      'Santé et performance de chaque bot connecté. Les cases à cocher choisissent les bots qui alimentent les widgets "Sélection".',
+    profitBenchmarkDesc: 'Profit combiné des bots sélectionnés comparé aux benchmarks.',
+    profitDistributionDesc:
+      'Distribution des profits des trades fermés pour les bots sélectionnés.',
+    activityTimelineDesc:
+      "Fil chronologique des événements (trades, DCA, alertes) de tous les bots.",
+    marketOverviewDesc:
+      'Instantané du marché pour les paires tradées par les bots. Rafraîchi toutes les 30 s.',
+    riskOverviewDesc: 'Exposition agrégée et indicateurs de risque de tous les bots.',
+    stressTestDesc:
+      'Simule un mouvement de marché (-50 % à +50 %) sur toutes les positions ouvertes, liquidations comprises.',
+    logConsoleDesc:
+      'Logs agrégés des bots (avertissements et erreurs). Rafraîchi toutes les 10 s.',
+    rateMonitorDesc:
+      "Budget API de l'exchange : cadence de requêtes, taux de cache, erreurs 429.",
+    requestTimelineDesc:
+      'Chronologie des requêtes API par bot : directes, en cache, erreurs, latence.',
+    infraHealthDesc:
+      'Santé des process bots : état, uptime, heartbeats, taille de la pairlist.',
+    volumeComparatorDesc: "Volume tradé par les bots comparé au volume de l'exchange par période.",
+    periodBreakdownDesc: 'Profit ventilé par jour, semaine ou mois sur tous les bots.',
+    botProfitComparisonDesc:
+      'Contribution au profit de chaque bot sur la période choisie, pour les bots sélectionnés.',
     opened: 'ouvert',
     closed: 'fermé',
+  },
+  widgetScope: {
+    selection: 'Sélection',
+    selectionTitle: 'Données des bots actuellement cochés dans le comparateur de bots',
+    all: 'Tous les bots',
+    allTitle: 'Données de tous les bots connectés, indépendamment de la sélection',
+    fleet: 'Flotte',
+    fleetTitle:
+      'Agrégat côté serveur sur la flotte entière, y compris les bots non connectés dans ce navigateur',
+    system: 'Système',
+    systemTitle: 'Supervision infrastructure et API, pas des données de trading',
+  },
+  widgetState: {
+    retry: 'Réessayer',
+    fetchError: 'Échec du chargement des données',
   },
   botProfitComparison: {
     fleetTotal: 'Total flotte',
@@ -164,6 +203,7 @@ export default {
     tabByDuration: 'Par durée',
     tradeCount: 'Nombre de trades',
     profitPct: 'Profit %',
+    profitAbs: 'Profit ({currency})',
     avgProfit: 'Profit moyen',
     avgProfitPct: 'Profit moyen %',
     duration: 'Durée',
@@ -291,6 +331,10 @@ export default {
     netAfterWithdrawals: '{amount} net après retraits',
     balance: 'Solde',
     winLoss: 'G/P',
+    lastTrade: 'Dernier trade',
+    lastTradeOthersToday: 'autres aujourd\'hui',
+    lastTradeOthersTodayTooltip:
+      '{n} autre trade clôturé aujourd\'hui | {n} autres trades clôturés aujourd\'hui',
     offline: 'Hors ligne',
     offlineSince: 'depuis {duration}',
     dry: 'Dry',
@@ -984,6 +1028,7 @@ export default {
     sharpe: 'Sharpe',
     sortino: 'Sortino',
     sqn: 'SQN',
+    pvalue: 'P-Value',
     avgDuration: 'Durée moyenne',
     bestPerforming: 'Meilleure performance',
     tradingVolume: 'Volume de trading',
@@ -1614,6 +1659,11 @@ export default {
     hours: '{n} heure | {n} heures',
     days: '{n} jour | {n} jours',
     lessThanMinute: "moins d'une minute",
+    // Compact "ago" form for tight cells (e.g. BotComparison "Last trade" column)
+    justNow: "à l'instant",
+    minutesAgoShort: 'il y a {n}min',
+    hoursAgoShort: 'il y a {n}h',
+    daysAgoShort: 'il y a {n}j',
   },
 
   // Metric tooltips
@@ -1756,6 +1806,7 @@ export default {
     crashOf: 'crash de {pct}%',
     pumpOf: 'hausse de {pct}%',
     noOpenPositions: 'Aucune position ouverte à tester.',
+    noOpenPositionsHint: "Le scénario s'appliquera dès qu'un bot ouvrira un trade",
     liquidation: 'LIQUIDATION',
     liquidationWarning: '{count} position(s) serai(en)t liquidée(s)',
     isolatedOnly:
@@ -1982,6 +2033,203 @@ export default {
     riskLow: 'Risque Faible',
     riskModerate: 'Risque Modéré',
     riskHigh: 'Risque Élevé',
+    noOpenPositions: 'Aucune position ouverte',
+    noOpenPositionsHint: "Les métriques de risque apparaîtront dès qu'un bot ouvrira un trade",
+  },
+
+  // Fleet view
+  fleet: {
+    title: 'Flotte',
+    servedBy: 'servi par {bot}',
+    refresh: 'Rafraîchir',
+    loading: 'Chargement des données de la flotte...',
+    walletReconciliation: 'Flotte · Réconciliation wallet',
+    allClear: 'tout est OK',
+    issueCount: '{count} problème(s)',
+    directionalExposure: 'Flotte · Exposition directionnelle',
+    pnlContribution: 'Flotte · Contribution au P&L',
+    botsPanel: 'Flotte · Bots',
+    reconciliationDesc:
+      'Compare les positions on-chain du wallet avec la somme des bases de données des bots. Agrégat serveur, rafraîchi toutes les 60 s.',
+    exposureDesc:
+      'Exposition nette long/short de la flotte entière. Agrégat serveur, rafraîchi toutes les 60 s.',
+    pnlDesc:
+      'Contribution au P&L de chaque bot sur la flotte entière. Agrégat serveur, rafraîchi toutes les 60 s.',
+    botsDesc:
+      'Tous les bots de la flotte avec capital, P&L et activité. Agrégat serveur, rafraîchi toutes les 60 s.',
+    errors: {
+      overviewFailed: "Échec du chargement de la vue d'ensemble de la flotte",
+      reconciliationFailed: 'Échec du chargement de la réconciliation',
+      noServingBot:
+        'Aucun bot connecté ne supporte FleetView. Redémarrez au moins un bot avec le backend à jour.',
+      servingBotUnavailable: 'Le bot qui sert FleetView est indisponible.',
+      resolveFailed: 'La demande de résolution a échoué',
+    },
+    botsTable: {
+      botCount: '{count} bots',
+      capital: 'Capital',
+      label1d: '1j',
+      label7d: '7j',
+      label30d: '30j',
+      total: 'Total',
+      open: 'Ouverts',
+      filterPlaceholder: 'Filtrer bot / stratégie',
+      modeLive: 'Live',
+      modeDry: 'Dry',
+      modeAll: 'Tous',
+      colBot: 'Bot',
+      colStrategy: 'Stratégie',
+      colDirection: 'Dir',
+      colCapital: 'Capital',
+      colPnl1d: 'P&L 1j',
+      colOpen: 'Ouverts',
+      colTrades30d: 'Trades 30j',
+      colUptime: 'Uptime',
+      colAge: 'Âge',
+      colPort: 'Port',
+      dryTag: 'DRY',
+      frozenTitle: 'Gelé (capital effectif <= 0)',
+      inertTitle: 'Inerte (aucun trade en 14j)',
+      leverageTitle: 'Levier {leverage}x',
+      dbUnreadable: 'Base de données illisible',
+      durationM: '{m}min',
+      durationHM: '{h}h {m}min',
+      durationDH: '{d}j {h}h',
+    },
+    pnl: {
+      includeUpnl: 'inclure le uPnL (approx.)',
+      sum: 'Somme :',
+      nonZeroBots: '{count} bots avec une contribution non nulle',
+      noContribution: 'Aucune contribution sur cette fenêtre.',
+      window1d: '1j',
+      window7d: '7j',
+      window30d: '30j',
+    },
+    exposure: {
+      long: 'Long',
+      short: 'Short',
+      longWord: 'long',
+      shortWord: 'short',
+      allocatedStake: '(stake alloué, {total} USDC)',
+      topNet: 'Top expositions nettes on-chain',
+      walletNet: 'Net du wallet :',
+      upnlTitle: 'uPnL {upnl} USDC',
+      noPosition: 'Aucune position on-chain.',
+    },
+    reconciliation: {
+      liveBots: '{count} bots live',
+      secondsAgo: 'il y a {seconds}s',
+      minutesAgo: 'il y a {minutes}min',
+      noData: 'Aucune donnée de réconciliation.',
+      mark: 'mark {price}',
+      upnl: 'uPnL',
+      dbSays: 'La DB dit',
+      onChain: 'On-chain',
+      gap: 'Écart',
+      sideFlat: 'flat',
+      sideLong: 'long',
+      sideShort: 'short',
+      summaryMinority:
+        'La DB et le wallet concordent sur le total ({chainSide} {chainAmount} {coin}), mais {bot} #{tradeId} détient le côté opposé de la position nette : ses sorties sont rejetées en reduce-only.',
+      summaryPhantom:
+        "La part de {bot} #{tradeId} n'existe pas on-chain : le wallet détient {chainSide} {chainAmount} {coin}, entièrement expliqué par les autres bots. Suppression en DB sûre (aucun ordre exchange).",
+      summaryUnowned:
+        "Le wallet détient {chainSide} {chainAmount} {coin} mais aucun bot ne revendique cette position.",
+      summaryAmbiguous:
+        "Les bots revendiquent collectivement {dbSide} {dbAmount} {coin} mais le wallet détient {chainSide} {chainAmount} (écart {gap}). Aucun trade unique n'explique l'écart : voir le guide de résolution.",
+      status: {
+        phantom: 'fantôme',
+        minority: 'minoritaire',
+        unowned: 'orpheline',
+        ambiguous: 'ambigu',
+      },
+      hint: {
+        phantom:
+          "Un bot détient un trade dont la part est prouvablement absente on-chain. Suppression sûre depuis sa DB (aucun ordre sur l'exchange).",
+        minority:
+          'La DB correspond au on-chain, mais un bot détient le côté OPPOSÉ de la position nette. Ses sorties sont rejetées (reduce-only).',
+        unowned:
+          'Position on-chain sans bot propriétaire dans aucune DB. Peut être soldée avec un ordre reduce-only.',
+        ambiguous:
+          'La DB et le on-chain divergent sans cause unique prouvable. Investigation manuelle requise.',
+      },
+      colBot: 'Bot',
+      colTrade: 'Trade',
+      colSignedAmount: 'Montant signé',
+      colOpenRate: "Prix d'entrée",
+      colStake: 'Stake',
+      closeMinority: 'Clôturer la part minoritaire',
+      deletePhantom: 'Supprimer le trade fantôme ({bot} #{tradeId})',
+      flattenReduceOnly: 'Solder (reduce-only)',
+      manualOnly: 'Intervention manuelle requise, aucune action automatique disponible.',
+      allInSync: 'Les positions DB et on-chain sont synchronisées.',
+      coinsInSync: '{count} coins synchronisés',
+      guide: {
+        title: 'Guide de résolution',
+        refreshNow: 'Rafraîchir maintenant',
+        refreshFirst:
+          "Rafraîchissez deux fois à ~1 min d'intervalle. Si l'écart bouge ou disparaît, c'était un ordre en cours : ne rien faire.",
+        dust: "L'écart est de la poussière (~{notional} USDC). Peut être ignoré sans risque. Optionnellement, solder manuellement avec un ordre reduce-only.",
+        multiPhantom:
+          "{count} trades sont chacun un fantôme possible. Recoupez l'historique des fills de chaque bot sur l'exchange : le vrai fantôme est celui dont le côté est absent on-chain. Ne supprimez que celui-là (suppression DB, aucun ordre).",
+        multiPhantomItem: '{bot} #{tradeId} ({amount})',
+        partialFill:
+          "Fill partiel probablement non enregistré : le trade #{tradeId} de {bot} a enregistré {dbAmount} mais le calcul on-chain implique que seulement {impliedFill} a réellement été rempli. Vérifiez les fills du trade sur l'exchange, puis corrigez le montant en DB, ou appliquez le playbook minoritaire (arrêter le bot, ordre inverse sans reduce-only, clôturer le trade en DB, relancer).",
+        staleDb:
+          'Rien ne se réconcilie : probablement un bot arrêté dont la DB contient encore des trades ouverts (invisibles pour ce scan). Vérifiez les bases des bots récemment arrêtés avant de toucher à quoi que ce soit.',
+        footer:
+          'Ne touchez jamais aux stratégies ni au levier pour corriger des problèmes de netting. Revérifiez avec un rafraîchissement forcé après chaque action.',
+      },
+      dialog: {
+        deletePhantomTitle: 'Supprimer le trade fantôme sur {coin}',
+        closeMinorityTitle: 'Clôturer la part minoritaire sur {coin}',
+        flattenUnownedTitle: 'Solder la position orpheline sur {coin}',
+        warnDeletePhantom:
+          "Le trade sera supprimé de la base du bot. Aucun ordre n'est placé sur l'exchange.",
+        warnCloseMinority:
+          'Un ordre au marché SANS reduce-only sera placé pour réaligner le wallet, puis le trade bloqué sera supprimé de la base du bot. Le P&L de ce trade ne sera PAS comptabilisé dans les statistiques du bot.',
+        warnFlattenUnowned:
+          "Un ordre au marché reduce-only sera placé pour solder la position on-chain. Le reduce-only ne peut que réduire la position, jamais l'inverser.",
+        coin: 'Coin',
+        bot: 'Bot',
+        trade: 'Trade',
+        amount: 'Montant',
+        estNotional: 'Notionnel est.',
+        done: 'Terminé',
+        orderResult: "Ordre {id} : rempli {filled} {'@'} {avg} ({notional} USDC)",
+        dbDelete: 'Suppression DB :',
+        close: 'Fermer',
+        cancel: 'Annuler',
+        confirm: 'Confirmer',
+      },
+      realign: {
+        button: 'Réaligner la DB',
+        title: "Réaligner la DB sur l'on-chain, {coin}",
+        dbOnly:
+          "Action DB uniquement : aucun ordre ne sera jamais placé sur l'exchange. Seules les bases des bots sont réécrites pour correspondre à la position on-chain.",
+        intro:
+          "Choisissez quoi faire de chaque part en DB pour que leur somme corresponde à la position nette on-chain. Une seule part peut être ajustée ; les parts fermées sont supprimées entièrement.",
+        colAction: 'Action',
+        colNewAmount: 'Nouveau montant',
+        keep: 'Garder',
+        closeOp: 'Fermer',
+        adjustOp: 'Ajuster',
+        onlyOneAdjust: 'Une seule part peut être ajustée par plan.',
+        resulting: 'Somme résultante :',
+        target: 'Cible on-chain :',
+        withinTolerance: 'concordance (2%)',
+        outsideTolerance: 'pas de concordance',
+        previewBtn: 'Prévisualiser',
+        colBefore: 'Avant',
+        colAfter: 'Après',
+        colDelta: 'Delta',
+        colNotional: 'Notionnel du delta',
+        touchedNotional: 'Notionnel touché : {notional} USDC',
+        backBtn: 'Retour',
+        applyBtn: 'Appliquer (DB seule)',
+        resultsTitle: 'Résultats',
+      },
+    },
   },
 
   // Summary cards

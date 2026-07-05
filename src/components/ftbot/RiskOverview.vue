@@ -7,6 +7,7 @@ import Popover from 'primevue/popover';
 const { t } = useI18n();
 const botStore = useBotStore();
 const { summaryCurrency } = useSummaryCurrency();
+const { initialLoading } = useInitialBotLoading();
 
 const currencyUnit = computed(() => {
   if (summaryCurrency.value && summaryCurrency.value !== 'auto') {
@@ -240,6 +241,30 @@ const worstDrawdownTrade = computed(() => {
 
 <template>
   <div class="risk-overview flex flex-col h-full p-3 gap-3" style="animation: ft-fade-in 300ms ease-out">
+    <!-- Initial loading: skeleton matching the widget's stacked-gauges shape -->
+    <template v-if="initialLoading">
+      <div class="flex justify-center py-1">
+        <Skeleton width="8rem" height="1.5rem" border-radius="9999px" />
+      </div>
+      <Skeleton height="4.5rem" border-radius="0.5rem" />
+      <Skeleton height="1.5rem" />
+      <Skeleton height="1.5rem" />
+      <Skeleton height="2.5rem" border-radius="0.5rem" />
+      <Skeleton height="3.5rem" border-radius="0.5rem" />
+      <Skeleton height="3.5rem" border-radius="0.5rem" />
+    </template>
+
+    <!-- No open positions -->
+    <div
+      v-else-if="openTrades.length === 0"
+      class="flex flex-col items-center justify-center gap-2 h-full text-center py-6"
+    >
+      <i-mdi-shield-check class="w-10 h-10 text-surface-500" />
+      <span class="text-surface-400 text-sm">{{ t('riskOverview.noOpenPositions') }}</span>
+      <span class="text-surface-500 text-xs">{{ t('riskOverview.noOpenPositionsHint') }}</span>
+    </div>
+
+    <template v-else>
     <!-- Risk Level Badge -->
     <div class="flex items-center justify-center gap-2 py-1">
       <span
@@ -524,6 +549,7 @@ const worstDrawdownTrade = computed(() => {
         <div v-else class="text-surface-500">{{ t('riskOverview.popoverCorrelationNone') }}</div>
       </div>
     </Popover>
+    </template>
   </div>
 </template>
 

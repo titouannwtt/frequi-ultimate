@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const botStore = useBotStore();
+const { initialLoading } = useInitialBotLoading();
 
 // Slider: -50% to +50% (crash or pump)
 const scenarioPercent = ref(-20);
@@ -105,6 +106,15 @@ const stakeCurrency = computed(() => {
 
 <template>
   <div class="p-2 space-y-2 h-full overflow-y-auto text-xs">
+    <!-- Initial loading: skeleton matching header + slider + rows -->
+    <template v-if="initialLoading">
+      <Skeleton height="4.5rem" border-radius="0.5rem" />
+      <Skeleton height="2.5rem" />
+      <Skeleton height="1.25rem" />
+      <Skeleton height="1.25rem" />
+      <Skeleton height="1.25rem" />
+    </template>
+    <template v-else>
     <!-- Header with total impact -->
     <div
       class="rounded-lg p-2 text-center"
@@ -157,9 +167,11 @@ const stakeCurrency = computed(() => {
     <!-- No positions -->
     <div
       v-if="stressResults.length === 0"
-      class="text-center text-gray-600 dark:text-gray-400 text-sm py-4"
+      class="flex flex-col items-center gap-1.5 text-center py-4"
     >
-      {{ t('stressTest.noOpenPositions') }}
+      <i-mdi-test-tube-empty class="w-8 h-8 text-surface-500" />
+      <span class="text-gray-600 dark:text-gray-400 text-sm">{{ t('stressTest.noOpenPositions') }}</span>
+      <span class="text-gray-500 dark:text-surface-500 text-xs">{{ t('stressTest.noOpenPositionsHint') }}</span>
     </div>
 
     <!-- Per-bot results -->
@@ -204,5 +216,6 @@ const stakeCurrency = computed(() => {
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>

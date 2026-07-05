@@ -37,6 +37,7 @@ const {
   exchangeOptions,
   filteredMetrics,
   primaryMetrics,
+  initialLoaded,
 } = useRateMetrics({ multiBotView: props.multiBotView, botFilter: (botId: string) => isBotInMode(botId) });
 
 import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
@@ -404,8 +405,18 @@ const sankeyOption = computed((): EChartsOption => {
 
     <!-- Content area -->
     <div class="grow min-h-0">
+      <!-- Initial loading: chart-shaped skeleton bars until the first fetch resolves -->
+      <div v-if="!initialLoaded" class="flex items-end gap-2 h-full p-3">
+        <Skeleton
+          v-for="i in 12"
+          :key="i"
+          class="flex-1"
+          :height="`${25 + ((i * 37) % 60)}%`"
+        />
+      </div>
+
       <!-- Timeline view -->
-      <template v-if="viewMode === 'timeline'">
+      <template v-else-if="viewMode === 'timeline'">
         <ECharts
           v-if="timeline.length > 0"
           :option="timelineOption"

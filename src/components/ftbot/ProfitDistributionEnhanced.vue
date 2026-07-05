@@ -50,12 +50,13 @@ const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
 const botStore = useBotStore();
 const { summaryCurrency } = useSummaryCurrency();
+const { initialLoading } = useInitialBotLoading();
 
-const currencyLabel = computed(() => {
+const displayCurrency = computed(() => {
   if (summaryCurrency.value && summaryCurrency.value !== 'auto') {
-    return ` (${summaryCurrency.value})`;
+    return summaryCurrency.value;
   }
-  return '';
+  return botStore.selectedBots[0]?.stakeCurrency || 'USDT';
 });
 
 const chart = ref<InstanceType<typeof ECharts>>();
@@ -77,6 +78,28 @@ const activeTab = ref<TabKey>('histogram');
 type FilterKey = 'all' | 'spot' | 'futures' | 'long' | 'short';
 const activeFilter = ref<FilterKey>('all');
 
+// Absolute / percent toggle (applies to every tab)
+type ValueMode = 'pct' | 'abs';
+const valueMode = ref<ValueMode>('pct');
+const valueModeOptions = computed(() => [
+  { key: 'pct' as ValueMode, label: '%' },
+  { key: 'abs' as ValueMode, label: displayCurrency.value },
+]);
+const valueSuffix = computed(() => (valueMode.value === 'abs' ? ` ${displayCurrency.value}` : '%'));
+const profitAxisLabel = computed(() =>
+  valueMode.value === 'abs'
+    ? t('profitDist.profitAbs', { currency: displayCurrency.value })
+    : t('profitDist.profitPct'),
+);
+const avgProfitAxisLabel = computed(() =>
+  valueMode.value === 'abs'
+    ? t('profitDist.profitAbs', { currency: displayCurrency.value })
+    : t('profitDist.avgProfitPct'),
+);
+function tradeValue(trade: ClosedTrade): number {
+  return valueMode.value === 'abs' ? (trade.profit_abs ?? 0) : (trade.profit_ratio ?? 0) * 100;
+}
+
 // Histogram range filter and bin count
 // Histogram filter refs (driven by sliders with debounce)
 const histMinPct = ref<number | null>(null);
@@ -88,6 +111,7 @@ const HARDCODED_DEFAULTS_DIST = {
   activeFilter: 'all' as string,
   histBinCount: 20,
   tradingMode: 'all' as string,
+  valueMode: 'pct' as string,
 };
 
 const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults(
@@ -97,12 +121,14 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
     activeFilter: activeFilter.value,
     histBinCount: histBinCount.value,
     tradingMode: tradingMode.value,
+    valueMode: valueMode.value,
   }),
   (d) => {
     if (d.activeTab !== undefined) activeTab.value = d.activeTab as TabKey;
     if (d.activeFilter !== undefined) activeFilter.value = d.activeFilter as FilterKey;
     if (d.histBinCount !== undefined) histBinCount.value = d.histBinCount as number;
     if (d.tradingMode !== undefined) tradingMode.value = d.tradingMode as typeof tradingMode.value;
+    if (d.valueMode !== undefined) valueMode.value = d.valueMode as ValueMode;
   },
   HARDCODED_DEFAULTS_DIST,
 );
@@ -175,8 +201,11 @@ const filteredTrades = computed<ClosedTrade[]>(() => {
 const profitValuesRaw = computed(() =>
   filteredTrades.value
     .filter((t) => t.profit_ratio !== null && t.profit_ratio !== undefined)
-    .map((t) => (t.profit_ratio ?? 0) * 100),
+    .map((t) => tradeValue(t)),
 );
+
+// Min/max range filters are expressed in the current unit; reset them on unit switch
+watch(valueMode, () => clearHistogramFilter());
 
 // Slider state (immediate visual feedback, debounced for chart update)
 const sliderMin = ref<number>(0);
@@ -264,7 +293,8 @@ function buildHistogramData(): { bucket: string; count: number; isPositive: bool
   const min = Math.min(...vals);
   const max = Math.max(...vals);
   const range = max - min;
-  if (range === 0) return [{ bucket: `${min.toFixed(1)}%`, count: vals.length, isPositive: min >= 0 }];
+  if (range === 0)
+    return [{ bucket: `${min.toFixed(1)}${valueSuffix.value}`, count: vals.length, isPositive: min >= 0 }];
 
   // Auto bucket size: aim for ~N buckets (user-configurable)
   const rawStep = range / histBinCount.value;
@@ -283,7 +313,7 @@ function buildHistogramData(): { bucket: string; count: number; isPositive: bool
     const nextB = Math.round((b + step) * 100) / 100;
     const count = vals.filter((v) => v >= bRound && v < nextB).length;
     buckets.push({
-      bucket: `${bRound.toFixed(1)}%`,
+      bucket: `${bRound.toFixed(1)}${valueSuffix.value}`,
       count,
       isPositive: bRound >= 0,
     });
@@ -312,12 +342,12 @@ function buildPerBotData(): { botName: string; buckets: Record<string, number> }
   const bucketEnd = Math.ceil(max / step) * step;
   const bucketLabels: string[] = [];
   for (let b = bucketStart; b < bucketEnd + step * 0.5; b += step) {
-    bucketLabels.push(`${(Math.round(b * 100) / 100).toFixed(1)}%`);
+    bucketLabels.push(`${(Math.round(b * 100) / 100).toFixed(1)}${valueSuffix.value}`);
   }
 
   return botIds.value.map((id) => {
     const botTrades = filteredTrades.value.filter((t) => t.botId === id && t.profit_ratio !== null);
-    const botVals = botTrades.map((t) => (t.profit_ratio ?? 0) * 100);
+    const botVals = botTrades.map((t) => tradeValue(t));
     const buckets: Record<string, number> = {};
 
     for (let i = 0; i < bucketLabels.length; i++) {
@@ -338,7 +368,7 @@ function buildPerPairData(): { pair: string; avgProfit: number; tradeCount: numb
   for (const trade of filteredTrades.value) {
     if (trade.profit_ratio === null || trade.profit_ratio === undefined) continue;
     const entry = pairMap.get(trade.pair) ?? { sum: 0, count: 0 };
-    entry.sum += (trade.profit_ratio ?? 0) * 100;
+    entry.sum += tradeValue(trade);
     entry.count++;
     pairMap.set(trade.pair, entry);
   }
@@ -359,7 +389,7 @@ function buildDurationData(): { duration: number; profit: number; botId: string;
     .filter((t) => t.profit_ratio !== null && t.open_timestamp && t.close_timestamp)
     .map((t) => ({
       duration: ((t.close_timestamp ?? 0) - t.open_timestamp) / (1000 * 60), // minutes
-      profit: (t.profit_ratio ?? 0) * 100,
+      profit: tradeValue(t),
       botId: t.botId ?? '',
       pair: t.pair,
     }));
@@ -406,7 +436,7 @@ function buildHistogramChart(): EChartsOption {
     xAxis: {
       type: 'category',
       data: data.map((d) => d.bucket),
-      name: t('profitDist.profitPct'),
+      name: profitAxisLabel.value,
       nameLocation: 'middle',
       nameGap: 30,
       axisLabel: { rotate: 45, fontSize: 9, interval: 'auto' },
@@ -441,7 +471,7 @@ function buildHistogramChart(): EChartsOption {
                 return val >= 0;
               }),
               lineStyle: { color: markLineZeroColor.value, type: 'solid', width: 1 },
-              label: { show: true, formatter: '0%', color: markLineZeroLabelColor.value, fontSize: 10 },
+              label: { show: true, formatter: `0${valueSuffix.value}`, color: markLineZeroLabelColor.value, fontSize: 10 },
             },
             {
               xAxis: (() => {
@@ -457,7 +487,7 @@ function buildHistogramChart(): EChartsOption {
               lineStyle: { color: '#fac858', type: 'dashed', width: 1 },
               label: {
                 show: true,
-                formatter: `${t('profitDist.mean')}: ${mean.toFixed(2)}%`,
+                formatter: `${t('profitDist.mean')}: ${mean.toFixed(2)}${valueSuffix.value}`,
                 color: '#fac858',
                 fontSize: 10,
               },
@@ -496,7 +526,7 @@ function buildPerBotChart(): EChartsOption {
     xAxis: {
       type: 'category',
       data: bucketLabels,
-      name: t('profitDist.profitPct'),
+      name: profitAxisLabel.value,
       nameLocation: 'middle',
       nameGap: 30,
       axisLabel: { rotate: 45, fontSize: 9, interval: 'auto' },
@@ -533,13 +563,13 @@ function buildPerPairChart(): EChartsOption {
         const item = reversed[idx];
         if (!item) return '';
         return `<div style="font-weight:600">${item.pair}</div>
-                <div>${t('profitDist.avgProfit')}: <b>${item.avgProfit.toFixed(2)}%</b></div>
+                <div>${t('profitDist.avgProfit')}: <b>${item.avgProfit.toFixed(2)}${valueSuffix.value}</b></div>
                 <div>${t('profitDist.tradeCount')}: <b>${item.tradeCount}</b></div>`;
       },
     },
     xAxis: {
       type: 'value',
-      name: t('profitDist.avgProfitPct'),
+      name: avgProfitAxisLabel.value,
       nameLocation: 'middle',
       nameGap: 30,
     },
@@ -609,7 +639,7 @@ function buildDurationChart(): EChartsOption {
         if (!d) return '';
         return `<div style="font-weight:600">${params.seriesName}</div>
                 <div>${t('profitDist.duration')}: <b>${formatDuration(d[0])}</b></div>
-                <div>${t('profitDist.profitPct')}: <b>${d[1].toFixed(2)}%</b></div>`;
+                <div>${profitAxisLabel.value}: <b>${d[1].toFixed(2)}${valueSuffix.value}</b></div>`;
       },
     },
     legend: {
@@ -629,13 +659,13 @@ function buildDurationChart(): EChartsOption {
     },
     yAxis: {
       type: 'value',
-      name: t('profitDist.profitPct'),
+      name: profitAxisLabel.value,
       splitLine: { show: false },
       nameRotate: 90,
       nameLocation: 'middle',
       nameGap: 40,
       axisLabel: {
-        formatter: (val: number) => `${val.toFixed(1)}%`,
+        formatter: (val: number) => `${val.toFixed(1)}${valueSuffix.value}`,
       },
     },
     grid: { ...echartsGridDefault, bottom: 50 },
@@ -665,7 +695,7 @@ function buildLeverageChart(): EChartsOption {
     const lev = trade.leverage ?? 1;
     const bucket = lev <= 1 ? '1x' : `${Math.round(lev)}x`;
     const entry = leverageBuckets.get(bucket) ?? { sum: 0, count: 0 };
-    entry.sum += (trade.profit_ratio ?? 0) * 100;
+    entry.sum += tradeValue(trade);
     entry.count++;
     leverageBuckets.set(bucket, entry);
   }
@@ -690,7 +720,7 @@ function buildLeverageChart(): EChartsOption {
         const item = sortedBuckets[idx];
         if (!item) return '';
         return `<div style="font-weight:600">${t('profitDist.leverage')}: ${item.bucket}</div>
-                <div>${t('profitDist.avgProfit')}: <b>${item.avgProfit.toFixed(2)}%</b></div>
+                <div>${t('profitDist.avgProfit')}: <b>${item.avgProfit.toFixed(2)}${valueSuffix.value}</b></div>
                 <div>${t('profitDist.tradeCount')}: <b>${item.tradeCount}</b></div>`;
       },
     },
@@ -703,13 +733,13 @@ function buildLeverageChart(): EChartsOption {
     },
     yAxis: {
       type: 'value',
-      name: t('profitDist.avgProfitPct'),
+      name: avgProfitAxisLabel.value,
       splitLine: { show: false },
       nameRotate: 90,
       nameLocation: 'middle',
       nameGap: 40,
       axisLabel: {
-        formatter: (val: number) => `${val.toFixed(1)}%`,
+        formatter: (val: number) => `${val.toFixed(1)}${valueSuffix.value}`,
       },
     },
     grid: { ...echartsGridDefault, bottom: 50 },
@@ -741,7 +771,7 @@ function buildLeverageChart(): EChartsOption {
 
 // --- Main chart options ---
 const chartOptions: ComputedRefWithControl<EChartsOption> = computedWithControl(
-  () => [filteredTrades.value, activeTab.value, activeFilter.value, histMinPct.value, histMaxPct.value, histBinCount.value],
+  () => [filteredTrades.value, activeTab.value, activeFilter.value, histMinPct.value, histMaxPct.value, histBinCount.value, valueMode.value],
   () => {
     let tabOpts: EChartsOption;
     switch (activeTab.value) {
@@ -832,6 +862,26 @@ watch(
         {{ t(f.labelKey) }}
       </button>
       <TradingModeSelect v-model="tradingMode" :show="hasMultipleModes" />
+      <!-- Absolute / percent toggle -->
+      <div
+        class="flex rounded-full overflow-hidden ml-auto"
+        style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06)"
+      >
+        <button
+          v-for="opt in valueModeOptions"
+          :key="opt.key"
+          class="px-2.5 py-0.5 text-[10px] font-medium transition-all duration-200 cursor-pointer"
+          :class="
+            valueMode === opt.key
+              ? 'bg-primary text-white shadow-sm'
+              : 'text-surface-400 hover:text-surface-200'
+          "
+          style="border: none; outline: none"
+          @click="valueMode = opt.key"
+        >
+          {{ opt.label }}
+        </button>
+      </div>
     </div>
 
     <!-- Histogram controls (only visible on histogram tab) -->
@@ -849,7 +899,7 @@ watch(
             class="flex-1 h-1 accent-blue-500"
             @input="onSliderMinChange(Number(($event.target as HTMLInputElement).value))"
           />
-          <span class="text-[10px] font-mono text-surface-300 w-10 text-right">{{ sliderMin }}%</span>
+          <span class="text-[10px] font-mono text-surface-300 w-14 text-right">{{ sliderMin }}{{ valueSuffix }}</span>
         </div>
         <!-- Max slider -->
         <div class="flex-1 flex items-center gap-1">
@@ -863,7 +913,7 @@ watch(
             class="flex-1 h-1 accent-blue-500"
             @input="onSliderMaxChange(Number(($event.target as HTMLInputElement).value))"
           />
-          <span class="text-[10px] font-mono text-surface-300 w-10 text-right">{{ sliderMax }}%</span>
+          <span class="text-[10px] font-mono text-surface-300 w-14 text-right">{{ sliderMax }}{{ valueSuffix }}</span>
         </div>
       </div>
       <div class="flex items-center gap-3">
@@ -897,8 +947,17 @@ watch(
 
     <!-- Chart -->
     <div class="flex-1 min-h-0">
+      <!-- Initial loading: histogram-shaped skeleton bars -->
+      <div v-if="initialLoading" class="flex items-end gap-1.5 h-full p-3">
+        <Skeleton
+          v-for="i in 14"
+          :key="i"
+          class="flex-1"
+          :height="`${20 + ((i * 31) % 65)}%`"
+        />
+      </div>
       <ECharts
-        v-if="trades && trades.length > 0"
+        v-else-if="trades && trades.length > 0"
         ref="chart"
         :option="chartOptions"
         :theme="settingsStore.chartTheme"
@@ -906,8 +965,9 @@ watch(
       />
       <div
         v-else
-        class="flex items-center justify-center h-full text-surface-400 text-sm"
+        class="flex flex-col items-center justify-center gap-1.5 h-full text-surface-400 text-sm"
       >
+        <i-mdi-chart-histogram class="w-8 h-8 text-surface-500" />
         {{ t('profitDist.noData') }}
       </div>
     </div>
@@ -927,7 +987,7 @@ watch(
           class="font-semibold"
           :class="stats.mean >= 0 ? 'text-green-400' : 'text-red-400'"
         >
-          {{ formatPrice(stats.mean, 2) }}%
+          {{ formatPrice(stats.mean, 2) }}{{ valueSuffix }}
         </span>
       </div>
       <div class="flex flex-col items-center">
@@ -936,13 +996,13 @@ watch(
           class="font-semibold"
           :class="stats.median >= 0 ? 'text-green-400' : 'text-red-400'"
         >
-          {{ formatPrice(stats.median, 2) }}%
+          {{ formatPrice(stats.median, 2) }}{{ valueSuffix }}
         </span>
       </div>
       <div class="flex flex-col items-center">
         <span class="text-surface-400">{{ t('profitDist.statStdDev') }}</span>
         <span class="font-semibold text-blue-400">
-          {{ formatPrice(stats.stdDev, 2) }}%
+          {{ formatPrice(stats.stdDev, 2) }}{{ valueSuffix }}
         </span>
       </div>
       <div class="flex flex-col items-center">
@@ -958,13 +1018,13 @@ watch(
       <div class="flex flex-col items-center">
         <span class="text-surface-400">{{ t('profitDist.statBest') }}</span>
         <span class="font-semibold text-green-400">
-          {{ formatPrice(stats.best, 2) }}%
+          {{ formatPrice(stats.best, 2) }}{{ valueSuffix }}
         </span>
       </div>
       <div class="flex flex-col items-center">
         <span class="text-surface-400">{{ t('profitDist.statWorst') }}</span>
         <span class="font-semibold text-red-400">
-          {{ formatPrice(stats.worst, 2) }}%
+          {{ formatPrice(stats.worst, 2) }}{{ valueSuffix }}
         </span>
       </div>
       <div class="flex flex-col items-center">

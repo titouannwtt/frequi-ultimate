@@ -250,10 +250,13 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
   const secondsSinceRefresh = ref(0);
   const freshnessInterval = ref<number | null>(null);
 
+  const initialLoaded = ref(false);
+
   const origFetchMetrics = fetchMetrics;
   async function fetchMetricsWithTs() {
     await origFetchMetrics();
     lastRefreshTs.value = Date.now();
+    initialLoaded.value = true;
   }
   fetchMetrics = fetchMetricsWithTs;
 
@@ -293,6 +296,7 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
     exchangeOptions,
     primaryMetrics,
     hasData,
+    initialLoaded,
     secondsSinceRefresh,
     fetchMetrics,
   };

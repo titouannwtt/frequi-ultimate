@@ -53,6 +53,12 @@ import type {
   CacheStatusResponse,
   FleetEventsResponse,
   FleetStatusResponse,
+  FleetviewOverviewResponse,
+  FleetviewReconciliationResponse,
+  FleetviewRealignPayload,
+  FleetviewRealignPreview,
+  FleetviewResolvePayload,
+  FleetviewResolveResponse,
   RateMetricsResponse,
   VolumeHistoryResponse,
   TimeSummaryPayload,
@@ -1262,6 +1268,31 @@ export function createBotSubStore(botId: string, botName: string) {
         } catch (err) {
           return Promise.reject(err);
         }
+      },
+      async getFleetviewOverview() {
+        const { data } = await api.get<FleetviewOverviewResponse>('/fleetview/overview');
+        return data;
+      },
+      async getFleetviewReconciliation(refresh = false) {
+        const { data } = await api.get<FleetviewReconciliationResponse>(
+          '/fleetview/reconciliation',
+          { params: { refresh } },
+        );
+        return data;
+      },
+      async fleetviewResolve(payload: FleetviewResolvePayload) {
+        const { data } = await api.post<
+          FleetviewResolvePayload,
+          AxiosResponse<FleetviewResolveResponse>
+        >('/fleetview/reconciliation/resolve', payload);
+        return data;
+      },
+      async fleetviewRealign(payload: FleetviewRealignPayload) {
+        const { data } = await api.post<
+          FleetviewRealignPayload,
+          AxiosResponse<FleetviewRealignPreview>
+        >('/fleetview/reconciliation/realign', payload);
+        return data;
       },
       async getRateMetrics(window = 3600, bucket_s = 10) {
         try {
