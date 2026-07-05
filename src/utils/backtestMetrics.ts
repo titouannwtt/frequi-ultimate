@@ -129,6 +129,9 @@ export function generateBacktestMetricRows(result: StrategyBacktestResult) {
       'Profit factor': formatNumber(result.profit_factor, 3),
     },
     {
+      'P-Value': result.pvalue !== undefined ? formatNumber(result.pvalue, 4) : 'N/A',
+    },
+    {
       'Total trades / Daily Avg Trades': `${result.total_trades} / ${formatNumber(result.trades_per_day, 2)}`,
     },
     // { 'First trade': result.backtest_fi },
