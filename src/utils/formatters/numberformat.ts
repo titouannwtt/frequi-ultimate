@@ -50,10 +50,11 @@ export function formatPriceCurrency(price: number | null, currency: string, deci
 /**
  * Formats a decimal number to a string with a varying number of decimal places
  * depending on the size of the number.
+ * Respects the locale for decimal separator but disables grouping.
  * @param value Number to format
  * @returns Formatted string
  */
-export function formatDecimal(value: number | null): string {
+export function formatDecimal(value: number | null, locale = 'fullwide'): string {
   if (!isNotUndefined(value)) {
     return 'N/A';
   }
@@ -74,8 +75,7 @@ export function formatDecimal(value: number | null): string {
   } else if (absValue < 100) {
     decimals = 3;
   }
-  return value.toLocaleString('fullwide', {
-    useGrouping: false,
-    maximumFractionDigits: decimals,
-  });
+  return Intl.NumberFormat(locale, { useGrouping: false, maximumFractionDigits: decimals }).format(
+    value,
+  );
 }
