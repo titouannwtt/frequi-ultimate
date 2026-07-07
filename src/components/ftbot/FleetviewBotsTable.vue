@@ -202,6 +202,7 @@ function maxLeverage(bot: FleetviewBot): number {
       class="text-xs"
       scrollable
       scroll-height="flex"
+      :virtual-scroller-options="{ itemSize: 37 }"
     >
       <template #empty>
         <div class="flex flex-col items-center gap-1.5 py-6 text-center">
