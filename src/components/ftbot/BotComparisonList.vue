@@ -614,10 +614,34 @@ function cancelMaxDrawdownHoverKeepPopover() {
 }
 
 // Per-bot drawdown: realized from /profit, open extended by open positions at their lows.
+// Memoised per bot on input identity: computeMaxDrawdown scans every closed trade, and
+// this computed is invalidated on each batch of ~6 bots refreshing (openTrades is
+// reassigned on every /status tick), so a naive version re-scans all 70 bots ~12× per
+// 10s cycle. The cache recomputes only the bots whose trades/openTrades/profit reference
+// actually changed since the last run; the rest are O(1) cache hits. Same output.
+const _ddCache = new Map<
+  string,
+  {
+    trades: import('@/types').ClosedTrade[];
+    open: import('@/types').Trade[];
+    profit: import('@/types').ProfitStats | undefined;
+    result: MaxDrawdownResult;
+  }
+>();
 const drawdownByBot = computed<Record<string, MaxDrawdownResult>>(() => {
   const out: Record<string, MaxDrawdownResult> = {};
   for (const [id, sub] of Object.entries(botStore.botStores)) {
-    out[id] = computeMaxDrawdown(botStore.allProfit[id], sub.trades ?? [], sub.openTrades ?? []);
+    const trades = sub.trades ?? [];
+    const open = sub.openTrades ?? [];
+    const profit = botStore.allProfit[id];
+    const cached = _ddCache.get(id);
+    if (cached && cached.trades === trades && cached.open === open && cached.profit === profit) {
+      out[id] = cached.result;
+      continue;
+    }
+    const result = computeMaxDrawdown(profit, trades, open);
+    _ddCache.set(id, { trades, open, profit, result });
+    out[id] = result;
   }
   return out;
 });
