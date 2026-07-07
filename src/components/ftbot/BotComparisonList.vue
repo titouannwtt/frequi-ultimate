@@ -2863,6 +2863,19 @@ function onColumnReorder(event: { dragIndex: number; dropIndex: number }) {
   columnOrder.value = [...newOrder, ...hidden];
 }
 
+// Element-wise identity comparison of two input signatures (see the per-bot row cache).
+function sameSig(a: readonly unknown[], b: readonly unknown[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+const _rowCache = new Map<
+  string,
+  { sig: readonly unknown[]; profitOpen: number; row: ComparisonTableItems }
+>();
+
 const tableItems = computed<ComparisonTableItems[]>(() => {
   const val: ComparisonTableItems[] = [];
   const summary: ComparisonTableItems = {
@@ -2896,87 +2909,116 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
 
     const allOpenTrades = botStore.allOpenTrades[k];
     if (!allOpenTrades) return;
-    const allStakes = allOpenTrades.reduce((a, b) => a + b.stake_amount, 0);
-    const profitOpenRatio =
-      allStakes > 0
-        ? allOpenTrades.reduce(
-            (a, b) => a + (b.total_profit_ratio ?? b.profit_ratio ?? 0) * b.stake_amount,
-            0,
-          ) / allStakes
-        : 0;
-    const profitOpen = allOpenTrades.reduce(
-      (a, b) => a + (b.total_profit_abs ?? b.profit_abs ?? 0),
-      0,
-    );
+    // Per-bot row memoisation. The row and profitOpen are pure functions of the inputs
+    // below; profit/openTrades/botState/balance are reassigned wholesale on update so
+    // their refs are reliable change markers, and the remaining sub-store values are
+    // primitives read directly. On each per-batch invalidation only the ~6 bots that
+    // actually changed rebuild; the other ~64 reuse the cached row. Output is identical.
+    const botState = botStore.allBotState[k];
+    const balance = botStore.allBalance[k];
+    const descriptor = botStore.availableBots[k];
+    const whitelist = thisBotStore.whitelist;
+    const sig = [
+      v,
+      allOpenTrades,
+      botState,
+      balance,
+      descriptor,
+      whitelist,
+      thisBotStore.uiBotName,
+      thisBotStore.uiBotIcon,
+      thisBotStore.isBotOnline,
+      thisBotStore.isBotStarting,
+      thisBotStore.lastSeenOnline,
+    ] as const;
+    let profitOpen: number;
+    let row: ComparisonTableItems;
+    const cachedRow = _rowCache.get(k);
+    if (cachedRow && sameSig(cachedRow.sig, sig)) {
+      profitOpen = cachedRow.profitOpen;
+      row = cachedRow.row;
+    } else {
+      const allStakes = allOpenTrades.reduce((a, b) => a + b.stake_amount, 0);
+      const profitOpenRatio =
+        allStakes > 0
+          ? allOpenTrades.reduce(
+              (a, b) => a + (b.total_profit_ratio ?? b.profit_ratio ?? 0) * b.stake_amount,
+              0,
+            ) / allStakes
+          : 0;
+      profitOpen = allOpenTrades.reduce(
+        (a, b) => a + (b.total_profit_abs ?? b.profit_abs ?? 0),
+        0,
+      );
 
-    // Extract port from botUrl
-    let port: number | undefined;
-    const botDescriptor = botStore.availableBots[k];
-    if (botDescriptor?.botUrl) {
-      try {
-        const urlPort = new URL(botDescriptor.botUrl).port;
-        if (urlPort) port = parseInt(urlPort, 10);
-      } catch {
-        // ignore invalid URL
+      // Extract port from botUrl
+      let port: number | undefined;
+      if (descriptor?.botUrl) {
+        try {
+          const urlPort = new URL(descriptor.botUrl).port;
+          if (urlPort) port = parseInt(urlPort, 10);
+        } catch {
+          // ignore invalid URL
+        }
       }
-    }
 
-    val.push({
-      botId: k,
-      botName: thisBotStore.uiBotName || thisBotStore.botId,
-      botIcon: thisBotStore.uiBotIcon || '',
-      trades: `${botStore.allOpenTradeCount[k]} / ${
-        (botStore.allBotState[k]?.max_open_trades ?? 0) > 0
-          ? botStore.allBotState[k]?.max_open_trades
-          : '∞'
-      }`,
-      profitClosed: v?.profit_closed_coin ?? 0,
-      profitClosedRatio: (() => {
-        const ac = botStore.allBotState[k]?.available_capital;
-        if (ac && ac > 0) {
-          return (v?.profit_closed_coin ?? 0) / ac;
-        }
-        return v?.profit_closed_ratio ?? 0;
-      })(),
-      capitalWithdrawal: v?.capital_withdrawal ?? 0,
-      stakeCurrency: botStore.allBotState[k]?.stake_currency || '',
-      profitOpenRatio,
-      profitOpen,
-      profitCurrent: profitOpen + (v?.profit_closed_coin ?? 0),
-      profitCurrentRatio: (() => {
-        const ac = botStore.allBotState[k]?.available_capital;
-        if (ac && ac > 0) {
-          return (profitOpen + (v?.profit_closed_coin ?? 0)) / ac;
-        }
-        return undefined;
-      })(),
-      wins: v?.winning_trades ?? 0,
-      losses: v?.losing_trades ?? 0,
-      balance: botStore.allBalance[k]?.total_bot ?? botStore.allBalance[k]?.total ?? 0,
-      stakeCurrencyDecimals: botStore.allBotState[k]?.stake_currency_decimals || 3,
-      isDryRun: botStore.allBotState[k]?.dry_run,
-      isOnline: botStore.botStores[k]?.isBotOnline,
-      isStarting: botStore.botStores[k]?.isBotStarting,
-      lastSeenOnline: botStore.botStores[k]?.lastSeenOnline ?? 0,
-      exchange: botStore.allBotState[k]?.exchange || '',
-      balanceAppendix: botStore.allBotState[k]?.dry_run ? '(dry)' : '',
-      stakeAmount: botStore.allBotState[k]?.stake_amount || '',
-      port,
-      strategy: botStore.allBotState[k]?.strategy || '',
-      pairCount: botStore.botStores[k]?.whitelist?.length ?? 0,
-      tradingMode: (botStore.allBotState[k]?.trading_mode as string) || 'spot',
-      availableCapital: botStore.allBotState[k]?.available_capital,
-      tradableBalanceRatio: botStore.allBotState[k]?.tradable_balance_ratio,
-      availableFunds: (() => {
-        const ac = botStore.allBotState[k]?.available_capital;
-        if (ac === undefined || ac === null) return undefined;
-        const gain = v?.profit_closed_coin ?? 0;
-        const withdraw = v?.capital_withdrawal ?? 0;
-        return ac + gain - withdraw;
-      })(),
-      yearlyProfit: calculatePeriodProfit(v, 365)?.abs,
-      monthlyProfit: calculateMonthlyProfit(v),
-    });
+      row = {
+        botId: k,
+        botName: thisBotStore.uiBotName || thisBotStore.botId,
+        botIcon: thisBotStore.uiBotIcon || '',
+        trades: `${botStore.allOpenTradeCount[k]} / ${
+          (botState?.max_open_trades ?? 0) > 0 ? botState?.max_open_trades : '∞'
+        }`,
+        profitClosed: v?.profit_closed_coin ?? 0,
+        profitClosedRatio: (() => {
+          const ac = botState?.available_capital;
+          if (ac && ac > 0) {
+            return (v?.profit_closed_coin ?? 0) / ac;
+          }
+          return v?.profit_closed_ratio ?? 0;
+        })(),
+        capitalWithdrawal: v?.capital_withdrawal ?? 0,
+        stakeCurrency: botState?.stake_currency || '',
+        profitOpenRatio,
+        profitOpen,
+        profitCurrent: profitOpen + (v?.profit_closed_coin ?? 0),
+        profitCurrentRatio: (() => {
+          const ac = botState?.available_capital;
+          if (ac && ac > 0) {
+            return (profitOpen + (v?.profit_closed_coin ?? 0)) / ac;
+          }
+          return undefined;
+        })(),
+        wins: v?.winning_trades ?? 0,
+        losses: v?.losing_trades ?? 0,
+        balance: balance?.total_bot ?? balance?.total ?? 0,
+        stakeCurrencyDecimals: botState?.stake_currency_decimals || 3,
+        isDryRun: botState?.dry_run,
+        isOnline: thisBotStore.isBotOnline,
+        isStarting: thisBotStore.isBotStarting,
+        lastSeenOnline: thisBotStore.lastSeenOnline ?? 0,
+        exchange: botState?.exchange || '',
+        balanceAppendix: botState?.dry_run ? '(dry)' : '',
+        stakeAmount: botState?.stake_amount || '',
+        port,
+        strategy: botState?.strategy || '',
+        pairCount: whitelist?.length ?? 0,
+        tradingMode: (botState?.trading_mode as string) || 'spot',
+        availableCapital: botState?.available_capital,
+        tradableBalanceRatio: botState?.tradable_balance_ratio,
+        availableFunds: (() => {
+          const ac = botState?.available_capital;
+          if (ac === undefined || ac === null) return undefined;
+          const gain = v?.profit_closed_coin ?? 0;
+          const withdraw = v?.capital_withdrawal ?? 0;
+          return ac + gain - withdraw;
+        })(),
+        yearlyProfit: calculatePeriodProfit(v, 365)?.abs,
+        monthlyProfit: calculateMonthlyProfit(v),
+      };
+      _rowCache.set(k, { sig, profitOpen, row });
+    }
+    val.push(row);
     if (v?.profit_closed_coin !== undefined) {
       if (thisBotStore.isSelected) {
         const cur = botStore.allBotState[k]?.stake_currency || 'USDT';
