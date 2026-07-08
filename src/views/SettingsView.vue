@@ -13,7 +13,7 @@ const openTradesOptions = [
 ];
 const colorPreferenceOptions = [
   { value: ColorPreferences.GREEN_UP, text: 'Green Up/Red Down' },
-  { value: ColorPreferences.RED_UP, text: 'Green Down/Red Up' },
+  { value: ColorPreferences.RED_UP, text: 'Red Up/Green Down' },
 ];
 
 const resetDynamicLayout = () => {
