@@ -8,6 +8,9 @@ import type {
   AlertConfigV2,
   AlertSettingConfig,
   DetectedAlert,
+  ClosedTrade,
+  Trade,
+  ProfitStats,
 } from '@/types';
 import type Popover from 'primevue/popover';
 import { useI18n } from 'vue-i18n';
@@ -621,12 +624,7 @@ function cancelMaxDrawdownHoverKeepPopover() {
 // actually changed since the last run; the rest are O(1) cache hits. Same output.
 const _ddCache = new Map<
   string,
-  {
-    trades: import('@/types').ClosedTrade[];
-    open: import('@/types').Trade[];
-    profit: import('@/types').ProfitStats | undefined;
-    result: MaxDrawdownResult;
-  }
+  { trades: ClosedTrade[]; open: Trade[]; profit: ProfitStats | undefined; result: MaxDrawdownResult }
 >();
 const drawdownByBot = computed<Record<string, MaxDrawdownResult>>(() => {
   const out: Record<string, MaxDrawdownResult> = {};
