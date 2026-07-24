@@ -595,6 +595,8 @@ export default {
     realizedCurve: 'Realized — closed trades',
     openCurve: 'Including open positions at their lowest',
     openCurveHint: 'The tail projects the open book down to the lowest it reached.',
+    openCurveHintHistory:
+      'Sampled current profit (closed + open) over time; the tail projects the open book down to the lowest it reached.',
     notEnoughData: 'Not enough closed trades to draw the curve.',
     peak: 'Peak',
     trough: 'Trough',

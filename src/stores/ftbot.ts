@@ -66,6 +66,7 @@ import type {
   Trade,
   TradeResponse,
   WalletHistory,
+  ProfitHistoryResponse,
   WalletHistoryPerBot,
   WhitelistResponse,
 } from '@/types';
@@ -126,6 +127,8 @@ export function createBotSubStore(botId: string, botName: string) {
         weeklyStats: {} as TimeSummaryReturnValue,
         monthlyStats: {} as TimeSummaryReturnValue,
         balanceHistory: undefined as WalletHistory | undefined,
+        profitHistory: undefined as ProfitHistoryResponse | undefined,
+        profitHistoryFetchedAt: 0,
         pairlistMethods: [] as string[],
         pairlistPipeline: [] as import('@/types/blacklist').PipelineStep[],
         handlerConfigs: [] as Record<string, any>[],
@@ -751,6 +754,22 @@ export function createBotSubStore(botId: string, botName: string) {
         } catch (error) {
           console.error(error);
           return Promise.reject(error);
+        }
+      },
+      async getProfitHistory(force = false): Promise<ProfitHistoryResponse | undefined> {
+        // Fork-specific: sampled current-profit series for time-accurate open-inclusive
+        // drawdown curves. Cached 60s (the popover mounts on every hover).
+        if (!force && this.profitHistory && Date.now() - this.profitHistoryFetchedAt < 60_000) {
+          return this.profitHistory;
+        }
+        try {
+          const { data } = await api.get<ProfitHistoryResponse>('/profit_history');
+          this.profitHistory = data;
+          this.profitHistoryFetchedAt = Date.now();
+          return data;
+        } catch {
+          // Older bot without the endpoint - callers fall back to the projected curve.
+          return undefined;
         }
       },
       async updateWalletChange() {
