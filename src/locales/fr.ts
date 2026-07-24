@@ -606,6 +606,8 @@ export default {
     realizedCurve: 'Réalisé — trades fermés',
     openCurve: 'Incluant les positions ouvertes à leur plus bas',
     openCurveHint: 'La queue projette les positions ouvertes jusqu’au plus bas atteint.',
+    openCurveHintHistory:
+      'Profit courant (fermé + ouvert) échantillonné dans le temps ; la queue projette les positions ouvertes jusqu’au plus bas atteint.',
     notEnoughData: 'Pas assez de trades fermés pour tracer la courbe.',
     peak: 'Plus haut',
     trough: 'Plus bas',
