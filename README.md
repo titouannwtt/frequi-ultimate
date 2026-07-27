@@ -74,7 +74,53 @@ Vue 3.5 · Pinia · PrimeVue · ECharts · TailwindCSS 4 · vue-i18n · Monaco E
 
 ## 📷 Screenshots
 
-_To be added — placeholder for dashboard, fleet view, strategy dev._
+### Multi-bot dashboard
+
+One glassmorphism screen for the whole fleet — live log console, cumulative profit vs BTC benchmark, per-bot comparison, and every open position with duration-health bars.
+
+![Multi-bot dashboard](.readme_illustrations/dashboard-overview.png)
+
+### Fleet comparison & alerts
+
+Compare bots head-to-head with custom columns, tags, filters, groups, drag-drop ordering, and 13 cross-bot alert types.
+
+<p align="center">
+  <img src=".readme_illustrations/bot-comparison-alerts.png" width="49%" alt="Bot comparison — alerts">
+  <img src=".readme_illustrations/bot-comparison-groups.png" width="49%" alt="Bot comparison — groups">
+</p>
+
+### Market context & portfolio risk
+
+Widgets stock FreqUI doesn't have: Market Pulse (BTC dominance, Fear & Greed, fleet vs BTC/ETH) and a portfolio-wide Risk Overview (net/gross exposure, leverage, worst drawdown, correlation warnings).
+
+<p align="center">
+  <img src=".readme_illustrations/widget-market-pulse.png" width="49%" alt="Market Pulse widget">
+  <img src=".readme_illustrations/widget-risk-overview.png" width="49%" alt="Risk Overview widget">
+</p>
+
+### Analytics widgets
+
+Per-bot profit benchmarks, profit distribution, performance heatmap, activity timeline, and a Monte-Carlo stress test.
+
+<p align="center">
+  <img src=".readme_illustrations/widget-profit-benchmarks-combined.png" width="49%" alt="Profit & benchmarks widget">
+  <img src=".readme_illustrations/widget-performance-heatmap.png" width="49%" alt="Performance heatmap widget">
+</p>
+<p align="center">
+  <img src=".readme_illustrations/widget-stress-test.png" width="49%" alt="Stress test widget">
+  <img src=".readme_illustrations/widget-activity-timeline.png" width="49%" alt="Activity timeline widget">
+</p>
+
+### Rich context popovers
+
+Hover any metric for a glassmorphism context card — open/closed profit, win/loss, DCA escalations, exit reasons, price levels, and more.
+
+<p align="center">
+  <img src=".readme_illustrations/popover-open-positions.png" width="49%" alt="Open positions popover">
+  <img src=".readme_illustrations/popover-dca-escalations.png" width="49%" alt="DCA escalations popover">
+</p>
+
+> 🔗 **Note:** the advanced widgets above (Market Pulse, Risk Overview, fleet status, volume/signal context, the in-browser strategy editor) are powered by REST endpoints that only exist in **[freqtrade-ultimate](https://github.com/titouannwtt/freqtrade-ultimate)**. Point this UI at a stock freqtrade bot and those panels stay empty — pair it with the fork for the full experience.
 
 ## 🎓 Learn algorithmic trading
 
