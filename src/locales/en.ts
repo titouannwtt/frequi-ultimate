@@ -251,6 +251,8 @@ export default {
 
   // Profit Benchmark Chart (merged profit + cumulative + benchmarks)
   profitBenchmark: {
+    periodDD: 'Period DD',
+    periodDDHint: 'Max drawdown within the displayed period, measured on the visible curve (latent when enabled). % of peak equity and amount.',
     latentToggle: 'Latent profit',
     latentCurve: 'Current profit (incl. latent)',
     latentCurveHint: 'Blue curve: closed + open unrealized profit, sampled over time (profit_history series).',

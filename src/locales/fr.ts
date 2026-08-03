@@ -256,6 +256,8 @@ export default {
 
   // Graphique Profit & Benchmarks
   profitBenchmark: {
+    periodDD: 'DD période',
+    periodDDHint: 'Drawdown maximum atteint sur la période affichée, mesuré sur la courbe visible (latente si activée). % du pic d\'équité et montant.',
     latentToggle: 'Profit latent',
     latentCurve: 'Profit courant (latent inclus)',
     latentCurveHint: 'Courbe bleue : profit fermé + latent des positions ouvertes, échantillonné dans le temps (série profit_history).',
