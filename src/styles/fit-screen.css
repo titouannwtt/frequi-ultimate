@@ -23,7 +23,11 @@
   padding-right: 0.25rem !important;
   font-size: 0.72rem !important;
   overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  /* Wrap instead of clipping: a truncated profit figure or bot tag is worse than
+     a two-line cell, and rows are free to grow vertically. */
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
 }
 .ft-fit-screen td > *,
 .ft-fit-screen .col-header-removable {
@@ -32,8 +36,20 @@
 }
 .ft-fit-screen td .bot-name-block,
 .ft-fit-screen td span {
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+/* Headers wrap too rather than forcing the column wider. */
+.ft-fit-screen th,
+.ft-fit-screen .col-header-removable {
+  white-space: normal !important;
+  line-height: 1.15;
+}
+/* Inline gauges (trades used / win-loss ratio) must follow the column width
+   instead of imposing a 50px floor that inflates otherwise narrow columns. */
+.ft-fit-screen .ft-gauge {
+  min-width: 0 !important;
+  width: 100% !important;
 }
 .ft-fit-screen .col-remove-btn {
   flex: 0 0 auto;

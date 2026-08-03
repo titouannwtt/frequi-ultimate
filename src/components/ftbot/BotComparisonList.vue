@@ -2069,6 +2069,40 @@ function showAlertsPopover(event: MouseEvent) {
   alertsPopover.value?.toggle(event);
 }
 
+// Relative column weights used ONLY in fit-to-screen mode: roughly how much
+// horizontal room each column's content actually needs. Without them every
+// column gets an equal share, so numeric columns (Trades, W/L) waste space on
+// their gauges while name/strategy columns get truncated.
+const FIT_COL_WEIGHTS: Record<string, number> = {
+  botName: 3,
+  status: 1,
+  market: 1.2,
+  exchange: 1,
+  trades: 0.85,
+  winLoss: 0.85,
+  port: 0.6,
+  pairCount: 0.7,
+  stakeCurrency: 0.8,
+  openProfit: 1.25,
+  closedProfit: 1.25,
+  profitCurrent: 1.25,
+  maxDrawdown: 1.1,
+  balance: 1.3,
+  lastTrade: 1.8,
+  stakeAmount: 1,
+  strategy: 1.6,
+  availableCapital: 1.15,
+  tradableBalanceRatio: 0.95,
+  weeklyProfit: 1.1,
+  monthlyProfit: 1.1,
+};
+function fitColWidth(id: string): string {
+  const cols = visibleOrderedColumns.value;
+  const total = cols.reduce((a, c) => a + (FIT_COL_WEIGHTS[c.id] ?? 1), 0) || 1;
+  // Leave ~3% for the fixed control column so a row never overflows.
+  return `${(((FIT_COL_WEIGHTS[id] ?? 1) / total) * 97).toFixed(2)}%`;
+}
+
 // --- Fit-to-screen mode (shared composable, styles in styles/fit-screen.css) ---
 const { fitToScreen, toggleFitToScreen } = useFitToScreen('botComparison');
 
@@ -4978,6 +5012,7 @@ const correlatedPairs = computed(() => {
       <Column
         v-for="col in visibleOrderedColumns"
         :key="col.id"
+        :style="fitToScreen ? { width: fitColWidth(col.id) } : undefined"
         :field="
           col.id === 'winLoss'
             ? 'winVsLoss'
@@ -5650,7 +5685,7 @@ const correlatedPairs = computed(() => {
                 </div>
                 <div
                   v-if="(data as ComparisonTableItems).summaryTradesMax! > 0"
-                  class="flex h-1.5 rounded-full overflow-hidden mt-1 bg-surface-300 dark:bg-surface-600"
+                  class="ft-gauge flex h-1.5 rounded-full overflow-hidden mt-1 bg-surface-300 dark:bg-surface-600"
                   style="min-width: 50px"
                 >
                   <div
@@ -5675,7 +5710,7 @@ const correlatedPairs = computed(() => {
                 <div>{{ data.trades }}</div>
                 <div
                   v-if="data.botId && data.trades?.includes('/') && !data.trades?.includes('∞')"
-                  class="flex h-1.5 rounded-full overflow-hidden mt-1 bg-surface-300 dark:bg-surface-600"
+                  class="ft-gauge flex h-1.5 rounded-full overflow-hidden mt-1 bg-surface-300 dark:bg-surface-600"
                   style="min-width: 50px"
                 >
                   <div
@@ -6078,7 +6113,7 @@ const correlatedPairs = computed(() => {
                 </div>
                 <div
                   v-if="data.wins + data.losses > 0"
-                  class="flex h-1.5 rounded-full overflow-hidden mt-1"
+                  class="ft-gauge flex h-1.5 rounded-full overflow-hidden mt-1"
                   style="min-width: 50px"
                   :title="`${((data.wins / (data.wins + data.losses)) * 100).toFixed(1)}% winrate`"
                 >
