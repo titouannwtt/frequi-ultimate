@@ -1344,8 +1344,9 @@ function getRowClass(data: ComparisonTableItems) {
   let base: string;
   if (data.isGroupRow) {
     const group = botGroups.value.find((g) => g.id === data.groupId);
+    const gIds = groupSelectableIds(data.groupId);
     base =
-      group && group.botIds.every((id) => !botStore.botStores[id]?.isSelected)
+      group && (gIds.length === 0 || gIds.every((id) => !botStore.botStores[id]?.isSelected))
         ? 'bot-row-unselected'
         : 'bot-row-group';
   } else if (data.botId && !botStore.botStores[data.botId]?.isSelected) {
@@ -2169,6 +2170,7 @@ function handleKeyboard(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
     e.preventDefault();
     const visibleBots = tableItems.value.filter((i) => i.botId && !i.isGroupRow);
+    if (visibleBots.length === 0) return;
     const allSelected = visibleBots.every((i) => botStore.botStores[i.botId!]?.isSelected);
     visibleBots.forEach((i) => {
       if (botStore.botStores[i.botId!]) {
@@ -2445,11 +2447,11 @@ function parseTradesPercent(trades: string): number {
 
 const allToggled = computed<boolean>({
   get: () => {
-    // Only check visible (non-filtered) bots
-    return Object.entries(botStore.botStores).every(([id, bot]) => {
-      if (!isBotVisibleByFilter(id)) return true; // Skip hidden bots
-      return bot.isSelected;
-    });
+    // Only consider visible (non-filtered) bots; an empty visible set must not
+    // read as "all selected" (vacuous truth would show a checked master box).
+    const visible = Object.entries(botStore.botStores).filter(([id]) => isBotVisibleByFilter(id));
+    if (visible.length === 0) return false;
+    return visible.every(([, bot]) => bot.isSelected);
   },
   set: (val) => {
     for (const [id, bot] of Object.entries(botStore.botStores)) {
@@ -2459,6 +2461,12 @@ const allToggled = computed<boolean>({
       // Hidden bots stay deselected
     }
   },
+});
+
+const someToggled = computed<boolean>(() => {
+  const visible = Object.entries(botStore.botStores).filter(([id]) => isBotVisibleByFilter(id));
+  const sel = visible.filter(([, bot]) => bot.isSelected).length;
+  return sel > 0 && sel < visible.length;
 });
 
 // --- Inline bot rename ---
@@ -2482,20 +2490,43 @@ function cancelRename() {
 }
 
 // --- Group toggle (only toggles bots within this group) ---
-function isGroupAllSelected(groupId: string): boolean {
+/**
+ * Bots of a group that can actually be toggled: they must still be connected
+ * (a group can reference a bot that was removed) AND visible under the current
+ * filters (hidden bots are force-deselected by applyFilterSelection, so
+ * including them would make the group checkbox permanently out of sync).
+ */
+function groupSelectableIds(groupId: string | undefined): string[] {
+  if (!groupId) return [];
   const group = botGroups.value.find((g) => g.id === groupId);
-  if (!group) return false;
-  return group.botIds.every((id) => botStore.botStores[id]?.isSelected);
+  if (!group) return [];
+  return group.botIds.filter((id) => botStore.botStores[id] && isBotVisibleByFilter(id));
+}
+
+function isGroupAllSelected(groupId: string): boolean {
+  const ids = groupSelectableIds(groupId);
+  // An empty set must NOT read as "all selected" ([].every() === true), otherwise
+  // an empty/fully-filtered group shows a checked box that nothing can uncheck.
+  if (ids.length === 0) return false;
+  return ids.every((id) => botStore.botStores[id]?.isSelected);
+}
+
+function isGroupPartiallySelected(groupId: string): boolean {
+  const ids = groupSelectableIds(groupId);
+  if (ids.length === 0) return false;
+  const sel = ids.filter((id) => botStore.botStores[id]?.isSelected).length;
+  return sel > 0 && sel < ids.length;
 }
 
 function toggleGroup(groupId: string) {
-  const group = botGroups.value.find((g) => g.id === groupId);
-  if (!group) return;
-  const allSelected = group.botIds.every((id) => botStore.botStores[id]?.isSelected);
-  group.botIds.forEach((id) => {
-    if (botStore.botStores[id]) {
-      botStore.botStores[id].isSelected = !allSelected;
-    }
+  const ids = groupSelectableIds(groupId);
+  if (ids.length === 0) return;
+  // Partial selection resolves to "select all" first (standard tri-state
+  // behaviour), so a second click then clears the whole group.
+  const allSelected = ids.every((id) => botStore.botStores[id]?.isSelected);
+  ids.forEach((id) => {
+    const bot = botStore.botStores[id];
+    if (bot) bot.isSelected = !allSelected;
   });
 }
 
@@ -4236,14 +4267,6 @@ const correlatedPairs = computed(() => {
             </span>
           </div>
           <div class="space-y-1">
-            <div
-              v-for="[botId, store] in Object.entries(botStore.botStores).filter(
-                ([id]) =>
-                  (store) =>
-                    store.isSelected,
-              )"
-              :key="botId"
-            ></div>
             <!-- Per-bot breakdown -->
             <template
               v-for="item in tableItems.filter((i) => i.botId)"
@@ -4926,8 +4949,9 @@ const correlatedPairs = computed(() => {
             <BaseCheckbox
               v-else-if="(data as ComparisonTableItems).isGroupRow && botStore.botCount > 1"
               :model-value="isGroupAllSelected((data as ComparisonTableItems).groupId!)"
-              @update:model-value="toggleGroup((data as ComparisonTableItems).groupId!)"
+              :indeterminate="isGroupPartiallySelected((data as ComparisonTableItems).groupId!)"
               :title="t('botComparison.toggleAll')"
+              @update:model-value="toggleGroup((data as ComparisonTableItems).groupId!)"
             />
             <!-- Summary row: checkbox toggles all bots -->
             <BaseCheckbox
@@ -4935,6 +4959,7 @@ const correlatedPairs = computed(() => {
                 !data.botId && !(data as ComparisonTableItems).isGroupRow && botStore.botCount > 1
               "
               v-model="allToggled"
+              :indeterminate="someToggled"
               :title="t('botComparison.toggleAll')"
             />
           </div>
