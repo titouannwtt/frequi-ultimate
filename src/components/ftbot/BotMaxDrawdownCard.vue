@@ -111,7 +111,16 @@ const historyPoints = computed<Point[]>(() => {
   if (seriesList.length === 1) {
     return seriesList[0].map((r) => ({ t: r[0], v: r[1] + r[2] }));
   }
-  const allTs = [...new Set(seriesList.flatMap((s) => s.map((r) => r[0])))].sort((a, b) => a - b);
+  // Merge only from the first COMMON timestamp: before every bot has begun
+  // sampling, the forward-filled sum silently misses whole bots (their slot is
+  // primed at 0), fabricating an artificially-low start of the curve — the max
+  // drawdown then anchors its trough dot on the zero line for no real reason.
+  // The pre-sampling window is covered by the realized curve prepended in
+  // openPoints instead.
+  const startT = Math.max(...seriesList.map((s) => s[0][0]));
+  const allTs = [...new Set(seriesList.flatMap((s) => s.map((r) => r[0])))]
+    .filter((t) => t >= startT)
+    .sort((a, b) => a - b);
   const idx = seriesList.map(() => 0);
   const last = seriesList.map(() => 0);
   return allTs.map((t) => {
