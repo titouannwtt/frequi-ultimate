@@ -1,6 +1,7 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ disabled?: boolean }>(), {
+withDefaults(defineProps<{ disabled?: boolean; indeterminate?: boolean }>(), {
   disabled: false,
+  indeterminate: false,
 });
 const id = useId();
 const value = defineModel<boolean>();
@@ -12,6 +13,7 @@ const value = defineModel<boolean>();
       <Checkbox v-model="value" binary size="small" :input-id="`input-${id}`">
         <template #icon="{ checked }">
           <i-mdi-check-bold v-if="checked" />
+          <i-mdi-minus-thick v-else-if="indeterminate" />
         </template>
       </Checkbox>
       <label :for="`input-${id}`" class="ml-2 text-base"><slot /></label>
