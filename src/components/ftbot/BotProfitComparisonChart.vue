@@ -46,7 +46,7 @@ const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
 const { summaryCurrency } = useSummaryCurrency();
 const { convert } = useExchangeRates();
-const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
+const { tradingMode, hasMultipleModes, filterTradesByMode, restorePersistedTradingMode } = useTradingModeFilter('botProfitComparison');
 
 const chart = ref<InstanceType<typeof ECharts>>();
 
@@ -171,6 +171,7 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
 
 onMounted(() => {
   loadDefaults();
+  restorePersistedTradingMode();
 });
 
 defineExpose({ filtersChanged, saveCurrentAsDefault });

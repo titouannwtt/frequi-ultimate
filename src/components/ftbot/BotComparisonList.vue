@@ -670,6 +670,58 @@ function ddColor(ratio: number): string {
   return 'text-surface-400';
 }
 
+
+// --- Market classification (crypto vs HIP-3 builder-dex universes) -----------
+// Derived from each bot's whitelist. XYZ- prefixed pairs live on the xyz
+// builder dex (TradFi perps); we split them into indices / commodities / stocks
+// via small symbol sets (unknown XYZ symbols default to stocks).
+const XYZ_INDEX_BASES = new Set([
+  'SP500', 'XYZ100', 'JP225', 'KR200', 'DAX', 'FTSE100', 'EU50', 'US2000', 'HSI', 'NIKKEI',
+]);
+const XYZ_COMMODITY_BASES = new Set([
+  'GOLD', 'SILVER', 'COPPER', 'PLATINUM', 'PALLADIUM', 'BRENTOIL', 'WTI', 'CL', 'NATGAS',
+  'GAS', 'CORN', 'WHEAT', 'SUGAR', 'COFFEE', 'COCOA', 'SOYBEAN',
+]);
+type MarketId = 'crypto' | 'xyzStocks' | 'xyzIndices' | 'xyzCommodities' | 'mixed';
+function classifyPairMarket(pair: string): Exclude<MarketId, 'mixed'> {
+  const base = pair.split('/')[0];
+  if (base.startsWith('XYZ-')) {
+    const sym = base.slice(4);
+    if (XYZ_INDEX_BASES.has(sym)) return 'xyzIndices';
+    if (XYZ_COMMODITY_BASES.has(sym)) return 'xyzCommodities';
+    return 'xyzStocks';
+  }
+  return 'crypto';
+}
+function marketOfWhitelist(whitelist: string[] | undefined): string {
+  if (!whitelist || whitelist.length === 0) return '';
+  const cats = new Set<string>();
+  for (const p of whitelist) {
+    cats.add(classifyPairMarket(p));
+    if (cats.size > 1) return 'mixed';
+  }
+  return [...cats][0];
+}
+function marketLabel(m: string | undefined): string {
+  return m ? t(`botComparison.marketNames.${m}`) : '';
+}
+function getMarketStyle(m: string | undefined): Record<string, string> {
+  switch (m) {
+    case 'crypto':
+      return { background: '#2b2010', color: '#f7931a' }; // bitcoin orange
+    case 'xyzStocks':
+      return { background: '#101c2e', color: '#60a5fa' }; // blue
+    case 'xyzIndices':
+      return { background: '#1c102e', color: '#c084fc' }; // purple
+    case 'xyzCommodities':
+      return { background: '#2e2410', color: '#fbbf24' }; // amber
+    case 'mixed':
+      return { background: '#1f2937', color: '#9ca3af' }; // gray
+    default:
+      return {};
+  }
+}
+
 // --- Last closed trade per bot (for the optional `lastTrade` column) ---
 // Cached computed → only re-evaluates when a bot's trades array reference changes
 // (which only happens when a trade closes). Heavy computation has no impact on
@@ -1372,6 +1424,13 @@ const allColumns: ColumnDefinition[] = [
     removable: true,
   },
   {
+    id: 'market',
+    labelKey: 'botComparison.marketLabel',
+    icon: 'i-mdi-earth',
+    default: false,
+    removable: true,
+  },
+  {
     id: 'exchange',
     labelKey: 'botComparison.exchange',
     icon: 'i-mdi-swap-horizontal',
@@ -1682,11 +1741,12 @@ function getCustomTagBotCount(tagId: string): number {
 }
 
 // --- Tag ordering (from store) ---
-const ALL_TAG_IDS = ['status', 'tradingMode', 'exchange', 'stakeCurrency', 'port'] as const;
+const ALL_TAG_IDS = ['status', 'tradingMode', 'market', 'exchange', 'stakeCurrency', 'port'] as const;
 
 const tagLabels: Record<TagId, string> = {
   status: 'botComparison.tagStatus',
   tradingMode: 'botComparison.tagTradingMode',
+  market: 'botComparison.tagMarket',
   exchange: 'botComparison.tagExchange',
   stakeCurrency: 'botComparison.tagCurrency',
   port: 'botComparison.tagPort',
@@ -2783,6 +2843,9 @@ function comparatorForField(
       case 'exchange':
         cmp = (a.exchange || '').localeCompare(b.exchange || '');
         break;
+      case 'market':
+        cmp = (a.market || '').localeCompare(b.market || '');
+        break;
       case 'status': {
         const statusOrder = { live: 0, dry: 1, offline: 2 };
         const aStatus = a.botId ? getBotStatus(a.botId) : 'offline';
@@ -3001,6 +3064,7 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
         port,
         strategy: botState?.strategy || '',
         pairCount: whitelist?.length ?? 0,
+        market: marketOfWhitelist(whitelist),
         tradingMode: (botState?.trading_mode as string) || 'spot',
         availableCapital: botState?.available_capital,
         tradableBalanceRatio: botState?.tradable_balance_ratio,
@@ -3193,6 +3257,9 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
           break;
         case 'exchange':
           cmp = (a.exchange || '').localeCompare(b.exchange || '');
+          break;
+        case 'market':
+          cmp = (a.market || '').localeCompare(b.market || '');
           break;
         case 'status': {
           const statusOrder = { live: 0, dry: 1, offline: 2 };
@@ -4881,6 +4948,7 @@ const correlatedPairs = computed(() => {
             ? 'winVsLoss'
             : [
                   'status',
+                  'market',
                   'exchange',
                   'openProfit',
                   'closedProfit',
@@ -4898,6 +4966,7 @@ const correlatedPairs = computed(() => {
           <div class="col-header-removable group">
             <i-mdi-robot v-if="col.id === 'botName'" class="text-xs opacity-50" />
             <i-mdi-circle v-else-if="col.id === 'status'" class="text-xs opacity-50" />
+            <i-mdi-earth v-else-if="col.id === 'market'" class="text-xs opacity-50" />
             <i-mdi-swap-horizontal v-else-if="col.id === 'exchange'" class="text-xs opacity-50" />
             <i-mdi-chart-box v-else-if="col.id === 'trades'" class="text-xs opacity-50" />
             <i-mdi-trending-up v-else-if="col.id === 'openProfit'" class="text-xs opacity-50" />
@@ -5256,6 +5325,15 @@ const correlatedPairs = computed(() => {
                             : 'Spot'
                         }}</span
                       >
+                      <!-- Market tag -->
+                      <span
+                        v-else-if="tagId === 'market' && (data as ComparisonTableItems).market"
+                        class="inline-flex items-center rounded-sm text-[0.55rem] font-bold"
+                        style="padding: 1px 5px; line-height: 1.2"
+                        :style="getMarketStyle((data as ComparisonTableItems).market)"
+                        :title="t('botComparison.marketTagTitle')"
+                        >{{ marketLabel((data as ComparisonTableItems).market) }}</span
+                      >
                       <!-- Exchange tag -->
                       <span
                         v-else-if="tagId === 'exchange' && (data as ComparisonTableItems).exchange"
@@ -5481,6 +5559,18 @@ const correlatedPairs = computed(() => {
                   <i-mdi-fast-forward class="text-sm" />
                 </button>
               </div>
+            </template>
+
+            <!-- market -->
+            <template v-else-if="col.id === 'market'">
+              <span
+                v-if="data.botId && (data as ComparisonTableItems).market"
+                class="inline-flex items-center rounded-sm text-[0.65rem] font-bold whitespace-nowrap"
+                style="padding: 2px 7px; line-height: 1.3"
+                :style="getMarketStyle((data as ComparisonTableItems).market)"
+                :title="marketLabel((data as ComparisonTableItems).market)"
+                >{{ marketLabel((data as ComparisonTableItems).market) }}</span
+              >
             </template>
 
             <!-- exchange -->

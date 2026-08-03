@@ -38,7 +38,7 @@ import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 const botStore = useBotStore();
 const replayStore = useReplayStore();
 const router = useRouter();
-const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
+const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter('closedTrades');
 const { initialLoading } = useInitialBotLoading();
 
 const {

@@ -19,6 +19,24 @@ subscribe();
 const bots = computed((): FleetviewBot[] => overview.value?.bots ?? []);
 const coins = computed((): FleetviewCoin[] => recon.value?.coins ?? []);
 
+// Dry/live mode filter — persisted per widget, defaults to 'live' (historic
+// behaviour: the contribution chart only counted live bots).
+const { tradingMode } = useTradingModeFilter('fleetPnl', 'live');
+function botInMode(b: FleetviewBot): boolean {
+  if (tradingMode.value === 'all') return true;
+  return (tradingMode.value === 'dry') === !!b.dry_run;
+}
+const fleetHasBothModes = computed(() => {
+  let dry = false;
+  let live = false;
+  for (const b of bots.value) {
+    if (b.dry_run) dry = true;
+    else live = true;
+    if (dry && live) return true;
+  }
+  return false;
+});
+
 const colorStore = useColorStore();
 const settingsStore = useSettingsStore();
 const { t } = useI18n();
@@ -74,7 +92,7 @@ function unrealizedFor(bot: FleetviewBot): number {
 
 const contributions = computed(() => {
   const rows = bots.value
-    .filter((b) => !b.dry_run)
+    .filter((b) => botInMode(b))
     .map((b) => ({
       name: b.bot_name,
       value: realizedFor(b) + (includeUnrealized.value ? unrealizedFor(b) : 0),
@@ -157,14 +175,17 @@ const total = computed(() => contributions.value.reduce((acc, r) => acc + r.valu
         <Checkbox v-model="includeUnrealized" binary size="small" />
         {{ t('fleet.pnl.includeUpnl') }}
       </label>
-      <SelectButton
-        v-model="window_"
-        :options="windowOptions"
-        size="small"
-        :allow-empty="false"
-        option-label="text"
-        option-value="value"
-      />
+      <div class="flex items-center gap-2">
+        <TradingModeSelect v-model="tradingMode" :show="fleetHasBothModes" />
+        <SelectButton
+          v-model="window_"
+          :options="windowOptions"
+          size="small"
+          :allow-empty="false"
+          option-label="text"
+          option-value="value"
+        />
+      </div>
     </div>
     <div class="text-xs text-surface-500 dark:text-surface-400">
       {{ t('fleet.pnl.sum') }}

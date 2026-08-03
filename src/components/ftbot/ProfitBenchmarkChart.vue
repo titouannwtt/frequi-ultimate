@@ -63,7 +63,7 @@ const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
 const { summaryCurrency } = useSummaryCurrency();
 const { convert } = useExchangeRates();
-const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
+const { tradingMode, hasMultipleModes, filterTradesByMode, restorePersistedTradingMode } = useTradingModeFilter('profitBenchmark');
 
 // Debounce the multi-bot trade inputs. With ~30 bots, /status responses arrive
 // staggered on each refresh cycle and each one mutates openTrades, which would
@@ -161,7 +161,7 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   HARDCODED_DEFAULTS_BENCH,
 );
 
-onMounted(() => { loadDefaults(); });
+onMounted(() => { loadDefaults(); restorePersistedTradingMode(); });
 
 defineExpose({ filtersChanged, saveCurrentAsDefault });
 

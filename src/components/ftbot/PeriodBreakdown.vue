@@ -9,7 +9,7 @@ import type { TimeSummaryReturnValue, TimeSummaryRecord } from '@/types';
 const { t } = useI18n();
 const botStore = useBotStore();
 const settingsStore = useSettingsStore();
-const { tradingMode, hasMultipleModes, isBotInMode } = useTradingModeFilter();
+const { tradingMode, hasMultipleModes, isBotInMode, restorePersistedTradingMode } = useTradingModeFilter('periodBreakdown');
 
 const props = defineProps<{
   multiBotView?: boolean;
@@ -54,7 +54,7 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   HARDCODED_DEFAULTS_PB,
 );
 
-onMounted(() => { loadDefaults(); });
+onMounted(() => { loadDefaults(); restorePersistedTradingMode(); });
 
 defineExpose({ filtersChanged, saveCurrentAsDefault });
 
