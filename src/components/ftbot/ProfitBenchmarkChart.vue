@@ -135,6 +135,8 @@ function saveBenchmarksToStorage() {
 
 const HARDCODED_DEFAULTS_BENCH = {
   showLatent: false as boolean,
+  showRealized: true as boolean,
+  showDrawdown: true as boolean,
   activeTab: 'combined' as string,
   selectedTimeframe: 'ALL' as string,
   enabledBenchmarks: ['BTC'] as string[],
@@ -146,6 +148,8 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   DashboardLayout.dailyChart,
   () => ({
     showLatent: showLatent.value,
+    showRealized: showRealized.value,
+    showDrawdown: showDrawdown.value,
     activeTab: activeTab.value,
     selectedTimeframe: selectedTimeframe.value,
     enabledBenchmarks: [...enabledBenchmarks.value],
@@ -154,6 +158,8 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   }),
   (d) => {
     if (d.showLatent !== undefined) showLatent.value = d.showLatent as boolean;
+    if (d.showRealized !== undefined) showRealized.value = d.showRealized as boolean;
+    if (d.showDrawdown !== undefined) showDrawdown.value = d.showDrawdown as boolean;
     if (d.activeTab !== undefined) activeTab.value = d.activeTab as TabKey;
     if (d.selectedTimeframe !== undefined) selectedTimeframe.value = d.selectedTimeframe as TimeframeKey;
     if (d.enabledBenchmarks) {
@@ -337,6 +343,24 @@ const totalStartingBalance = computed<number>(() => {
 // (closed + open unrealized) from the fork's profit_history series.
 const SHOW_LATENT_STORAGE_KEY = 'ft_benchmark_show_latent';
 const showLatent = ref<boolean>(localStorage.getItem(SHOW_LATENT_STORAGE_KEY) === 'true');
+// Realized-profit curve and drawdown annotation are independently toggleable so the
+// user can isolate exactly what they want to read.
+const showRealized = ref<boolean>(localStorage.getItem('ft_benchmark_show_realized') !== 'false');
+const showDrawdown = ref<boolean>(localStorage.getItem('ft_benchmark_show_dd') !== 'false');
+watch(showRealized, (v) => {
+  try {
+    localStorage.setItem('ft_benchmark_show_realized', String(v));
+  } catch {
+    /* ignore */
+  }
+});
+watch(showDrawdown, (v) => {
+  try {
+    localStorage.setItem('ft_benchmark_show_dd', String(v));
+  } catch {
+    /* ignore */
+  }
+});
 watch(showLatent, (v) => {
   try {
     localStorage.setItem(SHOW_LATENT_STORAGE_KEY, String(v));
@@ -484,16 +508,8 @@ const latentBand = computed(() => {
   return { upBase, upDelta, dnBase, dnDelta };
 });
 
-/**
- * Max drawdown WITHIN the selected period, measured on the curve actually shown
- * (latent when enabled — that is the real equity path — otherwise realized).
- * The widget's existing maxDD stat comes from each bot's lifetime API figure and
- * says nothing about the displayed window.
- */
-const periodDrawdown = computed(() => {
-  const src: { t: number; v: number }[] = showLatent.value && latentAbs.value.length >= 2
-    ? latentAbs.value
-    : cumulativeData.value.map((p) => ({ t: p.date, v: p.combined }));
+/** Max drawdown of a monotonic-in-time value series. */
+function ddOf(src: { t: number; v: number }[]) {
   if (src.length < 2) return null;
   let peak = src[0]!.v;
   let peakT = src[0]!.t;
@@ -516,17 +532,69 @@ const periodDrawdown = computed(() => {
     }
   }
   if (best <= 0) return null;
-  const peakEquity = totalStartingBalance.value + bestPeak;
   return {
     depthAbs: best,
-    depthPct: peakEquity > 0 ? (best / peakEquity) * 100 : 0,
     peakT: bestPeakT,
     troughT: bestTroughT,
     peakV: bestPeak,
     troughV: bestTrough,
-    onLatent: showLatent.value && latentAbs.value.length >= 2,
+  };
+}
+
+/**
+ * Max drawdown WITHIN the selected period. Measured independently on EVERY
+ * visible curve and the deepest one wins: the latent series only exists since
+ * profit_history was deployed, so on longer windows the realized curve often
+ * holds the real worst drawdown and must not be ignored.
+ */
+const periodDrawdown = computed(() => {
+  const candidates: { dd: ReturnType<typeof ddOf>; onLatent: boolean }[] = [];
+  if (showRealized.value) {
+    candidates.push({
+      dd: ddOf(cumulativeData.value.map((p) => ({ t: p.date, v: p.combined }))),
+      onLatent: false,
+    });
+  }
+  if (showLatent.value) {
+    candidates.push({ dd: ddOf(latentAbs.value), onLatent: true });
+  }
+  const valid = candidates.filter((c) => c.dd !== null);
+  if (!valid.length) return null;
+  const best = valid.reduce((a, b) => (b.dd!.depthAbs > a.dd!.depthAbs ? b : a));
+  const peakEquity = totalStartingBalance.value + best.dd!.peakV;
+  return {
+    ...best.dd!,
+    depthPct: peakEquity > 0 ? (best.dd!.depthAbs / peakEquity) * 100 : 0,
+    onLatent: best.onLatent,
   };
 });
+
+/** Running high-water mark of each curve, used by the tooltip. */
+function runningPeaks(src: { t: number; v: number }[]) {
+  let p = -Infinity;
+  return src.map((pt) => {
+    p = Math.max(p, pt.v);
+    return { t: pt.t, peak: p };
+  });
+}
+const realizedPeaks = computed(() =>
+  runningPeaks(cumulativeData.value.map((p) => ({ t: p.date, v: p.combined }))),
+);
+const latentPeaks = computed(() => runningPeaks(latentAbs.value));
+function peakAt(arr: { t: number; peak: number }[], t: number): number | null {
+  if (!arr.length) return null;
+  let lo = 0;
+  let hi = arr.length - 1;
+  let res: number | null = null;
+  while (lo <= hi) {
+    const m = (lo + hi) >> 1;
+    if (arr[m]!.t <= t) {
+      res = arr[m]!.peak;
+      lo = m + 1;
+    } else hi = m - 1;
+  }
+  return res;
+}
 
 /** Drawdown endpoints converted to the chart's display unit. */
 function toDisplay(v: number): number {
@@ -723,6 +791,7 @@ const periodStats = computed<PeriodStats>(() => {
 function buildCombinedSeries(): any[] {
   const series: any[] = [];
 
+  if (showRealized.value)
   series.push({
     type: 'line',
     name: t('profitBenchmark.combined'),
@@ -746,7 +815,7 @@ function buildCombinedSeries(): any[] {
 
   // Latent (closed + open unrealized) sampled curve — blue overlay + signed band
   if (showLatent.value && latentSeriesData.value.length >= 2) {
-    const band = latentBand.value;
+    const band = showRealized.value ? latentBand.value : null;
     if (band) {
       const mkBase = (name: string, data: unknown[], stack: string) => ({
         type: 'line',
@@ -799,9 +868,28 @@ function buildCombinedSeries(): any[] {
   }
 
   // Max drawdown of the selected period, annotated on the curve it was measured on
-  const ddp = periodDrawdown.value;
+  const ddp = showDrawdown.value ? periodDrawdown.value : null;
   if (ddp) {
     const label = `▼ ${ddp.depthPct.toFixed(1)}%  ·  -${formatPrice(ddp.depthAbs, 2)} ${stakeCurrencyLabel.value}`;
+    // Keep the label inside the plot and off the curves: anchor it on the side
+    // with the most free space (below a trough sitting high, above a trough
+    // sitting low, and flipped inward near the horizontal edges).
+    const vals: number[] = [];
+    if (showRealized.value) for (const pnt of activeChartData.value) vals.push(pnt.combined);
+    if (showLatent.value) for (const pr of latentSeriesData.value) vals.push(pr[1]);
+    const vMin = vals.length ? Math.min(...vals) : 0;
+    const vMax = vals.length ? Math.max(...vals) : 1;
+    const troughDisp = toDisplay(ddp.troughV);
+    const vRatio = vMax > vMin ? (troughDisp - vMin) / (vMax - vMin) : 0.5;
+    const xs = activeChartData.value.length
+      ? [activeChartData.value[0]!.date, activeChartData.value[activeChartData.value.length - 1]!.date]
+      : [ddp.troughT, ddp.troughT];
+    const xSpan = xs[1]! - xs[0]! || 1;
+    const xRatio = (ddp.troughT - xs[0]!) / xSpan;
+    let labelPos: string;
+    if (xRatio > 0.82) labelPos = 'left';
+    else if (xRatio < 0.12) labelPos = 'right';
+    else labelPos = vRatio < 0.4 ? 'top' : 'bottom';
     series.push({
       type: 'line',
       name: '__ddMarks',
@@ -820,8 +908,8 @@ function buildCombinedSeries(): any[] {
         itemStyle: { color: '#ef4444', borderColor: '#fff', borderWidth: 1 },
         label: {
           show: true,
-          position: 'bottom',
-          distance: 8,
+          position: labelPos,
+          distance: 10,
           formatter: label,
           color: '#f87171',
           fontSize: 10,
@@ -956,7 +1044,7 @@ const chartOptions = computed<EChartsOption>(() => {
   if (activeTab.value === 'perBot') {
     botIds.value.forEach((id) => legendData.push(botNameMap.value[id] ?? id));
   } else {
-    legendData.push(t('profitBenchmark.combined'));
+    if (showRealized.value) legendData.push(t('profitBenchmark.combined'));
     if (showLatent.value && latentSeriesData.value.length >= 2) {
       legendData.push(t('profitBenchmark.latentCurve'));
     }
@@ -1001,7 +1089,13 @@ const chartOptions = computed<EChartsOption>(() => {
     animationDurationUpdate: 500,
     tooltip: {
       trigger: 'axis',
-      axisPointer: { type: 'cross', crossStyle: { color: '#555' } },
+      axisPointer: {
+        type: 'cross',
+        snap: true,
+        crossStyle: { color: '#555' },
+        lineStyle: { color: 'rgba(148,163,184,0.55)', width: 1, type: 'dashed' },
+        label: { backgroundColor: 'rgba(30,41,59,0.95)', fontSize: 10 },
+      },
       backgroundColor: 'rgba(15, 15, 25, 0.92)',
       borderColor: 'rgba(100, 100, 140, 0.3)',
       borderWidth: 1,
@@ -1013,7 +1107,11 @@ const chartOptions = computed<EChartsOption>(() => {
         html += `<div style="color:#aaa;margin-bottom:4px">${date}</div>`;
 
         let profitValue: number | null = null;
+        let realizedVal: number | null = null;
+        let latentVal: number | null = null;
         const benchmarkValues: Record<string, number> = {};
+        const hoverTs: number =
+          params[0].data?.date ?? params[0].data?.[0] ?? params[0].axisValue;
 
         for (const p of params) {
           if (typeof p.seriesName === 'string' && p.seriesName.startsWith('__')) continue;
@@ -1033,12 +1131,62 @@ const chartOptions = computed<EChartsOption>(() => {
           } else if (p.seriesName === t('profitBenchmark.combined') || activeTab.value === 'perBot') {
             if (profitValue === null) profitValue = val;
           }
+          if (p.seriesName === t('profitBenchmark.combined')) realizedVal = val;
+          if (p.seriesName === t('profitBenchmark.latentCurve')) latentVal = val;
           const formatted = isBenchmark || !isAbsMode
             ? `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`
             : `${val >= 0 ? '+' : ''}${formatPrice(val, 2)} ${stakeCurrencyLabel.value}`;
           html += `<div style="display:flex;justify-content:space-between;gap:12px">`
             + `<span>${p.marker} ${p.seriesName}</span>`
             + `<span style="font-weight:600">${formatted}</span></div>`;
+        }
+
+        // --- Derived insight rows: open book, distance from high, drawdown ---
+        const fmt = (v: number) =>
+          isAbsMode
+            ? `${v >= 0 ? '+' : ''}${formatPrice(v, 2)} ${stakeCurrencyLabel.value}`
+            : `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+        const row = (lbl: string, txt: string, color: string) =>
+          `<div style="display:flex;justify-content:space-between;gap:12px">`
+          + `<span style="color:#9ca3af">${lbl}</span>`
+          + `<span style="font-weight:600;color:${color}">${txt}</span></div>`;
+
+        const extras: string[] = [];
+        if (realizedVal !== null && latentVal !== null) {
+          const openBook = latentVal - realizedVal;
+          extras.push(
+            row(
+              t('profitBenchmark.hoverOpenBook'),
+              fmt(openBook),
+              openBook >= 0 ? '#34d399' : '#f87171',
+            ),
+          );
+        }
+        // Distance from the running high of the curve being read (latent first).
+        const peakAbs = latentVal !== null
+          ? peakAt(latentPeaks.value, hoverTs)
+          : peakAt(realizedPeaks.value, hoverTs);
+        const curVal = latentVal ?? realizedVal;
+        if (peakAbs !== null && curVal !== null) {
+          const peakDisp = toDisplay(peakAbs);
+          const gap = curVal - peakDisp;
+          const startBal = totalStartingBalance.value;
+          const peakEquity = startBal + peakAbs;
+          const gapAbs = isAbsMode ? gap : (gap / 100) * startBal;
+          const gapPct = peakEquity > 0 ? (gapAbs / peakEquity) * 100 : 0;
+          extras.push(
+            row(
+              t('profitBenchmark.hoverFromHigh'),
+              gap >= -1e-9
+                ? t('profitBenchmark.hoverAtHigh')
+                : `${fmt(gap)} (${gapPct.toFixed(2)}%)`,
+              gap >= -1e-9 ? '#34d399' : '#fbbf24',
+            ),
+          );
+        }
+        if (extras.length) {
+          html += `<div style="border-top:1px solid rgba(255,255,255,0.12);margin:5px 0 4px"></div>`;
+          html += extras.join('');
         }
 
         // Show outperformance comparison for each benchmark
@@ -1212,16 +1360,39 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
 
       <TradingModeSelect v-model="tradingMode" :show="hasMultipleModes" />
 
-      <!-- Latent profit toggle (combined tab) -->
-      <label
+      <!-- Curve toggles (combined tab): realized / latent / drawdown -->
+      <div
         v-if="activeTab === 'combined'"
-        class="flex items-center gap-1 text-[10px] font-semibold cursor-pointer select-none text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-        :title="t('profitBenchmark.latentCurveHint')"
+        class="flex items-center gap-2.5 pl-1 border-l border-gray-300 dark:border-gray-600/30"
       >
-        <input v-model="showLatent" type="checkbox" class="accent-blue-500 cursor-pointer" />
-        <span class="inline-block w-2 h-0.5 rounded" style="background: #3b82f6"></span>
-        {{ t('profitBenchmark.latentToggle') }}
-      </label>
+        <label
+          class="flex items-center gap-1 text-[10px] font-semibold cursor-pointer select-none text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+          :title="t('profitBenchmark.toggleRealizedHint')"
+        >
+          <input v-model="showRealized" type="checkbox" class="accent-emerald-500 cursor-pointer" />
+          <span
+            class="inline-block w-2.5 h-0.5 rounded"
+            :style="{ background: colorStore.colorProfit }"
+          ></span>
+          {{ t('profitBenchmark.combined') }}
+        </label>
+        <label
+          class="flex items-center gap-1 text-[10px] font-semibold cursor-pointer select-none text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+          :title="t('profitBenchmark.latentCurveHint')"
+        >
+          <input v-model="showLatent" type="checkbox" class="accent-blue-500 cursor-pointer" />
+          <span class="inline-block w-2.5 h-0.5 rounded" style="background: #3b82f6"></span>
+          {{ t('profitBenchmark.latentToggle') }}
+        </label>
+        <label
+          class="flex items-center gap-1 text-[10px] font-semibold cursor-pointer select-none text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+          :title="t('profitBenchmark.periodDDHint')"
+        >
+          <input v-model="showDrawdown" type="checkbox" class="accent-red-500 cursor-pointer" />
+          <span class="inline-block w-2.5 h-2 rounded-sm" style="background: rgba(239,68,68,0.45)"></span>
+          {{ t('profitBenchmark.periodDD') }}
+        </label>
+      </div>
 
       <div class="flex-1"></div>
 
