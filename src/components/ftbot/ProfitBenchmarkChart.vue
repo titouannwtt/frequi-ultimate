@@ -131,7 +131,10 @@ function saveBenchmarksToStorage() {
   localStorage.setItem(BENCHMARKS_STORAGE_KEY, JSON.stringify(enabledBenchmarks.value));
 }
 
+
+
 const HARDCODED_DEFAULTS_BENCH = {
+  showLatent: false as boolean,
   activeTab: 'combined' as string,
   selectedTimeframe: 'ALL' as string,
   enabledBenchmarks: ['BTC'] as string[],
@@ -142,6 +145,7 @@ const HARDCODED_DEFAULTS_BENCH = {
 const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults(
   DashboardLayout.dailyChart,
   () => ({
+    showLatent: showLatent.value,
     activeTab: activeTab.value,
     selectedTimeframe: selectedTimeframe.value,
     enabledBenchmarks: [...enabledBenchmarks.value],
@@ -149,6 +153,7 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
     valueMode: valueMode.value,
   }),
   (d) => {
+    if (d.showLatent !== undefined) showLatent.value = d.showLatent as boolean;
     if (d.activeTab !== undefined) activeTab.value = d.activeTab as TabKey;
     if (d.selectedTimeframe !== undefined) selectedTimeframe.value = d.selectedTimeframe as TimeframeKey;
     if (d.enabledBenchmarks) {
@@ -326,6 +331,84 @@ const startingBalancePerBot = computed<Record<string, number>>(() => {
 const totalStartingBalance = computed<number>(() => {
   return Object.values(startingBalancePerBot.value).reduce((a, b) => a + b, 0) || 1;
 });
+
+// --- Latent (unrealized) profit curve -----------------------------------------
+// Blue overlay on the combined tab: the bot's sampled current profit
+// (closed + open unrealized) from the fork's profit_history series.
+const SHOW_LATENT_STORAGE_KEY = 'ft_benchmark_show_latent';
+const showLatent = ref<boolean>(localStorage.getItem(SHOW_LATENT_STORAGE_KEY) === 'true');
+watch(showLatent, (v) => {
+  try {
+    localStorage.setItem(SHOW_LATENT_STORAGE_KEY, String(v));
+  } catch {
+    /* ignore */
+  }
+  if (v) loadLatentHistories();
+});
+
+const latentHistories = ref<Record<string, [number, number, number, number][]>>({});
+async function loadLatentHistories() {
+  const res: Record<string, [number, number, number, number][]> = {};
+  await Promise.all(
+    botIds.value.map(async (id) => {
+      const h = await botStore.botStores[id]?.getProfitHistory?.();
+      if (h?.data?.length) res[id] = h.data;
+    }),
+  );
+  latentHistories.value = res;
+}
+onMounted(() => {
+  if (showLatent.value) loadLatentHistories();
+});
+watch(
+  () => botIds.value.join(','),
+  () => {
+    if (showLatent.value) loadLatentHistories();
+  },
+);
+
+// Merged current-profit series across the mode-filtered bots (same merge rules as
+// the drawdown card: forward-fill from the first COMMON sample so no bot is
+// silently missing from the sum), converted to the summary currency, clipped to
+// the selected timeframe, and normalized in % mode.
+const latentSeriesData = computed<[number, number][]>(() => {
+  if (!showLatent.value) return [];
+  const entries = Object.entries(latentHistories.value).filter(([id]) =>
+    botIds.value.includes(id),
+  );
+  if (!entries.length) return [];
+  const cutoff = getTimeframeCutoff(selectedTimeframe.value);
+  let merged: { t: number; v: number }[];
+  if (entries.length === 1) {
+    const [id, rows] = entries[0]!;
+    merged = rows.map((r) => ({ t: r[0], v: convertProfit(r[1] + r[2], id) }));
+  } else {
+    const seriesList = entries.map(([, rows]) => rows);
+    const ids = entries.map(([id]) => id);
+    const startT = Math.max(...seriesList.map((sr) => sr[0]![0]));
+    const allTs = [...new Set(seriesList.flatMap((sr) => sr.map((r) => r[0])))]
+      .filter((t_) => t_ >= startT)
+      .sort((a, b) => a - b);
+    const idx = seriesList.map(() => 0);
+    const last = seriesList.map(() => 0);
+    merged = allTs.map((t_) => {
+      seriesList.forEach((sr, i) => {
+        while (idx[i]! < sr.length && sr[idx[i]!]![0] <= t_) {
+          last[i] = convertProfit(sr[idx[i]!]![1] + sr[idx[i]!]![2], ids[i]!);
+          idx[i]!++;
+        }
+      });
+      return { t: t_, v: last.reduce((a, b) => a + b, 0) };
+    });
+  }
+  const clipped = merged.filter((pt) => pt.t >= cutoff);
+  if (valueMode.value === 'pct') {
+    const bal = totalStartingBalance.value;
+    return clipped.map((pt) => [pt.t, (pt.v / bal) * 100]);
+  }
+  return clipped.map((pt) => [pt.t, pt.v]);
+});
+const LATENT_COLOR = '#3b82f6';
 
 // --- Filtered + sorted trades ---
 const filteredTrades = computed(() => {
@@ -537,6 +620,22 @@ function buildCombinedSeries(): any[] {
     animationEasing: 'cubicOut',
   });
 
+  // Latent (closed + open unrealized) sampled curve — blue overlay
+  if (showLatent.value && latentSeriesData.value.length >= 2) {
+    series.push({
+      type: 'line',
+      name: t('profitBenchmark.latentCurve'),
+      smooth: true,
+      symbol: 'none',
+      z: 5,
+      lineStyle: { width: 2, color: LATENT_COLOR },
+      itemStyle: { color: LATENT_COLOR },
+      data: latentSeriesData.value,
+      animationDuration: 1200,
+      animationEasing: 'cubicOut',
+    });
+  }
+
   // Open trades projection
   const data = activeChartData.value;
   if (modeFilteredOpenTrades.value.length > 0 && data.length > 0) {
@@ -630,6 +729,9 @@ const chartOptions = computed<EChartsOption>(() => {
     botIds.value.forEach((id) => legendData.push(botNameMap.value[id] ?? id));
   } else {
     legendData.push(t('profitBenchmark.combined'));
+    if (showLatent.value && latentSeriesData.value.length >= 2) {
+      legendData.push(t('profitBenchmark.latentCurve'));
+    }
 
     if (modeFilteredOpenTrades.value.length > 0 && activeTab.value === 'combined') {
       legendData.push(t('profitBenchmark.projected'));
@@ -880,6 +982,17 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
       </div>
 
       <TradingModeSelect v-model="tradingMode" :show="hasMultipleModes" />
+
+      <!-- Latent profit toggle (combined tab) -->
+      <label
+        v-if="activeTab === 'combined'"
+        class="flex items-center gap-1 text-[10px] font-semibold cursor-pointer select-none text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+        :title="t('profitBenchmark.latentCurveHint')"
+      >
+        <input v-model="showLatent" type="checkbox" class="accent-blue-500 cursor-pointer" />
+        <span class="inline-block w-2 h-0.5 rounded" style="background: #3b82f6"></span>
+        {{ t('profitBenchmark.latentToggle') }}
+      </label>
 
       <div class="flex-1"></div>
 

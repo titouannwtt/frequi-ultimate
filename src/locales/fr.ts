@@ -256,6 +256,9 @@ export default {
 
   // Graphique Profit & Benchmarks
   profitBenchmark: {
+    latentToggle: 'Profit latent',
+    latentCurve: 'Profit courant (latent inclus)',
+    latentCurveHint: 'Courbe bleue : profit fermé + latent des positions ouvertes, échantillonné dans le temps (série profit_history).',
     tabCombined: 'Combiné',
     tabPerBot: 'Par bot',
     tabCumulative: 'Cumulatif',
