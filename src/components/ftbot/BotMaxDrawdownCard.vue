@@ -133,7 +133,16 @@ const openPoints = computed<Point[]>(() => {
   const lastRealized = rp.length ? rp[rp.length - 1].v : 0;
   const projected: Point = { t: Date.now(), v: lastRealized + dd.value.openWorstSum };
   const hist = historyPoints.value;
-  if (hist.length >= 2) return [...hist, projected];
+  if (hist.length >= 2) {
+    // Align the time domain with the realized curve above: the sampled series only
+    // exists since the profit_history feature was deployed, while the realized curve
+    // spans the bot's whole trading history. Without prepending the pre-sampling
+    // realized points, the two charts cover unrelated time windows and their shapes
+    // are impossible to compare.
+    const firstT = hist[0].t;
+    const before = rp.filter((p) => p.t < firstT);
+    return [...before, ...hist, projected];
+  }
   return [...rp, projected];
 });
 
