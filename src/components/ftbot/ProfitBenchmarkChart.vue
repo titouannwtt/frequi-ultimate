@@ -713,6 +713,24 @@ function buildBenchmarkSeries(): any[] {
 }
 
 // --- Chart options ---
+// Preserve the user's dataZoom window across option rebuilds: chartOptions is a
+// computed that re-emits on every data tick, and hardcoded start/end values were
+// snapping the slider back to the full range each time the user resized it.
+const zoomStart = ref(0);
+const zoomEnd = ref(100);
+function onDataZoom(evt: unknown) {
+  const e = evt as { start?: number; end?: number; batch?: { start?: number; end?: number }[] };
+  const d = e?.batch?.[0] ?? e;
+  if (typeof d?.start === 'number') zoomStart.value = d.start;
+  if (typeof d?.end === 'number') zoomEnd.value = d.end;
+}
+// A new timeframe/tab changes the x-domain entirely — showing the full range again
+// is the expected behaviour there.
+watch([selectedTimeframe, activeTab], () => {
+  zoomStart.value = 0;
+  zoomEnd.value = 100;
+});
+
 const chartOptions = computed<EChartsOption>(() => {
   const activeBenchmarks = enabledBenchmarks.value.filter(
     (t) => benchmarkNormalized.value[t] && benchmarkNormalized.value[t].length > 0,
@@ -854,8 +872,8 @@ const chartOptions = computed<EChartsOption>(() => {
     yAxis: yAxes,
     grid: { left: '60', right: '20', top: '35', bottom: '65' },
     dataZoom: [
-      { type: 'inside', start: 0, end: 100 },
-      { type: 'slider', start: 0, end: 100, height: 20, bottom: 5 },
+      { type: 'inside', start: zoomStart.value, end: zoomEnd.value },
+      { type: 'slider', start: zoomStart.value, end: zoomEnd.value, height: 20, bottom: 5 },
     ],
     series: allSeries,
   };
@@ -1148,6 +1166,7 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
         v-if="activeChartData.length > 0"
         ref="chart"
         :option="chartOptions"
+        @datazoom="onDataZoom"
         :theme="settingsStore.chartTheme"
         autoresize
         class="w-full h-full"
