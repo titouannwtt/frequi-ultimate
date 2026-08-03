@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import './stratdev-tokens.css';
 @import './light-mode.css';
+@import './fit-screen.css';
 
 @plugin 'tailwindcss-primeui';
 

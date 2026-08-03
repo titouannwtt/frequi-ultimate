@@ -1,0 +1,48 @@
+/*
+ * Fit-to-screen table mode (see composables/useFitToScreen.ts).
+ *
+ * `table-layout: fixed` lets the browser distribute the available width across
+ * every column instead of letting content force a horizontal scrollbar; each
+ * cell then truncates with an ellipsis. Vertical scrolling is untouched.
+ * Unscoped on purpose: these rules must win over PrimeVue's own table styles.
+ */
+.ft-fit-screen .p-datatable-table-container,
+.ft-fit-screen .p-datatable-wrapper {
+  overflow-x: hidden !important;
+}
+.ft-fit-screen table {
+  table-layout: fixed !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.ft-fit-screen th,
+.ft-fit-screen td {
+  min-width: 0 !important;
+  max-width: none !important;
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
+  font-size: 0.72rem !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.ft-fit-screen td > *,
+.ft-fit-screen .col-header-removable {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+.ft-fit-screen td .bot-name-block,
+.ft-fit-screen td span {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.ft-fit-screen .col-remove-btn {
+  flex: 0 0 auto;
+}
+
+/* Tables whose first column is a fixed-size control column (checkbox/reorder). */
+.ft-fit-screen--compact-first th:first-child,
+.ft-fit-screen--compact-first td:first-child {
+  width: 2rem !important;
+  padding-left: 0.1rem !important;
+  padding-right: 0.1rem !important;
+}
