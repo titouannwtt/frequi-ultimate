@@ -68,7 +68,7 @@ import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
 import { DashboardLayout } from '@/stores/layout';
 import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 
-const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
+const { tradingMode, hasMultipleModes, filterTradesByMode, restorePersistedTradingMode } = useTradingModeFilter('profitDistribution');
 const modeFilteredTrades = computed(() => filterTradesByMode(props.trades));
 
 // --- State ---
@@ -133,7 +133,7 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   HARDCODED_DEFAULTS_DIST,
 );
 
-onMounted(() => { loadDefaults(); });
+onMounted(() => { loadDefaults(); restorePersistedTradingMode(); });
 
 defineExpose({ filtersChanged, saveCurrentAsDefault });
 

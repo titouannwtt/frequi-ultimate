@@ -7,13 +7,14 @@ import type {
 } from '@/types/botComparison';
 
 // ── Tag ordering ──
-const ALL_TAG_IDS = ['status', 'tradingMode', 'exchange', 'stakeCurrency', 'port'] as const;
+const ALL_TAG_IDS = ['status', 'tradingMode', 'market', 'exchange', 'stakeCurrency', 'port'] as const;
 type TagId = (typeof ALL_TAG_IDS)[number];
 
 // ── Bot tag visibility ──
 interface BotTagVisibility {
   status: boolean;
   tradingMode: boolean;
+  market: boolean;
   exchange: boolean;
   stakeCurrency: boolean;
   port: boolean;
@@ -71,7 +72,7 @@ function defaultAlertConfig(): AlertConfigV2 {
 }
 
 function defaultBotTagVisibility(): BotTagVisibility {
-  return { status: true, tradingMode: true, exchange: true, stakeCurrency: true, port: true, onlineSince: true };
+  return { status: true, tradingMode: true, market: true, exchange: true, stakeCurrency: true, port: true, onlineSince: true };
 }
 
 function defaultBotFilters(): BotFilters {
@@ -182,6 +183,14 @@ export const useBotComparisonStore = defineStore('botComparison', {
       const missing = ALL_TAG_IDS.filter((id) => !valid.includes(id as TagId));
       if (missing.length > 0) {
         this.tagOrder = [...valid, ...missing] as TagId[];
+      }
+      // Heal persisted visibility maps that predate newly-added tags (a missing
+      // key reads as undefined → the tag would silently stay hidden forever).
+      const defVis = defaultBotTagVisibility();
+      for (const key of Object.keys(defVis) as (keyof BotTagVisibility)[]) {
+        if (this.botTagVisibility[key] === undefined) {
+          this.botTagVisibility[key] = defVis[key];
+        }
       }
     },
 

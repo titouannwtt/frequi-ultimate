@@ -39,7 +39,7 @@ const ALL_EVENT_TYPES: EventType[] = ['trade_opened', 'trade_closed_profit', 'tr
 const compactMode = ref(true);
 const searchQuery = ref('');
 const selectedBotFilter = ref<string>('all');
-const { tradingMode: tradingModeFilter, hasMultipleModes } = useTradingModeFilter();
+const { tradingMode: tradingModeFilter, hasMultipleModes, restorePersistedTradingMode } = useTradingModeFilter('activityTimeline');
 const { initialLoading } = useInitialBotLoading();
 const enabledEventTypes = ref<Set<EventType>>(new Set(ALL_EVENT_TYPES));
 const maxEvents = ref(100);
@@ -65,7 +65,7 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   HARDCODED_DEFAULTS_ACT,
 );
 
-onMounted(() => { loadDefaults(); });
+onMounted(() => { loadDefaults(); restorePersistedTradingMode(); });
 
 defineExpose({ filtersChanged, saveCurrentAsDefault });
 

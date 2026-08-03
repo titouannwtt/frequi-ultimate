@@ -46,7 +46,7 @@ const botStore = useBotStore();
 const settingsStore = useSettingsStore();
 const replayStore = useReplayStore();
 const router = useRouter();
-const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
+const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter('openTrades');
 const { initialLoading } = useInitialBotLoading();
 
 const {
