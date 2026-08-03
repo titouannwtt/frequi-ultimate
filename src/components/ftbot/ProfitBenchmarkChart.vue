@@ -371,7 +371,8 @@ watch(
 // the drawdown card: forward-fill from the first COMMON sample so no bot is
 // silently missing from the sum), converted to the summary currency, clipped to
 // the selected timeframe, and normalized in % mode.
-const latentSeriesData = computed<[number, number][]>(() => {
+/** Latent (closed+open) curve in STAKE CURRENCY, rebased on the selected window. */
+const latentAbs = computed<{ t: number; v: number }[]>(() => {
   if (!showLatent.value) return [];
   const entries = Object.entries(latentHistories.value).filter(([id]) =>
     botIds.value.includes(id),
@@ -433,12 +434,104 @@ const latentSeriesData = computed<[number, number][]>(() => {
     else break;
   }
 
-  if (valueMode.value === 'pct') {
-    const bal = totalStartingBalance.value;
-    return merged.map((pt) => [pt.t, ((pt.v + offset) / bal) * 100]);
-  }
-  return merged.map((pt) => [pt.t, pt.v + offset]);
+  return merged.map((pt) => ({ t: pt.t, v: pt.v + offset }));
 });
+
+/** Same curve converted to the widget's display unit (% of starting balance or currency). */
+const latentSeriesData = computed<[number, number][]>(() => {
+  const bal = totalStartingBalance.value;
+  return latentAbs.value.map((pt) =>
+    valueMode.value === 'pct' ? [pt.t, (pt.v / bal) * 100] : [pt.t, pt.v],
+  );
+});
+
+const BAND_UP = 'rgba(16, 185, 129, 0.22)';
+const BAND_DOWN = 'rgba(239, 68, 68, 0.22)';
+
+/**
+ * Latent vs realized band: for each latent sample, the realized curve's value at
+ * that instant (step function of closed trades). Rendered as two stacked
+ * base+delta pairs so the filled zone is green when the open book is in profit
+ * and red when it is underwater — far more readable than a bare extra line.
+ */
+const latentBand = computed(() => {
+  const lat = latentSeriesData.value;
+  const real = activeChartData.value;
+  if (!showLatent.value || lat.length < 2 || real.length === 0) return null;
+  const upBase: ([number, number] | [number, null])[] = [];
+  const upDelta: ([number, number] | [number, null])[] = [];
+  const dnBase: ([number, number] | [number, null])[] = [];
+  const dnDelta: ([number, number] | [number, null])[] = [];
+  let j = 0;
+  let rv = real[0]!.combined;
+  for (const [t_, lv] of lat) {
+    while (j < real.length && real[j]!.date <= t_) {
+      rv = real[j]!.combined;
+      j++;
+    }
+    if (lv >= rv) {
+      upBase.push([t_, rv]);
+      upDelta.push([t_, lv - rv]);
+      dnBase.push([t_, null]);
+      dnDelta.push([t_, null]);
+    } else {
+      dnBase.push([t_, lv]);
+      dnDelta.push([t_, rv - lv]);
+      upBase.push([t_, null]);
+      upDelta.push([t_, null]);
+    }
+  }
+  return { upBase, upDelta, dnBase, dnDelta };
+});
+
+/**
+ * Max drawdown WITHIN the selected period, measured on the curve actually shown
+ * (latent when enabled — that is the real equity path — otherwise realized).
+ * The widget's existing maxDD stat comes from each bot's lifetime API figure and
+ * says nothing about the displayed window.
+ */
+const periodDrawdown = computed(() => {
+  const src: { t: number; v: number }[] = showLatent.value && latentAbs.value.length >= 2
+    ? latentAbs.value
+    : cumulativeData.value.map((p) => ({ t: p.date, v: p.combined }));
+  if (src.length < 2) return null;
+  let peak = src[0]!.v;
+  let peakT = src[0]!.t;
+  let bestPeak = peak;
+  let bestPeakT = peakT;
+  let bestTrough = peak;
+  let bestTroughT = peakT;
+  let best = 0;
+  for (const pt of src) {
+    if (pt.v > peak) {
+      peak = pt.v;
+      peakT = pt.t;
+    }
+    if (peak - pt.v > best) {
+      best = peak - pt.v;
+      bestPeak = peak;
+      bestPeakT = peakT;
+      bestTrough = pt.v;
+      bestTroughT = pt.t;
+    }
+  }
+  if (best <= 0) return null;
+  const peakEquity = totalStartingBalance.value + bestPeak;
+  return {
+    depthAbs: best,
+    depthPct: peakEquity > 0 ? (best / peakEquity) * 100 : 0,
+    peakT: bestPeakT,
+    troughT: bestTroughT,
+    peakV: bestPeak,
+    troughV: bestTrough,
+    onLatent: showLatent.value && latentAbs.value.length >= 2,
+  };
+});
+
+/** Drawdown endpoints converted to the chart's display unit. */
+function toDisplay(v: number): number {
+  return valueMode.value === 'pct' ? (v / totalStartingBalance.value) * 100 : v;
+}
 const LATENT_COLOR = '#3b82f6';
 
 // --- Filtered + sorted trades ---
@@ -651,19 +744,94 @@ function buildCombinedSeries(): any[] {
     animationEasing: 'cubicOut',
   });
 
-  // Latent (closed + open unrealized) sampled curve — blue overlay
+  // Latent (closed + open unrealized) sampled curve — blue overlay + signed band
   if (showLatent.value && latentSeriesData.value.length >= 2) {
+    const band = latentBand.value;
+    if (band) {
+      const mkBase = (name: string, data: unknown[], stack: string) => ({
+        type: 'line',
+        name,
+        stack,
+        symbol: 'none',
+        silent: true,
+        z: 1,
+        lineStyle: { opacity: 0 },
+        areaStyle: { opacity: 0 },
+        emphasis: { disabled: true },
+        data,
+        animation: false,
+      });
+      const mkFill = (name: string, data: unknown[], stack: string, color: string) => ({
+        type: 'line',
+        name,
+        stack,
+        symbol: 'none',
+        silent: true,
+        z: 1,
+        lineStyle: { opacity: 0 },
+        areaStyle: { color },
+        emphasis: { disabled: true },
+        data,
+        animation: false,
+      });
+      series.push(mkBase('__bandUpBase', band.upBase, '__bandUp'));
+      series.push(mkFill('__bandUpFill', band.upDelta, '__bandUp', BAND_UP));
+      series.push(mkBase('__bandDownBase', band.dnBase, '__bandDown'));
+      series.push(mkFill('__bandDownFill', band.dnDelta, '__bandDown', BAND_DOWN));
+    }
     series.push({
       type: 'line',
       name: t('profitBenchmark.latentCurve'),
       smooth: true,
       symbol: 'none',
-      z: 5,
-      lineStyle: { width: 2, color: LATENT_COLOR },
+      z: 6,
+      lineStyle: {
+        width: 1.4,
+        color: LATENT_COLOR,
+        shadowBlur: 6,
+        shadowColor: 'rgba(59,130,246,0.55)',
+      },
       itemStyle: { color: LATENT_COLOR },
       data: latentSeriesData.value,
       animationDuration: 1200,
       animationEasing: 'cubicOut',
+    });
+  }
+
+  // Max drawdown of the selected period, annotated on the curve it was measured on
+  const ddp = periodDrawdown.value;
+  if (ddp) {
+    const label = `▼ ${ddp.depthPct.toFixed(1)}%  ·  -${formatPrice(ddp.depthAbs, 2)} ${stakeCurrencyLabel.value}`;
+    series.push({
+      type: 'line',
+      name: '__ddMarks',
+      data: [],
+      silent: true,
+      z: 7,
+      markArea: {
+        silent: true,
+        itemStyle: { color: 'rgba(239, 68, 68, 0.10)' },
+        data: [[{ xAxis: ddp.peakT }, { xAxis: ddp.troughT }]],
+      },
+      markPoint: {
+        silent: true,
+        symbol: 'circle',
+        symbolSize: 7,
+        itemStyle: { color: '#ef4444', borderColor: '#fff', borderWidth: 1 },
+        label: {
+          show: true,
+          position: 'bottom',
+          distance: 8,
+          formatter: label,
+          color: '#f87171',
+          fontSize: 10,
+          fontWeight: 'bold',
+          backgroundColor: 'rgba(15,15,25,0.85)',
+          padding: [3, 6],
+          borderRadius: 4,
+        },
+        data: [{ coord: [ddp.troughT, toDisplay(ddp.troughV)] }],
+      },
     });
   }
 
@@ -676,16 +844,27 @@ function buildCombinedSeries(): any[] {
       ? lastPoint.combined + totalOpen
       : lastPoint.combined + (totalOpen / totalStartingBalance.value) * 100;
 
+    // When the latent curve is shown it already carries the open book, so the
+    // projection continues IT (same colour) instead of jumping off the realized
+    // curve — otherwise two segments claim the same endpoint from two origins.
+    const lat = latentSeriesData.value;
+    const useLatentOrigin = showLatent.value && lat.length >= 2;
+    const origin = useLatentOrigin
+      ? (lat[lat.length - 1] as [number, number])
+      : ([lastPoint.date, lastPoint.combined] as [number, number]);
+    const projColor = useLatentOrigin
+      ? LATENT_COLOR
+      : totalOpen >= 0
+        ? colorStore.colorProfit
+        : colorStore.colorLoss;
     series.push({
       type: 'line',
       name: t('profitBenchmark.projected'),
       symbol: 'none',
-      lineStyle: { width: 2, type: 'dashed', color: totalOpen >= 0 ? colorStore.colorProfit : colorStore.colorLoss },
-      itemStyle: { color: totalOpen >= 0 ? colorStore.colorProfit : colorStore.colorLoss },
-      data: [
-        [lastPoint.date, lastPoint.combined],
-        [Date.now() + 12 * 60 * 60 * 1000, projectedValue],
-      ],
+      z: 6,
+      lineStyle: { width: 1.6, type: 'dashed', color: projColor },
+      itemStyle: { color: projColor },
+      data: [origin, [Date.now() + 12 * 60 * 60 * 1000, projectedValue]],
     });
   }
 
@@ -837,6 +1016,7 @@ const chartOptions = computed<EChartsOption>(() => {
         const benchmarkValues: Record<string, number> = {};
 
         for (const p of params) {
+          if (typeof p.seriesName === 'string' && p.seriesName.startsWith('__')) continue;
           let val: number;
           if (Array.isArray(p.value)) {
             val = p.value?.[1] ?? 0;
@@ -1179,6 +1359,22 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
         <span class="font-bold text-red-400">
           {{ ((periodStats.maxDrawdownPct ?? 0) * 100).toFixed(1) }}%
         </span>
+      </div>
+      <div v-if="periodDrawdown" class="flex items-center gap-1">
+        <span
+          class="text-gray-600 dark:text-gray-500 uppercase tracking-wide"
+          :title="t('profitBenchmark.periodDDHint')"
+          >{{ t('profitBenchmark.periodDD') }}</span
+        >
+        <span class="font-bold text-red-400">
+          -{{ (periodDrawdown?.depthPct ?? 0).toFixed(1) }}%
+        </span>
+        <span class="text-gray-500 dark:text-gray-400">
+          (-{{ formatPrice(periodDrawdown?.depthAbs ?? 0, 2) }} {{ stakeCurrencyLabel }})
+        </span>
+        <span v-if="periodDrawdown?.onLatent" class="text-[9px] text-blue-400 font-semibold"
+          >· {{ t('profitBenchmark.latentToggle') }}</span
+        >
       </div>
       <div v-if="periodStats.winRate !== null" class="flex items-center gap-1">
         <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide" v-tooltip.top="t('tooltips.winrate')">{{ t('profitBenchmark.winRate') }}</span>
