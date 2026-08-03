@@ -225,6 +225,23 @@ onMounted(async () => {
             >
               <i-mdi-folder-multiple class="inline" />
             </button>
+            <button
+              class="p-1 text-xs rounded cursor-pointer"
+              :class="
+                botComparisonRef?.fitToScreen
+                  ? 'bg-indigo-500/25 text-indigo-300 ring-1 ring-indigo-400/40'
+                  : 'hover:bg-white/10'
+              "
+              :title="
+                botComparisonRef?.fitToScreen
+                  ? t('botComparison.fitScreenOn')
+                  : t('botComparison.fitScreenOff')
+              "
+              @click="botComparisonRef?.toggleFitToScreen()"
+            >
+              <i-mdi-fullscreen v-if="!botComparisonRef?.fitToScreen" class="inline" />
+              <i-mdi-fullscreen-exit v-else class="inline" />
+            </button>
           </template>
           <BotComparisonList ref="botComparisonRef" />
         </DraggableContainer>

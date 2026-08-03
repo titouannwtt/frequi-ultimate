@@ -313,6 +313,8 @@ export default {
 
   // Bot comparison table
   botComparison: {
+    fitScreenOff: 'Fit columns to screen (removes horizontal scrolling)',
+    fitScreenOn: 'Fit-to-screen enabled — click to restore natural widths',
     botName: 'Bot Name',
     all: 'All',
     showInDashboard: 'Show this bot in Dashboard',
