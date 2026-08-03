@@ -378,13 +378,33 @@ const latentSeriesData = computed<[number, number][]>(() => {
   );
   if (!entries.length) return [];
   const cutoff = getTimeframeCutoff(selectedTimeframe.value);
+
+  // Clip to the selected timeframe FIRST, then rebase each bot's realized
+  // component on its first in-window sample. profit_closed_abs is the bot's
+  // lifetime realized total, while the green curve restarts from 0 at the
+  // window start — without this rebase the latent curve floats far above the
+  // realized one on any timeframe shorter than the bot's history.
+  const perBot = entries
+    .map(([id, rows]) => {
+      const inWin = rows.filter((r) => r[0] >= cutoff);
+      if (!inWin.length) return null;
+      const baseline = inWin[0]![1];
+      return {
+        id,
+        rows: inWin.map((r) => [r[0], r[1] - baseline, r[2]] as [number, number, number]),
+      };
+    })
+    .filter((e): e is { id: string; rows: [number, number, number][] } => e !== null);
+  if (!perBot.length) return [];
+
   let merged: { t: number; v: number }[];
-  if (entries.length === 1) {
-    const [id, rows] = entries[0]!;
-    merged = rows.map((r) => ({ t: r[0], v: convertProfit(r[1] + r[2], id) }));
+  if (perBot.length === 1) {
+    const only = perBot[0]!;
+    merged = only.rows.map((r) => ({ t: r[0], v: convertProfit(r[1] + r[2], only.id) }));
   } else {
-    const seriesList = entries.map(([, rows]) => rows);
-    const ids = entries.map(([id]) => id);
+    // Merge from the first COMMON sample so no bot is silently missing from the sum.
+    const seriesList = perBot.map((e) => e.rows);
+    const ids = perBot.map((e) => e.id);
     const startT = Math.max(...seriesList.map((sr) => sr[0]![0]));
     const allTs = [...new Set(seriesList.flatMap((sr) => sr.map((r) => r[0])))]
       .filter((t_) => t_ >= startT)
@@ -401,12 +421,23 @@ const latentSeriesData = computed<[number, number][]>(() => {
       return { t: t_, v: last.reduce((a, b) => a + b, 0) };
     });
   }
-  const clipped = merged.filter((pt) => pt.t >= cutoff);
+  if (!merged.length) return [];
+
+  // Anchor on the realized curve: its value when the latent series starts. Inside a
+  // window that is ~0; on ALL it carries the profit made before profit_history
+  // existed, so the blue curve continues the green one instead of dropping to 0.
+  const firstT = merged[0]!.t;
+  let offset = 0;
+  for (const pt of cumulativeData.value) {
+    if (pt.date <= firstT) offset = pt.combined;
+    else break;
+  }
+
   if (valueMode.value === 'pct') {
     const bal = totalStartingBalance.value;
-    return clipped.map((pt) => [pt.t, (pt.v / bal) * 100]);
+    return merged.map((pt) => [pt.t, ((pt.v + offset) / bal) * 100]);
   }
-  return clipped.map((pt) => [pt.t, pt.v]);
+  return merged.map((pt) => [pt.t, pt.v + offset]);
 });
 const LATENT_COLOR = '#3b82f6';
 
