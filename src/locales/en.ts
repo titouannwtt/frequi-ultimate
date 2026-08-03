@@ -251,6 +251,9 @@ export default {
 
   // Profit Benchmark Chart (merged profit + cumulative + benchmarks)
   profitBenchmark: {
+    latentToggle: 'Latent profit',
+    latentCurve: 'Current profit (incl. latent)',
+    latentCurveHint: 'Blue curve: closed + open unrealized profit, sampled over time (profit_history series).',
     tabCombined: 'Combined',
     tabPerBot: 'Per Bot',
     tabCumulative: 'Cumulative',
