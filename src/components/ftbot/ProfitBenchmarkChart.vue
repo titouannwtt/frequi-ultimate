@@ -322,11 +322,23 @@ function convertProfit(amount: number, botId: string): number {
 const startingBalancePerBot = computed<Record<string, number>>(() => {
   const result: Record<string, number> = {};
   for (const bot of botStore.selectedBots) {
+    // `balance.total` is the WHOLE exchange wallet. On a shared/netted account
+    // (all our Hyperliquid bots trade one wallet) every bot reports the same
+    // figure, so summing it across the selected bots multiplied the wallet by
+    // the number of bots — the denominator exploded and every percentage
+    // (normalized curves AND the drawdown %) came out absurdly small.
+    // `starting_capital` is the bot's own allocation (config available_capital);
+    // fall back to the bot-managed balance, then to the raw wallet.
+    const bal = bot.balance;
     const profit = bot.profit;
+    const alloc = bal?.starting_capital;
+    if (alloc && alloc > 0) {
+      result[bot.botId] = alloc;
+      continue;
+    }
     if (profit && profit.bot_start_timestamp) {
-      const bal = bot.balance?.total ?? 0;
-      const totalProfit = profit.profit_all_coin ?? 0;
-      result[bot.botId] = Math.max(bal - totalProfit, 1);
+      const base = bal?.total_bot ?? bal?.total ?? 0;
+      result[bot.botId] = Math.max(base - (profit.profit_all_coin ?? 0), 1);
     } else {
       result[bot.botId] = 1;
     }
