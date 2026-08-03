@@ -56,6 +56,7 @@ declare global {
   const controlledRef: typeof import('@vueuse/core').controlledRef
   const createApp: typeof import('vue').createApp
   const createBotSubStore: typeof import('./stores/ftbot').createBotSubStore
+  const createDisposableDirective: typeof import('@vueuse/core').createDisposableDirective
   const createEventHook: typeof import('@vueuse/core').createEventHook
   const createGlobalState: typeof import('@vueuse/core').createGlobalState
   const createInjectionState: typeof import('@vueuse/core').createInjectionState
@@ -328,6 +329,7 @@ declare global {
   const useFetch: typeof import('@vueuse/core').useFetch
   const useFileDialog: typeof import('@vueuse/core').useFileDialog
   const useFileSystemAccess: typeof import('@vueuse/core').useFileSystemAccess
+  const useFitToScreen: typeof import('./composables/useFitToScreen').useFitToScreen
   const useFleetView: typeof import('./composables/useFleetView').useFleetView
   const useFocus: typeof import('@vueuse/core').useFocus
   const useFocusWithin: typeof import('@vueuse/core').useFocusWithin
@@ -619,6 +621,7 @@ declare module 'vue' {
     readonly controlledRef: UnwrapRef<typeof import('@vueuse/core')['controlledRef']>
     readonly createApp: UnwrapRef<typeof import('vue')['createApp']>
     readonly createBotSubStore: UnwrapRef<typeof import('./stores/ftbot')['createBotSubStore']>
+    readonly createDisposableDirective: UnwrapRef<typeof import('@vueuse/core')['createDisposableDirective']>
     readonly createEventHook: UnwrapRef<typeof import('@vueuse/core')['createEventHook']>
     readonly createGlobalState: UnwrapRef<typeof import('@vueuse/core')['createGlobalState']>
     readonly createInjectionState: UnwrapRef<typeof import('@vueuse/core')['createInjectionState']>
@@ -765,7 +768,6 @@ declare module 'vue' {
     readonly requestNotificationPermission: UnwrapRef<typeof import('./utils/browserNotifications')['requestNotificationPermission']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
     readonly resolveGeckoId: UnwrapRef<typeof import('./utils/benchmarkData')['resolveGeckoId']>
-    readonly resolveRef: UnwrapRef<typeof import('@vueuse/core')['resolveRef']>
     readonly roundTimeframe: UnwrapRef<typeof import('./utils/roundTimeframe')['default']>
     readonly rowBgClass: UnwrapRef<typeof import('./composables/tradeColumns')['rowBgClass']>
     readonly runTypeToJobType: UnwrapRef<typeof import('./utils/reconstitute')['runTypeToJobType']>
@@ -891,6 +893,7 @@ declare module 'vue' {
     readonly useFetch: UnwrapRef<typeof import('@vueuse/core')['useFetch']>
     readonly useFileDialog: UnwrapRef<typeof import('@vueuse/core')['useFileDialog']>
     readonly useFileSystemAccess: UnwrapRef<typeof import('@vueuse/core')['useFileSystemAccess']>
+    readonly useFitToScreen: UnwrapRef<typeof import('./composables/useFitToScreen')['useFitToScreen']>
     readonly useFleetView: UnwrapRef<typeof import('./composables/useFleetView')['useFleetView']>
     readonly useFocus: UnwrapRef<typeof import('@vueuse/core')['useFocus']>
     readonly useFocusWithin: UnwrapRef<typeof import('@vueuse/core')['useFocusWithin']>
