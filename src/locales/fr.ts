@@ -256,7 +256,11 @@ export default {
 
   // Graphique Profit & Benchmarks
   profitBenchmark: {
-    periodDD: 'DD période',
+    periodDD: 'Drawdown',
+    toggleRealizedHint: 'Profit réalisé (trades fermés) cumulé sur la période.',
+    hoverOpenBook: 'Positions ouvertes',
+    hoverFromHigh: 'Écart au plus haut',
+    hoverAtHigh: 'au plus haut',
     periodDDHint: 'Drawdown maximum atteint sur la période affichée, mesuré sur la courbe visible (latente si activée). % du pic d\'équité et montant.',
     latentToggle: 'Profit latent',
     latentCurve: 'Profit courant (latent inclus)',
@@ -264,7 +268,7 @@ export default {
     tabCombined: 'Combiné',
     tabPerBot: 'Par bot',
     tabCumulative: 'Cumulatif',
-    combined: 'Combiné',
+    combined: 'Profit réalisé',
     projected: 'Projeté (incl. ouverts)',
     highWaterMark: 'High Water Mark',
     normAbsolute: 'Absolu',
