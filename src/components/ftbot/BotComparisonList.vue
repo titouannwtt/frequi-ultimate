@@ -2069,6 +2069,21 @@ function showAlertsPopover(event: MouseEvent) {
   alertsPopover.value?.toggle(event);
 }
 
+// --- Fit-to-screen mode ---
+// Squeezes every visible column into the viewport width (no horizontal scroll),
+// keeping the vertical scrollbar. Cells switch to a fixed table layout with
+// ellipsis so nothing is clipped mid-glyph.
+const FIT_SCREEN_KEY = 'ft_bot_comparison_fit_screen';
+const fitToScreen = ref<boolean>(localStorage.getItem(FIT_SCREEN_KEY) === 'true');
+function toggleFitToScreen() {
+  fitToScreen.value = !fitToScreen.value;
+  try {
+    localStorage.setItem(FIT_SCREEN_KEY, String(fitToScreen.value));
+  } catch {
+    /* ignore */
+  }
+}
+
 // --- Groups popover ---
 const groupsPopover = ref<InstanceType<typeof Popover>>();
 function showGroupsPopover(event: MouseEvent) {
@@ -2240,6 +2255,8 @@ function botWasReplayed(botId: string): boolean {
 }
 
 defineExpose({
+  fitToScreen,
+  toggleFitToScreen,
   showColumnPopover,
   showSortPopover,
   showFilterPopover,
@@ -4893,7 +4910,12 @@ const correlatedPairs = computed(() => {
 
     <!-- ProfitGoalBar removed -->
 
-    <DataTable size="small" :value="tableItems" :row-class="getRowClass" class="">
+    <DataTable
+      size="small"
+      :value="tableItems"
+      :row-class="getRowClass"
+      :class="fitToScreen ? 'ft-fit-screen' : ''"
+    >
       <!-- Fixed checkbox column -->
       <Column style="width: 2rem; min-width: 2rem" :reorderable-column="false" frozen>
         <template #body="{ data }">
@@ -6903,6 +6925,54 @@ tr:hover .row-hover-visible {
 tr:hover .rename-icon:hover,
 tr:hover .row-hover-visible:hover {
   opacity: 1 !important;
+}
+
+/*
+ * Fit-to-screen mode: every column shares the viewport width instead of forcing a
+ * horizontal scrollbar. `table-layout: fixed` lets the browser distribute the
+ * available width, and each cell truncates with an ellipsis rather than pushing
+ * the table wider. Vertical scrolling is untouched.
+ */
+.ft-fit-screen .p-datatable-table-container,
+.ft-fit-screen .p-datatable-wrapper {
+  overflow-x: hidden !important;
+}
+.ft-fit-screen table {
+  table-layout: fixed !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.ft-fit-screen th,
+.ft-fit-screen td {
+  min-width: 0 !important;
+  max-width: none !important;
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
+  font-size: 0.72rem !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+/* Keep the frozen checkbox/reorder column at its natural size */
+.ft-fit-screen th:first-child,
+.ft-fit-screen td:first-child {
+  width: 2rem !important;
+  padding-left: 0.1rem !important;
+  padding-right: 0.1rem !important;
+}
+/* Single-line, truncating content inside cells */
+.ft-fit-screen td > *,
+.ft-fit-screen .col-header-removable {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+.ft-fit-screen td .bot-name-block,
+.ft-fit-screen td span {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+/* Column-settings affordance stays reachable but never widens a header */
+.ft-fit-screen .col-remove-btn {
+  flex: 0 0 auto;
 }
 
 /* Ensure popovers render above all other UI elements */

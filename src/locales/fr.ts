@@ -319,6 +319,8 @@ export default {
 
   // Bot comparison table
   botComparison: {
+    fitScreenOff: 'Ajuster les colonnes à l\'écran (supprime le défilement horizontal)',
+    fitScreenOn: 'Ajustement écran activé — cliquer pour revenir aux largeurs normales',
     botName: 'Nom du bot',
     all: 'Tous',
     showInDashboard: 'Afficher ce bot dans le tableau de bord',
