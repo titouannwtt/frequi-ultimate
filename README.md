@@ -32,8 +32,8 @@ A fork of [FreqUI](https://github.com/freqtrade/frequi) rebuilt around two needs
 
 ### Dashboard redesign
 - **DashboardViewCustom** — Glassmorphism redesign with persistent layouts (Pinia store).
-- **Enhanced widgets** — MarketPulse, ActivityTimeline, PerformanceHeatmap, RiskOverview, StressTestCard, TradesLogEnhanced, LogViewerEnhanced.
-- **Enhanced charts** — ProfitBenchmarkChart, ProfitDistributionEnhanced, ProfitOverTimeEnhanced, CumulativeProfitEnhanced, OpenTradesEnhanced, ClosedTradesEnhanced.
+- **Enhanced widgets** — MarketPulse, ActivityTimeline, RiskOverview, StressTestCard, LogViewerEnhanced.
+- **Enhanced charts** — ProfitBenchmarkChart, ProfitDistributionEnhanced, CumulativeProfitEnhanced, OpenTradesEnhanced, ClosedTradesEnhanced.
 - **BotProfitComparisonChart** — Per-bot realized P&L as a bar chart to compare bots head-to-head over a chosen window. Period selector (24h, today, 48h, 7d, 14d, 1/2/3/6 months, 1 year, All), live/all/dry filter, value in the summary currency or in % of allocated capital, sortable, with the fleet total. Honors the bots selected in *Bot comparison* intersected with its own live/dry filter. Profit is summed from each bot's cached closed trades (no extra API calls) and currencies are normalized via the dashboard's exchange rates.
 
 ### Multi-bot fleet management
@@ -100,11 +100,10 @@ Widgets stock FreqUI doesn't have: Market Pulse (BTC dominance, Fear & Greed, fl
 
 ### Analytics widgets
 
-Per-bot profit benchmarks, profit distribution, performance heatmap, activity timeline, and a Monte-Carlo stress test.
+Per-bot profit benchmarks, profit distribution, activity timeline, and a Monte-Carlo stress test.
 
 <p align="center">
   <img src=".readme_illustrations/widget-profit-benchmarks-combined.png" width="49%" alt="Profit & benchmarks widget">
-  <img src=".readme_illustrations/widget-performance-heatmap.png" width="49%" alt="Performance heatmap widget">
 </p>
 <p align="center">
   <img src=".readme_illustrations/widget-stress-test.png" width="49%" alt="Stress test widget">
