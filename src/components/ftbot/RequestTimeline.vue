@@ -44,7 +44,7 @@ import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
 import { DashboardLayout } from '@/stores/layout';
 import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 
-const { tradingMode, hasMultipleModes, isBotInMode } = useTradingModeFilter();
+const { tradingMode, hasMultipleModes, isBotInMode, restorePersistedTradingMode } = useTradingModeFilter('requestTimeline');
 
 type ViewMode = 'timeline' | 'flow' | 'table';
 const viewMode = ref<ViewMode>('timeline');
@@ -80,7 +80,7 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   HARDCODED_DEFAULTS_RT,
 );
 
-onMounted(() => { loadDefaults(); });
+onMounted(() => { loadDefaults(); restorePersistedTradingMode(); });
 
 defineExpose({ filtersChanged, saveCurrentAsDefault });
 

@@ -38,7 +38,7 @@ import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 const botStore = useBotStore();
 const replayStore = useReplayStore();
 const router = useRouter();
-const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
+const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter('closedTrades');
 const { initialLoading } = useInitialBotLoading();
 
 const {
@@ -64,7 +64,9 @@ function showColumnPopover(event: Event) {
   columnPopover.value?.toggle(event);
 }
 
-defineExpose({ showColumnPopover, tradingMode, hasMultipleModes });
+const { fitToScreen, toggleFitToScreen } = useFitToScreen('closedTrades');
+
+defineExpose({ showColumnPopover, tradingMode, hasMultipleModes, fitToScreen, toggleFitToScreen });
 
 const filteredTrades = computed(() => {
   let result = filterTradesByMode(props.trades);
@@ -143,7 +145,7 @@ watch(
       :first="(currentPage - 1) * perPage"
       :rows-per-page-options="[25, 50, 100]"
       selection-mode="single"
-      class="text-center text-xs flex-1 min-h-0"
+      :class="['text-center text-xs flex-1 min-h-0', fitToScreen ? 'ft-fit-screen' : '']"
       size="small"
       :scrollable="true"
       scroll-height="flex"

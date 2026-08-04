@@ -43,7 +43,7 @@ const hideWebSocket = ref(false);
 const hideWalletSync = ref(true);
 const hideBtAnalysis = ref(true);
 
-const { tradingMode, hasMultipleModes, isBotInMode } = useTradingModeFilter();
+const { tradingMode, hasMultipleModes, isBotInMode, restorePersistedTradingMode } = useTradingModeFilter('logConsole');
 
 const HARDCODED_DEFAULTS = {
   displayMode: 'timeline' as string,
@@ -86,7 +86,7 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   HARDCODED_DEFAULTS,
 );
 
-onMounted(() => { loadDefaults(); });
+onMounted(() => { loadDefaults(); restorePersistedTradingMode(); });
 
 defineExpose({ filtersChanged, saveCurrentAsDefault });
 

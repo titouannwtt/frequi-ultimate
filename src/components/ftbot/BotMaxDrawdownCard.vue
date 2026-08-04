@@ -50,7 +50,7 @@ const dd = computed(() => {
   return computeAggregateDrawdown(closedTrades.value, openTradesList.value, base);
 });
 
-const hasDrawdown = computed(() => dd.value.realizedAbs > 0 || dd.value.openAbs > 0);
+const hasDrawdown = computed(() => ddView.value.realizedAbs > 0 || ddView.value.openAbs > 0);
 
 // ── Period (single bot, from freqtrade) ──
 const startTs = computed(() => profit.value?.max_drawdown_start_timestamp ?? 0);
@@ -73,15 +73,86 @@ const SVG_W = 348;
 const SVG_H = 70;
 const PAD = 6;
 
-const realizedCum = computed<number[]>(() => {
+interface Point {
+  t: number;
+  v: number;
+}
+
+// Sampled current-profit history per bot (fork backend). Empty until loaded, or when
+// a bot predates the /profit_history endpoint — the curve then falls back to the
+// legacy projection (realized curve + one point at the open positions' worst).
+const histories = ref<Record<string, [number, number, number, number][]>>({});
+async function loadHistories() {
+  const res: Record<string, [number, number, number, number][]> = {};
+  await Promise.all(
+    props.botIds.map(async (id) => {
+      const h = await botStore.botStores[id]?.getProfitHistory?.();
+      if (h?.data?.length) res[id] = h.data;
+    }),
+  );
+  histories.value = res;
+}
+onMounted(loadHistories);
+watch(() => props.botIds.join(','), loadHistories);
+
+const realizedPoints = computed<Point[]>(() => {
   let cum = 0;
-  return closedTrades.value.map((tr) => (cum += tr.profit_abs ?? 0));
+  return closedTrades.value.map((tr) => ({
+    t: tr.close_timestamp ?? 0,
+    v: (cum += tr.profit_abs ?? 0),
+  }));
 });
-// Open-inclusive curve = realized curve + a projected point at the open positions' worst.
-const openCum = computed<number[]>(() => {
-  const base = realizedCum.value;
-  const last = base.length ? base[base.length - 1] : 0;
-  return [...base, last + dd.value.openWorstSum];
+
+// "Profit courant" over time: closed + open unrealized at each sample, summed across
+// bots (forward-filling each bot's last sample when timestamps don't align).
+const historyPoints = computed<Point[]>(() => {
+  const seriesList = Object.values(histories.value);
+  if (!seriesList.length) return [];
+  if (seriesList.length === 1) {
+    return seriesList[0].map((r) => ({ t: r[0], v: r[1] + r[2] }));
+  }
+  // Merge only from the first COMMON timestamp: before every bot has begun
+  // sampling, the forward-filled sum silently misses whole bots (their slot is
+  // primed at 0), fabricating an artificially-low start of the curve — the max
+  // drawdown then anchors its trough dot on the zero line for no real reason.
+  // The pre-sampling window is covered by the realized curve prepended in
+  // openPoints instead.
+  const startT = Math.max(...seriesList.map((s) => s[0][0]));
+  const allTs = [...new Set(seriesList.flatMap((s) => s.map((r) => r[0])))]
+    .filter((t) => t >= startT)
+    .sort((a, b) => a - b);
+  const idx = seriesList.map(() => 0);
+  const last = seriesList.map(() => 0);
+  return allTs.map((t) => {
+    seriesList.forEach((s, i) => {
+      while (idx[i] < s.length && s[idx[i]][0] <= t) {
+        last[i] = s[idx[i]][1] + s[idx[i]][2];
+        idx[i]++;
+      }
+    });
+    return { t, v: last.reduce((a, b) => a + b, 0) };
+  });
+});
+
+// Open-inclusive curve: the sampled current-profit series when available, otherwise the
+// legacy projection. Both end with the open positions projected to their lows (min/max
+// rate), which captures intra-sample lows the periodic series can miss.
+const openPoints = computed<Point[]>(() => {
+  const rp = realizedPoints.value;
+  const lastRealized = rp.length ? rp[rp.length - 1].v : 0;
+  const projected: Point = { t: Date.now(), v: lastRealized + dd.value.openWorstSum };
+  const hist = historyPoints.value;
+  if (hist.length >= 2) {
+    // Align the time domain with the realized curve above: the sampled series only
+    // exists since the profit_history feature was deployed, while the realized curve
+    // spans the bot's whole trading history. Without prepending the pre-sampling
+    // realized points, the two charts cover unrelated time windows and their shapes
+    // are impossible to compare.
+    const firstT = hist[0].t;
+    const before = rp.filter((p) => p.t < firstT);
+    return [...before, ...hist, projected];
+  }
+  return [...rp, projected];
 });
 
 function maxDDIndices(values: number[]): { peak: number; trough: number } {
@@ -104,13 +175,15 @@ function maxDDIndices(values: number[]): { peak: number; trough: number } {
   return { peak: p, trough: tr };
 }
 
-function buildChart(values: number[]) {
-  if (values.length < 2) return null;
+function buildChart(points: Point[]) {
+  if (points.length < 2) return null;
+  const values = points.map((p) => p.v);
   const min = Math.min(...values, 0);
   const max = Math.max(...values, 0);
   const span = max - min || 1;
-  const n = values.length;
-  const x = (i: number) => PAD + (i / (n - 1)) * (SVG_W - 2 * PAD);
+  const tMin = points[0].t;
+  const tSpan = points[points.length - 1].t - tMin || 1;
+  const x = (i: number) => PAD + ((points[i].t - tMin) / tSpan) * (SVG_W - 2 * PAD);
   const y = (v: number) => PAD + (1 - (v - min) / span) * (SVG_H - 2 * PAD);
   const line = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   const { peak, trough } = maxDDIndices(values);
@@ -121,8 +194,28 @@ function buildChart(values: number[]) {
     trough: { x: x(trough), y: y(values[trough]) },
   };
 }
-const realizedChart = computed(() => buildChart(realizedCum.value));
-const openChart = computed(() => buildChart(openCum.value));
+const realizedChart = computed(() => buildChart(realizedPoints.value));
+const openChart = computed(() => buildChart(openPoints.value));
+const openCurveIsHistory = computed(() => historyPoints.value.length >= 2);
+
+// Headline "including open" figures: extend with the sampled curve's own max drawdown
+// (past open books now closed leave no trace in the trade-based numbers).
+function curveMaxDD(points: Point[]): number {
+  let peak = 0;
+  let best = 0;
+  for (const p of points) {
+    if (p.v > peak) peak = p.v;
+    if (peak - p.v > best) best = peak - p.v;
+  }
+  return best;
+}
+const ddView = computed(() => {
+  const d = dd.value;
+  if (!openCurveIsHistory.value) return d;
+  const openAbs = Math.max(d.openAbs, curveMaxDD(openPoints.value));
+  const base = d.openRatio > 0 ? d.openAbs / d.openRatio : 0;
+  return { ...d, openAbs, openRatio: base > 0 ? openAbs / base : d.openRatio };
+});
 
 // ── Responsible closed trades (single bot) ──
 const responsibleTrades = computed<Trade[]>(() => {
@@ -187,11 +280,11 @@ function profitColor(val: number | undefined | null): string {
         </div>
         <div class="metric-cell">
           <div class="text-[0.8rem] text-gray-500">{{ t('maxDrawdownCard.inclOpen') }}</div>
-          <div class="text-xl font-bold" :class="ddColor(dd.openRatio)">
-            -{{ formatPercent(dd.openRatio, 2) }}
+          <div class="text-xl font-bold" :class="ddColor(ddView.openRatio)">
+            -{{ formatPercent(ddView.openRatio, 2) }}
           </div>
-          <div class="text-[0.8rem]" :class="ddColor(dd.openRatio)">
-            {{ formatPriceCurrency(-dd.openAbs, currency, 2) }}
+          <div class="text-[0.8rem]" :class="ddColor(ddView.openRatio)">
+            {{ formatPriceCurrency(-ddView.openAbs, currency, 2) }}
           </div>
         </div>
       </div>
@@ -273,7 +366,11 @@ function profitColor(val: number | undefined | null): string {
           {{ t('maxDrawdownCard.notEnoughData') }}
         </div>
         <div class="text-[0.72rem] text-gray-500 mt-0.5">
-          {{ t('maxDrawdownCard.openCurveHint') }}
+          {{
+            openCurveIsHistory
+              ? t('maxDrawdownCard.openCurveHintHistory')
+              : t('maxDrawdownCard.openCurveHint')
+          }}
         </div>
       </div>
 

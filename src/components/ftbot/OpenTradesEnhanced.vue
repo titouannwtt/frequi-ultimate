@@ -46,7 +46,7 @@ const botStore = useBotStore();
 const settingsStore = useSettingsStore();
 const replayStore = useReplayStore();
 const router = useRouter();
-const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter();
+const { tradingMode, hasMultipleModes, filterTradesByMode } = useTradingModeFilter('openTrades');
 const { initialLoading } = useInitialBotLoading();
 
 const {
@@ -180,7 +180,9 @@ function showColumnPopover(event: Event) {
   columnPopover.value?.toggle(event);
 }
 
-defineExpose({ showColumnPopover, tradingMode, hasMultipleModes });
+const { fitToScreen, toggleFitToScreen } = useFitToScreen('openTrades');
+
+defineExpose({ showColumnPopover, tradingMode, hasMultipleModes, fitToScreen, toggleFitToScreen });
 
 const filteredTrades = computed(() => {
   let result = filterTradesByMode(props.trades);
@@ -338,7 +340,7 @@ watch(
       :value="filteredTrades"
       :rows="200"
       selection-mode="single"
-      class="text-center text-xs flex-1 min-h-0"
+      :class="['text-center text-xs flex-1 min-h-0', fitToScreen ? 'ft-fit-screen' : '']"
       size="small"
       :scrollable="true"
       scroll-height="flex"

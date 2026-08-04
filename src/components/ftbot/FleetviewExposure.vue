@@ -21,6 +21,24 @@ subscribe();
 const bots = computed((): FleetviewBot[] => overview.value?.bots ?? []);
 const coins = computed((): FleetviewCoin[] => recon.value?.coins ?? []);
 
+// Dry/live mode filter — persisted per widget, defaults to 'live' (historic
+// behaviour: the long/short split only counted live bots).
+const { tradingMode } = useTradingModeFilter('fleetExposure', 'live');
+function botInMode(b: FleetviewBot): boolean {
+  if (tradingMode.value === 'all') return true;
+  return (tradingMode.value === 'dry') === !!b.dry_run;
+}
+const fleetHasBothModes = computed(() => {
+  let dry = false;
+  let live = false;
+  for (const b of bots.value) {
+    if (b.dry_run) dry = true;
+    else live = true;
+    if (dry && live) return true;
+  }
+  return false;
+});
+
 const initialLoading = computed(
   () => (overviewLoading.value || reconLoading.value) && !overview.value && !recon.value,
 );
@@ -35,7 +53,7 @@ const split = computed(() => {
   let long = 0;
   let short = 0;
   for (const b of bots.value) {
-    if (b.dry_run) continue;
+    if (!botInMode(b)) continue;
     for (const t of b.open_trades) {
       if (t.is_short) short += t.stake_amount;
       else long += t.stake_amount;
@@ -106,6 +124,9 @@ const netTotal = computed(() =>
     </template>
 
     <template v-else>
+    <div class="flex justify-end">
+      <TradingModeSelect v-model="tradingMode" :show="fleetHasBothModes" />
+    </div>
     <div class="flex flex-col gap-1">
       <div class="flex justify-between text-xs font-mono tabular-nums">
         <span class="text-emerald-500">{{ t('fleet.exposure.long') }} {{ split.long.toFixed(0) }} USDC</span>
