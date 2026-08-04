@@ -2,8 +2,14 @@
  * Fit-to-screen table mode (see composables/useFitToScreen.ts).
  *
  * `table-layout: fixed` lets the browser distribute the available width across
- * every column instead of letting content force a horizontal scrollbar; each
- * cell then truncates with an ellipsis. Vertical scrolling is untouched.
+ * every column instead of letting content force a horizontal scrollbar.
+ * Vertical scrolling is untouched.
+ *
+ * Wrapping policy — deliberately NOT global:
+ *   - cells stay on ONE line and shrink, because a value broken mid-number
+ *     ("+12.\n34 %") is unreadable;
+ *   - only two things may go multi-line, since their break points carry meaning:
+ *     the profit pills (percentage / amount) and the bot-tag row.
  * Unscoped on purpose: these rules must win over PrimeVue's own table styles.
  */
 .ft-fit-screen .p-datatable-table-container,
@@ -21,44 +27,79 @@
   max-width: none !important;
   padding-left: 0.25rem !important;
   padding-right: 0.25rem !important;
-  font-size: 0.72rem !important;
+  font-size: 0.68rem !important;
   overflow: hidden !important;
-  /* Wrap instead of clipping: a truncated profit figure or bot tag is worse than
-     a two-line cell, and rows are free to grow vertically. */
-  white-space: normal !important;
-  word-break: break-word !important;
-  overflow-wrap: anywhere !important;
+}
+
+/* Cells: one line, shrink rather than wrap. Ellipsis only as a last resort. */
+.ft-fit-screen td {
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
 }
 .ft-fit-screen td > *,
-.ft-fit-screen .col-header-removable {
+.ft-fit-screen td span,
+.ft-fit-screen td div {
   min-width: 0 !important;
   max-width: 100% !important;
 }
-.ft-fit-screen td .bot-name-block,
-.ft-fit-screen td span {
-  white-space: normal !important;
-  overflow-wrap: anywhere !important;
-}
-/* Headers wrap too rather than forcing the column wider. */
+
+/* Headers may wrap, but only between words — never inside one. */
 .ft-fit-screen th,
 .ft-fit-screen .col-header-removable {
   white-space: normal !important;
-  line-height: 1.15;
-}
-/* Inline gauges (trades used / win-loss ratio) must follow the column width
-   instead of imposing a 50px floor that inflates otherwise narrow columns. */
-.ft-fit-screen .ft-gauge {
-  min-width: 0 !important;
-  width: 100% !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  line-height: 1.1;
 }
 .ft-fit-screen .col-remove-btn {
   flex: 0 0 auto;
 }
 
-/* Tables whose first column is a fixed-size control column (checkbox/reorder). */
+/*
+ * Profit pills (open / closed / current profit): percentage and amount sit side
+ * by side in a flex row, so narrowing the column used to break BOTH of them
+ * mid-value. Stack them instead — one line for the percentage, one for the
+ * amount — and forbid any break inside either.
+ */
+.ft-fit-screen .ft-profit-pill {
+  padding-inline: 2px !important;
+  white-space: nowrap !important;
+}
+.ft-fit-screen .ft-profit-pill > div {
+  flex-direction: column !important;
+  line-height: 1.12 !important;
+}
+.ft-fit-screen .ft-profit-pill > div > span {
+  margin-inline-start: 0 !important;
+}
+.ft-fit-screen .ft-profit-pill * {
+  white-space: nowrap !important;
+}
+
+/* Bot tags keep wrapping: they break between chips, never inside a word. */
+.ft-fit-screen td .flex-wrap {
+  white-space: normal !important;
+  flex-wrap: wrap !important;
+}
+
+/* Inline gauges (trades used / win-loss ratio) follow the column width instead
+   of imposing a 50px floor that inflated otherwise narrow columns. */
+.ft-fit-screen .ft-gauge {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+/*
+ * Tables whose first column is a fixed-size control column (checkbox + reorder
+ * chevrons). It must never wrap, otherwise its icons stack and inflate the row.
+ */
 .ft-fit-screen--compact-first th:first-child,
 .ft-fit-screen--compact-first td:first-child {
-  width: 2rem !important;
+  width: 2.6rem !important;
   padding-left: 0.1rem !important;
   padding-right: 0.1rem !important;
+}
+.ft-fit-screen--compact-first td:first-child > div {
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
 }
