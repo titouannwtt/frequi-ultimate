@@ -125,7 +125,8 @@ const healthBadges = computed(() => {
   if (Array.isArray(warnings)) {
     const high = warnings.filter((w: any) => w.severity === 'high').length;
     if (high > 0) badges.push({ label: `${high} high warnings`, severity: 'danger' });
-    else if (warnings.length > 0) badges.push({ label: `${warnings.length} warnings`, severity: 'warn' });
+    else if (warnings.length > 0)
+      badges.push({ label: `${warnings.length} warnings`, severity: 'warn' });
     else badges.push({ label: t('strategyDev.noWarnings'), severity: 'success' });
   }
   return badges;
@@ -133,9 +134,12 @@ const healthBadges = computed(() => {
 
 const showAllMetrics = ref(false);
 
-watch(() => store.selectedRun?.filename, () => {
-  showAllMetrics.value = false;
-});
+watch(
+  () => store.selectedRun?.filename,
+  () => {
+    showAllMetrics.value = false;
+  },
+);
 
 const verdictColorMap: Record<string, string> = {
   good: 'var(--sd-success)',
@@ -171,7 +175,12 @@ const verdictColorMap: Record<string, string> = {
             <span class="hop-metric-label">{{ m.label }}</span>
             <span
               class="hop-metric-value"
-              :style="{ color: m.metricKey && m.rawValue != null ? verdictColorMap[getVerdict(m.metricKey, m.rawValue)] : 'var(--sd-text)' }"
+              :style="{
+                color:
+                  m.metricKey && m.rawValue != null
+                    ? verdictColorMap[getVerdict(m.metricKey, m.rawValue)]
+                    : 'var(--sd-text)',
+              }"
             >
               {{ m.value }}
             </span>
@@ -194,7 +203,13 @@ const verdictColorMap: Record<string, string> = {
 
     <!-- Health badges -->
     <div v-if="healthBadges.length" class="hop-badges">
-      <Tag v-for="b in healthBadges" :key="b.label" :value="b.label" :severity="b.severity as any" class="text-sm" />
+      <Tag
+        v-for="b in healthBadges"
+        :key="b.label"
+        :value="b.label"
+        :severity="b.severity as any"
+        class="text-sm"
+      />
     </div>
 
     <!-- Loss function -->
@@ -216,11 +231,7 @@ const verdictColorMap: Record<string, string> = {
 
     <!-- Best epoch detailed metrics (lazy) -->
     <div v-if="detail?.best_epoch_metrics" class="hop-section">
-      <button
-        v-if="!showAllMetrics"
-        class="hop-lazy-btn"
-        @click="showAllMetrics = true"
-      >
+      <button v-if="!showAllMetrics" class="hop-lazy-btn" @click="showAllMetrics = true">
         <i-mdi-code-json class="w-4 h-4" />
         {{ t('strategyDev.hoBestEpochMetrics') }}
         <i-mdi-chevron-right class="w-4 h-4" />

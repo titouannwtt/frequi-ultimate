@@ -15,33 +15,186 @@ export interface TradeColumnDef {
 }
 
 const OPEN_COLUMNS: TradeColumnDef[] = [
-  { key: 'botState', labelKey: 'enhancedTrades.colBotState', defaultVisible: true, sortable: true, icon: 'i-mdi-circle' },
-  { key: 'botName', labelKey: 'enhancedTrades.colBot', defaultVisible: true, sortable: true, icon: 'i-mdi-robot' },
-  { key: 'trade_id', labelKey: 'enhancedTrades.colTradeId', defaultVisible: true, sortable: true, icon: 'i-mdi-identifier' },
-  { key: 'pair', labelKey: 'enhancedTrades.colPair', defaultVisible: true, sortable: true, icon: 'i-mdi-swap-horizontal' },
-  { key: 'type', labelKey: 'enhancedTrades.colType', defaultVisible: true, sortable: true, icon: 'i-mdi-arrow-up-down' },
-  { key: 'leverage', labelKey: 'enhancedTrades.colLeverage', defaultVisible: true, sortable: true, icon: 'i-mdi-multiplication' },
-  { key: 'open_rate', labelKey: 'enhancedTrades.colEntryPrice', defaultVisible: true, sortable: false, icon: 'i-mdi-login' },
-  { key: 'current_rate', labelKey: 'enhancedTrades.colCurrentPrice', defaultVisible: true, sortable: true, openOnly: true, icon: 'i-mdi-currency-usd' },
-  { key: 'profit_pct', labelKey: 'enhancedTrades.colProfitPct', defaultVisible: true, sortable: true, icon: 'i-mdi-percent' },
-  { key: 'profit_abs', labelKey: 'enhancedTrades.colProfitAbs', defaultVisible: true, sortable: true, icon: 'i-mdi-cash' },
-  { key: 'stake_amount', labelKey: 'enhancedTrades.colStake', defaultVisible: true, sortable: true, icon: 'i-mdi-wallet' },
-  { key: 'enter_tag', labelKey: 'enhancedTrades.colOpenReason', defaultVisible: false, sortable: true, openOnly: true, icon: 'i-mdi-tag' },
-  { key: 'replay', labelKey: 'enhancedTrades.colReplay', defaultVisible: false, sortable: false, icon: 'i-mdi-fast-forward' },
-  { key: 'duration', labelKey: 'enhancedTrades.colDuration', defaultVisible: true, sortable: true, icon: 'i-mdi-clock-outline' },
-  { key: 'stoploss_dist', labelKey: 'enhancedTrades.colStoplossDist', defaultVisible: false, openOnly: true, sortable: true, icon: 'i-mdi-shield-alert' },
-  { key: 'duration_anomaly', labelKey: 'enhancedTrades.colDurationAnomaly', defaultVisible: false, sortable: true, icon: 'i-mdi-alert-circle' },
-  { key: 'dca_info', labelKey: 'enhancedTrades.colDca', defaultVisible: false, sortable: true, icon: 'i-mdi-layers-plus' },
-  { key: 'open_date', labelKey: 'enhancedTrades.colOpenDate', defaultVisible: true, sortable: true, icon: 'i-mdi-calendar-start' },
-  { key: 'actions', labelKey: 'enhancedTrades.colActions', defaultVisible: true, openOnly: true, sortable: false, icon: 'i-mdi-dots-vertical' },
+  {
+    key: 'botState',
+    labelKey: 'enhancedTrades.colBotState',
+    defaultVisible: true,
+    sortable: true,
+    icon: 'i-mdi-circle',
+  },
+  {
+    key: 'botName',
+    labelKey: 'enhancedTrades.colBot',
+    defaultVisible: true,
+    sortable: true,
+    icon: 'i-mdi-robot',
+  },
+  {
+    key: 'trade_id',
+    labelKey: 'enhancedTrades.colTradeId',
+    defaultVisible: true,
+    sortable: true,
+    icon: 'i-mdi-identifier',
+  },
+  {
+    key: 'pair',
+    labelKey: 'enhancedTrades.colPair',
+    defaultVisible: true,
+    sortable: true,
+    icon: 'i-mdi-swap-horizontal',
+  },
+  {
+    key: 'type',
+    labelKey: 'enhancedTrades.colType',
+    defaultVisible: true,
+    sortable: true,
+    icon: 'i-mdi-arrow-up-down',
+  },
+  {
+    key: 'leverage',
+    labelKey: 'enhancedTrades.colLeverage',
+    defaultVisible: true,
+    sortable: true,
+    icon: 'i-mdi-multiplication',
+  },
+  {
+    key: 'open_rate',
+    labelKey: 'enhancedTrades.colEntryPrice',
+    defaultVisible: true,
+    sortable: false,
+    icon: 'i-mdi-login',
+  },
+  {
+    key: 'current_rate',
+    labelKey: 'enhancedTrades.colCurrentPrice',
+    defaultVisible: true,
+    sortable: true,
+    openOnly: true,
+    icon: 'i-mdi-currency-usd',
+  },
+  {
+    key: 'profit_pct',
+    labelKey: 'enhancedTrades.colProfitPct',
+    defaultVisible: true,
+    sortable: true,
+    icon: 'i-mdi-percent',
+  },
+  {
+    key: 'profit_abs',
+    labelKey: 'enhancedTrades.colProfitAbs',
+    defaultVisible: true,
+    sortable: true,
+    icon: 'i-mdi-cash',
+  },
+  {
+    key: 'stake_amount',
+    labelKey: 'enhancedTrades.colStake',
+    defaultVisible: true,
+    sortable: true,
+    icon: 'i-mdi-wallet',
+  },
+  {
+    key: 'enter_tag',
+    labelKey: 'enhancedTrades.colOpenReason',
+    defaultVisible: false,
+    sortable: true,
+    openOnly: true,
+    icon: 'i-mdi-tag',
+  },
+  {
+    key: 'replay',
+    labelKey: 'enhancedTrades.colReplay',
+    defaultVisible: false,
+    sortable: false,
+    icon: 'i-mdi-fast-forward',
+  },
+  {
+    key: 'duration',
+    labelKey: 'enhancedTrades.colDuration',
+    defaultVisible: true,
+    sortable: true,
+    icon: 'i-mdi-clock-outline',
+  },
+  {
+    key: 'stoploss_dist',
+    labelKey: 'enhancedTrades.colStoplossDist',
+    defaultVisible: false,
+    openOnly: true,
+    sortable: true,
+    icon: 'i-mdi-shield-alert',
+  },
+  {
+    key: 'duration_anomaly',
+    labelKey: 'enhancedTrades.colDurationAnomaly',
+    defaultVisible: false,
+    sortable: true,
+    icon: 'i-mdi-alert-circle',
+  },
+  {
+    key: 'dca_info',
+    labelKey: 'enhancedTrades.colDca',
+    defaultVisible: false,
+    sortable: true,
+    icon: 'i-mdi-layers-plus',
+  },
+  {
+    key: 'open_date',
+    labelKey: 'enhancedTrades.colOpenDate',
+    defaultVisible: true,
+    sortable: true,
+    icon: 'i-mdi-calendar-start',
+  },
+  {
+    key: 'actions',
+    labelKey: 'enhancedTrades.colActions',
+    defaultVisible: true,
+    openOnly: true,
+    sortable: false,
+    icon: 'i-mdi-dots-vertical',
+  },
 ];
 
 const CLOSED_EXTRA_COLUMNS: TradeColumnDef[] = [
-  { key: 'close_rate', labelKey: 'enhancedTrades.colClosePrice', defaultVisible: true, closedOnly: true, sortable: false, icon: 'i-mdi-logout' },
-  { key: 'exit_reason', labelKey: 'enhancedTrades.colCloseReason', defaultVisible: true, closedOnly: true, sortable: true, icon: 'i-mdi-flag' },
-  { key: 'close_date', labelKey: 'enhancedTrades.colCloseDate', defaultVisible: true, closedOnly: true, sortable: true, icon: 'i-mdi-calendar-end' },
-  { key: 'closed_ago', labelKey: 'enhancedTrades.colClosedAgo', defaultVisible: false, closedOnly: true, sortable: false, icon: 'i-mdi-history' },
-  { key: 'fee', labelKey: 'enhancedTrades.colFee', defaultVisible: false, closedOnly: true, sortable: true, icon: 'i-mdi-receipt' },
+  {
+    key: 'close_rate',
+    labelKey: 'enhancedTrades.colClosePrice',
+    defaultVisible: true,
+    closedOnly: true,
+    sortable: false,
+    icon: 'i-mdi-logout',
+  },
+  {
+    key: 'exit_reason',
+    labelKey: 'enhancedTrades.colCloseReason',
+    defaultVisible: true,
+    closedOnly: true,
+    sortable: true,
+    icon: 'i-mdi-flag',
+  },
+  {
+    key: 'close_date',
+    labelKey: 'enhancedTrades.colCloseDate',
+    defaultVisible: true,
+    closedOnly: true,
+    sortable: true,
+    icon: 'i-mdi-calendar-end',
+  },
+  {
+    key: 'closed_ago',
+    labelKey: 'enhancedTrades.colClosedAgo',
+    defaultVisible: false,
+    closedOnly: true,
+    sortable: false,
+    icon: 'i-mdi-history',
+  },
+  {
+    key: 'fee',
+    labelKey: 'enhancedTrades.colFee',
+    defaultVisible: false,
+    closedOnly: true,
+    sortable: true,
+    icon: 'i-mdi-receipt',
+  },
 ];
 
 export function getOpenTradeColumns(): TradeColumnDef[] {
@@ -146,8 +299,15 @@ export function useTradeColumnVisibility(mode: 'open' | 'closed') {
   );
 
   return {
-    allColumns, visibleKeys, visibleColumns, toggleColumn, isVisible,
-    columnOrder, orderedColumns, setColumnOrder, resetColumns,
+    allColumns,
+    visibleKeys,
+    visibleColumns,
+    toggleColumn,
+    isVisible,
+    columnOrder,
+    orderedColumns,
+    setColumnOrder,
+    resetColumns,
   };
 }
 
@@ -197,14 +357,14 @@ export function durationAnomalyPct(trade: Trade, closedTrades?: Trade[]): number
 
   if (closedTrades && closedTrades.length >= 3) {
     const botTrades = trade.botId
-      ? closedTrades.filter(t => t.botId === trade.botId)
+      ? closedTrades.filter((t) => t.botId === trade.botId)
       : closedTrades;
     const durations = botTrades
-      .map(t => tradeDurationMs(t))
-      .filter(d => d > 0)
+      .map((t) => tradeDurationMs(t))
+      .filter((d) => d > 0)
       .sort((a, b) => a - b);
     if (durations.length > 0) {
-      const belowCount = durations.filter(d => d <= ms).length;
+      const belowCount = durations.filter((d) => d <= ms).length;
       return Math.round((belowCount / durations.length) * 100);
     }
   }
@@ -223,8 +383,10 @@ export function durationAnomalyLevelFromPct(pct: number): 'ok' | 'warn' | 'dange
 export function exitReasonColor(reason: string | undefined): string {
   if (!reason) return 'bg-surface-400';
   const r = reason.toLowerCase();
-  if (r.includes('roi') || r.includes('profit') || r.includes('tp') || r.includes('trailing')) return 'bg-green-500 text-white';
-  if (r.includes('stop') || r.includes('sl') || r.includes('stoploss') || r.includes('liquidat')) return 'bg-red-500 text-white';
+  if (r.includes('roi') || r.includes('profit') || r.includes('tp') || r.includes('trailing'))
+    return 'bg-green-500 text-white';
+  if (r.includes('stop') || r.includes('sl') || r.includes('stoploss') || r.includes('liquidat'))
+    return 'bg-red-500 text-white';
   if (r.includes('signal') || r.includes('exit_signal')) return 'bg-blue-500 text-white';
   if (r.includes('force')) return 'bg-orange-500 text-white';
   return 'bg-surface-500 text-white';

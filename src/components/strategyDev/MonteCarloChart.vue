@@ -165,10 +165,7 @@ const chartOptions = computed<EChartsOption>(() => {
       // Box-plot rendered via custom series
       {
         type: 'custom',
-        renderItem: (
-          _params: unknown,
-          api: Record<string, (...args: unknown[]) => unknown>,
-        ) => {
+        renderItem: (_params: unknown, api: Record<string, (...args: unknown[]) => unknown>) => {
           const catIdx = 0;
           const yCoord = (api.coord([0, catIdx]) as number[])[1];
           const boxH = 40;
@@ -184,9 +181,27 @@ const chartOptions = computed<EChartsOption>(() => {
 
           const minLabelGap = 45;
           const topLabels = [
-            { x: xP25, text: `P25: ${fmtPct(d.p25)} DD`, fill: C.subtext, fontSize: 10, fontWeight: 'normal' as const },
-            { x: xP50, text: `P50: ${fmtPct(d.p50)} DD`, fill: C.blue, fontSize: 11, fontWeight: 'bold' as const },
-            { x: xP75, text: `P75: ${fmtPct(d.p75)} DD`, fill: C.subtext, fontSize: 10, fontWeight: 'normal' as const },
+            {
+              x: xP25,
+              text: `P25: ${fmtPct(d.p25)} DD`,
+              fill: C.subtext,
+              fontSize: 10,
+              fontWeight: 'normal' as const,
+            },
+            {
+              x: xP50,
+              text: `P50: ${fmtPct(d.p50)} DD`,
+              fill: C.blue,
+              fontSize: 11,
+              fontWeight: 'bold' as const,
+            },
+            {
+              x: xP75,
+              text: `P75: ${fmtPct(d.p75)} DD`,
+              fill: C.subtext,
+              fontSize: 10,
+              fontWeight: 'normal' as const,
+            },
           ];
           const baseY = yCoord - boxH / 2 - 20;
           const topY: number[] = [baseY, baseY, baseY];
@@ -298,10 +313,7 @@ const chartOptions = computed<EChartsOption>(() => {
       // Mean marker (diamond)
       {
         type: 'custom',
-        renderItem: (
-          _params: unknown,
-          api: Record<string, (...args: unknown[]) => unknown>,
-        ) => {
+        renderItem: (_params: unknown, api: Record<string, (...args: unknown[]) => unknown>) => {
           const coord = api.coord([meanc, 0]) as number[];
           return {
             type: 'group',

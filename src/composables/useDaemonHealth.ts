@@ -44,9 +44,7 @@ export function useDaemonHealth(opts: { refreshMs?: number } = {}) {
     const seen = new Set(state.events.map(eventKey));
     const newEvts = incoming.filter((e) => !seen.has(eventKey(e)));
     if (newEvts.length === 0) return;
-    const merged = [...state.events, ...newEvts]
-      .sort((a, b) => b.ts - a.ts)
-      .slice(0, MAX_EVENTS);
+    const merged = [...state.events, ...newEvts].sort((a, b) => b.ts - a.ts).slice(0, MAX_EVENTS);
     state.events = merged;
   }
 
@@ -62,21 +60,37 @@ export function useDaemonHealth(opts: { refreshMs?: number } = {}) {
     const promises: Promise<void>[] = [];
 
     promises.push(
-      bot.getCacheStatus().then((d) => { state.cache = d; }).catch(() => {}),
+      bot
+        .getCacheStatus()
+        .then((d) => {
+          state.cache = d;
+        })
+        .catch(() => {}),
     );
     promises.push(
-      bot.getFleetStatus().then((d) => {
-        if (d && !d.error) state.fleet = d;
-        else state.error = d?.error ?? '';
-      }).catch(() => {}),
+      bot
+        .getFleetStatus()
+        .then((d) => {
+          if (d && !d.error) state.fleet = d;
+          else state.error = d?.error ?? '';
+        })
+        .catch(() => {}),
     );
     promises.push(
-      bot.getFleetEvents(Date.now() / 1000 - 3600, 100).then((d) => {
-        if (d?.events) mergeEvents(d.events);
-      }).catch(() => {}),
+      bot
+        .getFleetEvents(Date.now() / 1000 - 3600, 100)
+        .then((d) => {
+          if (d?.events) mergeEvents(d.events);
+        })
+        .catch(() => {}),
     );
     promises.push(
-      bot.getRateMetrics(3600, 30).then((d) => { state.rate = d; }).catch(() => {}),
+      bot
+        .getRateMetrics(3600, 30)
+        .then((d) => {
+          state.rate = d;
+        })
+        .catch(() => {}),
     );
 
     await Promise.all(promises);
@@ -133,8 +147,14 @@ export function useDaemonHealth(opts: { refreshMs?: number } = {}) {
   }
 
   function stopRefresh() {
-    if (refreshTimer.value) { clearInterval(refreshTimer.value); refreshTimer.value = null; }
-    if (freshnessTimer.value) { clearInterval(freshnessTimer.value); freshnessTimer.value = null; }
+    if (refreshTimer.value) {
+      clearInterval(refreshTimer.value);
+      refreshTimer.value = null;
+    }
+    if (freshnessTimer.value) {
+      clearInterval(freshnessTimer.value);
+      freshnessTimer.value = null;
+    }
   }
 
   onMounted(startRefresh);

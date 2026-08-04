@@ -71,7 +71,15 @@ const bands = computed<BandItem[]>(() => {
     const bandWidth = bandRight - bandLeft;
     const medianPos = ((median - scaleMin) / scaleRange) * 100;
 
-    items.push({ label: e.label, band: e.band, unit: e.unit, spread, bandLeft, bandWidth, medianPos });
+    items.push({
+      label: e.label,
+      band: e.band,
+      unit: e.unit,
+      spread,
+      bandLeft,
+      bandWidth,
+      medianPos,
+    });
   }
   return items;
 });
@@ -84,10 +92,8 @@ const advisoryLevel = computed(() => {
 });
 
 const advisoryText = computed(() => {
-  if (advisoryLevel.value === 'green')
-    return t('strategyDev.dispersionConsistent');
-  if (advisoryLevel.value === 'yellow')
-    return t('strategyDev.dispersionModerateAdvisory');
+  if (advisoryLevel.value === 'green') return t('strategyDev.dispersionConsistent');
+  if (advisoryLevel.value === 'yellow') return t('strategyDev.dispersionModerateAdvisory');
   return t('strategyDev.dispersionHighVariance');
 });
 </script>
@@ -138,15 +144,11 @@ const advisoryText = computed(() => {
         </div>
 
         <div class="flex justify-between text-sm mt-1">
-          <span class="text-surface-500 tabular-nums"
-            >{{ b.band.min.toFixed(2) }}{{ b.unit }}</span
-          >
+          <span class="text-surface-500 tabular-nums">{{ b.band.min.toFixed(2) }}{{ b.unit }}</span>
           <span class="font-medium tabular-nums" :style="{ color: spreadColors[b.spread].text }"
             >{{ t('strategyDev.median') }}: {{ b.band.median.toFixed(2) }}{{ b.unit }}</span
           >
-          <span class="text-surface-500 tabular-nums"
-            >{{ b.band.max.toFixed(2) }}{{ b.unit }}</span
-          >
+          <span class="text-surface-500 tabular-nums">{{ b.band.max.toFixed(2) }}{{ b.unit }}</span>
         </div>
       </div>
     </div>

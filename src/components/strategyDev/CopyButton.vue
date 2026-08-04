@@ -22,7 +22,9 @@ async function doCopy() {
     await navigator.clipboard.writeText(props.text);
     copied.value = true;
     clearTimeout(timeout);
-    timeout = setTimeout(() => { copied.value = false; }, 2000);
+    timeout = setTimeout(() => {
+      copied.value = false;
+    }, 2000);
   } catch {
     // fallback
     const ta = document.createElement('textarea');
@@ -33,7 +35,9 @@ async function doCopy() {
     document.body.removeChild(ta);
     copied.value = true;
     clearTimeout(timeout);
-    timeout = setTimeout(() => { copied.value = false; }, 2000);
+    timeout = setTimeout(() => {
+      copied.value = false;
+    }, 2000);
   }
 }
 </script>
@@ -42,7 +46,7 @@ async function doCopy() {
   <button
     class="copy-btn"
     :class="[`copy-btn--${size}`, `copy-btn--${variant}`, { 'copy-btn--copied': copied }]"
-    :title="copied ? t('strategyDev.copied') : (label || t('strategyDev.copy'))"
+    :title="copied ? t('strategyDev.copied') : label || t('strategyDev.copy')"
     @click.stop="doCopy"
   >
     <Transition name="copy-icon" mode="out-in">
@@ -50,7 +54,7 @@ async function doCopy() {
       <i-mdi-content-copy v-else :key="'copy'" class="copy-icon" />
     </Transition>
     <span v-if="variant === 'button'" class="copy-label">
-      {{ copied ? t('strategyDev.copied') : (label || t('strategyDev.copy')) }}
+      {{ copied ? t('strategyDev.copied') : label || t('strategyDev.copy') }}
     </span>
   </button>
 </template>
@@ -79,9 +83,18 @@ async function doCopy() {
   color: var(--sd-success) !important;
 }
 
-.copy-btn--xs { padding: 2px 6px; font-size: var(--sd-text-2xs); }
-.copy-btn--sm { padding: 3px 8px; font-size: var(--sd-text-xs); }
-.copy-btn--md { padding: 4px 10px; font-size: var(--sd-text-sm); }
+.copy-btn--xs {
+  padding: 2px 6px;
+  font-size: var(--sd-text-2xs);
+}
+.copy-btn--sm {
+  padding: 3px 8px;
+  font-size: var(--sd-text-xs);
+}
+.copy-btn--md {
+  padding: 4px 10px;
+  font-size: var(--sd-text-sm);
+}
 
 .copy-btn--icon {
   padding: 4px;
@@ -95,7 +108,10 @@ async function doCopy() {
   flex-shrink: 0;
 }
 
-.copy-btn--xs .copy-icon { width: 12px; height: 12px; }
+.copy-btn--xs .copy-icon {
+  width: 12px;
+  height: 12px;
+}
 
 .copy-label {
   font-weight: 500;
@@ -103,7 +119,9 @@ async function doCopy() {
 
 .copy-icon-enter-active,
 .copy-icon-leave-active {
-  transition: opacity 100ms ease, transform 100ms ease;
+  transition:
+    opacity 100ms ease,
+    transform 100ms ease;
 }
 .copy-icon-enter-from {
   opacity: 0;

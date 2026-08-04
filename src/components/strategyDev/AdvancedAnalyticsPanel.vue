@@ -15,13 +15,17 @@ onMounted(async () => {
 
 const data = computed(() => store.advancedAnalytics);
 
-const btcEquityInput = computed(() => data.value?.equity_curve as { date: string; balance: number }[] | undefined);
+const btcEquityInput = computed(
+  () => data.value?.equity_curve as { date: string; balance: number }[] | undefined,
+);
 const btcStartBal = computed(() => (data.value?.starting_balance as number) ?? 1000);
 const { benchmarkEquity: btcBenchmark } = useBtcBenchmark(btcEquityInput, btcStartBal);
 
 const regimeTimeline = computed(() => {
   const mr = data.value?.market_regime as Record<string, unknown> | undefined;
-  return mr?.timeline as { date: string; regime: string; volatility: number; trend: number }[] | undefined;
+  return mr?.timeline as
+    | { date: string; regime: string; volatility: number; trend: number }[]
+    | undefined;
 });
 
 const epochInfo = computed(() => (data.value?.epoch_info as Record<string, unknown>) ?? null);
@@ -58,7 +62,9 @@ function fmtNum(v: unknown, decimals = 2): string {
         <div class="aa-epoch-title">
           <i-mdi-trophy class="w-4 h-4" />
           <span>{{ t('strategyDev.aaBestEpochBanner') }}</span>
-          <span v-if="epochInfo.current_epoch" class="aa-epoch-num">#{{ epochInfo.current_epoch }}</span>
+          <span v-if="epochInfo.current_epoch" class="aa-epoch-num"
+            >#{{ epochInfo.current_epoch }}</span
+          >
         </div>
         <div class="aa-epoch-stats">
           <div class="aa-epoch-stat">
@@ -66,7 +72,8 @@ function fmtNum(v: unknown, decimals = 2): string {
             <span
               class="aa-epoch-stat-value"
               :class="Number(epochInfo.total_profit) >= 0 ? 'aa-stat-pos' : 'aa-stat-neg'"
-            >{{ fmtPct(epochInfo.total_profit) }}</span>
+              >{{ fmtPct(epochInfo.total_profit) }}</span
+            >
           </div>
           <div class="aa-epoch-stat">
             <span class="aa-epoch-stat-label">Trades</span>
@@ -74,7 +81,9 @@ function fmtNum(v: unknown, decimals = 2): string {
           </div>
           <div class="aa-epoch-stat">
             <span class="aa-epoch-stat-label">Drawdown</span>
-            <span class="aa-epoch-stat-value aa-stat-neg">{{ fmtPct(epochInfo.max_drawdown) }}</span>
+            <span class="aa-epoch-stat-value aa-stat-neg">{{
+              fmtPct(epochInfo.max_drawdown)
+            }}</span>
           </div>
           <div class="aa-epoch-stat">
             <span class="aa-epoch-stat-label">Sharpe</span>
@@ -87,9 +96,11 @@ function fmtNum(v: unknown, decimals = 2): string {
           <div class="aa-epoch-stat">
             <span class="aa-epoch-stat-label">Win Rate</span>
             <span class="aa-epoch-stat-value">
-              {{ typeof epochInfo.winrate === 'number' && epochInfo.winrate <= 1
-                ? (Number(epochInfo.winrate) * 100).toFixed(1)
-                : fmtNum(epochInfo.winrate, 1) }}%
+              {{
+                typeof epochInfo.winrate === 'number' && epochInfo.winrate <= 1
+                  ? (Number(epochInfo.winrate) * 100).toFixed(1)
+                  : fmtNum(epochInfo.winrate, 1)
+              }}%
             </span>
           </div>
           <div class="aa-epoch-stat">
@@ -324,8 +335,12 @@ function fmtNum(v: unknown, decimals = 2): string {
   color: #cdd6f4;
 }
 
-.aa-stat-pos { color: #a6e3a1; }
-.aa-stat-neg { color: #f38ba8; }
+.aa-stat-pos {
+  color: #a6e3a1;
+}
+.aa-stat-neg {
+  color: #f38ba8;
+}
 
 /* ── Sections (matches HyperoptChartsPanel) ── */
 .section {

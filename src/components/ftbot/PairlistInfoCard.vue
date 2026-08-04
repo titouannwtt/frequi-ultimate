@@ -15,7 +15,9 @@ const pairlistMethods = computed(() => store.value?.pairlistMethods ?? []);
 const pairCount = computed(() => whitelist.value.length);
 const pairlistPairCount = computed(() => pairCount.value - addedPairs.value.length);
 const proportion = computed(() =>
-  totalMarketPairs.value > 0 ? Math.round((pairlistPairCount.value / totalMarketPairs.value) * 100) : 0,
+  totalMarketPairs.value > 0
+    ? Math.round((pairlistPairCount.value / totalMarketPairs.value) * 100)
+    : 0,
 );
 
 const hasPipeline = computed(() => pipeline.value.length > 0);
@@ -59,17 +61,25 @@ function formatValue(v: any): string {
       <div class="flex items-center justify-between mb-1">
         <span class="text-[10px] text-surface-500">{{ proportion }}% of exchange pairs</span>
       </div>
-      <div class="w-full h-1.5 rounded-full overflow-hidden" style="background: rgba(255,255,255,0.06)">
+      <div
+        class="w-full h-1.5 rounded-full overflow-hidden"
+        style="background: rgba(255, 255, 255, 0.06)"
+      >
         <div
           class="h-full rounded-full transition-all"
-          :style="{ width: `${Math.max(proportion, 1)}%`, background: 'linear-gradient(90deg, #3b82f6, #60a5fa)' }"
+          :style="{
+            width: `${Math.max(proportion, 1)}%`,
+            background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+          }"
         />
       </div>
     </div>
 
     <!-- Pipeline -->
     <div v-if="hasPipeline" class="mb-3">
-      <div class="text-[9px] text-surface-500 uppercase tracking-wider mb-1.5 font-semibold">Pipeline</div>
+      <div class="text-[9px] text-surface-500 uppercase tracking-wider mb-1.5 font-semibold">
+        Pipeline
+      </div>
       <div class="space-y-0">
         <template v-for="(step, idx) in pipeline" :key="idx">
           <!-- Step row -->
@@ -81,14 +91,20 @@ function formatValue(v: any): string {
             <!-- Step number -->
             <span
               class="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold mt-0.5"
-              :style="{ background: idx === 0 ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.06)', color: idx === 0 ? '#60a5fa' : '#9ca3af' }"
-            >{{ idx + 1 }}</span>
+              :style="{
+                background: idx === 0 ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.06)',
+                color: idx === 0 ? '#60a5fa' : '#9ca3af',
+              }"
+              >{{ idx + 1 }}</span
+            >
 
             <!-- Handler info -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
                 <span class="font-semibold text-surface-200">{{ step.handler }}</span>
-                <span class="text-surface-400 font-mono text-[10px]">{{ step.count_after }} pairs</span>
+                <span class="text-surface-400 font-mono text-[10px]"
+                  >{{ step.count_after }} pairs</span
+                >
               </div>
               <!-- Config params -->
               <div v-if="getConfigParams(idx).length > 0" class="flex flex-wrap gap-x-2 mt-0.5">
@@ -96,20 +112,24 @@ function formatValue(v: any): string {
                   v-for="[k, v] in getConfigParams(idx).slice(0, 4)"
                   :key="k"
                   class="text-[9px] text-surface-500"
-                >{{ k }}: <span class="text-surface-400">{{ formatValue(v) }}</span></span>
-                <span v-if="getConfigParams(idx).length > 4" class="text-[9px] text-surface-600">+{{ getConfigParams(idx).length - 4 }} more</span>
+                  >{{ k }}: <span class="text-surface-400">{{ formatValue(v) }}</span></span
+                >
+                <span v-if="getConfigParams(idx).length > 4" class="text-[9px] text-surface-600"
+                  >+{{ getConfigParams(idx).length - 4 }} more</span
+                >
               </div>
             </div>
           </div>
 
           <!-- Connector + removed count -->
           <div v-if="idx < pipeline.length - 1" class="flex items-center gap-2 pl-4 py-0.5">
-            <div class="w-px h-3 ml-2" style="background: rgba(255,255,255,0.08)" />
+            <div class="w-px h-3 ml-2" style="background: rgba(255, 255, 255, 0.08)" />
             <span
               v-if="step.pairs_removed.length > 0"
               class="text-[9px] font-mono"
               :style="{ color: step.pairs_removed.length > 10 ? '#f97316' : '#6b7280' }"
-            >−{{ step.pairs_removed.length }}</span>
+              >−{{ step.pairs_removed.length }}</span
+            >
           </div>
 
           <!-- Expanded: removed pairs -->
@@ -121,8 +141,9 @@ function formatValue(v: any): string {
                   v-for="pair in step.pairs_removed"
                   :key="pair"
                   class="px-1.5 py-0.5 rounded text-[8px] font-mono"
-                  style="background: rgba(239,68,68,0.1); color: #f87171"
-                >{{ pair.split('/')[0] }}</span>
+                  style="background: rgba(239, 68, 68, 0.1); color: #f87171"
+                  >{{ pair.split('/')[0] }}</span
+                >
               </div>
             </div>
           </Transition>
@@ -132,13 +153,15 @@ function formatValue(v: any): string {
 
     <!-- Fallback: no pipeline data, show method names -->
     <div v-else-if="pairlistMethods.length > 0" class="mb-3">
-      <div class="text-[9px] text-surface-500 uppercase tracking-wider mb-1.5 font-semibold">Handlers</div>
+      <div class="text-[9px] text-surface-500 uppercase tracking-wider mb-1.5 font-semibold">
+        Handlers
+      </div>
       <div class="flex flex-wrap gap-1">
         <span
           v-for="(method, idx) in pairlistMethods"
           :key="idx"
           class="px-2 py-0.5 rounded text-[10px] font-mono"
-          style="background: rgba(255,255,255,0.05)"
+          style="background: rgba(255, 255, 255, 0.05)"
         >
           <span class="text-surface-500 mr-1">{{ idx + 1 }}.</span>
           <span class="text-surface-300">{{ method }}</span>
@@ -147,28 +170,34 @@ function formatValue(v: any): string {
     </div>
 
     <!-- Separator -->
-    <div class="border-t my-2" style="border-color: rgba(255,255,255,0.06)" />
+    <div class="border-t my-2" style="border-color: rgba(255, 255, 255, 0.06)" />
 
     <!-- Active pairs -->
     <div class="mb-1">
       <div class="flex items-center justify-between mb-1">
-        <span class="text-[9px] text-surface-500 uppercase tracking-wider font-semibold">Active Pairs ({{ pairlistPairCount }})</span>
+        <span class="text-[9px] text-surface-500 uppercase tracking-wider font-semibold"
+          >Active Pairs ({{ pairlistPairCount }})</span
+        >
       </div>
       <div class="flex flex-wrap gap-1 max-h-[120px] overflow-y-auto pr-1">
         <span
-          v-for="pair in whitelist.filter(p => !addedPairs.includes(p))"
+          v-for="pair in whitelist.filter((p) => !addedPairs.includes(p))"
           :key="pair"
           class="px-1.5 py-0.5 rounded text-[9px] font-mono text-surface-300"
-          style="background: rgba(255,255,255,0.04)"
-        >{{ pair.split('/')[0] }}</span>
+          style="background: rgba(255, 255, 255, 0.04)"
+          >{{ pair.split('/')[0] }}</span
+        >
       </div>
     </div>
 
     <!-- Added pairs -->
     <div v-if="addedPairs.length > 0" class="mt-2">
-      <div class="border-t mb-2" style="border-color: rgba(255,255,255,0.06)" />
+      <div class="border-t mb-2" style="border-color: rgba(255, 255, 255, 0.06)" />
       <div class="text-[9px] text-surface-500 mb-1">
-        <i-mdi-plus-circle class="text-green-500 mr-0.5" style="font-size: 0.7rem; vertical-align: middle" />
+        <i-mdi-plus-circle
+          class="text-green-500 mr-0.5"
+          style="font-size: 0.7rem; vertical-align: middle"
+        />
         Added from open trades
       </div>
       <div class="flex flex-wrap gap-1">
@@ -176,8 +205,9 @@ function formatValue(v: any): string {
           v-for="pair in addedPairs"
           :key="pair"
           class="px-1.5 py-0.5 rounded text-[9px] font-mono"
-          style="background: rgba(34,197,94,0.1); color: #4ade80"
-        >+ {{ pair.split('/')[0] }}</span>
+          style="background: rgba(34, 197, 94, 0.1); color: #4ade80"
+          >+ {{ pair.split('/')[0] }}</span
+        >
       </div>
     </div>
   </div>

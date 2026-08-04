@@ -35,7 +35,8 @@ const fmtDate = computed(() => {
 
 const fmtLoss = computed(() => {
   const loss = props.data.max_loss_abs;
-  if (Math.abs(loss) >= 1000) return `${loss >= 0 ? '' : '-'}${(Math.abs(loss) / 1000).toFixed(1)}K`;
+  if (Math.abs(loss) >= 1000)
+    return `${loss >= 0 ? '' : '-'}${(Math.abs(loss) / 1000).toFixed(1)}K`;
   return loss.toFixed(2);
 });
 
@@ -83,10 +84,7 @@ const shortPairs = computed(() =>
 
     <!-- Pairs involved -->
     <div v-if="shortPairs.length">
-      <div
-        class="text-xs font-semibold uppercase tracking-wide mb-2"
-        :style="{ color: C.subtext }"
-      >
+      <div class="text-xs font-semibold uppercase tracking-wide mb-2" :style="{ color: C.subtext }">
         {{ t('strategyDev.mslPairsInvolved') }}
       </div>
       <div class="flex flex-wrap gap-1.5">

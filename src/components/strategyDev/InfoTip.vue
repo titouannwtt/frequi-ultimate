@@ -12,11 +12,7 @@ const visible = ref(false);
 </script>
 
 <template>
-  <span
-    class="infotip"
-    @mouseenter="visible = true"
-    @mouseleave="visible = false"
-  >
+  <span class="infotip" @mouseenter="visible = true" @mouseleave="visible = false">
     <i-mdi-information-outline class="infotip-icon" />
     <Transition name="infotip-pop">
       <div
@@ -44,7 +40,9 @@ const visible = ref(false);
   height: 14px;
   color: var(--sd-overlay);
   opacity: 0.7;
-  transition: opacity 0.15s, color 0.15s;
+  transition:
+    opacity 0.15s,
+    color 0.15s;
 }
 .infotip:hover .infotip-icon {
   opacity: 1;
@@ -88,7 +86,9 @@ const visible = ref(false);
 }
 
 .infotip-pop-enter-active {
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
 }
 .infotip-pop-leave-active {
   transition: opacity 100ms ease;

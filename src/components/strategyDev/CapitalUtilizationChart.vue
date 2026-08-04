@@ -12,7 +12,14 @@ import VChart from 'vue-echarts';
 import { useRegimeOverlay, type RegimeTimelineEntry } from '@/composables/useRegimeOverlay';
 import { useI18n } from 'vue-i18n';
 
-use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, DataZoomComponent, MarkAreaComponent]);
+use([
+  CanvasRenderer,
+  LineChart,
+  GridComponent,
+  TooltipComponent,
+  DataZoomComponent,
+  MarkAreaComponent,
+]);
 
 const { t } = useI18n();
 
@@ -81,7 +88,10 @@ const chartOptions = computed(() => {
         areaStyle: {
           color: {
             type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
             colorStops: [
               { offset: 0, color: 'rgba(166,227,161,0.25)' },
               { offset: 1, color: 'rgba(166,227,161,0.02)' },
@@ -91,7 +101,9 @@ const chartOptions = computed(() => {
         lineStyle: { color: '#a6e3a1', width: 1.5 },
         itemStyle: { color: '#a6e3a1' },
         symbol: 'none',
-        markArea: markAreaData.value.length ? { silent: true, data: markAreaData.value as any } : undefined,
+        markArea: markAreaData.value.length
+          ? { silent: true, data: markAreaData.value as any }
+          : undefined,
       },
     ],
   };

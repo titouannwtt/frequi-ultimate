@@ -11,7 +11,14 @@ import {
   CalendarComponent,
 } from 'echarts/components';
 
-use([HeatmapChart, CanvasRenderer, GridComponent, TooltipComponent, VisualMapComponent, CalendarComponent]);
+use([
+  HeatmapChart,
+  CanvasRenderer,
+  GridComponent,
+  TooltipComponent,
+  VisualMapComponent,
+  CalendarComponent,
+]);
 
 interface CalEntry {
   date: string;
@@ -66,9 +73,7 @@ const chartOptions = computed<EChartsOption>(() => {
     type: 'heatmap' as const,
     coordinateSystem: 'calendar' as const,
     calendarIndex: i,
-    data: props.data
-      .filter((d) => d.date.startsWith(String(y)))
-      .map((d) => [d.date, d.dd_pct]),
+    data: props.data.filter((d) => d.date.startsWith(String(y))).map((d) => [d.date, d.dd_pct]),
   }));
 
   return {

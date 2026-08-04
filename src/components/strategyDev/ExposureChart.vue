@@ -13,7 +13,14 @@ import {
 } from 'echarts/components';
 import { useRegimeOverlay, type RegimeTimelineEntry } from '@/composables/useRegimeOverlay';
 
-use([LineChart, CanvasRenderer, GridComponent, TooltipComponent, DataZoomComponent, MarkAreaComponent]);
+use([
+  LineChart,
+  CanvasRenderer,
+  GridComponent,
+  TooltipComponent,
+  DataZoomComponent,
+  MarkAreaComponent,
+]);
 
 const { t } = useI18n();
 
@@ -28,7 +35,13 @@ const { showRegimes, markAreaData } = useRegimeOverlay(regimeTimeline);
 function fmtDate(raw: string): string {
   const d = new Date(raw);
   if (isNaN(d.getTime())) return raw;
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 const option = computed<EChartsOption>(() => {
@@ -94,7 +107,9 @@ const option = computed<EChartsOption>(() => {
             ],
           },
         },
-        markArea: markAreaData.value.length ? { silent: true, data: markAreaData.value as any } : undefined,
+        markArea: markAreaData.value.length
+          ? { silent: true, data: markAreaData.value as any }
+          : undefined,
       },
     ],
   };

@@ -89,7 +89,11 @@ const feOrderType = ref<string | undefined>(undefined);
 function forceExitHandler(item: Trade, ordertype: string | undefined = undefined) {
   feTrade.value = item;
   confirmExitValue.value = ModalReasons.forceExit;
-  confirmExitText.value = t('tradeList.confirmExit', { id: item.trade_id, pair: item.pair, orderType: ordertype });
+  confirmExitText.value = t('tradeList.confirmExit', {
+    id: item.trade_id,
+    pair: item.pair,
+    orderType: ordertype,
+  });
   feOrderType.value = ordertype;
   if (settingsStore.confirmDialog === true) {
     removeTradeVisible.value = true;
@@ -226,7 +230,8 @@ watch(
             {{ data.trade_id }}
             {{
               botStore.activeBot.botFeatures.futures && data.trading_mode !== 'spot'
-                ? (data.trade_id ? '| ' : '') + (data.is_short ? t('tradeList.short') : t('tradeList.long'))
+                ? (data.trade_id ? '| ' : '') +
+                  (data.is_short ? t('tradeList.short') : t('tradeList.long'))
                 : ''
             }}
           </template>
@@ -276,7 +281,12 @@ watch(
       <template v-if="showFilter" #paginatorstart> </template>
       <template v-if="showFilter" #paginatorend>
         <div class="flex justify-end gap-2 p-2">
-          <InputText v-model="filterText" :placeholder="t('tradeList.filter')" class="w-64" size="small" />
+          <InputText
+            v-model="filterText"
+            :placeholder="t('tradeList.filter')"
+            class="w-64"
+            size="small"
+          />
         </div>
       </template>
     </DataTable>

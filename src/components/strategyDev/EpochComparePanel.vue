@@ -8,11 +8,15 @@ const leftData = ref<Record<string, unknown> | null>(null);
 const rightData = ref<Record<string, unknown> | null>(null);
 const loading = ref(false);
 
-const leftEq = computed(() => leftData.value?.equity_curve as { date: string; balance: number }[] | undefined);
+const leftEq = computed(
+  () => leftData.value?.equity_curve as { date: string; balance: number }[] | undefined,
+);
 const leftBal = computed(() => (leftData.value?.starting_balance as number) ?? 1000);
 const { benchmarkEquity: leftBtc } = useBtcBenchmark(leftEq, leftBal);
 
-const rightEq = computed(() => rightData.value?.equity_curve as { date: string; balance: number }[] | undefined);
+const rightEq = computed(
+  () => rightData.value?.equity_curve as { date: string; balance: number }[] | undefined,
+);
 const rightBal = computed(() => (rightData.value?.starting_balance as number) ?? 1000);
 const { benchmarkEquity: rightBtc } = useBtcBenchmark(rightEq, rightBal);
 
@@ -25,12 +29,16 @@ const topEpochs = computed(() => {
 
 const leftRank = computed({
   get: () => store.compareEpochRanks[0],
-  set: (v) => { store.compareEpochRanks = [v, store.compareEpochRanks[1]]; },
+  set: (v) => {
+    store.compareEpochRanks = [v, store.compareEpochRanks[1]];
+  },
 });
 
 const rightRank = computed({
   get: () => store.compareEpochRanks[1],
-  set: (v) => { store.compareEpochRanks = [store.compareEpochRanks[0], v]; },
+  set: (v) => {
+    store.compareEpochRanks = [store.compareEpochRanks[0], v];
+  },
 });
 
 async function loadBoth() {
@@ -56,7 +64,9 @@ onMounted(() => {
 watch([leftRank, rightRank], () => loadBoth());
 
 const leftInfo = computed(() => leftData.value?.epoch_info as Record<string, unknown> | undefined);
-const rightInfo = computed(() => rightData.value?.epoch_info as Record<string, unknown> | undefined);
+const rightInfo = computed(
+  () => rightData.value?.epoch_info as Record<string, unknown> | undefined,
+);
 
 interface MetricRow {
   label: string;
@@ -71,7 +81,8 @@ const metricRows = computed<MetricRow[]>(() => {
   const ri = rightInfo.value;
 
   function cmp(a: unknown, b: unknown, higherBetter = true): 'left' | 'right' | 'equal' {
-    const na = Number(a), nb = Number(b);
+    const na = Number(a),
+      nb = Number(b);
     if (isNaN(na) || isNaN(nb) || na === nb) return 'equal';
     if (higherBetter) return na > nb ? 'left' : 'right';
     return na < nb ? 'left' : 'right';
@@ -89,14 +100,54 @@ const metricRows = computed<MetricRow[]>(() => {
   }
 
   return [
-    { label: t('strategyDev.metricProfit'), left: fmtPct(li.total_profit), right: fmtPct(ri.total_profit), better: cmp(li.total_profit, ri.total_profit) },
-    { label: t('strategyDev.metricTrades'), left: String(li.total_trades), right: String(ri.total_trades), better: cmp(li.total_trades, ri.total_trades) },
-    { label: t('strategyDev.metricDrawdown'), left: fmtPct(li.max_drawdown), right: fmtPct(ri.max_drawdown), better: cmp(li.max_drawdown, ri.max_drawdown, false) },
-    { label: t('strategyDev.metricSharpe'), left: fmtNum(li.sharpe), right: fmtNum(ri.sharpe), better: cmp(li.sharpe, ri.sharpe) },
-    { label: t('strategyDev.metricSortino'), left: fmtNum(li.sortino), right: fmtNum(ri.sortino), better: cmp(li.sortino, ri.sortino) },
-    { label: t('strategyDev.metricProfitFactor'), left: fmtNum(li.profit_factor), right: fmtNum(ri.profit_factor), better: cmp(li.profit_factor, ri.profit_factor) },
-    { label: t('strategyDev.metricWinRate'), left: fmtPct(li.winrate), right: fmtPct(ri.winrate), better: cmp(li.winrate, ri.winrate) },
-    { label: t('strategyDev.metricLoss'), left: fmtNum(li.loss, 4), right: fmtNum(ri.loss, 4), better: cmp(li.loss, ri.loss, false) },
+    {
+      label: t('strategyDev.metricProfit'),
+      left: fmtPct(li.total_profit),
+      right: fmtPct(ri.total_profit),
+      better: cmp(li.total_profit, ri.total_profit),
+    },
+    {
+      label: t('strategyDev.metricTrades'),
+      left: String(li.total_trades),
+      right: String(ri.total_trades),
+      better: cmp(li.total_trades, ri.total_trades),
+    },
+    {
+      label: t('strategyDev.metricDrawdown'),
+      left: fmtPct(li.max_drawdown),
+      right: fmtPct(ri.max_drawdown),
+      better: cmp(li.max_drawdown, ri.max_drawdown, false),
+    },
+    {
+      label: t('strategyDev.metricSharpe'),
+      left: fmtNum(li.sharpe),
+      right: fmtNum(ri.sharpe),
+      better: cmp(li.sharpe, ri.sharpe),
+    },
+    {
+      label: t('strategyDev.metricSortino'),
+      left: fmtNum(li.sortino),
+      right: fmtNum(ri.sortino),
+      better: cmp(li.sortino, ri.sortino),
+    },
+    {
+      label: t('strategyDev.metricProfitFactor'),
+      left: fmtNum(li.profit_factor),
+      right: fmtNum(ri.profit_factor),
+      better: cmp(li.profit_factor, ri.profit_factor),
+    },
+    {
+      label: t('strategyDev.metricWinRate'),
+      left: fmtPct(li.winrate),
+      right: fmtPct(ri.winrate),
+      better: cmp(li.winrate, ri.winrate),
+    },
+    {
+      label: t('strategyDev.metricLoss'),
+      left: fmtNum(li.loss, 4),
+      right: fmtNum(ri.loss, 4),
+      better: cmp(li.loss, ri.loss, false),
+    },
   ];
 });
 
@@ -121,8 +172,9 @@ const paramDiff = computed(() => {
       <div class="compare-side">
         <label>{{ t('strategyDev.compareLeft') }}</label>
         <select v-model.number="leftRank" class="compare-select">
-          <option v-for="ep in topEpochs" :key="(ep.rank as number)" :value="ep.rank">
-            #{{ ep.rank }} — {{ ((ep.profit_pct as number) >= 0 ? '+' : '') }}{{ (ep.profit_pct as number).toFixed(1) }}%
+          <option v-for="ep in topEpochs" :key="ep.rank as number" :value="ep.rank">
+            #{{ ep.rank }} — {{ (ep.profit_pct as number) >= 0 ? '+' : ''
+            }}{{ (ep.profit_pct as number).toFixed(1) }}%
           </option>
         </select>
       </div>
@@ -130,8 +182,9 @@ const paramDiff = computed(() => {
       <div class="compare-side">
         <label>{{ t('strategyDev.compareRight') }}</label>
         <select v-model.number="rightRank" class="compare-select">
-          <option v-for="ep in topEpochs" :key="(ep.rank as number)" :value="ep.rank">
-            #{{ ep.rank }} — {{ ((ep.profit_pct as number) >= 0 ? '+' : '') }}{{ (ep.profit_pct as number).toFixed(1) }}%
+          <option v-for="ep in topEpochs" :key="ep.rank as number" :value="ep.rank">
+            #{{ ep.rank }} — {{ (ep.profit_pct as number) >= 0 ? '+' : ''
+            }}{{ (ep.profit_pct as number).toFixed(1) }}%
           </option>
         </select>
       </div>
@@ -156,7 +209,9 @@ const paramDiff = computed(() => {
             <tr v-for="row in metricRows" :key="row.label">
               <td class="dt-label">{{ row.label }}</td>
               <td class="dt-val" :class="{ 'dt-better': row.better === 'left' }">{{ row.left }}</td>
-              <td class="dt-val" :class="{ 'dt-better': row.better === 'right' }">{{ row.right }}</td>
+              <td class="dt-val" :class="{ 'dt-better': row.better === 'right' }">
+                {{ row.right }}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -184,8 +239,14 @@ const paramDiff = computed(() => {
       </div>
 
       <!-- Side-by-side equity curves -->
-      <div v-if="leftData?.equity_curve && rightData?.equity_curve" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <ChartWrapper :title="`${t('strategyDev.aaEquityCurve')} — ${t('strategyDev.compareRankN', { n: leftRank })}`" chart-id="cmp-equity-l">
+      <div
+        v-if="leftData?.equity_curve && rightData?.equity_curve"
+        class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"
+      >
+        <ChartWrapper
+          :title="`${t('strategyDev.aaEquityCurve')} — ${t('strategyDev.compareRankN', { n: leftRank })}`"
+          chart-id="cmp-equity-l"
+        >
           <EquityCurveChart
             :equity="leftData.equity_curve as any[]"
             :starting-balance="(leftData.starting_balance as number) ?? 1000"
@@ -193,7 +254,10 @@ const paramDiff = computed(() => {
             benchmark-label="BTC"
           />
         </ChartWrapper>
-        <ChartWrapper :title="`${t('strategyDev.aaEquityCurve')} — ${t('strategyDev.compareRankN', { n: rightRank })}`" chart-id="cmp-equity-r">
+        <ChartWrapper
+          :title="`${t('strategyDev.aaEquityCurve')} — ${t('strategyDev.compareRankN', { n: rightRank })}`"
+          chart-id="cmp-equity-r"
+        >
           <EquityCurveChart
             :equity="rightData.equity_curve as any[]"
             :starting-balance="(rightData.starting_balance as number) ?? 1000"
@@ -204,11 +268,20 @@ const paramDiff = computed(() => {
       </div>
 
       <!-- Side-by-side trade PnL -->
-      <div v-if="leftData?.trade_pnl_distribution && rightData?.trade_pnl_distribution" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <ChartWrapper :title="`${t('strategyDev.aaTradePnl')} — ${t('strategyDev.compareRankN', { n: leftRank })}`" chart-id="cmp-pnl-l">
+      <div
+        v-if="leftData?.trade_pnl_distribution && rightData?.trade_pnl_distribution"
+        class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"
+      >
+        <ChartWrapper
+          :title="`${t('strategyDev.aaTradePnl')} — ${t('strategyDev.compareRankN', { n: leftRank })}`"
+          chart-id="cmp-pnl-l"
+        >
           <TradePnlChart :distribution="leftData.trade_pnl_distribution as any" />
         </ChartWrapper>
-        <ChartWrapper :title="`${t('strategyDev.aaTradePnl')} — ${t('strategyDev.compareRankN', { n: rightRank })}`" chart-id="cmp-pnl-r">
+        <ChartWrapper
+          :title="`${t('strategyDev.aaTradePnl')} — ${t('strategyDev.compareRankN', { n: rightRank })}`"
+          chart-id="cmp-pnl-r"
+        >
           <TradePnlChart :distribution="rightData.trade_pnl_distribution as any" />
         </ChartWrapper>
       </div>

@@ -18,8 +18,12 @@ defineProps<{
       <ValuePair :description="t('tradeDetail.tradeId')">{{ trade.trade_id }}</ValuePair>
       <ValuePair :description="t('tradeDetail.pair')">{{ trade.pair }}</ValuePair>
 
-      <ValuePair :description="t('tradeDetail.openDate')">{{ timestampms(trade.open_timestamp) }}</ValuePair>
-      <ValuePair v-if="trade.enter_tag" :description="t('tradeDetail.entryTag')">{{ trade.enter_tag }}</ValuePair>
+      <ValuePair :description="t('tradeDetail.openDate')">{{
+        timestampms(trade.open_timestamp)
+      }}</ValuePair>
+      <ValuePair v-if="trade.enter_tag" :description="t('tradeDetail.entryTag')">{{
+        trade.enter_tag
+      }}</ValuePair>
       <ValuePair v-if="trade.is_open" :description="t('tradeDetail.stake')">
         {{ formatPriceCurrency(trade.stake_amount, stakeCurrency) }}
         <template v-if="trade.trading_mode !== 'spot'">
@@ -34,16 +38,23 @@ defineProps<{
         {{ trade.trading_mode !== 'spot' ? `(${trade.leverage}x)` : '' }}
       </ValuePair>
       <ValuePair :description="t('tradeDetail.amount')">{{ formatPrice(trade.amount) }}</ValuePair>
-      <ValuePair :description="t('tradeDetail.openRate')">{{ formatPrice(trade.open_rate) }}</ValuePair>
-      <ValuePair v-if="trade.is_open && trade.current_rate" :description="t('tradeDetail.currentRate')">
+      <ValuePair :description="t('tradeDetail.openRate')">{{
+        formatPrice(trade.open_rate)
+      }}</ValuePair>
+      <ValuePair
+        v-if="trade.is_open && trade.current_rate"
+        :description="t('tradeDetail.currentRate')"
+      >
         {{ formatPrice(trade.current_rate) }}
         <span title="Current Value - In futures mode Collateral + PnL" class="italic">
           ({{ formatPriceCurrency(trade.stake_amount + (trade.profit_abs ?? 0), stakeCurrency) }})
         </span>
       </ValuePair>
-      <ValuePair v-if="!trade.is_open && trade.close_rate" :description="t('tradeDetail.closeRate')">{{
-        formatPrice(trade.close_rate)
-      }}</ValuePair>
+      <ValuePair
+        v-if="!trade.is_open && trade.close_rate"
+        :description="t('tradeDetail.closeRate')"
+        >{{ formatPrice(trade.close_rate) }}</ValuePair
+      >
 
       <ValuePair v-if="trade.close_timestamp" :description="t('tradeDetail.closeDate')">{{
         timestampms(trade.close_timestamp)
@@ -54,7 +65,10 @@ defineProps<{
       >
         <TradeProfit :trade="trade" mode="realized" />
       </ValuePair>
-      <ValuePair v-if="trade.is_open && trade.total_profit_abs" :description="t('tradeDetail.totalProfit')">
+      <ValuePair
+        v-if="trade.is_open && trade.total_profit_abs"
+        :description="t('tradeDetail.totalProfit')"
+      >
         <TradeProfit :trade="trade" mode="total" />
       </ValuePair>
       <ValuePair
@@ -78,7 +92,10 @@ defineProps<{
           </span>
           ({{ formatPercent(trade.fee_open) }})
         </ValuePair>
-        <ValuePair v-if="trade.fee_close_cost && trade.fee_close" :description="t('tradeDetail.closeFees')">
+        <ValuePair
+          v-if="trade.fee_close_cost && trade.fee_close"
+          :description="t('tradeDetail.closeFees')"
+        >
           {{ trade.fee_close_cost }} {{ trade.fee_close_currency }} ({{
             formatPercent(trade.fee_close)
           }})
@@ -91,10 +108,7 @@ defineProps<{
         {{ formatPercent(trade.stop_loss_ratio) }} |
         {{ formatPrice(trade.stop_loss_abs) }}
       </ValuePair>
-      <ValuePair
-        :description="t('tradeDetail.atRisk')"
-        :help="t('tradeDetail.atRiskDesc')"
-      >
+      <ValuePair :description="t('tradeDetail.atRisk')" :help="t('tradeDetail.atRiskDesc')">
         {{
           formatPriceCurrency(trade.stake_amount * Math.abs(trade.stop_loss_ratio), stakeCurrency)
         }}
@@ -113,7 +127,10 @@ defineProps<{
         {{ formatPercent(trade.initial_stop_loss_pct / 100) }} |
         {{ formatPrice(trade.initial_stop_loss_abs) }}
       </ValuePair>
-      <ValuePair v-if="trade.stoploss_last_update_timestamp" :description="t('tradeDetail.stoplossLastUpdated')">
+      <ValuePair
+        v-if="trade.stoploss_last_update_timestamp"
+        :description="t('tradeDetail.stoplossLastUpdated')"
+      >
         {{ timestampms(trade.stoploss_last_update_timestamp) }}
       </ValuePair>
       <div v-if="trade.trading_mode !== undefined && trade.trading_mode !== 'spot'">
@@ -121,18 +138,30 @@ defineProps<{
         <ValuePair :description="t('tradeDetail.direction')">
           {{ trade.is_short ? 'short' : 'long' }} - {{ trade.leverage }}x
         </ValuePair>
-        <ValuePair v-if="trade.funding_fees !== undefined" :description="t('tradeDetail.fundingFees')">
+        <ValuePair
+          v-if="trade.funding_fees !== undefined"
+          :description="t('tradeDetail.fundingFees')"
+        >
           {{ formatPrice(trade.funding_fees) }}
         </ValuePair>
-        <ValuePair v-if="trade.interest_rate !== undefined" :description="t('tradeDetail.interestRate')">
+        <ValuePair
+          v-if="trade.interest_rate !== undefined"
+          :description="t('tradeDetail.interestRate')"
+        >
           {{ formatPrice(trade.interest_rate) }}
         </ValuePair>
-        <ValuePair v-if="trade.liquidation_price !== undefined" :description="t('tradeDetail.liquidationPrice')">
+        <ValuePair
+          v-if="trade.liquidation_price !== undefined"
+          :description="t('tradeDetail.liquidationPrice')"
+        >
           {{ formatPrice(trade.liquidation_price) }}
         </ValuePair>
       </div>
       <details v-if="trade.orders">
-        <summary>{{ t('tradeDetail.orders') }} {{ trade.orders.length > 1 ? `[${trade.orders.length}]` : '' }}</summary>
+        <summary>
+          {{ t('tradeDetail.orders') }}
+          {{ trade.orders.length > 1 ? `[${trade.orders.length}]` : '' }}
+        </summary>
         <div
           v-for="(order, key) in trade.orders"
           :key="key"

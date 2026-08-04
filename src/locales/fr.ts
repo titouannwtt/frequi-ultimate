@@ -113,20 +113,17 @@ export default {
     profitDistributionDesc:
       'Distribution des profits des trades fermés pour les bots sélectionnés.',
     activityTimelineDesc:
-      "Fil chronologique des événements (trades, DCA, alertes) de tous les bots.",
+      'Fil chronologique des événements (trades, DCA, alertes) de tous les bots.',
     marketOverviewDesc:
       'Instantané du marché pour les paires tradées par les bots. Rafraîchi toutes les 30 s.',
     riskOverviewDesc: 'Exposition agrégée et indicateurs de risque de tous les bots.',
     stressTestDesc:
       'Simule un mouvement de marché (-50 % à +50 %) sur toutes les positions ouvertes, liquidations comprises.',
-    logConsoleDesc:
-      'Logs agrégés des bots (avertissements et erreurs). Rafraîchi toutes les 10 s.',
-    rateMonitorDesc:
-      "Budget API de l'exchange : cadence de requêtes, taux de cache, erreurs 429.",
+    logConsoleDesc: 'Logs agrégés des bots (avertissements et erreurs). Rafraîchi toutes les 10 s.',
+    rateMonitorDesc: "Budget API de l'exchange : cadence de requêtes, taux de cache, erreurs 429.",
     requestTimelineDesc:
       'Chronologie des requêtes API par bot : directes, en cache, erreurs, latence.',
-    infraHealthDesc:
-      'Santé des process bots : état, uptime, heartbeats, taille de la pairlist.',
+    infraHealthDesc: 'Santé des process bots : état, uptime, heartbeats, taille de la pairlist.',
     volumeComparatorDesc: "Volume tradé par les bots comparé au volume de l'exchange par période.",
     periodBreakdownDesc: 'Profit ventilé par jour, semaine ou mois sur tous les bots.',
     botProfitComparisonDesc:
@@ -261,10 +258,12 @@ export default {
     hoverOpenBook: 'Positions ouvertes',
     hoverFromHigh: 'Écart au plus haut',
     hoverAtHigh: 'au plus haut',
-    periodDDHint: 'Drawdown maximum atteint sur la période affichée, mesuré sur la courbe visible (latente si activée). % du pic d\'équité et montant.',
+    periodDDHint:
+      "Drawdown maximum atteint sur la période affichée, mesuré sur la courbe visible (latente si activée). % du pic d'équité et montant.",
     latentToggle: 'Profit latent',
     latentCurve: 'Profit courant (latent inclus)',
-    latentCurveHint: 'Courbe bleue : profit fermé + latent des positions ouvertes, échantillonné dans le temps (série profit_history).',
+    latentCurveHint:
+      'Courbe bleue : profit fermé + latent des positions ouvertes, échantillonné dans le temps (série profit_history).',
     tabCombined: 'Combiné',
     tabPerBot: 'Par bot',
     tabCumulative: 'Cumulatif',
@@ -323,7 +322,7 @@ export default {
 
   // Bot comparison table
   botComparison: {
-    fitScreenOff: 'Ajuster les colonnes à l\'écran (supprime le défilement horizontal)',
+    fitScreenOff: "Ajuster les colonnes à l'écran (supprime le défilement horizontal)",
     fitScreenOn: 'Ajustement écran activé — cliquer pour revenir aux largeurs normales',
     botName: 'Nom du bot',
     all: 'Tous',
@@ -343,9 +342,9 @@ export default {
     balance: 'Solde',
     winLoss: 'G/P',
     lastTrade: 'Dernier trade',
-    lastTradeOthersToday: 'autres aujourd\'hui',
+    lastTradeOthersToday: "autres aujourd'hui",
     lastTradeOthersTodayTooltip:
-      '{n} autre trade clôturé aujourd\'hui | {n} autres trades clôturés aujourd\'hui',
+      "{n} autre trade clôturé aujourd'hui | {n} autres trades clôturés aujourd'hui",
     offline: 'Hors ligne',
     offlineSince: 'depuis {duration}',
     dry: 'Dry',
@@ -2157,7 +2156,7 @@ export default {
       summaryPhantom:
         "La part de {bot} #{tradeId} n'existe pas on-chain : le wallet détient {chainSide} {chainAmount} {coin}, entièrement expliqué par les autres bots. Suppression en DB sûre (aucun ordre exchange).",
       summaryUnowned:
-        "Le wallet détient {chainSide} {chainAmount} {coin} mais aucun bot ne revendique cette position.",
+        'Le wallet détient {chainSide} {chainAmount} {coin} mais aucun bot ne revendique cette position.',
       summaryAmbiguous:
         "Les bots revendiquent collectivement {dbSide} {dbAmount} {coin} mais le wallet détient {chainSide} {chainAmount} (écart {gap}). Aucun trade unique n'explique l'écart : voir le guide de résolution.",
       status: {
@@ -2231,7 +2230,7 @@ export default {
         dbOnly:
           "Action DB uniquement : aucun ordre ne sera jamais placé sur l'exchange. Seules les bases des bots sont réécrites pour correspondre à la position on-chain.",
         intro:
-          "Choisissez quoi faire de chaque part en DB pour que leur somme corresponde à la position nette on-chain. Une seule part peut être ajustée ; les parts fermées sont supprimées entièrement.",
+          'Choisissez quoi faire de chaque part en DB pour que leur somme corresponde à la position nette on-chain. Une seule part peut être ajustée ; les parts fermées sont supprimées entièrement.',
         colAction: 'Action',
         colNewAmount: 'Nouveau montant',
         keep: 'Garder',

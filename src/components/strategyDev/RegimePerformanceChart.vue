@@ -6,11 +6,7 @@ import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { BarChart } from 'echarts/charts';
-import {
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
-} from 'echarts/components';
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
 
 use([BarChart, CanvasRenderer, GridComponent, TooltipComponent, LegendComponent]);
 
@@ -132,7 +128,9 @@ const chartOptions = computed<EChartsOption>(() => {
     },
     yAxis: {
       type: 'value',
-      name: isDaily ? `${t('strategyDev.regimeAvgDailyProfit')} (%)` : `${t('strategyDev.regimeAvgProfit')} (%)`,
+      name: isDaily
+        ? `${t('strategyDev.regimeAvgDailyProfit')} (%)`
+        : `${t('strategyDev.regimeAvgProfit')} (%)`,
       nameTextStyle: { color: C.subtext, fontSize: 11 },
       axisLabel: { color: C.subtext, fontSize: 10 },
       splitLine: { lineStyle: { color: C.surface1 } },
@@ -201,7 +199,9 @@ const timeDistribution = computed(() => {
 
     <!-- Time distribution bar -->
     <div class="mt-3">
-      <div class="text-xs mb-1" :style="{ color: C.subtext }">{{ t('strategyDev.regimeTimeInEach') }}</div>
+      <div class="text-xs mb-1" :style="{ color: C.subtext }">
+        {{ t('strategyDev.regimeTimeInEach') }}
+      </div>
       <div class="flex w-full h-5 rounded overflow-hidden">
         <div
           v-for="seg in timeDistribution"

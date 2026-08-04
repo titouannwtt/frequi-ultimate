@@ -109,8 +109,7 @@ export default {
     profitBenchmarkDesc: 'Combined profit of the selected bots versus benchmarks.',
     profitDistributionDesc: 'Distribution of closed-trade profits for the selected bots.',
     activityTimelineDesc: 'Chronological feed of events (trades, DCA, alerts) across all bots.',
-    marketOverviewDesc:
-      'Market snapshot for the pairs traded by the bots. Refreshes every 30s.',
+    marketOverviewDesc: 'Market snapshot for the pairs traded by the bots. Refreshes every 30s.',
     riskOverviewDesc: 'Aggregated exposure and risk indicators across all bots.',
     stressTestDesc:
       'Simulates a market move (-50% to +50%) against all open positions, including liquidations.',
@@ -256,10 +255,12 @@ export default {
     hoverOpenBook: 'Open positions',
     hoverFromHigh: 'From high',
     hoverAtHigh: 'at high',
-    periodDDHint: 'Max drawdown within the displayed period, measured on the visible curve (latent when enabled). % of peak equity and amount.',
+    periodDDHint:
+      'Max drawdown within the displayed period, measured on the visible curve (latent when enabled). % of peak equity and amount.',
     latentToggle: 'Latent profit',
     latentCurve: 'Current profit (incl. latent)',
-    latentCurveHint: 'Blue curve: closed + open unrealized profit, sampled over time (profit_history series).',
+    latentCurveHint:
+      'Blue curve: closed + open unrealized profit, sampled over time (profit_history series).',
     tabCombined: 'Combined',
     tabPerBot: 'Per Bot',
     tabCumulative: 'Cumulative',
@@ -338,8 +339,7 @@ export default {
     winLoss: 'W/L',
     lastTrade: 'Last trade',
     lastTradeOthersToday: 'others today',
-    lastTradeOthersTodayTooltip:
-      '{n} other trade closed today | {n} other trades closed today',
+    lastTradeOthersTodayTooltip: '{n} other trade closed today | {n} other trades closed today',
     offline: 'Offline',
     offlineSince: 'since {duration}',
     dry: 'Dry',
@@ -542,8 +542,7 @@ export default {
         'Could not determine the bot’s pairs (empty whitelist, no trades, no logged whitelist). Is the bot initialized? Try again once its pairlist is ready.',
       pairsSource_trades:
         'Live whitelist unavailable — using the pairs this bot has actually traded.',
-      pairsSource_logs:
-        'Live whitelist unavailable — using the bot’s last logged whitelist.',
+      pairsSource_logs: 'Live whitelist unavailable — using the bot’s last logged whitelist.',
       startDate: 'Start date',
       endDate: 'End date',
       fundingHint: 'Funding fees are only accurate if you have funding data for the period.',

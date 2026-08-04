@@ -85,7 +85,9 @@ const orderTypeOptions = computed(() => [
         <p class="mb-2">
           <span>{{ t('forceExit.exitingTrade', { id: trade.trade_id, pair: trade.pair }) }}</span>
           <br />
-          <span>{{ t('forceExit.currentlyOwning', { amount: trade.amount, currency: trade.base_currency }) }}</span>
+          <span>{{
+            t('forceExit.currentlyOwning', { amount: trade.amount, currency: trade.base_currency })
+          }}</span>
         </p>
       </div>
 
@@ -151,8 +153,12 @@ const orderTypeOptions = computed(() => [
 
     <template #footer>
       <div class="flex justify-end gap-2">
-        <Button severity="secondary" size="small" @click="model = false">{{ t('forceExit.cancel') }}</Button>
-        <Button severity="primary" size="small" @click="handleExit">{{ t('forceExit.exitPosition') }}</Button>
+        <Button severity="secondary" size="small" @click="model = false">{{
+          t('forceExit.cancel')
+        }}</Button>
+        <Button severity="primary" size="small" @click="handleExit">{{
+          t('forceExit.exitPosition')
+        }}</Button>
       </div>
     </template>
   </Dialog>

@@ -165,7 +165,10 @@ export function createBotSubStore(botId: string, botName: string) {
         rateMetrics: {} as RateMetricsResponse,
         volumeHistory: undefined as VolumeHistoryResponse | undefined,
         fleetStatus: null as FleetStatusResponse | null,
-        signalSummary: {} as Record<string, { enter_long: number; exit_long: number; enter_short: number; exit_short: number }>,
+        signalSummary: {} as Record<
+          string,
+          { enter_long: number; exit_long: number; enter_short: number; exit_short: number }
+        >,
         signalSummaryLoading: false,
         signalSummaryLastFetched: 0,
       };
@@ -217,7 +220,8 @@ export function createBotSubStore(botId: string, botName: string) {
         }
         return false;
       },
-      uiBotName: (state) => loginInfo.botName.value || botName || state.botState?.bot_name || 'freqtrade',
+      uiBotName: (state) =>
+        loginInfo.botName.value || botName || state.botState?.bot_name || 'freqtrade',
       uiBotIcon: () => loginInfo.botIcon.value || '',
       botName: (state) => state.botState?.bot_name || 'freqtrade',
       botId: () => botId,
@@ -465,7 +469,14 @@ export function createBotSubStore(botId: string, botName: string) {
         if (this.signalSummaryLoading) return;
         this.signalSummaryLoading = true;
         try {
-          const { data } = await api.get<{ pairs: Record<string, { enter_long: number; exit_long: number; enter_short: number; exit_short: number }>; timeframe: string; last_analyzed_ts: number }>('/signal_summary');
+          const { data } = await api.get<{
+            pairs: Record<
+              string,
+              { enter_long: number; exit_long: number; enter_short: number; exit_short: number }
+            >;
+            timeframe: string;
+            last_analyzed_ts: number;
+          }>('/signal_summary');
           this.signalSummary = data.pairs;
           this.signalSummaryLastFetched = Date.now();
         } catch (e) {

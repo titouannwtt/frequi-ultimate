@@ -13,7 +13,15 @@ import {
   MarkLineComponent,
 } from 'echarts/components';
 
-use([BarChart, LineChart, CanvasRenderer, GridComponent, TooltipComponent, LegendComponent, MarkLineComponent]);
+use([
+  BarChart,
+  LineChart,
+  CanvasRenderer,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  MarkLineComponent,
+]);
 
 interface BucketData {
   label: string;
@@ -55,24 +63,32 @@ const insights = computed(() => {
 
   if (bestBucket.avg_profit > 0) {
     items.push({
-      text: t('strategyDev.durBestBucket', { label: bestBucket.label, profit: (bestBucket.avg_profit * 100).toFixed(2) }),
+      text: t('strategyDev.durBestBucket', {
+        label: bestBucket.label,
+        profit: (bestBucket.avg_profit * 100).toFixed(2),
+      }),
       color: C.green,
     });
   }
   if (worstBucket.avg_profit < 0 && worstBucket.count >= 5) {
     items.push({
-      text: t('strategyDev.durWorstBucket', { label: worstBucket.label, profit: (worstBucket.avg_profit * 100).toFixed(2) }),
+      text: t('strategyDev.durWorstBucket', {
+        label: worstBucket.label,
+        profit: (worstBucket.avg_profit * 100).toFixed(2),
+      }),
       color: C.red,
     });
   }
 
-  const longBuckets = props.data.filter(b => b.avg_duration >= 1440);
-  const shortBuckets = props.data.filter(b => b.avg_duration < 1440);
+  const longBuckets = props.data.filter((b) => b.avg_duration >= 1440);
+  const shortBuckets = props.data.filter((b) => b.avg_duration < 1440);
   if (longBuckets.length && shortBuckets.length) {
-    const longAvg = longBuckets.reduce((s, b) => s + b.avg_profit * b.count, 0) /
-                    longBuckets.reduce((s, b) => s + b.count, 0);
-    const shortAvg = shortBuckets.reduce((s, b) => s + b.avg_profit * b.count, 0) /
-                     shortBuckets.reduce((s, b) => s + b.count, 0);
+    const longAvg =
+      longBuckets.reduce((s, b) => s + b.avg_profit * b.count, 0) /
+      longBuckets.reduce((s, b) => s + b.count, 0);
+    const shortAvg =
+      shortBuckets.reduce((s, b) => s + b.avg_profit * b.count, 0) /
+      shortBuckets.reduce((s, b) => s + b.count, 0);
     if (longAvg < 0 && shortAvg > 0) {
       items.push({
         text: t('strategyDev.durLongNegShortPos'),
@@ -85,7 +101,7 @@ const insights = computed(() => {
 });
 
 const chartOptions = computed<EChartsOption>(() => {
-  const labels = props.data.map(b => b.label);
+  const labels = props.data.map((b) => b.label);
 
   return {
     tooltip: {
@@ -141,7 +157,7 @@ const chartOptions = computed<EChartsOption>(() => {
       {
         name: t('strategyDev.durTrades'),
         type: 'bar',
-        data: props.data.map(b => ({
+        data: props.data.map((b) => ({
           value: b.count,
           itemStyle: { color: wrColor(b.winrate), opacity: 0.8 },
         })),
@@ -151,7 +167,7 @@ const chartOptions = computed<EChartsOption>(() => {
         name: t('strategyDev.durAvgProfit'),
         type: 'line',
         yAxisIndex: 1,
-        data: props.data.map(b => b.avg_profit),
+        data: props.data.map((b) => b.avg_profit),
         lineStyle: { color: C.blue, width: 2 },
         symbol: 'circle',
         symbolSize: 6,

@@ -55,7 +55,9 @@ const runDuration = computed(() => {
   return formatDistanceStrict(new Date(start * 1000), new Date(end * 1000));
 });
 
-const canEdit = computed(() => props.run.run_type !== RunType.backtest && props.run.run_type !== RunType.live);
+const canEdit = computed(
+  () => props.run.run_type !== RunType.backtest && props.run.run_type !== RunType.live,
+);
 const isLive = computed(() => props.run.run_type === RunType.live);
 
 // ── Quick stats ──
@@ -91,8 +93,11 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
 
   if (r.verdict_grade) {
     const gradeColors: Record<string, string> = {
-      A: 'var(--sd-success)', B: 'var(--sd-success)',
-      C: 'var(--sd-warning)', D: 'var(--sd-danger)', F: 'var(--sd-danger)',
+      A: 'var(--sd-success)',
+      B: 'var(--sd-success)',
+      C: 'var(--sd-warning)',
+      D: 'var(--sd-danger)',
+      F: 'var(--sd-danger)',
     };
     stats.push({
       label: t('strategyDev.metricGrade'),
@@ -145,7 +150,12 @@ const quickStats = computed<{ label: string; value: string; color: string }[]>((
     stats.push({
       label: t('strategyDev.metricSQN'),
       value: r.best_sqn.toFixed(2),
-      color: r.best_sqn >= 2 ? 'var(--sd-success)' : r.best_sqn >= 1 ? 'var(--sd-warning)' : 'var(--sd-danger)',
+      color:
+        r.best_sqn >= 2
+          ? 'var(--sd-success)'
+          : r.best_sqn >= 1
+            ? 'var(--sd-warning)'
+            : 'var(--sd-danger)',
     });
   }
 
@@ -157,17 +167,41 @@ const verdictBadge = computed<{ label: string; color: string; bg: string } | nul
   const r = props.run;
   if (r.run_type === RunType.wfa && r.verdict_grade) {
     if (r.verdict_grade <= 'B')
-      return { label: t('strategyDev.verdictGood'), color: 'var(--sd-success)', bg: 'var(--sd-success-dim)' };
+      return {
+        label: t('strategyDev.verdictGood'),
+        color: 'var(--sd-success)',
+        bg: 'var(--sd-success-dim)',
+      };
     if (r.verdict_grade === 'C')
-      return { label: t('strategyDev.verdictCaution'), color: 'var(--sd-warning)', bg: 'var(--sd-warning-dim)' };
-    return { label: t('strategyDev.verdictDanger'), color: 'var(--sd-danger)', bg: 'var(--sd-danger-dim)' };
+      return {
+        label: t('strategyDev.verdictCaution'),
+        color: 'var(--sd-warning)',
+        bg: 'var(--sd-warning-dim)',
+      };
+    return {
+      label: t('strategyDev.verdictDanger'),
+      color: 'var(--sd-danger)',
+      bg: 'var(--sd-danger-dim)',
+    };
   }
   if (r.run_type === RunType.hyperopt && r.best_loss != null) {
     if (r.best_loss < -0.05)
-      return { label: t('strategyDev.verdictGood'), color: 'var(--sd-success)', bg: 'var(--sd-success-dim)' };
+      return {
+        label: t('strategyDev.verdictGood'),
+        color: 'var(--sd-success)',
+        bg: 'var(--sd-success-dim)',
+      };
     if (r.best_loss < 0)
-      return { label: t('strategyDev.verdictCaution'), color: 'var(--sd-warning)', bg: 'var(--sd-warning-dim)' };
-    return { label: t('strategyDev.verdictDanger'), color: 'var(--sd-danger)', bg: 'var(--sd-danger-dim)' };
+      return {
+        label: t('strategyDev.verdictCaution'),
+        color: 'var(--sd-warning)',
+        bg: 'var(--sd-warning-dim)',
+      };
+    return {
+      label: t('strategyDev.verdictDanger'),
+      color: 'var(--sd-danger)',
+      bg: 'var(--sd-danger-dim)',
+    };
   }
   return null;
 });
@@ -221,12 +255,20 @@ function filterByType() {
     <!-- Row 1: Breadcrumb + actions -->
     <div class="rdh-top">
       <div class="rdh-breadcrumb">
-        <button class="rdh-crumb" @click="filterByStrategy" :title="t('strategyDev.filterByStrategy')">
+        <button
+          class="rdh-crumb"
+          @click="filterByStrategy"
+          :title="t('strategyDev.filterByStrategy')"
+        >
           {{ run.strategy }}
         </button>
         <span class="rdh-crumb-sep">/</span>
         <button class="rdh-crumb" @click="filterByType">
-          <Tag :value="typeLabels[run.run_type]" :severity="typeColors[run.run_type]" class="rdh-type-tag" />
+          <Tag
+            :value="typeLabels[run.run_type]"
+            :severity="typeColors[run.run_type]"
+            class="rdh-type-tag"
+          />
         </button>
       </div>
 
@@ -234,7 +276,11 @@ function filterByType() {
       <span
         v-if="verdictBadge"
         class="rdh-verdict"
-        :style="{ color: verdictBadge.color, background: verdictBadge.bg, borderColor: verdictBadge.color }"
+        :style="{
+          color: verdictBadge.color,
+          background: verdictBadge.bg,
+          borderColor: verdictBadge.color,
+        }"
       >
         {{ verdictBadge.label }}
       </span>
@@ -301,7 +347,11 @@ function filterByType() {
         <span v-if="isLive && run.exchange" class="rdh-meta-item">
           <i-mdi-swap-horizontal class="rdh-meta-icon" /> {{ run.exchange }}
         </span>
-        <span v-if="isLive" class="rdh-meta-item" :style="{ color: run.dry_run ? 'var(--sd-success)' : 'var(--sd-info)' }">
+        <span
+          v-if="isLive"
+          class="rdh-meta-item"
+          :style="{ color: run.dry_run ? 'var(--sd-success)' : 'var(--sd-info)' }"
+        >
           <i-mdi-circle class="rdh-meta-icon" style="width: 8px; height: 8px" />
           {{ run.dry_run ? t('strategyDev.liveDryRun') : t('strategyDev.liveReal') }}
         </span>

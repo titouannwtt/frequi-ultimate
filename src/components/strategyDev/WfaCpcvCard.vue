@@ -28,7 +28,11 @@ const { t } = useI18n();
 const chartOptions = computed<EChartsOption>(() => {
   const returns = [...props.data.path_returns].sort((a, b) => a - b);
   return {
-    title: { text: t('strategyDev.chartCPCVPathReturns'), left: 'center', textStyle: { fontSize: 13 } },
+    title: {
+      text: t('strategyDev.chartCPCVPathReturns'),
+      left: 'center',
+      textStyle: { fontSize: 13 },
+    },
     tooltip: {
       trigger: 'axis',
       formatter: (params: unknown) => {

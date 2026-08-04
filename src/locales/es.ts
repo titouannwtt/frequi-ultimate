@@ -138,7 +138,8 @@ export default {
     benchmarks: 'Benchmarks',
     normalization: 'Normalización',
     normExplain: 'Cómo funciona',
-    normExplainDetail: 'En modo "% desde inicio", tu beneficio y los benchmarks empiezan en 0% y muestran el cambio porcentual. Esto permite comparar directamente: ¿superaron tus bots al BTC?',
+    normExplainDetail:
+      'En modo "% desde inicio", tu beneficio y los benchmarks empiezan en 0% y muestran el cambio porcentual. Esto permite comparar directamente: ¿superaron tus bots al BTC?',
     altProxy: 'proxy mercado alt',
     solLabel: 'Solana',
     bnbLabel: 'BNB Chain',
@@ -167,7 +168,8 @@ export default {
     descNormAbsolute: 'en {currency}',
     descNormPctCapital: 'como porcentaje del capital inicial',
     descBenchmarks: 'Comparación benchmark: {list}',
-    descBenchmarkHint: 'Si tu línea de beneficio está POR ENCIMA de un benchmark, lo estás superando.',
+    descBenchmarkHint:
+      'Si tu línea de beneficio está POR ENCIMA de un benchmark, lo estás superando.',
   },
 
   // Bot comparison table
@@ -293,7 +295,8 @@ export default {
     alertAllFundsExposed: 'Todos los fondos expuestos',
     alertAllFundsExposedDesc: 'Casi todo el capital está bloqueado en posiciones abiertas',
     alertLiquidationBeforeStoploss: 'Liquidación antes del stoploss',
-    alertLiquidationBeforeStoplossDesc: 'El precio de liquidación está más cerca que el stoploss (futuros)',
+    alertLiquidationBeforeStoplossDesc:
+      'El precio de liquidación está más cerca que el stoploss (futuros)',
     alertIncludeLeverage: 'Incluir apalancamiento',
     alertPerBot: 'Por bot',
     alertAllConfigured: '{count} alerta configurada | {count} alertas configuradas',
@@ -335,7 +338,8 @@ export default {
     filterByTag: 'Clic para seleccionar bots con esta etiqueta',
     byCustomTag: 'Por etiqueta personalizada',
     exportCSV: 'Exportar como CSV',
-    keyboardShortcuts: 'Atajos de teclado: Esc=cerrar ventanas, 1-9=alternar bot, F=filtro, S=ordenar, Ctrl+A=seleccionar todo',
+    keyboardShortcuts:
+      'Atajos de teclado: Esc=cerrar ventanas, 1-9=alternar bot, F=filtro, S=ordenar, Ctrl+A=seleccionar todo',
   },
 
   // Profit metrics
@@ -467,9 +471,11 @@ export default {
     levelWarning: 'Advertencia',
     levelError: 'Error',
     hideHeartbeat: 'Ocultar heartbeat',
-    hideHeartbeatTooltip: 'Oculta los mensajes periodicos de verificacion de salud del bot (Bot heartbeat PID=..., state=RUNNING). Son normales y no indican ningun problema.',
+    hideHeartbeatTooltip:
+      'Oculta los mensajes periodicos de verificacion de salud del bot (Bot heartbeat PID=..., state=RUNNING). Son normales y no indican ningun problema.',
     hideWebSocket: 'Ocultar WebSocket',
-    hideWebSocketTooltip: 'Oculta los mensajes de conexion/desconexion WebSocket del servidor API. Estos ocurren cuando la pestana de FreqUI se conecta o desconecta.',
+    hideWebSocketTooltip:
+      'Oculta los mensajes de conexion/desconexion WebSocket del servidor API. Estos ocurren cuando la pestana de FreqUI se conecta o desconecta.',
     search: 'Buscar en logs...',
     compact: 'Compacto',
     autoScroll: 'Auto-desplazar',
@@ -528,10 +534,12 @@ export default {
     trades: 'operaciones',
     fast: 'Rápido',
     slow: 'Lento',
-    explainClosed: 'Este trade está cerrado. La duración muestra cuánto tiempo se mantuvo la posición.',
+    explainClosed:
+      'Este trade está cerrado. La duración muestra cuánto tiempo se mantuvo la posición.',
     explainOk: 'La duración de esta operación está dentro del rango normal.',
     explainWarn: 'Esta operación está tardando más que la mayoría. Considere vigilarla de cerca.',
-    explainDanger: 'Esta operación lleva abierta mucho más tiempo que el promedio. Podría estar atascada.',
+    explainDanger:
+      'Esta operación lleva abierta mucho más tiempo que el promedio. Podría estar atascada.',
     loadingBenchmarks: 'Cargando datos de benchmark...',
     noData: 'No hay datos de operaciones cerradas disponibles para el análisis.',
   },
@@ -721,15 +729,16 @@ export default {
     // Browser notifications
     browserNotifications: 'Notificaciones del navegador',
     enableBrowserNotifications: 'Activar notificaciones del navegador',
-    enableBrowserNotificationsDesc: 'Recibir notificaciones del navegador cuando se activan alertas (pérdida de posición, bot desconectado, errores en registros).',
-    notificationsDenied: 'Las notificaciones del navegador están bloqueadas. Actívelas en la configuración de su navegador.',
+    enableBrowserNotificationsDesc:
+      'Recibir notificaciones del navegador cuando se activan alertas (pérdida de posición, bot desconectado, errores en registros).',
+    notificationsDenied:
+      'Las notificaciones del navegador están bloqueadas. Actívelas en la configuración de su navegador.',
     notifyPositionLoss: 'La pérdida de posición supera el umbral',
     notifyBotOffline: 'El bot se desconecta',
     notifyLogErrors: 'Errores detectados en los registros',
     backtestSettings: 'Configuración de Backtest',
     backtestMetrics: 'Métricas de Backtest',
-    backtestMetricsDesc:
-      'Seleccionar qué métricas deben mostrarse por par / etiqueta.',
+    backtestMetricsDesc: 'Seleccionar qué métricas deben mostrarse por par / etiqueta.',
     // Dashboard section
     dashboardSettings: 'Panel de control',
     // About section
@@ -759,8 +768,7 @@ export default {
     listUnavailable:
       'Lista no disponible. Por favor inicie sesión y asegúrese de que el servidor esté en funcionamiento.',
     blacklist: 'Lista negra',
-    blacklistDesc:
-      'Lista negra - Seleccione (seguido de un clic en \'-\') para eliminar pares',
+    blacklistDesc: "Lista negra - Seleccione (seguido de un clic en '-') para eliminar pares",
     addToBlacklist: 'Añadir par a la lista negra',
     selectToDelete: 'Seleccione pares para eliminarlos de su lista negra.',
     pair: 'Par',
@@ -779,8 +787,7 @@ export default {
   // Backtesting
   backtest: {
     title: 'Backtesting',
-    mustBeWebserver:
-      'El bot debe estar en modo servidor web para habilitar el Backtesting.',
+    mustBeWebserver: 'El bot debe estar en modo servidor web para habilitar el Backtesting.',
     loadResults: 'Cargar resultados',
     runBacktest: 'Ejecutar Backtest',
     analyzeResult: 'Analizar resultado',
@@ -1026,7 +1033,8 @@ export default {
     days: 'días',
     totalRealized: 'Total realizado',
     belowAverage: 'Por debajo de la media',
-    belowAverageWarning: 'El rendimiento reciente puede estar por debajo de la media histórica. El CAGR sugiere rendimientos decrecientes.',
+    belowAverageWarning:
+      'El rendimiento reciente puede estar por debajo de la media histórica. El CAGR sugiere rendimientos decrecientes.',
     currentMonth: 'Mes actual',
     currentYear: 'Año actual',
     actual: 'Real',
@@ -1184,7 +1192,8 @@ export default {
     heikinAshi: 'Heikin Ashi',
     noPairSelected: 'Sin par seleccionado',
     plotConfigurator: 'Configurador de graficos',
-    useLiveDataHint: 'Usar datos en directo del exchange. Solo usar si no tienes datos descargados localmente.',
+    useLiveDataHint:
+      'Usar datos en directo del exchange. Solo usar si no tienes datos descargados localmente.',
     longEntries: 'Entradas long',
     longExits: 'Salidas long',
     shortEntries: 'Entradas short',
@@ -1196,19 +1205,23 @@ export default {
   // Empty states
   emptyStates: {
     noTradesYet: 'Sin operaciones aún',
-    noTradesDesc: 'Este bot no ha ejecutado ninguna operación todavía. Las estadísticas aparecerán después de la primera operación.',
+    noTradesDesc:
+      'Este bot no ha ejecutado ninguna operación todavía. Las estadísticas aparecerán después de la primera operación.',
     noOpenPositions: 'Sin posiciones abiertas',
     noOpenPositionsDesc: 'Todo despejado — no hay capital en riesgo actualmente.',
     noClosedTrades: 'Sin operaciones cerradas',
-    noClosedTradesDesc: 'Las estadísticas de beneficio aparecerán después de que se cierre la primera operación.',
+    noClosedTradesDesc:
+      'Las estadísticas de beneficio aparecerán después de que se cierre la primera operación.',
     noTradingActivity: 'Sin actividad de trading',
     noTradingActivityDesc: 'Este bot no ha registrado ninguna actividad de trading todavía.',
     noWinLossData: 'Sin datos de ganancia/pérdida',
-    noWinLossDataDesc: 'Las estadísticas de tasa de aciertos requieren al menos una operación completada.',
+    noWinLossDataDesc:
+      'Las estadísticas de tasa de aciertos requieren al menos una operación completada.',
     balanceUnavailable: 'Saldo no disponible',
     balanceUnavailableDesc: 'Los datos de saldo no están disponibles para este bot.',
     insufficientHistory: 'Historial insuficiente',
-    insufficientHistoryDesc: 'El análisis por período requiere al menos unos días de historial de trading.',
+    insufficientHistoryDesc:
+      'El análisis por período requiere al menos unos días de historial de trading.',
   },
 
   // Time durations
@@ -1225,18 +1238,24 @@ export default {
     roi: 'Retorno de inversión — Beneficio total como porcentaje del capital inicial',
     winrate: 'Porcentaje de operaciones que fueron rentables',
     cagr: 'Tasa de crecimiento anual compuesto — Rendimiento anualizado considerando el interés compuesto',
-    sharpe: 'Ratio Sharpe — Rendimiento ajustado al riesgo. Por encima de 1 es bueno, por encima de 2 es excelente',
-    sortino: 'Ratio Sortino — Como Sharpe pero solo penaliza la volatilidad a la baja. Mayor es mejor',
+    sharpe:
+      'Ratio Sharpe — Rendimiento ajustado al riesgo. Por encima de 1 es bueno, por encima de 2 es excelente',
+    sortino:
+      'Ratio Sortino — Como Sharpe pero solo penaliza la volatilidad a la baja. Mayor es mejor',
     sqn: 'System Quality Number — Mide la calidad del sistema de trading. Por encima de 2 es bueno, por encima de 3 es excelente',
     expectancy: 'Beneficio esperado medio por operación en moneda de apuesta',
-    profitFactor: 'Ratio de beneficio bruto a pérdida bruta. Por encima de 1 es rentable, por encima de 2 es bueno',
+    profitFactor:
+      'Ratio de beneficio bruto a pérdida bruta. Por encima de 1 es rentable, por encima de 2 es bueno',
     maxDrawdown: 'Mayor caída de pico a valle en el capital. Menor es mejor',
     currentDrawdown: 'Caída actual desde el pico de capital más reciente',
     avgDuration: 'Tiempo medio que una operación se mantiene abierta antes de cerrarse',
-    anomalyScore: 'Cuánto más tiempo se mantiene la posición actual vs la media. Por encima de 2x es una advertencia',
+    anomalyScore:
+      'Cuánto más tiempo se mantiene la posición actual vs la media. Por encima de 2x es una advertencia',
     tradingVolume: 'Valor total de todas las operaciones ejecutadas',
-    calmar: 'Ratio Calmar — CAGR dividido por el drawdown máximo. Mayor significa mejores rendimientos ajustados al riesgo',
-    weightedAvgProfit: 'Beneficio medio ponderado por tamaño de posición — las posiciones más grandes cuentan más',
+    calmar:
+      'Ratio Calmar — CAGR dividido por el drawdown máximo. Mayor significa mejores rendimientos ajustados al riesgo',
+    weightedAvgProfit:
+      'Beneficio medio ponderado por tamaño de posición — las posiciones más grandes cuentan más',
     annualizedReturn: 'Rendimiento anual proyectado basado en el rendimiento actual',
     capacityUtilization: 'Porcentaje de posiciones máximas permitidas actualmente en uso',
     avgWinLossRatio: 'Tamaño medio de operación ganadora dividido por el de operación perdedora',
@@ -1259,7 +1278,8 @@ export default {
     totalStakeLocked: 'Capital total actualmente asignado a posiciones abiertas',
     pctOfBotBalance: 'Porcentaje del saldo total de este bot en posiciones abiertas',
     pctOfAllBots: 'Apuesta abierta de este bot como proporción de todos los bots combinados',
-    durationAnomaly: 'Compara el tiempo de mantenimiento actual con la duración media de operación cerrada. Amarillo >1.5x, Rojo >2x',
+    durationAnomaly:
+      'Compara el tiempo de mantenimiento actual con la duración media de operación cerrada. Amarillo >1.5x, Rojo >2x',
     // ClosedProfitCard
     realizedProfit: 'Beneficio total de todas las operaciones cerradas',
     weeklyTrend: 'Tendencia de beneficio semanal en el período reciente',
@@ -1276,7 +1296,8 @@ export default {
     tradesPerWeek: 'Número medio de operaciones abiertas por semana',
     timeBetweenTrades: 'Intervalo medio entre operaciones consecutivas',
     timeSinceLastTrade: 'Tiempo transcurrido desde la última operación abierta',
-    unusuallyQuiet: 'La actividad de trading está significativamente por debajo de la frecuencia media',
+    unusuallyQuiet:
+      'La actividad de trading está significativamente por debajo de la frecuencia media',
     // BalanceCard
     startingCapital: 'Capital inicial configurado para este bot',
     balanceGrowth: 'Crecimiento total del capital inicial al saldo actual',
@@ -1300,31 +1321,47 @@ export default {
     riskNote: 'Riesgos conocidos asociados con esta moneda',
     botImpact: 'Cómo esta moneda afecta los cálculos de beneficio de su bot',
     // Alert detailed tooltips
-    alertTooltipPositionLoss: 'Se activa cuando una posición abierta tiene una pérdida no realizada que supera su umbral. Ejemplo: con un umbral de -10%% y una posición a -12%%, la alerta se dispara. Si "Incluir apalancamiento" está marcado, una posición apalancada 3x a -4%% se trata como -12%%.',
-    alertTooltipPositionStuck: 'Se activa cuando una posición se ha mantenido significativamente más tiempo que la duración media de sus operaciones. Ejemplo: si sus operaciones duran 8 horas de media y el umbral es 3x, cualquier posición abierta >24 horas se activa.',
-    alertTooltipNearLiquidation: 'Se activa cuando una posición de futuros se acerca a su precio de liquidación. Ejemplo: con un umbral del 15%%, si el precio está dentro del 15%% del precio de liquidación, la alerta se dispara.',
-    alertTooltipLogErrors: 'Se activa cuando aparecen mensajes de nivel ERROR o CRITICAL en los registros del bot.',
-    alertTooltipOrderFailed: 'Se activa cuando el bot falla al colocar una orden. Frecuentemente causado por problemas del exchange o fondos insuficientes.',
-    alertTooltipInsufficientFunds: 'Se activa cuando el bot no puede abrir una posición por falta de fondos.',
-    alertTooltipExchangeError: 'Se activa por problemas de conectividad con el exchange: tiempos de espera, límites de tasa, errores de red.',
-    alertTooltipWalletMismatch: 'Se activa cuando el bot detecta una discrepancia entre su seguimiento y la cartera del exchange.',
-    alertTooltipNoTradeActivity: 'Se activa cuando no se ha abierto ninguna nueva operación dentro del tiempo configurado.',
+    alertTooltipPositionLoss:
+      'Se activa cuando una posición abierta tiene una pérdida no realizada que supera su umbral. Ejemplo: con un umbral de -10%% y una posición a -12%%, la alerta se dispara. Si "Incluir apalancamiento" está marcado, una posición apalancada 3x a -4%% se trata como -12%%.',
+    alertTooltipPositionStuck:
+      'Se activa cuando una posición se ha mantenido significativamente más tiempo que la duración media de sus operaciones. Ejemplo: si sus operaciones duran 8 horas de media y el umbral es 3x, cualquier posición abierta >24 horas se activa.',
+    alertTooltipNearLiquidation:
+      'Se activa cuando una posición de futuros se acerca a su precio de liquidación. Ejemplo: con un umbral del 15%%, si el precio está dentro del 15%% del precio de liquidación, la alerta se dispara.',
+    alertTooltipLogErrors:
+      'Se activa cuando aparecen mensajes de nivel ERROR o CRITICAL en los registros del bot.',
+    alertTooltipOrderFailed:
+      'Se activa cuando el bot falla al colocar una orden. Frecuentemente causado por problemas del exchange o fondos insuficientes.',
+    alertTooltipInsufficientFunds:
+      'Se activa cuando el bot no puede abrir una posición por falta de fondos.',
+    alertTooltipExchangeError:
+      'Se activa por problemas de conectividad con el exchange: tiempos de espera, límites de tasa, errores de red.',
+    alertTooltipWalletMismatch:
+      'Se activa cuando el bot detecta una discrepancia entre su seguimiento y la cartera del exchange.',
+    alertTooltipNoTradeActivity:
+      'Se activa cuando no se ha abierto ninguna nueva operación dentro del tiempo configurado.',
     alertTooltipBotOffline: 'Se activa inmediatamente cuando un bot deja de responder.',
-    alertTooltipHighDrawdown: 'Se activa cuando el drawdown actual desde el pico de capital supera su umbral.',
-    alertTooltipCapacityFull: 'Se activa cuando todos los slots de operación disponibles están ocupados.',
-    alertTooltipAllFundsExposed: 'Se activa cuando el 95%% o más del saldo está bloqueado en posiciones abiertas.',
-    alertTooltipLiquidationBeforeStoploss: 'Se activa cuando el precio de liquidación está más cerca que el stoploss. La posición sería liquidada antes de que se active el stoploss.',
+    alertTooltipHighDrawdown:
+      'Se activa cuando el drawdown actual desde el pico de capital supera su umbral.',
+    alertTooltipCapacityFull:
+      'Se activa cuando todos los slots de operación disponibles están ocupados.',
+    alertTooltipAllFundsExposed:
+      'Se activa cuando el 95%% o más del saldo está bloqueado en posiciones abiertas.',
+    alertTooltipLiquidationBeforeStoploss:
+      'Se activa cuando el precio de liquidación está más cerca que el stoploss. La posición sería liquidada antes de que se active el stoploss.',
     // Additional metric tooltips
     currentStreak: 'Número de ganancias o pérdidas consecutivas',
     historicalRange: 'Rango de duración desde la operación cerrada más corta a la más larga',
-    medianDuration: 'Valor medio de todas las duraciones de operaciones cerradas, menos afectado por valores atípicos',
+    medianDuration:
+      'Valor medio de todas las duraciones de operaciones cerradas, menos afectado por valores atípicos',
     currentBalance: 'Saldo total actual de este bot',
     bestBot: 'Bot con el mayor retorno de inversión',
     worstBot: 'Bot con el menor retorno de inversión',
     avgRoiAllBots: 'ROI medio en todos los bots seleccionados',
     totalWithdrawalsAllBots: 'Suma de todos los retiros en los bots seleccionados',
-    periodReturn: 'Beneficio total obtenido durante el período seleccionado, tanto como importe absoluto como porcentaje del capital inicial.',
-    vsBtc: 'Compara tu beneficio total % con el cambio de precio de BTC % en el mismo período. Positivo = superaste simplemente mantener BTC.',
+    periodReturn:
+      'Beneficio total obtenido durante el período seleccionado, tanto como importe absoluto como porcentaje del capital inicial.',
+    vsBtc:
+      'Compara tu beneficio total % con el cambio de precio de BTC % en el mismo período. Positivo = superaste simplemente mantener BTC.',
   },
 
   // Stress Test
@@ -1333,7 +1370,8 @@ export default {
     estimatedGain: 'Ganancia total estimada',
     crash: 'caída',
     pump: 'subida',
-    scenarioDesc: 'En caso de un movimiento repentino e instantáneo del mercado, esto es lo que ocurriría con sus posiciones abiertas actuales. Se asume un movimiento generalizado donde todas las criptomonedas experimentan la misma fluctuación.',
+    scenarioDesc:
+      'En caso de un movimiento repentino e instantáneo del mercado, esto es lo que ocurriría con sus posiciones abiertas actuales. Se asume un movimiento generalizado donde todas las criptomonedas experimentan la misma fluctuación.',
     estimatedImpact: 'Impacto estimado',
     estimatedTotalLoss: 'Pérdida total estimada',
     crashScenario: 'Escenario de caída del mercado',
@@ -1485,21 +1523,29 @@ export default {
     popover7dChange: 'Cambio 7d',
     popoverSource: 'Fuente',
     popoverFgTitle: 'Índice Miedo y Codicia',
-    popoverFgDescription: 'Mide el sentimiento del mercado de 0 (miedo extremo) a 100 (codicia extrema). Basado en volatilidad, volumen, redes sociales, encuestas, dominancia y tendencias.',
+    popoverFgDescription:
+      'Mide el sentimiento del mercado de 0 (miedo extremo) a 100 (codicia extrema). Basado en volatilidad, volumen, redes sociales, encuestas, dominancia y tendencias.',
     popoverPerf_totalProfit: 'Beneficio total',
-    popoverPerfDesc_totalProfit: 'Suma de beneficios de todas las operaciones cerradas en el período seleccionado, convertidos a la moneda de resumen.',
+    popoverPerfDesc_totalProfit:
+      'Suma de beneficios de todas las operaciones cerradas en el período seleccionado, convertidos a la moneda de resumen.',
     popoverPerf_trades: 'Número de operaciones',
-    popoverPerfDesc_trades: 'Número total de operaciones cerradas en el período seleccionado en todos los bots seleccionados.',
+    popoverPerfDesc_trades:
+      'Número total de operaciones cerradas en el período seleccionado en todos los bots seleccionados.',
     popoverPerf_winRate: 'Tasa de éxito',
-    popoverPerfDesc_winRate: 'Porcentaje de operaciones rentables (beneficio > 0) entre todas las operaciones cerradas en el período.',
+    popoverPerfDesc_winRate:
+      'Porcentaje de operaciones rentables (beneficio > 0) entre todas las operaciones cerradas en el período.',
     popoverPerf_bestTrade: 'Mejor operación',
-    popoverPerfDesc_bestTrade: 'La operación con la mayor ratio de beneficio en el período seleccionado.',
+    popoverPerfDesc_bestTrade:
+      'La operación con la mayor ratio de beneficio en el período seleccionado.',
     popoverPerf_worstTrade: 'Peor operación',
-    popoverPerfDesc_worstTrade: 'La operación con la menor ratio de beneficio en el período seleccionado.',
+    popoverPerfDesc_worstTrade:
+      'La operación con la menor ratio de beneficio en el período seleccionado.',
     popoverPerf_bestBot: 'Mejor bot',
-    popoverPerfDesc_bestBot: 'El bot con el mayor beneficio absoluto total en el período seleccionado.',
+    popoverPerfDesc_bestBot:
+      'El bot con el mayor beneficio absoluto total en el período seleccionado.',
     popoverPerf_worstBot: 'Peor bot',
-    popoverPerfDesc_worstBot: 'El bot con el menor beneficio absoluto total en el período seleccionado.',
+    popoverPerfDesc_worstBot:
+      'El bot con el menor beneficio absoluto total en el período seleccionado.',
   },
 
   // Performance Heatmap
@@ -1530,18 +1576,21 @@ export default {
     correlationWarnings: 'Alertas de correlación',
     // Popovers
     popoverExposureTitle: 'Desglose de exposición',
-    popoverExposureDesc: 'Capital actualmente desplegado en posiciones abiertas, desglosado por bot.',
+    popoverExposureDesc:
+      'Capital actualmente desplegado en posiciones abiertas, desglosado por bot.',
     popoverDrawdownTitle: 'Peor drawdown',
     popoverDrawdownDesc: 'La posición abierta con la mayor pérdida no realizada en porcentaje.',
     popoverDrawdownPair: 'Par',
     popoverDrawdownPct: 'Drawdown',
     popoverDrawdownBot: 'Bot',
     popoverPnlTitle: 'Desglose del PnL abierto',
-    popoverPnlDesc: 'Beneficio/pérdida no realizada de todas las posiciones abiertas, desglosado por bot.',
+    popoverPnlDesc:
+      'Beneficio/pérdida no realizada de todas las posiciones abiertas, desglosado por bot.',
     popoverLeverageTitle: 'Detalle de apalancamiento',
     popoverLeverageDesc: 'Apalancamiento promedio utilizado por cada bot en posiciones abiertas.',
     popoverCorrelationTitle: 'Alertas de correlación',
-    popoverCorrelationDesc: 'Pares operados simultáneamente por múltiples bots, aumentando el riesgo correlacionado.',
+    popoverCorrelationDesc:
+      'Pares operados simultáneamente por múltiples bots, aumentando el riesgo correlacionado.',
     popoverCorrelationNone: 'No se detectaron pares correlacionados.',
     totalBalanceTooltip: 'Saldo total de todos los bots seleccionados',
   },

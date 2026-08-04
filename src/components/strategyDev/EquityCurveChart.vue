@@ -16,23 +16,35 @@ import {
 } from 'echarts/components';
 import { useRegimeOverlay, type RegimeTimelineEntry } from '@/composables/useRegimeOverlay';
 
-use([LineChart, CanvasRenderer, GridComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, MarkAreaComponent, LegendComponent]);
+use([
+  LineChart,
+  CanvasRenderer,
+  GridComponent,
+  TooltipComponent,
+  DataZoomComponent,
+  MarkLineComponent,
+  MarkAreaComponent,
+  LegendComponent,
+]);
 
 const { t } = useI18n();
 
-const props = withDefaults(defineProps<{
-  equity: { date: string; balance: number }[];
-  startingBalance: number;
-  benchmark?: { date: string; balance: number }[];
-  benchmarkLabel?: string;
-  showBenchmarkToggle?: boolean;
-  regimes?: RegimeTimelineEntry[];
-}>(), {
-  benchmark: undefined,
-  benchmarkLabel: 'BTC',
-  showBenchmarkToggle: false,
-  regimes: undefined,
-});
+const props = withDefaults(
+  defineProps<{
+    equity: { date: string; balance: number }[];
+    startingBalance: number;
+    benchmark?: { date: string; balance: number }[];
+    benchmarkLabel?: string;
+    showBenchmarkToggle?: boolean;
+    regimes?: RegimeTimelineEntry[];
+  }>(),
+  {
+    benchmark: undefined,
+    benchmarkLabel: 'BTC',
+    showBenchmarkToggle: false,
+    regimes: undefined,
+  },
+);
 
 const regimeTimeline = computed(() => props.regimes);
 const { showRegimes, markAreaData } = useRegimeOverlay(regimeTimeline);
@@ -58,9 +70,7 @@ const option = computed<EChartsOption>(() => {
       benchmarkMap.set(p.date, p.balance);
     }
   }
-  const benchmarkBalances = hasBenchmark.value
-    ? dates.map((d) => benchmarkMap.get(d) ?? null)
-    : [];
+  const benchmarkBalances = hasBenchmark.value ? dates.map((d) => benchmarkMap.get(d) ?? null) : [];
 
   const series: EChartsOption['series'] = [
     {
@@ -73,7 +83,10 @@ const option = computed<EChartsOption>(() => {
       areaStyle: {
         color: {
           type: 'linear',
-          x: 0, y: 0, x2: 0, y2: 1,
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
           colorStops: [
             { offset: 0, color: 'rgba(137,180,250,0.25)' },
             { offset: 1, color: 'rgba(137,180,250,0)' },
@@ -93,7 +106,9 @@ const option = computed<EChartsOption>(() => {
         },
         data: [{ yAxis: props.startingBalance }],
       },
-      markArea: markAreaData.value.length ? { silent: true, data: markAreaData.value as any } : undefined,
+      markArea: markAreaData.value.length
+        ? { silent: true, data: markAreaData.value as any }
+        : undefined,
       z: 2,
     },
   ];
@@ -109,7 +124,10 @@ const option = computed<EChartsOption>(() => {
       areaStyle: {
         color: {
           type: 'linear',
-          x: 0, y: 0, x2: 0, y2: 1,
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
           colorStops: [
             { offset: 0, color: 'rgba(250,179,135,0.08)' },
             { offset: 1, color: 'rgba(250,179,135,0)' },
@@ -127,7 +145,12 @@ const option = computed<EChartsOption>(() => {
       borderColor: '#45475a',
       textStyle: { color: '#cdd6f4', fontSize: 12 },
       formatter: (params: unknown) => {
-        const items = params as { seriesName: string; data: number | null; axisValue: string; color: string }[];
+        const items = params as {
+          seriesName: string;
+          data: number | null;
+          axisValue: string;
+          color: string;
+        }[];
         if (!items?.length) return '';
         const lines = [`<b>${items[0].axisValue}</b>`];
         for (const item of items) {
@@ -136,25 +159,31 @@ const option = computed<EChartsOption>(() => {
           const ret = ((bal - props.startingBalance) / props.startingBalance) * 100;
           const sign = ret >= 0 ? '+' : '';
           lines.push(
-            `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${item.color};margin-right:4px"></span>`
-            + `${item.seriesName}: <b>${bal.toFixed(2)}</b> (${sign}${ret.toFixed(2)}%)`,
+            `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${item.color};margin-right:4px"></span>` +
+              `${item.seriesName}: <b>${bal.toFixed(2)}</b> (${sign}${ret.toFixed(2)}%)`,
           );
         }
         return lines.join('<br/>');
       },
     },
-    legend: hasBenchmark.value ? {
-      show: true,
-      top: 4,
-      right: 20,
-      textStyle: { color: '#a6adc8', fontSize: 11 },
-      itemWidth: 16,
-      itemHeight: 2,
-      data: [
-        { name: t('strategyDev.eqStrategy'), icon: 'roundRect', itemStyle: { color: '#89b4fa' } },
-        { name: props.benchmarkLabel, icon: 'roundRect', itemStyle: { color: '#fab387' } },
-      ],
-    } : undefined,
+    legend: hasBenchmark.value
+      ? {
+          show: true,
+          top: 4,
+          right: 20,
+          textStyle: { color: '#a6adc8', fontSize: 11 },
+          itemWidth: 16,
+          itemHeight: 2,
+          data: [
+            {
+              name: t('strategyDev.eqStrategy'),
+              icon: 'roundRect',
+              itemStyle: { color: '#89b4fa' },
+            },
+            { name: props.benchmarkLabel, icon: 'roundRect', itemStyle: { color: '#fab387' } },
+          ],
+        }
+      : undefined,
     grid: { left: 60, right: 20, top: hasBenchmark.value ? 36 : 20, bottom: 60 },
     dataZoom: [
       { type: 'inside', xAxisIndex: 0, filterMode: 'none' },
@@ -194,7 +223,11 @@ const option = computed<EChartsOption>(() => {
 
 <template>
   <div class="eq-chart-wrap">
-    <div v-if="hasBenchmark && alpha != null" class="eq-alpha-badge" :class="alpha >= 0 ? 'eq-alpha-pos' : 'eq-alpha-neg'">
+    <div
+      v-if="hasBenchmark && alpha != null"
+      class="eq-alpha-badge"
+      :class="alpha >= 0 ? 'eq-alpha-pos' : 'eq-alpha-neg'"
+    >
       <span class="eq-alpha-label">Alpha</span>
       <span class="eq-alpha-value">{{ alpha >= 0 ? '+' : '' }}{{ alpha.toFixed(2) }}%</span>
     </div>

@@ -118,10 +118,7 @@ export const useSettingsStore = defineStore('uiSettings', {
         const tag: string = data.tag_name ?? '';
         const version = tag.startsWith('v') ? tag.slice(1) : tag;
         this._latestForkVersion = version;
-        localStorage.setItem(
-          UPDATE_CHECK_KEY,
-          JSON.stringify({ version, ts: Date.now() }),
-        );
+        localStorage.setItem(UPDATE_CHECK_KEY, JSON.stringify({ version, ts: Date.now() }));
       } catch {
         // network error or no releases — silent
       }

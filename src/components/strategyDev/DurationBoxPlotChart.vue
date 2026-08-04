@@ -58,16 +58,20 @@ const summaryOptions = computed<EChartsOption>(() => {
     { name: t('strategyDev.durWinners'), box: props.data.winners, color: C.green },
     { name: t('strategyDev.durLosers'), box: props.data.losers, color: C.red },
   ];
-  const validCats = cats.filter(c => c.box);
+  const validCats = cats.filter((c) => c.box);
   if (!validCats.length) return {};
 
-  const labels = validCats.map(c => c.name);
-  const boxData = validCats.map(c => [
-    c.box!.whisker_low, c.box!.q1, c.box!.median, c.box!.q3, c.box!.whisker_high,
+  const labels = validCats.map((c) => c.name);
+  const boxData = validCats.map((c) => [
+    c.box!.whisker_low,
+    c.box!.q1,
+    c.box!.median,
+    c.box!.q3,
+    c.box!.whisker_high,
   ]);
   const outlierData: [number, number][] = [];
   validCats.forEach((c, i) => {
-    c.box!.outliers.forEach(v => outlierData.push([i, v]));
+    c.box!.outliers.forEach((v) => outlierData.push([i, v]));
   });
 
   return {
@@ -87,7 +91,9 @@ const summaryOptions = computed<EChartsOption>(() => {
           `Q1–Q3: ${fmtDur(b.q1)} – ${fmtDur(b.q3)}`,
           `Range: ${fmtDur(b.whisker_low)} – ${fmtDur(b.whisker_high)}`,
           b.outliers.length > 0 ? `${b.outliers.length} outliers` : '',
-        ].filter(Boolean).join('<br/>');
+        ]
+          .filter(Boolean)
+          .join('<br/>');
       },
     },
     grid: { left: 70, right: 30, top: 20, bottom: 30 },
@@ -162,11 +168,13 @@ const exitReasonOptions = computed<EChartsOption>(() => {
       axisLabel: { color: C.subtext, formatter: (v: number) => fmtDur(v) },
       splitLine: { lineStyle: { color: C.surface1 } },
     },
-    series: [{
-      type: 'boxplot',
-      data: boxData,
-      itemStyle: { color: 'transparent', borderColor: C.blue, borderWidth: 2 },
-    }],
+    series: [
+      {
+        type: 'boxplot',
+        data: boxData,
+        itemStyle: { color: 'transparent', borderColor: C.blue, borderWidth: 2 },
+      },
+    ],
   };
 });
 </script>
@@ -176,7 +184,11 @@ const exitReasonOptions = computed<EChartsOption>(() => {
     <div class="flex items-center gap-2 mb-2">
       <button
         class="text-xs px-2 py-1 rounded"
-        :class="viewMode === 'summary' ? 'bg-blue-500/20 text-blue-300' : 'bg-surface-700 text-surface-400'"
+        :class="
+          viewMode === 'summary'
+            ? 'bg-blue-500/20 text-blue-300'
+            : 'bg-surface-700 text-surface-400'
+        "
         @click="viewMode = 'summary'"
       >
         {{ t('strategyDev.durSummary') }}
@@ -184,7 +196,11 @@ const exitReasonOptions = computed<EChartsOption>(() => {
       <button
         v-if="Object.keys(data.by_exit_reason || {}).length"
         class="text-xs px-2 py-1 rounded"
-        :class="viewMode === 'exit_reason' ? 'bg-blue-500/20 text-blue-300' : 'bg-surface-700 text-surface-400'"
+        :class="
+          viewMode === 'exit_reason'
+            ? 'bg-blue-500/20 text-blue-300'
+            : 'bg-surface-700 text-surface-400'
+        "
         @click="viewMode = 'exit_reason'"
       >
         {{ t('strategyDev.durByExitReason') }}
@@ -196,11 +212,6 @@ const exitReasonOptions = computed<EChartsOption>(() => {
       autoresize
       style="height: 280px"
     />
-    <ECharts
-      v-else
-      :option="exitReasonOptions"
-      autoresize
-      style="height: 280px"
-    />
+    <ECharts v-else :option="exitReasonOptions" autoresize style="height: 280px" />
   </div>
 </template>

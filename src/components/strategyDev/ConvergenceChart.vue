@@ -33,24 +33,20 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
-const losses = computed(() =>
-  props.data.map(v => (typeof v === 'number' ? v : v.loss)),
-);
+const losses = computed(() => props.data.map((v) => (typeof v === 'number' ? v : v.loss)));
 
 const maxReasonableLoss = computed(() => {
-  const sorted = [...losses.value].filter(v => isFinite(v)).sort((a, b) => a - b);
+  const sorted = [...losses.value].filter((v) => isFinite(v)).sort((a, b) => a - b);
   if (sorted.length === 0) return 100;
   const p95 = sorted[Math.floor(sorted.length * 0.95)];
   return Math.max(p95 * 2, Math.abs(sorted[0]) * 2, 1);
 });
 
-const clampedData = computed(() =>
-  losses.value.map(v => Math.min(v, maxReasonableLoss.value)),
-);
+const clampedData = computed(() => losses.value.map((v) => Math.min(v, maxReasonableLoss.value)));
 
 const bestSoFar = computed(() => {
   if (props.data.length > 0 && typeof props.data[0] === 'object') {
-    return (props.data as { loss: number; best: number }[]).map(v =>
+    return (props.data as { loss: number; best: number }[]).map((v) =>
       Math.min(v.best, maxReasonableLoss.value),
     );
   }
@@ -76,7 +72,8 @@ const converged = computed(() => {
   if (n < 10) return null;
   const lastPortion = bestSoFar.value.slice(Math.floor(n * 0.7));
   if (lastPortion.length < 2) return null;
-  const improvement = (lastPortion[0] - lastPortion[lastPortion.length - 1]) / Math.abs(lastPortion[0] || 1);
+  const improvement =
+    (lastPortion[0] - lastPortion[lastPortion.length - 1]) / Math.abs(lastPortion[0] || 1);
   return improvement < 0.01;
 });
 
@@ -168,17 +165,16 @@ const chartOptions = computed<EChartsOption>(() => {
     <ECharts :option="chartOptions" autoresize style="height: 340px" />
 
     <!-- Convergence advisory -->
-    <div v-if="converged !== null" class="mt-2 px-3 py-1.5 rounded text-sm font-medium"
+    <div
+      v-if="converged !== null"
+      class="mt-2 px-3 py-1.5 rounded text-sm font-medium"
       :style="{
         background: converged ? 'rgba(166, 227, 161, 0.12)' : 'rgba(249, 226, 175, 0.12)',
         color: converged ? '#a6e3a1' : '#f9e2af',
         border: `1px solid ${converged ? 'rgba(166,227,161,0.3)' : 'rgba(249,226,175,0.3)'}`,
       }"
     >
-      {{ converged
-        ? t('strategyDev.convConverged')
-        : t('strategyDev.convNotConverged')
-      }}
+      {{ converged ? t('strategyDev.convConverged') : t('strategyDev.convNotConverged') }}
     </div>
   </div>
 </template>

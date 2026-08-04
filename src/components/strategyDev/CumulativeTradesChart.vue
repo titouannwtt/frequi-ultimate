@@ -69,7 +69,11 @@ const chartOptions = computed<EChartsOption>(() => {
       },
     },
     legend: {
-      data: [t('strategyDev.seriesCumulativePct'), t('strategyDev.seriesBalance'), t('strategyDev.seriesTradePnL')],
+      data: [
+        t('strategyDev.seriesCumulativePct'),
+        t('strategyDev.seriesBalance'),
+        t('strategyDev.seriesTradePnL'),
+      ],
       top: 0,
       textStyle: { color: '#a6adc8', fontSize: 11 },
     },
@@ -137,7 +141,9 @@ const chartOptions = computed<EChartsOption>(() => {
             ],
           },
         },
-        markArea: markAreaData.value.length ? { silent: true, data: markAreaData.value as any } : undefined,
+        markArea: markAreaData.value.length
+          ? { silent: true, data: markAreaData.value as any }
+          : undefined,
       },
       {
         name: t('strategyDev.seriesBalance'),

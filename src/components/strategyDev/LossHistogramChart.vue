@@ -66,9 +66,10 @@ function rebinLosses(losses: number[], nBins: number): BinData[] {
   for (let i = 0; i < nBins; i++) {
     const edgeLo = lo + i * bw;
     const edgeHi = lo + (i + 1) * bw;
-    const count = i === nBins - 1
-      ? losses.filter(v => v >= edgeLo && v <= edgeHi).length
-      : losses.filter(v => v >= edgeLo && v < edgeHi).length;
+    const count =
+      i === nBins - 1
+        ? losses.filter((v) => v >= edgeLo && v <= edgeHi).length
+        : losses.filter((v) => v >= edgeLo && v < edgeHi).length;
     bins.push({ lo: +edgeLo.toFixed(4), hi: +edgeHi.toFixed(4), count });
   }
   return bins;
@@ -83,9 +84,11 @@ const activeBins = computed(() => {
 
 function getAssessment(pct: number): { label: string; color: string } {
   if (pct >= 90)
-    return { label: t('strategyDev.lhExceptional', { pct: (100 - pct).toFixed(0) }), color: cat.green };
-  if (pct >= 50)
-    return { label: t('strategyDev.lhDecent'), color: cat.yellow };
+    return {
+      label: t('strategyDev.lhExceptional', { pct: (100 - pct).toFixed(0) }),
+      color: cat.green,
+    };
+  if (pct >= 50) return { label: t('strategyDev.lhDecent'), color: cat.yellow };
   return { label: t('strategyDev.lhStruggled'), color: cat.red };
 }
 
@@ -132,8 +135,8 @@ const insights = computed(() => {
     });
   }
 
-  const peak = Math.max(...bins.map(b => b.count));
-  const peakBins = bins.filter(b => b.count === peak);
+  const peak = Math.max(...bins.map((b) => b.count));
+  const peakBins = bins.filter((b) => b.count === peak);
   if (peakBins.length > 0) {
     const peakIdx = bins.indexOf(peakBins[0]);
     const halfIdx = Math.floor(bins.length / 2);
@@ -157,13 +160,13 @@ const insights = computed(() => {
 
 const chartOptions = computed<EChartsOption>(() => {
   const maxReasonable = (() => {
-    const nonEmpty = activeBins.value.filter(b => b.count > 0);
+    const nonEmpty = activeBins.value.filter((b) => b.count > 0);
     if (nonEmpty.length <= 2) return Infinity;
     const sorted = [...nonEmpty].sort((a, b) => b.count - a.count);
     const peakHi = sorted[0].hi;
     return peakHi + (Math.abs(peakHi) + 1) * 3;
   })();
-  const filteredBins = activeBins.value.filter(b => b.lo < maxReasonable);
+  const filteredBins = activeBins.value.filter((b) => b.lo < maxReasonable);
   const bins = filteredBins;
   const bestLoss = props.histogram.best_loss;
   const bestPct = props.histogram.best_percentile;
@@ -300,6 +303,5 @@ const chartOptions = computed<EChartsOption>(() => {
         {{ assessment.label }}
       </span>
     </div>
-
   </div>
 </template>

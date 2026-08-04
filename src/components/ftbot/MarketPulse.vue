@@ -56,7 +56,9 @@ function loadSettings(): OverviewSettings {
       const parsed = JSON.parse(raw);
       return { ...defaultSettings(), ...parsed, slots: parsed.slots ?? [...DEFAULT_SLOTS] };
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return defaultSettings();
 }
 
@@ -82,17 +84,27 @@ const showSettingsPanel = ref(false);
 const editingSlotIdx = ref<number | null>(null);
 
 /** Slot type options for the selector */
-const SLOT_OPTIONS: { label: string; type: SlotType; coinId?: string; ticker: string; supportsTimefilter: boolean }[] = [
+const SLOT_OPTIONS: {
+  label: string;
+  type: SlotType;
+  coinId?: string;
+  ticker: string;
+  supportsTimefilter: boolean;
+}[] = [
   // Crypto benchmarks
   ...Object.entries(KNOWN_BENCHMARKS).map(([ticker, coinId]) => ({
-    label: ticker, type: 'crypto' as SlotType, coinId, ticker, supportsTimefilter: true,
+    label: ticker,
+    type: 'crypto' as SlotType,
+    coinId,
+    ticker,
+    supportsTimefilter: true,
   })),
   // Macro indicators
   { label: 'Fear & Greed Index', type: 'feargreed', ticker: 'F&G', supportsTimefilter: false },
   { label: 'BTC Dominance', type: 'btc_dominance', ticker: 'BTC.D', supportsTimefilter: false },
 ];
 
-function setSlot(idx: number, option: typeof SLOT_OPTIONS[number]) {
+function setSlot(idx: number, option: (typeof SLOT_OPTIONS)[number]) {
   settings.value.slots[idx] = {
     type: option.type,
     coinId: option.coinId,
@@ -211,9 +223,20 @@ function setDefaultTimeframe(tf: string) {
 // ── Timeframe selector ──
 type TimeframeKey = 'today' | '24h' | '7d' | 'thisWeek' | '30d' | 'thisMonth' | 'thisYear' | '1y';
 
-const timeframes: TimeframeKey[] = ['today', '24h', '7d', 'thisWeek', '30d', 'thisMonth', 'thisYear', '1y'];
+const timeframes: TimeframeKey[] = [
+  'today',
+  '24h',
+  '7d',
+  'thisWeek',
+  '30d',
+  'thisMonth',
+  'thisYear',
+  '1y',
+];
 
-const selectedTimeframe = ref<TimeframeKey>(settings.value.defaultTimeframe as TimeframeKey || '24h');
+const selectedTimeframe = ref<TimeframeKey>(
+  (settings.value.defaultTimeframe as TimeframeKey) || '24h',
+);
 
 function timeframeLabel(tf: TimeframeKey): string {
   return t(`marketPulse.tf_${tf}`);
@@ -367,10 +390,16 @@ function tradeProfit(tr: ClosedTrade): number {
   return converted ?? abs;
 }
 
-const totalProfit = computed(() => filteredTrades.value.reduce((sum, tr) => sum + tradeProfit(tr), 0));
+const totalProfit = computed(() =>
+  filteredTrades.value.reduce((sum, tr) => sum + tradeProfit(tr), 0),
+);
 const tradeCount = computed(() => filteredTrades.value.length);
-const winCount = computed(() => filteredTrades.value.filter((tr) => (tr.profit_abs ?? 0) > 0).length);
-const winRate = computed(() => (tradeCount.value > 0 ? (winCount.value / tradeCount.value) * 100 : 0));
+const winCount = computed(
+  () => filteredTrades.value.filter((tr) => (tr.profit_abs ?? 0) > 0).length,
+);
+const winRate = computed(() =>
+  tradeCount.value > 0 ? (winCount.value / tradeCount.value) * 100 : 0,
+);
 
 const bestTrade = computed(() => {
   if (filteredTrades.value.length === 0) return null;
@@ -488,7 +517,10 @@ const beatsBtc = computed(() => {
 
 // ── Formatting ──
 function fmtNum(val: number, decimals = 2): string {
-  return val.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  return val.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
 }
 
 function fmtChange(val: number | null): string {
@@ -516,10 +548,17 @@ const perfPopoverMetric = ref('');
 let hideDelayId: ReturnType<typeof setTimeout> | null = null;
 
 function cancelHideDelay() {
-  if (hideDelayId) { clearTimeout(hideDelayId); hideDelayId = null; }
+  if (hideDelayId) {
+    clearTimeout(hideDelayId);
+    hideDelayId = null;
+  }
 }
 
-function showMpPopover(popoverRef: typeof btcPopover, timeoutRef: typeof btcPopoverTimeout, event: MouseEvent) {
+function showMpPopover(
+  popoverRef: typeof btcPopover,
+  timeoutRef: typeof btcPopoverTimeout,
+  event: MouseEvent,
+) {
   cancelHideDelay();
   if (timeoutRef.value) clearTimeout(timeoutRef.value);
   const target = event.currentTarget as HTMLElement;
@@ -541,17 +580,31 @@ function keepMpPopover() {
   cancelHideDelay();
 }
 
-function onBtcMouseEnter(event: MouseEvent) { showMpPopover(btcPopover, btcPopoverTimeout, event); }
-function onBtcMouseLeave() { hideMpPopover(btcPopover, btcPopoverTimeout); }
-function onEthMouseEnter(event: MouseEvent) { showMpPopover(ethPopover, ethPopoverTimeout, event); }
-function onEthMouseLeave() { hideMpPopover(ethPopover, ethPopoverTimeout); }
-function onFgMouseEnter(event: MouseEvent) { showMpPopover(fgPopover, fgPopoverTimeout, event); }
-function onFgMouseLeave() { hideMpPopover(fgPopover, fgPopoverTimeout); }
+function onBtcMouseEnter(event: MouseEvent) {
+  showMpPopover(btcPopover, btcPopoverTimeout, event);
+}
+function onBtcMouseLeave() {
+  hideMpPopover(btcPopover, btcPopoverTimeout);
+}
+function onEthMouseEnter(event: MouseEvent) {
+  showMpPopover(ethPopover, ethPopoverTimeout, event);
+}
+function onEthMouseLeave() {
+  hideMpPopover(ethPopover, ethPopoverTimeout);
+}
+function onFgMouseEnter(event: MouseEvent) {
+  showMpPopover(fgPopover, fgPopoverTimeout, event);
+}
+function onFgMouseLeave() {
+  hideMpPopover(fgPopover, fgPopoverTimeout);
+}
 function onPerfMouseEnter(event: MouseEvent, metric: string) {
   perfPopoverMetric.value = metric;
   showMpPopover(perfPopover, perfPopoverTimeout, event);
 }
-function onPerfMouseLeave() { hideMpPopover(perfPopover, perfPopoverTimeout); }
+function onPerfMouseLeave() {
+  hideMpPopover(perfPopover, perfPopoverTimeout);
+}
 
 // ── Lifecycle ──
 let refreshInterval: ReturnType<typeof setInterval> | null = null;
@@ -593,32 +646,54 @@ watch(selectedTimeframe, () => {
         class="absolute right-0 top-8 rounded-lg p-3 min-w-[220px] flex flex-col gap-2 glass-panel shadow-xl"
         style="z-index: 200"
       >
-          <span class="text-xs font-semibold text-surface-300 uppercase tracking-wider mb-1">{{ t('marketPulse.settings') }}</span>
-          <label class="flex items-center gap-2 text-xs text-surface-300 cursor-pointer">
-            <input type="checkbox" :checked="settings.showMarket" @change="toggleSection('showMarket')" class="accent-blue-500" />
-            {{ t('marketPulse.sectionMarket') }}
-          </label>
-          <label class="flex items-center gap-2 text-xs text-surface-300 cursor-pointer">
-            <input type="checkbox" :checked="settings.showPerformance" @change="toggleSection('showPerformance')" class="accent-blue-500" />
-            {{ t('marketPulse.sectionPerformance') }}
-          </label>
-          <label class="flex items-center gap-2 text-xs text-surface-300 cursor-pointer">
-            <input type="checkbox" :checked="settings.showVolume" @change="toggleSection('showVolume')" class="accent-blue-500" />
-            {{ t('marketPulse.sectionVolume') }}
-          </label>
-          <label class="flex items-center gap-2 text-xs text-surface-300 cursor-pointer">
-            <input type="checkbox" :checked="settings.showComparison" @change="toggleSection('showComparison')" class="accent-blue-500" />
-            {{ t('marketPulse.sectionComparison') }}
-          </label>
-          <hr class="border-surface-600 my-1" />
-          <span class="text-xs text-surface-400">{{ t('marketPulse.defaultTimeframe') }}</span>
-          <select
-            :value="settings.defaultTimeframe"
-            class="text-xs bg-surface-700 text-surface-200 rounded px-2 py-1 border border-surface-600"
-            @change="setDefaultTimeframe(($event.target as HTMLSelectElement).value)"
-          >
-            <option v-for="tf in timeframes" :key="tf" :value="tf">{{ timeframeLabel(tf) }}</option>
-          </select>
+        <span class="text-xs font-semibold text-surface-300 uppercase tracking-wider mb-1">{{
+          t('marketPulse.settings')
+        }}</span>
+        <label class="flex items-center gap-2 text-xs text-surface-300 cursor-pointer">
+          <input
+            type="checkbox"
+            :checked="settings.showMarket"
+            @change="toggleSection('showMarket')"
+            class="accent-blue-500"
+          />
+          {{ t('marketPulse.sectionMarket') }}
+        </label>
+        <label class="flex items-center gap-2 text-xs text-surface-300 cursor-pointer">
+          <input
+            type="checkbox"
+            :checked="settings.showPerformance"
+            @change="toggleSection('showPerformance')"
+            class="accent-blue-500"
+          />
+          {{ t('marketPulse.sectionPerformance') }}
+        </label>
+        <label class="flex items-center gap-2 text-xs text-surface-300 cursor-pointer">
+          <input
+            type="checkbox"
+            :checked="settings.showVolume"
+            @change="toggleSection('showVolume')"
+            class="accent-blue-500"
+          />
+          {{ t('marketPulse.sectionVolume') }}
+        </label>
+        <label class="flex items-center gap-2 text-xs text-surface-300 cursor-pointer">
+          <input
+            type="checkbox"
+            :checked="settings.showComparison"
+            @change="toggleSection('showComparison')"
+            class="accent-blue-500"
+          />
+          {{ t('marketPulse.sectionComparison') }}
+        </label>
+        <hr class="border-surface-600 my-1" />
+        <span class="text-xs text-surface-400">{{ t('marketPulse.defaultTimeframe') }}</span>
+        <select
+          :value="settings.defaultTimeframe"
+          class="text-xs bg-surface-700 text-surface-200 rounded px-2 py-1 border border-surface-600"
+          @change="setDefaultTimeframe(($event.target as HTMLSelectElement).value)"
+        >
+          <option v-for="tf in timeframes" :key="tf" :value="tf">{{ timeframeLabel(tf) }}</option>
+        </select>
       </div>
     </div>
 
@@ -645,7 +720,8 @@ watch(selectedTimeframe, () => {
     <!-- 1. Market indicators -->
     <div v-if="settings.showMarket" class="grid grid-cols-3 gap-2">
       <div
-        v-for="(slot, idx) in settings.slots" :key="idx"
+        v-for="(slot, idx) in settings.slots"
+        :key="idx"
         class="glass-card relative flex flex-col items-center gap-1 p-2 rounded-lg group"
       >
         <!-- Edit button (top-right, on hover) -->
@@ -664,20 +740,29 @@ watch(selectedTimeframe, () => {
             :style="slotDropdownStyle(idx)"
             style="z-index: 9999"
           >
-          <button
-            v-for="opt in SLOT_OPTIONS" :key="opt.ticker"
-            class="flex items-center gap-1.5 w-full px-2 py-0.5 text-[10px] rounded cursor-pointer transition-colors"
-            :class="slot.ticker === opt.ticker ? 'text-blue-400 bg-blue-500/15' : 'text-surface-300 hover:bg-surface-700/50'"
-            @click.stop="setSlot(idx, opt)"
-          >
-            <span class="font-bold w-10">{{ opt.ticker }}</span>
-            <span v-if="opt.type !== 'crypto'" class="text-surface-500 text-[9px]">{{ opt.label }}</span>
-          </button>
-        </div>
+            <button
+              v-for="opt in SLOT_OPTIONS"
+              :key="opt.ticker"
+              class="flex items-center gap-1.5 w-full px-2 py-0.5 text-[10px] rounded cursor-pointer transition-colors"
+              :class="
+                slot.ticker === opt.ticker
+                  ? 'text-blue-400 bg-blue-500/15'
+                  : 'text-surface-300 hover:bg-surface-700/50'
+              "
+              @click.stop="setSlot(idx, opt)"
+            >
+              <span class="font-bold w-10">{{ opt.ticker }}</span>
+              <span v-if="opt.type !== 'crypto'" class="text-surface-500 text-[9px]">{{
+                opt.label
+              }}</span>
+            </button>
+          </div>
         </Teleport>
 
         <!-- Slot label -->
-        <span class="text-[10px] uppercase tracking-wider text-surface-500 font-semibold">{{ slot.ticker }}</span>
+        <span class="text-[10px] uppercase tracking-wider text-surface-500 font-semibold">{{
+          slot.ticker
+        }}</span>
 
         <!-- Loading state -->
         <template v-if="slotData[idx].loading">
@@ -701,11 +786,18 @@ watch(selectedTimeframe, () => {
             <div class="w-full h-2 rounded-full bg-surface-700 overflow-hidden">
               <div
                 class="h-full rounded-full transition-all duration-500"
-                :style="{ width: slotData[idx].value + '%', backgroundColor: fgColor(slotData[idx].value!) }"
+                :style="{
+                  width: slotData[idx].value + '%',
+                  backgroundColor: fgColor(slotData[idx].value!),
+                }"
               />
             </div>
-            <span class="text-lg font-bold" :style="{ color: fgColor(slotData[idx].value!) }">{{ slotData[idx].value }}</span>
-            <span class="text-[10px]" :style="{ color: fgColor(slotData[idx].value!) }">{{ fgLabel(slotData[idx].value!) }}</span>
+            <span class="text-lg font-bold" :style="{ color: fgColor(slotData[idx].value!) }">{{
+              slotData[idx].value
+            }}</span>
+            <span class="text-[10px]" :style="{ color: fgColor(slotData[idx].value!) }">{{
+              fgLabel(slotData[idx].value!)
+            }}</span>
           </div>
           <span v-else class="text-surface-500 text-xs">-</span>
         </template>
@@ -766,7 +858,9 @@ watch(selectedTimeframe, () => {
           @mouseleave="onPerfMouseLeave()"
         >
           <span class="text-surface-400">{{ t('marketPulse.bestTrade') }}</span>
-          <span v-if="bestTrade" class="text-green-400 font-semibold">{{ bestTrade.pair }} {{ bestTrade.pct }}%</span>
+          <span v-if="bestTrade" class="text-green-400 font-semibold"
+            >{{ bestTrade.pair }} {{ bestTrade.pct }}%</span
+          >
           <span v-else class="text-surface-500">-</span>
         </div>
         <div
@@ -775,7 +869,13 @@ watch(selectedTimeframe, () => {
           @mouseleave="onPerfMouseLeave()"
         >
           <span class="text-surface-400">{{ t('marketPulse.worstTrade') }}</span>
-          <span v-if="worstTrade" class="font-semibold" :class="Number(worstTrade.pct) >= 0 ? 'text-green-400' : 'text-red-400'">{{ worstTrade.pair }} {{ Number(worstTrade.pct) >= 0 ? '+' : '' }}{{ worstTrade.pct }}%</span>
+          <span
+            v-if="worstTrade"
+            class="font-semibold"
+            :class="Number(worstTrade.pct) >= 0 ? 'text-green-400' : 'text-red-400'"
+            >{{ worstTrade.pair }} {{ Number(worstTrade.pct) >= 0 ? '+' : ''
+            }}{{ worstTrade.pct }}%</span
+          >
           <span v-else class="text-surface-500">-</span>
         </div>
         <div
@@ -784,7 +884,9 @@ watch(selectedTimeframe, () => {
           @mouseleave="onPerfMouseLeave()"
         >
           <span class="text-surface-400">{{ t('marketPulse.bestBot') }}</span>
-          <span v-if="bestBot" class="text-green-400 font-semibold">{{ bestBot.name }} {{ fmtNum(bestBot.profit) }} {{ currencyUnit }}</span>
+          <span v-if="bestBot" class="text-green-400 font-semibold"
+            >{{ bestBot.name }} {{ fmtNum(bestBot.profit) }} {{ currencyUnit }}</span
+          >
           <span v-else class="text-surface-500">-</span>
         </div>
         <div
@@ -793,7 +895,9 @@ watch(selectedTimeframe, () => {
           @mouseleave="onPerfMouseLeave()"
         >
           <span class="text-surface-400">{{ t('marketPulse.worstBot') }}</span>
-          <span v-if="worstBot" class="text-red-400 font-semibold">{{ worstBot.name }} {{ fmtNum(worstBot.profit) }} {{ currencyUnit }}</span>
+          <span v-if="worstBot" class="text-red-400 font-semibold"
+            >{{ worstBot.name }} {{ fmtNum(worstBot.profit) }} {{ currencyUnit }}</span
+          >
           <span v-else class="text-surface-500">-</span>
         </div>
       </div>
@@ -825,13 +929,17 @@ watch(selectedTimeframe, () => {
         style="z-index: 100"
       >
         <div class="flex flex-col gap-2 text-xs">
-          <span class="font-semibold text-surface-300">{{ t('marketPulse.volumeByExchange') }}</span>
+          <span class="font-semibold text-surface-300">{{
+            t('marketPulse.volumeByExchange')
+          }}</span>
           <div v-for="(vol, ex) in volumeByExchange" :key="ex" class="flex justify-between">
             <span class="text-surface-400">{{ ex }}</span>
             <span class="text-surface-200">{{ fmtNum(vol, 2) }} {{ currencyUnit }}</span>
           </div>
           <hr class="border-surface-600" />
-          <span class="font-semibold text-surface-300">{{ t('marketPulse.volumeByCurrency') }}</span>
+          <span class="font-semibold text-surface-300">{{
+            t('marketPulse.volumeByCurrency')
+          }}</span>
           <div v-for="(vol, cur) in volumeByCurrency" :key="cur" class="flex justify-between">
             <span class="text-surface-400">{{ cur }}</span>
             <span class="text-surface-200">{{ fmtNum(vol, 2) }}</span>
@@ -867,7 +975,13 @@ watch(selectedTimeframe, () => {
             <span class="text-[10px] text-surface-400">{{ t('marketPulse.yourBots') }}</span>
             <span
               class="text-sm font-bold"
-              :class="beatsBtc === true ? 'text-green-400' : beatsBtc === false ? 'text-red-400' : 'text-surface-300'"
+              :class="
+                beatsBtc === true
+                  ? 'text-green-400'
+                  : beatsBtc === false
+                    ? 'text-red-400'
+                    : 'text-surface-300'
+              "
             >
               {{ fmtChange(botChangeInPeriod) }}
             </span>
@@ -893,45 +1007,79 @@ watch(selectedTimeframe, () => {
     </div>
     <!-- BTC Price Popover -->
     <Popover ref="btcPopover" class="p-0">
-      <div class="p-3 text-xs min-w-[220px] max-w-[300px]" @mouseenter="keepMpPopover" @mouseleave="onBtcMouseLeave()">
+      <div
+        class="p-3 text-xs min-w-[220px] max-w-[300px]"
+        @mouseenter="keepMpPopover"
+        @mouseleave="onBtcMouseLeave()"
+      >
         <div class="font-bold text-[11px] mb-2">{{ t('marketPulse.popoverBtcTitle') }}</div>
         <div class="grid grid-cols-2 gap-x-3 gap-y-1">
           <span class="text-surface-400">{{ t('marketPulse.popoverPrice') }}</span>
-          <span class="font-mono font-semibold text-surface-200">{{ btcPrice !== null ? `$${fmtNum(btcPrice, 0)}` : '-' }}</span>
+          <span class="font-mono font-semibold text-surface-200">{{
+            btcPrice !== null ? `$${fmtNum(btcPrice, 0)}` : '-'
+          }}</span>
           <span class="text-surface-400">{{ t('marketPulse.popover24hChange') }}</span>
-          <span class="font-mono font-semibold" :class="changeColor(btcChange24h)">{{ fmtChange(btcChange24h) }}</span>
+          <span class="font-mono font-semibold" :class="changeColor(btcChange24h)">{{
+            fmtChange(btcChange24h)
+          }}</span>
           <span class="text-surface-400">{{ t('marketPulse.popover7dChange') }}</span>
-          <span class="font-mono font-semibold" :class="changeColor(btcChangeInPeriod)">{{ fmtChange(btcChangeInPeriod) }}</span>
+          <span class="font-mono font-semibold" :class="changeColor(btcChangeInPeriod)">{{
+            fmtChange(btcChangeInPeriod)
+          }}</span>
         </div>
         <hr class="border-surface-600 my-2" />
         <div class="text-[10px] text-surface-500">
           {{ t('marketPulse.popoverSource') }}:
-          <a href="https://www.coingecko.com/en/coins/bitcoin" target="_blank" rel="noopener" class="text-blue-400 hover:underline">CoinGecko</a>
+          <a
+            href="https://www.coingecko.com/en/coins/bitcoin"
+            target="_blank"
+            rel="noopener"
+            class="text-blue-400 hover:underline"
+            >CoinGecko</a
+          >
         </div>
       </div>
     </Popover>
 
     <!-- ETH Popover -->
     <Popover ref="ethPopover" class="p-0">
-      <div class="p-3 text-xs min-w-[220px] max-w-[300px]" @mouseenter="keepMpPopover" @mouseleave="onEthMouseLeave()">
+      <div
+        class="p-3 text-xs min-w-[220px] max-w-[300px]"
+        @mouseenter="keepMpPopover"
+        @mouseleave="onEthMouseLeave()"
+      >
         <div class="font-bold text-[11px] mb-2">Ethereum (ETH)</div>
         <div class="grid grid-cols-2 gap-x-3 gap-y-1">
           <span class="text-surface-400">{{ t('marketPulse.popoverPrice') }}</span>
-          <span class="font-mono font-semibold text-surface-200">{{ ethPrice !== null ? `$${fmtNum(ethPrice, 0)}` : '-' }}</span>
+          <span class="font-mono font-semibold text-surface-200">{{
+            ethPrice !== null ? `$${fmtNum(ethPrice, 0)}` : '-'
+          }}</span>
           <span class="text-surface-400">{{ t('marketPulse.popover24hChange') }}</span>
-          <span class="font-mono font-semibold" :class="changeColor(ethChange24h)">{{ fmtChange(ethChange24h) }}</span>
+          <span class="font-mono font-semibold" :class="changeColor(ethChange24h)">{{
+            fmtChange(ethChange24h)
+          }}</span>
         </div>
         <hr class="border-surface-600 my-2" />
         <div class="text-[10px] text-surface-500">
           {{ t('marketPulse.popoverSource') }}:
-          <a href="https://www.coingecko.com/en/coins/ethereum" target="_blank" rel="noopener" class="text-blue-400 hover:underline">CoinGecko</a>
+          <a
+            href="https://www.coingecko.com/en/coins/ethereum"
+            target="_blank"
+            rel="noopener"
+            class="text-blue-400 hover:underline"
+            >CoinGecko</a
+          >
         </div>
       </div>
     </Popover>
 
     <!-- Fear & Greed Popover -->
     <Popover ref="fgPopover" class="p-0">
-      <div class="p-3 text-xs min-w-[240px] max-w-[320px]" @mouseenter="keepMpPopover" @mouseleave="onFgMouseLeave()">
+      <div
+        class="p-3 text-xs min-w-[240px] max-w-[320px]"
+        @mouseenter="keepMpPopover"
+        @mouseleave="onFgMouseLeave()"
+      >
         <div class="font-bold text-[11px] mb-2">{{ t('marketPulse.popoverFgTitle') }}</div>
         <p class="text-surface-400 mb-2">{{ t('marketPulse.popoverFgDescription') }}</p>
         <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 mb-2">
@@ -943,7 +1091,13 @@ watch(selectedTimeframe, () => {
         <hr class="border-surface-600 my-2" />
         <div class="text-[10px] text-surface-500">
           {{ t('marketPulse.popoverSource') }}:
-          <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener" class="text-blue-400 hover:underline">Alternative.me</a>
+          <a
+            href="https://alternative.me/crypto/fear-and-greed-index/"
+            target="_blank"
+            rel="noopener"
+            class="text-blue-400 hover:underline"
+            >Alternative.me</a
+          >
         </div>
       </div>
     </Popover>
@@ -951,7 +1105,9 @@ watch(selectedTimeframe, () => {
     <!-- Performance Metric Popover -->
     <Popover ref="perfPopover" class="p-0">
       <div class="p-3 text-xs min-w-[200px] max-w-[300px]">
-        <div class="font-bold text-[11px] mb-1">{{ t(`marketPulse.popoverPerf_${perfPopoverMetric}`) }}</div>
+        <div class="font-bold text-[11px] mb-1">
+          {{ t(`marketPulse.popoverPerf_${perfPopoverMetric}`) }}
+        </div>
         <p class="text-surface-400">{{ t(`marketPulse.popoverPerfDesc_${perfPopoverMetric}`) }}</p>
       </div>
     </Popover>

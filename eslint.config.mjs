@@ -51,7 +51,9 @@ export default defineConfigWithVueTs(
       // TODO: should be activated
       // 'vue/prefer-use-template-ref': ['error'],
       // 'vue/no-useless-v-bind': ['error'],
-      'vue/no-undef-directives': ['error'],
+      // v-tooltip is registered globally by PrimeVue (see plugins/primevue.ts), so
+      // eslint cannot see its declaration and flagged all 115 usages.
+      'vue/no-undef-directives': ['error', { ignore: ['tooltip'] }],
       'vue/no-ref-object-reactivity-loss': ['error'],
       'vue/no-use-v-else-with-v-for': ['error'],
       'vue/no-useless-mustaches': ['error'],

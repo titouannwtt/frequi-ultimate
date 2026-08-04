@@ -33,7 +33,11 @@ const goalAmount = ref(goal.value.amount);
 const goalPeriod = ref(goal.value.period);
 
 function applyGoal() {
-  goal.value = { amount: goalAmount.value, currency: goal.value.currency, period: goalPeriod.value };
+  goal.value = {
+    amount: goalAmount.value,
+    currency: goal.value.currency,
+    period: goalPeriod.value,
+  };
   saveGoal(goal.value);
   settingsPopover.value?.hide();
 }

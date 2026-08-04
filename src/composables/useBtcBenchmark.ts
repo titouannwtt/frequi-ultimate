@@ -73,7 +73,7 @@ export function useBtcBenchmark(
           if (basePrice === null) basePrice = price;
           aligned.push({
             date,
-            balance: Math.round((bal * price / basePrice) * 100) / 100,
+            balance: Math.round(((bal * price) / basePrice) * 100) / 100,
           });
         } else if (basePrice !== null && aligned.length > 0) {
           aligned.push({ date, balance: aligned[aligned.length - 1].balance });

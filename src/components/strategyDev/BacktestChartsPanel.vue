@@ -42,9 +42,11 @@ watch(selectedPair, (pair) => {
     <div class="flex gap-2">
       <button
         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        :class="activeSection === 'plot-profit'
-          ? 'bg-primary text-primary-contrast'
-          : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700'"
+        :class="
+          activeSection === 'plot-profit'
+            ? 'bg-primary text-primary-contrast'
+            : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700'
+        "
         @click="activeSection = 'plot-profit'"
       >
         <i-mdi-chart-line class="w-4 h-4 inline mr-1" />
@@ -52,9 +54,11 @@ watch(selectedPair, (pair) => {
       </button>
       <button
         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        :class="activeSection === 'plot-dataframe'
-          ? 'bg-primary text-primary-contrast'
-          : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700'"
+        :class="
+          activeSection === 'plot-dataframe'
+            ? 'bg-primary text-primary-contrast'
+            : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700'
+        "
         @click="activeSection = 'plot-dataframe'"
       >
         <i-mdi-chart-timeline-variant class="w-4 h-4 inline mr-1" />
@@ -90,14 +94,20 @@ watch(selectedPair, (pair) => {
       <div v-if="!selectedPair" class="text-center py-16 text-surface-400">
         {{ t('strategyDev.plotSelectPair') }}
       </div>
-      <div v-else-if="dataframeLoading" class="flex items-center justify-center py-16 text-surface-400">
+      <div
+        v-else-if="dataframeLoading"
+        class="flex items-center justify-center py-16 text-surface-400"
+      >
         <i-mdi-loading class="w-6 h-6 animate-spin mr-2" />
         {{ t('strategyDev.plotLoadingDataframe') }}
       </div>
       <div v-else-if="store.plotDataframeData && !store.plotDataframeData.error">
         <PlotDataframeView :data="store.plotDataframeData as Record<string, unknown>" />
       </div>
-      <div v-else-if="store.plotDataframeData?.error === 'ohlcv_not_found'" class="text-center py-16 text-surface-400">
+      <div
+        v-else-if="store.plotDataframeData?.error === 'ohlcv_not_found'"
+        class="text-center py-16 text-surface-400"
+      >
         <i-mdi-alert-circle class="w-8 h-8 mx-auto mb-2 text-yellow-500" />
         {{ t('strategyDev.plotNoOhlcv') }}
       </div>

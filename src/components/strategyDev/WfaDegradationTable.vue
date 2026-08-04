@@ -33,12 +33,24 @@ function fmtDeg(val: number | undefined): string {
       <table class="w-full text-sm">
         <thead class="bg-surface-900/50">
           <tr>
-            <th class="text-left px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaWindow') }}</th>
-            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaTrainProfit') }}</th>
-            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaTestProfit') }}</th>
-            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaDegProfit') }}</th>
-            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaDegSharpe') }}</th>
-            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaDegCalmar') }}</th>
+            <th class="text-left px-3 py-2 text-sm text-surface-400 uppercase">
+              {{ t('strategyDev.wfaWindow') }}
+            </th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">
+              {{ t('strategyDev.wfaTrainProfit') }}
+            </th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">
+              {{ t('strategyDev.wfaTestProfit') }}
+            </th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">
+              {{ t('strategyDev.wfaDegProfit') }}
+            </th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">
+              {{ t('strategyDev.wfaDegSharpe') }}
+            </th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">
+              {{ t('strategyDev.wfaDegCalmar') }}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -50,17 +62,13 @@ function fmtDeg(val: number | undefined): string {
             <td class="px-3 py-2 font-mono text-sm">W{{ w.index }}</td>
             <td
               class="px-3 py-2 text-right tabular-nums"
-              :class="
-                (w.train_metrics?.profit_pct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'
-              "
+              :class="(w.train_metrics?.profit_pct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'"
             >
               {{ (w.train_metrics?.profit_pct ?? 0).toFixed(2) }}%
             </td>
             <td
               class="px-3 py-2 text-right tabular-nums"
-              :class="
-                (w.test_metrics?.profit_pct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'
-              "
+              :class="(w.test_metrics?.profit_pct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'"
             >
               {{ (w.test_metrics?.profit_pct ?? 0).toFixed(2) }}%
             </td>

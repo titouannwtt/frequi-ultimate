@@ -4,11 +4,7 @@ import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { BarChart, LineChart } from 'echarts/charts';
-import {
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
-} from 'echarts/components';
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
 import { useI18n } from 'vue-i18n';
 
 use([BarChart, LineChart, CanvasRenderer, GridComponent, TooltipComponent, LegendComponent]);

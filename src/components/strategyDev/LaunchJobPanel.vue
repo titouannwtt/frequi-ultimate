@@ -228,12 +228,15 @@ watch(configFile, async (newVal) => {
   configInfo.value = parts.join(' · ');
 });
 
-watch(() => props.configOverride, (path) => {
-  if (path) {
-    configFile.value = path;
-    emit('config-used');
-  }
-});
+watch(
+  () => props.configOverride,
+  (path) => {
+    if (path) {
+      configFile.value = path;
+      emit('config-used');
+    }
+  },
+);
 
 function applyPrefill(p: Partial<JobStartRequest>) {
   if (p.job_type) jobType.value = p.job_type;
@@ -281,12 +284,16 @@ function applyPrefill(p: Partial<JobStartRequest>) {
   activeTab.value = 'config';
 }
 
-watch(() => props.prefill, (p) => {
-  if (p) {
-    applyPrefill(p);
-    emit('prefill-applied');
-  }
-}, { immediate: true });
+watch(
+  () => props.prefill,
+  (p) => {
+    if (p) {
+      applyPrefill(p);
+      emit('prefill-applied');
+    }
+  },
+  { immediate: true },
+);
 
 const isCustomConfig = computed(() => configFile.value.startsWith('custom_configs/'));
 const customConfigLabel = computed(() => {
@@ -338,7 +345,11 @@ async function handleStart() {
   // Common advanced
   if (dataFormatOhlcv.value) req.data_format_ohlcv = dataFormatOhlcv.value;
   if (fee.value != null) req.fee = fee.value;
-  if (pairsText.value) req.pairs = pairsText.value.split(',').map((p) => p.trim()).filter(Boolean);
+  if (pairsText.value)
+    req.pairs = pairsText.value
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
   if (enablePositionStacking.value) req.enable_position_stacking = true;
   if (timeframeDetail.value) req.timeframe_detail = timeframeDetail.value;
 
@@ -405,11 +416,16 @@ const logText = computed(() => logLines.value.join('\n'));
 
 const statusColor = computed(() => {
   switch (activeJob.value?.status) {
-    case JobStatus.running: return 'var(--sd-info)';
-    case JobStatus.completed: return 'var(--sd-success)';
-    case JobStatus.failed: return 'var(--sd-danger)';
-    case JobStatus.aborted: return 'var(--sd-warning)';
-    default: return 'var(--sd-overlay)';
+    case JobStatus.running:
+      return 'var(--sd-info)';
+    case JobStatus.completed:
+      return 'var(--sd-success)';
+    case JobStatus.failed:
+      return 'var(--sd-danger)';
+    case JobStatus.aborted:
+      return 'var(--sd-warning)';
+    default:
+      return 'var(--sd-overlay)';
   }
 });
 
@@ -425,11 +441,14 @@ function onJobComplete() {
   stratStore.fetchAllRuns();
 }
 
-watch(() => activeJob.value?.status, (newStatus, oldStatus) => {
-  if (oldStatus === JobStatus.running && newStatus === JobStatus.completed) {
-    onJobComplete();
-  }
-});
+watch(
+  () => activeJob.value?.status,
+  (newStatus, oldStatus) => {
+    if (oldStatus === JobStatus.running && newStatus === JobStatus.completed) {
+      onJobComplete();
+    }
+  },
+);
 
 const logContainer = ref<HTMLElement>();
 watch(logLines, () => {
@@ -457,22 +476,26 @@ const jobDuration = computed(() => {
 const durationTimer = ref(0);
 let _durationInterval: ReturnType<typeof setInterval> | null = null;
 
-watch(isRunning, (running) => {
-  if (running) {
-    _durationInterval = setInterval(() => { durationTimer.value++; }, 1000);
-  } else if (_durationInterval) {
-    clearInterval(_durationInterval);
-    _durationInterval = null;
-  }
-}, { immediate: true });
+watch(
+  isRunning,
+  (running) => {
+    if (running) {
+      _durationInterval = setInterval(() => {
+        durationTimer.value++;
+      }, 1000);
+    } else if (_durationInterval) {
+      clearInterval(_durationInterval);
+      _durationInterval = null;
+    }
+  },
+  { immediate: true },
+);
 
 onUnmounted(() => {
   if (_durationInterval) clearInterval(_durationInterval);
 });
 
-const hasConsoleContent = computed(() =>
-  activeJob.value != null || jobStore.jobHistory.length > 0,
-);
+const hasConsoleContent = computed(() => activeJob.value != null || jobStore.jobHistory.length > 0);
 
 const consoleBadge = computed(() => {
   if (isRunning.value) return 'live';
@@ -507,7 +530,9 @@ const consoleBadge = computed(() => {
         <i-mdi-console class="launch-tab-icon" />
         {{ t('strategyDev.jobTabConsole') }}
         <span v-if="consoleBadge === 'live'" class="launch-tab-badge launch-tab-badge--live" />
-        <span v-else-if="consoleBadge === 'error'" class="launch-tab-badge launch-tab-badge--error">!</span>
+        <span v-else-if="consoleBadge === 'error'" class="launch-tab-badge launch-tab-badge--error"
+          >!</span
+        >
       </button>
     </div>
 
@@ -577,14 +602,17 @@ const consoleBadge = computed(() => {
         <!-- Job history -->
         <div v-if="jobStore.jobHistory.length" class="launch-section launch-history">
           <h4 class="launch-section-title">{{ t('strategyDev.jobHistory') }}</h4>
-          <div
-            v-for="job in jobStore.jobHistory"
-            :key="job.job_id"
-            class="launch-history-item"
-          >
+          <div v-for="job in jobStore.jobHistory" :key="job.job_id" class="launch-history-item">
             <span
               class="launch-status-dot"
-              :style="{ backgroundColor: job.status === JobStatus.completed ? 'var(--sd-success)' : job.status === JobStatus.failed ? 'var(--sd-danger)' : 'var(--sd-warning)' }"
+              :style="{
+                backgroundColor:
+                  job.status === JobStatus.completed
+                    ? 'var(--sd-success)'
+                    : job.status === JobStatus.failed
+                      ? 'var(--sd-danger)'
+                      : 'var(--sd-warning)',
+              }"
             />
             <span class="launch-history-type">{{ job.job_type }}</span>
             <span class="launch-history-strategy">{{ job.strategy }}</span>
@@ -596,485 +624,623 @@ const consoleBadge = computed(() => {
 
     <!-- ═══════════════════ CONFIG TAB ═══════════════════ -->
     <div v-if="activeTab === 'config'" class="launch-config-tab">
+      <!-- Configs loading error -->
+      <div v-if="jobStore.configsError" class="launch-error">
+        <i-mdi-alert-circle class="launch-error-icon" />
+        <span>{{ jobStore.configsError }}</span>
+      </div>
 
-    <!-- Configs loading error -->
-    <div v-if="jobStore.configsError" class="launch-error">
-      <i-mdi-alert-circle class="launch-error-icon" />
-      <span>{{ jobStore.configsError }}</span>
-    </div>
+      <!-- Form -->
+      <div class="launch-form">
+        <!-- Job type selector -->
+        <div class="launch-section">
+          <h4 class="launch-section-title">{{ t('strategyDev.jobTypeLabel') }}</h4>
+          <div class="launch-radio-group">
+            <label
+              v-for="opt in jobTypeOptions"
+              :key="opt.value"
+              class="launch-radio"
+              :class="{ 'launch-radio--active': jobType === opt.value }"
+            >
+              <input v-model="jobType" type="radio" :value="opt.value" class="launch-radio-input" />
+              {{ opt.label }}
+            </label>
+          </div>
+        </div>
 
-    <!-- Form -->
-    <div class="launch-form">
-      <!-- Job type selector -->
-      <div class="launch-section">
-        <h4 class="launch-section-title">{{ t('strategyDev.jobTypeLabel') }}</h4>
-        <div class="launch-radio-group">
-          <label
-            v-for="opt in jobTypeOptions"
-            :key="opt.value"
-            class="launch-radio"
-            :class="{ 'launch-radio--active': jobType === opt.value }"
-          >
-            <input
-              v-model="jobType"
-              type="radio"
-              :value="opt.value"
-              class="launch-radio-input"
-            />
-            {{ opt.label }}
-          </label>
+        <!-- ═══ BASE CONFIGURATION ═══ -->
+        <div class="launch-section">
+          <h4 class="launch-section-title">{{ t('strategyDev.jobBaseConfig') }}</h4>
+          <table class="launch-table">
+            <tbody>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobConfig') }}</td>
+                <td class="launch-td-input">
+                  <div class="launch-input-with-edit">
+                    <select v-model="configFile" class="launch-select">
+                      <option value="" disabled>{{ t('strategyDev.jobSelectConfig') }}</option>
+                      <optgroup
+                        v-for="group in configGroups"
+                        :key="group.label"
+                        :label="group.label"
+                      >
+                        <option v-for="c in group.configs" :key="c" :value="c">
+                          {{ c.includes('/') ? c.split('/').pop() : c }}
+                        </option>
+                      </optgroup>
+                    </select>
+                    <button
+                      v-if="configFile"
+                      class="launch-edit-btn"
+                      :title="t('strategyDev.editorEditConfig')"
+                      @click="editConfig"
+                    >
+                      <i-mdi-pencil-outline class="launch-edit-icon" />
+                    </button>
+                  </div>
+                </td>
+                <td class="launch-td-desc">
+                  <span v-if="isCustomConfig" class="launch-custom-badge">{{
+                    customConfigLabel
+                  }}</span>
+                  <span v-else-if="configInfo" class="launch-config-info">{{ configInfo }}</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobStrategy') }}</td>
+                <td class="launch-td-input">
+                  <div class="launch-input-with-edit">
+                    <select v-model="strategy" class="launch-select">
+                      <option value="" disabled>{{ t('strategyDev.jobSelectStrategy') }}</option>
+                      <option v-for="s in jobStore.availableStrategies" :key="s" :value="s">
+                        {{ s }}
+                      </option>
+                    </select>
+                    <button
+                      v-if="strategy"
+                      class="launch-edit-btn"
+                      :title="t('strategyDev.editorEditStrategy')"
+                      @click="editStrategy"
+                    >
+                      <i-mdi-pencil-outline class="launch-edit-icon" />
+                    </button>
+                  </div>
+                </td>
+                <td class="launch-td-desc" />
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobDateFrom') }}</td>
+                <td class="launch-td-input">
+                  <VueDatePicker
+                    v-model="dateFrom"
+                    :dark="settingsStore.isDarkTheme"
+                    :max-date="now"
+                    model-type="yyyy-MM-dd"
+                    :format="'yyyy-MM-dd'"
+                    text-input
+                    auto-apply
+                    :enable-time-picker="false"
+                    class="launch-datepicker"
+                  />
+                </td>
+                <td class="launch-td-desc" />
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobDateTo') }}</td>
+                <td class="launch-td-input">
+                  <VueDatePicker
+                    v-model="dateTo"
+                    :dark="settingsStore.isDarkTheme"
+                    :max-date="now"
+                    model-type="yyyy-MM-dd"
+                    :format="'yyyy-MM-dd'"
+                    text-input
+                    auto-apply
+                    :enable-time-picker="false"
+                    class="launch-datepicker"
+                  />
+                </td>
+                <td class="launch-td-desc">
+                  <span v-if="timerange" class="launch-hint">→ {{ timerange }}</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobTimeframe') }}</td>
+                <td class="launch-td-input">
+                  <TimeframeSelect :value="timeframe" size="small" @input="timeframe = $event" />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobTimeframeDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobMaxOpenTrades') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="maxOpenTrades"
+                    type="number"
+                    class="launch-input"
+                    min="1"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobMaxOpenTradesDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobStakeAmount') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model="stakeAmount"
+                    type="text"
+                    class="launch-input"
+                    placeholder="unlimited"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobStakeAmountDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobDryRunWallet') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="dryRunWallet"
+                    type="number"
+                    class="launch-input"
+                    min="0"
+                    step="100"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobDryRunWalletDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobEnableProtections') }}</td>
+                <td class="launch-td-input">
+                  <label class="launch-toggle">
+                    <input v-model="enableProtections" type="checkbox" />
+                    <span class="launch-toggle-slider" />
+                  </label>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobEnableProtectionsDesc') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ═══ BACKTEST-ONLY PARAMS ═══ -->
+        <div v-if="isBacktest" class="launch-section">
+          <h4 class="launch-section-title">{{ t('strategyDev.jobBacktestParams') }}</h4>
+          <table class="launch-table">
+            <tbody>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobExportType') }}</td>
+                <td class="launch-td-input">
+                  <select v-model="exportType" class="launch-select">
+                    <option v-for="o in exportTypeOptions" :key="o.value" :value="o.value">
+                      {{ o.label }}
+                    </option>
+                  </select>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobExportTypeDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobBreakdown') }}</td>
+                <td class="launch-td-input">
+                  <select v-model="breakdown" multiple class="launch-select launch-select--multi">
+                    <option v-for="o in breakdownOptions" :key="o.value" :value="o.value">
+                      {{ o.label }}
+                    </option>
+                  </select>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobBreakdownDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobCache') }}</td>
+                <td class="launch-td-input">
+                  <select v-model="cache" class="launch-select">
+                    <option v-for="o in cacheOptions" :key="o.value" :value="o.value">
+                      {{ o.label }}
+                    </option>
+                  </select>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobCacheDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobDynamicPairlist') }}</td>
+                <td class="launch-td-input">
+                  <label class="launch-toggle">
+                    <input v-model="enableDynamicPairlist" type="checkbox" />
+                    <span class="launch-toggle-slider" />
+                  </label>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobDynamicPairlistDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobNotes') }}</td>
+                <td class="launch-td-input">
+                  <input v-model="notes" type="text" class="launch-input" />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobNotesDesc') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ═══ HYPEROPT PARAMS ═══ -->
+        <div v-if="isHyperoptOrWfa" class="launch-section">
+          <h4 class="launch-section-title">{{ t('strategyDev.jobHyperoptParams') }}</h4>
+          <table class="launch-table">
+            <tbody>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobEpochs') }} *</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="epochs"
+                    type="number"
+                    class="launch-input"
+                    min="10"
+                    max="10000"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobEpochsDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobLoss') }}</td>
+                <td class="launch-td-input">
+                  <select v-model="hyperoptLoss" class="launch-select">
+                    <option v-for="l in lossOptions" :key="l" :value="l">{{ l }}</option>
+                  </select>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobLossDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobSampler') }}</td>
+                <td class="launch-td-input">
+                  <select v-model="sampler" class="launch-select">
+                    <option v-for="s in samplerOptions" :key="s.value" :value="s.value">
+                      {{ s.label }}
+                    </option>
+                  </select>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobSamplerDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobSpaces') }}</td>
+                <td class="launch-td-input">
+                  <select v-model="spaces" multiple class="launch-select launch-select--multi">
+                    <option v-for="s in spaceOptions" :key="s.value" :value="s.value">
+                      {{ s.label }}
+                    </option>
+                  </select>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobSpacesDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobEarlyStop') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="earlyStop"
+                    type="number"
+                    class="launch-input"
+                    min="0"
+                    placeholder="0"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobEarlyStopDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobMinTrades') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="minTrades"
+                    type="number"
+                    class="launch-input"
+                    min="1"
+                    placeholder="30"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobMinTradesDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobWorkers') }}</td>
+                <td class="launch-td-input">
+                  <input v-model.number="jobWorkers" type="number" class="launch-input" min="-2" />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobWorkersDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobRandomState') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="randomState"
+                    type="number"
+                    class="launch-input"
+                    min="0"
+                    placeholder="auto"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobRandomStateDesc') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ═══ HYPEROPT-ONLY FLAGS ═══ -->
+        <div v-if="isHyperopt" class="launch-section">
+          <h4 class="launch-section-title">Options Hyperopt</h4>
+          <table class="launch-table">
+            <tbody>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobPrintAll') }}</td>
+                <td class="launch-td-input">
+                  <label class="launch-toggle">
+                    <input v-model="printAll" type="checkbox" />
+                    <span class="launch-toggle-slider" />
+                  </label>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobPrintAllDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobDisableParamExport') }}</td>
+                <td class="launch-td-input">
+                  <label class="launch-toggle">
+                    <input v-model="disableParamExport" type="checkbox" />
+                    <span class="launch-toggle-slider" />
+                  </label>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobDisableParamExportDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobIgnoreMissingSpaces') }}</td>
+                <td class="launch-td-input">
+                  <label class="launch-toggle">
+                    <input v-model="ignoreMissingSpaces" type="checkbox" />
+                    <span class="launch-toggle-slider" />
+                  </label>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobIgnoreMissingSpacesDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobAnalyzePerEpoch') }}</td>
+                <td class="launch-td-input">
+                  <label class="launch-toggle">
+                    <input v-model="analyzePerEpoch" type="checkbox" />
+                    <span class="launch-toggle-slider" />
+                  </label>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobAnalyzePerEpochDesc') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ═══ WFA PARAMS ═══ -->
+        <div v-if="isWfa" class="launch-section">
+          <h4 class="launch-section-title">{{ t('strategyDev.jobWfaParams') }}</h4>
+          <table class="launch-table">
+            <tbody>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobWfWindows') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="wfWindows"
+                    type="number"
+                    class="launch-input"
+                    min="2"
+                    max="20"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobWfWindowsDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobWfTrainRatio') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="wfTrainRatio"
+                    type="number"
+                    class="launch-input"
+                    min="0.5"
+                    max="0.95"
+                    step="0.05"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobWfTrainRatioDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobWfEmbargo') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="wfEmbargoDays"
+                    type="number"
+                    class="launch-input"
+                    min="0"
+                    max="30"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobWfEmbargoDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobWfHoldout') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="wfHoldoutMonths"
+                    type="number"
+                    class="launch-input"
+                    min="0"
+                    max="12"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobWfHoldoutDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobWfMinTrades') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="wfMinTestTrades"
+                    type="number"
+                    class="launch-input"
+                    min="1"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobWfMinTradesDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobWfMode') }}</td>
+                <td class="launch-td-input">
+                  <select v-model="wfMode" class="launch-select">
+                    <option v-for="m in wfModeOptions" :key="m.value" :value="m.value">
+                      {{ m.label }}
+                    </option>
+                  </select>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobWfModeDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobWfMultiSeed') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="wfMultiSeed"
+                    type="number"
+                    class="launch-input"
+                    min="0"
+                    placeholder="0"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobWfMultiSeedDesc') }}</td>
+              </tr>
+              <tr v-if="isCpcv">
+                <td class="launch-td-label">{{ t('strategyDev.jobWfCpcvGroups') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="wfCpcvGroups"
+                    type="number"
+                    class="launch-input"
+                    min="3"
+                    max="20"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobWfCpcvGroupsDesc') }}</td>
+              </tr>
+              <tr v-if="isCpcv">
+                <td class="launch-td-label">{{ t('strategyDev.jobWfCpcvTestGroups') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="wfCpcvTestGroups"
+                    type="number"
+                    class="launch-input"
+                    min="1"
+                    max="10"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobWfCpcvTestGroupsDesc') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ═══ ADVANCED (COLLAPSIBLE) ═══ -->
+        <div class="launch-section">
+          <button class="launch-toggle-advanced" @click="showAdvanced = !showAdvanced">
+            <i-mdi-chevron-right v-if="!showAdvanced" class="launch-chevron" />
+            <i-mdi-chevron-down v-else class="launch-chevron" />
+            {{ t('strategyDev.jobAdvancedParams') }}
+          </button>
+          <table v-if="showAdvanced" class="launch-table">
+            <tbody>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobDataFormat') }}</td>
+                <td class="launch-td-input">
+                  <select v-model="dataFormatOhlcv" class="launch-select">
+                    <option v-for="o in dataFormatOptions" :key="o.value" :value="o.value">
+                      {{ o.label }}
+                    </option>
+                  </select>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobDataFormatDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobFee') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model.number="fee"
+                    type="number"
+                    class="launch-input"
+                    min="0"
+                    step="0.0001"
+                    placeholder="auto"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobFeeDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobPairs') }}</td>
+                <td class="launch-td-input">
+                  <input
+                    v-model="pairsText"
+                    type="text"
+                    class="launch-input"
+                    placeholder="BTC/USDT, ETH/USDT"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobPairsDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobPositionStacking') }}</td>
+                <td class="launch-td-input">
+                  <label class="launch-toggle">
+                    <input v-model="enablePositionStacking" type="checkbox" />
+                    <span class="launch-toggle-slider" />
+                  </label>
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobPositionStackingDesc') }}</td>
+              </tr>
+              <tr>
+                <td class="launch-td-label">{{ t('strategyDev.jobTimeframeDetail') }}</td>
+                <td class="launch-td-input">
+                  <TimeframeSelect
+                    :value="timeframeDetail"
+                    size="small"
+                    @input="timeframeDetail = $event"
+                  />
+                </td>
+                <td class="launch-td-desc">{{ t('strategyDev.jobTimeframeDetailDesc') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Start button -->
+        <div class="launch-actions">
+          <button class="launch-btn launch-btn--primary" :disabled="!canStart" @click="handleStart">
+            <i-mdi-play v-if="!jobStore.loading" class="launch-btn-icon" />
+            <i-mdi-loading v-else class="launch-btn-icon launch-btn-icon--spin" />
+            {{ t('strategyDev.jobStart') }}
+            {{
+              jobType === JobType.backtest
+                ? 'Backtest'
+                : jobType === JobType.hyperopt
+                  ? 'Hyperopt'
+                  : 'Walk-Forward'
+            }}
+          </button>
+        </div>
+
+        <!-- Error -->
+        <div v-if="jobStore.error && !activeJob" class="launch-error">
+          <i-mdi-alert-circle class="launch-error-icon" />
+          <span>{{ jobStore.error }}</span>
         </div>
       </div>
 
-      <!-- ═══ BASE CONFIGURATION ═══ -->
-      <div class="launch-section">
-        <h4 class="launch-section-title">{{ t('strategyDev.jobBaseConfig') }}</h4>
-        <table class="launch-table">
-          <tbody>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobConfig') }}</td>
-              <td class="launch-td-input">
-                <div class="launch-input-with-edit">
-                  <select v-model="configFile" class="launch-select">
-                    <option value="" disabled>{{ t('strategyDev.jobSelectConfig') }}</option>
-                    <optgroup v-for="group in configGroups" :key="group.label" :label="group.label">
-                      <option v-for="c in group.configs" :key="c" :value="c">
-                        {{ c.includes('/') ? c.split('/').pop() : c }}
-                      </option>
-                    </optgroup>
-                  </select>
-                  <button v-if="configFile" class="launch-edit-btn" :title="t('strategyDev.editorEditConfig')" @click="editConfig">
-                    <i-mdi-pencil-outline class="launch-edit-icon" />
-                  </button>
-                </div>
-              </td>
-              <td class="launch-td-desc">
-                <span v-if="isCustomConfig" class="launch-custom-badge">{{ customConfigLabel }}</span>
-                <span v-else-if="configInfo" class="launch-config-info">{{ configInfo }}</span>
-              </td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobStrategy') }}</td>
-              <td class="launch-td-input">
-                <div class="launch-input-with-edit">
-                  <select v-model="strategy" class="launch-select">
-                    <option value="" disabled>{{ t('strategyDev.jobSelectStrategy') }}</option>
-                    <option v-for="s in jobStore.availableStrategies" :key="s" :value="s">{{ s }}</option>
-                  </select>
-                  <button v-if="strategy" class="launch-edit-btn" :title="t('strategyDev.editorEditStrategy')" @click="editStrategy">
-                    <i-mdi-pencil-outline class="launch-edit-icon" />
-                  </button>
-                </div>
-              </td>
-              <td class="launch-td-desc" />
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobDateFrom') }}</td>
-              <td class="launch-td-input">
-                <VueDatePicker
-                  v-model="dateFrom"
-                  :dark="settingsStore.isDarkTheme"
-                  :max-date="now"
-                  model-type="yyyy-MM-dd"
-                  :format="'yyyy-MM-dd'"
-                  text-input
-                  auto-apply
-                  :enable-time-picker="false"
-                  class="launch-datepicker"
-                />
-              </td>
-              <td class="launch-td-desc" />
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobDateTo') }}</td>
-              <td class="launch-td-input">
-                <VueDatePicker
-                  v-model="dateTo"
-                  :dark="settingsStore.isDarkTheme"
-                  :max-date="now"
-                  model-type="yyyy-MM-dd"
-                  :format="'yyyy-MM-dd'"
-                  text-input
-                  auto-apply
-                  :enable-time-picker="false"
-                  class="launch-datepicker"
-                />
-              </td>
-              <td class="launch-td-desc">
-                <span v-if="timerange" class="launch-hint">→ {{ timerange }}</span>
-              </td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobTimeframe') }}</td>
-              <td class="launch-td-input">
-                <TimeframeSelect :value="timeframe" size="small" @input="timeframe = $event" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobTimeframeDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobMaxOpenTrades') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="maxOpenTrades" type="number" class="launch-input" min="1" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobMaxOpenTradesDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobStakeAmount') }}</td>
-              <td class="launch-td-input">
-                <input v-model="stakeAmount" type="text" class="launch-input" placeholder="unlimited" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobStakeAmountDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobDryRunWallet') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="dryRunWallet" type="number" class="launch-input" min="0" step="100" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobDryRunWalletDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobEnableProtections') }}</td>
-              <td class="launch-td-input">
-                <label class="launch-toggle">
-                  <input v-model="enableProtections" type="checkbox" />
-                  <span class="launch-toggle-slider" />
-                </label>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobEnableProtectionsDesc') }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- ═══ BACKTEST-ONLY PARAMS ═══ -->
-      <div v-if="isBacktest" class="launch-section">
-        <h4 class="launch-section-title">{{ t('strategyDev.jobBacktestParams') }}</h4>
-        <table class="launch-table">
-          <tbody>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobExportType') }}</td>
-              <td class="launch-td-input">
-                <select v-model="exportType" class="launch-select">
-                  <option v-for="o in exportTypeOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-                </select>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobExportTypeDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobBreakdown') }}</td>
-              <td class="launch-td-input">
-                <select v-model="breakdown" multiple class="launch-select launch-select--multi">
-                  <option v-for="o in breakdownOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-                </select>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobBreakdownDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobCache') }}</td>
-              <td class="launch-td-input">
-                <select v-model="cache" class="launch-select">
-                  <option v-for="o in cacheOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-                </select>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobCacheDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobDynamicPairlist') }}</td>
-              <td class="launch-td-input">
-                <label class="launch-toggle">
-                  <input v-model="enableDynamicPairlist" type="checkbox" />
-                  <span class="launch-toggle-slider" />
-                </label>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobDynamicPairlistDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobNotes') }}</td>
-              <td class="launch-td-input">
-                <input v-model="notes" type="text" class="launch-input" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobNotesDesc') }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- ═══ HYPEROPT PARAMS ═══ -->
-      <div v-if="isHyperoptOrWfa" class="launch-section">
-        <h4 class="launch-section-title">{{ t('strategyDev.jobHyperoptParams') }}</h4>
-        <table class="launch-table">
-          <tbody>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobEpochs') }} *</td>
-              <td class="launch-td-input">
-                <input v-model.number="epochs" type="number" class="launch-input" min="10" max="10000" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobEpochsDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobLoss') }}</td>
-              <td class="launch-td-input">
-                <select v-model="hyperoptLoss" class="launch-select">
-                  <option v-for="l in lossOptions" :key="l" :value="l">{{ l }}</option>
-                </select>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobLossDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobSampler') }}</td>
-              <td class="launch-td-input">
-                <select v-model="sampler" class="launch-select">
-                  <option v-for="s in samplerOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
-                </select>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobSamplerDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobSpaces') }}</td>
-              <td class="launch-td-input">
-                <select v-model="spaces" multiple class="launch-select launch-select--multi">
-                  <option v-for="s in spaceOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
-                </select>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobSpacesDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobEarlyStop') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="earlyStop" type="number" class="launch-input" min="0" placeholder="0" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobEarlyStopDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobMinTrades') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="minTrades" type="number" class="launch-input" min="1" placeholder="30" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobMinTradesDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobWorkers') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="jobWorkers" type="number" class="launch-input" min="-2" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobWorkersDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobRandomState') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="randomState" type="number" class="launch-input" min="0" placeholder="auto" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobRandomStateDesc') }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- ═══ HYPEROPT-ONLY FLAGS ═══ -->
-      <div v-if="isHyperopt" class="launch-section">
-        <h4 class="launch-section-title">Options Hyperopt</h4>
-        <table class="launch-table">
-          <tbody>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobPrintAll') }}</td>
-              <td class="launch-td-input">
-                <label class="launch-toggle">
-                  <input v-model="printAll" type="checkbox" />
-                  <span class="launch-toggle-slider" />
-                </label>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobPrintAllDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobDisableParamExport') }}</td>
-              <td class="launch-td-input">
-                <label class="launch-toggle">
-                  <input v-model="disableParamExport" type="checkbox" />
-                  <span class="launch-toggle-slider" />
-                </label>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobDisableParamExportDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobIgnoreMissingSpaces') }}</td>
-              <td class="launch-td-input">
-                <label class="launch-toggle">
-                  <input v-model="ignoreMissingSpaces" type="checkbox" />
-                  <span class="launch-toggle-slider" />
-                </label>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobIgnoreMissingSpacesDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobAnalyzePerEpoch') }}</td>
-              <td class="launch-td-input">
-                <label class="launch-toggle">
-                  <input v-model="analyzePerEpoch" type="checkbox" />
-                  <span class="launch-toggle-slider" />
-                </label>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobAnalyzePerEpochDesc') }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- ═══ WFA PARAMS ═══ -->
-      <div v-if="isWfa" class="launch-section">
-        <h4 class="launch-section-title">{{ t('strategyDev.jobWfaParams') }}</h4>
-        <table class="launch-table">
-          <tbody>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobWfWindows') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="wfWindows" type="number" class="launch-input" min="2" max="20" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobWfWindowsDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobWfTrainRatio') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="wfTrainRatio" type="number" class="launch-input" min="0.5" max="0.95" step="0.05" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobWfTrainRatioDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobWfEmbargo') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="wfEmbargoDays" type="number" class="launch-input" min="0" max="30" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobWfEmbargoDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobWfHoldout') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="wfHoldoutMonths" type="number" class="launch-input" min="0" max="12" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobWfHoldoutDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobWfMinTrades') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="wfMinTestTrades" type="number" class="launch-input" min="1" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobWfMinTradesDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobWfMode') }}</td>
-              <td class="launch-td-input">
-                <select v-model="wfMode" class="launch-select">
-                  <option v-for="m in wfModeOptions" :key="m.value" :value="m.value">{{ m.label }}</option>
-                </select>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobWfModeDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobWfMultiSeed') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="wfMultiSeed" type="number" class="launch-input" min="0" placeholder="0" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobWfMultiSeedDesc') }}</td>
-            </tr>
-            <tr v-if="isCpcv">
-              <td class="launch-td-label">{{ t('strategyDev.jobWfCpcvGroups') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="wfCpcvGroups" type="number" class="launch-input" min="3" max="20" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobWfCpcvGroupsDesc') }}</td>
-            </tr>
-            <tr v-if="isCpcv">
-              <td class="launch-td-label">{{ t('strategyDev.jobWfCpcvTestGroups') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="wfCpcvTestGroups" type="number" class="launch-input" min="1" max="10" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobWfCpcvTestGroupsDesc') }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- ═══ ADVANCED (COLLAPSIBLE) ═══ -->
-      <div class="launch-section">
-        <button class="launch-toggle-advanced" @click="showAdvanced = !showAdvanced">
-          <i-mdi-chevron-right v-if="!showAdvanced" class="launch-chevron" />
-          <i-mdi-chevron-down v-else class="launch-chevron" />
-          {{ t('strategyDev.jobAdvancedParams') }}
-        </button>
-        <table v-if="showAdvanced" class="launch-table">
-          <tbody>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobDataFormat') }}</td>
-              <td class="launch-td-input">
-                <select v-model="dataFormatOhlcv" class="launch-select">
-                  <option v-for="o in dataFormatOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-                </select>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobDataFormatDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobFee') }}</td>
-              <td class="launch-td-input">
-                <input v-model.number="fee" type="number" class="launch-input" min="0" step="0.0001" placeholder="auto" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobFeeDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobPairs') }}</td>
-              <td class="launch-td-input">
-                <input v-model="pairsText" type="text" class="launch-input" placeholder="BTC/USDT, ETH/USDT" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobPairsDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobPositionStacking') }}</td>
-              <td class="launch-td-input">
-                <label class="launch-toggle">
-                  <input v-model="enablePositionStacking" type="checkbox" />
-                  <span class="launch-toggle-slider" />
-                </label>
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobPositionStackingDesc') }}</td>
-            </tr>
-            <tr>
-              <td class="launch-td-label">{{ t('strategyDev.jobTimeframeDetail') }}</td>
-              <td class="launch-td-input">
-                <TimeframeSelect :value="timeframeDetail" size="small" @input="timeframeDetail = $event" />
-              </td>
-              <td class="launch-td-desc">{{ t('strategyDev.jobTimeframeDetailDesc') }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Start button -->
-      <div class="launch-actions">
-        <button
-          class="launch-btn launch-btn--primary"
-          :disabled="!canStart"
-          @click="handleStart"
-        >
-          <i-mdi-play v-if="!jobStore.loading" class="launch-btn-icon" />
-          <i-mdi-loading v-else class="launch-btn-icon launch-btn-icon--spin" />
-          {{ t('strategyDev.jobStart') }} {{ jobType === JobType.backtest ? 'Backtest' : jobType === JobType.hyperopt ? 'Hyperopt' : 'Walk-Forward' }}
-        </button>
-      </div>
-
-      <!-- Error -->
-      <div v-if="jobStore.error && !activeJob" class="launch-error">
-        <i-mdi-alert-circle class="launch-error-icon" />
-        <span>{{ jobStore.error }}</span>
+      <!-- Running job mini-banner (on config tab) -->
+      <div v-if="isRunning && activeJob" class="launch-running-hint" @click="activeTab = 'console'">
+        <span
+          class="launch-status-dot launch-status-dot--pulse"
+          :style="{ backgroundColor: 'var(--sd-info)' }"
+        />
+        <span>{{ activeJob.job_type }} · {{ activeJob.strategy }}</span>
+        <span v-if="jobStore.jobProgress" class="launch-running-progress">{{
+          jobStore.jobProgress
+        }}</span>
+        <span class="launch-running-link">{{ t('strategyDev.jobTabConsole') }} →</span>
       </div>
     </div>
-
-    <!-- Running job mini-banner (on config tab) -->
-    <div v-if="isRunning && activeJob" class="launch-running-hint" @click="activeTab = 'console'">
-      <span class="launch-status-dot launch-status-dot--pulse" :style="{ backgroundColor: 'var(--sd-info)' }" />
-      <span>{{ activeJob.job_type }} · {{ activeJob.strategy }}</span>
-      <span v-if="jobStore.jobProgress" class="launch-running-progress">{{ jobStore.jobProgress }}</span>
-      <span class="launch-running-link">{{ t('strategyDev.jobTabConsole') }} →</span>
-    </div>
-
-    </div><!-- end config tab -->
+    <!-- end config tab -->
   </div>
 </template>
 
@@ -1737,12 +1903,21 @@ const consoleBadge = computed(() => {
 }
 
 @keyframes sd-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes sd-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 </style>

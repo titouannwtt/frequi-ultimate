@@ -23,15 +23,20 @@ const filters = ref({
   exitShort: false,
 });
 
-const openTradePairs = computed(() =>
-  new Set(botStore.activeBot.openTrades.map((t) => t.pair)),
-);
+const openTradePairs = computed(() => new Set(botStore.activeBot.openTrades.map((t) => t.pair)));
 
 function timeframeToMs(tf: string): number {
   const m = tf.match(/^(\d+)([smhdwM])$/);
   if (!m) return 0;
   const n = parseInt(m[1]);
-  const unit: Record<string, number> = { s: 1000, m: 60000, h: 3600000, d: 86400000, w: 604800000, M: 2592000000 };
+  const unit: Record<string, number> = {
+    s: 1000,
+    m: 60000,
+    h: 3600000,
+    d: 86400000,
+    w: 604800000,
+    M: 2592000000,
+  };
   return n * (unit[m[2]] ?? 0);
 }
 
@@ -56,7 +61,9 @@ const closedOutsideChart = computed(() => {
   const inWindow = closedInChartWindow.value;
   return new Set(
     botStore.activeBot.closedTrades
-      .filter((t) => t.close_timestamp && t.close_timestamp * 1000 <= cutoff && !inWindow.has(t.pair))
+      .filter(
+        (t) => t.close_timestamp && t.close_timestamp * 1000 <= cutoff && !inWindow.has(t.pair),
+      )
       .map((t) => t.pair),
   );
 });
@@ -161,10 +168,7 @@ const hasActiveFilters = computed(() => Object.values(filters.value).some(Boolea
 <template>
   <div class="pair-selector-advanced">
     <!-- Trigger -->
-    <button
-      class="pair-trigger"
-      @click="(e: Event) => popoverRef?.toggle(e)"
-    >
+    <button class="pair-trigger" @click="(e: Event) => popoverRef?.toggle(e)">
       <span v-if="openTradePairs.has(modelValue)" class="trigger-dot" />
       <span class="trigger-text">{{ modelValue || 'Select pair' }}</span>
       <i-mdi-chevron-down class="trigger-chevron" />
@@ -204,40 +208,58 @@ const hasActiveFilters = computed(() => Object.values(filters.value).some(Boolea
           >
             <i-mdi-check-circle-outline class="w-3 h-3" /> Closed
           </button>
-          <div v-if="hasAnySignal.enterLong || hasAnySignal.exitLong || hasAnySignal.enterShort || hasAnySignal.exitShort" class="filter-sep" />
+          <div
+            v-if="
+              hasAnySignal.enterLong ||
+              hasAnySignal.exitLong ||
+              hasAnySignal.enterShort ||
+              hasAnySignal.exitShort
+            "
+            class="filter-sep"
+          />
           <button
             v-if="hasAnySignal.enterLong"
             class="filter-pill filter-el"
             :class="{ active: filters.enterLong }"
             title="Has enter long signals"
             @click="toggleFilter('enterLong')"
-          >EL</button>
+          >
+            EL
+          </button>
           <button
             v-if="hasAnySignal.exitLong"
             class="filter-pill filter-xl"
             :class="{ active: filters.exitLong }"
             title="Has exit long signals"
             @click="toggleFilter('exitLong')"
-          >XL</button>
+          >
+            XL
+          </button>
           <button
             v-if="hasAnySignal.enterShort"
             class="filter-pill filter-es"
             :class="{ active: filters.enterShort }"
             title="Has enter short signals"
             @click="toggleFilter('enterShort')"
-          >ES</button>
+          >
+            ES
+          </button>
           <button
             v-if="hasAnySignal.exitShort"
             class="filter-pill filter-xs"
             :class="{ active: filters.exitShort }"
             title="Has exit short signals"
             @click="toggleFilter('exitShort')"
-          >XS</button>
+          >
+            XS
+          </button>
           <button
             v-if="hasActiveFilters"
             class="filter-clear"
             title="Clear all filters"
-            @click="Object.keys(filters).forEach((k) => (filters[k as keyof typeof filters] = false))"
+            @click="
+              Object.keys(filters).forEach((k) => (filters[k as keyof typeof filters] = false))
+            "
           >
             <i-mdi-close class="w-3 h-3" />
           </button>
@@ -245,12 +267,7 @@ const hasActiveFilters = computed(() => Object.values(filters.value).some(Boolea
 
         <!-- List -->
         <div class="pair-list">
-          <div
-            v-if="filteredPairs.length === 0"
-            class="pair-empty"
-          >
-            No pairs match
-          </div>
+          <div v-if="filteredPairs.length === 0" class="pair-empty">No pairs match</div>
           <div
             v-for="(pair, idx) in filteredPairs"
             :key="pair"
@@ -273,10 +290,26 @@ const hasActiveFilters = computed(() => Object.values(filters.value).some(Boolea
                 <div class="skel-badge" />
               </template>
               <template v-else-if="signalData[pair]">
-                <span v-if="hasAnySignal.enterLong && signalData[pair].enter_long" class="badge badge-el">{{ signalData[pair].enter_long }}</span>
-                <span v-if="hasAnySignal.exitLong && signalData[pair].exit_long" class="badge badge-xl">{{ signalData[pair].exit_long }}</span>
-                <span v-if="hasAnySignal.enterShort && signalData[pair].enter_short" class="badge badge-es">{{ signalData[pair].enter_short }}</span>
-                <span v-if="hasAnySignal.exitShort && signalData[pair].exit_short" class="badge badge-xs">{{ signalData[pair].exit_short }}</span>
+                <span
+                  v-if="hasAnySignal.enterLong && signalData[pair].enter_long"
+                  class="badge badge-el"
+                  >{{ signalData[pair].enter_long }}</span
+                >
+                <span
+                  v-if="hasAnySignal.exitLong && signalData[pair].exit_long"
+                  class="badge badge-xl"
+                  >{{ signalData[pair].exit_long }}</span
+                >
+                <span
+                  v-if="hasAnySignal.enterShort && signalData[pair].enter_short"
+                  class="badge badge-es"
+                  >{{ signalData[pair].enter_short }}</span
+                >
+                <span
+                  v-if="hasAnySignal.exitShort && signalData[pair].exit_short"
+                  class="badge badge-xs"
+                  >{{ signalData[pair].exit_short }}</span
+                >
               </template>
             </div>
           </div>
@@ -679,7 +712,11 @@ const hasActiveFilters = computed(() => Object.values(filters.value).some(Boolea
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 </style>

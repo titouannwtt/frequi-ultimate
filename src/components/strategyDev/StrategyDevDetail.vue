@@ -157,7 +157,10 @@ watch(
             <div key="overview" class="sd-panel-enter">
               <HyperoptOverviewPanel v-if="isHyperopt" />
               <WfaOverviewPanel v-else-if="isWfa" />
-              <LiveBotOverviewPanel v-else-if="isLive" @reconstitute="(p) => emit('reconstitute', p)" />
+              <LiveBotOverviewPanel
+                v-else-if="isLive"
+                @reconstitute="(p) => emit('reconstitute', p)"
+              />
               <OverviewPanel v-else />
             </div>
           </Transition>

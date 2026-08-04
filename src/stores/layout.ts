@@ -105,8 +105,12 @@ const DEFAULT_WIDGET_DEFAULTS: Record<number, Record<string, unknown>> = {
     compactMode: true,
     tradingModeFilter: 'live',
     enabledEventTypes: [
-      'trade_opened', 'trade_closed_profit', 'trade_closed_loss',
-      'bot_status', 'alert', 'dca',
+      'trade_opened',
+      'trade_closed_profit',
+      'trade_closed_loss',
+      'bot_status',
+      'alert',
+      'dca',
     ],
   },
   [DashboardLayout.logConsole]: {
@@ -266,12 +270,8 @@ export const useLayoutStore = defineStore('layoutStore', {
       this.widgetDefaults[id] = defaults;
     },
     compactLayout(layout: GridItemData[], cols: number): GridItemData[] {
-      const visible = layout.filter(
-        (item: GridItemData) => item.w > 0 && item.h > 0,
-      );
-      const hidden = layout.filter(
-        (item: GridItemData) => item.w === 0 || item.h === 0,
-      );
+      const visible = layout.filter((item: GridItemData) => item.w > 0 && item.h > 0);
+      const hidden = layout.filter((item: GridItemData) => item.w === 0 || item.h === 0);
       visible.sort((a: GridItemData, b: GridItemData) => a.y - b.y || a.x - b.x);
 
       const placed: GridItemData[] = [];
@@ -341,27 +341,33 @@ export const useLayoutStore = defineStore('layoutStore', {
           context.store.dashboardLayout.push(...JSON.parse(JSON.stringify(defaults)));
         }
         // Migrate from old grid to 48-col grid
-        const maxRight = Math.max(...context.store.dashboardLayout.map((item: GridItemData) => item.w + item.x));
+        const maxRight = Math.max(
+          ...context.store.dashboardLayout.map((item: GridItemData) => item.w + item.x),
+        );
         if (maxRight > 0 && maxRight <= 12) {
           // Old 12-col layout → ×4
           console.log('Migrating dashboard layout from 12-col to 48-col grid.');
-          context.store.dashboardLayout = context.store.dashboardLayout.map((item: GridItemData) => ({
-            ...item,
-            x: item.x * 4,
-            y: item.y * 4,
-            w: item.w * 4,
-            h: item.h * 4,
-          }));
+          context.store.dashboardLayout = context.store.dashboardLayout.map(
+            (item: GridItemData) => ({
+              ...item,
+              x: item.x * 4,
+              y: item.y * 4,
+              w: item.w * 4,
+              h: item.h * 4,
+            }),
+          );
         } else if (maxRight > 12 && maxRight <= 24) {
           // Intermediate 24-col layout → ×2
           console.log('Migrating dashboard layout from 24-col to 48-col grid.');
-          context.store.dashboardLayout = context.store.dashboardLayout.map((item: GridItemData) => ({
-            ...item,
-            x: item.x * 2,
-            y: item.y * 2,
-            w: item.w * 2,
-            h: item.h * 2,
-          }));
+          context.store.dashboardLayout = context.store.dashboardLayout.map(
+            (item: GridItemData) => ({
+              ...item,
+              x: item.x * 2,
+              y: item.y * 2,
+              w: item.w * 2,
+              h: item.h * 2,
+            }),
+          );
         }
       }
       const smCorrupt =
@@ -374,9 +380,7 @@ export const useLayoutStore = defineStore('layoutStore', {
         context.store.dashboardLayoutSm = context.store.dashboardLayoutSm.filter(
           (item: GridItemData) => !PHANTOM_WIDGETS.has(item.i),
         );
-        const smIds = new Set(
-          context.store.dashboardLayoutSm.map((item: GridItemData) => item.i),
-        );
+        const smIds = new Set(context.store.dashboardLayoutSm.map((item: GridItemData) => item.i));
         const smMissing = DEFAULT_DASHBOARD_LAYOUT_SM.filter((item) => !smIds.has(item.i));
         if (smMissing.length > 0) {
           context.store.dashboardLayoutSm.push(...JSON.parse(JSON.stringify(smMissing)));

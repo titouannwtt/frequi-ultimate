@@ -46,14 +46,20 @@ export function delayedHide(popover: { hide: () => void } | undefined, clearFn: 
 }
 
 export function cancelDelayedHide() {
-  for (const id of allHideDelays) { clearTimeout(id); }
+  for (const id of allHideDelays) {
+    clearTimeout(id);
+  }
   allHideDelays.clear();
 }
 
 export function cleanupAllTimeouts() {
-  for (const id of allHideDelays) { clearTimeout(id); }
+  for (const id of allHideDelays) {
+    clearTimeout(id);
+  }
   allHideDelays.clear();
-  for (const id of allFakeAnchors) { clearTimeout(id); }
+  for (const id of allFakeAnchors) {
+    clearTimeout(id);
+  }
   allFakeAnchors.clear();
   // Remove any orphaned anchor elements from DOM
   for (const el of allFakeElements) {
@@ -90,18 +96,31 @@ export function usePopoverHover<T = string>(delay = 400) {
   }
 
   function cancelHover() {
-    if (hoverTimeout.value) { clearTimeout(hoverTimeout.value); hoverTimeout.value = null; }
-    delayedHide(popoverRef.value, () => { hoveredValue.value = null; });
+    if (hoverTimeout.value) {
+      clearTimeout(hoverTimeout.value);
+      hoverTimeout.value = null;
+    }
+    delayedHide(popoverRef.value, () => {
+      hoveredValue.value = null;
+    });
   }
 
   function keepPopover() {
     cancelDelayedHide();
-    if (hoverTimeout.value) { clearTimeout(hoverTimeout.value); hoverTimeout.value = null; }
+    if (hoverTimeout.value) {
+      clearTimeout(hoverTimeout.value);
+      hoverTimeout.value = null;
+    }
   }
 
   function hide() {
-    if (hoverTimeout.value) { clearTimeout(hoverTimeout.value); hoverTimeout.value = null; }
-    delayedHide(popoverRef.value, () => { hoveredValue.value = null; });
+    if (hoverTimeout.value) {
+      clearTimeout(hoverTimeout.value);
+      hoverTimeout.value = null;
+    }
+    delayedHide(popoverRef.value, () => {
+      hoveredValue.value = null;
+    });
   }
 
   return {

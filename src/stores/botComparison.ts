@@ -7,7 +7,14 @@ import type {
 } from '@/types/botComparison';
 
 // ── Tag ordering ──
-const ALL_TAG_IDS = ['status', 'tradingMode', 'market', 'exchange', 'stakeCurrency', 'port'] as const;
+const ALL_TAG_IDS = [
+  'status',
+  'tradingMode',
+  'market',
+  'exchange',
+  'stakeCurrency',
+  'port',
+] as const;
 type TagId = (typeof ALL_TAG_IDS)[number];
 
 // ── Bot tag visibility ──
@@ -40,20 +47,162 @@ interface ActiveSort {
 
 // ── Alert definitions (constant, not persisted) ──
 export const ALERT_TYPES: AlertTypeDefinition[] = [
-  { id: 'positionLoss', category: 'position', labelKey: 'botComparison.alertPositionLoss', descriptionKey: 'botComparison.alertPositionLossDesc', icon: 'i-mdi-trending-down', severity: 'warning', defaultEnabled: true, hasThreshold: true, thresholdMin: -100, thresholdMax: -1, thresholdDefault: -10, thresholdUnit: '%', thresholdStep: 1 },
-  { id: 'positionStuck', category: 'position', labelKey: 'botComparison.alertPositionStuck', descriptionKey: 'botComparison.alertPositionStuckDesc', icon: 'i-mdi-timer-sand', severity: 'warning', defaultEnabled: false, hasThreshold: true, thresholdMin: 1.5, thresholdMax: 10, thresholdDefault: 3, thresholdUnit: 'x', thresholdStep: 0.5 },
-  { id: 'nearLiquidation', category: 'position', labelKey: 'botComparison.alertNearLiquidation', descriptionKey: 'botComparison.alertNearLiquidationDesc', icon: 'i-mdi-skull-crossbones', severity: 'critical', defaultEnabled: true, hasThreshold: true, thresholdMin: 5, thresholdMax: 50, thresholdDefault: 15, thresholdUnit: '%', thresholdStep: 1 },
-  { id: 'logErrors', category: 'log', labelKey: 'botComparison.alertLogErrors', descriptionKey: 'botComparison.alertLogErrorsDesc', icon: 'i-mdi-alert-octagon', severity: 'critical', defaultEnabled: true },
-  { id: 'orderFailed', category: 'log', labelKey: 'botComparison.alertOrderFailed', descriptionKey: 'botComparison.alertOrderFailedDesc', icon: 'i-mdi-close-circle', severity: 'critical', defaultEnabled: true },
-  { id: 'insufficientFunds', category: 'log', labelKey: 'botComparison.alertInsufficientFunds', descriptionKey: 'botComparison.alertInsufficientFundsDesc', icon: 'i-mdi-cash-remove', severity: 'warning', defaultEnabled: true },
-  { id: 'exchangeError', category: 'log', labelKey: 'botComparison.alertExchangeError', descriptionKey: 'botComparison.alertExchangeErrorDesc', icon: 'i-mdi-cloud-off-outline', severity: 'warning', defaultEnabled: false },
-  { id: 'walletMismatch', category: 'log', labelKey: 'botComparison.alertWalletMismatch', descriptionKey: 'botComparison.alertWalletMismatchDesc', icon: 'i-mdi-wallet-bifold', severity: 'critical', defaultEnabled: true },
-  { id: 'noTradeActivity', category: 'activity', labelKey: 'botComparison.alertNoTradeActivity', descriptionKey: 'botComparison.alertNoTradeActivityDesc', icon: 'i-mdi-sleep', severity: 'info', defaultEnabled: false, hasThreshold: true, thresholdMin: 1, thresholdMax: 168, thresholdDefault: 24, thresholdUnit: 'h', thresholdStep: 1 },
-  { id: 'botOffline', category: 'activity', labelKey: 'botComparison.alertBotOffline', descriptionKey: 'botComparison.alertBotOfflineDesc', icon: 'i-mdi-power-plug-off', severity: 'critical', defaultEnabled: true },
-  { id: 'highDrawdown', category: 'system', labelKey: 'botComparison.alertHighDrawdown', descriptionKey: 'botComparison.alertHighDrawdownDesc', icon: 'i-mdi-chart-line-variant', severity: 'warning', defaultEnabled: false, hasThreshold: true, thresholdMin: -50, thresholdMax: -5, thresholdDefault: -15, thresholdUnit: '%', thresholdStep: 1 },
-  { id: 'capacityFull', category: 'system', labelKey: 'botComparison.alertCapacityFull', descriptionKey: 'botComparison.alertCapacityFullDesc', icon: 'i-mdi-gauge-full', severity: 'info', defaultEnabled: false },
-  { id: 'allFundsExposed', category: 'position', labelKey: 'botComparison.alertAllFundsExposed', descriptionKey: 'botComparison.alertAllFundsExposedDesc', icon: 'i-mdi-cash-lock', severity: 'warning', defaultEnabled: true },
-  { id: 'liquidationBeforeStoploss', category: 'position', labelKey: 'botComparison.alertLiquidationBeforeStoploss', descriptionKey: 'botComparison.alertLiquidationBeforeStoplossDesc', icon: 'i-mdi-shield-alert', severity: 'critical', defaultEnabled: true },
+  {
+    id: 'positionLoss',
+    category: 'position',
+    labelKey: 'botComparison.alertPositionLoss',
+    descriptionKey: 'botComparison.alertPositionLossDesc',
+    icon: 'i-mdi-trending-down',
+    severity: 'warning',
+    defaultEnabled: true,
+    hasThreshold: true,
+    thresholdMin: -100,
+    thresholdMax: -1,
+    thresholdDefault: -10,
+    thresholdUnit: '%',
+    thresholdStep: 1,
+  },
+  {
+    id: 'positionStuck',
+    category: 'position',
+    labelKey: 'botComparison.alertPositionStuck',
+    descriptionKey: 'botComparison.alertPositionStuckDesc',
+    icon: 'i-mdi-timer-sand',
+    severity: 'warning',
+    defaultEnabled: false,
+    hasThreshold: true,
+    thresholdMin: 1.5,
+    thresholdMax: 10,
+    thresholdDefault: 3,
+    thresholdUnit: 'x',
+    thresholdStep: 0.5,
+  },
+  {
+    id: 'nearLiquidation',
+    category: 'position',
+    labelKey: 'botComparison.alertNearLiquidation',
+    descriptionKey: 'botComparison.alertNearLiquidationDesc',
+    icon: 'i-mdi-skull-crossbones',
+    severity: 'critical',
+    defaultEnabled: true,
+    hasThreshold: true,
+    thresholdMin: 5,
+    thresholdMax: 50,
+    thresholdDefault: 15,
+    thresholdUnit: '%',
+    thresholdStep: 1,
+  },
+  {
+    id: 'logErrors',
+    category: 'log',
+    labelKey: 'botComparison.alertLogErrors',
+    descriptionKey: 'botComparison.alertLogErrorsDesc',
+    icon: 'i-mdi-alert-octagon',
+    severity: 'critical',
+    defaultEnabled: true,
+  },
+  {
+    id: 'orderFailed',
+    category: 'log',
+    labelKey: 'botComparison.alertOrderFailed',
+    descriptionKey: 'botComparison.alertOrderFailedDesc',
+    icon: 'i-mdi-close-circle',
+    severity: 'critical',
+    defaultEnabled: true,
+  },
+  {
+    id: 'insufficientFunds',
+    category: 'log',
+    labelKey: 'botComparison.alertInsufficientFunds',
+    descriptionKey: 'botComparison.alertInsufficientFundsDesc',
+    icon: 'i-mdi-cash-remove',
+    severity: 'warning',
+    defaultEnabled: true,
+  },
+  {
+    id: 'exchangeError',
+    category: 'log',
+    labelKey: 'botComparison.alertExchangeError',
+    descriptionKey: 'botComparison.alertExchangeErrorDesc',
+    icon: 'i-mdi-cloud-off-outline',
+    severity: 'warning',
+    defaultEnabled: false,
+  },
+  {
+    id: 'walletMismatch',
+    category: 'log',
+    labelKey: 'botComparison.alertWalletMismatch',
+    descriptionKey: 'botComparison.alertWalletMismatchDesc',
+    icon: 'i-mdi-wallet-bifold',
+    severity: 'critical',
+    defaultEnabled: true,
+  },
+  {
+    id: 'noTradeActivity',
+    category: 'activity',
+    labelKey: 'botComparison.alertNoTradeActivity',
+    descriptionKey: 'botComparison.alertNoTradeActivityDesc',
+    icon: 'i-mdi-sleep',
+    severity: 'info',
+    defaultEnabled: false,
+    hasThreshold: true,
+    thresholdMin: 1,
+    thresholdMax: 168,
+    thresholdDefault: 24,
+    thresholdUnit: 'h',
+    thresholdStep: 1,
+  },
+  {
+    id: 'botOffline',
+    category: 'activity',
+    labelKey: 'botComparison.alertBotOffline',
+    descriptionKey: 'botComparison.alertBotOfflineDesc',
+    icon: 'i-mdi-power-plug-off',
+    severity: 'critical',
+    defaultEnabled: true,
+  },
+  {
+    id: 'highDrawdown',
+    category: 'system',
+    labelKey: 'botComparison.alertHighDrawdown',
+    descriptionKey: 'botComparison.alertHighDrawdownDesc',
+    icon: 'i-mdi-chart-line-variant',
+    severity: 'warning',
+    defaultEnabled: false,
+    hasThreshold: true,
+    thresholdMin: -50,
+    thresholdMax: -5,
+    thresholdDefault: -15,
+    thresholdUnit: '%',
+    thresholdStep: 1,
+  },
+  {
+    id: 'capacityFull',
+    category: 'system',
+    labelKey: 'botComparison.alertCapacityFull',
+    descriptionKey: 'botComparison.alertCapacityFullDesc',
+    icon: 'i-mdi-gauge-full',
+    severity: 'info',
+    defaultEnabled: false,
+  },
+  {
+    id: 'allFundsExposed',
+    category: 'position',
+    labelKey: 'botComparison.alertAllFundsExposed',
+    descriptionKey: 'botComparison.alertAllFundsExposedDesc',
+    icon: 'i-mdi-cash-lock',
+    severity: 'warning',
+    defaultEnabled: true,
+  },
+  {
+    id: 'liquidationBeforeStoploss',
+    category: 'position',
+    labelKey: 'botComparison.alertLiquidationBeforeStoploss',
+    descriptionKey: 'botComparison.alertLiquidationBeforeStoplossDesc',
+    icon: 'i-mdi-shield-alert',
+    severity: 'critical',
+    defaultEnabled: true,
+  },
 ];
 
 export const ALERT_CATEGORIES: { id: string; labelKey: string }[] = [
@@ -66,17 +215,35 @@ export const ALERT_CATEGORIES: { id: string; labelKey: string }[] = [
 function defaultAlertConfig(): AlertConfigV2 {
   const global: Record<string, AlertSettingConfig> = {};
   for (const at of ALERT_TYPES) {
-    global[at.id] = { enabled: at.defaultEnabled, threshold: at.thresholdDefault, includeLeverage: false };
+    global[at.id] = {
+      enabled: at.defaultEnabled,
+      threshold: at.thresholdDefault,
+      includeLeverage: false,
+    };
   }
   return { global, perBotEnabled: {} };
 }
 
 function defaultBotTagVisibility(): BotTagVisibility {
-  return { status: true, tradingMode: true, market: true, exchange: true, stakeCurrency: true, port: true, onlineSince: true };
+  return {
+    status: true,
+    tradingMode: true,
+    market: true,
+    exchange: true,
+    stakeCurrency: true,
+    port: true,
+    onlineSince: true,
+  };
 }
 
 function defaultBotFilters(): BotFilters {
-  return { status: { live: true, dry: true, offline: true }, exchanges: {}, currencies: {}, tradingMode: {}, customTags: {} };
+  return {
+    status: { live: true, dry: true, offline: true },
+    exchanges: {},
+    currencies: {},
+    tradingMode: {},
+    customTags: {},
+  };
 }
 
 export const useBotComparisonStore = defineStore('botComparison', {
@@ -141,7 +308,9 @@ export const useBotComparisonStore = defineStore('botComparison', {
         for (const id of defaultColumnIds) {
           if (!this.visibleColumnIds.includes(id) && !this.columnOrder.includes(id)) {
             const lastIdx = Math.max(
-              ...defaultColumnIds.map((d) => this.visibleColumnIds.indexOf(d)).filter((i) => i >= 0),
+              ...defaultColumnIds
+                .map((d) => this.visibleColumnIds.indexOf(d))
+                .filter((i) => i >= 0),
               0,
             );
             this.visibleColumnIds.splice(lastIdx + 1, 0, id);
@@ -296,11 +465,17 @@ export const useBotComparisonStore = defineStore('botComparison', {
 
       // String value
       const cur = localStorage.getItem(OLD_KEYS.summaryCurrency);
-      if (cur) { this.summaryCurrency = cur; migrated = true; }
+      if (cur) {
+        this.summaryCurrency = cur;
+        migrated = true;
+      }
 
       // Boolean stored as string
       const notifEnabled = localStorage.getItem(OLD_KEYS.browserNotificationsEnabled);
-      if (notifEnabled) { this.browserNotificationsEnabled = notifEnabled === 'true'; migrated = true; }
+      if (notifEnabled) {
+        this.browserNotificationsEnabled = notifEnabled === 'true';
+        migrated = true;
+      }
 
       // JSON values
       const jsonMappings: [keyof typeof OLD_KEYS, string][] = [
@@ -324,7 +499,9 @@ export const useBotComparisonStore = defineStore('botComparison', {
           try {
             (this as any)[field] = JSON.parse(raw);
             migrated = true;
-          } catch { /* ignore malformed data */ }
+          } catch {
+            /* ignore malformed data */
+          }
         }
       }
 

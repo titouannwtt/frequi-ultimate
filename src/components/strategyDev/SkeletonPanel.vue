@@ -37,7 +37,12 @@ withDefaults(
 
   <!-- Text block skeleton -->
   <div v-else class="sk-text">
-    <div v-for="r in rows" :key="r" class="sd-skeleton sk-line" :style="{ width: `${60 + Math.random() * 40}%` }" />
+    <div
+      v-for="r in rows"
+      :key="r"
+      class="sd-skeleton sk-line"
+      :style="{ width: `${60 + Math.random() * 40}%` }"
+    />
   </div>
 </template>
 
@@ -62,9 +67,16 @@ withDefaults(
   height: 12px;
   border-radius: 4px;
 }
-.sk-line--short { width: 40%; }
-.sk-line--value { width: 60%; height: 20px; }
-.sk-line--full { width: 100%; }
+.sk-line--short {
+  width: 40%;
+}
+.sk-line--value {
+  width: 60%;
+  height: 20px;
+}
+.sk-line--full {
+  width: 100%;
+}
 
 .sk-chart {
   background: var(--sd-base);
@@ -92,7 +104,8 @@ withDefaults(
   gap: 4px;
 }
 
-.sk-table-header, .sk-table-row {
+.sk-table-header,
+.sk-table-row {
   display: flex;
   gap: 8px;
 }

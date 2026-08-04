@@ -129,7 +129,9 @@ const activeInsights = computed(() =>
       <table class="w-full text-xs border-collapse" :style="{ color: C.text }">
         <thead>
           <tr>
-            <th class="p-2 text-left" :style="{ color: C.subtext }">{{ t('strategyDev.regimeFromTo') }}</th>
+            <th class="p-2 text-left" :style="{ color: C.subtext }">
+              {{ t('strategyDev.regimeFromTo') }}
+            </th>
             <th
               v-for="regime in regimeKeys"
               :key="regime"

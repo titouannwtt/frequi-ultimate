@@ -25,11 +25,21 @@ const gridLayoutData = computed((): GridItemData[] => {
   return [...layoutStore.getTradingLayoutSm];
 });
 
-const gridLayoutMultiPane = computed(() => findGridLayout(gridLayoutData.value, TradeLayout.multiPane));
-const gridLayoutOpenTrades = computed(() => findGridLayout(gridLayoutData.value, TradeLayout.openTrades));
-const gridLayoutTradeHistory = computed(() => findGridLayout(gridLayoutData.value, TradeLayout.tradeHistory));
-const gridLayoutTradeDetail = computed(() => findGridLayout(gridLayoutData.value, TradeLayout.tradeDetail));
-const gridLayoutChartView = computed(() => findGridLayout(gridLayoutData.value, TradeLayout.chartView));
+const gridLayoutMultiPane = computed(() =>
+  findGridLayout(gridLayoutData.value, TradeLayout.multiPane),
+);
+const gridLayoutOpenTrades = computed(() =>
+  findGridLayout(gridLayoutData.value, TradeLayout.openTrades),
+);
+const gridLayoutTradeHistory = computed(() =>
+  findGridLayout(gridLayoutData.value, TradeLayout.tradeHistory),
+);
+const gridLayoutTradeDetail = computed(() =>
+  findGridLayout(gridLayoutData.value, TradeLayout.tradeDetail),
+);
+const gridLayoutChartView = computed(() =>
+  findGridLayout(gridLayoutData.value, TradeLayout.chartView),
+);
 
 const responsiveGridLayouts = computed(() => ({ sm: layoutStore.getTradingLayoutSm }));
 
@@ -68,7 +78,9 @@ const botStateColor = computed(() => {
 
 function refreshOHLCV(pair: string, columns: string[]) {
   botStore.activeBot.getPairCandles({
-    pair, timeframe: botStore.activeBot.timeframe, columns,
+    pair,
+    timeframe: botStore.activeBot.timeframe,
+    columns,
   });
 }
 </script>
@@ -107,7 +119,10 @@ function refreshOHLCV(pair: string, columns: string[]) {
                 <div class="flex items-center gap-2.5">
                   <i-mdi-view-grid class="w-4 h-4" />
                   <span class="font-medium">{{ t('trading.multiPane') }}</span>
-                  <span class="flex items-center gap-1.5 text-surface-500 dark:text-surface-400" style="font-size: 0.8125rem">
+                  <span
+                    class="flex items-center gap-1.5 text-surface-500 dark:text-surface-400"
+                    style="font-size: 0.8125rem"
+                  >
                     <span class="w-2 h-2 rounded-full inline-block" :class="botStateColor" />
                     {{ isBotStarting ? $t('general.starting') : (botState?.state ?? 'offline') }}
                   </span>
@@ -144,7 +159,10 @@ function refreshOHLCV(pair: string, columns: string[]) {
                   <i-mdi-chart-bar v-else-if="tab.id === 'performance'" class="mp-tab-icon" />
                   <i-mdi-wallet-outline v-else-if="tab.id === 'balance'" class="mp-tab-icon" />
                   <i-mdi-calendar-clock v-else-if="tab.id === 'periods'" class="mp-tab-icon" />
-                  <i-mdi-format-list-bulleted v-else-if="tab.id === 'pairlist'" class="mp-tab-icon" />
+                  <i-mdi-format-list-bulleted
+                    v-else-if="tab.id === 'pairlist'"
+                    class="mp-tab-icon"
+                  />
                   <i-mdi-lock-outline v-else-if="tab.id === 'locks'" class="mp-tab-icon" />
                   <i-mdi-database-sync-outline v-else-if="tab.id === 'cache'" class="mp-tab-icon" />
                   <span>{{ t(tab.labelKey) }}</span>
@@ -264,7 +282,11 @@ function refreshOHLCV(pair: string, columns: string[]) {
 
         <!-- ═══ Trade Detail ═══ -->
         <GridItem
-          v-if="botStore.activeBot.detailTradeId && botStore.activeBot.tradeDetail && gridLayoutTradeDetail.h !== 0"
+          v-if="
+            botStore.activeBot.detailTradeId &&
+            botStore.activeBot.tradeDetail &&
+            gridLayoutTradeDetail.h !== 0
+          "
           v-bind="gridItemProps"
           :i="gridLayoutTradeDetail.i"
           :x="gridLayoutTradeDetail.x"
@@ -281,7 +303,10 @@ function refreshOHLCV(pair: string, columns: string[]) {
                 <span>{{ t('trading.tradeDetail') }}</span>
               </div>
             </template>
-            <TradeDetail :trade="botStore.activeBot.tradeDetail" :stake-currency="botStore.activeBot.stakeCurrency" />
+            <TradeDetail
+              :trade="botStore.activeBot.tradeDetail"
+              :stake-currency="botStore.activeBot.stakeCurrency"
+            />
           </DraggableContainer>
         </GridItem>
 
@@ -423,7 +448,9 @@ function refreshOHLCV(pair: string, columns: string[]) {
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   scrollbar-width: none;
 }
-.mp-tabs::-webkit-scrollbar { display: none; }
+.mp-tabs::-webkit-scrollbar {
+  display: none;
+}
 .ft-dark-theme .mp-tabs {
   border-bottom-color: rgba(255, 255, 255, 0.06);
 }

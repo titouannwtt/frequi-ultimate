@@ -13,9 +13,12 @@ function openLauncher() {
   stratDevStore.selectRun(null);
 }
 
-watch(() => stratDevStore.selectedRun, (run) => {
-  if (run) showLauncher.value = false;
-});
+watch(
+  () => stratDevStore.selectedRun,
+  (run) => {
+    if (run) showLauncher.value = false;
+  },
+);
 
 // ── Editor split-pane resize ──
 const editorFormWidth = ref(520);
@@ -58,7 +61,6 @@ function handleReconstitute(prefill: Partial<import('@/types').JobStartRequest>)
   showLauncher.value = true;
   stratDevStore.selectRun(null);
 }
-
 
 const isBotOnline = computed(() => botStore.activeBot?.isBotOnline ?? false);
 
@@ -162,11 +164,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
       </div>
 
       <!-- Resize handle -->
-      <div
-        v-if="showLeftBar"
-        class="sd-resize-handle"
-        @mousedown="startResize"
-      />
+      <div v-if="showLeftBar" class="sd-resize-handle" @mousedown="startResize" />
     </aside>
 
     <!-- Main content -->
@@ -190,13 +188,19 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
       </div>
 
       <!-- Detail view -->
-      <StrategyDevDetail v-else-if="stratDevStore.selectedRun && !showLauncher" @reconstitute="handleReconstitute" />
+      <StrategyDevDetail
+        v-else-if="stratDevStore.selectedRun && !showLauncher"
+        @reconstitute="handleReconstitute"
+      />
 
       <!-- Launcher -->
       <div
         v-else-if="showLauncher"
         class="sd-launcher-container"
-        :class="{ 'sd-launcher--split': editorStore.isOpen, 'sd-launcher--resizing': isEditorResizing }"
+        :class="{
+          'sd-launcher--split': editorStore.isOpen,
+          'sd-launcher--resizing': isEditorResizing,
+        }"
       >
         <div
           class="sd-launcher-form"
@@ -207,11 +211,22 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
               <i-mdi-play-circle-outline class="w-5 h-5" />
               {{ t('strategyDev.jobLaunch') }}
             </h3>
-            <button class="sd-launcher-close" @click="showLauncher = false; editorStore.closeAll()">
+            <button
+              class="sd-launcher-close"
+              @click="
+                showLauncher = false;
+                editorStore.closeAll();
+              "
+            >
               <i-mdi-close class="w-4 h-4" />
             </button>
           </div>
-          <LaunchJobPanel :config-override="launchConfigOverride" :prefill="launchPrefill" @config-used="launchConfigOverride = null" @prefill-applied="launchPrefill = null" />
+          <LaunchJobPanel
+            :config-override="launchConfigOverride"
+            :prefill="launchPrefill"
+            @config-used="launchConfigOverride = null"
+            @prefill-applied="launchPrefill = null"
+          />
         </div>
         <div v-if="editorStore.isOpen" class="sd-launcher-resize" @mousedown="startEditorResize" />
         <div v-if="editorStore.isOpen" class="sd-launcher-editor">

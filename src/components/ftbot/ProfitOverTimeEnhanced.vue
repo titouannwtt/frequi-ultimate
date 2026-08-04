@@ -237,9 +237,7 @@ const cumulativeDataPct = computed<CumPoint[]>(() => {
 });
 
 const chartData = computed(() => {
-  return selectedProfitType.value === 'percentage'
-    ? cumulativeDataPct.value
-    : cumulativeData.value;
+  return selectedProfitType.value === 'percentage' ? cumulativeDataPct.value : cumulativeData.value;
 });
 
 // --- Period statistics ---
@@ -255,7 +253,14 @@ interface PeriodStats {
 const periodStats = computed<PeriodStats>(() => {
   const trades = filteredTrades.value;
   if (trades.length === 0) {
-    return { periodReturn: 0, periodReturnPct: 0, bestDay: 0, worstDay: 0, avgDaily: 0, totalTrades: 0 };
+    return {
+      periodReturn: 0,
+      periodReturnPct: 0,
+      bestDay: 0,
+      worstDay: 0,
+      avgDaily: 0,
+      totalTrades: 0,
+    };
   }
 
   const totalProfit = trades.reduce((s, tr) => s + (tr.profit_abs ?? 0), 0);
@@ -270,7 +275,8 @@ const periodStats = computed<PeriodStats>(() => {
   const dailyValues = Object.values(dailyProfits);
   const bestDay = dailyValues.length > 0 ? Math.max(...dailyValues) : 0;
   const worstDay = dailyValues.length > 0 ? Math.min(...dailyValues) : 0;
-  const avgDaily = dailyValues.length > 0 ? dailyValues.reduce((s, v) => s + v, 0) / dailyValues.length : 0;
+  const avgDaily =
+    dailyValues.length > 0 ? dailyValues.reduce((s, v) => s + v, 0) / dailyValues.length : 0;
 
   return {
     periodReturn: totalProfit,
@@ -490,12 +496,11 @@ const chartOptions = computed<EChartsOption>(() => {
           } else {
             val = 0;
           }
-          const formatted = isPercentage
-            ? `${val.toFixed(2)}%`
-            : formatPrice(val, 2);
-          html += `<div style="display:flex;justify-content:space-between;gap:12px">`
-            + `<span>${p.marker} ${p.seriesName}</span>`
-            + `<span style="font-weight:600">${formatted}</span></div>`;
+          const formatted = isPercentage ? `${val.toFixed(2)}%` : formatPrice(val, 2);
+          html +=
+            `<div style="display:flex;justify-content:space-between;gap:12px">` +
+            `<span>${p.marker} ${p.seriesName}</span>` +
+            `<span style="font-weight:600">${formatted}</span></div>`;
         }
         return html;
       },
@@ -544,7 +549,9 @@ const chartOptions = computed<EChartsOption>(() => {
     yAxis: [
       {
         type: 'value',
-        name: isPercentage ? t('profitEnhanced.profitPct') : t('profitEnhanced.profitAbs') + currencyLabel.value,
+        name: isPercentage
+          ? t('profitEnhanced.profitPct')
+          : t('profitEnhanced.profitAbs') + currencyLabel.value,
         nameTextStyle: {
           color: settingsStore.isDarkTheme ? '#808098' : '#555',
           fontSize: 10,
@@ -597,10 +604,7 @@ function exportCSV() {
   botIds.value.forEach((id) => headers.push(botNameMap.value[id] ?? id));
 
   const rows = data.map((p) => {
-    const row = [
-      new Date(p.date).toISOString(),
-      p.combined.toFixed(4),
-    ];
+    const row = [new Date(p.date).toISOString(), p.combined.toFixed(4)];
     botIds.value.forEach((id) => row.push((p[id] ?? 0).toFixed(4)));
     return row.join(',');
   });
@@ -735,13 +739,21 @@ watch(
           class="font-semibold"
         >
           {{ formatPrice(periodStats.periodReturn, 2) }}
-          <span v-if="currencyLabel" class="text-gray-600 dark:text-gray-500 font-normal text-[0.6rem]">{{ currencyLabel.trim() }}</span>
-          <span class="text-gray-600 dark:text-gray-500 font-normal">({{ periodStats.periodReturnPct.toFixed(2) }}%)</span>
+          <span
+            v-if="currencyLabel"
+            class="text-gray-600 dark:text-gray-500 font-normal text-[0.6rem]"
+            >{{ currencyLabel.trim() }}</span
+          >
+          <span class="text-gray-600 dark:text-gray-500 font-normal"
+            >({{ periodStats.periodReturnPct.toFixed(2) }}%)</span
+          >
         </span>
       </div>
       <div class="flex items-center gap-1">
         <span class="text-gray-600 dark:text-gray-500">{{ t('profitEnhanced.bestDay') }}</span>
-        <span class="text-emerald-400 font-semibold">{{ formatPrice(periodStats.bestDay, 2) }}</span>
+        <span class="text-emerald-400 font-semibold">{{
+          formatPrice(periodStats.bestDay, 2)
+        }}</span>
       </div>
       <div class="flex items-center gap-1">
         <span class="text-gray-600 dark:text-gray-500">{{ t('profitEnhanced.worstDay') }}</span>
@@ -758,7 +770,9 @@ watch(
       </div>
       <div class="flex items-center gap-1">
         <span class="text-gray-600 dark:text-gray-500">{{ t('profitEnhanced.trades') }}</span>
-        <span class="text-gray-700 dark:text-gray-300 font-semibold">{{ periodStats.totalTrades }}</span>
+        <span class="text-gray-700 dark:text-gray-300 font-semibold">{{
+          periodStats.totalTrades
+        }}</span>
       </div>
     </div>
 
@@ -781,18 +795,30 @@ watch(
     </div>
 
     <!-- Key metrics bar -->
-    <div class="flex flex-wrap justify-center gap-4 px-2 py-1.5 metrics-bar border-t border-gray-300 dark:border-gray-700/30">
+    <div
+      class="flex flex-wrap justify-center gap-4 px-2 py-1.5 metrics-bar border-t border-gray-300 dark:border-gray-700/30"
+    >
       <div v-if="keyMetrics.sharpe !== null" class="flex items-center gap-1 text-[10px]">
-        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{ t('profitEnhanced.sharpe') }}</span>
+        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{
+          t('profitEnhanced.sharpe')
+        }}</span>
         <span
           class="font-bold"
-          :class="(keyMetrics.sharpe ?? 0) >= 1 ? 'text-emerald-400' : (keyMetrics.sharpe ?? 0) >= 0 ? 'text-amber-400' : 'text-red-400'"
+          :class="
+            (keyMetrics.sharpe ?? 0) >= 1
+              ? 'text-emerald-400'
+              : (keyMetrics.sharpe ?? 0) >= 0
+                ? 'text-amber-400'
+                : 'text-red-400'
+          "
         >
           {{ (keyMetrics.sharpe ?? 0).toFixed(2) }}
         </span>
       </div>
       <div v-if="keyMetrics.maxDrawdownPct !== null" class="flex items-center gap-1 text-[10px]">
-        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{ t('profitEnhanced.maxDD') }}</span>
+        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{
+          t('profitEnhanced.maxDD')
+        }}</span>
         <span class="font-bold text-red-400">
           {{ ((keyMetrics.maxDrawdownPct ?? 0) * 100).toFixed(1) }}%
         </span>
@@ -801,19 +827,35 @@ watch(
         </span>
       </div>
       <div v-if="keyMetrics.winRate !== null" class="flex items-center gap-1 text-[10px]">
-        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{ t('profitEnhanced.winRate') }}</span>
+        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{
+          t('profitEnhanced.winRate')
+        }}</span>
         <span
           class="font-bold"
-          :class="(keyMetrics.winRate ?? 0) >= 60 ? 'text-emerald-400' : (keyMetrics.winRate ?? 0) >= 50 ? 'text-amber-400' : 'text-red-400'"
+          :class="
+            (keyMetrics.winRate ?? 0) >= 60
+              ? 'text-emerald-400'
+              : (keyMetrics.winRate ?? 0) >= 50
+                ? 'text-amber-400'
+                : 'text-red-400'
+          "
         >
           {{ (keyMetrics.winRate ?? 0).toFixed(1) }}%
         </span>
       </div>
       <div v-if="keyMetrics.profitFactor !== null" class="flex items-center gap-1 text-[10px]">
-        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{ t('profitEnhanced.profitFactor') }}</span>
+        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{
+          t('profitEnhanced.profitFactor')
+        }}</span>
         <span
           class="font-bold"
-          :class="(keyMetrics.profitFactor ?? 0) >= 1.5 ? 'text-emerald-400' : (keyMetrics.profitFactor ?? 0) >= 1 ? 'text-amber-400' : 'text-red-400'"
+          :class="
+            (keyMetrics.profitFactor ?? 0) >= 1.5
+              ? 'text-emerald-400'
+              : (keyMetrics.profitFactor ?? 0) >= 1
+                ? 'text-amber-400'
+                : 'text-red-400'
+          "
         >
           {{ (keyMetrics.profitFactor ?? 0).toFixed(2) }}
         </span>

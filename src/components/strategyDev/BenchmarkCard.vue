@@ -28,15 +28,11 @@ defineProps<{ data: BenchmarkData }>();
         >
           {{ data.sharpe.value.toFixed(3) }}
         </div>
-        <div class="text-sm text-surface-500 mt-0.5">
-          Sharpe (vs {{ data.sharpe.benchmark }})
-        </div>
+        <div class="text-sm text-surface-500 mt-0.5">Sharpe (vs {{ data.sharpe.benchmark }})</div>
         <span
           class="text-sm px-1.5 py-0.5 rounded mt-1 inline-block"
           :class="
-            data.sharpe.above
-              ? 'bg-green-900/30 text-green-400'
-              : 'bg-surface-700 text-surface-400'
+            data.sharpe.above ? 'bg-green-900/30 text-green-400' : 'bg-surface-700 text-surface-400'
           "
         >
           {{ data.sharpe.above ? t('strategyDev.bmAbove') : t('strategyDev.bmBelow') }}
@@ -49,16 +45,10 @@ defineProps<{ data: BenchmarkData }>();
         >
           {{ data.dd.value.toFixed(1) }}%
         </div>
-        <div class="text-sm text-surface-500 mt-0.5">
-          Max DD (vs {{ data.dd.benchmark }}%)
-        </div>
+        <div class="text-sm text-surface-500 mt-0.5">Max DD (vs {{ data.dd.benchmark }}%)</div>
         <span
           class="text-sm px-1.5 py-0.5 rounded mt-1 inline-block"
-          :class="
-            !data.dd.above
-              ? 'bg-green-900/30 text-green-400'
-              : 'bg-red-900/30 text-red-400'
-          "
+          :class="!data.dd.above ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'"
         >
           {{ !data.dd.above ? t('strategyDev.bmHealthy') : t('strategyDev.bmHigh') }}
         </span>

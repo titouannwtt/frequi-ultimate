@@ -67,10 +67,7 @@ const SEVERITY_RANK: Record<string, number> = {
 
 // ── Default excluded module prefixes (noise) ──
 
-const DEFAULT_EXCLUDED_PREFIXES = [
-  'uvicorn.',
-  'freqtrade.rpc.api_server.ws.',
-];
+const DEFAULT_EXCLUDED_PREFIXES = ['uvicorn.', 'freqtrade.rpc.api_server.ws.'];
 
 // ── Factory ──
 
@@ -178,7 +175,9 @@ export function useLogFiltering(entries: Ref<AggregatedLogEntry[]>) {
   });
 
   // ── Step 3: Grouped by bot (for the sectioned view) ──
-  const groupedByBot = computed<{ botId: string; botName: string; maxSeverity: string; groups: GroupedLogEntry[] }[]>(() => {
+  const groupedByBot = computed<
+    { botId: string; botName: string; maxSeverity: string; groups: GroupedLogEntry[] }[]
+  >(() => {
     const botMap = new Map<string, GroupedLogEntry[]>();
 
     for (const group of groupedEntries.value) {
@@ -198,7 +197,8 @@ export function useLogFiltering(entries: Ref<AggregatedLogEntry[]>) {
         const sev = SEVERITY_RANK[g.level] ?? 9;
         if (sev < maxSev) maxSev = sev;
       }
-      const maxSeverity = Object.entries(SEVERITY_RANK).find(([, v]) => v === maxSev)?.[0] ?? 'INFO';
+      const maxSeverity =
+        Object.entries(SEVERITY_RANK).find(([, v]) => v === maxSev)?.[0] ?? 'INFO';
       return { botId, botName, maxSeverity, groups };
     });
 
@@ -212,13 +212,24 @@ export function useLogFiltering(entries: Ref<AggregatedLogEntry[]>) {
 
   // ── Summary counts ──
   const summaryCounts = computed(() => {
-    let critical = 0, error = 0, warning = 0, info = 0;
+    let critical = 0,
+      error = 0,
+      warning = 0,
+      info = 0;
     for (const e of filteredEntries.value) {
       switch (e.level) {
-        case 'CRITICAL': critical++; break;
-        case 'ERROR': error++; break;
-        case 'WARNING': warning++; break;
-        case 'INFO': info++; break;
+        case 'CRITICAL':
+          critical++;
+          break;
+        case 'ERROR':
+          error++;
+          break;
+        case 'WARNING':
+          warning++;
+          break;
+        case 'INFO':
+          info++;
+          break;
       }
     }
     return { critical, error, warning, info, total: filteredEntries.value.length };

@@ -115,107 +115,119 @@ const stakeCurrency = computed(() => {
       <Skeleton height="1.25rem" />
     </template>
     <template v-else>
-    <!-- Header with total impact -->
-    <div
-      class="rounded-lg p-2 text-center"
-      :style="{
-        background: isPositiveImpact ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-        border: `1px solid ${isPositiveImpact ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
-      }"
-    >
-      <div class="text-xs text-gray-600 dark:text-gray-500 uppercase tracking-wider mb-1">
-        {{ t('stressTest.estimatedImpact') }}
-        <span v-if="scenarioPercent !== 0" class="normal-case">
-          ({{ scenarioPercent < 0 ? t('stressTest.crashOf', { pct: Math.abs(scenarioPercent) }) : t('stressTest.pumpOf', { pct: scenarioPercent }) }})
-        </span>
-      </div>
+      <!-- Header with total impact -->
       <div
-        class="text-2xl font-bold"
-        :class="isPositiveImpact ? 'text-green-500' : 'text-red-500'"
-      >
-        {{ totalImpact >= 0 ? '+' : '' }}{{ totalImpact.toFixed(2) }} {{ stakeCurrency }}
-      </div>
-      <div v-if="liquidationCount > 0" class="mt-1 text-amber-400 text-sm font-semibold">
-        ⚠ {{ t('stressTest.liquidationWarning', { count: liquidationCount }) }}
-      </div>
-    </div>
-
-    <!-- Slider: -50% to +50% -->
-    <div>
-      <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
-        <span>{{ t('stressTest.crashScenario') }}</span>
-        <span
-          class="font-bold"
-          :class="scenarioPercent >= 0 ? 'text-green-400' : 'text-red-400'"
-        >{{ scenarioPercent >= 0 ? '+' : '' }}{{ scenarioPercent }}%</span>
-      </div>
-      <input
-        v-model.number="scenarioPercent"
-        type="range"
-        :min="-50"
-        :max="50"
-        :step="1"
-        class="w-full accent-blue-500"
-      />
-      <div class="flex justify-between text-[0.55rem] text-gray-600 dark:text-gray-500 mt-0.5">
-        <span>-50% {{ t('stressTest.crash') }}</span>
-        <span>0%</span>
-        <span>+50% {{ t('stressTest.pump') }}</span>
-      </div>
-    </div>
-
-    <!-- No positions -->
-    <div
-      v-if="stressResults.length === 0"
-      class="flex flex-col items-center gap-1.5 text-center py-4"
-    >
-      <i-mdi-test-tube-empty class="w-8 h-8 text-surface-500" />
-      <span class="text-gray-600 dark:text-gray-400 text-sm">{{ t('stressTest.noOpenPositions') }}</span>
-      <span class="text-gray-500 dark:text-surface-500 text-xs">{{ t('stressTest.noOpenPositionsHint') }}</span>
-    </div>
-
-    <!-- Per-bot results -->
-    <div v-for="result in stressResults" :key="result.botId" class="space-y-1">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-semibold text-gray-800 dark:text-gray-200">{{ result.botName }}</span>
-        <span
-          class="text-xs font-bold"
-          :class="result.totalImpact >= 0 ? 'text-green-400' : 'text-red-400'"
-        >{{ result.totalImpact >= 0 ? '+' : '' }}{{ result.totalImpact.toFixed(2) }} {{ stakeCurrency }}</span>
-      </div>
-
-      <div
-        v-for="pos in result.positions"
-        :key="pos.pair"
-        class="flex items-center justify-between text-[0.65rem] px-2 py-0.5 rounded"
+        class="rounded-lg p-2 text-center"
         :style="{
-          background: pos.isLiquidated
-            ? 'rgba(239, 68, 68, 0.15)'
-            : pos.cappedImpact >= 0
-            ? 'rgba(34, 197, 94, 0.05)'
-            : 'rgba(239, 68, 68, 0.05)',
+          background: isPositiveImpact ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+          border: `1px solid ${isPositiveImpact ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
         }"
       >
-        <div class="flex items-center gap-1">
-          <span class="text-gray-700 dark:text-gray-300">{{ pos.pair.replace(/\/.*/, '') }}</span>
-          <span
-            class="text-[0.5rem] font-bold px-1 rounded"
-            :class="pos.isShort ? 'text-red-300 bg-red-900/30' : 'text-green-300 bg-green-900/30'"
-          >{{ pos.isShort ? 'S' : 'L' }}</span>
-          <span v-if="pos.leverage > 1" class="text-[0.5rem] text-yellow-400">{{ pos.leverage }}x</span>
+        <div class="text-xs text-gray-600 dark:text-gray-500 uppercase tracking-wider mb-1">
+          {{ t('stressTest.estimatedImpact') }}
+          <span v-if="scenarioPercent !== 0" class="normal-case">
+            ({{
+              scenarioPercent < 0
+                ? t('stressTest.crashOf', { pct: Math.abs(scenarioPercent) })
+                : t('stressTest.pumpOf', { pct: scenarioPercent })
+            }})
+          </span>
         </div>
-        <div class="flex items-center gap-2">
-          <span
-            v-if="pos.isLiquidated"
-            class="text-red-400 font-bold text-[0.6rem]"
-          >💀 {{ t('stressTest.liquidation') }}</span>
-          <span
-            v-else
-            :class="pos.cappedImpact >= 0 ? 'text-green-400' : 'text-red-400'"
-          >{{ pos.cappedImpact >= 0 ? '+' : '' }}{{ pos.cappedImpact.toFixed(2) }}</span>
+        <div
+          class="text-2xl font-bold"
+          :class="isPositiveImpact ? 'text-green-500' : 'text-red-500'"
+        >
+          {{ totalImpact >= 0 ? '+' : '' }}{{ totalImpact.toFixed(2) }} {{ stakeCurrency }}
+        </div>
+        <div v-if="liquidationCount > 0" class="mt-1 text-amber-400 text-sm font-semibold">
+          ⚠ {{ t('stressTest.liquidationWarning', { count: liquidationCount }) }}
         </div>
       </div>
-    </div>
+
+      <!-- Slider: -50% to +50% -->
+      <div>
+        <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+          <span>{{ t('stressTest.crashScenario') }}</span>
+          <span class="font-bold" :class="scenarioPercent >= 0 ? 'text-green-400' : 'text-red-400'"
+            >{{ scenarioPercent >= 0 ? '+' : '' }}{{ scenarioPercent }}%</span
+          >
+        </div>
+        <input
+          v-model.number="scenarioPercent"
+          type="range"
+          :min="-50"
+          :max="50"
+          :step="1"
+          class="w-full accent-blue-500"
+        />
+        <div class="flex justify-between text-[0.55rem] text-gray-600 dark:text-gray-500 mt-0.5">
+          <span>-50% {{ t('stressTest.crash') }}</span>
+          <span>0%</span>
+          <span>+50% {{ t('stressTest.pump') }}</span>
+        </div>
+      </div>
+
+      <!-- No positions -->
+      <div
+        v-if="stressResults.length === 0"
+        class="flex flex-col items-center gap-1.5 text-center py-4"
+      >
+        <i-mdi-test-tube-empty class="w-8 h-8 text-surface-500" />
+        <span class="text-gray-600 dark:text-gray-400 text-sm">{{
+          t('stressTest.noOpenPositions')
+        }}</span>
+        <span class="text-gray-500 dark:text-surface-500 text-xs">{{
+          t('stressTest.noOpenPositionsHint')
+        }}</span>
+      </div>
+
+      <!-- Per-bot results -->
+      <div v-for="result in stressResults" :key="result.botId" class="space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-gray-800 dark:text-gray-200">{{
+            result.botName
+          }}</span>
+          <span
+            class="text-xs font-bold"
+            :class="result.totalImpact >= 0 ? 'text-green-400' : 'text-red-400'"
+            >{{ result.totalImpact >= 0 ? '+' : '' }}{{ result.totalImpact.toFixed(2) }}
+            {{ stakeCurrency }}</span
+          >
+        </div>
+
+        <div
+          v-for="pos in result.positions"
+          :key="pos.pair"
+          class="flex items-center justify-between text-[0.65rem] px-2 py-0.5 rounded"
+          :style="{
+            background: pos.isLiquidated
+              ? 'rgba(239, 68, 68, 0.15)'
+              : pos.cappedImpact >= 0
+                ? 'rgba(34, 197, 94, 0.05)'
+                : 'rgba(239, 68, 68, 0.05)',
+          }"
+        >
+          <div class="flex items-center gap-1">
+            <span class="text-gray-700 dark:text-gray-300">{{ pos.pair.replace(/\/.*/, '') }}</span>
+            <span
+              class="text-[0.5rem] font-bold px-1 rounded"
+              :class="pos.isShort ? 'text-red-300 bg-red-900/30' : 'text-green-300 bg-green-900/30'"
+              >{{ pos.isShort ? 'S' : 'L' }}</span
+            >
+            <span v-if="pos.leverage > 1" class="text-[0.5rem] text-yellow-400"
+              >{{ pos.leverage }}x</span
+            >
+          </div>
+          <div class="flex items-center gap-2">
+            <span v-if="pos.isLiquidated" class="text-red-400 font-bold text-[0.6rem]"
+              >💀 {{ t('stressTest.liquidation') }}</span
+            >
+            <span v-else :class="pos.cappedImpact >= 0 ? 'text-green-400' : 'text-red-400'"
+              >{{ pos.cappedImpact >= 0 ? '+' : '' }}{{ pos.cappedImpact.toFixed(2) }}</span
+            >
+          </div>
+        </div>
+      </div>
     </template>
   </div>
 </template>

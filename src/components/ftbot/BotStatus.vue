@@ -38,21 +38,29 @@ const botStore = useBotStore();
     <p v-if="'stoploss_on_exchange' in botStore.activeBot.botState" class="mb-4">
       {{ t('botStatus.stoplossOnExchange') }}
       <strong>{{
-        botStore.activeBot.botState.stoploss_on_exchange ? t('botStatus.enabled') : t('botStatus.disabled')
+        botStore.activeBot.botState.stoploss_on_exchange
+          ? t('botStatus.enabled')
+          : t('botStatus.disabled')
       }}</strong
       >.
     </p>
     <p class="mb-4">
       {{ t('botStatus.currently') }} <strong>{{ botStore.activeBot.botState.state }}</strong
       >,
-      <strong>{{ t('botStatus.forceEntry') }}: {{ botStore.activeBot.botState.force_entry_enable }}</strong>
+      <strong
+        >{{ t('botStatus.forceEntry') }}:
+        {{ botStore.activeBot.botState.force_entry_enable }}</strong
+      >
     </p>
     <p>
-      <strong>{{ botStore.activeBot.botState.dry_run ? t('botStatus.dryRun') : t('botStatus.live') }}</strong>
+      <strong>{{
+        botStore.activeBot.botState.dry_run ? t('botStatus.dryRun') : t('botStatus.live')
+      }}</strong>
     </p>
     <Divider />
     <p class="mb-4" v-if="botStore.activeBot.profit">
-      {{ t('botStatus.avgProfit') }} {{ formatPercent(botStore.activeBot.profit.profit_all_ratio_mean) }} (&sum;
+      {{ t('botStatus.avgProfit') }}
+      {{ formatPercent(botStore.activeBot.profit.profit_all_ratio_mean) }} (&sum;
       {{ formatPercent(botStore.activeBot.profit.profit_all_ratio_sum) }}) in
       {{ botStore.activeBot.profit.trade_count }} {{ t('botStatus.tradesAvgDuration') }}
       {{ botStore.activeBot.profit.avg_duration }}. {{ t('botStatus.bestPair') }}:

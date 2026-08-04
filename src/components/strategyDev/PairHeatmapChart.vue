@@ -103,15 +103,21 @@ const columns = computed(() => [
       <tfoot v-if="totalRow">
         <tr class="total-row">
           <td class="pair-cell"><b>TOTAL</b></td>
-          <td class="num-cell"><b>{{ totalRow.trades }}</b></td>
-          <td class="num-cell"><b>{{ (totalRow.winrate * 100).toFixed(1) }}%</b></td>
+          <td class="num-cell">
+            <b>{{ totalRow.trades }}</b>
+          </td>
+          <td class="num-cell">
+            <b>{{ (totalRow.winrate * 100).toFixed(1) }}%</b>
+          </td>
           <td class="num-cell" :class="cellClass(totalRow.avg_profit, 'profit')">
             <b>{{ fmtPct(totalRow.avg_profit) }}</b>
           </td>
           <td class="num-cell" :class="cellClass(totalRow.total_profit, 'profit')">
             <b>{{ fmtPct(totalRow.total_profit) }}</b>
           </td>
-          <td class="num-cell"><b>{{ totalRow.profit_factor.toFixed(2) }}</b></td>
+          <td class="num-cell">
+            <b>{{ totalRow.profit_factor.toFixed(2) }}</b>
+          </td>
         </tr>
       </tfoot>
     </table>
@@ -180,10 +186,20 @@ const columns = computed(() => [
   color: #a6adc8;
 }
 
-.cell-strong-pos { color: #a6e3a1; background: rgba(166, 227, 161, 0.08); }
-.cell-pos { color: #a6e3a1; }
-.cell-neg { color: #f38ba8; }
-.cell-strong-neg { color: #f38ba8; background: rgba(243, 139, 168, 0.08); }
+.cell-strong-pos {
+  color: #a6e3a1;
+  background: rgba(166, 227, 161, 0.08);
+}
+.cell-pos {
+  color: #a6e3a1;
+}
+.cell-neg {
+  color: #f38ba8;
+}
+.cell-strong-neg {
+  color: #f38ba8;
+  background: rgba(243, 139, 168, 0.08);
+}
 
 .total-row td {
   border-top: 2px solid rgba(137, 180, 250, 0.2);

@@ -120,12 +120,7 @@ const exchangeUrl = computed(() => getExchangeTradeUrl(props.trade));
     >
       <i-mdi-dots-vertical class="text-sm" />
     </button>
-    <Popover
-      ref="popover"
-      :target="`btn-actions-${id}`"
-      triggers="manual"
-      placement="left"
-    >
+    <Popover ref="popover" :target="`btn-actions-${id}`" triggers="manual" placement="left">
       <div class="flex flex-col gap-0.5 p-1 min-w-[180px]">
         <!-- Trade actions -->
         <button

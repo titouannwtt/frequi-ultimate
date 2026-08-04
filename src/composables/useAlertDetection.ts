@@ -9,7 +9,13 @@ import { useBotComparisonStore, ALERT_TYPES } from '@/stores/botComparison';
 import { checkAndNotifyAlerts, pruneNotifiedAlerts } from '@/utils/browserNotifications';
 
 // Log pattern matchers
-const ORDER_FAILED_PATTERNS = ['Could not create', 'InvalidOrderException', 'Unable to exit trade', 'Unable to create', 'Insufficient funds'];
+const ORDER_FAILED_PATTERNS = [
+  'Could not create',
+  'InvalidOrderException',
+  'Unable to exit trade',
+  'Unable to create',
+  'Insufficient funds',
+];
 const INSUFFICIENT_FUNDS_PATTERNS = ['Insufficient', 'Not enough', 'balance too low'];
 const EXCHANGE_ERROR_PATTERNS = ['ExchangeError', 'RequestTimeout', 'NetworkError', 'rate limit'];
 const WALLET_MISMATCH_PATTERNS = ['Wallet shows a total of 0', 'Refusing to adjust'];
@@ -40,10 +46,7 @@ interface BotAlertContext {
   isBotStarting: boolean;
 }
 
-function detectBotAlerts(
-  config: AlertConfigV2['global'],
-  ctx: BotAlertContext,
-): DetectedAlert[] {
+function detectBotAlerts(config: AlertConfigV2['global'], ctx: BotAlertContext): DetectedAlert[] {
   const alerts: DetectedAlert[] = [];
   const { state, openTrades, profit, lastLogs: logs, isBotOnline, isBotStarting } = ctx;
   const isFutures = (state?.trading_mode as string)?.toLowerCase() === 'futures';
@@ -53,7 +56,11 @@ function detectBotAlerts(
     for (const trade of openTrades) {
       const lossRatio = trade.profit_ratio ?? 0;
       if (lossRatio < threshold) {
-        alerts.push({ typeId: 'positionLoss', severity: lossRatio < threshold * 2 ? 'critical' : 'warning', message: `${trade.pair}: ${(lossRatio * 100).toFixed(1)}%` });
+        alerts.push({
+          typeId: 'positionLoss',
+          severity: lossRatio < threshold * 2 ? 'critical' : 'warning',
+          message: `${trade.pair}: ${(lossRatio * 100).toFixed(1)}%`,
+        });
       }
     }
   }
@@ -64,7 +71,11 @@ function detectBotAlerts(
     const dayMatch = avgDurationStr.match(/(\d+)\s*day/);
     const timeMatch = avgDurationStr.match(/(\d+):(\d+):(\d+)/);
     if (dayMatch) avgMs += parseInt(dayMatch[1]) * 86400000;
-    if (timeMatch) avgMs += parseInt(timeMatch[1]) * 3600000 + parseInt(timeMatch[2]) * 60000 + parseInt(timeMatch[3]) * 1000;
+    if (timeMatch)
+      avgMs +=
+        parseInt(timeMatch[1]) * 3600000 +
+        parseInt(timeMatch[2]) * 60000 +
+        parseInt(timeMatch[3]) * 1000;
     if (avgMs > 0) {
       const multiplier = config.positionStuck.threshold ?? 3;
       const maxMs = avgMs * multiplier;
@@ -72,7 +83,11 @@ function detectBotAlerts(
       for (const trade of openTrades) {
         const held = now - new Date(trade.open_date).getTime();
         if (held > maxMs) {
-          alerts.push({ typeId: 'positionStuck', severity: 'warning', message: `${trade.pair}: ${Math.round(held / 3600000)}h` });
+          alerts.push({
+            typeId: 'positionStuck',
+            severity: 'warning',
+            message: `${trade.pair}: ${Math.round(held / 3600000)}h`,
+          });
         }
       }
     }
@@ -85,7 +100,7 @@ function detectBotAlerts(
         const profitRatio = trade.profit_ratio ?? 0;
         const remainingMarginPct = 1 + profitRatio;
         if (remainingMarginPct < distThreshold) {
-          const currentRate = trade.current_rate ?? (trade.open_rate * (1 + profitRatio));
+          const currentRate = trade.current_rate ?? trade.open_rate * (1 + profitRatio);
           alerts.push({
             typeId: 'nearLiquidation',
             severity: 'critical',
@@ -100,35 +115,69 @@ function detectBotAlerts(
   if (config.logErrors?.enabled) {
     const recentErrors = logs.filter((l) => l[3] === 'ERROR' || l[3] === 'CRITICAL');
     if (recentErrors.length > 0) {
-      alerts.push({ typeId: 'logErrors', severity: 'critical', message: `${recentErrors.length} error(s)`, details: recentErrors.slice(0, 3).map((l: any) => l[4]).join(' | ') });
+      alerts.push({
+        typeId: 'logErrors',
+        severity: 'critical',
+        message: `${recentErrors.length} error(s)`,
+        details: recentErrors
+          .slice(0, 3)
+          .map((l: any) => l[4])
+          .join(' | '),
+      });
     }
   }
 
   if (config.orderFailed?.enabled) {
     const matches = logs.filter((l) => ORDER_FAILED_PATTERNS.some((p) => l[4]?.includes(p)));
     if (matches.length > 0) {
-      alerts.push({ typeId: 'orderFailed', severity: 'critical', message: `${matches.length} failed order(s)`, details: matches.slice(0, 2).map((l: any) => l[4]).join(' | ') });
+      alerts.push({
+        typeId: 'orderFailed',
+        severity: 'critical',
+        message: `${matches.length} failed order(s)`,
+        details: matches
+          .slice(0, 2)
+          .map((l: any) => l[4])
+          .join(' | '),
+      });
     }
   }
 
   if (config.insufficientFunds?.enabled) {
-    const matches = logs.filter((l) => INSUFFICIENT_FUNDS_PATTERNS.some((p) => l[4]?.toLowerCase().includes(p.toLowerCase())));
+    const matches = logs.filter((l) =>
+      INSUFFICIENT_FUNDS_PATTERNS.some((p) => l[4]?.toLowerCase().includes(p.toLowerCase())),
+    );
     if (matches.length > 0) {
-      alerts.push({ typeId: 'insufficientFunds', severity: 'warning', message: `${matches.length} fund warning(s)` });
+      alerts.push({
+        typeId: 'insufficientFunds',
+        severity: 'warning',
+        message: `${matches.length} fund warning(s)`,
+      });
     }
   }
 
   if (config.exchangeError?.enabled) {
     const matches = logs.filter((l) => EXCHANGE_ERROR_PATTERNS.some((p) => l[4]?.includes(p)));
     if (matches.length > 0) {
-      alerts.push({ typeId: 'exchangeError', severity: 'warning', message: `${matches.length} exchange error(s)` });
+      alerts.push({
+        typeId: 'exchangeError',
+        severity: 'warning',
+        message: `${matches.length} exchange error(s)`,
+      });
     }
   }
 
   if (config.walletMismatch?.enabled) {
     const matches = logs.filter((l) => WALLET_MISMATCH_PATTERNS.some((p) => l[4]?.includes(p)));
     if (matches.length > 0) {
-      alerts.push({ typeId: 'walletMismatch', severity: 'critical', message: 'Wallet desync detected', details: matches.slice(0, 1).map((l: any) => l[4]).join('') });
+      alerts.push({
+        typeId: 'walletMismatch',
+        severity: 'critical',
+        message: 'Wallet desync detected',
+        details: matches
+          .slice(0, 1)
+          .map((l: any) => l[4])
+          .join(''),
+      });
     }
   }
 
@@ -138,7 +187,11 @@ function detectBotAlerts(
     if (lastTradeTs) {
       const hoursSince = (Date.now() / 1000 - lastTradeTs) / 3600;
       if (hoursSince > thresholdHours) {
-        alerts.push({ typeId: 'noTradeActivity', severity: 'info', message: `${Math.round(hoursSince)}h since last trade` });
+        alerts.push({
+          typeId: 'noTradeActivity',
+          severity: 'info',
+          message: `${Math.round(hoursSince)}h since last trade`,
+        });
       }
     }
   }
@@ -155,7 +208,11 @@ function detectBotAlerts(
     const threshold = (config.highDrawdown.threshold ?? -15) / 100;
     const currentDD = profit.current_drawdown;
     if (currentDD !== undefined && currentDD < threshold) {
-      alerts.push({ typeId: 'highDrawdown', severity: 'warning', message: `Drawdown: ${(currentDD * 100).toFixed(1)}%` });
+      alerts.push({
+        typeId: 'highDrawdown',
+        severity: 'warning',
+        message: `Drawdown: ${(currentDD * 100).toFixed(1)}%`,
+      });
     }
   }
 
@@ -163,7 +220,11 @@ function detectBotAlerts(
     const maxTrades = state.max_open_trades;
     const currentCount = openTrades.length;
     if (maxTrades > 0 && currentCount >= maxTrades) {
-      alerts.push({ typeId: 'capacityFull', severity: 'info', message: `${currentCount}/${maxTrades} slots used` });
+      alerts.push({
+        typeId: 'capacityFull',
+        severity: 'info',
+        message: `${currentCount}/${maxTrades} slots used`,
+      });
     }
   }
 
@@ -173,7 +234,11 @@ function detectBotAlerts(
       const totalStake = openTrades.reduce((sum, t) => sum + (t.stake_amount ?? 0), 0);
       if (totalStake >= balance * 0.95) {
         const pct = ((totalStake / balance) * 100).toFixed(0);
-        alerts.push({ typeId: 'allFundsExposed', severity: 'warning', message: `${pct}% of balance in trades` });
+        alerts.push({
+          typeId: 'allFundsExposed',
+          severity: 'warning',
+          message: `${pct}% of balance in trades`,
+        });
       }
     }
   }
@@ -183,14 +248,18 @@ function detectBotAlerts(
       const liqPrice = trade.liquidation_price;
       const slPrice = trade.stop_loss_abs;
       if (liqPrice && liqPrice > 0 && slPrice && slPrice > 0) {
-        const currentRate = trade.current_rate ?? (trade.open_rate * (1 + (trade.profit_ratio ?? 0)));
+        const currentRate = trade.current_rate ?? trade.open_rate * (1 + (trade.profit_ratio ?? 0));
         if (currentRate > 0) {
           const liqDist = Math.abs(currentRate - liqPrice);
           const slDist = Math.abs(currentRate - slPrice);
           if (liqDist < slDist) {
             const liqPct = ((liqDist / currentRate) * 100).toFixed(1);
             const slPct = ((slDist / currentRate) * 100).toFixed(1);
-            alerts.push({ typeId: 'liquidationBeforeStoploss', severity: 'critical', message: `${trade.pair}: liq ${liqPct}% vs SL ${slPct}%` });
+            alerts.push({
+              typeId: 'liquidationBeforeStoploss',
+              severity: 'critical',
+              message: `${trade.pair}: liq ${liqPct}% vs SL ${slPct}%`,
+            });
           }
         }
       }
@@ -245,10 +314,14 @@ export function useAlertDetection() {
   });
 
   // Fire browser notifications on new alerts
-  watch(allBotAlerts, (alerts) => {
-    checkAndNotifyAlerts(alerts, botStore.botStores);
-    pruneNotifiedAlerts(alerts);
-  }, { deep: true });
+  watch(
+    allBotAlerts,
+    (alerts) => {
+      checkAndNotifyAlerts(alerts, botStore.botStores);
+      pruneNotifiedAlerts(alerts);
+    },
+    { deep: true },
+  );
 
   function hasBotAlert(botId: string): boolean {
     return (allBotAlerts.value[botId]?.length ?? 0) > 0;
@@ -267,7 +340,11 @@ export function useAlertDetection() {
   function hasBotOfflineAlert(botId: string): boolean {
     const store = botStore.botStores[botId];
     if (!store) return false;
-    return !store.isBotOnline && !store.isBotStarting && compStore.alertConfig.global.botOffline?.enabled !== false;
+    return (
+      !store.isBotOnline &&
+      !store.isBotStarting &&
+      compStore.alertConfig.global.botOffline?.enabled !== false
+    );
   }
 
   function getAlertTooltip(alertId: string, t: (key: string) => string): string {

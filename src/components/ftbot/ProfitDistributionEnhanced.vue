@@ -68,7 +68,8 @@ import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
 import { DashboardLayout } from '@/stores/layout';
 import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 
-const { tradingMode, hasMultipleModes, filterTradesByMode, restorePersistedTradingMode } = useTradingModeFilter('profitDistribution');
+const { tradingMode, hasMultipleModes, filterTradesByMode, restorePersistedTradingMode } =
+  useTradingModeFilter('profitDistribution');
 const modeFilteredTrades = computed(() => filterTradesByMode(props.trades));
 
 // --- State ---
@@ -133,7 +134,10 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   HARDCODED_DEFAULTS_DIST,
 );
 
-onMounted(() => { loadDefaults(); restorePersistedTradingMode(); });
+onMounted(() => {
+  loadDefaults();
+  restorePersistedTradingMode();
+});
 
 defineExpose({ filtersChanged, saveCurrentAsDefault });
 
@@ -155,8 +159,16 @@ const filters: { key: FilterKey; labelKey: string }[] = [
 
 // Bot color palette
 const BOT_COLORS = [
-  '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de',
-  '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc', '#4dc9f6',
+  '#5470c6',
+  '#91cc75',
+  '#fac858',
+  '#ee6666',
+  '#73c0de',
+  '#3ba272',
+  '#fc8452',
+  '#9a60b4',
+  '#ea7ccc',
+  '#4dc9f6',
 ];
 
 function botColor(index: number): string {
@@ -213,28 +225,42 @@ const sliderMax = ref<number>(0);
 const sliderBins = ref<number>(20);
 let sliderDebounce: ReturnType<typeof setTimeout> | null = null;
 
-const dataRangeMin = computed(() => profitValuesRaw.value.length ? Math.floor(Math.min(...profitValuesRaw.value)) : -50);
-const dataRangeMax = computed(() => profitValuesRaw.value.length ? Math.ceil(Math.max(...profitValuesRaw.value)) : 50);
+const dataRangeMin = computed(() =>
+  profitValuesRaw.value.length ? Math.floor(Math.min(...profitValuesRaw.value)) : -50,
+);
+const dataRangeMax = computed(() =>
+  profitValuesRaw.value.length ? Math.ceil(Math.max(...profitValuesRaw.value)) : 50,
+);
 
-watch(profitValuesRaw, () => {
-  if (histMinPct.value === null) sliderMin.value = dataRangeMin.value;
-  if (histMaxPct.value === null) sliderMax.value = dataRangeMax.value;
-}, { immediate: true });
+watch(
+  profitValuesRaw,
+  () => {
+    if (histMinPct.value === null) sliderMin.value = dataRangeMin.value;
+    if (histMaxPct.value === null) sliderMax.value = dataRangeMax.value;
+  },
+  { immediate: true },
+);
 
 function onSliderMinChange(val: number) {
   sliderMin.value = val;
   if (sliderDebounce) clearTimeout(sliderDebounce);
-  sliderDebounce = setTimeout(() => { histMinPct.value = val <= dataRangeMin.value ? null : val; }, 200);
+  sliderDebounce = setTimeout(() => {
+    histMinPct.value = val <= dataRangeMin.value ? null : val;
+  }, 200);
 }
 function onSliderMaxChange(val: number) {
   sliderMax.value = val;
   if (sliderDebounce) clearTimeout(sliderDebounce);
-  sliderDebounce = setTimeout(() => { histMaxPct.value = val >= dataRangeMax.value ? null : val; }, 200);
+  sliderDebounce = setTimeout(() => {
+    histMaxPct.value = val >= dataRangeMax.value ? null : val;
+  }, 200);
 }
 function onSliderBinsChange(val: number) {
   sliderBins.value = val;
   if (sliderDebounce) clearTimeout(sliderDebounce);
-  sliderDebounce = setTimeout(() => { histBinCount.value = val; }, 200);
+  sliderDebounce = setTimeout(() => {
+    histBinCount.value = val;
+  }, 200);
 }
 
 const profitValues = computed(() => {
@@ -258,17 +284,22 @@ const stats = computed(() => {
   const vals = profitValues.value;
   if (vals.length === 0) {
     return {
-      mean: 0, median: 0, stdDev: 0, skewness: 0,
-      best: 0, worst: 0, winRate: 0, count: 0,
+      mean: 0,
+      median: 0,
+      stdDev: 0,
+      skewness: 0,
+      best: 0,
+      worst: 0,
+      winRate: 0,
+      count: 0,
     };
   }
 
   const n = vals.length;
   const sorted = [...vals].sort((a, b) => a - b);
   const mean = vals.reduce((a, b) => a + b, 0) / n;
-  const median = n % 2 === 0
-    ? (sorted[n / 2 - 1]! + sorted[n / 2]!) / 2
-    : sorted[Math.floor(n / 2)]!;
+  const median =
+    n % 2 === 0 ? (sorted[n / 2 - 1]! + sorted[n / 2]!) / 2 : sorted[Math.floor(n / 2)]!;
 
   const variance = vals.reduce((sum, v) => sum + (v - mean) ** 2, 0) / n;
   const stdDev = Math.sqrt(variance);
@@ -294,7 +325,9 @@ function buildHistogramData(): { bucket: string; count: number; isPositive: bool
   const max = Math.max(...vals);
   const range = max - min;
   if (range === 0)
-    return [{ bucket: `${min.toFixed(1)}${valueSuffix.value}`, count: vals.length, isPositive: min >= 0 }];
+    return [
+      { bucket: `${min.toFixed(1)}${valueSuffix.value}`, count: vals.length, isPositive: min >= 0 },
+    ];
 
   // Auto bucket size: aim for ~N buckets (user-configurable)
   const rawStep = range / histBinCount.value;
@@ -471,7 +504,12 @@ function buildHistogramChart(): EChartsOption {
                 return val >= 0;
               }),
               lineStyle: { color: markLineZeroColor.value, type: 'solid', width: 1 },
-              label: { show: true, formatter: `0${valueSuffix.value}`, color: markLineZeroLabelColor.value, fontSize: 10 },
+              label: {
+                show: true,
+                formatter: `0${valueSuffix.value}`,
+                color: markLineZeroLabelColor.value,
+                fontSize: 10,
+              },
             },
             {
               xAxis: (() => {
@@ -480,7 +518,10 @@ function buildHistogramChart(): EChartsOption {
                 let minDist = Infinity;
                 data.forEach((d, i) => {
                   const dist = Math.abs(parseFloat(d.bucket) - mean);
-                  if (dist < minDist) { minDist = dist; closest = i; }
+                  if (dist < minDist) {
+                    minDist = dist;
+                    closest = i;
+                  }
                 });
                 return closest;
               })(),
@@ -771,7 +812,15 @@ function buildLeverageChart(): EChartsOption {
 
 // --- Main chart options ---
 const chartOptions: ComputedRefWithControl<EChartsOption> = computedWithControl(
-  () => [filteredTrades.value, activeTab.value, activeFilter.value, histMinPct.value, histMaxPct.value, histBinCount.value, valueMode.value],
+  () => [
+    filteredTrades.value,
+    activeTab.value,
+    activeFilter.value,
+    histMinPct.value,
+    histMaxPct.value,
+    histBinCount.value,
+    valueMode.value,
+  ],
   () => {
     let tabOpts: EChartsOption;
     switch (activeTab.value) {
@@ -852,10 +901,11 @@ watch(
             : 'text-surface-400 hover:text-surface-200'
         "
         :style="{
-          background: activeFilter === f.key
-            ? 'rgba(99, 102, 241, 0.85)'
-            : 'rgba(255, 255, 255, 0.04)',
-          border: '1px solid ' + (activeFilter === f.key ? 'rgba(99, 102, 241, 0.5)' : 'rgba(255, 255, 255, 0.06)'),
+          background:
+            activeFilter === f.key ? 'rgba(99, 102, 241, 0.85)' : 'rgba(255, 255, 255, 0.04)',
+          border:
+            '1px solid ' +
+            (activeFilter === f.key ? 'rgba(99, 102, 241, 0.5)' : 'rgba(255, 255, 255, 0.06)'),
         }"
         @click="activeFilter = f.key"
       >
@@ -899,7 +949,9 @@ watch(
             class="flex-1 h-1 accent-blue-500"
             @input="onSliderMinChange(Number(($event.target as HTMLInputElement).value))"
           />
-          <span class="text-[10px] font-mono text-surface-300 w-14 text-right">{{ sliderMin }}{{ valueSuffix }}</span>
+          <span class="text-[10px] font-mono text-surface-300 w-14 text-right"
+            >{{ sliderMin }}{{ valueSuffix }}</span
+          >
         </div>
         <!-- Max slider -->
         <div class="flex-1 flex items-center gap-1">
@@ -913,7 +965,9 @@ watch(
             class="flex-1 h-1 accent-blue-500"
             @input="onSliderMaxChange(Number(($event.target as HTMLInputElement).value))"
           />
-          <span class="text-[10px] font-mono text-surface-300 w-14 text-right">{{ sliderMax }}{{ valueSuffix }}</span>
+          <span class="text-[10px] font-mono text-surface-300 w-14 text-right"
+            >{{ sliderMax }}{{ valueSuffix }}</span
+          >
         </div>
       </div>
       <div class="flex items-center gap-3">
@@ -929,7 +983,9 @@ watch(
             class="flex-1 h-1 accent-blue-500"
             @input="onSliderBinsChange(Number(($event.target as HTMLInputElement).value))"
           />
-          <span class="text-[10px] font-mono text-surface-300 w-10 text-right">{{ sliderBins }}</span>
+          <span class="text-[10px] font-mono text-surface-300 w-10 text-right">{{
+            sliderBins
+          }}</span>
         </div>
         <!-- Clear + count -->
         <div class="flex items-center gap-2">
@@ -937,8 +993,13 @@ watch(
             v-if="histMinPct !== null || histMaxPct !== null || histBinCount !== 20"
             class="text-[10px] text-blue-400 hover:text-blue-300 cursor-pointer"
             @click="clearHistogramFilter"
-          >{{ t('profitDist.clearFilter') }}</button>
-          <span v-if="histMinPct !== null || histMaxPct !== null" class="text-[9px] text-surface-500">
+          >
+            {{ t('profitDist.clearFilter') }}
+          </button>
+          <span
+            v-if="histMinPct !== null || histMaxPct !== null"
+            class="text-[9px] text-surface-500"
+          >
             {{ profitValues.length }}/{{ profitValuesRaw.length }}
           </span>
         </div>
@@ -949,12 +1010,7 @@ watch(
     <div class="flex-1 min-h-0">
       <!-- Initial loading: histogram-shaped skeleton bars -->
       <div v-if="initialLoading" class="flex items-end gap-1.5 h-full p-3">
-        <Skeleton
-          v-for="i in 14"
-          :key="i"
-          class="flex-1"
-          :height="`${20 + ((i * 31) % 65)}%`"
-        />
+        <Skeleton v-for="i in 14" :key="i" class="flex-1" :height="`${20 + ((i * 31) % 65)}%`" />
       </div>
       <ECharts
         v-else-if="trades && trades.length > 0"
@@ -983,19 +1039,13 @@ watch(
     >
       <div class="flex flex-col items-center">
         <span class="text-surface-400">{{ t('profitDist.statMean') }}</span>
-        <span
-          class="font-semibold"
-          :class="stats.mean >= 0 ? 'text-green-400' : 'text-red-400'"
-        >
+        <span class="font-semibold" :class="stats.mean >= 0 ? 'text-green-400' : 'text-red-400'">
           {{ formatPrice(stats.mean, 2) }}{{ valueSuffix }}
         </span>
       </div>
       <div class="flex flex-col items-center">
         <span class="text-surface-400">{{ t('profitDist.statMedian') }}</span>
-        <span
-          class="font-semibold"
-          :class="stats.median >= 0 ? 'text-green-400' : 'text-red-400'"
-        >
+        <span class="font-semibold" :class="stats.median >= 0 ? 'text-green-400' : 'text-red-400'">
           {{ formatPrice(stats.median, 2) }}{{ valueSuffix }}
         </span>
       </div>
@@ -1010,7 +1060,11 @@ watch(
         <span
           class="font-semibold"
           :class="stats.skewness >= 0 ? 'text-emerald-400' : 'text-orange-400'"
-          :title="stats.skewness >= 0 ? t('profitDist.skewnessPositive') : t('profitDist.skewnessNegative')"
+          :title="
+            stats.skewness >= 0
+              ? t('profitDist.skewnessPositive')
+              : t('profitDist.skewnessNegative')
+          "
         >
           {{ formatPrice(stats.skewness, 2) }}
         </span>

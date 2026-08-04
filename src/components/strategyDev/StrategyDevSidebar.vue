@@ -36,7 +36,11 @@ const dateRangeOptions = [
 ];
 
 const sortOptions = computed(() => [
-  { label: t('strategyDev.sortDate'), value: 'date' as const, icon: 'i-mdi-sort-calendar-descending' },
+  {
+    label: t('strategyDev.sortDate'),
+    value: 'date' as const,
+    icon: 'i-mdi-sort-calendar-descending',
+  },
   { label: t('strategyDev.sortProfit'), value: 'profit' as const, icon: 'i-mdi-trending-up' },
   { label: t('strategyDev.sortLoss'), value: 'loss' as const, icon: 'i-mdi-target' },
   { label: t('strategyDev.sortGrade'), value: 'grade' as const, icon: 'i-mdi-school' },
@@ -58,10 +62,7 @@ function clearSearch() {
     <button class="sd-launch-btn" @click="$emit('openLauncher')">
       <i-mdi-play-circle-outline class="sd-launch-btn-icon" />
       <span>{{ t('strategyDev.jobLaunch') }}</span>
-      <span
-        v-if="jobStore.isJobRunning"
-        class="sd-launch-badge sd-launch-badge--running"
-      >
+      <span v-if="jobStore.isJobRunning" class="sd-launch-badge sd-launch-badge--running">
         <span class="sd-launch-badge-dot" />
         {{ jobStore.jobProgress || t('strategyDev.jobRunning') }}
       </span>
@@ -87,11 +88,7 @@ function clearSearch() {
         class="sd-search-input"
         :placeholder="`${t('strategyDev.search')} (Ctrl+K)`"
       />
-      <button
-        v-if="store.filterText"
-        class="sd-search-clear"
-        @click="clearSearch"
-      >
+      <button v-if="store.filterText" class="sd-search-clear" @click="clearSearch">
         <i-mdi-close class="w-3.5 h-3.5" />
       </button>
     </div>
@@ -173,7 +170,10 @@ function clearSearch() {
         v-for="run in store.favoriteRuns"
         :key="'fav-' + run.filename"
         :run="run"
-        :selected="store.selectedRun?.filename === run.filename && store.selectedRun?.run_type === run.run_type"
+        :selected="
+          store.selectedRun?.filename === run.filename &&
+          store.selectedRun?.run_type === run.run_type
+        "
         @click="store.selectRun(run)"
       />
     </div>
@@ -182,12 +182,18 @@ function clearSearch() {
     <div class="sd-divider" />
 
     <!-- Run list -->
-    <div v-if="store.loading && !store.filteredRuns.length && !store.loadingTypes.size" class="sd-center-state">
+    <div
+      v-if="store.loading && !store.filteredRuns.length && !store.loadingTypes.size"
+      class="sd-center-state"
+    >
       <div class="sd-loading-spinner sd-loading-spinner--sm" />
       <p>{{ t('strategyDev.loading') }}</p>
     </div>
 
-    <div v-else-if="!store.loading && store.filteredRuns.length === 0 && !store.loadingTypes.size" class="sd-center-state">
+    <div
+      v-else-if="!store.loading && store.filteredRuns.length === 0 && !store.loadingTypes.size"
+      class="sd-center-state"
+    >
       <p>{{ t('strategyDev.noRuns') }}</p>
     </div>
 
@@ -451,8 +457,13 @@ function clearSearch() {
 }
 
 @keyframes sd-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .sd-launch-badge--done {

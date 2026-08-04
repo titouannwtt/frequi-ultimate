@@ -13,7 +13,15 @@ import {
   LegendComponent,
 } from 'echarts/components';
 
-use([ScatterChart, CanvasRenderer, GridComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, LegendComponent]);
+use([
+  ScatterChart,
+  CanvasRenderer,
+  GridComponent,
+  TooltipComponent,
+  DataZoomComponent,
+  MarkLineComponent,
+  LegendComponent,
+]);
 
 interface MaeMfePoint {
   mae: number;

@@ -53,35 +53,64 @@ const items = computed<RiskItem[]>(() => {
       label: t('strategyDev.metricTailRatio'),
       value: m.tail_ratio > 100 ? '>100' : m.tail_ratio.toFixed(2),
       description: t('strategyDev.descTailRatio'),
-      verdict: m.tail_ratio > 1.5 ? 'good' : m.tail_ratio > 1 ? 'ok' : m.tail_ratio > 0.5 ? 'warn' : 'bad',
+      verdict:
+        m.tail_ratio > 1.5 ? 'good' : m.tail_ratio > 1 ? 'ok' : m.tail_ratio > 0.5 ? 'warn' : 'bad',
     },
     {
       key: 'ulcer_index',
       label: t('strategyDev.metricUlcerIndex'),
       value: m.ulcer_index.toFixed(2),
       description: t('strategyDev.descUlcer'),
-      verdict: m.ulcer_index < 5 ? 'good' : m.ulcer_index < 10 ? 'ok' : m.ulcer_index < 20 ? 'warn' : 'bad',
+      verdict:
+        m.ulcer_index < 5
+          ? 'good'
+          : m.ulcer_index < 10
+            ? 'ok'
+            : m.ulcer_index < 20
+              ? 'warn'
+              : 'bad',
     },
     {
       key: 'recovery',
       label: t('strategyDev.metricRecoveryFactor'),
       value: m.recovery_factor > 100 ? '>100' : m.recovery_factor.toFixed(2),
       description: t('strategyDev.descRecovery'),
-      verdict: m.recovery_factor > 3 ? 'good' : m.recovery_factor > 1.5 ? 'ok' : m.recovery_factor > 1 ? 'warn' : 'bad',
+      verdict:
+        m.recovery_factor > 3
+          ? 'good'
+          : m.recovery_factor > 1.5
+            ? 'ok'
+            : m.recovery_factor > 1
+              ? 'warn'
+              : 'bad',
     },
     {
       key: 'gain_pain',
       label: t('strategyDev.metricGainPain'),
       value: m.gain_pain_ratio > 100 ? '>100' : m.gain_pain_ratio.toFixed(2),
       description: t('strategyDev.descGainPain'),
-      verdict: m.gain_pain_ratio > 2 ? 'good' : m.gain_pain_ratio > 1 ? 'ok' : m.gain_pain_ratio > 0.5 ? 'warn' : 'bad',
+      verdict:
+        m.gain_pain_ratio > 2
+          ? 'good'
+          : m.gain_pain_ratio > 1
+            ? 'ok'
+            : m.gain_pain_ratio > 0.5
+              ? 'warn'
+              : 'bad',
     },
     {
       key: 'kelly',
       label: t('strategyDev.metricKelly'),
       value: `${m.kelly_criterion.toFixed(1)}%`,
       description: t('strategyDev.descKelly'),
-      verdict: m.kelly_criterion > 10 ? 'good' : m.kelly_criterion > 5 ? 'ok' : m.kelly_criterion > 0 ? 'warn' : 'bad',
+      verdict:
+        m.kelly_criterion > 10
+          ? 'good'
+          : m.kelly_criterion > 5
+            ? 'ok'
+            : m.kelly_criterion > 0
+              ? 'warn'
+              : 'bad',
     },
   ];
 });
@@ -97,11 +126,7 @@ const verdictColor: Record<string, string> = {
 
 <template>
   <div class="rm-grid">
-    <div
-      v-for="item in items"
-      :key="item.key"
-      class="rm-card"
-    >
+    <div v-for="item in items" :key="item.key" class="rm-card">
       <MetricPopover
         :label="item.label"
         :value="item.value"
@@ -114,7 +139,9 @@ const verdictColor: Record<string, string> = {
             <span class="rm-label">{{ item.label }}</span>
             <span class="rm-verdict-dot" :style="{ backgroundColor: verdictColor[item.verdict] }" />
           </div>
-          <span class="rm-value" :style="{ color: verdictColor[item.verdict] }">{{ item.value }}</span>
+          <span class="rm-value" :style="{ color: verdictColor[item.verdict] }">{{
+            item.value
+          }}</span>
         </div>
       </MetricPopover>
     </div>
@@ -167,5 +194,4 @@ const verdictColor: Record<string, string> = {
   font-weight: 700;
   font-family: var(--sd-font-mono);
 }
-
 </style>

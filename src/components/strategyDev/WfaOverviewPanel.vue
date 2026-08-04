@@ -28,11 +28,14 @@ const metrics = computed(() => {
     items.push({
       label: t('strategyDev.verdictGrade'),
       value: run.verdict_grade,
-      severity: run.verdict_grade <= 'B' ? 'success' : run.verdict_grade >= 'D' ? 'danger' : undefined,
+      severity:
+        run.verdict_grade <= 'B' ? 'success' : run.verdict_grade >= 'D' ? 'danger' : undefined,
     });
   }
-  if (run?.n_windows != null) items.push({ label: t('strategyDev.nWindows'), value: String(run.n_windows) });
-  if (run?.hyperopt_loss) items.push({ label: t('strategyDev.hoLossFunction'), value: run.hyperopt_loss });
+  if (run?.n_windows != null)
+    items.push({ label: t('strategyDev.nWindows'), value: String(run.n_windows) });
+  if (run?.hyperopt_loss)
+    items.push({ label: t('strategyDev.hoLossFunction'), value: run.hyperopt_loss });
 
   const dsr = d?.deflated_sharpe_ratio as number | undefined;
   if (dsr != null) {
@@ -45,9 +48,12 @@ const metrics = computed(() => {
 
   const oos = d?.oos_aggregate as Record<string, number> | undefined;
   if (oos) {
-    if (oos.total_trades != null) items.push({ label: t('strategyDev.metricOOSTrades'), value: String(oos.total_trades) });
-    if (oos.sqn != null) items.push({ label: t('strategyDev.metricOOSSQN'), value: oos.sqn.toFixed(2) });
-    if (oos.expectancy != null) items.push({ label: t('strategyDev.metricOOSExpectancy'), value: oos.expectancy.toFixed(4) });
+    if (oos.total_trades != null)
+      items.push({ label: t('strategyDev.metricOOSTrades'), value: String(oos.total_trades) });
+    if (oos.sqn != null)
+      items.push({ label: t('strategyDev.metricOOSSQN'), value: oos.sqn.toFixed(2) });
+    if (oos.expectancy != null)
+      items.push({ label: t('strategyDev.metricOOSExpectancy'), value: oos.expectancy.toFixed(4) });
     if (oos.profit_total != null) {
       items.push({
         label: t('strategyDev.metricOOSProfit'),
@@ -59,20 +65,22 @@ const metrics = computed(() => {
 
   const oosEquity = d?.oos_equity as Record<string, number> | undefined;
   if (oosEquity) {
-    if (oosEquity.k_ratio != null) items.push({
-      label: t('strategyDev.metricKRatio'),
-      value: oosEquity.k_ratio.toFixed(3),
-      severity: oosEquity.k_ratio >= 0 ? 'success' : 'danger',
-    });
+    if (oosEquity.k_ratio != null)
+      items.push({
+        label: t('strategyDev.metricKRatio'),
+        value: oosEquity.k_ratio.toFixed(3),
+        severity: oosEquity.k_ratio >= 0 ? 'success' : 'danger',
+      });
   }
 
   const mc = d?.monte_carlo as Record<string, number> | undefined;
   if (mc) {
-    if (mc.carver_discount != null) items.push({
-      label: t('strategyDev.metricCarverDiscount'),
-      value: `${(mc.carver_discount * 100).toFixed(0)}%`,
-      severity: mc.carver_discount >= 0.5 ? 'success' : 'danger',
-    });
+    if (mc.carver_discount != null)
+      items.push({
+        label: t('strategyDev.metricCarverDiscount'),
+        value: `${(mc.carver_discount * 100).toFixed(0)}%`,
+        severity: mc.carver_discount >= 0.5 ? 'success' : 'danger',
+      });
   }
 
   return items;
@@ -94,8 +102,8 @@ const healthBadges = computed(() => {
   const ps = d.param_stability as Record<string, any> | undefined;
   if (ps) {
     const total = Object.keys(ps).length;
-    const stable = Object.values(ps).filter(s => s.stable).length;
-    const pct = total > 0 ? Math.round(stable / total * 100) : 0;
+    const stable = Object.values(ps).filter((s) => s.stable).length;
+    const pct = total > 0 ? Math.round((stable / total) * 100) : 0;
     badges.push({
       label: `Params: ${stable}/${total} stable (${pct}%)`,
       severity: pct >= 70 ? 'success' : pct >= 40 ? 'warn' : 'danger',
@@ -144,7 +152,13 @@ const healthBadges = computed(() => {
 
     <!-- Health badges -->
     <div v-if="healthBadges.length" class="flex flex-wrap gap-2">
-      <Tag v-for="b in healthBadges" :key="b.label" :value="b.label" :severity="b.severity as any" class="text-sm" />
+      <Tag
+        v-for="b in healthBadges"
+        :key="b.label"
+        :value="b.label"
+        :severity="b.severity as any"
+        class="text-sm"
+      />
     </div>
 
     <!-- Metric cards -->
@@ -172,14 +186,11 @@ const healthBadges = computed(() => {
       <h4 class="text-sm font-semibold mb-2">{{ t('strategyDev.wfaVerdictChecks') }}</h4>
       <div class="flex flex-col gap-1">
         <div
-          v-for="(check, idx) in (verdict.checks as [string, boolean, string][])"
+          v-for="(check, idx) in verdict.checks as [string, boolean, string][]"
           :key="idx"
           class="flex items-center gap-2 text-sm"
         >
-          <i-mdi-check-circle
-            v-if="check[1]"
-            class="w-4 h-4 text-green-500 shrink-0"
-          />
+          <i-mdi-check-circle v-if="check[1]" class="w-4 h-4 text-green-500 shrink-0" />
           <i-mdi-close-circle v-else class="w-4 h-4 text-red-500 shrink-0" />
           <span class="text-surface-300">{{ check[2] }}</span>
         </div>

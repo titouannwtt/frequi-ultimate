@@ -80,7 +80,10 @@ const backtestResultSettings = computed(() => {
         key-header="Pair"
         :stake-currency-decimals="backtestResult.stake_currency_decimals"
       />
-      <DraggableContainer v-if="backtestResult.periodic_breakdown" :header="t('backtest.periodicBreakdown')">
+      <DraggableContainer
+        v-if="backtestResult.periodic_breakdown"
+        :header="t('backtest.periodicBreakdown')"
+      >
         <BacktestResultPeriodBreakdown :periodic-breakdown="backtestResult.periodic_breakdown">
         </BacktestResultPeriodBreakdown>
       </DraggableContainer>

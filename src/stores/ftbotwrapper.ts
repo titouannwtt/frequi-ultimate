@@ -430,9 +430,12 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       // per-bot refreshSlow already re-fetches trades on change (open-trade id diff),
       // so this periodic sweep can be infrequent. 10min (was 5min) halves the
       // redundant full /trades downloads across all bots.
-      this.tradesRefreshInterval = window.setInterval(() => {
-        this.fetchAllBotsTrades();
-      }, 10 * 60 * 1000);
+      this.tradesRefreshInterval = window.setInterval(
+        () => {
+          this.fetchAllBotsTrades();
+        },
+        10 * 60 * 1000,
+      );
     },
     async fetchAllBotsTrades() {
       const tasks = Object.values(this.botStores)

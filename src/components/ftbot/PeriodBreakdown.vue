@@ -9,7 +9,8 @@ import type { TimeSummaryReturnValue, TimeSummaryRecord } from '@/types';
 const { t } = useI18n();
 const botStore = useBotStore();
 const settingsStore = useSettingsStore();
-const { tradingMode, hasMultipleModes, isBotInMode, restorePersistedTradingMode } = useTradingModeFilter('periodBreakdown');
+const { tradingMode, hasMultipleModes, isBotInMode, restorePersistedTradingMode } =
+  useTradingModeFilter('periodBreakdown');
 
 const props = defineProps<{
   multiBotView?: boolean;
@@ -47,14 +48,19 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
     tradingMode: tradingMode.value,
   }),
   (d) => {
-    if (d.timeProfitPeriod !== undefined) settingsStore.timeProfitPeriod = d.timeProfitPeriod as string;
-    if (d.timeProfitPreference !== undefined) settingsStore.timeProfitPreference = d.timeProfitPreference as string;
+    if (d.timeProfitPeriod !== undefined)
+      settingsStore.timeProfitPeriod = d.timeProfitPeriod as string;
+    if (d.timeProfitPreference !== undefined)
+      settingsStore.timeProfitPreference = d.timeProfitPreference as string;
     if (d.tradingMode !== undefined) tradingMode.value = d.tradingMode as typeof tradingMode.value;
   },
   HARDCODED_DEFAULTS_PB,
 );
 
-onMounted(() => { loadDefaults(); restorePersistedTradingMode(); });
+onMounted(() => {
+  loadDefaults();
+  restorePersistedTradingMode();
+});
 
 defineExpose({ filtersChanged, saveCurrentAsDefault });
 
@@ -146,7 +152,9 @@ function periodRowClass(val: number): string {
 <template>
   <div class="flex flex-col h-full">
     <div v-if="!props.multiBotView" class="mb-2">
-      <h3 class="me-auto inline text-xl">{{ hasWeekly ? t('periodBreakdown.title') : t('periodBreakdown.dailyBreakdown') }}</h3>
+      <h3 class="me-auto inline text-xl">
+        {{ hasWeekly ? t('periodBreakdown.title') : t('periodBreakdown.dailyBreakdown') }}
+      </h3>
       <Button class="float-end" severity="secondary" @click="refreshSummary">
         <template #icon>
           <i-mdi-refresh />
@@ -218,14 +226,19 @@ function periodRowClass(val: number): string {
               :class="periodProfitBgClass(data.abs_profit)"
             >
               <span :class="data.abs_profit >= 0 ? 'text-green-400' : 'text-red-400'">
-                {{ data.abs_profit >= 0 ? '+' : '' }}{{ formatPrice(data.abs_profit, botStore.activeBot.stakeCurrencyDecimals) }}
+                {{ data.abs_profit >= 0 ? '+' : ''
+                }}{{ formatPrice(data.abs_profit, botStore.activeBot.stakeCurrencyDecimals) }}
               </span>
             </span>
           </template>
         </Column>
         <Column
           field="fiat_value"
-          :header="t('periodBreakdown.inFiat', { currency: botStore.activeBot.dailyStats.fiat_display_currency })"
+          :header="
+            t('periodBreakdown.inFiat', {
+              currency: botStore.activeBot.dailyStats.fiat_display_currency,
+            })
+          "
           sortable
         >
           <template #body="{ data }">

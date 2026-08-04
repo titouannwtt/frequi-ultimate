@@ -103,16 +103,40 @@ function getPositionLossDetail(alert: DetectedAlert) {
   const pair = pairMatch[1];
   const lossPct = parseFloat(pairMatch[2]);
   const trade = openTrades.value.find((t) => t.pair === pair);
-  if (!trade) return { pair, lossPct, direction: '', leverage: 1, entryPrice: 0, currentPrice: 0, stakeAtRisk: 0, exitValue: 0, threshold: -10, liqDistance: null as number | null };
+  if (!trade)
+    return {
+      pair,
+      lossPct,
+      direction: '',
+      leverage: 1,
+      entryPrice: 0,
+      currentPrice: 0,
+      stakeAtRisk: 0,
+      exitValue: 0,
+      threshold: -10,
+      liqDistance: null as number | null,
+    };
   const direction = trade.is_short ? 'Short' : 'Long';
   const leverage = trade.leverage ?? 1;
   const currentPrice = trade.open_rate * (1 + (trade.profit_ratio ?? 0));
   const stakeAtRisk = trade.stake_amount ?? 0;
   const exitValue = stakeAtRisk + (trade.profit_abs ?? trade.total_profit_abs ?? 0);
-  const liqDistance = trade.liquidation_price && trade.liquidation_price > 0
-    ? Math.abs(currentPrice - trade.liquidation_price) / currentPrice
-    : null;
-  return { pair, lossPct, direction, leverage, entryPrice: trade.open_rate, currentPrice, stakeAtRisk, exitValue, threshold: -10, liqDistance };
+  const liqDistance =
+    trade.liquidation_price && trade.liquidation_price > 0
+      ? Math.abs(currentPrice - trade.liquidation_price) / currentPrice
+      : null;
+  return {
+    pair,
+    lossPct,
+    direction,
+    leverage,
+    entryPrice: trade.open_rate,
+    currentPrice,
+    stakeAtRisk,
+    exitValue,
+    threshold: -10,
+    liqDistance,
+  };
 }
 
 function getPositionStuckDetail(alert: DetectedAlert) {
@@ -218,7 +242,9 @@ function treeConnector(index: number, total: number): string {
     <div :style="{ height: '3px', background: severityColorMap[maxSeverity] || '#3b82f6' }" />
 
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-black/10 dark:border-white/10">
+    <div
+      class="flex items-center justify-between px-4 py-3 border-b border-black/10 dark:border-white/10"
+    >
       <div class="flex items-center gap-2">
         <i-mdi-robot class="text-lg opacity-70" />
         <span class="font-bold text-sm">{{ botName }}</span>
@@ -236,7 +262,6 @@ function treeConnector(index: number, total: number): string {
 
     <!-- Content -->
     <div class="max-h-[500px] overflow-y-auto p-3 flex flex-col gap-3">
-
       <!-- ===== POSITION GROUPS ===== -->
       <template v-if="Object.keys(groupedAlerts.positionAlerts).length > 0">
         <div
@@ -258,16 +283,15 @@ function treeConnector(index: number, total: number): string {
               <span class="font-bold text-sm">{{ pair }}</span>
               <span
                 class="px-1.5 py-0.5 rounded text-[0.85rem] font-bold"
-                :class="getPositionIsShort(String(pair))
-                  ? 'bg-red-500/20 text-red-300'
-                  : 'bg-green-500/20 text-green-300'"
+                :class="
+                  getPositionIsShort(String(pair))
+                    ? 'bg-red-500/20 text-red-300'
+                    : 'bg-green-500/20 text-green-300'
+                "
               >
                 {{ getPositionDirection(String(pair)) }}
               </span>
-              <span
-                v-if="getPositionLeverage(String(pair)) > 1"
-                class="text-[0.85rem] opacity-50"
-              >
+              <span v-if="getPositionLeverage(String(pair)) > 1" class="text-[0.85rem] opacity-50">
                 {{ getPositionLeverage(String(pair)) }}x
               </span>
             </div>
@@ -282,11 +306,7 @@ function treeConnector(index: number, total: number): string {
 
           <!-- Sub-alerts with tree connectors -->
           <div class="px-3 pb-3 space-y-1.5">
-            <div
-              v-for="(alert, aIdx) in posAlerts"
-              :key="aIdx"
-              class="flex gap-2"
-            >
+            <div v-for="(alert, aIdx) in posAlerts" :key="aIdx" class="flex gap-2">
               <!-- Tree connector -->
               <span class="text-white/20 font-mono text-xs select-none shrink-0 leading-5">
                 {{ treeConnector(aIdx, posAlerts.length) }}
@@ -299,18 +319,25 @@ function treeConnector(index: number, total: number): string {
                   <div v-if="getPositionLossDetail(alert)" class="space-y-1">
                     <div class="flex items-center gap-1.5">
                       <i-mdi-trending-down class="text-red-400 text-sm shrink-0" />
-                      <span class="text-xs opacity-70">{{ t('botComparison.alertPositionLoss') }}: {{ getPositionLossDetail(alert)!.lossPct.toFixed(1) }}%</span>
+                      <span class="text-xs opacity-70"
+                        >{{ t('botComparison.alertPositionLoss') }}:
+                        {{ getPositionLossDetail(alert)!.lossPct.toFixed(1) }}%</span
+                      >
                     </div>
                     <div class="text-[0.85rem] opacity-50">
-                      {{ t('alertDetailCard.entry') }}: {{ getPositionLossDetail(alert)!.entryPrice.toPrecision(5) }}
+                      {{ t('alertDetailCard.entry') }}:
+                      {{ getPositionLossDetail(alert)!.entryPrice.toPrecision(5) }}
                       <span class="mx-1 text-white/30">→</span>
-                      {{ t('alertDetailCard.current') }}: {{ getPositionLossDetail(alert)!.currentPrice.toPrecision(5) }}
+                      {{ t('alertDetailCard.current') }}:
+                      {{ getPositionLossDetail(alert)!.currentPrice.toPrecision(5) }}
                     </div>
                     <div class="text-[0.85rem] opacity-50">
-                      {{ t('alertDetailCard.stakeAtRisk') }}: {{ getPositionLossDetail(alert)!.stakeAtRisk.toFixed(2) }} USDC
+                      {{ t('alertDetailCard.stakeAtRisk') }}:
+                      {{ getPositionLossDetail(alert)!.stakeAtRisk.toFixed(2) }} USDC
                     </div>
                     <div class="text-[0.85rem] font-bold text-amber-300">
-                      {{ t('alertDetailCard.ifClosedNow') }}: → {{ getPositionLossDetail(alert)!.exitValue.toFixed(2) }} USDC
+                      {{ t('alertDetailCard.ifClosedNow') }}: →
+                      {{ getPositionLossDetail(alert)!.exitValue.toFixed(2) }} USDC
                     </div>
                   </div>
                 </template>
@@ -320,11 +347,16 @@ function treeConnector(index: number, total: number): string {
                   <div v-if="getPositionStuckDetail(alert)" class="space-y-1">
                     <div class="flex items-center gap-1.5">
                       <i-mdi-timer-sand class="text-amber-400 text-sm shrink-0" />
-                      <span class="text-xs opacity-70">{{ t('botComparison.alertPositionStuck') }}: {{ getPositionStuckDetail(alert)!.heldHours }}h</span>
+                      <span class="text-xs opacity-70"
+                        >{{ t('botComparison.alertPositionStuck') }}:
+                        {{ getPositionStuckDetail(alert)!.heldHours }}h</span
+                      >
                     </div>
                     <div class="text-[0.85rem] opacity-50">
-                      {{ t('alertDetailCard.heldFor') }} {{ getPositionStuckDetail(alert)!.heldHours }}h
-                      ({{ t('alertDetailCard.avgDuration') }}: {{ getPositionStuckDetail(alert)!.avgHours }}h)
+                      {{ t('alertDetailCard.heldFor') }}
+                      {{ getPositionStuckDetail(alert)!.heldHours }}h ({{
+                        t('alertDetailCard.avgDuration')
+                      }}: {{ getPositionStuckDetail(alert)!.avgHours }}h)
                     </div>
                   </div>
                 </template>
@@ -334,12 +366,18 @@ function treeConnector(index: number, total: number): string {
                   <div v-if="getNearLiquidationDetail(alert)" class="space-y-1">
                     <div class="flex items-center gap-1.5">
                       <i-mdi-skull-crossbones class="text-red-500 text-sm shrink-0" />
-                      <span class="text-xs opacity-70">{{ t('botComparison.alertNearLiquidation') }}: {{ getNearLiquidationDetail(alert)!.distancePct.toFixed(1) }}% {{ t('alertDetailCard.remaining') }}</span>
+                      <span class="text-xs opacity-70"
+                        >{{ t('botComparison.alertNearLiquidation') }}:
+                        {{ getNearLiquidationDetail(alert)!.distancePct.toFixed(1) }}%
+                        {{ t('alertDetailCard.remaining') }}</span
+                      >
                     </div>
                     <div class="text-[0.85rem] opacity-50">
-                      {{ t('alertDetail.currentPrice') }}: {{ getNearLiquidationDetail(alert)!.currentPrice.toPrecision(5) }}
+                      {{ t('alertDetail.currentPrice') }}:
+                      {{ getNearLiquidationDetail(alert)!.currentPrice.toPrecision(5) }}
                       <span class="mx-1 text-white/30">→</span>
-                      {{ t('alertDetail.liqPrice') }}: {{ getNearLiquidationDetail(alert)!.liqPrice.toPrecision(5) }}
+                      {{ t('alertDetail.liqPrice') }}:
+                      {{ getNearLiquidationDetail(alert)!.liqPrice.toPrecision(5) }}
                     </div>
                   </div>
                 </template>
@@ -357,7 +395,9 @@ function treeConnector(index: number, total: number): string {
           class="flex items-center gap-2 opacity-40"
         >
           <div class="flex-1 h-px bg-white/20" />
-          <span class="text-[0.8rem] uppercase tracking-wider whitespace-nowrap">{{ t('alertDetailCard.generalAlerts') }}</span>
+          <span class="text-[0.8rem] uppercase tracking-wider whitespace-nowrap">{{
+            t('alertDetailCard.generalAlerts')
+          }}</span>
           <div class="flex-1 h-px bg-white/20" />
         </div>
 
@@ -371,7 +411,15 @@ function treeConnector(index: number, total: number): string {
           }"
         >
           <!-- Log Errors -->
-          <template v-if="alert.typeId === 'logErrors' || alert.typeId === 'orderFailed' || alert.typeId === 'exchangeError' || alert.typeId === 'walletMismatch' || alert.typeId === 'insufficientFunds'">
+          <template
+            v-if="
+              alert.typeId === 'logErrors' ||
+              alert.typeId === 'orderFailed' ||
+              alert.typeId === 'exchangeError' ||
+              alert.typeId === 'walletMismatch' ||
+              alert.typeId === 'insufficientFunds'
+            "
+          >
             <div class="space-y-2">
               <div class="flex items-center gap-1.5">
                 <i-mdi-alert-octagon class="text-red-400" />
@@ -389,13 +437,20 @@ function treeConnector(index: number, total: number): string {
                   {{ t('alertDetail.lastError') }}: {{ getLogErrorsDetail(alert).lastTimestamp }}
                 </div>
               </div>
-              <div v-else-if="alert.details" class="text-[0.85rem] px-2 py-1 rounded bg-white/5 truncate max-w-[380px]">
+              <div
+                v-else-if="alert.details"
+                class="text-[0.85rem] px-2 py-1 rounded bg-white/5 truncate max-w-[380px]"
+              >
                 {{ alert.details }}
               </div>
               <button
                 class="text-[0.8rem] text-blue-400 hover:text-blue-300 cursor-pointer mt-0.5"
-                @click.stop="goToLogs(alert.details ? alert.details.split(' | ')[0]?.slice(0, 60) : 'ERROR')"
-              >{{ t('alertDetail.viewLogs') }} →</button>
+                @click.stop="
+                  goToLogs(alert.details ? alert.details.split(' | ')[0]?.slice(0, 60) : 'ERROR')
+                "
+              >
+                {{ t('alertDetail.viewLogs') }} →
+              </button>
             </div>
           </template>
 
@@ -404,15 +459,28 @@ function treeConnector(index: number, total: number): string {
             <div class="space-y-2">
               <div class="flex items-center gap-1.5">
                 <i-mdi-cash-lock class="text-amber-400" />
-                <span class="text-xs font-medium opacity-60">{{ t('botComparison.alertAllFundsExposed') }}</span>
+                <span class="text-xs font-medium opacity-60">{{
+                  t('botComparison.alertAllFundsExposed')
+                }}</span>
               </div>
               <div class="flex items-center gap-4">
                 <div class="relative w-14 h-14">
                   <svg viewBox="0 0 36 36" class="w-14 h-14 -rotate-90">
-                    <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="3" />
                     <circle
-                      cx="18" cy="18" r="15" fill="none"
-                      stroke="#f59e0b" stroke-width="3"
+                      cx="18"
+                      cy="18"
+                      r="15"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.05)"
+                      stroke-width="3"
+                    />
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15"
+                      fill="none"
+                      stroke="#f59e0b"
+                      stroke-width="3"
                       :stroke-dasharray="`${getAllFundsExposedDetail().pct * 0.942} 94.2`"
                       stroke-linecap="round"
                     />
@@ -422,8 +490,14 @@ function treeConnector(index: number, total: number): string {
                   </div>
                 </div>
                 <div class="space-y-1 text-xs">
-                  <div><span class="opacity-50">{{ t('alertDetail.locked') }}:</span> {{ getAllFundsExposedDetail().totalStake.toFixed(2) }}</div>
-                  <div><span class="opacity-50">{{ t('alertDetail.free') }}:</span> {{ getAllFundsExposedDetail().free.toFixed(2) }}</div>
+                  <div>
+                    <span class="opacity-50">{{ t('alertDetail.locked') }}:</span>
+                    {{ getAllFundsExposedDetail().totalStake.toFixed(2) }}
+                  </div>
+                  <div>
+                    <span class="opacity-50">{{ t('alertDetail.free') }}:</span>
+                    {{ getAllFundsExposedDetail().free.toFixed(2) }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -433,12 +507,16 @@ function treeConnector(index: number, total: number): string {
           <template v-else-if="alert.typeId === 'botOffline'">
             <div class="space-y-2 text-center py-2">
               <i-mdi-robot-off class="text-4xl text-red-500 mx-auto" />
-              <div class="text-sm font-bold text-red-400">{{ t('botComparison.alertBotOffline') }}</div>
+              <div class="text-sm font-bold text-red-400">
+                {{ t('botComparison.alertBotOffline') }}
+              </div>
               <div v-if="getBotOfflineDetail().lastSeen > 0" class="text-xs opacity-50">
-                {{ t('alertDetail.lastSeen') }}: {{ new Date(getBotOfflineDetail().lastSeen).toLocaleString() }}
+                {{ t('alertDetail.lastSeen') }}:
+                {{ new Date(getBotOfflineDetail().lastSeen).toLocaleString() }}
               </div>
               <div v-if="getBotOfflineDetail().offlineDuration > 0" class="text-xs opacity-40">
-                {{ t('alertDetail.offlineFor') }} {{ formatDuration(getBotOfflineDetail().offlineDuration) }}
+                {{ t('alertDetail.offlineFor') }}
+                {{ formatDuration(getBotOfflineDetail().offlineDuration) }}
               </div>
             </div>
           </template>
@@ -448,12 +526,16 @@ function treeConnector(index: number, total: number): string {
             <div class="space-y-2">
               <div class="flex items-center gap-1.5">
                 <i-mdi-chart-line-variant class="text-amber-400" />
-                <span class="text-xs font-medium opacity-60">{{ t('botComparison.alertHighDrawdown') }}</span>
+                <span class="text-xs font-medium opacity-60">{{
+                  t('botComparison.alertHighDrawdown')
+                }}</span>
               </div>
               <div class="relative h-3 bg-white/5 rounded-full overflow-hidden">
                 <div
                   class="absolute h-full bg-red-500/70 rounded-full"
-                  :style="{ width: Math.min(100, Math.abs(getHighDrawdownDetail().drawdownPct) * 2) + '%' }"
+                  :style="{
+                    width: Math.min(100, Math.abs(getHighDrawdownDetail().drawdownPct) * 2) + '%',
+                  }"
                 />
               </div>
               <div class="text-xl font-bold text-red-400 text-center">
@@ -466,7 +548,9 @@ function treeConnector(index: number, total: number): string {
                 </div>
                 <div class="text-right">
                   <div class="opacity-40 text-[0.8rem]">{{ t('alertDetail.currentValue') }}</div>
-                  <div class="text-red-400">{{ getHighDrawdownDetail().currentValue.toFixed(2) }}</div>
+                  <div class="text-red-400">
+                    {{ getHighDrawdownDetail().currentValue.toFixed(2) }}
+                  </div>
                 </div>
               </div>
             </div>

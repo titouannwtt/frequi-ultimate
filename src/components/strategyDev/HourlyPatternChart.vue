@@ -13,7 +13,15 @@ import VChart from 'vue-echarts';
 
 const { t } = useI18n();
 
-use([CanvasRenderer, BarChart, LineChart, GridComponent, TooltipComponent, LegendComponent, DataZoomComponent]);
+use([
+  CanvasRenderer,
+  BarChart,
+  LineChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  DataZoomComponent,
+]);
 
 const props = defineProps<{
   data: {
@@ -28,9 +36,13 @@ const chartOptions = computed(() => {
   const raw = props.data.hours ?? [];
   const isObjArray = raw.length > 0 && typeof raw[0] === 'object';
   const hours = isObjArray ? (raw as any[]).map((h) => h.hour) : (raw as number[]);
-  const avgProfit = isObjArray ? (raw as any[]).map((h) => h.avg_profit) : (props.data.avg_profit ?? []);
+  const avgProfit = isObjArray
+    ? (raw as any[]).map((h) => h.avg_profit)
+    : (props.data.avg_profit ?? []);
   const winrate = isObjArray ? (raw as any[]).map((h) => h.winrate) : (props.data.winrate ?? []);
-  const tradeCount = isObjArray ? (raw as any[]).map((h) => h.trades) : (props.data.trade_count ?? []);
+  const tradeCount = isObjArray
+    ? (raw as any[]).map((h) => h.trades)
+    : (props.data.trade_count ?? []);
 
   return {
     tooltip: {
@@ -44,18 +56,23 @@ const chartOptions = computed(() => {
         const h = params[0]?.name ?? '';
         let html = `<div style="font-weight:600;margin-bottom:4px">${h}:00</div>`;
         for (const p of params) {
-          const val = p.seriesName === winRateLabel
-            ? `${(p.value * 100).toFixed(1)}%`
-            : p.seriesName === tradesLabel
-              ? p.value
-              : `${p.value >= 0 ? '+' : ''}${(p.value * 100).toFixed(2)}%`;
+          const val =
+            p.seriesName === winRateLabel
+              ? `${(p.value * 100).toFixed(1)}%`
+              : p.seriesName === tradesLabel
+                ? p.value
+                : `${p.value >= 0 ? '+' : ''}${(p.value * 100).toFixed(2)}%`;
           html += `<div>${p.marker} ${p.seriesName}: <b>${val}</b></div>`;
         }
         return html;
       },
     },
     legend: {
-      data: [t('strategyDev.metricAvgProfit'), t('strategyDev.metricWinRate'), t('strategyDev.metricTrades')],
+      data: [
+        t('strategyDev.metricAvgProfit'),
+        t('strategyDev.metricWinRate'),
+        t('strategyDev.metricTrades'),
+      ],
       textStyle: { color: '#6c7086', fontSize: 10 },
       top: 0,
     },
@@ -103,9 +120,8 @@ const chartOptions = computed(() => {
         data: avgProfit,
         yAxisIndex: 0,
         itemStyle: {
-          color: (params: any) => params.value >= 0
-            ? 'rgba(166, 227, 161, 0.7)'
-            : 'rgba(243, 139, 168, 0.7)',
+          color: (params: any) =>
+            params.value >= 0 ? 'rgba(166, 227, 161, 0.7)' : 'rgba(243, 139, 168, 0.7)',
           borderRadius: [2, 2, 0, 0],
         },
       },

@@ -13,5 +13,6 @@ defineProps<{
     v-tooltip.top="name"
     class="inline-block truncate align-bottom"
     :style="{ maxWidth: maxWidth ?? '120px' }"
-  >{{ name }}</span>
+    >{{ name }}</span
+  >
 </template>

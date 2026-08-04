@@ -99,7 +99,10 @@ const metrics = computed(() =>
           {{ formatPercent(data[field as string], 2) }}
         </template>
       </Column>
-      <Column field="profit_total_abs" :header="t('backtest.totProfitStake', { stake: props.stakeCurrency })">
+      <Column
+        field="profit_total_abs"
+        :header="t('backtest.totProfitStake', { stake: props.stakeCurrency })"
+      >
         <template #body="{ data, field }">
           {{ formatPrice(data[field as string], props.stakeCurrencyDecimals) }}
         </template>

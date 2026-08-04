@@ -109,9 +109,24 @@ function valClass(v: unknown): string {
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-2">
           <h4 class="text-sm font-semibold">{{ t('strategyDev.tabParameters') }}</h4>
-          <Tag v-if="runType === RunType.hyperopt" :value="t('strategyDev.ppBestEpochTag')" severity="success" class="text-sm" />
-          <Tag v-else-if="runType === RunType.wfa" :value="t('strategyDev.ppConsensusTag')" severity="info" class="text-sm" />
-          <Tag v-else-if="runType === RunType.backtest" :value="t('strategyDev.ppSnapshotTag')" severity="secondary" class="text-sm" />
+          <Tag
+            v-if="runType === RunType.hyperopt"
+            :value="t('strategyDev.ppBestEpochTag')"
+            severity="success"
+            class="text-sm"
+          />
+          <Tag
+            v-else-if="runType === RunType.wfa"
+            :value="t('strategyDev.ppConsensusTag')"
+            severity="info"
+            class="text-sm"
+          />
+          <Tag
+            v-else-if="runType === RunType.backtest"
+            :value="t('strategyDev.ppSnapshotTag')"
+            severity="secondary"
+            class="text-sm"
+          />
         </div>
         <div class="flex items-center gap-2">
           <SelectButton
@@ -125,12 +140,7 @@ function valClass(v: unknown): string {
             :allowEmpty="false"
             class="text-sm"
           />
-          <Button
-            size="small"
-            severity="secondary"
-            variant="outlined"
-            @click="copyParams"
-          >
+          <Button size="small" severity="secondary" variant="outlined" @click="copyParams">
             <i-mdi-check v-if="copied" class="w-4 h-4 mr-1 text-green-400" />
             <i-mdi-content-copy v-else class="w-4 h-4 mr-1" />
             {{ copied ? t('strategyDev.copied') : t('strategyDev.copyJson') }}
@@ -149,10 +159,18 @@ function valClass(v: unknown): string {
           <table class="param-table">
             <thead>
               <tr>
-                <th v-if="tableRows.some(r => r.space)" class="th-space">{{ t('strategyDev.ppSpace') }}</th>
+                <th v-if="tableRows.some((r) => r.space)" class="th-space">
+                  {{ t('strategyDev.ppSpace') }}
+                </th>
                 <th class="th-param">{{ t('strategyDev.ppParameter') }}</th>
                 <th class="th-val">
-                  {{ runType === RunType.hyperopt ? t('strategyDev.ppBestEpochTag') : runType === RunType.wfa ? t('strategyDev.ppConsensusTag') : t('strategyDev.ppValue') }}
+                  {{
+                    runType === RunType.hyperopt
+                      ? t('strategyDev.ppBestEpochTag')
+                      : runType === RunType.wfa
+                        ? t('strategyDev.ppConsensusTag')
+                        : t('strategyDev.ppValue')
+                  }}
                 </th>
                 <template v-if="runType === RunType.hyperopt && paramStats">
                   <th class="th-val">{{ t('strategyDev.ppTop5Median') }}</th>
@@ -163,15 +181,21 @@ function valClass(v: unknown): string {
             </thead>
             <tbody>
               <tr v-for="(row, i) in tableRows" :key="i">
-                <td v-if="tableRows.some(r => r.space)" class="td-space">
+                <td v-if="tableRows.some((r) => r.space)" class="td-space">
                   <Tag v-if="row.space" :value="row.space" severity="secondary" class="text-sm" />
                 </td>
                 <td class="td-param">{{ row.key }}</td>
                 <td class="td-val" :class="valClass(row.value)">{{ formatVal(row.value) }}</td>
                 <template v-if="runType === RunType.hyperopt && paramStats">
-                  <td class="td-val" :class="valClass(row.top5Median)">{{ formatVal(row.top5Median) }}</td>
-                  <td class="td-val" :class="valClass(row.top10Median)">{{ formatVal(row.top10Median) }}</td>
-                  <td class="td-val font-semibold" :class="valClass(row.recommended)">{{ formatVal(row.recommended) }}</td>
+                  <td class="td-val" :class="valClass(row.top5Median)">
+                    {{ formatVal(row.top5Median) }}
+                  </td>
+                  <td class="td-val" :class="valClass(row.top10Median)">
+                    {{ formatVal(row.top10Median) }}
+                  </td>
+                  <td class="td-val font-semibold" :class="valClass(row.recommended)">
+                    {{ formatVal(row.recommended) }}
+                  </td>
                 </template>
               </tr>
             </tbody>

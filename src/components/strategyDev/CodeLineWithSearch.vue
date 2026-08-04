@@ -37,7 +37,11 @@ const segments = computed<RenderSegment[]>(() => {
       const hlEnd = Math.min(m.end, tokEnd);
 
       if (hlStart > pos) {
-        result.push({ text: tok.text.slice(pos - tokStart, hlStart - tokStart), cls: tok.cls, hlClass: '' });
+        result.push({
+          text: tok.text.slice(pos - tokStart, hlStart - tokStart),
+          cls: tok.cls,
+          hlClass: '',
+        });
       }
       result.push({
         text: tok.text.slice(hlStart - tokStart, hlEnd - tokStart),

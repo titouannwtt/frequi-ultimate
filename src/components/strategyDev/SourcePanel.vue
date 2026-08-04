@@ -107,12 +107,7 @@ async function copySource() {
           </div>
         </div>
         <div class="flex gap-2">
-          <Button
-            size="small"
-            severity="secondary"
-            variant="outlined"
-            @click="copySource"
-          >
+          <Button size="small" severity="secondary" variant="outlined" @click="copySource">
             <template #icon>
               <i-mdi-check v-if="copied" class="w-3.5 h-3.5 text-green-400" />
               <i-mdi-content-copy v-else class="w-3.5 h-3.5" />

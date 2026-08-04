@@ -112,7 +112,9 @@ onMounted(() => {
       </button>
 
       <span class="editor-statusbar-cursor">{{ cursorDisplay }}</span>
-      <span class="editor-statusbar-lang">{{ editorStore.activeFile?.language?.toUpperCase() }}</span>
+      <span class="editor-statusbar-lang">{{
+        editorStore.activeFile?.language?.toUpperCase()
+      }}</span>
 
       <div class="editor-statusbar-actions">
         <button
@@ -145,8 +147,14 @@ onMounted(() => {
           :class="`editor-diag-item--${d.severity}`"
           @click="goToLine(d.line)"
         >
-          <i-mdi-close-circle v-if="d.severity === 'error'" class="editor-diag-icon editor-diag-icon--error" />
-          <i-mdi-alert v-else-if="d.severity === 'warning'" class="editor-diag-icon editor-diag-icon--warning" />
+          <i-mdi-close-circle
+            v-if="d.severity === 'error'"
+            class="editor-diag-icon editor-diag-icon--error"
+          />
+          <i-mdi-alert
+            v-else-if="d.severity === 'warning'"
+            class="editor-diag-icon editor-diag-icon--warning"
+          />
           <i-mdi-information v-else class="editor-diag-icon editor-diag-icon--info" />
           <span class="editor-diag-loc">L{{ d.line }}</span>
           <span class="editor-diag-msg">{{ d.message }}</span>
@@ -411,9 +419,15 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.editor-diag-icon--error { color: var(--sd-danger); }
-.editor-diag-icon--warning { color: var(--sd-warning); }
-.editor-diag-icon--info { color: var(--sd-info); }
+.editor-diag-icon--error {
+  color: var(--sd-danger);
+}
+.editor-diag-icon--warning {
+  color: var(--sd-warning);
+}
+.editor-diag-icon--info {
+  color: var(--sd-info);
+}
 
 .editor-diag-loc {
   color: var(--sd-overlay);
@@ -429,7 +443,19 @@ onMounted(() => {
 }
 
 /* ── Transition ── */
-.editor-diag-enter-active { transition: max-height 200ms ease, opacity 200ms ease; }
-.editor-diag-leave-active { transition: max-height 150ms ease, opacity 150ms ease; }
-.editor-diag-enter-from, .editor-diag-leave-to { max-height: 0; opacity: 0; }
+.editor-diag-enter-active {
+  transition:
+    max-height 200ms ease,
+    opacity 200ms ease;
+}
+.editor-diag-leave-active {
+  transition:
+    max-height 150ms ease,
+    opacity 150ms ease;
+}
+.editor-diag-enter-from,
+.editor-diag-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
 </style>

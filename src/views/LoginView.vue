@@ -48,7 +48,9 @@ async function confirmImport() {
       password: importPassword.value || undefined,
     });
     importSuccess.value = true;
-    setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 1500);
   } catch (err: any) {
     const msg = err?.message ?? '';
     if (msg === 'WRONG_PASSWORD') {
@@ -67,8 +69,11 @@ async function confirmImport() {
 
 function formatPreviewDate(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 </script>
@@ -94,7 +99,13 @@ function formatPreviewDate(iso: string): string {
           {{ t('nav.importConfig') }}
         </button>
 
-        <input ref="fileInput" type="file" accept=".json" class="hidden" @change="handleFileSelected" />
+        <input
+          ref="fileInput"
+          type="file"
+          accept=".json"
+          class="hidden"
+          @change="handleFileSelected"
+        />
 
         <div v-if="importError && !previewVisible" class="mt-2 text-xs text-red-400">
           {{ importError }}
@@ -111,7 +122,9 @@ function formatPreviewDate(iso: string): string {
     >
       <div v-if="configPreview" class="space-y-3">
         <!-- Summary rows -->
-        <div class="divide-y divide-surface-200 dark:divide-surface-700 rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden text-sm">
+        <div
+          class="divide-y divide-surface-200 dark:divide-surface-700 rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden text-sm"
+        >
           <div class="flex justify-between px-3 py-2 bg-surface-50 dark:bg-surface-800/50">
             <span class="text-surface-500">{{ t('nav.exportDate') }}</span>
             <span>{{ formatPreviewDate(configPreview.exportedAt) }}</span>
@@ -124,7 +137,9 @@ function formatPreviewDate(iso: string): string {
           </div>
           <div class="flex justify-between px-3 py-2 bg-surface-50 dark:bg-surface-800/50">
             <span class="text-surface-500">{{ t('nav.containsAuth') }}</span>
-            <span v-if="!configPreview.includesAuth" class="text-green-400">{{ t('nav.authNotIncluded') }}</span>
+            <span v-if="!configPreview.includesAuth" class="text-green-400">{{
+              t('nav.authNotIncluded')
+            }}</span>
             <span v-else-if="configPreview.encrypted" class="text-blue-400">
               <i-mdi-lock class="inline w-3.5 h-3.5 mr-0.5" />{{ t('nav.authEncrypted') }}
             </span>
@@ -134,7 +149,10 @@ function formatPreviewDate(iso: string): string {
             <span class="text-surface-500">{{ t('nav.settingsCount') }}</span>
             <span>{{ configPreview.settingsCount }}</span>
           </div>
-          <div v-if="configPreview.botCount > 0" class="flex justify-between px-3 py-2 bg-surface-50 dark:bg-surface-800/50">
+          <div
+            v-if="configPreview.botCount > 0"
+            class="flex justify-between px-3 py-2 bg-surface-50 dark:bg-surface-800/50"
+          >
             <span class="text-surface-500">{{ t('nav.botsCount') }}</span>
             <span>{{ configPreview.botCount }}</span>
           </div>
@@ -143,7 +161,10 @@ function formatPreviewDate(iso: string): string {
             <span v-if="configPreview.integrityValid === true" class="text-green-400">
               <i-mdi-check-circle class="inline w-3.5 h-3.5 mr-0.5" />{{ t('nav.integrityValid') }}
             </span>
-            <span v-else-if="configPreview.integrityValid === false" class="text-red-400 font-medium">
+            <span
+              v-else-if="configPreview.integrityValid === false"
+              class="text-red-400 font-medium"
+            >
               <i-mdi-alert class="inline w-3.5 h-3.5 mr-0.5" />{{ t('nav.integrityFailed') }}
             </span>
             <span v-else class="text-surface-400">{{ t('nav.integrityNA') }}</span>
@@ -151,15 +172,23 @@ function formatPreviewDate(iso: string): string {
         </div>
 
         <!-- Expiration warning -->
-        <div v-if="configPreview.isExpired" class="flex items-start gap-1.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/15">
+        <div
+          v-if="configPreview.isExpired"
+          class="flex items-start gap-1.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/15"
+        >
           <i-mdi-clock-alert class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
           <p class="text-xs text-amber-300/90 leading-relaxed">{{ t('nav.expiredWarning') }}</p>
         </div>
 
         <!-- Integrity failure -->
-        <div v-if="configPreview.integrityValid === false" class="flex items-start gap-1.5 p-2.5 rounded-lg bg-red-500/10 border border-red-500/15">
+        <div
+          v-if="configPreview.integrityValid === false"
+          class="flex items-start gap-1.5 p-2.5 rounded-lg bg-red-500/10 border border-red-500/15"
+        >
           <i-mdi-shield-alert class="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-          <p class="text-xs text-red-300/90 leading-relaxed">{{ t('nav.integrityFailedDetail') }}</p>
+          <p class="text-xs text-red-300/90 leading-relaxed">
+            {{ t('nav.integrityFailedDetail') }}
+          </p>
         </div>
 
         <!-- Password field for encrypted files -->
@@ -175,15 +204,23 @@ function formatPreviewDate(iso: string): string {
         </div>
 
         <!-- Import error -->
-        <div v-if="importError" class="flex items-center gap-1.5 p-2 rounded-lg bg-red-500/10 border border-red-500/15">
+        <div
+          v-if="importError"
+          class="flex items-center gap-1.5 p-2 rounded-lg bg-red-500/10 border border-red-500/15"
+        >
           <i-mdi-alert-circle class="w-4 h-4 text-red-400 flex-shrink-0" />
           <p class="text-xs text-red-400">{{ importError }}</p>
         </div>
 
         <!-- Import success -->
-        <div v-if="importSuccess" class="flex items-center gap-1.5 p-2 rounded-lg bg-green-500/10 border border-green-500/15">
+        <div
+          v-if="importSuccess"
+          class="flex items-center gap-1.5 p-2 rounded-lg bg-green-500/10 border border-green-500/15"
+        >
           <i-mdi-check-circle class="w-4 h-4 text-green-400 flex-shrink-0" />
-          <p class="text-xs text-green-400">{{ t('nav.importSuccess') }} — {{ t('nav.reloading') }}</p>
+          <p class="text-xs text-green-400">
+            {{ t('nav.importSuccess') }} — {{ t('nav.reloading') }}
+          </p>
         </div>
 
         <!-- Actions -->
@@ -193,7 +230,11 @@ function formatPreviewDate(iso: string): string {
           </Button>
           <Button
             size="small"
-            :disabled="importLoading || (configPreview.encrypted && !importPassword) || configPreview.integrityValid === false"
+            :disabled="
+              importLoading ||
+              (configPreview.encrypted && !importPassword) ||
+              configPreview.integrityValid === false
+            "
             :loading="importLoading"
             @click="confirmImport"
           >

@@ -115,11 +115,7 @@ const items = computed<MetricItem[]>(() => {
 
 <template>
   <div class="ex-grid">
-    <div
-      v-for="item in items"
-      :key="item.key"
-      class="ex-card"
-    >
+    <div v-for="item in items" :key="item.key" class="ex-card">
       <div class="ex-card-header">
         <span class="ex-label">{{ item.label }}</span>
         <span
@@ -130,10 +126,7 @@ const items = computed<MetricItem[]>(() => {
           {{ item.badge }}
         </span>
       </div>
-      <span
-        class="ex-value"
-        :style="{ color: item.color }"
-      >
+      <span class="ex-value" :style="{ color: item.color }">
         {{ item.value }}
       </span>
     </div>

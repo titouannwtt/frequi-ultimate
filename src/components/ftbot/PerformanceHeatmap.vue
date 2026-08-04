@@ -58,9 +58,12 @@ const currencyUnit = computed(() => {
 // Compute lookback days based on timeframe
 const lookbackDays = computed(() => {
   switch (selectedTimeframe.value) {
-    case 'week': return 90; // ~13 weeks
-    case 'month': return 365; // ~12 months
-    default: return 30;
+    case 'week':
+      return 90; // ~13 weeks
+    case 'month':
+      return 365; // ~12 months
+    default:
+      return 30;
   }
 });
 
@@ -170,10 +173,7 @@ const chartOptions = computed<EChartsOption>(() => {
       right: 10,
       bottom: 10,
       cellSize: ['auto', 'auto'],
-      range: [
-        startDate.toISOString().slice(0, 10),
-        now.toISOString().slice(0, 10),
-      ],
+      range: [startDate.toISOString().slice(0, 10), now.toISOString().slice(0, 10)],
       itemStyle: {
         borderWidth: 2,
         borderColor: settingsStore.chartTheme === 'dark' ? '#1e1e2e' : '#f0f0f0',
@@ -215,7 +215,7 @@ const chartOptions = computed<EChartsOption>(() => {
     <!-- Timeframe pills -->
     <div class="flex items-center gap-1 px-2 py-1">
       <button
-        v-for="tf in (['day', 'week', 'month'] as HeatmapTimeframe[])"
+        v-for="tf in ['day', 'week', 'month'] as HeatmapTimeframe[]"
         :key="tf"
         class="px-2 py-0.5 rounded-full text-[11px] font-medium transition-all"
         :class="
@@ -235,10 +235,7 @@ const chartOptions = computed<EChartsOption>(() => {
         :theme="settingsStore.chartTheme"
         autoresize
       />
-      <div
-        v-else
-        class="flex items-center justify-center h-full text-surface-400 text-sm"
-      >
+      <div v-else class="flex items-center justify-center h-full text-surface-400 text-sm">
         {{ t('performanceHeatmap.noData') }}
       </div>
     </div>

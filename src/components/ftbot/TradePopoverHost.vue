@@ -71,11 +71,7 @@ async function exportPng() {
         @mouseleave="emit('leave')"
       >
         <!-- Arrow -->
-        <div
-          id="trade-popover-arrow"
-          class="trade-popover-arrow"
-          :style="arrowStyle"
-        />
+        <div id="trade-popover-arrow" class="trade-popover-arrow" :style="arrowStyle" />
 
         <!-- Export button (top-right, discreet) -->
         <button
@@ -124,7 +120,9 @@ async function exportPng() {
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.3);
   max-height: calc(100vh - 16px);
   max-width: calc(100vw - 16px);
   overflow-y: auto;
@@ -145,10 +143,14 @@ async function exportPng() {
 }
 
 .popover-fade-enter-active {
-  transition: opacity 0.12s ease-out, transform 0.12s ease-out;
+  transition:
+    opacity 0.12s ease-out,
+    transform 0.12s ease-out;
 }
 .popover-fade-leave-active {
-  transition: opacity 0.08s ease-in, transform 0.08s ease-in;
+  transition:
+    opacity 0.08s ease-in,
+    transform 0.08s ease-in;
 }
 .popover-fade-enter-from {
   opacity: 0;

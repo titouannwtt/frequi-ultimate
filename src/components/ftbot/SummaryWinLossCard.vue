@@ -46,7 +46,9 @@ const sortedByWinrate = computed(() => {
 const totalWins = computed(() => botEntries.value.reduce((sum, e) => sum + e.wins, 0));
 const totalLosses = computed(() => botEntries.value.reduce((sum, e) => sum + e.losses, 0));
 const totalTrades = computed(() => totalWins.value + totalLosses.value);
-const overallWinrate = computed(() => totalTrades.value > 0 ? (totalWins.value / totalTrades.value) * 100 : 0);
+const overallWinrate = computed(() =>
+  totalTrades.value > 0 ? (totalWins.value / totalTrades.value) * 100 : 0,
+);
 
 const avgWinrate = computed(() => {
   const entries = botEntries.value.filter((e) => e.totalTrades > 0);
@@ -55,7 +57,9 @@ const avgWinrate = computed(() => {
 });
 
 const avgProfitFactor = computed(() => {
-  const entries = botEntries.value.filter((e) => e.profitFactor !== undefined && e.profitFactor !== null && e.totalTrades > 0);
+  const entries = botEntries.value.filter(
+    (e) => e.profitFactor !== undefined && e.profitFactor !== null && e.totalTrades > 0,
+  );
   if (entries.length === 0) return undefined;
   const totalWeight = entries.reduce((sum, e) => sum + e.totalTrades, 0);
   if (totalWeight <= 0) return undefined;
@@ -101,7 +105,9 @@ function winrateColor(val: number): string {
 <template>
   <div class="glass-card" style="width: 540px">
     <!-- ═══ HEADER ═══ -->
-    <div class="flex items-center justify-between mb-3 pb-2 border-b border-black/5 dark:border-white/5">
+    <div
+      class="flex items-center justify-between mb-3 pb-2 border-b border-black/5 dark:border-white/5"
+    >
       <div class="flex items-center gap-2">
         <i-mdi-trophy class="text-yellow-400 text-base" />
         <span class="font-semibold text-gray-100 text-sm">
@@ -116,30 +122,59 @@ function winrateColor(val: number): string {
     </div>
 
     <!-- ═══ SECTION 1: Overall Winrate Donut ═══ -->
-    <div class="flex items-center justify-around mb-3 pb-3 border-b border-black/5 dark:border-white/5">
+    <div
+      class="flex items-center justify-around mb-3 pb-3 border-b border-black/5 dark:border-white/5"
+    >
       <div class="flex flex-col items-center">
         <svg width="110" height="110" viewBox="0 0 110 110">
-          <circle cx="55" cy="55" :r="donutRadius" fill="none" stroke="rgba(255,255,255,0.06)" :stroke-width="donutStroke" />
           <circle
-            cx="55" cy="55" :r="donutRadius"
-            fill="none" stroke="#22c55e" :stroke-width="donutStroke"
+            cx="55"
+            cy="55"
+            :r="donutRadius"
+            fill="none"
+            stroke="rgba(255,255,255,0.06)"
+            :stroke-width="donutStroke"
+          />
+          <circle
+            cx="55"
+            cy="55"
+            :r="donutRadius"
+            fill="none"
+            stroke="#22c55e"
+            :stroke-width="donutStroke"
             stroke-linecap="round"
             :stroke-dasharray="donutWinDash"
             :stroke-dashoffset="donutCircumference / 4"
             style="transition: stroke-dasharray 0.5s ease"
           />
           <circle
-            cx="55" cy="55" :r="donutRadius"
-            fill="none" stroke="#ef4444" :stroke-width="donutStroke"
+            cx="55"
+            cy="55"
+            :r="donutRadius"
+            fill="none"
+            stroke="#ef4444"
+            :stroke-width="donutStroke"
             stroke-linecap="round"
             :stroke-dasharray="donutLossDash"
             :stroke-dashoffset="donutLossOffset + donutCircumference / 4"
             style="transition: stroke-dasharray 0.5s ease"
           />
-          <text x="55" y="50" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 1.4rem">
+          <text
+            x="55"
+            y="50"
+            text-anchor="middle"
+            class="fill-gray-100 font-bold"
+            style="font-size: 1.4rem"
+          >
             {{ overallWinrate.toFixed(1) }}%
           </text>
-          <text x="55" y="66" text-anchor="middle" class="fill-gray-600 dark:fill-gray-500" style="font-size: 0.9rem">
+          <text
+            x="55"
+            y="66"
+            text-anchor="middle"
+            class="fill-gray-600 dark:fill-gray-500"
+            style="font-size: 0.9rem"
+          >
             {{ t('summaryWinLoss.overallWinrate') }}
           </text>
         </svg>
@@ -155,7 +190,9 @@ function winrateColor(val: number): string {
           <span class="text-red-400 font-bold text-lg">{{ totalLosses }}</span>
           <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]">losses</span>
         </div>
-        <div class="text-gray-600 dark:text-gray-500 text-[0.8rem] pt-1 border-t border-black/5 dark:border-white/5">
+        <div
+          class="text-gray-600 dark:text-gray-500 text-[0.8rem] pt-1 border-t border-black/5 dark:border-white/5"
+        >
           {{ t('summaryWinLoss.outOfTrades', { count: totalTrades }) }}
         </div>
       </div>
@@ -168,23 +205,19 @@ function winrateColor(val: number): string {
         <span>{{ t('summaryWinLoss.overallWinrate') }}</span>
       </div>
       <div class="space-y-1.5">
-        <div
-          v-for="entry in sortedByWinrate"
-          :key="entry.botId"
-          class="bot-bar-row"
-        >
+        <div v-for="entry in sortedByWinrate" :key="entry.botId" class="bot-bar-row">
           <div class="flex items-center justify-between mb-0.5">
-            <span class="text-gray-700 dark:text-gray-300 text-[0.85rem] font-medium truncate" style="max-width: 140px">
+            <span
+              class="text-gray-700 dark:text-gray-300 text-[0.85rem] font-medium truncate"
+              style="max-width: 140px"
+            >
               {{ entry.name }}
             </span>
             <div class="flex items-center gap-2">
               <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]">
                 {{ entry.wins }}W / {{ entry.losses }}L
               </span>
-              <span
-                class="font-bold text-[0.85rem]"
-                :class="winrateColor(entry.winrate)"
-              >
+              <span class="font-bold text-[0.85rem]" :class="winrateColor(entry.winrate)">
                 {{ entry.winrate.toFixed(1) }}%
               </span>
             </div>
@@ -212,21 +245,31 @@ function winrateColor(val: number): string {
     <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
       <div class="section-header">
         <i-mdi-podium class="text-green-400" />
-        <span>{{ t('summaryWinLoss.bestPerformer') }} / {{ t('summaryWinLoss.worstPerformer') }}</span>
+        <span
+          >{{ t('summaryWinLoss.bestPerformer') }} / {{ t('summaryWinLoss.worstPerformer') }}</span
+        >
       </div>
       <div class="space-y-0.5">
         <div v-if="bestBot" class="stat-row">
           <span class="stat-label">{{ t('summaryWinLoss.bestPerformer') }}</span>
           <span class="stat-value">
             <span class="text-green-400 font-bold">{{ bestBot.name }}</span>
-            <span class="text-gray-600 dark:text-gray-500 ml-1">{{ bestBot.winrate.toFixed(1) }}%</span>
+            <span class="text-gray-600 dark:text-gray-500 ml-1"
+              >{{ bestBot.winrate.toFixed(1) }}%</span
+            >
           </span>
         </div>
         <div v-if="worstBot" class="stat-row">
           <span class="stat-label">{{ t('summaryWinLoss.worstPerformer') }}</span>
           <span class="stat-value">
-            <span :class="worstBot.winrate < 45 ? 'text-red-400' : 'text-amber-400'" class="font-bold">{{ worstBot.name }}</span>
-            <span class="text-gray-600 dark:text-gray-500 ml-1">{{ worstBot.winrate.toFixed(1) }}%</span>
+            <span
+              :class="worstBot.winrate < 45 ? 'text-red-400' : 'text-amber-400'"
+              class="font-bold"
+              >{{ worstBot.name }}</span
+            >
+            <span class="text-gray-600 dark:text-gray-500 ml-1"
+              >{{ worstBot.winrate.toFixed(1) }}%</span
+            >
           </span>
         </div>
       </div>
@@ -253,7 +296,13 @@ function winrateColor(val: number): string {
           <span class="stat-label">Avg Profit Factor</span>
           <span
             class="stat-value"
-            :class="avgProfitFactor >= 1.5 ? 'text-green-400' : avgProfitFactor >= 1 ? 'text-amber-400' : 'text-red-400'"
+            :class="
+              avgProfitFactor >= 1.5
+                ? 'text-green-400'
+                : avgProfitFactor >= 1
+                  ? 'text-amber-400'
+                  : 'text-red-400'
+            "
           >
             {{ avgProfitFactor.toFixed(2) }}
           </span>

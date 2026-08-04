@@ -624,7 +624,12 @@ function cancelMaxDrawdownHoverKeepPopover() {
 // actually changed since the last run; the rest are O(1) cache hits. Same output.
 const _ddCache = new Map<
   string,
-  { trades: ClosedTrade[]; open: Trade[]; profit: ProfitStats | undefined; result: MaxDrawdownResult }
+  {
+    trades: ClosedTrade[];
+    open: Trade[];
+    profit: ProfitStats | undefined;
+    result: MaxDrawdownResult;
+  }
 >();
 const drawdownByBot = computed<Record<string, MaxDrawdownResult>>(() => {
   const out: Record<string, MaxDrawdownResult> = {};
@@ -670,17 +675,39 @@ function ddColor(ratio: number): string {
   return 'text-surface-400';
 }
 
-
 // --- Market classification (crypto vs HIP-3 builder-dex universes) -----------
 // Derived from each bot's whitelist. XYZ- prefixed pairs live on the xyz
 // builder dex (TradFi perps); we split them into indices / commodities / stocks
 // via small symbol sets (unknown XYZ symbols default to stocks).
 const XYZ_INDEX_BASES = new Set([
-  'SP500', 'XYZ100', 'JP225', 'KR200', 'DAX', 'FTSE100', 'EU50', 'US2000', 'HSI', 'NIKKEI',
+  'SP500',
+  'XYZ100',
+  'JP225',
+  'KR200',
+  'DAX',
+  'FTSE100',
+  'EU50',
+  'US2000',
+  'HSI',
+  'NIKKEI',
 ]);
 const XYZ_COMMODITY_BASES = new Set([
-  'GOLD', 'SILVER', 'COPPER', 'PLATINUM', 'PALLADIUM', 'BRENTOIL', 'WTI', 'CL', 'NATGAS',
-  'GAS', 'CORN', 'WHEAT', 'SUGAR', 'COFFEE', 'COCOA', 'SOYBEAN',
+  'GOLD',
+  'SILVER',
+  'COPPER',
+  'PLATINUM',
+  'PALLADIUM',
+  'BRENTOIL',
+  'WTI',
+  'CL',
+  'NATGAS',
+  'GAS',
+  'CORN',
+  'WHEAT',
+  'SUGAR',
+  'COFFEE',
+  'COCOA',
+  'SOYBEAN',
 ]);
 type MarketId = 'crypto' | 'xyzStocks' | 'xyzIndices' | 'xyzCommodities' | 'mixed';
 function classifyPairMarket(pair: string): Exclude<MarketId, 'mixed'> {
@@ -1742,7 +1769,14 @@ function getCustomTagBotCount(tagId: string): number {
 }
 
 // --- Tag ordering (from store) ---
-const ALL_TAG_IDS = ['status', 'tradingMode', 'market', 'exchange', 'stakeCurrency', 'port'] as const;
+const ALL_TAG_IDS = [
+  'status',
+  'tradingMode',
+  'market',
+  'exchange',
+  'stakeCurrency',
+  'port',
+] as const;
 
 const tagLabels: Record<TagId, string> = {
   status: 'botComparison.tagStatus',
@@ -3080,10 +3114,7 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
               0,
             ) / allStakes
           : 0;
-      profitOpen = allOpenTrades.reduce(
-        (a, b) => a + (b.total_profit_abs ?? b.profit_abs ?? 0),
-        0,
-      );
+      profitOpen = allOpenTrades.reduce((a, b) => a + (b.total_profit_abs ?? b.profit_abs ?? 0), 0);
 
       // Extract port from botUrl
       let port: number | undefined;
@@ -5971,7 +6002,10 @@ const correlatedPairs = computed(() => {
                   @mouseleave="cancelMaxDrawdownHover()"
                 >
                   <!-- single value when open positions don't deepen the drawdown -->
-                  <div v-if="mdd.openAbs - mdd.realizedAbs <= 0.005" class="flex items-center gap-1">
+                  <div
+                    v-if="mdd.openAbs - mdd.realizedAbs <= 0.005"
+                    class="flex items-center gap-1"
+                  >
                     <span class="font-semibold text-xs" :class="ddColor(mdd.realizedRatio)"
                       >-{{ formatPercent(mdd.realizedRatio, 1) }}</span
                     >
@@ -6154,7 +6188,8 @@ const correlatedPairs = computed(() => {
                     :class="
                       lastTradeByBot[data.botId]!.profitRatio >= 0 ? 'text-profit' : 'text-loss'
                     "
-                  >{{ formatPercent(lastTradeByBot[data.botId]!.profitRatio, 2) }}</span>
+                    >{{ formatPercent(lastTradeByBot[data.botId]!.profitRatio, 2) }}</span
+                  >
                 </div>
                 <div class="ft-last-trade-l2">
                   <span class="ft-last-trade-abs">{{
@@ -6171,8 +6206,13 @@ const correlatedPairs = computed(() => {
                   <span
                     v-if="lastTradeByBot[data.botId]!.sameDayCount > 0"
                     class="ft-last-trade-badge"
-                    :title="t('botComparison.lastTradeOthersTodayTooltip', { n: lastTradeByBot[data.botId]!.sameDayCount })"
-                  >+{{ lastTradeByBot[data.botId]!.sameDayCount }}</span>
+                    :title="
+                      t('botComparison.lastTradeOthersTodayTooltip', {
+                        n: lastTradeByBot[data.botId]!.sameDayCount,
+                      })
+                    "
+                    >+{{ lastTradeByBot[data.botId]!.sameDayCount }}</span
+                  >
                 </div>
               </div>
               <span v-else-if="data.botId" class="opacity-30">—</span>

@@ -107,7 +107,9 @@ async function startDownload() {
               <div class="flex flex-col gap-2">
                 <div class="flex justify-between">
                   <h4 class="text-start font-bold text-lg">{{ t('downloadData.selectPairs') }}</h4>
-                  <h5 class="text-start font-bold text-lg">{{ t('downloadData.pairsFromTemplate') }}</h5>
+                  <h5 class="text-start font-bold text-lg">
+                    {{ t('downloadData.pairsFromTemplate') }}
+                  </h5>
                 </div>
                 <div class="flex gap-2">
                   <BaseStringList v-model="pairs" placeholder="Pair" size="small" class="grow" />
@@ -140,7 +142,9 @@ async function startDownload() {
             <!-- Timeframes section -->
             <div class="flex-fill px-3">
               <div class="flex flex-col gap-2">
-                <h4 class="text-start font-bold text-lg">{{ t('downloadData.selectTimeframes') }}</h4>
+                <h4 class="text-start font-bold text-lg">
+                  {{ t('downloadData.selectTimeframes') }}
+                </h4>
                 <BaseStringList v-model="timeframes" placeholder="Timeframe" />
               </div>
             </div>
@@ -150,7 +154,9 @@ async function startDownload() {
           <div class="px-3 border dark:border-surface-700 border-surface-300 p-2 rounded-sm">
             <div class="flex flex-col gap-2">
               <div class="flex justify-between items-center">
-                <h4 class="text-start mb-0 font-bold text-lg">{{ t('downloadData.timeSelection') }}</h4>
+                <h4 class="text-start mb-0 font-bold text-lg">
+                  {{ t('downloadData.timeSelection') }}
+                </h4>
                 <BaseCheckbox v-model="timeSelection.useCustomTimerange" class="mb-0" switch>
                   Use custom timerange
                 </BaseCheckbox>

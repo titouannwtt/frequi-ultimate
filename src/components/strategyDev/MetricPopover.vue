@@ -23,7 +23,10 @@ const visible = ref(false);
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
 function show() {
-  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+  if (hideTimer) {
+    clearTimeout(hideTimer);
+    hideTimer = null;
+  }
   visible.value = true;
 }
 
@@ -38,7 +41,9 @@ const entry = computed<GlossaryEntry | null>(() => {
   if (props.glossary) return props.glossary;
   if (!props.metricKey || !store.glossary) return null;
   const g = store.glossary;
-  return g.metrics[props.metricKey] ?? g.samplers[props.metricKey] ?? g.losses[props.metricKey] ?? null;
+  return (
+    g.metrics[props.metricKey] ?? g.samplers[props.metricKey] ?? g.losses[props.metricKey] ?? null
+  );
 });
 
 const displayLabel = computed(() => props.label ?? entry.value?.label ?? props.metricKey ?? '');
@@ -48,18 +53,18 @@ const verdictColors: Record<VerdictLevel, { text: string; bg: string; border: st
   ok: { text: 'var(--sd-info)', bg: 'var(--sd-info-dim)', border: 'rgba(137,180,250,0.3)' },
   warn: { text: 'var(--sd-warning)', bg: 'var(--sd-warning-dim)', border: 'rgba(249,226,175,0.3)' },
   bad: { text: 'var(--sd-danger)', bg: 'var(--sd-danger-dim)', border: 'rgba(243,139,168,0.3)' },
-  neutral: { text: 'var(--sd-subtext)', bg: 'rgba(166,173,200,0.08)', border: 'var(--sd-border-subtle)' },
+  neutral: {
+    text: 'var(--sd-subtext)',
+    bg: 'rgba(166,173,200,0.08)',
+    border: 'var(--sd-border-subtle)',
+  },
 };
 
 const verdictStyle = computed(() => verdictColors[props.verdict]);
 </script>
 
 <template>
-  <span
-    class="metric-popover-trigger"
-    @mouseenter="show"
-    @mouseleave="hide"
-  >
+  <span class="metric-popover-trigger" @mouseenter="show" @mouseleave="hide">
     <slot />
 
     <Transition name="sd-pop">
@@ -73,11 +78,7 @@ const verdictStyle = computed(() => verdictColors[props.verdict]);
         <!-- Header -->
         <div class="pop-header">
           <span class="pop-label">{{ displayLabel }}</span>
-          <span
-            v-if="value != null"
-            class="pop-value"
-            :style="{ color: verdictStyle.text }"
-          >
+          <span v-if="value != null" class="pop-value" :style="{ color: verdictStyle.text }">
             {{ value }}
           </span>
         </div>
@@ -239,10 +240,14 @@ const verdictStyle = computed(() => verdictColors[props.verdict]);
 
 /* ── Transition ── */
 .sd-pop-enter-active {
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
 }
 .sd-pop-leave-active {
-  transition: opacity 100ms ease, transform 100ms ease;
+  transition:
+    opacity 100ms ease,
+    transform 100ms ease;
 }
 .sd-pop-enter-from {
   opacity: 0;

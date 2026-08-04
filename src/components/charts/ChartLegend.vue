@@ -44,7 +44,14 @@ function getValueForSeries(name: string): string | null {
   return String(val);
 }
 
-function getOhlcValues(): { o: string; h: string; l: string; c: string; v: string; change: number } | null {
+function getOhlcValues(): {
+  o: string;
+  h: string;
+  l: string;
+  c: string;
+  v: string;
+  change: number;
+} | null {
   if (!props.axisValues) return null;
   const v = props.axisValues.values;
   if (v.open == null || v.close == null) return null;
@@ -62,15 +69,16 @@ function getOhlcValues(): { o: string; h: string; l: string; c: string; v: strin
     h: fmt(v.high),
     l: fmt(v.low),
     c: fmt(v.close),
-    v: v.volume != null ? Number(v.volume).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '-',
+    v:
+      v.volume != null
+        ? Number(v.volume).toLocaleString(undefined, { maximumFractionDigits: 0 })
+        : '-',
     change,
   };
 }
 
 const indicatorSeries = computed(() =>
-  uniqueSeries.value.filter(
-    (s) => s.group === 'indicator' || s.group === 'subplot',
-  ),
+  uniqueSeries.value.filter((s) => s.group === 'indicator' || s.group === 'subplot'),
 );
 </script>
 
@@ -82,10 +90,12 @@ const indicatorSeries = computed(() =>
         <span class="ohlcv-label">O</span><span class="ohlcv-val">{{ getOhlcValues()!.o }}</span>
       </span>
       <span class="ohlcv">
-        <span class="ohlcv-label">H</span><span class="ohlcv-val ohlcv-high">{{ getOhlcValues()!.h }}</span>
+        <span class="ohlcv-label">H</span
+        ><span class="ohlcv-val ohlcv-high">{{ getOhlcValues()!.h }}</span>
       </span>
       <span class="ohlcv">
-        <span class="ohlcv-label">L</span><span class="ohlcv-val ohlcv-low">{{ getOhlcValues()!.l }}</span>
+        <span class="ohlcv-label">L</span
+        ><span class="ohlcv-val ohlcv-low">{{ getOhlcValues()!.l }}</span>
       </span>
       <span class="ohlcv">
         <span class="ohlcv-label">C</span><span class="ohlcv-val">{{ getOhlcValues()!.c }}</span>
@@ -104,7 +114,9 @@ const indicatorSeries = computed(() =>
 
     <!-- Built-in series toggles (compact) -->
     <button
-      v-for="s in uniqueSeries.filter(s => ['price', 'volume', 'signal', 'trade'].includes(s.group))"
+      v-for="s in uniqueSeries.filter((s) =>
+        ['price', 'volume', 'signal', 'trade'].includes(s.group),
+      )"
       :key="s.name + '-btn'"
       class="legend-chip"
       :class="{ off: !s.visible }"
@@ -112,14 +124,21 @@ const indicatorSeries = computed(() =>
       @click="emit('toggle', s.name)"
       @dblclick="emit('isolate', s.name)"
     >
-      <span class="chip-dot" :style="{ backgroundColor: s.visible ? s.color : 'transparent', borderColor: s.color }" />
+      <span
+        class="chip-dot"
+        :style="{ backgroundColor: s.visible ? s.color : 'transparent', borderColor: s.color }"
+      />
       <span class="chip-name">{{ s.name }}</span>
     </button>
 
     <!-- Trade marker legend -->
     <span class="legend-sep" />
-    <span class="trade-legend-item"><span class="tl-marker tl-circle tl-sig-entry" />Signal entrée</span>
-    <span class="trade-legend-item"><span class="tl-marker tl-circle tl-sig-exit" />Signal sortie</span>
+    <span class="trade-legend-item"
+      ><span class="tl-marker tl-circle tl-sig-entry" />Signal entrée</span
+    >
+    <span class="trade-legend-item"
+      ><span class="tl-marker tl-circle tl-sig-exit" />Signal sortie</span
+    >
     <span class="trade-legend-item"><span class="tl-marker tl-circle tl-entry" />Entrée</span>
     <span class="trade-legend-item"><span class="tl-marker tl-triangle tl-entry" />Short</span>
     <span class="trade-legend-item"><span class="tl-marker tl-square tl-dca" />DCA</span>
@@ -130,17 +149,28 @@ const indicatorSeries = computed(() =>
     <template v-if="indicatorSeries.length > 0">
       <span class="legend-sep" />
       <button
-        v-for="ind in (expanded ? indicatorSeries : indicatorSeries.slice(0, 4))"
+        v-for="ind in expanded ? indicatorSeries : indicatorSeries.slice(0, 4)"
         :key="ind.name + '-ind'"
         class="legend-chip indicator-chip"
         :class="{ off: !ind.visible }"
-        :title="(ind.subplotName ? ind.subplotName + ' / ' : '') + ind.name + ' — double-clic: isoler'"
+        :title="
+          (ind.subplotName ? ind.subplotName + ' / ' : '') + ind.name + ' — double-clic: isoler'
+        "
         @click="emit('toggle', ind.name)"
         @dblclick="emit('isolate', ind.name)"
       >
-        <span class="chip-dot" :style="{ backgroundColor: ind.visible ? ind.color : 'transparent', borderColor: ind.color }" />
+        <span
+          class="chip-dot"
+          :style="{
+            backgroundColor: ind.visible ? ind.color : 'transparent',
+            borderColor: ind.color,
+          }"
+        />
         <span class="chip-name">{{ ind.name }}</span>
-        <span v-if="showRealtimeValues && ind.visible && getValueForSeries(ind.name)" class="chip-value">
+        <span
+          v-if="showRealtimeValues && ind.visible && getValueForSeries(ind.name)"
+          class="chip-value"
+        >
           {{ getValueForSeries(ind.name) }}
         </span>
       </button>
@@ -203,8 +233,12 @@ const indicatorSeries = computed(() =>
 .legend-dark .ohlcv-val {
   color: rgba(255, 255, 255, 0.7);
 }
-.ohlcv-high { color: #26a69a !important; }
-.ohlcv-low { color: #ef5350 !important; }
+.ohlcv-high {
+  color: #26a69a !important;
+}
+.ohlcv-low {
+  color: #ef5350 !important;
+}
 
 .ohlcv-change {
   font-family: monospace;
@@ -324,8 +358,12 @@ const indicatorSeries = computed(() =>
   flex-shrink: 0;
   border: 1.5px solid #000;
 }
-.tl-circle { border-radius: 50%; }
-.tl-square { border-radius: 1px; }
+.tl-circle {
+  border-radius: 50%;
+}
+.tl-square {
+  border-radius: 1px;
+}
 .tl-triangle {
   border: none;
   width: 0;
@@ -333,13 +371,30 @@ const indicatorSeries = computed(() =>
   border-left: 0.3rem solid transparent;
   border-right: 0.3rem solid transparent;
 }
-.tl-sig-entry { background: #00E676; opacity: 0.35; }
-.tl-sig-exit { background: #FF1744; opacity: 0.35; }
-.tl-entry.tl-circle, .tl-entry.tl-square { background: #0066FF; }
-.tl-entry.tl-triangle { border-top: 0.5rem solid #0066FF; }
-.tl-dca { background: #7B1FA2; }
-.tl-win { background: #00E676; }
-.tl-loss { background: #FF1744; }
+.tl-sig-entry {
+  background: #00e676;
+  opacity: 0.35;
+}
+.tl-sig-exit {
+  background: #ff1744;
+  opacity: 0.35;
+}
+.tl-entry.tl-circle,
+.tl-entry.tl-square {
+  background: #0066ff;
+}
+.tl-entry.tl-triangle {
+  border-top: 0.5rem solid #0066ff;
+}
+.tl-dca {
+  background: #7b1fa2;
+}
+.tl-win {
+  background: #00e676;
+}
+.tl-loss {
+  background: #ff1744;
+}
 
 /* Show all */
 .legend-show-all {

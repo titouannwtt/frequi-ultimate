@@ -32,9 +32,7 @@ function refresh() {
 
 const okExpanded = ref(false);
 
-const issueCoins = computed(() =>
-  (recon.value?.coins ?? []).filter((c) => c.status !== 'ok'),
-);
+const issueCoins = computed(() => (recon.value?.coins ?? []).filter((c) => c.status !== 'ok'));
 const okCoins = computed(() => (recon.value?.coins ?? []).filter((c) => c.status === 'ok'));
 
 const dataAge = computed(() => {
@@ -394,9 +392,7 @@ const realignWithinTolerance = computed(() => {
   return amountsMatch(realignResulting.value, coin.on_chain);
 });
 
-const realignHasOps = computed(() =>
-  Object.values(realignChoices.value).some((c) => c !== 'keep'),
-);
+const realignHasOps = computed(() => Object.values(realignChoices.value).some((c) => c !== 'keep'));
 
 const realignAmountsValid = computed(() => {
   for (const [k, v] of Object.entries(realignChoices.value)) {
@@ -487,7 +483,9 @@ async function doRealignExecute() {
       v-if="!recon || issueCoins.length"
       class="flex items-center justify-between flex-wrap gap-2"
     >
-      <div class="flex items-center gap-1.5 flex-wrap text-xs text-surface-500 dark:text-surface-400">
+      <div
+        class="flex items-center gap-1.5 flex-wrap text-xs text-surface-500 dark:text-surface-400"
+      >
         <template v-if="recon">
           <span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono bg-surface-500/10">
             {{ recon.wallet }}
@@ -543,7 +541,9 @@ async function doRealignExecute() {
 
       <div class="flex items-stretch gap-2 flex-wrap">
         <div class="rounded bg-surface-500/10 px-2.5 py-1 flex flex-col">
-          <span class="text-[0.6rem] uppercase tracking-wide text-surface-500 dark:text-surface-400">
+          <span
+            class="text-[0.6rem] uppercase tracking-wide text-surface-500 dark:text-surface-400"
+          >
             {{ t('fleet.reconciliation.dbSays') }}
           </span>
           <span class="text-sm font-semibold font-mono tabular-nums">
@@ -551,7 +551,9 @@ async function doRealignExecute() {
           </span>
         </div>
         <div class="rounded bg-surface-500/10 px-2.5 py-1 flex flex-col">
-          <span class="text-[0.6rem] uppercase tracking-wide text-surface-500 dark:text-surface-400">
+          <span
+            class="text-[0.6rem] uppercase tracking-wide text-surface-500 dark:text-surface-400"
+          >
             {{ t('fleet.reconciliation.onChain') }}
           </span>
           <span class="text-sm font-semibold font-mono tabular-nums">
@@ -559,7 +561,9 @@ async function doRealignExecute() {
           </span>
         </div>
         <div class="rounded bg-surface-500/10 px-2.5 py-1 flex flex-col">
-          <span class="text-[0.6rem] uppercase tracking-wide text-surface-500 dark:text-surface-400">
+          <span
+            class="text-[0.6rem] uppercase tracking-wide text-surface-500 dark:text-surface-400"
+          >
             {{ t('fleet.reconciliation.gap') }}
           </span>
           <span
@@ -947,9 +951,7 @@ async function doRealignExecute() {
           </p>
 
           <div class="flex items-center gap-2 flex-wrap text-xs">
-            <span class="text-surface-500">{{
-              t('fleet.reconciliation.realign.resulting')
-            }}</span>
+            <span class="text-surface-500">{{ t('fleet.reconciliation.realign.resulting') }}</span>
             <span class="font-mono tabular-nums font-semibold">
               {{ fmtSigned(realignResulting) }}
             </span>
@@ -1039,14 +1041,21 @@ async function doRealignExecute() {
           </table>
 
           <div class="flex items-center gap-2 flex-wrap text-xs">
-            <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10 font-mono tabular-nums">
-              {{ t('fleet.reconciliation.dbSays') }} {{ fmtSigned(realignPreview.db_sum_before) }}
-              &rarr; {{ fmtSigned(realignPreview.db_sum_after) }}
+            <span
+              class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10 font-mono tabular-nums"
+            >
+              {{ t('fleet.reconciliation.dbSays') }}
+              {{ fmtSigned(realignPreview.db_sum_before) }} &rarr;
+              {{ fmtSigned(realignPreview.db_sum_after) }}
             </span>
-            <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10 font-mono tabular-nums">
+            <span
+              class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10 font-mono tabular-nums"
+            >
               {{ t('fleet.reconciliation.onChain') }} {{ fmtSigned(realignPreview.on_chain) }}
             </span>
-            <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10 font-mono tabular-nums">
+            <span
+              class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10 font-mono tabular-nums"
+            >
               {{
                 t('fleet.reconciliation.realign.touchedNotional', {
                   notional: realignPreview.touched_notional.toFixed(2),

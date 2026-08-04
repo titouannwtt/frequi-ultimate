@@ -42,10 +42,7 @@ const props = defineProps<{
 const { t } = useI18n();
 
 const chartOptions = computed<EChartsOption>(() => {
-  const points = props.data.map((d) => [
-    (d.dd_pct ?? d.dd ?? 0),
-    (d.profit_pct ?? d.profit ?? 0),
-  ]);
+  const points = props.data.map((d) => [d.dd_pct ?? d.dd ?? 0, d.profit_pct ?? d.profit ?? 0]);
 
   // Find best epoch (lowest loss)
   let bestIdx = 0;
@@ -55,8 +52,8 @@ const chartOptions = computed<EChartsOption>(() => {
     }
   }
 
-  const maxDD = Math.max(...points.map(p => p[0]), 50);
-  const maxProfit = Math.max(...points.map(p => p[1]), 10);
+  const maxDD = Math.max(...points.map((p) => p[0]), 50);
+  const maxProfit = Math.max(...points.map((p) => p[1]), 10);
 
   return {
     title: { text: props.title, left: 'center', textStyle: { fontSize: 14, color: '#cdd6f4' } },
@@ -74,7 +71,9 @@ const chartOptions = computed<EChartsOption>(() => {
           `Profit: <b>${params.value[1].toFixed(1)}%</b>`,
           d?.trades ? `Trades: <b>${d.trades}</b>` : '',
           d?.loss != null ? `Loss: <b>${d.loss.toFixed(4)}</b>` : '',
-        ].filter(Boolean).join('<br/>');
+        ]
+          .filter(Boolean)
+          .join('<br/>');
       },
     },
     grid: { left: 60, right: 20, top: 40, bottom: 50 },
@@ -103,7 +102,7 @@ const chartOptions = computed<EChartsOption>(() => {
           value: p,
           symbolSize: i === bestIdx ? 14 : 6,
           itemStyle: {
-            color: i === bestIdx ? '#94e2d5' : (p[1] > 0 && p[0] < 25 ? '#a6e3a1' : '#6c7086'),
+            color: i === bestIdx ? '#94e2d5' : p[1] > 0 && p[0] < 25 ? '#a6e3a1' : '#6c7086',
             opacity: i === bestIdx ? 1 : 0.6,
             borderColor: i === bestIdx ? '#1e1e2e' : undefined,
             borderWidth: i === bestIdx ? 2 : 0,
@@ -143,8 +142,10 @@ const bestEpoch = computed(() => {
   return props.data.reduce((a, b) => ((a.loss ?? Infinity) < (b.loss ?? Infinity) ? a : b));
 });
 
-const greenCount = computed(() =>
-  props.data.filter(d => (d.profit_pct ?? d.profit ?? 0) > 0 && (d.dd_pct ?? d.dd ?? 0) < 25).length
+const greenCount = computed(
+  () =>
+    props.data.filter((d) => (d.profit_pct ?? d.profit ?? 0) > 0 && (d.dd_pct ?? d.dd ?? 0) < 25)
+      .length,
 );
 </script>
 
@@ -155,7 +156,12 @@ const greenCount = computed(() =>
     <div class="flex items-center justify-between mt-2 px-2 text-sm text-surface-500">
       <span>{{ t('strategyDev.rvddIdealZone', { count: greenCount, total: data.length }) }}</span>
       <span v-if="bestEpoch" class="text-teal-400">
-        {{ t('strategyDev.rvddBest', { profit: (bestEpoch.profit_pct ?? bestEpoch.profit ?? 0).toFixed(1), dd: (bestEpoch.dd_pct ?? bestEpoch.dd ?? 0).toFixed(1) }) }}
+        {{
+          t('strategyDev.rvddBest', {
+            profit: (bestEpoch.profit_pct ?? bestEpoch.profit ?? 0).toFixed(1),
+            dd: (bestEpoch.dd_pct ?? bestEpoch.dd ?? 0).toFixed(1),
+          })
+        }}
       </span>
     </div>
   </div>

@@ -46,7 +46,8 @@ const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
 const { summaryCurrency } = useSummaryCurrency();
 const { convert } = useExchangeRates();
-const { tradingMode, hasMultipleModes, filterTradesByMode, restorePersistedTradingMode } = useTradingModeFilter('botProfitComparison');
+const { tradingMode, hasMultipleModes, filterTradesByMode, restorePersistedTradingMode } =
+  useTradingModeFilter('botProfitComparison');
 
 const chart = ref<InstanceType<typeof ECharts>>();
 

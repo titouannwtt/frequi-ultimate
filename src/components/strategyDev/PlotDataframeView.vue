@@ -16,9 +16,17 @@ import {
 } from 'echarts/components';
 
 use([
-  CandlestickChart, LineChart, BarChart, ScatterChart,
-  CanvasRenderer, GridComponent, TooltipComponent,
-  DataZoomComponent, LegendComponent, MarkPointComponent, AxisPointerComponent,
+  CandlestickChart,
+  LineChart,
+  BarChart,
+  ScatterChart,
+  CanvasRenderer,
+  GridComponent,
+  TooltipComponent,
+  DataZoomComponent,
+  LegendComponent,
+  MarkPointComponent,
+  AxisPointerComponent,
 ]);
 
 const { t } = useI18n();
@@ -59,7 +67,7 @@ const INDICATOR_COLORS = [BLUE, PEACH, MAUVE, TEAL, YELLOW, '#f5c2e7', '#74c7ec'
 const mainPlotIndicators = computed(() => {
   const mp = plotConfig.value.main_plot;
   if (!mp || typeof mp !== 'object') return [];
-  return Object.keys(mp as Record<string, unknown>).filter(k => colIndex(k) >= 0);
+  return Object.keys(mp as Record<string, unknown>).filter((k) => colIndex(k) >= 0);
 });
 
 const subplots = computed(() => {
@@ -68,7 +76,7 @@ const subplots = computed(() => {
   const result: Record<string, string[]> = {};
   for (const [name, conf] of Object.entries(sp as Record<string, Record<string, unknown>>)) {
     if (!conf || typeof conf !== 'object') continue;
-    const cols = Object.keys(conf).filter(k => colIndex(k) >= 0);
+    const cols = Object.keys(conf).filter((k) => colIndex(k) >= 0);
     if (cols.length > 0) result[name] = cols;
   }
   return result;
@@ -87,16 +95,23 @@ const chartOption = computed<EChartsOption>(() => {
 
   if (dIdx < 0 || oIdx < 0) return {};
 
-  const dates = rawData.value.map(r => r[dIdx] as string);
-  const candleData = rawData.value.map(r => [r[oIdx], r[cIdx], r[lIdx], r[hIdx]]);
-  const volumeData = vIdx >= 0 ? rawData.value.map((r, i) => {
-    const o = r[oIdx] as number;
-    const c = r[cIdx] as number;
-    return { value: r[vIdx], itemStyle: { color: c >= o ? 'rgba(166,227,161,0.4)' : 'rgba(243,139,168,0.4)' } };
-  }) : [];
+  const dates = rawData.value.map((r) => r[dIdx] as string);
+  const candleData = rawData.value.map((r) => [r[oIdx], r[cIdx], r[lIdx], r[hIdx]]);
+  const volumeData =
+    vIdx >= 0
+      ? rawData.value.map((r, i) => {
+          const o = r[oIdx] as number;
+          const c = r[cIdx] as number;
+          return {
+            value: r[vIdx],
+            itemStyle: { color: c >= o ? 'rgba(166,227,161,0.4)' : 'rgba(243,139,168,0.4)' },
+          };
+        })
+      : [];
 
   const rowHeights: number[] = [55];
-  const subRowHeight = subplotNames.value.length > 0 ? Math.min(15, 30 / subplotNames.value.length) : 0;
+  const subRowHeight =
+    subplotNames.value.length > 0 ? Math.min(15, 30 / subplotNames.value.length) : 0;
   rowHeights.push(12);
   subplotNames.value.forEach(() => rowHeights.push(subRowHeight));
 
@@ -110,7 +125,10 @@ const chartOption = computed<EChartsOption>(() => {
   for (let i = 0; i < totalRows.value; i++) {
     const heightPct = (rowHeights[i] / totalH) * 90;
     grids.push({
-      left: 60, right: 20, top: `${topPct}%`, height: `${heightPct}%`,
+      left: 60,
+      right: 20,
+      top: `${topPct}%`,
+      height: `${heightPct}%`,
     });
     xAxes.push({
       type: 'category',
@@ -154,11 +172,13 @@ const chartOption = computed<EChartsOption>(() => {
   for (const indicator of mainPlotIndicators.value) {
     const idx = colIndex(indicator);
     const color = INDICATOR_COLORS[colorIdx % INDICATOR_COLORS.length];
-    const mpConf = (plotConfig.value.main_plot as Record<string, Record<string, unknown>> | undefined)?.[indicator];
+    const mpConf = (
+      plotConfig.value.main_plot as Record<string, Record<string, unknown>> | undefined
+    )?.[indicator];
     series.push({
       type: 'line',
       name: indicator,
-      data: rawData.value.map(r => r[idx]),
+      data: rawData.value.map((r) => r[idx]),
       xAxisIndex: 0,
       yAxisIndex: 0,
       lineStyle: { color: mpConf?.color || color, width: 1 },
@@ -170,10 +190,34 @@ const chartOption = computed<EChartsOption>(() => {
 
   // Entry/exit signals as scatter
   const signalCols = [
-    { col: 'enter_long', color: GREEN, symbol: 'triangle', symbolSize: 10, label: t('strategyDev.signalEntryLong') },
-    { col: 'exit_long', color: RED, symbol: 'pin', symbolSize: 10, label: t('strategyDev.signalExitLong') },
-    { col: 'enter_short', color: BLUE, symbol: 'diamond', symbolSize: 10, label: t('strategyDev.signalEntryShort') },
-    { col: 'exit_short', color: MAUVE, symbol: 'arrow', symbolSize: 10, label: t('strategyDev.signalExitShort') },
+    {
+      col: 'enter_long',
+      color: GREEN,
+      symbol: 'triangle',
+      symbolSize: 10,
+      label: t('strategyDev.signalEntryLong'),
+    },
+    {
+      col: 'exit_long',
+      color: RED,
+      symbol: 'pin',
+      symbolSize: 10,
+      label: t('strategyDev.signalExitLong'),
+    },
+    {
+      col: 'enter_short',
+      color: BLUE,
+      symbol: 'diamond',
+      symbolSize: 10,
+      label: t('strategyDev.signalEntryShort'),
+    },
+    {
+      col: 'exit_short',
+      color: MAUVE,
+      symbol: 'arrow',
+      symbolSize: 10,
+      label: t('strategyDev.signalExitShort'),
+    },
   ];
   for (const sig of signalCols) {
     const sIdx = colIndex(sig.col);
@@ -181,7 +225,7 @@ const chartOption = computed<EChartsOption>(() => {
     const scatterData: (number | null)[] = rawData.value.map((r, i) => {
       const val = r[sIdx];
       if (val && val !== 0) {
-        return r[lIdx] as number * 0.998;
+        return (r[lIdx] as number) * 0.998;
       }
       return null;
     });
@@ -203,8 +247,8 @@ const chartOption = computed<EChartsOption>(() => {
   for (const tr of trades.value) {
     const openDate = String(tr.open_date || '').slice(0, 19);
     const closeDate = String(tr.close_date || '').slice(0, 19);
-    const openIdx = dates.findIndex(d => String(d).slice(0, 19) === openDate);
-    const closeIdx = dates.findIndex(d => String(d).slice(0, 19) === closeDate);
+    const openIdx = dates.findIndex((d) => String(d).slice(0, 19) === openDate);
+    const closeIdx = dates.findIndex((d) => String(d).slice(0, 19) === closeDate);
     if (openIdx >= 0) {
       entryMarkers.push([openIdx, rawData.value[openIdx][oIdx] as number]);
     }
@@ -255,7 +299,11 @@ const chartOption = computed<EChartsOption>(() => {
   subplotNames.value.forEach((subName, si) => {
     const subCols = subplots.value[subName];
     const axisIdx = si + 2;
-    const spConf = (plotConfig.value.subplots as Record<string, Record<string, Record<string, unknown>>> | undefined)?.[subName];
+    const spConf = (
+      plotConfig.value.subplots as
+        | Record<string, Record<string, Record<string, unknown>>>
+        | undefined
+    )?.[subName];
     subCols.forEach((col, ci) => {
       const idx = colIndex(col);
       const conf = spConf?.[col];
@@ -263,7 +311,7 @@ const chartOption = computed<EChartsOption>(() => {
       series.push({
         type: 'line',
         name: col,
-        data: rawData.value.map(r => r[idx]),
+        data: rawData.value.map((r) => r[idx]),
         xAxisIndex: axisIdx,
         yAxisIndex: axisIdx,
         lineStyle: { color, width: 1 },
@@ -320,18 +368,18 @@ const chartHeight = computed(() => {
 </script>
 
 <template>
-  <div class="rounded-lg bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 overflow-hidden">
-    <div class="px-3 py-2 border-b border-surface-200 dark:border-surface-700 flex items-center gap-2">
+  <div
+    class="rounded-lg bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 overflow-hidden"
+  >
+    <div
+      class="px-3 py-2 border-b border-surface-200 dark:border-surface-700 flex items-center gap-2"
+    >
       <i-mdi-chart-timeline-variant class="w-4 h-4 text-surface-400" />
       <h4 class="text-sm font-semibold text-surface-300">{{ pair }}</h4>
       <span class="text-xs text-surface-500 ml-auto">
         {{ (data.data_length as number) || rawData.length }} candles
       </span>
     </div>
-    <ECharts
-      :option="chartOption"
-      :style="{ width: '100%', height: chartHeight }"
-      autoresize
-    />
+    <ECharts :option="chartOption" :style="{ width: '100%', height: chartHeight }" autoresize />
   </div>
 </template>
