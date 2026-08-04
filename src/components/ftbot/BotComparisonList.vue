@@ -2074,18 +2074,21 @@ function showAlertsPopover(event: MouseEvent) {
 // column gets an equal share, so numeric columns (Trades, W/L) waste space on
 // their gauges while name/strategy columns get truncated.
 const FIT_COL_WEIGHTS: Record<string, number> = {
-  botName: 3,
-  status: 1,
-  market: 1.2,
-  exchange: 1,
+  botName: 2.8,
+  // Status is a short badge (dry/live) + a dot: it only needs one line.
+  status: 0.8,
+  market: 1.15,
+  // Exchange names are spelled out ("Hyperliquid") — keep a full line for them.
+  exchange: 1.15,
   trades: 0.85,
   winLoss: 0.85,
-  port: 0.6,
+  port: 0.55,
   pairCount: 0.7,
-  stakeCurrency: 0.8,
-  openProfit: 1.25,
-  closedProfit: 1.25,
-  profitCurrent: 1.25,
+  stakeCurrency: 0.75,
+  // Profit pills stack percentage over amount in fit mode, so they need less width.
+  openProfit: 1.1,
+  closedProfit: 1.1,
+  profitCurrent: 1.1,
   maxDrawdown: 1.1,
   balance: 1.3,
   lastTrade: 1.8,
