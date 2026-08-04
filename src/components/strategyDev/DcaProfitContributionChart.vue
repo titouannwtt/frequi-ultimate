@@ -4,11 +4,7 @@ import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { BarChart } from 'echarts/charts';
-import {
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
-} from 'echarts/components';
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
 import { useI18n } from 'vue-i18n';
 
 use([BarChart, CanvasRenderer, GridComponent, TooltipComponent, LegendComponent]);
@@ -62,9 +58,7 @@ const props = defineProps<{
 }>();
 
 const topPairs = computed(() => {
-  return [...props.data.pair_dca_stats]
-    .sort((a, b) => b.avg_entries - a.avg_entries)
-    .slice(0, 5);
+  return [...props.data.pair_dca_stats].sort((a, b) => b.avg_entries - a.avg_entries).slice(0, 5);
 });
 
 function profitColor(val: number): string {
@@ -72,10 +66,7 @@ function profitColor(val: number): string {
 }
 
 const chartOptions = computed<EChartsOption>(() => {
-  const labels = [
-    t('strategyDev.dcaSingleEntry'),
-    t('strategyDev.dcaMultiEntry'),
-  ];
+  const labels = [t('strategyDev.dcaSingleEntry'), t('strategyDev.dcaMultiEntry')];
   const contributions = [
     props.data.profit_contribution_single,
     props.data.profit_contribution_multi,

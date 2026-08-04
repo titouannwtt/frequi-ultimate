@@ -30,9 +30,23 @@ function getActions(w: OverfitWarning) {
 }
 
 function severityStyle(s: string) {
-  if (s === 'high') return { borderColor: 'rgba(239,68,68,0.4)', background: 'rgba(127,29,29,0.2)', color: '#fca5a5' };
-  if (s === 'medium') return { borderColor: 'rgba(245,158,11,0.4)', background: 'rgba(120,53,15,0.2)', color: '#fcd34d' };
-  return { borderColor: 'rgba(59,130,246,0.4)', background: 'rgba(30,58,138,0.2)', color: '#93c5fd' };
+  if (s === 'high')
+    return {
+      borderColor: 'rgba(239,68,68,0.4)',
+      background: 'rgba(127,29,29,0.2)',
+      color: '#fca5a5',
+    };
+  if (s === 'medium')
+    return {
+      borderColor: 'rgba(245,158,11,0.4)',
+      background: 'rgba(120,53,15,0.2)',
+      color: '#fcd34d',
+    };
+  return {
+    borderColor: 'rgba(59,130,246,0.4)',
+    background: 'rgba(30,58,138,0.2)',
+    color: '#93c5fd',
+  };
 }
 
 function severityIcon(s: string) {

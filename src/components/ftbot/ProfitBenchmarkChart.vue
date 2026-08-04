@@ -63,7 +63,8 @@ const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
 const { summaryCurrency } = useSummaryCurrency();
 const { convert } = useExchangeRates();
-const { tradingMode, hasMultipleModes, filterTradesByMode, restorePersistedTradingMode } = useTradingModeFilter('profitBenchmark');
+const { tradingMode, hasMultipleModes, filterTradesByMode, restorePersistedTradingMode } =
+  useTradingModeFilter('profitBenchmark');
 
 // Debounce the multi-bot trade inputs. With ~30 bots, /status responses arrive
 // staggered on each refresh cycle and each one mutates openTrades, which would
@@ -123,15 +124,15 @@ function loadBenchmarksFromStorage(): string[] {
   try {
     const stored = localStorage.getItem(BENCHMARKS_STORAGE_KEY);
     if (stored) return JSON.parse(stored);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return ['BTC']; // BTC on by default
 }
 
 function saveBenchmarksToStorage() {
   localStorage.setItem(BENCHMARKS_STORAGE_KEY, JSON.stringify(enabledBenchmarks.value));
 }
-
-
 
 const HARDCODED_DEFAULTS_BENCH = {
   showLatent: false as boolean,
@@ -161,7 +162,8 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
     if (d.showRealized !== undefined) showRealized.value = d.showRealized as boolean;
     if (d.showDrawdown !== undefined) showDrawdown.value = d.showDrawdown as boolean;
     if (d.activeTab !== undefined) activeTab.value = d.activeTab as TabKey;
-    if (d.selectedTimeframe !== undefined) selectedTimeframe.value = d.selectedTimeframe as TimeframeKey;
+    if (d.selectedTimeframe !== undefined)
+      selectedTimeframe.value = d.selectedTimeframe as TimeframeKey;
     if (d.enabledBenchmarks) {
       enabledBenchmarks.value = [...(d.enabledBenchmarks as string[])];
       saveBenchmarksToStorage();
@@ -172,7 +174,10 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   HARDCODED_DEFAULTS_BENCH,
 );
 
-onMounted(() => { loadDefaults(); restorePersistedTradingMode(); });
+onMounted(() => {
+  loadDefaults();
+  restorePersistedTradingMode();
+});
 
 defineExpose({ filtersChanged, saveCurrentAsDefault });
 
@@ -245,8 +250,16 @@ const timeframes: TimeframeKey[] = ['1D', '7D', '30D', '90D', 'YTD', 'ALL'];
 
 // Bot color palette
 const BOT_COLORS = [
-  '#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6',
-  '#06b6d4', '#f97316', '#ec4899', '#14b8a6', '#84cc16',
+  '#6366f1',
+  '#f59e0b',
+  '#10b981',
+  '#ef4444',
+  '#8b5cf6',
+  '#06b6d4',
+  '#f97316',
+  '#ec4899',
+  '#14b8a6',
+  '#84cc16',
 ];
 
 function getBotColor(index: number): string {
@@ -258,27 +271,40 @@ function getTimeframeCutoff(tf: TimeframeKey): number {
   const now = Date.now();
   const day = 24 * 60 * 60 * 1000;
   switch (tf) {
-    case '1D': return now - 1 * day;
-    case '7D': return now - 7 * day;
-    case '30D': return now - 30 * day;
-    case '90D': return now - 90 * day;
+    case '1D':
+      return now - 1 * day;
+    case '7D':
+      return now - 7 * day;
+    case '30D':
+      return now - 30 * day;
+    case '90D':
+      return now - 90 * day;
     case 'YTD': {
       const d = new Date();
       return new Date(d.getFullYear(), 0, 1).getTime();
     }
     case 'ALL':
-    default: return 0;
+    default:
+      return 0;
   }
 }
 
 function timeframeToDays(tf: TimeframeKey): number {
   switch (tf) {
-    case '1D': return 1;
-    case '7D': return 7;
-    case '30D': return 30;
-    case '90D': return 90;
-    case 'YTD': return Math.ceil((Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) / 86400000);
-    case 'ALL': return 365;
+    case '1D':
+      return 1;
+    case '7D':
+      return 7;
+    case '30D':
+      return 30;
+    case '90D':
+      return 90;
+    case 'YTD':
+      return Math.ceil(
+        (Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) / 86400000,
+      );
+    case 'ALL':
+      return 365;
   }
 }
 
@@ -410,9 +436,7 @@ watch(
 /** Latent (closed+open) curve in STAKE CURRENCY, rebased on the selected window. */
 const latentAbs = computed<{ t: number; v: number }[]>(() => {
   if (!showLatent.value) return [];
-  const entries = Object.entries(latentHistories.value).filter(([id]) =>
-    botIds.value.includes(id),
-  );
+  const entries = Object.entries(latentHistories.value).filter(([id]) => botIds.value.includes(id));
   if (!entries.length) return [];
   const cutoff = getTimeframeCutoff(selectedTimeframe.value);
 
@@ -646,7 +670,9 @@ const cumulativeData = computed<CumPoint[]>(() => {
   if (trades.length === 0) return [];
 
   const cumPerBot: Record<string, number> = {};
-  botIds.value.forEach((id) => { cumPerBot[id] = 0; });
+  botIds.value.forEach((id) => {
+    cumPerBot[id] = 0;
+  });
   let cumTotal = 0;
 
   const points: CumPoint[] = [];
@@ -654,7 +680,9 @@ const cumulativeData = computed<CumPoint[]>(() => {
   const firstTrade = trades[0];
   if (firstTrade) {
     const zeroPoint: CumPoint = { date: firstTrade.open_timestamp, combined: 0 };
-    botIds.value.forEach((id) => { zeroPoint[id] = 0; });
+    botIds.value.forEach((id) => {
+      zeroPoint[id] = 0;
+    });
     points.push(zeroPoint);
   }
 
@@ -665,7 +693,9 @@ const cumulativeData = computed<CumPoint[]>(() => {
     cumPerBot[trade.botId] = (cumPerBot[trade.botId] ?? 0) + profitAbs;
 
     const point: CumPoint = { date: trade.close_timestamp, combined: cumTotal };
-    botIds.value.forEach((id) => { point[id] = cumPerBot[id] ?? 0; });
+    botIds.value.forEach((id) => {
+      point[id] = cumPerBot[id] ?? 0;
+    });
     points.push(point);
   }
 
@@ -706,9 +736,7 @@ async function loadBenchmarks() {
 
   benchmarkLoading.value = true;
   try {
-    const results = await Promise.all(
-      toFetch.map((ticker) => fetchBenchmarkHistory(ticker, days)),
-    );
+    const results = await Promise.all(toFetch.map((ticker) => fetchBenchmarkHistory(ticker, days)));
     const newData: Record<string, PricePoint[]> = {};
     const cutoff = getTimeframeCutoff(selectedTimeframe.value);
     toFetch.forEach((ticker, i) => {
@@ -727,9 +755,13 @@ async function loadBenchmarks() {
   }
 }
 
-watch([enabledBenchmarks, selectedTimeframe], () => {
-  loadBenchmarks();
-}, { immediate: true, deep: true });
+watch(
+  [enabledBenchmarks, selectedTimeframe],
+  () => {
+    loadBenchmarks();
+  },
+  { immediate: true, deep: true },
+);
 
 /**
  * Benchmark data normalized based on current normMode:
@@ -804,26 +836,30 @@ function buildCombinedSeries(): any[] {
   const series: any[] = [];
 
   if (showRealized.value)
-  series.push({
-    type: 'line',
-    name: t('profitBenchmark.combined'),
-    smooth: true,
-    symbol: 'none',
-    lineStyle: { width: 2.5, color: colorStore.colorProfit },
-    itemStyle: { color: colorStore.colorProfit },
-    areaStyle: {
-      color: {
-        type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-        colorStops: [
-          { offset: 0, color: colorStore.colorProfit + '40' },
-          { offset: 1, color: colorStore.colorProfit + '05' },
-        ],
+    series.push({
+      type: 'line',
+      name: t('profitBenchmark.combined'),
+      smooth: true,
+      symbol: 'none',
+      lineStyle: { width: 2.5, color: colorStore.colorProfit },
+      itemStyle: { color: colorStore.colorProfit },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
+          colorStops: [
+            { offset: 0, color: colorStore.colorProfit + '40' },
+            { offset: 1, color: colorStore.colorProfit + '05' },
+          ],
+        },
       },
-    },
-    encode: { x: 'date', y: 'combined' },
-    animationDuration: 1500,
-    animationEasing: 'cubicOut',
-  });
+      encode: { x: 'date', y: 'combined' },
+      animationDuration: 1500,
+      animationEasing: 'cubicOut',
+    });
 
   // Latent (closed + open unrealized) sampled curve — blue overlay + signed band
   if (showLatent.value && latentSeriesData.value.length >= 2) {
@@ -894,7 +930,10 @@ function buildCombinedSeries(): any[] {
     const troughDisp = toDisplay(ddp.troughV);
     const vRatio = vMax > vMin ? (troughDisp - vMin) / (vMax - vMin) : 0.5;
     const xs = activeChartData.value.length
-      ? [activeChartData.value[0]!.date, activeChartData.value[activeChartData.value.length - 1]!.date]
+      ? [
+          activeChartData.value[0]!.date,
+          activeChartData.value[activeChartData.value.length - 1]!.date,
+        ]
       : [ddp.troughT, ddp.troughT];
     const xSpan = xs[1]! - xs[0]! || 1;
     const xRatio = (ddp.troughT - xs[0]!) / xSpan;
@@ -940,9 +979,10 @@ function buildCombinedSeries(): any[] {
   if (modeFilteredOpenTrades.value.length > 0 && data.length > 0) {
     const lastPoint = data[data.length - 1]!;
     const totalOpen = Object.values(openProfitPerBot.value).reduce((s, v) => s + v, 0);
-    const projectedValue = valueMode.value === 'abs'
-      ? lastPoint.combined + totalOpen
-      : lastPoint.combined + (totalOpen / totalStartingBalance.value) * 100;
+    const projectedValue =
+      valueMode.value === 'abs'
+        ? lastPoint.combined + totalOpen
+        : lastPoint.combined + (totalOpen / totalStartingBalance.value) * 100;
 
     // When the latent curve is shown it already carries the open book, so the
     // projection continues IT (same colour) instead of jumping off the realized
@@ -1079,12 +1119,15 @@ const chartOptions = computed<EChartsOption>(() => {
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: settingsStore.isDarkTheme ? '#808098' : '#555', fontSize: 10,
+        color: settingsStore.isDarkTheme ? '#808098' : '#555',
+        fontSize: 10,
         formatter: isAbsMode
           ? (value: number) => formatPrice(value, 2)
           : (value: number) => `${value.toFixed(1)}%`,
       },
-      nameRotate: 90, nameLocation: 'middle', nameGap: isAbsMode ? 55 : 45,
+      nameRotate: 90,
+      nameLocation: 'middle',
+      nameGap: isAbsMode ? 55 : 45,
     },
   ];
 
@@ -1114,7 +1157,9 @@ const chartOptions = computed<EChartsOption>(() => {
       textStyle: { color: '#e0e0e0', fontSize: 12 },
       formatter: (params: any) => {
         if (!params || params.length === 0) return '';
-        const date = timestampToDateString(params[0].data?.date ?? params[0].data?.[0] ?? params[0].axisValue);
+        const date = timestampToDateString(
+          params[0].data?.date ?? params[0].data?.[0] ?? params[0].axisValue,
+        );
         let html = `<div style="font-size:11px">`;
         html += `<div style="color:#aaa;margin-bottom:4px">${date}</div>`;
 
@@ -1122,8 +1167,7 @@ const chartOptions = computed<EChartsOption>(() => {
         let realizedVal: number | null = null;
         let latentVal: number | null = null;
         const benchmarkValues: Record<string, number> = {};
-        const hoverTs: number =
-          params[0].data?.date ?? params[0].data?.[0] ?? params[0].axisValue;
+        const hoverTs: number = params[0].data?.date ?? params[0].data?.[0] ?? params[0].axisValue;
 
         for (const p of params) {
           if (typeof p.seriesName === 'string' && p.seriesName.startsWith('__')) continue;
@@ -1140,17 +1184,22 @@ const chartOptions = computed<EChartsOption>(() => {
           const isBenchmark = enabledBenchmarks.value.includes(p.seriesName);
           if (isBenchmark) {
             benchmarkValues[p.seriesName] = val;
-          } else if (p.seriesName === t('profitBenchmark.combined') || activeTab.value === 'perBot') {
+          } else if (
+            p.seriesName === t('profitBenchmark.combined') ||
+            activeTab.value === 'perBot'
+          ) {
             if (profitValue === null) profitValue = val;
           }
           if (p.seriesName === t('profitBenchmark.combined')) realizedVal = val;
           if (p.seriesName === t('profitBenchmark.latentCurve')) latentVal = val;
-          const formatted = isBenchmark || !isAbsMode
-            ? `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`
-            : `${val >= 0 ? '+' : ''}${formatPrice(val, 2)} ${stakeCurrencyLabel.value}`;
-          html += `<div style="display:flex;justify-content:space-between;gap:12px">`
-            + `<span>${p.marker} ${p.seriesName}</span>`
-            + `<span style="font-weight:600">${formatted}</span></div>`;
+          const formatted =
+            isBenchmark || !isAbsMode
+              ? `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`
+              : `${val >= 0 ? '+' : ''}${formatPrice(val, 2)} ${stakeCurrencyLabel.value}`;
+          html +=
+            `<div style="display:flex;justify-content:space-between;gap:12px">` +
+            `<span>${p.marker} ${p.seriesName}</span>` +
+            `<span style="font-weight:600">${formatted}</span></div>`;
         }
 
         // --- Derived insight rows: open book, distance from high, drawdown ---
@@ -1159,9 +1208,9 @@ const chartOptions = computed<EChartsOption>(() => {
             ? `${v >= 0 ? '+' : ''}${formatPrice(v, 2)} ${stakeCurrencyLabel.value}`
             : `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
         const row = (lbl: string, txt: string, color: string) =>
-          `<div style="display:flex;justify-content:space-between;gap:12px">`
-          + `<span style="color:#9ca3af">${lbl}</span>`
-          + `<span style="font-weight:600;color:${color}">${txt}</span></div>`;
+          `<div style="display:flex;justify-content:space-between;gap:12px">` +
+          `<span style="color:#9ca3af">${lbl}</span>` +
+          `<span style="font-weight:600;color:${color}">${txt}</span></div>`;
 
         const extras: string[] = [];
         if (realizedVal !== null && latentVal !== null) {
@@ -1175,9 +1224,10 @@ const chartOptions = computed<EChartsOption>(() => {
           );
         }
         // Distance from the running high of the curve being read (latent first).
-        const peakAbs = latentVal !== null
-          ? peakAt(latentPeaks.value, hoverTs)
-          : peakAt(realizedPeaks.value, hoverTs);
+        const peakAbs =
+          latentVal !== null
+            ? peakAt(latentPeaks.value, hoverTs)
+            : peakAt(realizedPeaks.value, hoverTs);
         const curVal = latentVal ?? realizedVal;
         if (peakAbs !== null && curVal !== null) {
           const peakDisp = toDisplay(peakAbs);
@@ -1206,11 +1256,11 @@ const chartOptions = computed<EChartsOption>(() => {
           for (const [ticker, bVal] of Object.entries(benchmarkValues)) {
             const diff = profitValue - bVal;
             const color = diff >= 0 ? '#22c55e' : '#ef4444';
-            const word = diff >= 0
-              ? t('profitBenchmark.outperforming')
-              : t('profitBenchmark.underperforming');
-            html += `<div style="color:${color};font-weight:bold;margin-top:4px">`
-              + `${word} ${ticker} ${t('profitBenchmark.by')} ${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%</div>`;
+            const word =
+              diff >= 0 ? t('profitBenchmark.outperforming') : t('profitBenchmark.underperforming');
+            html +=
+              `<div style="color:${color};font-weight:bold;margin-top:4px">` +
+              `${word} ${ticker} ${t('profitBenchmark.by')} ${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%</div>`;
           }
         }
 
@@ -1256,7 +1306,8 @@ const chartDescription = computed(() => {
   const tf = selectedTimeframe.value;
   const benchmarks = enabledBenchmarks.value;
 
-  let desc = tab === 'combined' ? t('profitBenchmark.descCombined') : t('profitBenchmark.descPerBot');
+  let desc =
+    tab === 'combined' ? t('profitBenchmark.descCombined') : t('profitBenchmark.descPerBot');
   desc += ` ${t('profitBenchmark.descOverPeriod', { period: tf })}`;
   desc += `, ${t('profitBenchmark.descNormPctStart')}`;
 
@@ -1277,10 +1328,7 @@ function exportCSV() {
   botIds.value.forEach((id) => headers.push(botNameMap.value[id] ?? id));
 
   const rows = data.map((p) => {
-    const row = [
-      new Date(p.date).toISOString(),
-      p.combined.toFixed(4),
-    ];
+    const row = [new Date(p.date).toISOString(), p.combined.toFixed(4)];
     botIds.value.forEach((id) => row.push((p[id] ?? 0).toFixed(4)));
     return row.join(',');
   });
@@ -1308,7 +1356,12 @@ function exportChartImage() {
 }
 
 // Watch for theme changes
-watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */ });
+watch(
+  () => settingsStore.chartTheme,
+  () => {
+    /* force re-render via computed */
+  },
+);
 </script>
 
 <template>
@@ -1401,7 +1454,10 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
           :title="t('profitBenchmark.periodDDHint')"
         >
           <input v-model="showDrawdown" type="checkbox" class="accent-red-500 cursor-pointer" />
-          <span class="inline-block w-2.5 h-2 rounded-sm" style="background: rgba(239,68,68,0.45)"></span>
+          <span
+            class="inline-block w-2.5 h-2 rounded-sm"
+            style="background: rgba(239, 68, 68, 0.45)"
+          ></span>
           {{ t('profitBenchmark.periodDD') }}
         </label>
       </div>
@@ -1444,27 +1500,43 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
           >
             <div class="max-h-[300px] overflow-y-auto">
               <template v-for="cat in BENCHMARK_CATEGORIES" :key="cat.label">
-                <div class="text-[9px] text-gray-600 dark:text-gray-500 uppercase tracking-wide font-semibold mt-1.5 mb-0.5 px-1">
+                <div
+                  class="text-[9px] text-gray-600 dark:text-gray-500 uppercase tracking-wide font-semibold mt-1.5 mb-0.5 px-1"
+                >
                   {{ cat.label }}
                 </div>
                 <template v-for="ticker in cat.tickers" :key="ticker">
                   <button
                     class="flex items-center gap-2 w-full px-2 py-0.5 text-[10px] rounded cursor-pointer transition-colors"
-                    :class="enabledBenchmarks.includes(ticker) ? 'text-gray-900 dark:text-white bg-black/10 dark:bg-white/10' : 'text-gray-600 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-200'"
+                    :class="
+                      enabledBenchmarks.includes(ticker)
+                        ? 'text-gray-900 dark:text-white bg-black/10 dark:bg-white/10'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-200'
+                    "
                     @click="toggleBenchmark(ticker)"
                   >
                     <span
                       class="w-2 h-2 rounded-full flex-shrink-0"
-                      :style="{ backgroundColor: enabledBenchmarks.includes(ticker) ? getBenchmarkColor(ticker) : '#6b7280' }"
+                      :style="{
+                        backgroundColor: enabledBenchmarks.includes(ticker)
+                          ? getBenchmarkColor(ticker)
+                          : '#6b7280',
+                      }"
                     ></span>
                     {{ ticker }}
-                    <span v-if="enabledBenchmarks.includes(ticker)" class="ml-auto text-[8px] text-green-400">ON</span>
+                    <span
+                      v-if="enabledBenchmarks.includes(ticker)"
+                      class="ml-auto text-[8px] text-green-400"
+                      >ON</span
+                    >
                   </button>
                 </template>
               </template>
             </div>
             <div class="border-t border-gray-300 dark:border-gray-600/30 mt-1.5 pt-1.5">
-              <div class="text-[9px] text-gray-600 dark:text-gray-500 px-1 mb-1">{{ t('profitBenchmark.customCoinGecko') }}</div>
+              <div class="text-[9px] text-gray-600 dark:text-gray-500 px-1 mb-1">
+                {{ t('profitBenchmark.customCoinGecko') }}
+              </div>
               <form class="flex gap-1" @submit.prevent="addCustomBenchmark">
                 <input
                   v-model="customBenchmarkInput"
@@ -1482,17 +1554,18 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
                   {{ benchmarkLoading ? '...' : t('profitBenchmark.add') }}
                 </button>
               </form>
-              <div
-                v-if="customBenchmarkError"
-                class="text-[9px] text-red-400 px-1 mt-1"
-              >
+              <div v-if="customBenchmarkError" class="text-[9px] text-red-400 px-1 mt-1">
                 {{ customBenchmarkError }}
               </div>
             </div>
           </div>
         </div>
 
-        <span v-if="benchmarkLoading" class="text-[9px] text-gray-600 dark:text-gray-500 ml-1 animate-pulse">...</span>
+        <span
+          v-if="benchmarkLoading"
+          class="text-[9px] text-gray-600 dark:text-gray-500 ml-1 animate-pulse"
+          >...</span
+        >
       </div>
 
       <div class="w-px h-4 bg-gray-300 dark:bg-gray-600/30"></div>
@@ -1510,13 +1583,18 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
     <!-- Stats strip -->
     <div class="flex flex-wrap gap-3 px-2 py-1 text-[10px] period-stats">
       <div class="flex items-center gap-1">
-        <span class="text-gray-600 dark:text-gray-500" v-tooltip.top="t('tooltips.periodReturn')">{{ t('profitBenchmark.periodReturn') }}</span>
+        <span class="text-gray-600 dark:text-gray-500" v-tooltip.top="t('tooltips.periodReturn')">{{
+          t('profitBenchmark.periodReturn')
+        }}</span>
         <span
           :class="periodStats.periodReturn >= 0 ? 'text-emerald-400' : 'text-red-400'"
           class="font-semibold"
         >
           {{ formatPrice(periodStats.periodReturn, 2) }}
-          <span class="text-gray-600 dark:text-gray-500 font-normal">({{ periodStats.periodReturnPct >= 0 ? '+' : '' }}{{ periodStats.periodReturnPct.toFixed(2) }}%)</span>
+          <span class="text-gray-600 dark:text-gray-500 font-normal"
+            >({{ periodStats.periodReturnPct >= 0 ? '+' : ''
+            }}{{ periodStats.periodReturnPct.toFixed(2) }}%)</span
+          >
         </span>
       </div>
       <div v-if="periodStats.vsBTC !== null" class="flex items-center gap-1">
@@ -1529,16 +1607,28 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
         </span>
       </div>
       <div v-if="periodStats.sharpe !== null" class="flex items-center gap-1">
-        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide" v-tooltip.top="t('tooltips.sharpe')">{{ t('profitBenchmark.sharpe') }}</span>
+        <span
+          class="text-gray-600 dark:text-gray-500 uppercase tracking-wide"
+          v-tooltip.top="t('tooltips.sharpe')"
+          >{{ t('profitBenchmark.sharpe') }}</span
+        >
         <span
           class="font-bold"
-          :class="(periodStats.sharpe ?? 0) >= 1 ? 'text-emerald-400' : (periodStats.sharpe ?? 0) >= 0 ? 'text-amber-400' : 'text-red-400'"
+          :class="
+            (periodStats.sharpe ?? 0) >= 1
+              ? 'text-emerald-400'
+              : (periodStats.sharpe ?? 0) >= 0
+                ? 'text-amber-400'
+                : 'text-red-400'
+          "
         >
           {{ (periodStats.sharpe ?? 0).toFixed(2) }}
         </span>
       </div>
       <div v-if="periodStats.maxDrawdownPct !== null" class="flex items-center gap-1">
-        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{ t('profitBenchmark.maxDD') }}</span>
+        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide">{{
+          t('profitBenchmark.maxDD')
+        }}</span>
         <span class="font-bold text-red-400">
           {{ ((periodStats.maxDrawdownPct ?? 0) * 100).toFixed(1) }}%
         </span>
@@ -1560,10 +1650,20 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
         >
       </div>
       <div v-if="periodStats.winRate !== null" class="flex items-center gap-1">
-        <span class="text-gray-600 dark:text-gray-500 uppercase tracking-wide" v-tooltip.top="t('tooltips.winrate')">{{ t('profitBenchmark.winRate') }}</span>
+        <span
+          class="text-gray-600 dark:text-gray-500 uppercase tracking-wide"
+          v-tooltip.top="t('tooltips.winrate')"
+          >{{ t('profitBenchmark.winRate') }}</span
+        >
         <span
           class="font-bold"
-          :class="(periodStats.winRate ?? 0) >= 60 ? 'text-emerald-400' : (periodStats.winRate ?? 0) >= 50 ? 'text-amber-400' : 'text-red-400'"
+          :class="
+            (periodStats.winRate ?? 0) >= 60
+              ? 'text-emerald-400'
+              : (periodStats.winRate ?? 0) >= 50
+                ? 'text-amber-400'
+                : 'text-red-400'
+          "
         >
           {{ (periodStats.winRate ?? 0).toFixed(1) }}%
         </span>
@@ -1590,9 +1690,14 @@ watch(() => settingsStore.chartTheme, () => { /* force re-render via computed */
     </div>
 
     <!-- Benchmark loading indicator -->
-    <div v-if="benchmarkLoading && enabledBenchmarks.length > 0" class="flex items-center justify-center gap-2 py-1">
+    <div
+      v-if="benchmarkLoading && enabledBenchmarks.length > 0"
+      class="flex items-center justify-center gap-2 py-1"
+    >
       <i-mdi-loading class="animate-spin text-blue-400" style="font-size: 0.8rem" />
-      <span class="text-xs text-gray-600 dark:text-gray-400">{{ t('profitBenchmark.loadingBenchmarks') }}</span>
+      <span class="text-xs text-gray-600 dark:text-gray-400">{{
+        t('profitBenchmark.loadingBenchmarks')
+      }}</span>
     </div>
 
     <!-- Description: icon-only with tooltip (no visible text to avoid overlap) -->

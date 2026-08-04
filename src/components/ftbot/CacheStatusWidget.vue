@@ -116,12 +116,11 @@ onUnmounted(() => {
           </div>
           <div v-if="ftcache.backoff_active" class="col-span-2">
             <span
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
-                     bg-red-500/20 text-red-400 border border-red-500/30"
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400 border border-red-500/30"
             >
               <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-              BACKOFF ACTIVE — {{ Math.ceil(ftcache.backoff_remaining_s ?? 0) }}s
-              (level {{ ftcache.consecutive_backoffs ?? 0 }}/4)
+              BACKOFF ACTIVE — {{ Math.ceil(ftcache.backoff_remaining_s ?? 0) }}s (level
+              {{ ftcache.consecutive_backoffs ?? 0 }}/4)
             </span>
           </div>
         </div>
@@ -167,9 +166,7 @@ onUnmounted(() => {
         <div>
           <span class="opacity-60">Hit rate:</span>
           <span
-            :class="
-              (pairlistCache.hit_rate_pct ?? 0) > 50 ? 'text-green-500' : 'text-yellow-500'
-            "
+            :class="(pairlistCache.hit_rate_pct ?? 0) > 50 ? 'text-green-500' : 'text-yellow-500'"
           >
             {{ (pairlistCache.hit_rate_pct ?? 0).toFixed(1) }}%
           </span>
@@ -182,10 +179,7 @@ onUnmounted(() => {
       <div v-else class="text-xs ml-4 opacity-50">Offline</div>
     </div>
 
-    <button
-      class="mt-3 text-xs opacity-50 hover:opacity-100 transition-opacity"
-      @click="refresh"
-    >
+    <button class="mt-3 text-xs opacity-50 hover:opacity-100 transition-opacity" @click="refresh">
       Refresh
     </button>
   </div>

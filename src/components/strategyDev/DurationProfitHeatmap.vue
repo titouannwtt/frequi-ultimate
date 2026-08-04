@@ -6,11 +6,7 @@ import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { HeatmapChart } from 'echarts/charts';
-import {
-  GridComponent,
-  TooltipComponent,
-  VisualMapComponent,
-} from 'echarts/components';
+import { GridComponent, TooltipComponent, VisualMapComponent } from 'echarts/components';
 
 use([HeatmapChart, CanvasRenderer, GridComponent, TooltipComponent, VisualMapComponent]);
 
@@ -58,7 +54,7 @@ const dangerZone = computed(() => {
       if (di >= nDur - 2 && pi <= 1 && v > 0) dangerCount += v;
     }
   }
-  return { count: dangerCount, pct: total > 0 ? (dangerCount / total * 100) : 0 };
+  return { count: dangerCount, pct: total > 0 ? (dangerCount / total) * 100 : 0 };
 });
 
 const chartOptions = computed<EChartsOption>(() => {
@@ -90,7 +86,9 @@ const chartOptions = computed<EChartsOption>(() => {
           `<b>${durBins[di]} × ${pnlBins[pi]}</b>`,
           `Trades: ${count}`,
           isDanger ? `<span style="color:${C.red}">⚠ Danger zone</span>` : '',
-        ].filter(Boolean).join('<br/>');
+        ]
+          .filter(Boolean)
+          .join('<br/>');
       },
     },
     grid: { left: 70, right: 90, top: 10, bottom: 40 },
@@ -118,17 +116,19 @@ const chartOptions = computed<EChartsOption>(() => {
       itemWidth: 12,
       itemHeight: 100,
     },
-    series: [{
-      type: 'heatmap',
-      data,
-      label: {
-        show: true,
-        color: C.text,
-        fontSize: 10,
-        formatter: (p: any) => p.value[2] > 0 ? String(p.value[2]) : '',
+    series: [
+      {
+        type: 'heatmap',
+        data,
+        label: {
+          show: true,
+          color: C.text,
+          fontSize: 10,
+          formatter: (p: any) => (p.value[2] > 0 ? String(p.value[2]) : ''),
+        },
+        itemStyle: { borderWidth: 1, borderColor: C.surface0 },
       },
-      itemStyle: { borderWidth: 1, borderColor: C.surface0 },
-    }],
+    ],
   };
 });
 </script>
@@ -148,7 +148,9 @@ const chartOptions = computed<EChartsOption>(() => {
         v-for="p in pairs"
         :key="p"
         class="text-xs px-2 py-1 rounded"
-        :class="selectedPair === p ? 'bg-blue-500/20 text-blue-300' : 'bg-surface-700 text-surface-400'"
+        :class="
+          selectedPair === p ? 'bg-blue-500/20 text-blue-300' : 'bg-surface-700 text-surface-400'
+        "
         @click="selectedPair = p"
       >
         {{ p }}
@@ -163,7 +165,9 @@ const chartOptions = computed<EChartsOption>(() => {
       class="mt-2 text-xs px-2 py-1 rounded"
       :style="{ backgroundColor: '#f38ba814', color: '#f38ba8' }"
     >
-      {{ t('strategyDev.durDangerZone', { count: dangerZone.count, pct: dangerZone.pct.toFixed(0) }) }}
+      {{
+        t('strategyDev.durDangerZone', { count: dangerZone.count, pct: dangerZone.pct.toFixed(0) })
+      }}
     </div>
   </div>
 </template>

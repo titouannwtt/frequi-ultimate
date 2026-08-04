@@ -88,10 +88,7 @@ function fmtVal(v: unknown): string {
 
 const rows = computed<Row[]>(() => {
   const result: Row[] = [];
-  const allNames = new Set([
-    ...Object.keys(props.deepDive),
-    ...Object.keys(props.paramStats),
-  ]);
+  const allNames = new Set([...Object.keys(props.deepDive), ...Object.keys(props.paramStats)]);
 
   for (const name of [...allNames].sort()) {
     const dd = props.deepDive[name];
@@ -176,8 +173,14 @@ const rows = computed<Row[]>(() => {
     reasoning = reasons.join('. ');
 
     let boxPlot: BoxPlotData | null = null;
-    if (dd?.range_low != null && dd?.range_high != null && dd.range_high > dd.range_low
-      && dd?.top10_min != null && dd?.top10_max != null && dd?.top10_median != null) {
+    if (
+      dd?.range_low != null &&
+      dd?.range_high != null &&
+      dd.range_high > dd.range_low &&
+      dd?.top10_min != null &&
+      dd?.top10_max != null &&
+      dd?.top10_median != null
+    ) {
       const bestNum = typeof dd.best_value === 'number' ? dd.best_value : dd.top10_median;
       const meanNum = ps?.mean ?? ps?.median ?? dd.top10_median;
       boxPlot = {
@@ -221,12 +224,31 @@ const BOX_W = 140;
 const BOX_H = 18;
 
 const summary = computed(() => {
-  const converging = rows.value.filter(r => r.tendency === t('strategyDev.prtConverging') || r.tendency === t('strategyDev.prtStable')).length;
-  const spread = rows.value.filter(r => r.tendency === t('strategyDev.prtSpread') || r.tendency === t('strategyDev.prtUnstable')).length;
+  const converging = rows.value.filter(
+    (r) =>
+      r.tendency === t('strategyDev.prtConverging') || r.tendency === t('strategyDev.prtStable'),
+  ).length;
+  const spread = rows.value.filter(
+    (r) => r.tendency === t('strategyDev.prtSpread') || r.tendency === t('strategyDev.prtUnstable'),
+  ).length;
   const total = rows.value.length;
-  if (converging === total) return { color: '#a6e3a1', bg: 'rgba(166, 227, 161, 0.12)', text: t('strategyDev.prtSummaryAllClear') };
-  if (spread > total / 2) return { color: '#f38ba8', bg: 'rgba(243, 139, 168, 0.12)', text: t('strategyDev.prtSummaryMostSpread') };
-  return { color: '#f9e2af', bg: 'rgba(249, 226, 175, 0.12)', text: t('strategyDev.prtSummaryMixed', { converging, spread, total }) };
+  if (converging === total)
+    return {
+      color: '#a6e3a1',
+      bg: 'rgba(166, 227, 161, 0.12)',
+      text: t('strategyDev.prtSummaryAllClear'),
+    };
+  if (spread > total / 2)
+    return {
+      color: '#f38ba8',
+      bg: 'rgba(243, 139, 168, 0.12)',
+      text: t('strategyDev.prtSummaryMostSpread'),
+    };
+  return {
+    color: '#f9e2af',
+    bg: 'rgba(249, 226, 175, 0.12)',
+    text: t('strategyDev.prtSummaryMixed', { converging, spread, total }),
+  };
 });
 </script>
 
@@ -267,17 +289,41 @@ const summary = computed(() => {
               <svg v-if="row.boxPlot" :width="BOX_W" :height="BOX_H" class="bp-svg">
                 <!-- Full range whisker line -->
                 <line
-                  x1="2" :y1="BOX_H / 2" :x2="BOX_W - 2" :y2="BOX_H / 2"
-                  stroke="#45475a" stroke-width="1"
+                  x1="2"
+                  :y1="BOX_H / 2"
+                  :x2="BOX_W - 2"
+                  :y2="BOX_H / 2"
+                  stroke="#45475a"
+                  stroke-width="1"
                 />
                 <!-- Min/Max whisker caps -->
-                <line x1="2" :y1="BOX_H / 2 - 4" x2="2" :y2="BOX_H / 2 + 4" stroke="#45475a" stroke-width="1" />
-                <line :x1="BOX_W - 2" :y1="BOX_H / 2 - 4" :x2="BOX_W - 2" :y2="BOX_H / 2 + 4" stroke="#45475a" stroke-width="1" />
+                <line
+                  x1="2"
+                  :y1="BOX_H / 2 - 4"
+                  x2="2"
+                  :y2="BOX_H / 2 + 4"
+                  stroke="#45475a"
+                  stroke-width="1"
+                />
+                <line
+                  :x1="BOX_W - 2"
+                  :y1="BOX_H / 2 - 4"
+                  :x2="BOX_W - 2"
+                  :y2="BOX_H / 2 + 4"
+                  stroke="#45475a"
+                  stroke-width="1"
+                />
                 <!-- Top 10 box -->
                 <rect
                   :x="boxX(row.boxPlot.t10Min, row.boxPlot, BOX_W)"
                   :y="BOX_H / 2 - 6"
-                  :width="Math.max(2, boxX(row.boxPlot.t10Max, row.boxPlot, BOX_W) - boxX(row.boxPlot.t10Min, row.boxPlot, BOX_W))"
+                  :width="
+                    Math.max(
+                      2,
+                      boxX(row.boxPlot.t10Max, row.boxPlot, BOX_W) -
+                        boxX(row.boxPlot.t10Min, row.boxPlot, BOX_W),
+                    )
+                  "
                   :height="12"
                   rx="2"
                   fill="rgba(137, 180, 250, 0.25)"
@@ -312,8 +358,12 @@ const summary = computed(() => {
                   stroke-width="1"
                 />
                 <!-- Labels at extremes -->
-                <text x="2" :y="BOX_H / 2 - 6" class="bp-label">{{ fmtVal(row.boxPlot.rangeMin) }}</text>
-                <text :x="BOX_W - 2" :y="BOX_H / 2 - 6" class="bp-label" text-anchor="end">{{ fmtVal(row.boxPlot.rangeMax) }}</text>
+                <text x="2" :y="BOX_H / 2 - 6" class="bp-label">
+                  {{ fmtVal(row.boxPlot.rangeMin) }}
+                </text>
+                <text :x="BOX_W - 2" :y="BOX_H / 2 - 6" class="bp-label" text-anchor="end">
+                  {{ fmtVal(row.boxPlot.rangeMax) }}
+                </text>
               </svg>
               <span v-else class="td-range">—</span>
             </td>
@@ -328,23 +378,42 @@ const summary = computed(() => {
     <!-- Box plot legend -->
     <div class="bp-legend">
       <span class="bp-legend-item">
-        <svg width="16" height="12"><line x1="0" y1="6" x2="16" y2="6" stroke="#45475a" stroke-width="1" /></svg>
+        <svg width="16" height="12">
+          <line x1="0" y1="6" x2="16" y2="6" stroke="#45475a" stroke-width="1" />
+        </svg>
         {{ t('strategyDev.prtBpFullRange') }}
       </span>
       <span class="bp-legend-item">
-        <svg width="16" height="12"><rect x="2" y="2" width="12" height="8" rx="1" fill="rgba(137,180,250,0.25)" stroke="#89b4fa" stroke-width="1" /></svg>
+        <svg width="16" height="12">
+          <rect
+            x="2"
+            y="2"
+            width="12"
+            height="8"
+            rx="1"
+            fill="rgba(137,180,250,0.25)"
+            stroke="#89b4fa"
+            stroke-width="1"
+          />
+        </svg>
         Top 10
       </span>
       <span class="bp-legend-item">
-        <svg width="8" height="12"><line x1="4" y1="1" x2="4" y2="11" stroke="#f9e2af" stroke-width="2" /></svg>
+        <svg width="8" height="12">
+          <line x1="4" y1="1" x2="4" y2="11" stroke="#f9e2af" stroke-width="2" />
+        </svg>
         {{ t('strategyDev.prtMedian') }}
       </span>
       <span class="bp-legend-item">
-        <svg width="10" height="10"><circle cx="5" cy="5" r="3" fill="#cba6f7" stroke="#1e1e2e" stroke-width="1" /></svg>
+        <svg width="10" height="10">
+          <circle cx="5" cy="5" r="3" fill="#cba6f7" stroke="#1e1e2e" stroke-width="1" />
+        </svg>
         {{ t('strategyDev.prtBpMean') }}
       </span>
       <span class="bp-legend-item">
-        <svg width="10" height="10"><circle cx="5" cy="5" r="3.5" fill="#a6e3a1" stroke="#1e1e2e" stroke-width="1" /></svg>
+        <svg width="10" height="10">
+          <circle cx="5" cy="5" r="3.5" fill="#a6e3a1" stroke="#1e1e2e" stroke-width="1" />
+        </svg>
         {{ t('strategyDev.prtBest') }}
       </span>
     </div>
@@ -352,12 +421,15 @@ const summary = computed(() => {
     <!-- Summary advisory -->
     <div
       class="prt-summary"
-      :style="{ backgroundColor: summary.bg, color: summary.color, borderColor: summary.color + '33' }"
+      :style="{
+        backgroundColor: summary.bg,
+        color: summary.color,
+        borderColor: summary.color + '33',
+      }"
     >
       <span class="prt-summary-dot" :style="{ backgroundColor: summary.color }" />
       {{ summary.text }}
     </div>
-
   </div>
 </template>
 

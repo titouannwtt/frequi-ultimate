@@ -74,7 +74,9 @@ const carverPct = computed(() => Math.round(props.data.carver_discount * 100));
           <div class="text-sm text-surface-500">{{ label }}</div>
         </div>
       </div>
-      <h5 class="text-sm text-surface-400 uppercase mt-2">{{ t('strategyDev.wfaMcReturnDdRatio') }}</h5>
+      <h5 class="text-sm text-surface-400 uppercase mt-2">
+        {{ t('strategyDev.wfaMcReturnDdRatio') }}
+      </h5>
       <div class="flex gap-4 text-sm">
         <div
           v-for="[label, val] in [

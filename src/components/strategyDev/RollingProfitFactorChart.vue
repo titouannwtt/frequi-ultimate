@@ -14,7 +14,15 @@ import {
 import { useRegimeOverlay, type RegimeTimelineEntry } from '@/composables/useRegimeOverlay';
 import { useI18n } from 'vue-i18n';
 
-use([LineChart, CanvasRenderer, GridComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, MarkAreaComponent]);
+use([
+  LineChart,
+  CanvasRenderer,
+  GridComponent,
+  TooltipComponent,
+  DataZoomComponent,
+  MarkLineComponent,
+  MarkAreaComponent,
+]);
 
 const { t } = useI18n();
 
@@ -35,8 +43,13 @@ const option = computed<EChartsOption>(() => {
       textStyle: { color: '#cdd6f4', fontSize: 12 },
       formatter: (params: unknown) => {
         const p = (params as { data: number[]; axisValue: string }[])[0];
-        const dateStr = new Date(p.axisValue).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-        const pf = typeof p.data[1] === 'number' && isFinite(p.data[1]) ? p.data[1].toFixed(2) : '—';
+        const dateStr = new Date(p.axisValue).toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+        const pf =
+          typeof p.data[1] === 'number' && isFinite(p.data[1]) ? p.data[1].toFixed(2) : '—';
         return `<b>${dateStr}</b><br/>Profit Factor: ${pf}`;
       },
     },
@@ -100,7 +113,9 @@ const option = computed<EChartsOption>(() => {
           },
           data: [{ yAxis: 1.0 }],
         },
-        markArea: markAreaData.value.length ? { silent: true, data: markAreaData.value as any } : undefined,
+        markArea: markAreaData.value.length
+          ? { silent: true, data: markAreaData.value as any }
+          : undefined,
       },
     ],
   };

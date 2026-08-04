@@ -22,16 +22,16 @@ const wfeData = computed(() =>
 const degradationData = computed(() =>
   windows.value.map((w, i) => ({
     index: i + 1,
-    train: ((w.train_profit as number) ?? (w.train_metrics as any)?.profit_pct ?? 0) * (
-      (w.test_metrics as any)?.profit_pct != null ? 1 : 100
-    ),
-    test: ((w.test_profit as number) ?? (w.test_metrics as any)?.profit_pct ?? 0) * (
-      (w.test_metrics as any)?.profit_pct != null ? 1 : 100
-    ),
+    train:
+      ((w.train_profit as number) ?? (w.train_metrics as any)?.profit_pct ?? 0) *
+      ((w.test_metrics as any)?.profit_pct != null ? 1 : 100),
+    test:
+      ((w.test_profit as number) ?? (w.test_metrics as any)?.profit_pct ?? 0) *
+      ((w.test_metrics as any)?.profit_pct != null ? 1 : 100),
   })),
 );
 
-const hasWfeData = computed(() => wfeData.value.some(w => w.wfe !== 0));
+const hasWfeData = computed(() => wfeData.value.some((w) => w.wfe !== 0));
 
 const holdout = computed(() => {
   const d = detail.value;
@@ -91,7 +91,7 @@ const warnings = computed(() => {
 
 const marketContextWindows = computed(() => {
   return windows.value
-    .filter(w => (w.market_context as any)?.btc_change_pct != null)
+    .filter((w) => (w.market_context as any)?.btc_change_pct != null)
     .map((w, i) => ({
       index: (w.index as number) ?? i + 1,
       market_context: w.market_context as any,
@@ -100,7 +100,7 @@ const marketContextWindows = computed(() => {
 
 const degradationWindows = computed(() => {
   return windows.value
-    .filter(w => w.degradation)
+    .filter((w) => w.degradation)
     .map((w, i) => ({
       index: (w.index as number) ?? i + 1,
       train_range: (w.train_range as string) ?? '',
@@ -146,25 +146,51 @@ const degradationWindows = computed(() => {
         <h3>{{ t('strategyDev.sectionWindowPerformance') }}</h3>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ChartWrapper v-if="hasWfeData" :title="t('strategyDev.wfaWfeTitle')" :hint="t('strategyDev.hintWfe')" chart-id="wfe">
+        <ChartWrapper
+          v-if="hasWfeData"
+          :title="t('strategyDev.wfaWfeTitle')"
+          :hint="t('strategyDev.hintWfe')"
+          chart-id="wfe"
+        >
           <WfeBarChart :data="wfeData" :title="t('strategyDev.wfaWfeTitle')" />
           <template #fullscreen>
             <WfeBarChart :data="wfeData" :title="t('strategyDev.wfaWfeTitle')" />
           </template>
         </ChartWrapper>
-        <ChartWrapper :title="t('strategyDev.wfaTrainVsTestTitle')" :hint="t('strategyDev.hintTrainVsTest')" chart-id="degradation">
+        <ChartWrapper
+          :title="t('strategyDev.wfaTrainVsTestTitle')"
+          :hint="t('strategyDev.hintTrainVsTest')"
+          chart-id="degradation"
+        >
           <DegradationChart :data="degradationData" :title="t('strategyDev.wfaTrainVsTestTitle')" />
           <template #fullscreen>
-            <DegradationChart :data="degradationData" :title="t('strategyDev.wfaTrainVsTestTitle')" />
+            <DegradationChart
+              :data="degradationData"
+              :title="t('strategyDev.wfaTrainVsTestTitle')"
+            />
           </template>
         </ChartWrapper>
       </div>
-      <div v-if="degradationWindows.length || marketContextWindows.length" class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+      <div
+        v-if="degradationWindows.length || marketContextWindows.length"
+        class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4"
+      >
         <WfaDegradationTable v-if="degradationWindows.length" :windows="degradationWindows" />
-        <ChartWrapper v-if="marketContextWindows.length" :title="t('strategyDev.wfaMarketContextTitle')" :hint="t('strategyDev.hintMarketContext')" chart-id="market-context">
-          <WfaMarketContextChart :windows="marketContextWindows" :title="t('strategyDev.wfaMarketContextTitle')" />
+        <ChartWrapper
+          v-if="marketContextWindows.length"
+          :title="t('strategyDev.wfaMarketContextTitle')"
+          :hint="t('strategyDev.hintMarketContext')"
+          chart-id="market-context"
+        >
+          <WfaMarketContextChart
+            :windows="marketContextWindows"
+            :title="t('strategyDev.wfaMarketContextTitle')"
+          />
           <template #fullscreen>
-            <WfaMarketContextChart :windows="marketContextWindows" :title="t('strategyDev.wfaMarketContextTitle')" />
+            <WfaMarketContextChart
+              :windows="marketContextWindows"
+              :title="t('strategyDev.wfaMarketContextTitle')"
+            />
           </template>
         </ChartWrapper>
       </div>

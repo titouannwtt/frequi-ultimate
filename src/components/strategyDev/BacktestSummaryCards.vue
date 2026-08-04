@@ -31,12 +31,14 @@ const cards = computed(() => {
 
   if (s.best_pair) {
     const bp = s.best_pair;
-    const label = typeof bp === 'object' && bp !== null ? (bp as any).key ?? String(bp) : String(bp);
+    const label =
+      typeof bp === 'object' && bp !== null ? ((bp as any).key ?? String(bp)) : String(bp);
     result.push({ label: t('strategyDev.btBestPair'), value: label, color: 'green' });
   }
   if (s.worst_pair) {
     const wp = s.worst_pair;
-    const label = typeof wp === 'object' && wp !== null ? (wp as any).key ?? String(wp) : String(wp);
+    const label =
+      typeof wp === 'object' && wp !== null ? ((wp as any).key ?? String(wp)) : String(wp);
     result.push({ label: t('strategyDev.btWorstPair'), value: label, color: 'red' });
   }
   if (s.trades_per_day != null) {
@@ -81,8 +83,10 @@ const cards = computed(() => {
 
   if (s.sqn != null) result.push({ label: t('strategyDev.metricSQN'), value: fmtNum(s.sqn) });
   if (s.cagr != null) result.push({ label: t('strategyDev.metricCAGR'), value: fmtPct(s.cagr) });
-  if (s.expectancy != null) result.push({ label: t('strategyDev.btExpectancy'), value: fmtNum(s.expectancy, 4) });
-  if (s.expectancy_ratio != null) result.push({ label: t('strategyDev.btExpectancyRatio'), value: fmtNum(s.expectancy_ratio) });
+  if (s.expectancy != null)
+    result.push({ label: t('strategyDev.btExpectancy'), value: fmtNum(s.expectancy, 4) });
+  if (s.expectancy_ratio != null)
+    result.push({ label: t('strategyDev.btExpectancyRatio'), value: fmtNum(s.expectancy_ratio) });
 
   return result;
 });
@@ -91,10 +95,26 @@ const orderCards = computed(() => {
   if (!props.orderStats) return [];
   const os = props.orderStats;
   const result: Array<{ label: string; value: number; warn: boolean }> = [];
-  result.push({ label: t('strategyDev.btRejectedSignals'), value: os.rejected_signals, warn: os.rejected_signals > 0 });
-  result.push({ label: t('strategyDev.btTimedoutEntry'), value: os.timedout_entry_orders, warn: os.timedout_entry_orders > 0 });
-  result.push({ label: t('strategyDev.btTimedoutExit'), value: os.timedout_exit_orders, warn: os.timedout_exit_orders > 0 });
-  result.push({ label: t('strategyDev.btCanceledEntries'), value: os.canceled_trade_entries, warn: os.canceled_trade_entries > 0 });
+  result.push({
+    label: t('strategyDev.btRejectedSignals'),
+    value: os.rejected_signals,
+    warn: os.rejected_signals > 0,
+  });
+  result.push({
+    label: t('strategyDev.btTimedoutEntry'),
+    value: os.timedout_entry_orders,
+    warn: os.timedout_entry_orders > 0,
+  });
+  result.push({
+    label: t('strategyDev.btTimedoutExit'),
+    value: os.timedout_exit_orders,
+    warn: os.timedout_exit_orders > 0,
+  });
+  result.push({
+    label: t('strategyDev.btCanceledEntries'),
+    value: os.canceled_trade_entries,
+    warn: os.canceled_trade_entries > 0,
+  });
   return result;
 });
 </script>
@@ -103,11 +123,7 @@ const orderCards = computed(() => {
   <div class="summary-grid">
     <!-- Main metrics -->
     <div class="cards-grid">
-      <div
-        v-for="(card, i) in cards"
-        :key="i"
-        class="summary-card"
-      >
+      <div v-for="(card, i) in cards" :key="i" class="summary-card">
         <span class="card-label">{{ card.label }}</span>
         <span
           class="card-value"
@@ -183,8 +199,12 @@ const orderCards = computed(() => {
   color: #6c7086;
 }
 
-.text-green { color: #a6e3a1; }
-.text-red { color: #f38ba8; }
+.text-green {
+  color: #a6e3a1;
+}
+.text-red {
+  color: #f38ba8;
+}
 
 .order-stats {
   padding: 0.75rem;

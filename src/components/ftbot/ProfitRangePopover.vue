@@ -48,7 +48,10 @@ onMounted(async () => {
   }
   try {
     const store = botStore.botStores[bid] ?? botStore.activeBot;
-    if (!store) { loading.value = false; return; }
+    if (!store) {
+      loading.value = false;
+      return;
+    }
     await store.getPairCandles({ pair: props.trade.pair, timeframe: timeframe.value, limit: 5000 });
     const key = `${props.trade.pair}__${timeframe.value}`;
     const cd = (store.candleData as Record<string, any>)[key];
@@ -57,14 +60,21 @@ onMounted(async () => {
       columns.value = cd.data.columns;
       _rangeCache.set(cacheKey, { data: cd.data.data, columns: cd.data.columns });
     }
-  } catch { /* ignore */ } finally {
+  } catch {
+    /* ignore */
+  } finally {
     loading.value = false;
   }
 });
 
 const colIdx = computed(() => {
   const c = columns.value;
-  return { date: c.indexOf('date'), high: c.indexOf('high'), low: c.indexOf('low'), close: c.indexOf('close') };
+  return {
+    date: c.indexOf('date'),
+    high: c.indexOf('high'),
+    low: c.indexOf('low'),
+    close: c.indexOf('close'),
+  };
 });
 
 // Filter candles from trade open to now
@@ -96,12 +106,20 @@ const priceExtremes = computed(() => {
   const { high: hi, low: lo, date: di } = colIdx.value;
   if (hi < 0 || lo < 0) return null;
 
-  let maxPrice = -Infinity, minPrice = Infinity;
-  let maxDate = 0, minDate = 0;
+  let maxPrice = -Infinity,
+    minPrice = Infinity;
+  let maxDate = 0,
+    minDate = 0;
 
   for (const c of tc) {
-    if (c[hi] > maxPrice) { maxPrice = c[hi]; maxDate = c[di]; }
-    if (c[lo] < minPrice) { minPrice = c[lo]; minDate = c[di]; }
+    if (c[hi] > maxPrice) {
+      maxPrice = c[hi];
+      maxDate = c[di];
+    }
+    if (c[lo] < minPrice) {
+      minPrice = c[lo];
+      minDate = c[di];
+    }
   }
 
   const maxProfitPct = profitPctAtPrice(maxPrice);
@@ -121,11 +139,18 @@ const priceExtremes = computed(() => {
   const worstPnl = stake * leverage.value * (worstProfitPct / 100);
 
   return {
-    maxPrice, minPrice, maxDate, minDate,
-    bestProfitPct, worstProfitPct,
-    bestPrice, worstPrice,
-    bestDate, worstDate,
-    bestPnl, worstPnl,
+    maxPrice,
+    minPrice,
+    maxDate,
+    minDate,
+    bestProfitPct,
+    worstProfitPct,
+    bestPrice,
+    worstPrice,
+    bestDate,
+    worstDate,
+    bestPnl,
+    worstPnl,
   };
 });
 
@@ -193,22 +218,39 @@ function areMerged(pct1: number, pct2: number): boolean {
   if (!priceExtremes.value) return false;
   const range = Math.abs(priceExtremes.value.bestProfitPct - priceExtremes.value.worstProfitPct);
   if (range === 0) return true;
-  return Math.abs(pct1 - pct2) / range * 100 < MERGE_THRESHOLD_PCT;
+  return (Math.abs(pct1 - pct2) / range) * 100 < MERGE_THRESHOLD_PCT;
 }
 
-const isNearBest = computed(() => priceExtremes.value ? areMerged(currentProfitPct.value, priceExtremes.value.bestProfitPct) : false);
-const isNearWorst = computed(() => priceExtremes.value ? areMerged(currentProfitPct.value, priceExtremes.value.worstProfitPct) : false);
+const isNearBest = computed(() =>
+  priceExtremes.value
+    ? areMerged(currentProfitPct.value, priceExtremes.value.bestProfitPct)
+    : false,
+);
+const isNearWorst = computed(() =>
+  priceExtremes.value
+    ? areMerged(currentProfitPct.value, priceExtremes.value.worstProfitPct)
+    : false,
+);
 
 const blinkClass = ref(true);
 const blinkInterval = ref<ReturnType<typeof setInterval>>();
 onMounted(() => {
-  blinkInterval.value = setInterval(() => { blinkClass.value = !blinkClass.value; }, 800);
+  blinkInterval.value = setInterval(() => {
+    blinkClass.value = !blinkClass.value;
+  }, 800);
 });
-onUnmounted(() => { if (blinkInterval.value) clearInterval(blinkInterval.value); });
+onUnmounted(() => {
+  if (blinkInterval.value) clearInterval(blinkInterval.value);
+});
 
 function formatDate(ts: number): string {
   const d = new Date(ts);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function formatPrc(v: number): string {
@@ -217,7 +259,11 @@ function formatPrc(v: number): string {
 
 const stakeCurrency = computed(() => {
   const bid = props.botId || botStore.selectedBot;
-  return (botStore.allBotState[bid] as any)?.stake_currency || botStore.activeBot?.stakeCurrency || 'USDC';
+  return (
+    (botStore.allBotState[bid] as any)?.stake_currency ||
+    botStore.activeBot?.stakeCurrency ||
+    'USDC'
+  );
 });
 </script>
 
@@ -227,26 +273,36 @@ const stakeCurrency = computed(() => {
 
     <!-- Loading -->
     <div v-if="loading" class="text-center py-6 text-surface-400">
-      <span class="animate-spin inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full" />
+      <span
+        class="animate-spin inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full"
+      />
     </div>
 
     <template v-else-if="priceExtremes && heatmapData">
       <!-- Summary: Best / Worst profit -->
       <div class="grid grid-cols-2 gap-x-4 gap-y-1 mb-3">
         <div>
-          <div class="text-[9px] text-surface-400 uppercase tracking-wider">{{ t('profitRange.bestProfit') }}</div>
+          <div class="text-[9px] text-surface-400 uppercase tracking-wider">
+            {{ t('profitRange.bestProfit') }}
+          </div>
           <div class="font-mono font-bold text-green-400 text-sm">
             +{{ priceExtremes.bestProfitPct.toFixed(2) }}%
           </div>
-          <div class="font-mono text-[10px] text-green-300">+{{ priceExtremes.bestPnl.toFixed(2) }} {{ stakeCurrency }}</div>
+          <div class="font-mono text-[10px] text-green-300">
+            +{{ priceExtremes.bestPnl.toFixed(2) }} {{ stakeCurrency }}
+          </div>
           <div class="text-[9px] text-surface-500">{{ formatDate(priceExtremes.bestDate) }}</div>
         </div>
         <div>
-          <div class="text-[9px] text-surface-400 uppercase tracking-wider">{{ t('profitRange.worstProfit') }}</div>
+          <div class="text-[9px] text-surface-400 uppercase tracking-wider">
+            {{ t('profitRange.worstProfit') }}
+          </div>
           <div class="font-mono font-bold text-red-400 text-sm">
             {{ priceExtremes.worstProfitPct.toFixed(2) }}%
           </div>
-          <div class="font-mono text-[10px] text-red-300">{{ priceExtremes.worstPnl.toFixed(2) }} {{ stakeCurrency }}</div>
+          <div class="font-mono text-[10px] text-red-300">
+            {{ priceExtremes.worstPnl.toFixed(2) }} {{ stakeCurrency }}
+          </div>
           <div class="text-[9px] text-surface-500">{{ formatDate(priceExtremes.worstDate) }}</div>
         </div>
       </div>
@@ -266,42 +322,74 @@ const stakeCurrency = computed(() => {
 
         <!-- Entry price line -->
         <line
-          :x1="PAD_L" :x2="SVG_W - PAD_R"
-          :y1="priceToY(entryPrice)" :y2="priceToY(entryPrice)"
-          stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"
+          :x1="PAD_L"
+          :x2="SVG_W - PAD_R"
+          :y1="priceToY(entryPrice)"
+          :y2="priceToY(entryPrice)"
+          stroke="#94a3b8"
+          stroke-width="1"
+          stroke-dasharray="4,3"
         />
-        <text :x="SVG_W - PAD_R - 2" :y="priceToY(entryPrice) - 3" text-anchor="end" fill="#94a3b8" font-size="8">
+        <text
+          :x="SVG_W - PAD_R - 2"
+          :y="priceToY(entryPrice) - 3"
+          text-anchor="end"
+          fill="#94a3b8"
+          font-size="8"
+        >
           {{ t('profitRange.entry') }} {{ formatPrc(entryPrice) }}
         </text>
 
         <!-- Stoploss line -->
         <template v-if="stoplossPrice">
           <line
-            :x1="PAD_L" :x2="SVG_W - PAD_R"
-            :y1="priceToY(stoplossPrice)" :y2="priceToY(stoplossPrice)"
-            stroke="#ef4444" stroke-width="1" stroke-dasharray="2,2"
+            :x1="PAD_L"
+            :x2="SVG_W - PAD_R"
+            :y1="priceToY(stoplossPrice)"
+            :y2="priceToY(stoplossPrice)"
+            stroke="#ef4444"
+            stroke-width="1"
+            stroke-dasharray="2,2"
           />
-          <text :x="4" :y="priceToY(stoplossPrice) - 3" fill="#ef4444" font-size="7">SL {{ formatPrc(stoplossPrice) }}</text>
+          <text :x="4" :y="priceToY(stoplossPrice) - 3" fill="#ef4444" font-size="7">
+            SL {{ formatPrc(stoplossPrice) }}
+          </text>
         </template>
 
         <!-- Liquidation line -->
         <template v-if="liquidationPrice">
           <line
-            :x1="PAD_L" :x2="SVG_W - PAD_R"
-            :y1="priceToY(liquidationPrice)" :y2="priceToY(liquidationPrice)"
-            stroke="#dc2626" stroke-width="1.5" stroke-dasharray="1,2"
+            :x1="PAD_L"
+            :x2="SVG_W - PAD_R"
+            :y1="priceToY(liquidationPrice)"
+            :y2="priceToY(liquidationPrice)"
+            stroke="#dc2626"
+            stroke-width="1.5"
+            stroke-dasharray="1,2"
           />
-          <text :x="4" :y="priceToY(liquidationPrice) + 10" fill="#dc2626" font-size="7">LIQ {{ formatPrc(liquidationPrice) }}</text>
+          <text :x="4" :y="priceToY(liquidationPrice) + 10" fill="#dc2626" font-size="7">
+            LIQ {{ formatPrc(liquidationPrice) }}
+          </text>
         </template>
 
         <!-- Best price marker -->
         <template v-if="!isNearBest">
           <line
-            :x1="PAD_L" :x2="SVG_W - PAD_R"
-            :y1="priceToY(priceExtremes.bestPrice)" :y2="priceToY(priceExtremes.bestPrice)"
-            stroke="#22c55e" stroke-width="1" opacity="0.6"
+            :x1="PAD_L"
+            :x2="SVG_W - PAD_R"
+            :y1="priceToY(priceExtremes.bestPrice)"
+            :y2="priceToY(priceExtremes.bestPrice)"
+            stroke="#22c55e"
+            stroke-width="1"
+            opacity="0.6"
           />
-          <text :x="SVG_W - PAD_R - 2" :y="priceToY(priceExtremes.bestPrice) + 10" text-anchor="end" fill="#22c55e" font-size="7">
+          <text
+            :x="SVG_W - PAD_R - 2"
+            :y="priceToY(priceExtremes.bestPrice) + 10"
+            text-anchor="end"
+            fill="#22c55e"
+            font-size="7"
+          >
             MAX +{{ priceExtremes.bestProfitPct.toFixed(1) }}%
           </text>
         </template>
@@ -309,19 +397,31 @@ const stakeCurrency = computed(() => {
         <!-- Worst price marker -->
         <template v-if="!isNearWorst">
           <line
-            :x1="PAD_L" :x2="SVG_W - PAD_R"
-            :y1="priceToY(priceExtremes.worstPrice)" :y2="priceToY(priceExtremes.worstPrice)"
-            stroke="#ef4444" stroke-width="1" opacity="0.6"
+            :x1="PAD_L"
+            :x2="SVG_W - PAD_R"
+            :y1="priceToY(priceExtremes.worstPrice)"
+            :y2="priceToY(priceExtremes.worstPrice)"
+            stroke="#ef4444"
+            stroke-width="1"
+            opacity="0.6"
           />
-          <text :x="SVG_W - PAD_R - 2" :y="priceToY(priceExtremes.worstPrice) - 3" text-anchor="end" fill="#ef4444" font-size="7">
+          <text
+            :x="SVG_W - PAD_R - 2"
+            :y="priceToY(priceExtremes.worstPrice) - 3"
+            text-anchor="end"
+            fill="#ef4444"
+            font-size="7"
+          >
             MIN {{ priceExtremes.worstProfitPct.toFixed(1) }}%
           </text>
         </template>
 
         <!-- Current price marker (blinking) -->
         <line
-          :x1="PAD_L" :x2="SVG_W - PAD_R"
-          :y1="priceToY(currentPrice)" :y2="priceToY(currentPrice)"
+          :x1="PAD_L"
+          :x2="SVG_W - PAD_R"
+          :y1="priceToY(currentPrice)"
+          :y2="priceToY(currentPrice)"
           :stroke="isNearBest ? '#22c55e' : isNearWorst ? '#ef4444' : '#60a5fa'"
           stroke-width="2"
           :opacity="blinkClass ? 1 : 0.3"
@@ -344,7 +444,9 @@ const stakeCurrency = computed(() => {
           :opacity="blinkClass ? 1 : 0.5"
           style="transition: opacity 0.3s"
         >
-          {{ isNearBest ? 'MAX ' : isNearWorst ? 'MIN ' : '' }}{{ formatPrc(currentPrice) }} ({{ currentProfitPct >= 0 ? '+' : '' }}{{ currentProfitPct.toFixed(2) }}%)
+          {{ isNearBest ? 'MAX ' : isNearWorst ? 'MIN ' : '' }}{{ formatPrc(currentPrice) }} ({{
+            currentProfitPct >= 0 ? '+' : ''
+          }}{{ currentProfitPct.toFixed(2) }}%)
         </text>
       </svg>
 
@@ -365,13 +467,17 @@ const stakeCurrency = computed(() => {
         <template v-if="stoplossPrice">
           <span class="text-red-400">SL</span>
           <span class="font-mono text-red-300">{{ formatPrc(stoplossPrice) }}</span>
-          <span class="font-mono text-red-400">{{ profitPctAtPrice(stoplossPrice).toFixed(2) }}%</span>
+          <span class="font-mono text-red-400"
+            >{{ profitPctAtPrice(stoplossPrice).toFixed(2) }}%</span
+          >
         </template>
 
         <template v-if="liquidationPrice">
           <span class="text-red-500 font-bold">LIQ</span>
           <span class="font-mono text-red-400">{{ formatPrc(liquidationPrice) }}</span>
-          <span class="font-mono text-red-500">{{ profitPctAtPrice(liquidationPrice).toFixed(2) }}%</span>
+          <span class="font-mono text-red-500"
+            >{{ profitPctAtPrice(liquidationPrice).toFixed(2) }}%</span
+          >
         </template>
       </div>
 

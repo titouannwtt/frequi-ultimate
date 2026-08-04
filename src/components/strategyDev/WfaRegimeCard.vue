@@ -45,7 +45,11 @@ const regimes = computed(() =>
             : 'bg-green-900/30 text-green-400 border border-green-700/40'
         "
       >
-        {{ data.regime_dependent ? t('strategyDev.wfaRegimeDependent') : t('strategyDev.wfaRegimeRobust') }}
+        {{
+          data.regime_dependent
+            ? t('strategyDev.wfaRegimeDependent')
+            : t('strategyDev.wfaRegimeRobust')
+        }}
       </span>
     </div>
     <div class="space-y-2">

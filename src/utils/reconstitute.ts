@@ -87,7 +87,8 @@ export function buildPrefillFromWfa(
     if (detail.max_open_trades != null) prefill.max_open_trades = Number(detail.max_open_trades);
     if (detail.dry_run_wallet != null) prefill.dry_run_wallet = Number(detail.dry_run_wallet);
     if (detail.stake_amount != null) prefill.stake_amount = String(detail.stake_amount);
-    if ((detail as any).epochs_per_window) prefill.epochs = Number((detail as any).epochs_per_window);
+    if ((detail as any).epochs_per_window)
+      prefill.epochs = Number((detail as any).epochs_per_window);
     if ((detail as any).n_windows) prefill.wf_windows = Number((detail as any).n_windows);
     const sp = detail.spaces as string[] | undefined;
     if (sp?.length) prefill.spaces = sp;

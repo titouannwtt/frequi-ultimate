@@ -190,18 +190,10 @@ export function usePercentageTool(
     const isPositive = pctRaw >= 0;
 
     // Dynamic colors
-    const areaColor = isPositive
-      ? 'rgba(38, 166, 154, 0.08)'
-      : 'rgba(239, 83, 80, 0.08)';
-    const lineColor = isPositive
-      ? 'rgba(38, 166, 154, 0.3)'
-      : 'rgba(239, 83, 80, 0.3)';
-    const pillColor = isPositive
-      ? 'rgba(38, 166, 154, 0.92)'
-      : 'rgba(239, 83, 80, 0.92)';
-    const pillShadow = isPositive
-      ? 'rgba(38, 166, 154, 0.3)'
-      : 'rgba(239, 83, 80, 0.3)';
+    const areaColor = isPositive ? 'rgba(38, 166, 154, 0.08)' : 'rgba(239, 83, 80, 0.08)';
+    const lineColor = isPositive ? 'rgba(38, 166, 154, 0.3)' : 'rgba(239, 83, 80, 0.3)';
+    const pillColor = isPositive ? 'rgba(38, 166, 154, 0.92)' : 'rgba(239, 83, 80, 0.92)';
+    const pillShadow = isPositive ? 'rgba(38, 166, 154, 0.3)' : 'rgba(239, 83, 80, 0.3)';
 
     // Area rectangle
     const areaX = Math.min(startPos.value.x, xr);

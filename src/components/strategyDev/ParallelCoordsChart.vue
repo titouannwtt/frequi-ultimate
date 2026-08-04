@@ -6,19 +6,9 @@ import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { ParallelChart } from 'echarts/charts';
-import {
-  TitleComponent,
-  TooltipComponent,
-  ParallelComponent,
-} from 'echarts/components';
+import { TitleComponent, TooltipComponent, ParallelComponent } from 'echarts/components';
 
-use([
-  ParallelChart,
-  CanvasRenderer,
-  TitleComponent,
-  TooltipComponent,
-  ParallelComponent,
-]);
+use([ParallelChart, CanvasRenderer, TitleComponent, TooltipComponent, ParallelComponent]);
 
 interface PCLine {
   values: Record<string, number>;
@@ -149,7 +139,12 @@ const chartOptions = computed<EChartsOption>(() => {
   ];
 
   return {
-    title: { text: props.title, left: 'center', top: 4, textStyle: { fontSize: 14, color: '#cdd6f4' } },
+    title: {
+      text: props.title,
+      left: 'center',
+      top: 4,
+      textStyle: { fontSize: 14, color: '#cdd6f4' },
+    },
     parallelAxis,
     parallel: { left: 60, right: 60, top: 80, bottom: 50 },
     series: [
@@ -222,9 +217,10 @@ const qualityStrips = computed<ParamStrip[]>(() => {
       return range ? denormalize(norm, pMin, pMax) : norm;
     });
     allActuals.sort((a, b) => a - b);
-    const medianActual = allActuals.length % 2 === 0
-      ? (allActuals[allActuals.length / 2 - 1] + allActuals[allActuals.length / 2]) / 2
-      : allActuals[Math.floor(allActuals.length / 2)];
+    const medianActual =
+      allActuals.length % 2 === 0
+        ? (allActuals[allActuals.length / 2 - 1] + allActuals[allActuals.length / 2]) / 2
+        : allActuals[Math.floor(allActuals.length / 2)];
     const medianBi = Math.min(Math.floor((medianActual - pMin) / binSize), N_BINS - 1);
 
     const bins: QualityBin[] = binLosses.map((bl) => {
@@ -342,11 +338,7 @@ const bestLoss = computed(() => {
       <span class="text-green-400 font-medium">
         {{ t('strategyDev.pcBestEpoch', { loss: bestLoss.toFixed(4) }) }}
       </span>
-      <span
-        v-for="info in bestEpochInfo"
-        :key="info.name"
-        class="text-surface-400"
-      >
+      <span v-for="info in bestEpochInfo" :key="info.name" class="text-surface-400">
         {{ info.name }}=<span class="text-green-300 font-mono">{{ info.formatted }}</span>
       </span>
     </div>

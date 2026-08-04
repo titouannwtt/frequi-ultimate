@@ -60,12 +60,19 @@ const convertTargetCurrency = computed(() => {
   let bestVal = 0;
   for (const cur of currencies) {
     const val = perCurrencyTotals.value[cur] ?? 0;
-    if (val > bestVal) { bestVal = val; best = cur; }
+    if (val > bestVal) {
+      bestVal = val;
+      best = cur;
+    }
   }
   return best;
 });
 
-const convertedTotal = computed<{ total: number; currency: string; rates: { from: string; rate: number }[] } | null>(() => {
+const convertedTotal = computed<{
+  total: number;
+  currency: string;
+  rates: { from: string; rate: number }[];
+} | null>(() => {
   if (!isMultiCurrency.value || !hasRates.value) return null;
   const target = convertTargetCurrency.value;
   let total = 0;
@@ -132,7 +139,9 @@ function donutDash(value: number, total: number): string {
 <template>
   <div class="glass-card" style="width: 380px">
     <!-- ═══ HEADER ═══ -->
-    <div class="flex items-center justify-between mb-3 pb-2 border-b border-black/5 dark:border-white/5">
+    <div
+      class="flex items-center justify-between mb-3 pb-2 border-b border-black/5 dark:border-white/5"
+    >
       <div class="flex items-center gap-2">
         <i-mdi-wallet class="text-blue-400 text-base" />
         <span class="font-semibold text-gray-100 text-sm">
@@ -149,16 +158,28 @@ function donutDash(value: number, total: number): string {
       </div>
       <div v-for="(amt, cur) in perCurrencyTotals" :key="cur" class="stat-row">
         <span class="stat-label text-sm">{{ cur }}</span>
-        <span class="stat-value font-bold text-sm text-blue-400">{{ formatPriceCurrency(amt, cur as string, 2) }}</span>
+        <span class="stat-value font-bold text-sm text-blue-400">{{
+          formatPriceCurrency(amt, cur as string, 2)
+        }}</span>
       </div>
       <!-- Converted total when multi-currency -->
       <div v-if="convertedTotal" class="mt-2 pt-2 border-t border-black/5 dark:border-white/5">
         <div class="stat-row">
-          <span class="stat-label text-sm">{{ t('summaryTrades.convertedTotal') }} ({{ convertedTotal.currency }})</span>
-          <span class="stat-value font-bold text-sm text-purple-400">&#8776; {{ formatPriceCurrency(convertedTotal.total, convertedTotal.currency, 2) }}</span>
+          <span class="stat-label text-sm"
+            >{{ t('summaryTrades.convertedTotal') }} ({{ convertedTotal.currency }})</span
+          >
+          <span class="stat-value font-bold text-sm text-purple-400"
+            >&#8776;
+            {{ formatPriceCurrency(convertedTotal.total, convertedTotal.currency, 2) }}</span
+          >
         </div>
-        <div v-for="r in convertedTotal.rates" :key="r.from" class="text-[0.85rem] text-gray-600 dark:text-gray-500 text-right">
-          {{ t('summaryTrades.conversionRate') }}: 1 {{ r.from }} &#8776; {{ r.rate < 1 ? r.rate.toFixed(6) : r.rate.toFixed(2) }} {{ convertedTotal.currency }}
+        <div
+          v-for="r in convertedTotal.rates"
+          :key="r.from"
+          class="text-[0.85rem] text-gray-600 dark:text-gray-500 text-right"
+        >
+          {{ t('summaryTrades.conversionRate') }}: 1 {{ r.from }} &#8776;
+          {{ r.rate < 1 ? r.rate.toFixed(6) : r.rate.toFixed(2) }} {{ convertedTotal.currency }}
         </div>
       </div>
     </div>
@@ -169,25 +190,51 @@ function donutDash(value: number, total: number): string {
         <!-- Donut chart -->
         <svg width="80" height="80" viewBox="0 0 80 80" class="flex-shrink-0">
           <circle
-            cx="40" cy="40" :r="donutRadius"
-            fill="none" stroke="rgba(255,255,255,0.06)" :stroke-width="donutStroke"
+            cx="40"
+            cy="40"
+            :r="donutRadius"
+            fill="none"
+            stroke="rgba(255,255,255,0.06)"
+            :stroke-width="donutStroke"
           />
           <circle
             v-for="(entry, idx) in donutEntries"
             :key="'donut-' + entry.label"
-            cx="40" cy="40" :r="donutRadius"
+            cx="40"
+            cy="40"
+            :r="donutRadius"
             fill="none"
             :stroke="barColor(idx).from"
             :stroke-width="donutStroke"
             stroke-linecap="round"
             :stroke-dasharray="donutDash(entry.value, donutTotal)"
-            :stroke-dashoffset="-(donutEntries.slice(0, idx).reduce((sum, e) => sum + (donutTotal > 0 ? (e.value / donutTotal) : 0), 0) * donutCircumference) + donutCircumference / 4"
+            :stroke-dashoffset="
+              -(
+                donutEntries
+                  .slice(0, idx)
+                  .reduce((sum, e) => sum + (donutTotal > 0 ? e.value / donutTotal : 0), 0) *
+                donutCircumference
+              ) +
+              donutCircumference / 4
+            "
             style="transition: stroke-dasharray 0.6s ease"
           />
-          <text x="40" y="38" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 0.95rem">
+          <text
+            x="40"
+            y="38"
+            text-anchor="middle"
+            class="fill-gray-100 font-bold"
+            style="font-size: 0.95rem"
+          >
             {{ botEntries.length }}
           </text>
-          <text x="40" y="48" text-anchor="middle" class="fill-gray-600 dark:fill-gray-500" style="font-size: 0.4rem">
+          <text
+            x="40"
+            y="48"
+            text-anchor="middle"
+            class="fill-gray-600 dark:fill-gray-500"
+            style="font-size: 0.4rem"
+          >
             {{ t('summaryCards.bots') }}
           </text>
         </svg>
@@ -202,7 +249,9 @@ function donutDash(value: number, total: number): string {
               class="w-2 h-2 rounded-full flex-shrink-0"
               :style="{ background: barColor(idx).from }"
             />
-            <span class="text-gray-600 dark:text-gray-400 truncate" style="max-width: 100px">{{ entry.label }}</span>
+            <span class="text-gray-600 dark:text-gray-400 truncate" style="max-width: 100px">{{
+              entry.label
+            }}</span>
             <span class="ml-auto text-gray-800 dark:text-gray-200">
               {{ donutTotal > 0 ? ((entry.value / donutTotal) * 100).toFixed(1) : 0 }}%
             </span>
@@ -218,20 +267,23 @@ function donutDash(value: number, total: number): string {
         <span>{{ t('summaryTrades.perBot') }}</span>
       </div>
       <div class="space-y-1">
-        <div
-          v-for="(entry, idx) in botEntries"
-          :key="entry.botId"
-        >
+        <div v-for="(entry, idx) in botEntries" :key="entry.botId">
           <div class="flex items-center justify-between mb-0.5">
             <div class="flex items-center gap-1.5">
               <span
                 class="w-2 h-2 rounded-full flex-shrink-0"
                 :style="{ background: barColor(idx).from }"
               />
-              <span class="text-gray-700 dark:text-gray-300 text-[0.85rem] truncate" style="max-width: 120px">{{ entry.name }}</span>
+              <span
+                class="text-gray-700 dark:text-gray-300 text-[0.85rem] truncate"
+                style="max-width: 120px"
+                >{{ entry.name }}</span
+              >
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]">{{ botPercentOfCurrency(entry).toFixed(1) }}%</span>
+              <span class="text-gray-600 dark:text-gray-500 text-[0.85rem]"
+                >{{ botPercentOfCurrency(entry).toFixed(1) }}%</span
+              >
               <span class="text-gray-800 dark:text-gray-200 text-[0.85rem] font-bold">
                 {{ formatPriceCurrency(entry.balance, entry.stakeCurrency, 2) }}
               </span>
@@ -240,7 +292,10 @@ function donutDash(value: number, total: number): string {
           <div class="h-1 rounded-full bg-white/5 overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-500"
-              :style="{ width: `${botPercentOfCurrency(entry)}%`, background: `linear-gradient(to right, ${barColor(idx).from}, ${barColor(idx).to})` }"
+              :style="{
+                width: `${botPercentOfCurrency(entry)}%`,
+                background: `linear-gradient(to right, ${barColor(idx).from}, ${barColor(idx).to})`,
+              }"
             />
           </div>
         </div>

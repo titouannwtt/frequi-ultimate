@@ -28,9 +28,10 @@ interface BotEntry {
 
 const botEntries = computed<BotEntry[]>(() => {
   const entries: BotEntry[] = [];
-  const botsToUse = props.botIds && props.botIds.length > 0
-    ? botStore.selectedBots.filter(b => props.botIds!.includes(b.botId))
-    : botStore.selectedBots;
+  const botsToUse =
+    props.botIds && props.botIds.length > 0
+      ? botStore.selectedBots.filter((b) => props.botIds!.includes(b.botId))
+      : botStore.selectedBots;
   for (const bot of botsToUse) {
     const botId = bot.botId;
     const profitData = botStore.allProfit[botId];
@@ -168,7 +169,9 @@ function barWidthPercent(val: number): number {
 <template>
   <div class="glass-card" style="width: 560px">
     <!-- ═══ HEADER ═══ -->
-    <div class="flex items-center justify-between mb-3 pb-2 border-b border-black/5 dark:border-white/5">
+    <div
+      class="flex items-center justify-between mb-3 pb-2 border-b border-black/5 dark:border-white/5"
+    >
       <div class="flex items-center gap-2">
         <i-mdi-chart-box v-if="mode === 'open'" class="text-blue-400 text-base" />
         <i-mdi-chart-line v-else class="text-green-400 text-base" />
@@ -176,10 +179,7 @@ function barWidthPercent(val: number): number {
           {{ mode === 'open' ? t('summaryCard.openTitle') : t('summaryCard.closedTitle') }}
         </span>
       </div>
-      <span
-        class="font-bold text-sm"
-        :class="profitColor(totalProfit)"
-      >
+      <span class="font-bold text-sm" :class="profitColor(totalProfit)">
         {{ formatPriceCurrency(totalProfit, currency, 2) }}
       </span>
     </div>
@@ -191,13 +191,12 @@ function barWidthPercent(val: number): number {
         <span>{{ t('summaryCard.botRanking') }}</span>
       </div>
       <div class="space-y-1.5">
-        <div
-          v-for="(entry, idx) in sortedEntries"
-          :key="entry.botId"
-          class="bot-bar-row"
-        >
+        <div v-for="(entry, idx) in sortedEntries" :key="entry.botId" class="bot-bar-row">
           <div class="flex items-center justify-between mb-0.5">
-            <span class="text-gray-700 dark:text-gray-300 text-[0.85rem] font-medium truncate" style="max-width: 140px">
+            <span
+              class="text-gray-700 dark:text-gray-300 text-[0.85rem] font-medium truncate"
+              style="max-width: 140px"
+            >
               {{ entry.name }}
             </span>
             <div class="flex items-center gap-2">
@@ -214,10 +213,7 @@ function barWidthPercent(val: number): number {
               >
                 ROI {{ formatPercent(entry.roi, 1) }}
               </span>
-              <span
-                class="font-bold text-[0.85rem]"
-                :class="profitColor(entry.profit)"
-              >
+              <span class="font-bold text-[0.85rem]" :class="profitColor(entry.profit)">
                 {{ formatPriceCurrency(entry.profit, entry.stakeCurrency, 2) }}
               </span>
             </div>
@@ -247,25 +243,54 @@ function barWidthPercent(val: number): number {
           <!-- Donut chart -->
           <svg width="80" height="80" viewBox="0 0 80 80" class="flex-shrink-0">
             <circle
-              cx="40" cy="40" :r="donutRadius"
-              fill="none" stroke="rgba(255,255,255,0.06)" :stroke-width="donutStroke"
+              cx="40"
+              cy="40"
+              :r="donutRadius"
+              fill="none"
+              stroke="rgba(255,255,255,0.06)"
+              :stroke-width="donutStroke"
             />
             <circle
               v-for="(entry, idx) in sortedEntries"
               :key="'donut-' + entry.botId"
-              cx="40" cy="40" :r="donutRadius"
+              cx="40"
+              cy="40"
+              :r="donutRadius"
               fill="none"
               :stroke="barColor(idx).from"
               :stroke-width="donutStroke"
               stroke-linecap="round"
               :stroke-dasharray="donutDash(entry.stakeInOpenTrades, totalStakeAtRisk)"
-              :stroke-dashoffset="-(sortedEntries.slice(0, idx).reduce((sum, e) => sum + (totalStakeAtRisk > 0 ? (e.stakeInOpenTrades / totalStakeAtRisk) : 0), 0) * donutCircumference) + donutCircumference / 4"
+              :stroke-dashoffset="
+                -(
+                  sortedEntries
+                    .slice(0, idx)
+                    .reduce(
+                      (sum, e) =>
+                        sum + (totalStakeAtRisk > 0 ? e.stakeInOpenTrades / totalStakeAtRisk : 0),
+                      0,
+                    ) * donutCircumference
+                ) +
+                donutCircumference / 4
+              "
               style="transition: stroke-dasharray 0.6s ease"
             />
-            <text x="40" y="38" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 0.95rem">
+            <text
+              x="40"
+              y="38"
+              text-anchor="middle"
+              class="fill-gray-100 font-bold"
+              style="font-size: 0.95rem"
+            >
               {{ sortedEntries.length }}
             </text>
-            <text x="40" y="48" text-anchor="middle" class="fill-gray-600 dark:fill-gray-500" style="font-size: 0.4rem">
+            <text
+              x="40"
+              y="48"
+              text-anchor="middle"
+              class="fill-gray-600 dark:fill-gray-500"
+              style="font-size: 0.4rem"
+            >
               {{ t('summaryCards.bots') }}
             </text>
           </svg>
@@ -280,7 +305,9 @@ function barWidthPercent(val: number): number {
                 class="w-2 h-2 rounded-full flex-shrink-0"
                 :style="{ background: barColor(idx).from }"
               />
-              <span class="text-gray-600 dark:text-gray-400 truncate" style="max-width: 100px">{{ entry.name }}</span>
+              <span class="text-gray-600 dark:text-gray-400 truncate" style="max-width: 100px">{{
+                entry.name
+              }}</span>
               <span class="ml-auto text-gray-800 dark:text-gray-200">
                 {{ formatPriceCurrency(entry.stakeInOpenTrades, entry.stakeCurrency, 0) }}
               </span>
@@ -299,27 +326,39 @@ function barWidthPercent(val: number): number {
         </div>
         <div class="space-y-0.5">
           <div v-if="bestBot" class="stat-row">
-            <span class="stat-label" v-tooltip.top="t('tooltips.bestBot')">{{ t('summaryCard.bestBot') }}</span>
+            <span class="stat-label" v-tooltip.top="t('tooltips.bestBot')">{{
+              t('summaryCard.bestBot')
+            }}</span>
             <span class="stat-value">
               <span class="text-green-400 font-bold">{{ bestBot.name }}</span>
-              <span class="text-gray-600 dark:text-gray-500 ml-1">{{ formatPercent(bestBot.roi, 1) }}</span>
+              <span class="text-gray-600 dark:text-gray-500 ml-1">{{
+                formatPercent(bestBot.roi, 1)
+              }}</span>
             </span>
           </div>
           <div v-if="worstBot" class="stat-row">
-            <span class="stat-label" v-tooltip.top="t('tooltips.worstBot')">{{ t('summaryCard.worstBot') }}</span>
+            <span class="stat-label" v-tooltip.top="t('tooltips.worstBot')">{{
+              t('summaryCard.worstBot')
+            }}</span>
             <span class="stat-value">
               <span class="text-red-400 font-bold">{{ worstBot.name }}</span>
-              <span class="text-gray-600 dark:text-gray-500 ml-1">{{ formatPercent(worstBot.roi, 1) }}</span>
+              <span class="text-gray-600 dark:text-gray-500 ml-1">{{
+                formatPercent(worstBot.roi, 1)
+              }}</span>
             </span>
           </div>
           <div class="stat-row">
-            <span class="stat-label" v-tooltip.top="t('tooltips.avgRoiAllBots')">{{ t('summaryCard.avgRoi') }}</span>
+            <span class="stat-label" v-tooltip.top="t('tooltips.avgRoiAllBots')">{{
+              t('summaryCard.avgRoi')
+            }}</span>
             <span class="stat-value" :class="profitColor(avgRoi)">
               {{ formatPercent(avgRoi, 2) }}
             </span>
           </div>
           <div v-if="totalWithdrawals > 0" class="stat-row">
-            <span class="stat-label" v-tooltip.top="t('tooltips.totalWithdrawalsAllBots')">{{ t('summaryCard.totalWithdrawals') }}</span>
+            <span class="stat-label" v-tooltip.top="t('tooltips.totalWithdrawalsAllBots')">{{
+              t('summaryCard.totalWithdrawals')
+            }}</span>
             <span class="stat-value text-amber-400">
               {{ formatPriceCurrency(totalWithdrawals, currency, 2) }}
             </span>
@@ -339,7 +378,10 @@ function barWidthPercent(val: number): number {
             :key="'wr-' + entry.botId"
             class="flex items-center gap-2"
           >
-            <span class="text-[0.8rem] text-gray-600 dark:text-gray-400 truncate" style="min-width: 70px; max-width: 100px">
+            <span
+              class="text-[0.8rem] text-gray-600 dark:text-gray-400 truncate"
+              style="min-width: 70px; max-width: 100px"
+            >
               {{ entry.name }}
             </span>
             <div class="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
@@ -348,7 +390,10 @@ function barWidthPercent(val: number): number {
                 :style="{ width: `${entry.winrate}%` }"
               />
             </div>
-            <span class="text-[0.8rem] text-gray-800 dark:text-gray-200 font-bold" style="min-width: 32px; text-align: right">
+            <span
+              class="text-[0.8rem] text-gray-800 dark:text-gray-200 font-bold"
+              style="min-width: 32px; text-align: right"
+            >
               {{ entry.winrate.toFixed(0) }}%
             </span>
           </div>

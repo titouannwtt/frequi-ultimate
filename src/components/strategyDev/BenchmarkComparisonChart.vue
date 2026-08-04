@@ -13,7 +13,14 @@ import VChart from 'vue-echarts';
 
 const { t } = useI18n();
 
-use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent, DataZoomComponent]);
+use([
+  CanvasRenderer,
+  LineChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  DataZoomComponent,
+]);
 
 const props = defineProps<{
   data: {
@@ -76,7 +83,10 @@ const chartOptions = computed(() => {
         areaStyle: {
           color: {
             type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
             colorStops: [
               { offset: 0, color: 'rgba(166,227,161,0.15)' },
               { offset: 1, color: 'rgba(166,227,161,0)' },

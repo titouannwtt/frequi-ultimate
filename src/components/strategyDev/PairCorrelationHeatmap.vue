@@ -6,11 +6,7 @@ import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { HeatmapChart } from 'echarts/charts';
-import {
-  GridComponent,
-  TooltipComponent,
-  VisualMapComponent,
-} from 'echarts/components';
+import { GridComponent, TooltipComponent, VisualMapComponent } from 'echarts/components';
 
 use([HeatmapChart, CanvasRenderer, GridComponent, TooltipComponent, VisualMapComponent]);
 
@@ -89,9 +85,9 @@ const chartOptions = computed<EChartsOption>(() => {
           strengthColor = C.yellow;
         }
         return (
-          `<b>${shortPairNames.value[row]}</b> × <b>${shortPairNames.value[col]}</b><br/>`
-          + `${t('strategyDev.corrCoeff')}: <b style="color:${strengthColor}">${val.toFixed(3)}</b><br/>`
-          + `${t('strategyDev.corrStrength')}: <span style="color:${strengthColor}">${strength}</span>`
+          `<b>${shortPairNames.value[row]}</b> × <b>${shortPairNames.value[col]}</b><br/>` +
+          `${t('strategyDev.corrCoeff')}: <b style="color:${strengthColor}">${val.toFixed(3)}</b><br/>` +
+          `${t('strategyDev.corrStrength')}: <span style="color:${strengthColor}">${strength}</span>`
         );
       },
       backgroundColor: C.surface0,

@@ -10,7 +10,7 @@ export function useWidgetDefaults<T extends Record<string, unknown>>(
 
   const savedDefaults = computed<T>(() => {
     const stored = layoutStore.getWidgetDefaults(widgetId);
-    return stored ? { ...hardcodedDefaults, ...stored } as T : hardcodedDefaults;
+    return stored ? ({ ...hardcodedDefaults, ...stored } as T) : hardcodedDefaults;
   });
 
   const filtersChanged = computed(() => {

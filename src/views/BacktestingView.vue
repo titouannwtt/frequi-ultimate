@@ -146,10 +146,14 @@ watch(
               ><i-mdi-compare-horizontal class="me-2" />{{ t('backtest.compareResults') }}</Tab
             >
             <Tab class="flex items-center" value="visualize-summary" :disabled="!hasBacktestResult"
-              ><i-mdi-chart-bell-curve-cumulative class="me-2" />{{ t('backtest.visualizeSummary') }}</Tab
+              ><i-mdi-chart-bell-curve-cumulative class="me-2" />{{
+                t('backtest.visualizeSummary')
+              }}</Tab
             >
             <Tab class="flex items-center" value="visualize" :disabled="!hasBacktestResult"
-              ><i-mdi-chart-timeline-variant-shimmer class="me-2" />{{ t('backtest.visualizeResult') }}</Tab
+              ><i-mdi-chart-timeline-variant-shimmer class="me-2" />{{
+                t('backtest.visualizeResult')
+              }}</Tab
             >
           </TabList>
           <TabPanels>

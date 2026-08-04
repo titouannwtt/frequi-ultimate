@@ -32,8 +32,14 @@ const dayGroups = computed<DayGroup[]>(() => {
     yesterday.setDate(yesterday.getDate() - 1);
     let dateLabel: string;
     if (date === today.toISOString().slice(0, 10)) dateLabel = t('strategyDev.timelineToday');
-    else if (date === yesterday.toISOString().slice(0, 10)) dateLabel = t('strategyDev.timelineYesterday');
-    else dateLabel = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    else if (date === yesterday.toISOString().slice(0, 10))
+      dateLabel = t('strategyDev.timelineYesterday');
+    else
+      dateLabel = d.toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      });
 
     result.push({ date, dateLabel, runs: dayRuns });
   }
@@ -42,10 +48,14 @@ const dayGroups = computed<DayGroup[]>(() => {
 
 function runTypeColor(type: RunType): string {
   switch (type) {
-    case RunType.hyperopt: return 'var(--sd-info)';
-    case RunType.wfa: return 'var(--sd-warning)';
-    case RunType.backtest: return 'var(--sd-success)';
-    default: return 'var(--sd-subtext)';
+    case RunType.hyperopt:
+      return 'var(--sd-info)';
+    case RunType.wfa:
+      return 'var(--sd-warning)';
+    case RunType.backtest:
+      return 'var(--sd-success)';
+    default:
+      return 'var(--sd-subtext)';
   }
 }
 
@@ -114,7 +124,11 @@ const isSelected = (run: RunListEntry) => store.selectedRun?.filename === run.fi
                 <span v-if="run.total_profit_pct != null" class="tl-metric">
                   {{ run.total_profit_pct >= 0 ? '+' : '' }}{{ run.total_profit_pct.toFixed(1) }}%
                 </span>
-                <span v-if="run.verdict_grade" class="tl-grade" :style="{ color: runVerdictColor(run) }">
+                <span
+                  v-if="run.verdict_grade"
+                  class="tl-grade"
+                  :style="{ color: runVerdictColor(run) }"
+                >
                   {{ run.verdict_grade }}
                 </span>
               </div>

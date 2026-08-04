@@ -31,7 +31,7 @@ const stats = computed(() => {
 
   const durationEntries = trades
     .map((t) => {
-      const d = (t.close_timestamp && t.open_timestamp) ? t.close_timestamp - t.open_timestamp : 0;
+      const d = t.close_timestamp && t.open_timestamp ? t.close_timestamp - t.open_timestamp : 0;
       return { duration: d, trade: t };
     })
     .filter((e) => e.duration > 0);
@@ -121,22 +121,36 @@ const stats = computed(() => {
         <span class="text-surface-400">{{ t('durationHealth.percentile') }}</span>
         <span
           class="font-mono font-semibold"
-          :class="stats.level === 'danger' ? 'text-red-400' : stats.level === 'warn' ? 'text-orange-400' : 'text-green-400'"
+          :class="
+            stats.level === 'danger'
+              ? 'text-red-400'
+              : stats.level === 'warn'
+                ? 'text-orange-400'
+                : 'text-green-400'
+          "
         >
           {{ stats.percentile }}%
         </span>
 
         <span class="text-surface-400">{{ t('durationHealth.sampleSize') }}</span>
-        <span class="text-surface-500">{{ stats.totalTrades }} {{ t('durationHealth.trades') }}</span>
+        <span class="text-surface-500"
+          >{{ stats.totalTrades }} {{ t('durationHealth.trades') }}</span
+        >
       </div>
 
       <!-- Min / Max trades -->
       <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 mb-2 border-t border-surface-700 pt-2">
         <span class="text-surface-400">{{ t('durationHealth.shortest') }}</span>
-        <span class="font-mono"><span class="text-cyan-400">{{ formatDurationMs(stats.shortestDuration) }}</span> <span class="text-surface-500 text-[11px]">({{ stats.shortestPair }})</span></span>
+        <span class="font-mono"
+          ><span class="text-cyan-400">{{ formatDurationMs(stats.shortestDuration) }}</span>
+          <span class="text-surface-500 text-[11px]">({{ stats.shortestPair }})</span></span
+        >
 
         <span class="text-surface-400">{{ t('durationHealth.longest') }}</span>
-        <span class="font-mono"><span class="text-amber-400">{{ formatDurationMs(stats.longestDuration) }}</span> <span class="text-surface-500 text-[11px]">({{ stats.longestPair }})</span></span>
+        <span class="font-mono"
+          ><span class="text-amber-400">{{ formatDurationMs(stats.longestDuration) }}</span>
+          <span class="text-surface-500 text-[11px]">({{ stats.longestPair }})</span></span
+        >
       </div>
 
       <!-- Box plot SVG -->
@@ -148,7 +162,8 @@ const stats = computed(() => {
             y1="22"
             x2="230"
             y2="22"
-            stroke="#6b7280" stroke-width="1"
+            stroke="#6b7280"
+            stroke-width="1"
           />
           <!-- IQR box -->
           <rect
@@ -156,7 +171,10 @@ const stats = computed(() => {
             y="10"
             :width="Math.max(((stats.boxQ3 - stats.boxQ1) / stats.boxMax) * 220, 2)"
             height="24"
-            fill="rgba(59,130,246,0.2)" stroke="#3b82f6" stroke-width="1" rx="2"
+            fill="rgba(59,130,246,0.2)"
+            stroke="#3b82f6"
+            stroke-width="1"
+            rx="2"
           />
           <!-- Median line -->
           <line
@@ -164,31 +182,47 @@ const stats = computed(() => {
             y1="8"
             :x2="(stats.boxMedian / stats.boxMax) * 220 + 10"
             y2="36"
-            stroke="#f59e0b" stroke-width="2"
+            stroke="#f59e0b"
+            stroke-width="2"
           />
           <!-- Min whisker cap -->
           <line
-            :x1="(stats.boxMin / stats.boxMax) * 220 + 10" y1="15"
-            :x2="(stats.boxMin / stats.boxMax) * 220 + 10" y2="29"
-            stroke="#6b7280" stroke-width="1.5"
+            :x1="(stats.boxMin / stats.boxMax) * 220 + 10"
+            y1="15"
+            :x2="(stats.boxMin / stats.boxMax) * 220 + 10"
+            y2="29"
+            stroke="#6b7280"
+            stroke-width="1.5"
           />
           <!-- Max whisker cap -->
           <line x1="230" y1="15" x2="230" y2="29" stroke="#6b7280" stroke-width="1.5" />
           <!-- Current trade marker -->
           <circle
             :cx="Math.min(stats.currentMs / stats.boxMax, 1) * 220 + 10"
-            cy="22" r="4"
-            :fill="stats.level === 'danger' ? '#ef4444' : stats.level === 'warn' ? '#f59e0b' : '#22c55e'"
-            stroke="#fff" stroke-width="1"
+            cy="22"
+            r="4"
+            :fill="
+              stats.level === 'danger' ? '#ef4444' : stats.level === 'warn' ? '#f59e0b' : '#22c55e'
+            "
+            stroke="#fff"
+            stroke-width="1"
           />
         </svg>
       </div>
 
       <!-- Distribution bar (percentile) -->
-      <div class="relative h-3 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden mb-1">
+      <div
+        class="relative h-3 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden mb-1"
+      >
         <div
           class="absolute top-0 left-0 h-full rounded-full transition-all"
-          :class="stats.level === 'danger' ? 'bg-red-500' : stats.level === 'warn' ? 'bg-orange-400' : 'bg-green-500'"
+          :class="
+            stats.level === 'danger'
+              ? 'bg-red-500'
+              : stats.level === 'warn'
+                ? 'bg-orange-400'
+                : 'bg-green-500'
+          "
           :style="{ width: stats.percentile + '%' }"
         />
       </div>

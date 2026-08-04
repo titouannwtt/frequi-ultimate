@@ -25,7 +25,10 @@ const dataLoaders: Record<SupportedLocale, () => Promise<{ default: unknown[] }>
   pt: () => import('emojibase-data/pt/compact.json'),
 };
 
-const messageLoaders: Record<SupportedLocale, () => Promise<{ default: { groups: { order: number; key: string; message: string }[] } }>> = {
+const messageLoaders: Record<
+  SupportedLocale,
+  () => Promise<{ default: { groups: { order: number; key: string; message: string }[] } }>
+> = {
   en: () => import('emojibase-data/en/messages.json'),
   fr: () => import('emojibase-data/fr/messages.json'),
   de: () => import('emojibase-data/de/messages.json'),
@@ -62,8 +65,12 @@ async function loadCatalog(currentLocale: string) {
   }
 
   try {
-    const datas = await Promise.all(localesToLoad.map((l) => dataLoaders[l]().then((m) => m.default as CompactEmoji[])));
-    const messagesLocale: SupportedLocale = (SUPPORTED_LOCALES as readonly string[]).includes(currentLocale)
+    const datas = await Promise.all(
+      localesToLoad.map((l) => dataLoaders[l]().then((m) => m.default as CompactEmoji[])),
+    );
+    const messagesLocale: SupportedLocale = (SUPPORTED_LOCALES as readonly string[]).includes(
+      currentLocale,
+    )
       ? (currentLocale as SupportedLocale)
       : 'en';
     const messages = await messageLoaders[messagesLocale]().then((m) => m.default);
@@ -75,7 +82,10 @@ async function loadCatalog(currentLocale: string) {
       const tags = new Set<string>();
       if (e.label) {
         tags.add(e.label.toLowerCase());
-        e.label.toLowerCase().split(/[\s\-_]+/).forEach((w) => w && tags.add(w));
+        e.label
+          .toLowerCase()
+          .split(/[\s\-_]+/)
+          .forEach((w) => w && tags.add(w));
       }
       e.tags?.forEach((t) => tags.add(t.toLowerCase()));
       map.set(e.hexcode, {
@@ -91,7 +101,10 @@ async function loadCatalog(currentLocale: string) {
         if (!entry) continue;
         if (e.label) {
           entry.tags.push(e.label.toLowerCase());
-          e.label.toLowerCase().split(/[\s\-_]+/).forEach((w) => w && entry.tags.push(w));
+          e.label
+            .toLowerCase()
+            .split(/[\s\-_]+/)
+            .forEach((w) => w && entry.tags.push(w));
         }
         e.tags?.forEach((t) => entry.tags.push(t.toLowerCase()));
       }

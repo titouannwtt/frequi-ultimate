@@ -18,11 +18,23 @@ const metrics = computed(() => {
       hint: t('strategyDev.hintTotalProfit'),
     });
   if (run.value.total_trades != null)
-    items.push({ label: t('strategyDev.totalTrades'), value: run.value.total_trades, hint: t('strategyDev.hintTotalTrades') });
+    items.push({
+      label: t('strategyDev.totalTrades'),
+      value: run.value.total_trades,
+      hint: t('strategyDev.hintTotalTrades'),
+    });
   if (run.value.best_sharpe != null)
-    items.push({ label: t('strategyDev.bestSharpe'), value: run.value.best_sharpe.toFixed(3), hint: t('strategyDev.hintBestSharpe') });
+    items.push({
+      label: t('strategyDev.bestSharpe'),
+      value: run.value.best_sharpe.toFixed(3),
+      hint: t('strategyDev.hintBestSharpe'),
+    });
   if (run.value.best_loss != null)
-    items.push({ label: t('strategyDev.bestLoss'), value: run.value.best_loss.toFixed(5), hint: t('strategyDev.hintBestLoss') });
+    items.push({
+      label: t('strategyDev.bestLoss'),
+      value: run.value.best_loss.toFixed(5),
+      hint: t('strategyDev.hintBestLoss'),
+    });
   if (run.value.epochs_completed != null && run.value.epochs_total != null)
     items.push({
       label: t('strategyDev.epochsCompleted'),
@@ -40,7 +52,8 @@ const detail = computed(() => {
   if (!run.value) return null;
   if (run.value.run_type === RunType.hyperopt) return store.hyperoptDetail;
   if (run.value.run_type === RunType.wfa) return store.wfaDetail;
-  if (run.value.run_type === RunType.backtest) return store.backtestSnapshot as Record<string, unknown> | null;
+  if (run.value.run_type === RunType.backtest)
+    return store.backtestSnapshot as Record<string, unknown> | null;
   return null;
 });
 
@@ -55,7 +68,10 @@ const bestParams = computed(() => {
 // --- Backtest data ---
 const s = computed<Record<string, unknown> | null>(() => {
   if (run.value?.run_type !== RunType.backtest || !detail.value) return null;
-  return (detail.value as Record<string, unknown>).strategy_summary as Record<string, unknown> | null;
+  return (detail.value as Record<string, unknown>).strategy_summary as Record<
+    string,
+    unknown
+  > | null;
 });
 
 type ResultLine = {
@@ -130,7 +146,11 @@ const showExitReason = ref(false);
 const showMixTag = ref(false);
 
 // Summary metrics
-interface MetricRow { label: string; value: string; separator?: boolean }
+interface MetricRow {
+  label: string;
+  value: string;
+  separator?: boolean;
+}
 
 const summaryMetrics = computed<MetricRow[]>(() => {
   const d = s.value;
@@ -140,79 +160,181 @@ const summaryMetrics = computed<MetricRow[]>(() => {
 
   rows.push({ label: 'Backtesting from', value: (d.backtest_start as string) ?? '—' });
   rows.push({ label: 'Backtesting to', value: (d.backtest_end as string) ?? '—' });
-  if (d.trading_mode) rows.push({ label: 'Trading Mode', value: `${capitalize(d.margin_mode as string ?? '')} ${capitalize(d.trading_mode as string)}`.trim() });
+  if (d.trading_mode)
+    rows.push({
+      label: 'Trading Mode',
+      value:
+        `${capitalize((d.margin_mode as string) ?? '')} ${capitalize(d.trading_mode as string)}`.trim(),
+    });
   rows.push({ label: 'Max open trades', value: String(d.max_open_trades ?? '—') });
   rows.push({ label: '', value: '', separator: true });
 
-  rows.push({ label: 'Total/Daily Avg Trades', value: `${d.total_trades ?? 0} / ${fmtAbs(d.trades_per_day as number, 2)}` });
-  rows.push({ label: 'Starting balance', value: `${fmtAbs(d.starting_balance as number, 2)} ${c}` });
+  rows.push({
+    label: 'Total/Daily Avg Trades',
+    value: `${d.total_trades ?? 0} / ${fmtAbs(d.trades_per_day as number, 2)}`,
+  });
+  rows.push({
+    label: 'Starting balance',
+    value: `${fmtAbs(d.starting_balance as number, 2)} ${c}`,
+  });
   rows.push({ label: 'Final balance', value: `${fmtAbs(d.final_balance as number, 2)} ${c}` });
   rows.push({ label: 'Absolute profit', value: `${fmtAbs(d.profit_total_abs as number, 3)} ${c}` });
-  rows.push({ label: 'Total profit %', value: `${((d.profit_total as number ?? 0) * 100).toFixed(2)}%` });
-  if (d.cagr != null) rows.push({ label: 'CAGR %', value: `${((d.cagr as number) * 100).toFixed(2)}%` });
+  rows.push({
+    label: 'Total profit %',
+    value: `${(((d.profit_total as number) ?? 0) * 100).toFixed(2)}%`,
+  });
+  if (d.cagr != null)
+    rows.push({ label: 'CAGR %', value: `${((d.cagr as number) * 100).toFixed(2)}%` });
   rows.push({ label: 'Sharpe', value: fmtAbs(d.sharpe as number, 2) });
   rows.push({ label: 'Sortino', value: fmtAbs(d.sortino as number, 2) });
   rows.push({ label: 'Calmar', value: fmtAbs(d.calmar as number, 2) });
   rows.push({ label: 'SQN', value: fmtAbs(d.sqn as number, 2) });
   rows.push({ label: 'Profit factor', value: fmtAbs(d.profit_factor as number, 2) });
-  if (d.expectancy != null) rows.push({ label: 'Expectancy (Ratio)', value: `${fmtAbs(d.expectancy as number, 2)} (${fmtAbs(d.expectancy_ratio as number, 2)})` });
-  if (d.backtest_days) rows.push({ label: 'Avg. daily profit', value: `${fmtAbs((d.profit_total_abs as number) / (d.backtest_days as number), 3)} ${c}` });
-  rows.push({ label: 'Avg. stake amount', value: `${fmtAbs(d.avg_stake_amount as number, 2)} ${c}` });
-  if (d.market_change != null) rows.push({ label: 'Market change', value: `${((d.market_change as number) * 100).toFixed(2)}%` });
-  if (d.total_volume != null) rows.push({ label: 'Total trade volume', value: `${fmtAbs(d.total_volume as number, 3)} ${c}` });
+  if (d.expectancy != null)
+    rows.push({
+      label: 'Expectancy (Ratio)',
+      value: `${fmtAbs(d.expectancy as number, 2)} (${fmtAbs(d.expectancy_ratio as number, 2)})`,
+    });
+  if (d.backtest_days)
+    rows.push({
+      label: 'Avg. daily profit',
+      value: `${fmtAbs((d.profit_total_abs as number) / (d.backtest_days as number), 3)} ${c}`,
+    });
+  rows.push({
+    label: 'Avg. stake amount',
+    value: `${fmtAbs(d.avg_stake_amount as number, 2)} ${c}`,
+  });
+  if (d.market_change != null)
+    rows.push({
+      label: 'Market change',
+      value: `${((d.market_change as number) * 100).toFixed(2)}%`,
+    });
+  if (d.total_volume != null)
+    rows.push({
+      label: 'Total trade volume',
+      value: `${fmtAbs(d.total_volume as number, 3)} ${c}`,
+    });
   rows.push({ label: '', value: '', separator: true });
 
   const bp = d.best_pair as Record<string, unknown> | null;
   const wp = d.worst_pair as Record<string, unknown> | null;
-  if (bp) rows.push({ label: 'Best Pair', value: `${bp.key} ${fmtPct(bp.profit_total_pct as number)}` });
-  if (wp) rows.push({ label: 'Worst Pair', value: `${wp.key} ${fmtPct(wp.profit_total_pct as number)}` });
+  if (bp)
+    rows.push({ label: 'Best Pair', value: `${bp.key} ${fmtPct(bp.profit_total_pct as number)}` });
+  if (wp)
+    rows.push({ label: 'Worst Pair', value: `${wp.key} ${fmtPct(wp.profit_total_pct as number)}` });
 
   // Best/worst trade from trades list
   const trades = d.trades as Record<string, unknown>[] | undefined;
   if (trades?.length) {
-    const sorted = [...trades].sort((a, b) => (b.profit_ratio as number) - (a.profit_ratio as number));
+    const sorted = [...trades].sort(
+      (a, b) => (b.profit_ratio as number) - (a.profit_ratio as number),
+    );
     const best = sorted[0];
     const worst = sorted[sorted.length - 1];
-    rows.push({ label: 'Best trade', value: `${best.pair} ${fmtPct((best.profit_ratio as number) * 100)}` });
-    rows.push({ label: 'Worst trade', value: `${worst.pair} ${fmtPct((worst.profit_ratio as number) * 100)}` });
+    rows.push({
+      label: 'Best trade',
+      value: `${best.pair} ${fmtPct((best.profit_ratio as number) * 100)}`,
+    });
+    rows.push({
+      label: 'Worst trade',
+      value: `${worst.pair} ${fmtPct((worst.profit_ratio as number) * 100)}`,
+    });
   }
 
   rows.push({ label: 'Best day', value: `${fmtAbs(d.backtest_best_day_abs as number, 3)} ${c}` });
   rows.push({ label: 'Worst day', value: `${fmtAbs(d.backtest_worst_day_abs as number, 3)} ${c}` });
-  rows.push({ label: 'Days win/draw/lose', value: `${d.winning_days ?? 0} / ${d.draw_days ?? 0} / ${d.losing_days ?? 0}` });
-  rows.push({ label: 'Min/Max/Avg. Duration Winners', value: `${d.winner_holding_min ?? '—'} / ${d.winner_holding_max ?? '—'} / ${d.winner_holding_avg ?? '—'}` });
-  rows.push({ label: 'Min/Max/Avg. Duration Losers', value: `${d.loser_holding_min ?? '—'} / ${d.loser_holding_max ?? '—'} / ${d.loser_holding_avg ?? '—'}` });
-  rows.push({ label: 'Max Consecutive Wins / Loss', value: `${d.max_consecutive_wins ?? 0} / ${d.max_consecutive_losses ?? 0}` });
+  rows.push({
+    label: 'Days win/draw/lose',
+    value: `${d.winning_days ?? 0} / ${d.draw_days ?? 0} / ${d.losing_days ?? 0}`,
+  });
+  rows.push({
+    label: 'Min/Max/Avg. Duration Winners',
+    value: `${d.winner_holding_min ?? '—'} / ${d.winner_holding_max ?? '—'} / ${d.winner_holding_avg ?? '—'}`,
+  });
+  rows.push({
+    label: 'Min/Max/Avg. Duration Losers',
+    value: `${d.loser_holding_min ?? '—'} / ${d.loser_holding_max ?? '—'} / ${d.loser_holding_avg ?? '—'}`,
+  });
+  rows.push({
+    label: 'Max Consecutive Wins / Loss',
+    value: `${d.max_consecutive_wins ?? 0} / ${d.max_consecutive_losses ?? 0}`,
+  });
   rows.push({ label: 'Rejected Entry signals', value: String(d.rejected_signals ?? 0) });
-  rows.push({ label: 'Entry/Exit Timeouts', value: `${d.timedout_entry_orders ?? 0} / ${d.timedout_exit_orders ?? 0}` });
+  rows.push({
+    label: 'Entry/Exit Timeouts',
+    value: `${d.timedout_entry_orders ?? 0} / ${d.timedout_exit_orders ?? 0}`,
+  });
   rows.push({ label: '', value: '', separator: true });
 
   // Drawdown section
-  rows.push({ label: 'Max % of account underwater', value: `${((d.max_drawdown_account as number ?? 0) * 100).toFixed(2)}%` });
-  rows.push({ label: 'Absolute drawdown', value: `${fmtAbs(d.max_drawdown_abs as number, 3)} ${c} (${((d.max_drawdown_account as number ?? 0) * 100).toFixed(2)}%)` });
-  if (d.drawdown_duration_s) rows.push({ label: 'Drawdown duration', value: fmtTimedelta(d.drawdown_duration_s as number) });
-  rows.push({ label: 'Profit at drawdown start', value: `${fmtAbs(d.max_drawdown_high as number, 3)} ${c}` });
-  rows.push({ label: 'Profit at drawdown end', value: `${fmtAbs(d.max_drawdown_low as number, 3)} ${c}` });
-  if (d.drawdown_start) rows.push({ label: 'Drawdown start', value: (d.drawdown_start as string) ?? '—' });
-  if (d.drawdown_end) rows.push({ label: 'Drawdown end', value: (d.drawdown_end as string) ?? '—' });
+  rows.push({
+    label: 'Max % of account underwater',
+    value: `${(((d.max_drawdown_account as number) ?? 0) * 100).toFixed(2)}%`,
+  });
+  rows.push({
+    label: 'Absolute drawdown',
+    value: `${fmtAbs(d.max_drawdown_abs as number, 3)} ${c} (${(((d.max_drawdown_account as number) ?? 0) * 100).toFixed(2)}%)`,
+  });
+  if (d.drawdown_duration_s)
+    rows.push({ label: 'Drawdown duration', value: fmtTimedelta(d.drawdown_duration_s as number) });
+  rows.push({
+    label: 'Profit at drawdown start',
+    value: `${fmtAbs(d.max_drawdown_high as number, 3)} ${c}`,
+  });
+  rows.push({
+    label: 'Profit at drawdown end',
+    value: `${fmtAbs(d.max_drawdown_low as number, 3)} ${c}`,
+  });
+  if (d.drawdown_start)
+    rows.push({ label: 'Drawdown start', value: (d.drawdown_start as string) ?? '—' });
+  if (d.drawdown_end)
+    rows.push({ label: 'Drawdown end', value: (d.drawdown_end as string) ?? '—' });
 
   // Wallet-based metrics
   const ws = d.wallet_stats as Record<string, unknown> | undefined;
   if (ws && Object.keys(ws).length > 0) {
     rows.push({ label: '', value: '', separator: true });
     rows.push({ label: 'Wallet based Metrics', value: '' });
-    rows.push({ label: 'Min/Max balance (wallet)', value: `${fmtAbs(ws.low_balance as number, 3)} ${c} / ${fmtAbs(ws.high_balance as number, 3)} ${c}` });
-    if (ws.low_date && ws.high_date) rows.push({ label: 'Min/Max balance dates', value: `${ws.low_date} / ${ws.high_date}` });
-    rows.push({ label: 'Max % underwater (balance)', value: `${((ws.max_drawdown_account as number ?? 0) * 100).toFixed(2)}%` });
-    rows.push({ label: 'Absolute drawdown (wallet)', value: `${fmtAbs(ws.max_drawdown_abs as number, 3)} ${c} (${((ws.max_drawdown_account as number ?? 0) * 100).toFixed(2)}%)` });
-    if (ws.drawdown_duration_s) rows.push({ label: 'Drawdown duration', value: fmtTimedelta(ws.drawdown_duration_s as number) });
-    if (ws.max_drawdown_high != null) rows.push({ label: 'Profit at drawdown start', value: `${fmtAbs(ws.max_drawdown_high as number, 3)} ${c}` });
-    if (ws.max_drawdown_low != null) rows.push({ label: 'Profit at drawdown end', value: `${fmtAbs(ws.max_drawdown_low as number, 3)} ${c}` });
+    rows.push({
+      label: 'Min/Max balance (wallet)',
+      value: `${fmtAbs(ws.low_balance as number, 3)} ${c} / ${fmtAbs(ws.high_balance as number, 3)} ${c}`,
+    });
+    if (ws.low_date && ws.high_date)
+      rows.push({ label: 'Min/Max balance dates', value: `${ws.low_date} / ${ws.high_date}` });
+    rows.push({
+      label: 'Max % underwater (balance)',
+      value: `${(((ws.max_drawdown_account as number) ?? 0) * 100).toFixed(2)}%`,
+    });
+    rows.push({
+      label: 'Absolute drawdown (wallet)',
+      value: `${fmtAbs(ws.max_drawdown_abs as number, 3)} ${c} (${(((ws.max_drawdown_account as number) ?? 0) * 100).toFixed(2)}%)`,
+    });
+    if (ws.drawdown_duration_s)
+      rows.push({
+        label: 'Drawdown duration',
+        value: fmtTimedelta(ws.drawdown_duration_s as number),
+      });
+    if (ws.max_drawdown_high != null)
+      rows.push({
+        label: 'Profit at drawdown start',
+        value: `${fmtAbs(ws.max_drawdown_high as number, 3)} ${c}`,
+      });
+    if (ws.max_drawdown_low != null)
+      rows.push({
+        label: 'Profit at drawdown end',
+        value: `${fmtAbs(ws.max_drawdown_low as number, 3)} ${c}`,
+      });
     if (ws.drawdown_start) rows.push({ label: 'Drawdown start', value: String(ws.drawdown_start) });
     if (ws.drawdown_end) rows.push({ label: 'Drawdown end', value: String(ws.drawdown_end) });
-    if (ws.sharpe != null) rows.push({ label: 'Sharpe (daily wallet balance)', value: fmtAbs(ws.sharpe as number, 2) });
-    if (ws.sortino != null) rows.push({ label: 'Sortino (daily wallet balance)', value: fmtAbs(ws.sortino as number, 2) });
-    if (ws.calmar != null) rows.push({ label: 'Calmar (daily wallet balance)', value: fmtAbs(ws.calmar as number, 2) });
+    if (ws.sharpe != null)
+      rows.push({ label: 'Sharpe (daily wallet balance)', value: fmtAbs(ws.sharpe as number, 2) });
+    if (ws.sortino != null)
+      rows.push({
+        label: 'Sortino (daily wallet balance)',
+        value: fmtAbs(ws.sortino as number, 2),
+      });
+    if (ws.calmar != null)
+      rows.push({ label: 'Calmar (daily wallet balance)', value: fmtAbs(ws.calmar as number, 2) });
   }
 
   return rows;
@@ -226,7 +348,10 @@ function capitalize(str: string): string {
 <template>
   <div class="flex flex-col gap-4 py-3" style="max-width: 1600px; margin: 0 auto">
     <!-- Summary metrics cards (hyperopt/wfa/quick glance) -->
-    <div v-if="metrics.length && run?.run_type !== RunType.backtest" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div
+      v-if="metrics.length && run?.run_type !== RunType.backtest"
+      class="grid grid-cols-2 md:grid-cols-4 gap-3"
+    >
       <div
         v-for="m in metrics"
         :key="m.label"
@@ -311,9 +436,15 @@ function capitalize(str: string): string {
               >
                 <td class="ov-td ov-td-left ov-td-pair">{{ keyDisplay(r.key) }}</td>
                 <td class="ov-td">{{ r.trades }}</td>
-                <td class="ov-td" :class="profitClass(r.profit_mean_pct)">{{ r.profit_mean_pct.toFixed(2) }}</td>
-                <td class="ov-td" :class="profitClass(r.profit_total_abs)">{{ fmtAbs(r.profit_total_abs, 3) }}</td>
-                <td class="ov-td" :class="profitClass(r.profit_total_pct)">{{ r.profit_total_pct.toFixed(2) }}</td>
+                <td class="ov-td" :class="profitClass(r.profit_mean_pct)">
+                  {{ r.profit_mean_pct.toFixed(2) }}
+                </td>
+                <td class="ov-td" :class="profitClass(r.profit_total_abs)">
+                  {{ fmtAbs(r.profit_total_abs, 3) }}
+                </td>
+                <td class="ov-td" :class="profitClass(r.profit_total_pct)">
+                  {{ r.profit_total_pct.toFixed(2) }}
+                </td>
                 <td class="ov-td">{{ fmtDuration(r.duration_avg) }}</td>
                 <td class="ov-td ov-positive">{{ r.wins }}</td>
                 <td class="ov-td">{{ r.draws }}</td>
@@ -350,12 +481,22 @@ function capitalize(str: string): string {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="r in enterTagStats" :key="keyDisplay(r.key)" :class="{ 'ov-row-total': keyDisplay(r.key) === 'TOTAL' }">
+              <tr
+                v-for="r in enterTagStats"
+                :key="keyDisplay(r.key)"
+                :class="{ 'ov-row-total': keyDisplay(r.key) === 'TOTAL' }"
+              >
                 <td class="ov-td ov-td-left ov-td-pair">{{ keyDisplay(r.key) || 'OTHER' }}</td>
                 <td class="ov-td">{{ r.trades }}</td>
-                <td class="ov-td" :class="profitClass(r.profit_mean_pct)">{{ r.profit_mean_pct.toFixed(2) }}</td>
-                <td class="ov-td" :class="profitClass(r.profit_total_abs)">{{ fmtAbs(r.profit_total_abs, 3) }}</td>
-                <td class="ov-td" :class="profitClass(r.profit_total_pct)">{{ r.profit_total_pct.toFixed(2) }}</td>
+                <td class="ov-td" :class="profitClass(r.profit_mean_pct)">
+                  {{ r.profit_mean_pct.toFixed(2) }}
+                </td>
+                <td class="ov-td" :class="profitClass(r.profit_total_abs)">
+                  {{ fmtAbs(r.profit_total_abs, 3) }}
+                </td>
+                <td class="ov-td" :class="profitClass(r.profit_total_pct)">
+                  {{ r.profit_total_pct.toFixed(2) }}
+                </td>
                 <td class="ov-td">{{ fmtDuration(r.duration_avg) }}</td>
                 <td class="ov-td ov-positive">{{ r.wins }}</td>
                 <td class="ov-td">{{ r.draws }}</td>
@@ -392,12 +533,22 @@ function capitalize(str: string): string {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="r in exitReasonSummary" :key="keyDisplay(r.key)" :class="{ 'ov-row-total': keyDisplay(r.key) === 'TOTAL' }">
+              <tr
+                v-for="r in exitReasonSummary"
+                :key="keyDisplay(r.key)"
+                :class="{ 'ov-row-total': keyDisplay(r.key) === 'TOTAL' }"
+              >
                 <td class="ov-td ov-td-left ov-td-pair">{{ keyDisplay(r.key) }}</td>
                 <td class="ov-td">{{ r.trades }}</td>
-                <td class="ov-td" :class="profitClass(r.profit_mean_pct)">{{ r.profit_mean_pct.toFixed(2) }}</td>
-                <td class="ov-td" :class="profitClass(r.profit_total_abs)">{{ fmtAbs(r.profit_total_abs, 3) }}</td>
-                <td class="ov-td" :class="profitClass(r.profit_total_pct)">{{ r.profit_total_pct.toFixed(2) }}</td>
+                <td class="ov-td" :class="profitClass(r.profit_mean_pct)">
+                  {{ r.profit_mean_pct.toFixed(2) }}
+                </td>
+                <td class="ov-td" :class="profitClass(r.profit_total_abs)">
+                  {{ fmtAbs(r.profit_total_abs, 3) }}
+                </td>
+                <td class="ov-td" :class="profitClass(r.profit_total_pct)">
+                  {{ r.profit_total_pct.toFixed(2) }}
+                </td>
                 <td class="ov-td">{{ fmtDuration(r.duration_avg) }}</td>
                 <td class="ov-td ov-positive">{{ r.wins }}</td>
                 <td class="ov-td">{{ r.draws }}</td>
@@ -434,12 +585,22 @@ function capitalize(str: string): string {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="r in mixTagStats" :key="keyDisplay(r.key)" :class="{ 'ov-row-total': keyDisplay(r.key) === 'TOTAL' }">
+              <tr
+                v-for="r in mixTagStats"
+                :key="keyDisplay(r.key)"
+                :class="{ 'ov-row-total': keyDisplay(r.key) === 'TOTAL' }"
+              >
                 <td class="ov-td ov-td-left ov-td-pair">{{ keyDisplay(r.key) || '—' }}</td>
                 <td class="ov-td">{{ r.trades }}</td>
-                <td class="ov-td" :class="profitClass(r.profit_mean_pct)">{{ r.profit_mean_pct.toFixed(2) }}</td>
-                <td class="ov-td" :class="profitClass(r.profit_total_abs)">{{ fmtAbs(r.profit_total_abs, 3) }}</td>
-                <td class="ov-td" :class="profitClass(r.profit_total_pct)">{{ r.profit_total_pct.toFixed(2) }}</td>
+                <td class="ov-td" :class="profitClass(r.profit_mean_pct)">
+                  {{ r.profit_mean_pct.toFixed(2) }}
+                </td>
+                <td class="ov-td" :class="profitClass(r.profit_total_abs)">
+                  {{ fmtAbs(r.profit_total_abs, 3) }}
+                </td>
+                <td class="ov-td" :class="profitClass(r.profit_total_pct)">
+                  {{ r.profit_total_pct.toFixed(2) }}
+                </td>
                 <td class="ov-td">{{ fmtDuration(r.duration_avg) }}</td>
                 <td class="ov-td ov-positive">{{ r.wins }}</td>
                 <td class="ov-td">{{ r.draws }}</td>
@@ -543,7 +704,9 @@ function capitalize(str: string): string {
   background: #181825;
   border-bottom: 1px solid var(--p-surface-700);
 }
-.ov-th-left { text-align: left; }
+.ov-th-left {
+  text-align: left;
+}
 
 .ov-td {
   padding: 4px 10px;
@@ -551,7 +714,9 @@ function capitalize(str: string): string {
   border-bottom: 1px solid #313244;
   font-variant-numeric: tabular-nums;
 }
-.ov-td-left { text-align: left; }
+.ov-td-left {
+  text-align: left;
+}
 
 .ov-td-pair {
   color: #89b4fa;
@@ -562,19 +727,31 @@ function capitalize(str: string): string {
   background: #1e1e2e;
   transition: background 0.1s;
 }
-.ov-table tbody tr:hover { background: #313244; }
-.ov-table tbody tr:nth-child(even) { background: #1a1a2a; }
-.ov-table tbody tr:nth-child(even):hover { background: #313244; }
+.ov-table tbody tr:hover {
+  background: #313244;
+}
+.ov-table tbody tr:nth-child(even) {
+  background: #1a1a2a;
+}
+.ov-table tbody tr:nth-child(even):hover {
+  background: #313244;
+}
 
 .ov-row-total {
   background: #181825 !important;
   font-weight: 700;
   border-top: 2px solid var(--p-surface-600);
 }
-.ov-row-total .ov-td-pair { color: var(--p-surface-200); }
+.ov-row-total .ov-td-pair {
+  color: var(--p-surface-200);
+}
 
-.ov-positive { color: #a6e3a1; }
-.ov-negative { color: #f38ba8; }
+.ov-positive {
+  color: #a6e3a1;
+}
+.ov-negative {
+  color: #f38ba8;
+}
 
 /* ── Summary Metrics table ── */
 .ov-metrics-wrap {
@@ -593,7 +770,9 @@ function capitalize(str: string): string {
 .ov-metrics-row {
   background: #1e1e2e;
 }
-.ov-metrics-row:hover { background: #252535; }
+.ov-metrics-row:hover {
+  background: #252535;
+}
 
 .ov-metrics-label {
   padding: 3px 14px;

@@ -21,8 +21,12 @@ const exitReasonStats = computed(() => {
   }
   const total = props.trades.length || 1;
   return {
-    reasons: Object.entries(reasons).sort((a, b) => b[1] - a[1]).slice(0, 8),
-    tags: Object.entries(tags).sort((a, b) => b[1] - a[1]).slice(0, 8),
+    reasons: Object.entries(reasons)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8),
+    tags: Object.entries(tags)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8),
     total,
   };
 });
@@ -38,8 +42,12 @@ const exitReasonStats = computed(() => {
         <span class="text-surface-400">{{ t('exitReasonStats.exitReason') }}</span>
         <span
           class="font-mono font-bold px-1.5 py-0.5 rounded text-[12px]"
-          :style="{ color: exitReasonColor((trade as any).exit_reason ?? ''), background: exitReasonColor((trade as any).exit_reason ?? '') + '20' }"
-        >{{ (trade as any).exit_reason ?? '—' }}</span>
+          :style="{
+            color: exitReasonColor((trade as any).exit_reason ?? ''),
+            background: exitReasonColor((trade as any).exit_reason ?? '') + '20',
+          }"
+          >{{ (trade as any).exit_reason ?? '—' }}</span
+        >
       </div>
       <div v-if="trade.enter_tag" class="flex justify-between mt-0.5">
         <span class="text-surface-400">{{ t('exitReasonStats.entryTag') }}</span>
@@ -49,22 +57,48 @@ const exitReasonStats = computed(() => {
 
     <!-- Exit reason distribution -->
     <div class="text-[13px] mb-2">
-      <div class="text-surface-400 text-[12px] mb-1">{{ t('exitReasonStats.reasonDistribution') }}</div>
-      <div v-for="([reason, count]) in exitReasonStats.reasons" :key="reason" class="flex items-center justify-between py-0.5">
+      <div class="text-surface-400 text-[12px] mb-1">
+        {{ t('exitReasonStats.reasonDistribution') }}
+      </div>
+      <div
+        v-for="[reason, count] in exitReasonStats.reasons"
+        :key="reason"
+        class="flex items-center justify-between py-0.5"
+      >
         <span
           class="font-mono px-1 py-0.5 rounded text-[12px]"
           :style="{ color: exitReasonColor(reason), background: exitReasonColor(reason) + '15' }"
-        >{{ reason }}</span>
-        <span class="font-mono text-surface-300">{{ count }} <span class="text-surface-500">({{ ((count / exitReasonStats.total) * 100).toFixed(0) }}%)</span></span>
+          >{{ reason }}</span
+        >
+        <span class="font-mono text-surface-300"
+          >{{ count }}
+          <span class="text-surface-500"
+            >({{ ((count / exitReasonStats.total) * 100).toFixed(0) }}%)</span
+          ></span
+        >
       </div>
     </div>
 
     <!-- Entry tag distribution -->
-    <div v-if="exitReasonStats.tags.length > 0" class="text-[13px] border-t border-surface-700 pt-2">
-      <div class="text-surface-400 text-[12px] mb-1">{{ t('exitReasonStats.tagDistribution') }}</div>
-      <div v-for="([tag, count]) in exitReasonStats.tags" :key="tag" class="flex items-center justify-between py-0.5">
+    <div
+      v-if="exitReasonStats.tags.length > 0"
+      class="text-[13px] border-t border-surface-700 pt-2"
+    >
+      <div class="text-surface-400 text-[12px] mb-1">
+        {{ t('exitReasonStats.tagDistribution') }}
+      </div>
+      <div
+        v-for="[tag, count] in exitReasonStats.tags"
+        :key="tag"
+        class="flex items-center justify-between py-0.5"
+      >
         <span class="font-mono text-blue-400 text-[12px]">{{ tag }}</span>
-        <span class="font-mono text-surface-300">{{ count }} <span class="text-surface-500">({{ ((count / exitReasonStats.total) * 100).toFixed(0) }}%)</span></span>
+        <span class="font-mono text-surface-300"
+          >{{ count }}
+          <span class="text-surface-500"
+            >({{ ((count / exitReasonStats.total) * 100).toFixed(0) }}%)</span
+          ></span
+        >
       </div>
     </div>
   </div>

@@ -7,13 +7,17 @@ const store = useStrategyDevStore();
 const epochData = ref<Record<string, unknown> | null>(null);
 const epochLoading = ref(false);
 
-const btcEquityInput = computed(() => epochData.value?.equity_curve as { date: string; balance: number }[] | undefined);
+const btcEquityInput = computed(
+  () => epochData.value?.equity_curve as { date: string; balance: number }[] | undefined,
+);
 const btcStartBal = computed(() => (epochData.value?.starting_balance as number) ?? 1000);
 const { benchmarkEquity: btcBenchmark } = useBtcBenchmark(btcEquityInput, btcStartBal);
 
 const regimeTimeline = computed(() => {
   const mr = epochData.value?.market_regime as Record<string, unknown> | undefined;
-  return mr?.timeline as { date: string; regime: string; volatility: number; trend: number }[] | undefined;
+  return mr?.timeline as
+    | { date: string; regime: string; volatility: number; trend: number }[]
+    | undefined;
 });
 
 const topEpochs = computed(() => {
@@ -25,7 +29,9 @@ const topEpochs = computed(() => {
 
 const selectedRank = computed({
   get: () => store.selectedEpochRank,
-  set: (v) => { store.selectedEpochRank = v; },
+  set: (v) => {
+    store.selectedEpochRank = v;
+  },
 });
 
 async function loadEpoch(rank: number) {
@@ -50,7 +56,9 @@ watch(topEpochs, (v) => {
   if (v.length > 0 && !epochData.value) loadEpoch(selectedRank.value);
 });
 
-const epochInfo = computed(() => epochData.value?.epoch_info as Record<string, unknown> | undefined);
+const epochInfo = computed(
+  () => epochData.value?.epoch_info as Record<string, unknown> | undefined,
+);
 
 function fmtPct(v: unknown): string {
   const n = Number(v);
@@ -72,7 +80,9 @@ function copyParams() {
   if (!data) return;
   navigator.clipboard.writeText(JSON.stringify(data, null, 2));
   paramsCopied.value = true;
-  setTimeout(() => { paramsCopied.value = false; }, 2000);
+  setTimeout(() => {
+    paramsCopied.value = false;
+  }, 2000);
 }
 </script>
 
@@ -84,7 +94,7 @@ function copyParams() {
       <div class="epoch-pills">
         <button
           v-for="ep in topEpochs"
-          :key="(ep.rank as number)"
+          :key="ep.rank as number"
           class="epoch-pill"
           :class="{
             active: selectedRank === ep.rank,
@@ -94,7 +104,10 @@ function copyParams() {
           @click="loadEpoch(ep.rank as number)"
         >
           <span class="ep-rank">#{{ ep.rank }}</span>
-          <span class="ep-profit">{{ (ep.profit_pct as number) >= 0 ? '+' : '' }}{{ (ep.profit_pct as number).toFixed(1) }}%</span>
+          <span class="ep-profit"
+            >{{ (ep.profit_pct as number) >= 0 ? '+' : ''
+            }}{{ (ep.profit_pct as number).toFixed(1) }}%</span
+          >
         </button>
       </div>
     </div>
@@ -117,7 +130,10 @@ function copyParams() {
         <div class="scorecard-metrics">
           <div class="sc-metric">
             <span class="sc-label">{{ t('strategyDev.totalProfit') }}</span>
-            <span class="sc-value" :class="Number(epochInfo.total_profit) >= 0 ? 'sc-pos' : 'sc-neg'">
+            <span
+              class="sc-value"
+              :class="Number(epochInfo.total_profit) >= 0 ? 'sc-pos' : 'sc-neg'"
+            >
               {{ fmtPct(epochInfo.total_profit) }}
             </span>
           </div>
@@ -140,9 +156,11 @@ function copyParams() {
           <div class="sc-metric">
             <span class="sc-label">{{ t('strategyDev.btScorecardWinrate') }}</span>
             <span class="sc-value">
-              {{ typeof epochInfo.winrate === 'number' && epochInfo.winrate <= 1
-                ? (Number(epochInfo.winrate) * 100).toFixed(1)
-                : fmtNum(epochInfo.winrate, 1) }}%
+              {{
+                typeof epochInfo.winrate === 'number' && epochInfo.winrate <= 1
+                  ? (Number(epochInfo.winrate) * 100).toFixed(1)
+                  : fmtNum(epochInfo.winrate, 1)
+              }}%
             </span>
           </div>
           <div class="sc-metric">
@@ -157,22 +175,21 @@ function copyParams() {
       </div>
 
       <!-- Params export -->
-      <div v-if="epochData.params_dict || epochData.params_details" class="params-export-panel mt-3">
-        <button
-          class="params-toggle-btn"
-          @click="showParams = !showParams"
-        >
+      <div
+        v-if="epochData.params_dict || epochData.params_details"
+        class="params-export-panel mt-3"
+      >
+        <button class="params-toggle-btn" @click="showParams = !showParams">
           <i-mdi-code-json class="w-4 h-4" />
           {{ t('strategyDev.exportParams') }}
           <i-mdi-chevron-down v-if="!showParams" class="w-4 h-4" />
           <i-mdi-chevron-up v-else class="w-4 h-4" />
         </button>
         <div v-if="showParams" class="params-json-wrap">
-          <pre class="params-json">{{ JSON.stringify(epochData.params_details ?? epochData.params_dict, null, 2) }}</pre>
-          <button
-            class="params-copy-btn"
-            @click="copyParams"
-          >
+          <pre class="params-json">{{
+            JSON.stringify(epochData.params_details ?? epochData.params_dict, null, 2)
+          }}</pre>
+          <button class="params-copy-btn" @click="copyParams">
             {{ paramsCopied ? t('strategyDev.copied') : t('strategyDev.copy') }}
           </button>
         </div>
@@ -218,9 +235,15 @@ function copyParams() {
             :hint="t('strategyDev.hintUnderwater')"
             chart-id="epoch-underwater"
           >
-            <UnderwaterChart :series="epochData.drawdown_series as any[]" :regimes="regimeTimeline" />
+            <UnderwaterChart
+              :series="epochData.drawdown_series as any[]"
+              :regimes="regimeTimeline"
+            />
             <template #fullscreen>
-              <UnderwaterChart :series="epochData.drawdown_series as any[]" :regimes="regimeTimeline" />
+              <UnderwaterChart
+                :series="epochData.drawdown_series as any[]"
+                :regimes="regimeTimeline"
+              />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -231,9 +254,15 @@ function copyParams() {
             :hint="t('strategyDev.hintCumulativeTrades')"
             chart-id="epoch-cumulative"
           >
-            <CumulativeTradesChart :trades="epochData.cumulative_trades as any[]" :regimes="regimeTimeline" />
+            <CumulativeTradesChart
+              :trades="epochData.cumulative_trades as any[]"
+              :regimes="regimeTimeline"
+            />
             <template #fullscreen>
-              <CumulativeTradesChart :trades="epochData.cumulative_trades as any[]" :regimes="regimeTimeline" />
+              <CumulativeTradesChart
+                :trades="epochData.cumulative_trades as any[]"
+                :regimes="regimeTimeline"
+              />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -404,9 +433,15 @@ function copyParams() {
             :hint="t('strategyDev.hintRollingWinrate')"
             chart-id="epoch-rwr"
           >
-            <RollingWinrateChart :data="epochData.rolling_winrate as any[]" :regimes="regimeTimeline" />
+            <RollingWinrateChart
+              :data="epochData.rolling_winrate as any[]"
+              :regimes="regimeTimeline"
+            />
             <template #fullscreen>
-              <RollingWinrateChart :data="epochData.rolling_winrate as any[]" :regimes="regimeTimeline" />
+              <RollingWinrateChart
+                :data="epochData.rolling_winrate as any[]"
+                :regimes="regimeTimeline"
+              />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -417,9 +452,15 @@ function copyParams() {
             :hint="t('strategyDev.hintRollingProfitFactor')"
             chart-id="epoch-rpf"
           >
-            <RollingProfitFactorChart :data="epochData.rolling_profit_factor as any[]" :regimes="regimeTimeline" />
+            <RollingProfitFactorChart
+              :data="epochData.rolling_profit_factor as any[]"
+              :regimes="regimeTimeline"
+            />
             <template #fullscreen>
-              <RollingProfitFactorChart :data="epochData.rolling_profit_factor as any[]" :regimes="regimeTimeline" />
+              <RollingProfitFactorChart
+                :data="epochData.rolling_profit_factor as any[]"
+                :regimes="regimeTimeline"
+              />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -431,9 +472,15 @@ function copyParams() {
           :hint="t('strategyDev.hintExposure')"
           chart-id="epoch-exposure"
         >
-          <ExposureChart :timeline="epochData.exposure_timeline as any[]" :regimes="regimeTimeline" />
+          <ExposureChart
+            :timeline="epochData.exposure_timeline as any[]"
+            :regimes="regimeTimeline"
+          />
           <template #fullscreen>
-            <ExposureChart :timeline="epochData.exposure_timeline as any[]" :regimes="regimeTimeline" />
+            <ExposureChart
+              :timeline="epochData.exposure_timeline as any[]"
+              :regimes="regimeTimeline"
+            />
           </template>
         </ChartWrapper>
         <ChartEmptyState v-else />
@@ -449,14 +496,22 @@ function copyParams() {
         <ChartEmptyState v-else />
 
         <ChartWrapper
-          v-if="epochData.capital_utilization && (epochData.capital_utilization as any[]).length > 0"
+          v-if="
+            epochData.capital_utilization && (epochData.capital_utilization as any[]).length > 0
+          "
           :title="t('strategyDev.btCapitalUtilization')"
           :hint="t('strategyDev.hintBtCapitalUtilization')"
           chart-id="epoch-cap-util"
         >
-          <CapitalUtilizationChart :data="epochData.capital_utilization as any[]" :regimes="regimeTimeline" />
+          <CapitalUtilizationChart
+            :data="epochData.capital_utilization as any[]"
+            :regimes="regimeTimeline"
+          />
           <template #fullscreen>
-            <CapitalUtilizationChart :data="epochData.capital_utilization as any[]" :regimes="regimeTimeline" />
+            <CapitalUtilizationChart
+              :data="epochData.capital_utilization as any[]"
+              :regimes="regimeTimeline"
+            />
           </template>
         </ChartWrapper>
 
@@ -620,8 +675,12 @@ function copyParams() {
   color: #cdd6f4;
 }
 
-.sc-pos { color: #a6e3a1; }
-.sc-neg { color: #f38ba8; }
+.sc-pos {
+  color: #a6e3a1;
+}
+.sc-neg {
+  color: #f38ba8;
+}
 
 /* ── Section headers ── */
 .epoch-section-header {

@@ -97,7 +97,13 @@ onBeforeUnmount(() => {
 
 <template>
   <Transition name="ft-boot-fade">
-    <div v-if="visible" class="ft-boot-overlay" role="status" aria-live="polite" :aria-label="status">
+    <div
+      v-if="visible"
+      class="ft-boot-overlay"
+      role="status"
+      aria-live="polite"
+      :aria-label="status"
+    >
       <div class="ft-boot-ring">
         <div class="ft-boot-dot"></div>
       </div>
@@ -114,14 +120,23 @@ onBeforeUnmount(() => {
 /* Unscoped so the keyframes + selectors stay consistent with the static splash;
    selectors are namespaced under .ft-boot-overlay so collisions are impossible. */
 .ft-boot-overlay {
-  position: fixed; inset: 0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 20px;
   background: #0a1622;
   color: rgba(255, 255, 255, 0.92);
   z-index: 9999;
-  font-family: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Helvetica,
+    Arial,
+    sans-serif;
 }
 @media (prefers-color-scheme: light) {
   .ft-boot-overlay {
@@ -129,65 +144,115 @@ onBeforeUnmount(() => {
     color: rgba(15, 23, 42, 0.92);
   }
 }
-.ft-boot-overlay .ft-boot-ring { position: relative; width: 88px; height: 88px; }
+.ft-boot-overlay .ft-boot-ring {
+  position: relative;
+  width: 88px;
+  height: 88px;
+}
 .ft-boot-overlay .ft-boot-ring::before {
-  content: ''; position: absolute; inset: 0; border-radius: 50%;
-  background: conic-gradient(from 0deg,
-    rgba(0, 137, 161, 0) 0%, rgba(0, 137, 161, 0) 30%,
-    rgba(0, 137, 161, 0.85) 70%, rgba(0, 137, 161, 1) 100%);
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(0, 137, 161, 0) 0%,
+    rgba(0, 137, 161, 0) 30%,
+    rgba(0, 137, 161, 0.85) 70%,
+    rgba(0, 137, 161, 1) 100%
+  );
   -webkit-mask: radial-gradient(circle, transparent 32px, black 33px);
   mask: radial-gradient(circle, transparent 32px, black 33px);
   animation: ft-boot-spin 3.6s linear infinite;
 }
 .ft-boot-overlay .ft-boot-dot {
-  position: absolute; left: 50%; top: 50%;
-  width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%;
-  background: #0089A1;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: #0089a1;
   box-shadow: 0 0 20px rgba(0, 137, 161, 0.6);
   animation: ft-boot-pulse 1.6s ease-in-out infinite;
 }
 .ft-boot-overlay .ft-boot-wordmark {
-  font-size: 28px; font-weight: 300; letter-spacing: 0.05em;
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: 0.05em;
 }
-.ft-boot-overlay .ft-boot-wordmark > b { color: #0089A1; font-weight: 500; }
+.ft-boot-overlay .ft-boot-wordmark > b {
+  color: #0089a1;
+  font-weight: 500;
+}
 .ft-boot-overlay .ft-boot-status {
-  font-size: 14px; opacity: 0.7; min-height: 20px; text-align: center;
+  font-size: 14px;
+  opacity: 0.7;
+  min-height: 20px;
+  text-align: center;
 }
 .ft-boot-overlay .ft-boot-bar {
-  width: 200px; height: 2px;
+  width: 200px;
+  height: 2px;
   background: rgba(255, 255, 255, 0.08);
-  border-radius: 1px; overflow: hidden;
+  border-radius: 1px;
+  overflow: hidden;
 }
 @media (prefers-color-scheme: light) {
-  .ft-boot-overlay .ft-boot-bar { background: rgba(15, 23, 42, 0.08); }
+  .ft-boot-overlay .ft-boot-bar {
+    background: rgba(15, 23, 42, 0.08);
+  }
 }
 .ft-boot-overlay .ft-boot-bar > i {
-  display: block; height: 100%;
-  background: #0089A1;
-  transition: width .2s ease;
+  display: block;
+  height: 100%;
+  background: #0089a1;
+  transition: width 0.2s ease;
 }
 /* Exit fade — opacity only, GPU-friendly, pointer-events off to unblock the dashboard. */
 .ft-boot-fade-leave-active {
-  transition: opacity .35s ease-out;
+  transition: opacity 0.35s ease-out;
   pointer-events: none;
 }
-.ft-boot-fade-leave-to { opacity: 0; }
+.ft-boot-fade-leave-to {
+  opacity: 0;
+}
 /* Status swap fade — quick + subtle so the message change reads but doesn't distract. */
 .ft-boot-status-fade-enter-active,
-.ft-boot-status-fade-leave-active { transition: opacity .18s ease; }
+.ft-boot-status-fade-leave-active {
+  transition: opacity 0.18s ease;
+}
 .ft-boot-status-fade-enter-from,
-.ft-boot-status-fade-leave-to { opacity: 0; }
+.ft-boot-status-fade-leave-to {
+  opacity: 0;
+}
 
-@keyframes ft-boot-spin { to { transform: rotate(360deg); } }
+@keyframes ft-boot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 @keyframes ft-boot-pulse {
-  0%, 100% { transform: scale(1);    opacity: 0.85; }
-  50%       { transform: scale(1.12); opacity: 1;    }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .ft-boot-overlay .ft-boot-ring::before,
-  .ft-boot-overlay .ft-boot-dot { animation: none; }
+  .ft-boot-overlay .ft-boot-dot {
+    animation: none;
+  }
   .ft-boot-fade-leave-active,
   .ft-boot-status-fade-enter-active,
-  .ft-boot-status-fade-leave-active { transition: none; }
+  .ft-boot-status-fade-leave-active {
+    transition: none;
+  }
 }
 </style>

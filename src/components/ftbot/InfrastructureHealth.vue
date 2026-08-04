@@ -31,7 +31,11 @@ const showEvents = ref(true);
 const bots = computed(() => {
   const list = state.fleet?.bots ?? [];
   const order: Record<string, number> = {
-    crashed: 0, initializing: 1, running: 2, paused: 3, stopped: 4,
+    crashed: 0,
+    initializing: 1,
+    running: 2,
+    paused: 3,
+    stopped: 4,
   };
   return [...list].sort((a, b) => (order[a.state] ?? 5) - (order[b.state] ?? 5));
 });
@@ -54,32 +58,50 @@ function formatUptime(s: number): string {
 }
 
 function formatTimestamp(ts: number): string {
-  return new Date(ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return new Date(ts * 1000).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 }
 
 function healthColor(level: string): string {
   switch (level) {
-    case 'healthy': return '#22c55e';
-    case 'degraded': return '#f59e0b';
-    case 'critical': return '#ef4444';
-    default: return '#64748b';
+    case 'healthy':
+      return '#22c55e';
+    case 'degraded':
+      return '#f59e0b';
+    case 'critical':
+      return '#ef4444';
+    default:
+      return '#64748b';
   }
 }
 
 function stateColor(s: string): string {
   switch (s) {
-    case 'running': return 'bg-green-500/15 text-green-400 border-green-500/30';
-    case 'initializing': return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
-    case 'paused': return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
-    case 'crashed': return 'bg-red-500/15 text-red-400 border-red-500/30';
-    case 'stopped': return 'bg-slate-500/15 text-slate-400 border-slate-500/30';
-    default: return 'bg-slate-500/15 text-slate-400 border-slate-500/30';
+    case 'running':
+      return 'bg-green-500/15 text-green-400 border-green-500/30';
+    case 'initializing':
+      return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+    case 'paused':
+      return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+    case 'crashed':
+      return 'bg-red-500/15 text-red-400 border-red-500/30';
+    case 'stopped':
+      return 'bg-slate-500/15 text-slate-400 border-slate-500/30';
+    default:
+      return 'bg-slate-500/15 text-slate-400 border-slate-500/30';
   }
 }
 
 function exchangeShort(exchange: string, mode: string): string {
   const map: Record<string, string> = {
-    hyperliquid: 'HL', binance: 'BN', gateio: 'GI', gate: 'GI', kucoin: 'KU',
+    hyperliquid: 'HL',
+    binance: 'BN',
+    gateio: 'GI',
+    gate: 'GI',
+    kucoin: 'KU',
   };
   const ex = map[exchange.toLowerCase()] ?? exchange.substring(0, 2).toUpperCase();
   return ex + (mode === 'futures' ? '/F' : '/S');
@@ -93,14 +115,22 @@ function heartbeatColor(s: number): string {
 
 function eventTypeIcon(type: string): string {
   switch (type) {
-    case 'bot_connect': return '↗';
-    case 'bot_disconnect': return '↘';
-    case 'bot_crash': return '✕';
-    case 'rate_limit_429': return '⚡';
-    case 'backoff_start': return '⏸';
-    case 'backoff_end': return '▶';
-    case 'stagger_applied': return '⧖';
-    default: return '●';
+    case 'bot_connect':
+      return '↗';
+    case 'bot_disconnect':
+      return '↘';
+    case 'bot_crash':
+      return '✕';
+    case 'rate_limit_429':
+      return '⚡';
+    case 'backoff_start':
+      return '⏸';
+    case 'backoff_end':
+      return '▶';
+    case 'stagger_applied':
+      return '⧖';
+    default:
+      return '●';
   }
 }
 
@@ -123,11 +153,17 @@ function formatEventDetails(evt: FleetEvent): string {
   if (evt.event_type === 'bot_connect' || evt.event_type === 'bot_disconnect') {
     return (d.exchange as string) ?? '';
   }
-  return Object.entries(d).map(([k, v]) => `${k}=${v}`).join(' ');
+  return Object.entries(d)
+    .map(([k, v]) => `${k}=${v}`)
+    .join(' ');
 }
 
 async function copyToClipboard(text: string) {
-  try { await navigator.clipboard.writeText(text); } catch { /* noop */ }
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    /* noop */
+  }
 }
 
 const refreshProgress = computed(() => {
@@ -193,9 +229,7 @@ const refreshProgress = computed(() => {
             <i-mdi-database class="w-3.5 h-3.5 inline align-text-bottom" />
             {{ (ftcache.hit_rate_pct ?? 0).toFixed(0) }}% hit
           </span>
-          <span class="ml-auto text-surface-500 text-[10px]">
-            {{ secondsSinceRefresh }}s ago
-          </span>
+          <span class="ml-auto text-surface-500 text-[10px]"> {{ secondsSinceRefresh }}s ago </span>
         </div>
 
         <!-- Rate limiters compact -->
@@ -204,11 +238,15 @@ const refreshProgress = computed(() => {
             v-for="(rl, exchange) in rateLimiters"
             :key="exchange as string"
             class="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border transition-colors duration-300"
-            :class="rl.backoff_active
-              ? 'bg-red-500/10 border-red-500/30 text-red-400'
-              : 'bg-surface-800 border-surface-700 text-surface-300'"
+            :class="
+              rl.backoff_active
+                ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                : 'bg-surface-800 border-surface-700 text-surface-300'
+            "
           >
-            <span class="font-semibold">{{ (exchange as string).substring(0, 2).toUpperCase() }}</span>
+            <span class="font-semibold">{{
+              (exchange as string).substring(0, 2).toUpperCase()
+            }}</span>
             <span class="font-mono">{{ rl.tokens_available.toFixed(0) }}/{{ rl.tokens_max }}</span>
             <span
               v-if="rl.backoff_active"
@@ -221,11 +259,25 @@ const refreshProgress = computed(() => {
         <div v-if="bots.length > 0" class="text-xs">
           <div class="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-2 gap-y-0.5">
             <!-- Header -->
-            <span class="text-surface-500 font-semibold pb-0.5 border-b border-surface-800">{{ t('infraHealth.bot') }}</span>
-            <span class="text-surface-500 font-semibold pb-0.5 border-b border-surface-800 text-center">{{ t('infraHealth.state') }}</span>
-            <span class="text-surface-500 font-semibold pb-0.5 border-b border-surface-800 text-right">{{ t('infraHealth.pairs') }}</span>
-            <span class="text-surface-500 font-semibold pb-0.5 border-b border-surface-800 text-right">{{ t('infraHealth.uptime') }}</span>
-            <span class="text-surface-500 font-semibold pb-0.5 border-b border-surface-800 text-right">{{ t('infraHealth.hb') }}</span>
+            <span class="text-surface-500 font-semibold pb-0.5 border-b border-surface-800">{{
+              t('infraHealth.bot')
+            }}</span>
+            <span
+              class="text-surface-500 font-semibold pb-0.5 border-b border-surface-800 text-center"
+              >{{ t('infraHealth.state') }}</span
+            >
+            <span
+              class="text-surface-500 font-semibold pb-0.5 border-b border-surface-800 text-right"
+              >{{ t('infraHealth.pairs') }}</span
+            >
+            <span
+              class="text-surface-500 font-semibold pb-0.5 border-b border-surface-800 text-right"
+              >{{ t('infraHealth.uptime') }}</span
+            >
+            <span
+              class="text-surface-500 font-semibold pb-0.5 border-b border-surface-800 text-right"
+              >{{ t('infraHealth.hb') }}</span
+            >
 
             <!-- Rows -->
             <template v-for="bot in bots" :key="bot.bot_id">
@@ -234,7 +286,9 @@ const refreshProgress = computed(() => {
                 @mouseenter="startBotHover($event, bot)"
                 @mouseleave="cancelBotHover()"
               >
-                <code class="text-[10px] text-surface-400 mr-1">{{ exchangeShort(bot.exchange, bot.trading_mode) }}</code>
+                <code class="text-[10px] text-surface-400 mr-1">{{
+                  exchangeShort(bot.exchange, bot.trading_mode)
+                }}</code>
                 <span class="font-medium">{{ bot.bot_id }}</span>
                 <span v-if="bot.dry_run" class="text-[9px] ml-0.5 text-green-400">DRY</span>
               </span>
@@ -246,9 +300,16 @@ const refreshProgress = computed(() => {
                   {{ bot.state }}
                 </span>
               </span>
-              <span class="text-right py-0.5 font-mono text-surface-300">{{ bot.pairs_count }}</span>
-              <span class="text-right py-0.5 font-mono text-surface-400">{{ formatUptime(bot.uptime_s) }}</span>
-              <span class="text-right py-0.5 font-mono" :class="heartbeatColor(bot.last_heartbeat_ago_s)">
+              <span class="text-right py-0.5 font-mono text-surface-300">{{
+                bot.pairs_count
+              }}</span>
+              <span class="text-right py-0.5 font-mono text-surface-400">{{
+                formatUptime(bot.uptime_s)
+              }}</span>
+              <span
+                class="text-right py-0.5 font-mono"
+                :class="heartbeatColor(bot.last_heartbeat_ago_s)"
+              >
                 {{ Math.round(bot.last_heartbeat_ago_s) }}s
               </span>
             </template>
@@ -275,7 +336,8 @@ const refreshProgress = computed(() => {
             />
             <span class="text-surface-400">ftpairlist</span>
             <span v-if="pairlistCache?.online" class="font-mono text-surface-300">
-              {{ (pairlistCache.hit_rate_pct ?? 0).toFixed(0) }}% · {{ pairlistCache.entries ?? 0 }}e
+              {{ (pairlistCache.hit_rate_pct ?? 0).toFixed(0) }}% ·
+              {{ pairlistCache.entries ?? 0 }}e
             </span>
             <span v-else class="text-surface-500">offline</span>
           </div>
@@ -292,13 +354,18 @@ const refreshProgress = computed(() => {
               :class="{ 'rotate-90': showEvents }"
             />
             {{ t('infraHealth.events') }}
-            <span v-if="state.events.length" class="font-mono text-surface-500">({{ state.events.length }})</span>
+            <span v-if="state.events.length" class="font-mono text-surface-500"
+              >({{ state.events.length }})</span
+            >
           </button>
         </div>
 
         <!-- Event log -->
         <Transition name="slide-down">
-          <div v-if="showEvents && state.events.length > 0" class="max-h-[180px] overflow-auto text-xs space-y-px">
+          <div
+            v-if="showEvents && state.events.length > 0"
+            class="max-h-[180px] overflow-auto text-xs space-y-px"
+          >
             <div
               v-for="(evt, idx) in state.events.slice(0, 100)"
               :key="idx"
@@ -323,7 +390,13 @@ const refreshProgress = computed(() => {
     </div>
 
     <!-- Bot popover -->
-    <Popover ref="botPopoverRef" :dismiss-able="false" class="!p-0" @mouseenter="keepBotPopover" @mouseleave="hideBotPopover">
+    <Popover
+      ref="botPopoverRef"
+      :dismiss-able="false"
+      class="!p-0"
+      @mouseenter="keepBotPopover"
+      @mouseleave="hideBotPopover"
+    >
       <div v-if="hoveredBot" class="p-3 text-xs space-y-2 min-w-[220px] max-w-[300px]">
         <div class="flex items-center gap-2">
           <span class="font-semibold text-sm">{{ hoveredBot.bot_id }}</span>
@@ -378,7 +451,13 @@ const refreshProgress = computed(() => {
     </Popover>
 
     <!-- Event popover -->
-    <Popover ref="eventPopoverRef" :dismiss-able="false" class="!p-0" @mouseenter="keepEventPopover" @mouseleave="hideEventPopover">
+    <Popover
+      ref="eventPopoverRef"
+      :dismiss-able="false"
+      class="!p-0"
+      @mouseenter="keepEventPopover"
+      @mouseleave="hideEventPopover"
+    >
       <div v-if="hoveredEvent" class="p-3 text-xs space-y-1.5 min-w-[200px] max-w-[320px]">
         <div class="flex items-center gap-2">
           <span :class="eventTypeColor(hoveredEvent.event_type)" class="font-semibold">
@@ -392,7 +471,10 @@ const refreshProgress = computed(() => {
           <span class="text-surface-500">Bot:</span>
           <span class="font-mono ml-1">{{ hoveredEvent.bot_id }}</span>
         </div>
-        <div v-if="hoveredEvent.details && Object.keys(hoveredEvent.details).length > 0" class="space-y-0.5">
+        <div
+          v-if="hoveredEvent.details && Object.keys(hoveredEvent.details).length > 0"
+          class="space-y-0.5"
+        >
           <div v-for="(v, k) in hoveredEvent.details" :key="k as string" class="flex gap-2">
             <span class="text-surface-500 shrink-0">{{ k }}:</span>
             <span class="font-mono text-surface-300 truncate">{{ v }}</span>
@@ -406,7 +488,9 @@ const refreshProgress = computed(() => {
 <style scoped>
 .slide-down-enter-active,
 .slide-down-leave-active {
-  transition: max-height 200ms ease, opacity 200ms ease;
+  transition:
+    max-height 200ms ease,
+    opacity 200ms ease;
   overflow: hidden;
 }
 .slide-down-enter-from,

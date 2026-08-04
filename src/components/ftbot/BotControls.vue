@@ -128,11 +128,7 @@ function goToLogs() {
         <i-mdi-plus-box-multiple-outline class="bc-icon" />
         <span class="bc-label">Entrée</span>
       </button>
-      <button
-        class="bc-btn bc-logs"
-        :title="'Voir les logs'"
-        @click="goToLogs()"
-      >
+      <button class="bc-btn bc-logs" :title="'Voir les logs'" @click="goToLogs()">
         <i-mdi-text-box-outline class="bc-icon" />
         <span class="bc-label">Logs</span>
       </button>

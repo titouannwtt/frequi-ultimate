@@ -6,11 +6,7 @@ import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { BarChart } from 'echarts/charts';
-import {
-  GridComponent,
-  TooltipComponent,
-  MarkLineComponent,
-} from 'echarts/components';
+import { GridComponent, TooltipComponent, MarkLineComponent } from 'echarts/components';
 
 const { t } = useI18n();
 

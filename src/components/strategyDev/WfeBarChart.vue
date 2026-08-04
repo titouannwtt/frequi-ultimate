@@ -20,7 +20,11 @@ const chartOptions = computed<EChartsOption>(() => ({
   title: { text: props.title, left: 'center', textStyle: { fontSize: 14 } },
   tooltip: { trigger: 'axis' },
   grid: { left: 50, right: 20, top: 40, bottom: 30 },
-  xAxis: { type: 'category', name: t('strategyDev.axisWindow'), data: props.data.map((d) => `W${d.index}`) },
+  xAxis: {
+    type: 'category',
+    name: t('strategyDev.axisWindow'),
+    data: props.data.map((d) => `W${d.index}`),
+  },
   yAxis: { type: 'value', name: t('strategyDev.axisWFE') },
   series: [
     {

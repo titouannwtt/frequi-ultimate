@@ -6,11 +6,7 @@ import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { HeatmapChart } from 'echarts/charts';
-import {
-  GridComponent,
-  TooltipComponent,
-  VisualMapComponent,
-} from 'echarts/components';
+import { GridComponent, TooltipComponent, VisualMapComponent } from 'echarts/components';
 
 use([HeatmapChart, CanvasRenderer, GridComponent, TooltipComponent, VisualMapComponent]);
 
@@ -93,9 +89,11 @@ const chartOptions = computed<EChartsOption>(() => {
         const entry = lookup.get(`${year}-${mi + 1}`);
         const trades = entry ? entry.trades : 0;
         const color = val >= 0 ? C.green : C.red;
-        return `<b>${month} ${year}</b><br/>`
-          + `<span style="color:${color}">${fmtProfit(val)}</span>`
-          + ` (${trades} trade${trades !== 1 ? 's' : ''})`;
+        return (
+          `<b>${month} ${year}</b><br/>` +
+          `<span style="color:${color}">${fmtProfit(val)}</span>` +
+          ` (${trades} trade${trades !== 1 ? 's' : ''})`
+        );
       },
       backgroundColor: C.surface1,
       borderColor: C.overlay,

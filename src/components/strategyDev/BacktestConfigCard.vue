@@ -183,8 +183,12 @@ function fmtPct(v: unknown): string {
   color: #f38ba8;
 }
 
-.text-green { color: #a6e3a1; }
-.text-red { color: #f38ba8; }
+.text-green {
+  color: #a6e3a1;
+}
+.text-red {
+  color: #f38ba8;
+}
 
 .roi-table {
   width: 100%;

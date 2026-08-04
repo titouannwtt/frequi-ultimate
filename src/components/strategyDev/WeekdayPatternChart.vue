@@ -4,11 +4,7 @@ import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { BarChart, LineChart } from 'echarts/charts';
-import {
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
-} from 'echarts/components';
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
 import { useI18n } from 'vue-i18n';
 
 use([BarChart, LineChart, CanvasRenderer, GridComponent, TooltipComponent, LegendComponent]);
@@ -128,7 +124,9 @@ const chartOptions = computed<EChartsOption>(() => {
         class="text-center rounded px-1 py-1.5"
         style="background-color: #313244"
       >
-        <div class="text-xs font-medium" style="color: #cdd6f4">{{ dayNames[d.day_index] ?? d.day }}</div>
+        <div class="text-xs font-medium" style="color: #cdd6f4">
+          {{ dayNames[d.day_index] ?? d.day }}
+        </div>
         <div class="text-xs" style="color: #a6adc8">{{ d.trades }} trades</div>
         <div
           class="text-xs font-medium"

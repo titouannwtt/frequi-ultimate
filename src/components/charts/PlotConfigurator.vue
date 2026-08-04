@@ -20,9 +20,12 @@ const expandedIndicator = ref<string | null>(null);
 const searchQuery = ref('');
 const showJsonPanel = ref(false);
 
-watch(() => props.focusSubplot, (name) => {
-  if (name && props.isVisible) selSubPlot.value = name;
-});
+watch(
+  () => props.focusSubplot,
+  (name) => {
+    if (name && props.isVisible) selSubPlot.value = name;
+  },
+);
 const tempPlotConfig = ref<PlotConfig>();
 const tempPlotConfigValid = ref(true);
 const jsonCopied = ref(false);
@@ -208,8 +211,12 @@ async function copyJsonToClipboard() {
   try {
     await navigator.clipboard.writeText(JSON.stringify(plotStore.editablePlotConfig, null, 2));
     jsonCopied.value = true;
-    setTimeout(() => { jsonCopied.value = false; }, 2000);
-  } catch { /* ignore */ }
+    setTimeout(() => {
+      jsonCopied.value = false;
+    }, 2000);
+  } catch {
+    /* ignore */
+  }
 }
 
 function importJson() {
@@ -263,34 +270,47 @@ function applyTemplate(templateName: string) {
 }
 
 // Watchers
-watch(selSubPlot, () => { expandedIndicator.value = null; });
-
-watch(() => plotStore.plotConfigName, () => {
+watch(selSubPlot, () => {
   expandedIndicator.value = null;
-  plotConfigNameLoc.value = plotStore.plotConfigName;
 });
+
+watch(
+  () => plotStore.plotConfigName,
+  () => {
+    expandedIndicator.value = null;
+    plotConfigNameLoc.value = plotStore.plotConfigName;
+  },
+);
 
 let savedSnapshot: PlotConfig | null = null;
 
-watch(() => props.isVisible, () => {
-  if (props.isVisible) {
-    savedSnapshot = deepClone(plotStore.customPlotConfigs[plotStore.plotConfigName] ?? EMPTY_PLOTCONFIG);
-    plotStore.editablePlotConfig = deepClone(savedSnapshot);
-    plotStore.isEditing = true;
-    plotConfigNameLoc.value = plotStore.plotConfigName;
-    undoStack.value = [];
-    redoStack.value = [];
-    if (props.focusSubplot) {
-      nextTick(() => { selSubPlot.value = props.focusSubplot; });
-    }
-  } else {
-    plotStore.isEditing = false;
-    if (savedSnapshot) {
+watch(
+  () => props.isVisible,
+  () => {
+    if (props.isVisible) {
+      savedSnapshot = deepClone(
+        plotStore.customPlotConfigs[plotStore.plotConfigName] ?? EMPTY_PLOTCONFIG,
+      );
       plotStore.editablePlotConfig = deepClone(savedSnapshot);
-      savedSnapshot = null;
+      plotStore.isEditing = true;
+      plotConfigNameLoc.value = plotStore.plotConfigName;
+      undoStack.value = [];
+      redoStack.value = [];
+      if (props.focusSubplot) {
+        nextTick(() => {
+          selSubPlot.value = props.focusSubplot;
+        });
+      }
+    } else {
+      plotStore.isEditing = false;
+      if (savedSnapshot) {
+        plotStore.editablePlotConfig = deepClone(savedSnapshot);
+        savedSnapshot = null;
+      }
     }
-  }
-}, { immediate: true });
+  },
+  { immediate: true },
+);
 
 const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
 </script>
@@ -349,16 +369,17 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
               v-model="newSubplotName"
               class="pc-add-subplot-input"
               placeholder="+ Subplot"
-              @keydown.enter="addSubplot(newSubplotName); newSubplotName = ''"
+              @keydown.enter="
+                addSubplot(newSubplotName);
+                newSubplotName = '';
+              "
             />
           </div>
         </div>
 
         <!-- Indicator list (accordion) -->
         <div class="pc-indicator-list">
-          <div v-if="indicators.length === 0" class="pc-empty">
-            Aucun indicateur
-          </div>
+          <div v-if="indicators.length === 0" class="pc-empty">Aucun indicateur</div>
 
           <div
             v-for="ind in indicators"
@@ -408,13 +429,18 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
                     <ColorPicker
                       :model-value="ind.config.color || '#888888'"
                       class="pc-color-picker"
-                      @update:model-value="(v: string) => updateIndicatorProp(ind.name, 'color', v.startsWith('#') ? v : '#' + v)"
+                      @update:model-value="
+                        (v: string) =>
+                          updateIndicatorProp(ind.name, 'color', v.startsWith('#') ? v : '#' + v)
+                      "
                     />
                     <InputText
                       :model-value="ind.config.color || '#888888'"
                       size="small"
                       class="pc-color-input"
-                      @update:model-value="(v: string | undefined) => updateIndicatorProp(ind.name, 'color', v ?? '')"
+                      @update:model-value="
+                        (v: string | undefined) => updateIndicatorProp(ind.name, 'color', v ?? '')
+                      "
                     />
                     <button
                       class="pc-btn-icon pc-btn-dice"
@@ -434,7 +460,9 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
                     class="pc-config-input"
                     filter
                     placeholder="Aucun"
-                    @update:model-value="(v: string) => updateIndicatorProp(ind.name, 'fill_to', v || undefined)"
+                    @update:model-value="
+                      (v: string) => updateIndicatorProp(ind.name, 'fill_to', v || undefined)
+                    "
                   />
                 </div>
                 <div v-if="ind.config.type === 'scatter'" class="pc-config-row">
@@ -447,7 +475,9 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
                     show-buttons
                     button-layout="horizontal"
                     class="pc-config-input"
-                    @update:model-value="(v: number) => updateIndicatorProp(ind.name, 'scatterSymbolSize', v)"
+                    @update:model-value="
+                      (v: number) => updateIndicatorProp(ind.name, 'scatterSymbolSize', v)
+                    "
                   />
                 </div>
               </div>
@@ -490,8 +520,14 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
         <div class="pc-section">
           <div class="pc-section-title">Actions</div>
           <div class="pc-action-grid">
-            <button class="pc-action-btn" @click="loadPlotConfigFromStrategy"
-              :disabled="(botStore.activeBot.isWebserverMode && !botStore.activeBot.botFeatures.plotConfigFromServer) || !botStore.activeBot.isBotOnline"
+            <button
+              class="pc-action-btn"
+              @click="loadPlotConfigFromStrategy"
+              :disabled="
+                (botStore.activeBot.isWebserverMode &&
+                  !botStore.activeBot.botFeatures.plotConfigFromServer) ||
+                !botStore.activeBot.isBotOnline
+              "
             >
               <i-mdi-strategy class="w-4 h-4" />
               <span>Depuis stratégie</span>
@@ -613,10 +649,13 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   min-height: 300px;
 }
 @media (max-width: 640px) {
-  .pc-panels { grid-template-columns: 1fr; }
+  .pc-panels {
+    grid-template-columns: 1fr;
+  }
 }
 
-.pc-left, .pc-right {
+.pc-left,
+.pc-right {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -668,9 +707,14 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   opacity: 0.5;
   padding: 0;
 }
-.pc-subplot-delete:hover { opacity: 1; color: #ef5350; }
+.pc-subplot-delete:hover {
+  opacity: 1;
+  color: #ef5350;
+}
 
-.pc-subplot-name { white-space: nowrap; }
+.pc-subplot-name {
+  white-space: nowrap;
+}
 
 .pc-add-subplot {
   display: flex;
@@ -711,16 +755,22 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   color: rgba(0, 0, 0, 0.3);
   font-size: 0.75rem;
 }
-.ft-dark-theme .pc-empty { color: rgba(255, 255, 255, 0.25); }
+.ft-dark-theme .pc-empty {
+  color: rgba(255, 255, 255, 0.25);
+}
 
 .pc-indicator-item {
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
 }
-.pc-indicator-item:last-child { border-bottom: none; }
+.pc-indicator-item:last-child {
+  border-bottom: none;
+}
 .ft-dark-theme .pc-indicator-item {
   border-bottom-color: rgba(255, 255, 255, 0.04);
 }
-.pc-indicator-item.unavailable { opacity: 0.5; }
+.pc-indicator-item.unavailable {
+  opacity: 0.5;
+}
 
 .pc-indicator-header {
   display: flex;
@@ -772,7 +822,9 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   color: rgba(0, 0, 0, 0.3);
   text-transform: uppercase;
 }
-.ft-dark-theme .pc-indicator-type { color: rgba(255, 255, 255, 0.25); }
+.ft-dark-theme .pc-indicator-type {
+  color: rgba(255, 255, 255, 0.25);
+}
 
 .pc-indicator-remove {
   display: flex;
@@ -789,7 +841,9 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   color: #ef5350;
   background: rgba(239, 83, 80, 0.08);
 }
-.ft-dark-theme .pc-indicator-remove { color: rgba(255, 255, 255, 0.25); }
+.ft-dark-theme .pc-indicator-remove {
+  color: rgba(255, 255, 255, 0.25);
+}
 
 /* ═══ Indicator config (expanded) ═══ */
 .pc-indicator-config {
@@ -817,10 +871,17 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   min-width: 5rem;
   flex-shrink: 0;
 }
-.ft-dark-theme .pc-config-label { color: rgba(255, 255, 255, 0.45); }
+.ft-dark-theme .pc-config-label {
+  color: rgba(255, 255, 255, 0.45);
+}
 
-.pc-config-input { flex: 1; min-width: 0; }
-.pc-config-input-sm { width: 5rem; }
+.pc-config-input {
+  flex: 1;
+  min-width: 0;
+}
+.pc-config-input-sm {
+  width: 5rem;
+}
 
 .pc-color-group {
   display: flex;
@@ -828,8 +889,13 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   gap: 0.25rem;
   flex: 1;
 }
-.pc-color-picker { flex-shrink: 0; }
-.pc-color-input { flex: 1; min-width: 0; }
+.pc-color-picker {
+  flex-shrink: 0;
+}
+.pc-color-input {
+  flex: 1;
+  min-width: 0;
+}
 
 /* ═══ Search + add ═══ */
 .pc-search-add {
@@ -846,7 +912,9 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   color: rgba(0, 0, 0, 0.3);
   pointer-events: none;
 }
-.ft-dark-theme .pc-search-icon { color: rgba(255, 255, 255, 0.25); }
+.ft-dark-theme .pc-search-icon {
+  color: rgba(255, 255, 255, 0.25);
+}
 
 .pc-search-input {
   width: 100%;
@@ -894,7 +962,9 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   cursor: pointer;
   transition: background 0.1s;
 }
-.pc-search-result:hover { background: rgba(99, 102, 241, 0.06); }
+.pc-search-result:hover {
+  background: rgba(99, 102, 241, 0.06);
+}
 .pc-search-result.used {
   opacity: 0.4;
   cursor: default;
@@ -905,9 +975,13 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   font-weight: 600;
   color: rgba(0, 0, 0, 0.3);
 }
-.ft-dark-theme .pc-used-badge { color: rgba(255, 255, 255, 0.25); }
+.ft-dark-theme .pc-used-badge {
+  color: rgba(255, 255, 255, 0.25);
+}
 
-.pc-add-icon { color: rgb(99, 102, 241); }
+.pc-add-icon {
+  color: rgb(99, 102, 241);
+}
 
 .pc-search-empty {
   padding: 0.75rem;
@@ -929,7 +1003,9 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   letter-spacing: 0.06em;
   color: rgba(0, 0, 0, 0.35);
 }
-.ft-dark-theme .pc-section-title { color: rgba(255, 255, 255, 0.3); }
+.ft-dark-theme .pc-section-title {
+  color: rgba(255, 255, 255, 0.3);
+}
 
 .pc-action-grid {
   display: grid;
@@ -984,7 +1060,9 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   display: flex;
   gap: 0.25rem;
 }
-.pc-export-actions .pc-action-btn { flex: 1; }
+.pc-export-actions .pc-action-btn {
+  flex: 1;
+}
 
 /* ═══ Templates ═══ */
 .pc-template-grid {
@@ -1022,7 +1100,7 @@ const graphTypes = Object.keys(ChartType) as (keyof typeof ChartType)[];
   font-size: 0.75rem;
   cursor: pointer;
 }
-.pc-toggle input[type="checkbox"] {
+.pc-toggle input[type='checkbox'] {
   accent-color: rgb(99, 102, 241);
 }
 

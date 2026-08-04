@@ -120,16 +120,22 @@ function fmtDur(min: number): string {
               {{ st.pair }}
               <span v-if="st.is_short" class="text-red-400 text-[10px]">S</span>
             </td>
-            <td class="py-1 px-1 text-right tabular-nums text-surface-300">{{ fmtDur(st.duration_min) }}</td>
+            <td class="py-1 px-1 text-right tabular-nums text-surface-300">
+              {{ fmtDur(st.duration_min) }}
+            </td>
             <td
               class="py-1 px-1 text-right tabular-nums"
               :class="st.profit >= 0 ? 'text-green-400' : 'text-red-400'"
             >
               {{ (st.profit * 100).toFixed(2) }}%
             </td>
-            <td class="py-1 px-1 text-right tabular-nums text-surface-300">{{ st.stake_amount.toFixed(0) }}</td>
+            <td class="py-1 px-1 text-right tabular-nums text-surface-300">
+              {{ st.stake_amount.toFixed(0) }}
+            </td>
             <td class="py-1 px-1 text-surface-400">{{ st.exit_reason }}</td>
-            <td class="py-1 px-1 text-right tabular-nums text-surface-400">{{ st.orders || '–' }}</td>
+            <td class="py-1 px-1 text-right tabular-nums text-surface-400">
+              {{ st.orders || '–' }}
+            </td>
           </tr>
         </tbody>
       </table>

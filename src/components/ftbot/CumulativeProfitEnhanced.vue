@@ -270,7 +270,12 @@ function buildProfitTab(initial: boolean): EChartsOption {
     currentProfit: undefined as number | undefined,
   }));
   for (const o of openData) {
-    combinedData.push({ date: o.date, profit: undefined as unknown as number, hwm: undefined, currentProfit: o.currentProfit });
+    combinedData.push({
+      date: o.date,
+      profit: undefined as unknown as number,
+      hwm: undefined,
+      currentProfit: o.currentProfit,
+    });
   }
 
   return {
@@ -307,7 +312,10 @@ function buildProfitTab(initial: boolean): EChartsOption {
         areaStyle: {
           color: {
             type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
             colorStops: [
               { offset: 0, color: colorProfit + '40' },
               { offset: 1, color: colorLoss + '10' },
@@ -611,10 +619,7 @@ watch(
         :theme="settingsStore.chartTheme"
         autoresize
       />
-      <div
-        v-else
-        class="flex items-center justify-center h-full text-surface-400 text-sm"
-      >
+      <div v-else class="flex items-center justify-center h-full text-surface-400 text-sm">
         {{ t('cumProfit.noData') }}
       </div>
     </div>
@@ -635,21 +640,27 @@ watch(
           :class="stats.totalProfit >= 0 ? 'text-green-400' : 'text-red-400'"
         >
           {{ formatPrice(stats.totalProfit, 2) }}
-          <span v-if="currencyLabel" class="text-[0.6rem] font-normal opacity-50">{{ currencyLabel.trim() }}</span>
+          <span v-if="currencyLabel" class="text-[0.6rem] font-normal opacity-50">{{
+            currencyLabel.trim()
+          }}</span>
         </span>
       </div>
       <div class="flex flex-col items-center">
         <span class="text-surface-400">{{ t('cumProfit.statPeak') }}</span>
         <span class="font-semibold text-blue-400">
           {{ formatPrice(stats.peakProfit, 2) }}
-          <span v-if="currencyLabel" class="text-[0.6rem] font-normal opacity-50">{{ currencyLabel.trim() }}</span>
+          <span v-if="currencyLabel" class="text-[0.6rem] font-normal opacity-50">{{
+            currencyLabel.trim()
+          }}</span>
         </span>
       </div>
       <div class="flex flex-col items-center">
         <span class="text-surface-400">{{ t('cumProfit.statDrawdown') }}</span>
         <span class="font-semibold text-red-400">
           {{ formatPrice(stats.maxDrawdown, 2) }}
-          <span v-if="currencyLabel" class="text-[0.6rem] font-normal opacity-50">{{ currencyLabel.trim() }}</span>
+          <span v-if="currencyLabel" class="text-[0.6rem] font-normal opacity-50">{{
+            currencyLabel.trim()
+          }}</span>
         </span>
       </div>
       <div class="flex flex-col items-center">

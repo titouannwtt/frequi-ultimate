@@ -19,7 +19,9 @@ const botState = computed(() => {
   return botStore.allBotState[props.botId];
 });
 
-const currency = computed(() => props.stakeCurrency || (botState.value?.stake_currency as string) || 'USDC');
+const currency = computed(
+  () => props.stakeCurrency || (botState.value?.stake_currency as string) || 'USDC',
+);
 
 // ── Section 1: Profit Header ──
 const hasClosedTrades = computed(() => {
@@ -51,7 +53,9 @@ const totalAllBotsProfit = computed(() => {
   }
   return total;
 });
-const pctOfTotalProfit = computed(() => totalAllBotsProfit.value > 0 ? (totalRealizedProfit.value / totalAllBotsProfit.value) * 100 : 0);
+const pctOfTotalProfit = computed(() =>
+  totalAllBotsProfit.value > 0 ? (totalRealizedProfit.value / totalAllBotsProfit.value) * 100 : 0,
+);
 
 // Weekly profit trend (last 4 weeks approximation from total)
 const firstTradeTs = computed(() => profit.value?.first_trade_timestamp ?? 0);
@@ -72,7 +76,9 @@ const avgProfitPerWeek = computed(() => {
 const wins = computed(() => profit.value?.winning_trades ?? 0);
 const losses = computed(() => profit.value?.losing_trades ?? 0);
 const totalTrades = computed(() => wins.value + losses.value);
-const winrate = computed(() => totalTrades.value > 0 ? (wins.value / totalTrades.value) * 100 : 0);
+const winrate = computed(() =>
+  totalTrades.value > 0 ? (wins.value / totalTrades.value) * 100 : 0,
+);
 
 const donutRadius = 44;
 const donutStroke = 8;
@@ -102,31 +108,56 @@ const performanceMetrics = computed(() => {
     },
     {
       label: t('profit.cagr'),
-      value: profit.value.cagr !== undefined && Math.abs(profit.value.cagr) < 100 ? formatPercent(profit.value.cagr, 1) : 'N/A',
-      color: profit.value.cagr !== undefined && Math.abs(profit.value.cagr) < 100 ? metricColor(profit.value.cagr, 0.2, 0) : '',
+      value:
+        profit.value.cagr !== undefined && Math.abs(profit.value.cagr) < 100
+          ? formatPercent(profit.value.cagr, 1)
+          : 'N/A',
+      color:
+        profit.value.cagr !== undefined && Math.abs(profit.value.cagr) < 100
+          ? metricColor(profit.value.cagr, 0.2, 0)
+          : '',
       tooltip: t('tooltips.cagr'),
     },
     {
       label: t('profit.sharpe'),
-      value: profit.value.sharpe !== undefined && Math.abs(profit.value.sharpe) < 1000 ? formatNumber(profit.value.sharpe, 2) : 'N/A',
-      color: profit.value.sharpe !== undefined && Math.abs(profit.value.sharpe) < 1000 ? metricColor(profit.value.sharpe, 1, 0) : '',
+      value:
+        profit.value.sharpe !== undefined && Math.abs(profit.value.sharpe) < 1000
+          ? formatNumber(profit.value.sharpe, 2)
+          : 'N/A',
+      color:
+        profit.value.sharpe !== undefined && Math.abs(profit.value.sharpe) < 1000
+          ? metricColor(profit.value.sharpe, 1, 0)
+          : '',
       tooltip: t('tooltips.sharpe'),
     },
     {
       label: t('profit.sortino'),
-      value: profit.value.sortino !== undefined && Math.abs(profit.value.sortino) < 1000 ? formatNumber(profit.value.sortino, 2) : 'N/A',
-      color: profit.value.sortino !== undefined && Math.abs(profit.value.sortino) < 1000 ? metricColor(profit.value.sortino, 1.5, 0) : '',
+      value:
+        profit.value.sortino !== undefined && Math.abs(profit.value.sortino) < 1000
+          ? formatNumber(profit.value.sortino, 2)
+          : 'N/A',
+      color:
+        profit.value.sortino !== undefined && Math.abs(profit.value.sortino) < 1000
+          ? metricColor(profit.value.sortino, 1.5, 0)
+          : '',
       tooltip: t('tooltips.sortino'),
     },
     {
       label: t('profit.sqn'),
-      value: profit.value.sqn !== undefined && Math.abs(profit.value.sqn) < 1000 ? formatNumber(profit.value.sqn, 2) : 'N/A',
-      color: profit.value.sqn !== undefined && Math.abs(profit.value.sqn) < 1000 ? metricColor(profit.value.sqn, 2, 0) : '',
+      value:
+        profit.value.sqn !== undefined && Math.abs(profit.value.sqn) < 1000
+          ? formatNumber(profit.value.sqn, 2)
+          : 'N/A',
+      color:
+        profit.value.sqn !== undefined && Math.abs(profit.value.sqn) < 1000
+          ? metricColor(profit.value.sqn, 2, 0)
+          : '',
       tooltip: t('tooltips.sqn'),
     },
     {
       label: t('profit.expectancy'),
-      value: profit.value.expectancy !== undefined ? formatNumber(profit.value.expectancy, 4) : 'N/A',
+      value:
+        profit.value.expectancy !== undefined ? formatNumber(profit.value.expectancy, 4) : 'N/A',
       color: metricColor(profit.value.expectancy, 0.1, 0),
       tooltip: t('tooltips.expectancy'),
     },
@@ -178,218 +209,305 @@ function profitColor(val: number | undefined | null): string {
 
 <template>
   <div class="glass-card" style="width: 540px">
-
     <!-- Empty state: no closed trades -->
     <div v-if="!hasClosedTrades" class="flex flex-col items-center justify-center py-8 gap-2">
       <i-mdi-clock-outline class="text-3xl text-amber-400/40" />
-      <div class="text-sm text-gray-800 dark:text-gray-200">{{ t('emptyStates.noClosedTrades') }}</div>
-      <div class="text-xs text-gray-600 dark:text-gray-400 text-center">{{ t('emptyStates.noClosedTradesDesc') }}</div>
-    </div>
-
-    <template v-else>
-    <!-- ═══ SECTION 1: Profit Header ═══ -->
-    <div class="section-header">
-      <i-mdi-cash-check class="text-green-400" />
-      <span>{{ t('closedProfitCard.realizedPerformance') }}</span>
-    </div>
-    <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="text-2xl font-bold" :class="profitColor(totalRealizedProfit)">
-            {{ formatPriceCurrency(totalRealizedProfit, currency, 2) }}
-          </div>
-          <div class="text-[0.85rem] mt-0.5" :class="profitColor(roiPercent)" v-tooltip.top="t('tooltips.roi')">
-            ROI {{ formatPercent(roiPercent, 2) }}
-          </div>
-        </div>
+      <div class="text-sm text-gray-800 dark:text-gray-200">
+        {{ t('emptyStates.noClosedTrades') }}
       </div>
-      <div v-if="capitalWithdrawal > 0" class="text-[0.8rem] text-gray-600 dark:text-gray-500 mt-1">
-        {{ t('closedProfitCard.netAfterWithdrawals') }}:
-        <span :class="profitColor(netProfit)">{{ formatPriceCurrency(netProfit, currency, 2) }}</span>
+      <div class="text-xs text-gray-600 dark:text-gray-400 text-center">
+        {{ t('emptyStates.noClosedTradesDesc') }}
       </div>
     </div>
 
-    <div v-if="!profit" class="text-center text-gray-600 dark:text-gray-500 py-3 text-[0.8rem]">
-      {{ t('closedProfitCard.noData') }}
-    </div>
-
     <template v-else>
-      <!-- ═══ SECTION 2: Win Rate Donut + Stats ═══ -->
+      <!-- ═══ SECTION 1: Profit Header ═══ -->
+      <div class="section-header">
+        <i-mdi-cash-check class="text-green-400" />
+        <span>{{ t('closedProfitCard.realizedPerformance') }}</span>
+      </div>
       <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
-        <div class="section-header">
-          <i-mdi-trophy class="text-yellow-400" />
-          <span>{{ t('closedProfitCard.winRateStats') }}</span>
-        </div>
-        <div class="flex gap-4">
-          <!-- Donut -->
-          <div class="flex flex-col items-center" style="min-width: 100px">
-            <svg width="116" height="116" viewBox="0 0 116 116">
-              <circle cx="58" cy="58" :r="donutRadius" fill="none" stroke="rgba(255,255,255,0.06)" :stroke-width="donutStroke" />
-              <circle
-                cx="58" cy="58" :r="donutRadius"
-                fill="none" stroke="#22c55e" :stroke-width="donutStroke"
-                stroke-linecap="round"
-                :stroke-dasharray="donutWinDash"
-                :stroke-dashoffset="donutCircumference / 4"
-                style="transition: stroke-dasharray 0.5s ease"
-              />
-              <circle
-                cx="58" cy="58" :r="donutRadius"
-                fill="none" stroke="#ef4444" :stroke-width="donutStroke"
-                stroke-linecap="round"
-                :stroke-dasharray="donutLossDash"
-                :stroke-dashoffset="donutLossOffset + donutCircumference / 4"
-                style="transition: stroke-dasharray 0.5s ease"
-              />
-              <text x="58" y="54" text-anchor="middle" class="fill-gray-100 font-bold" style="font-size: 1rem">
-                {{ winrate.toFixed(0) }}%
-              </text>
-              <text x="58" y="68" text-anchor="middle" class="fill-gray-600 dark:fill-gray-500" style="font-size: 0.85rem">
-                {{ wins }}W / {{ losses }}L
-              </text>
-            </svg>
-          </div>
-          <!-- Stats next to donut -->
-          <div class="flex-1 space-y-0.5 pt-1">
-            <div class="stat-row">
-              <span class="stat-label" v-tooltip.top="t('tooltips.totalTradeCount')">{{ t('closedProfitCard.totalTrades') }}</span>
-              <span class="stat-value">{{ profit.closed_trade_count ?? totalTrades }}</span>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-2xl font-bold" :class="profitColor(totalRealizedProfit)">
+              {{ formatPriceCurrency(totalRealizedProfit, currency, 2) }}
             </div>
+            <div
+              class="text-[0.85rem] mt-0.5"
+              :class="profitColor(roiPercent)"
+              v-tooltip.top="t('tooltips.roi')"
+            >
+              ROI {{ formatPercent(roiPercent, 2) }}
+            </div>
+          </div>
+        </div>
+        <div
+          v-if="capitalWithdrawal > 0"
+          class="text-[0.8rem] text-gray-600 dark:text-gray-500 mt-1"
+        >
+          {{ t('closedProfitCard.netAfterWithdrawals') }}:
+          <span :class="profitColor(netProfit)">{{
+            formatPriceCurrency(netProfit, currency, 2)
+          }}</span>
+        </div>
+      </div>
+
+      <div v-if="!profit" class="text-center text-gray-600 dark:text-gray-500 py-3 text-[0.8rem]">
+        {{ t('closedProfitCard.noData') }}
+      </div>
+
+      <template v-else>
+        <!-- ═══ SECTION 2: Win Rate Donut + Stats ═══ -->
+        <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
+          <div class="section-header">
+            <i-mdi-trophy class="text-yellow-400" />
+            <span>{{ t('closedProfitCard.winRateStats') }}</span>
+          </div>
+          <div class="flex gap-4">
+            <!-- Donut -->
+            <div class="flex flex-col items-center" style="min-width: 100px">
+              <svg width="116" height="116" viewBox="0 0 116 116">
+                <circle
+                  cx="58"
+                  cy="58"
+                  :r="donutRadius"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.06)"
+                  :stroke-width="donutStroke"
+                />
+                <circle
+                  cx="58"
+                  cy="58"
+                  :r="donutRadius"
+                  fill="none"
+                  stroke="#22c55e"
+                  :stroke-width="donutStroke"
+                  stroke-linecap="round"
+                  :stroke-dasharray="donutWinDash"
+                  :stroke-dashoffset="donutCircumference / 4"
+                  style="transition: stroke-dasharray 0.5s ease"
+                />
+                <circle
+                  cx="58"
+                  cy="58"
+                  :r="donutRadius"
+                  fill="none"
+                  stroke="#ef4444"
+                  :stroke-width="donutStroke"
+                  stroke-linecap="round"
+                  :stroke-dasharray="donutLossDash"
+                  :stroke-dashoffset="donutLossOffset + donutCircumference / 4"
+                  style="transition: stroke-dasharray 0.5s ease"
+                />
+                <text
+                  x="58"
+                  y="54"
+                  text-anchor="middle"
+                  class="fill-gray-100 font-bold"
+                  style="font-size: 1rem"
+                >
+                  {{ winrate.toFixed(0) }}%
+                </text>
+                <text
+                  x="58"
+                  y="68"
+                  text-anchor="middle"
+                  class="fill-gray-600 dark:fill-gray-500"
+                  style="font-size: 0.85rem"
+                >
+                  {{ wins }}W / {{ losses }}L
+                </text>
+              </svg>
+            </div>
+            <!-- Stats next to donut -->
+            <div class="flex-1 space-y-0.5 pt-1">
+              <div class="stat-row">
+                <span class="stat-label" v-tooltip.top="t('tooltips.totalTradeCount')">{{
+                  t('closedProfitCard.totalTrades')
+                }}</span>
+                <span class="stat-value">{{ profit.closed_trade_count ?? totalTrades }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label" v-tooltip.top="t('tooltips.avgPerTrade')">{{
+                  t('closedProfitCard.avgProfitTrade')
+                }}</span>
+                <span class="stat-value" :class="profitColor(profit.profit_closed_ratio_mean)">
+                  {{ formatPercent(profit.profit_closed_ratio_mean, 2) }}
+                </span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label" v-tooltip.top="t('tooltips.avgDuration')">{{
+                  t('profit.avgDuration')
+                }}</span>
+                <span class="stat-value">{{ profit.avg_duration ?? 'N/A' }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label" v-tooltip.top="t('tooltips.bestPair')">{{
+                  t('profit.bestPerforming')
+                }}</span>
+                <span
+                  v-if="profit.best_pair"
+                  class="stat-value"
+                  :class="profitColor(profit.best_pair_profit_ratio)"
+                >
+                  {{ profit.best_pair }} {{ formatPercent(profit.best_pair_profit_ratio, 1) }}
+                </span>
+                <span v-else class="stat-value">N/A</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION 3: Performance Grid (2x3) ═══ -->
+        <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
+          <div class="section-header">
+            <i-mdi-chart-bar class="text-blue-400" />
+            <span>{{ t('closedProfitCard.performanceMetrics') }}</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <div v-for="metric in performanceMetrics" :key="metric.label" class="metric-cell">
+              <div
+                class="text-[0.85rem] text-gray-600 dark:text-gray-500 mb-0.5"
+                v-tooltip.top="metric.tooltip"
+              >
+                {{ metric.label }}
+              </div>
+              <div class="font-bold text-sm" :class="metric.color">{{ metric.value }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION 4: Time Analysis ═══ -->
+        <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
+          <div class="section-header">
+            <i-mdi-calendar-clock class="text-amber-400" />
+            <span>{{ t('closedProfitCard.timeAnalysis') }}</span>
+          </div>
+          <div class="space-y-0.5">
             <div class="stat-row">
-              <span class="stat-label" v-tooltip.top="t('tooltips.avgPerTrade')">{{ t('closedProfitCard.avgProfitTrade') }}</span>
-              <span class="stat-value" :class="profitColor(profit.profit_closed_ratio_mean)">
-                {{ formatPercent(profit.profit_closed_ratio_mean, 2) }}
+              <span class="stat-label" v-tooltip.top="t('tooltips.tradingPeriod')">{{
+                t('closedProfitCard.tradingSpan')
+              }}</span>
+              <span class="stat-value">
+                {{ firstTradeTs ? timestampms(firstTradeTs) : 'N/A' }}
+                <span class="text-gray-600 mx-0.5">-></span>
+                {{ latestTradeTs ? timestampms(latestTradeTs) : 'N/A' }}
               </span>
             </div>
-            <div class="stat-row">
-              <span class="stat-label" v-tooltip.top="t('tooltips.avgDuration')">{{ t('profit.avgDuration') }}</span>
-              <span class="stat-value">{{ profit.avg_duration ?? 'N/A' }}</span>
+            <div v-if="tradesPerWeek !== undefined" class="stat-row">
+              <span class="stat-label" v-tooltip.top="t('tooltips.tradesPerWeek')">{{
+                t('closedProfitCard.avgTradesPerWeek')
+              }}</span>
+              <span class="stat-value">{{ formatNumber(tradesPerWeek, 1) }}</span>
             </div>
-            <div class="stat-row">
-              <span class="stat-label" v-tooltip.top="t('tooltips.bestPair')">{{ t('profit.bestPerforming') }}</span>
-              <span v-if="profit.best_pair" class="stat-value" :class="profitColor(profit.best_pair_profit_ratio)">
+            <div v-if="tradesPerMonth !== undefined" class="stat-row">
+              <span class="stat-label" v-tooltip="t('tooltips.tradesPerWeek')">{{
+                t('closedProfitCard.avgTradesPerMonth')
+              }}</span>
+              <span class="stat-value">{{ formatNumber(tradesPerMonth, 1) }}</span>
+            </div>
+            <div v-if="avgProfitPerWeek !== undefined" class="stat-row">
+              <span class="stat-label" v-tooltip="t('tooltips.avgProfitWeek')">{{
+                t('closedProfitCard.avgProfitWeek')
+              }}</span>
+              <span class="stat-value" :class="profitColor(avgProfitPerWeek)">
+                {{ formatPriceCurrency(avgProfitPerWeek, currency, 2) }}
+              </span>
+            </div>
+            <div v-if="avgProfitPerMonth !== undefined" class="stat-row">
+              <span class="stat-label" v-tooltip="t('tooltips.avgProfitMonth')">{{
+                t('closedProfitCard.avgProfitMonth')
+              }}</span>
+              <span class="stat-value" :class="profitColor(avgProfitPerMonth)">
+                {{ formatPriceCurrency(avgProfitPerMonth, currency, 2) }}
+              </span>
+            </div>
+            <div v-if="profit.best_pair" class="stat-row">
+              <span class="stat-label" v-tooltip="t('tooltips.bestPair')">{{
+                t('closedProfitCard.bestPair')
+              }}</span>
+              <span class="stat-value" :class="profitColor(profit.best_pair_profit_ratio)">
                 {{ profit.best_pair }} {{ formatPercent(profit.best_pair_profit_ratio, 1) }}
               </span>
-              <span v-else class="stat-value">N/A</span>
+            </div>
+            <div v-if="profit.trading_volume" class="stat-row">
+              <span class="stat-label" v-tooltip="t('tooltips.tradingVolume')">{{
+                t('profit.tradingVolume')
+              }}</span>
+              <span class="stat-value">{{
+                formatPriceCurrency(profit.trading_volume, currency, 0)
+              }}</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- ═══ SECTION 3: Performance Grid (2x3) ═══ -->
-      <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
-        <div class="section-header">
-          <i-mdi-chart-bar class="text-blue-400" />
-          <span>{{ t('closedProfitCard.performanceMetrics') }}</span>
-        </div>
-        <div class="grid grid-cols-3 gap-2">
-          <div
-            v-for="metric in performanceMetrics"
-            :key="metric.label"
-            class="metric-cell"
-          >
-            <div class="text-[0.85rem] text-gray-600 dark:text-gray-500 mb-0.5" v-tooltip.top="metric.tooltip">{{ metric.label }}</div>
-            <div class="font-bold text-sm" :class="metric.color">{{ metric.value }}</div>
+        <!-- Bot contribution to total profit -->
+        <div
+          v-if="totalAllBotsProfit > 0"
+          class="mb-3 pb-3 border-b border-black/5 dark:border-white/5"
+        >
+          <div class="section-header">
+            <i-mdi-chart-pie class="text-blue-400" />
+            <span>{{ t('summaryCards.shareOfTotalProfit') }}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex-1 h-3 rounded-full overflow-hidden bg-white/5">
+              <div
+                class="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all"
+                :style="{ width: `${Math.min(pctOfTotalProfit, 100)}%` }"
+              />
+            </div>
+            <span
+              class="text-blue-400 font-bold text-sm"
+              style="min-width: 50px; text-align: right"
+            >
+              {{ pctOfTotalProfit.toFixed(1) }}%
+            </span>
+          </div>
+          <div class="text-[0.8rem] text-gray-600 dark:text-gray-500 mt-1">
+            {{
+              t('summaryCards.profitOfTotal', {
+                profit: formatPriceCurrency(totalRealizedProfit, currency, 2),
+                total: formatPriceCurrency(totalAllBotsProfit, currency, 2),
+              })
+            }}
           </div>
         </div>
-      </div>
 
-      <!-- ═══ SECTION 4: Time Analysis ═══ -->
-      <div class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
-        <div class="section-header">
-          <i-mdi-calendar-clock class="text-amber-400" />
-          <span>{{ t('closedProfitCard.timeAnalysis') }}</span>
-        </div>
-        <div class="space-y-0.5">
-          <div class="stat-row">
-            <span class="stat-label" v-tooltip.top="t('tooltips.tradingPeriod')">{{ t('closedProfitCard.tradingSpan') }}</span>
-            <span class="stat-value">
-              {{ firstTradeTs ? timestampms(firstTradeTs) : 'N/A' }}
-              <span class="text-gray-600 mx-0.5">-></span>
-              {{ latestTradeTs ? timestampms(latestTradeTs) : 'N/A' }}
-            </span>
+        <!-- ═══ SECTION 5: Withdrawal Summary ═══ -->
+        <div v-if="capitalWithdrawal > 0">
+          <div class="section-header">
+            <i-mdi-bank-transfer-out class="text-yellow-400" />
+            <span>{{ t('closedProfitCard.withdrawalSummary') }}</span>
           </div>
-          <div v-if="tradesPerWeek !== undefined" class="stat-row">
-            <span class="stat-label" v-tooltip.top="t('tooltips.tradesPerWeek')">{{ t('closedProfitCard.avgTradesPerWeek') }}</span>
-            <span class="stat-value">{{ formatNumber(tradesPerWeek, 1) }}</span>
-          </div>
-          <div v-if="tradesPerMonth !== undefined" class="stat-row">
-            <span class="stat-label" v-tooltip="t('tooltips.tradesPerWeek')">{{ t('closedProfitCard.avgTradesPerMonth') }}</span>
-            <span class="stat-value">{{ formatNumber(tradesPerMonth, 1) }}</span>
-          </div>
-          <div v-if="avgProfitPerWeek !== undefined" class="stat-row">
-            <span class="stat-label" v-tooltip="t('tooltips.avgProfitWeek')">{{ t('closedProfitCard.avgProfitWeek') }}</span>
-            <span class="stat-value" :class="profitColor(avgProfitPerWeek)">
-              {{ formatPriceCurrency(avgProfitPerWeek, currency, 2) }}
-            </span>
-          </div>
-          <div v-if="avgProfitPerMonth !== undefined" class="stat-row">
-            <span class="stat-label" v-tooltip="t('tooltips.avgProfitMonth')">{{ t('closedProfitCard.avgProfitMonth') }}</span>
-            <span class="stat-value" :class="profitColor(avgProfitPerMonth)">
-              {{ formatPriceCurrency(avgProfitPerMonth, currency, 2) }}
-            </span>
-          </div>
-          <div v-if="profit.best_pair" class="stat-row">
-            <span class="stat-label" v-tooltip="t('tooltips.bestPair')">{{ t('closedProfitCard.bestPair') }}</span>
-            <span class="stat-value" :class="profitColor(profit.best_pair_profit_ratio)">
-              {{ profit.best_pair }} {{ formatPercent(profit.best_pair_profit_ratio, 1) }}
-            </span>
-          </div>
-          <div v-if="profit.trading_volume" class="stat-row">
-            <span class="stat-label" v-tooltip="t('tooltips.tradingVolume')">{{ t('profit.tradingVolume') }}</span>
-            <span class="stat-value">{{ formatPriceCurrency(profit.trading_volume, currency, 0) }}</span>
+          <div class="space-y-0.5">
+            <div class="stat-row">
+              <span class="stat-label" v-tooltip="t('tooltips.withdrawn')">{{
+                t('closedProfitCard.totalWithdrawn')
+              }}</span>
+              <span class="stat-value text-yellow-400">{{
+                formatPriceCurrency(capitalWithdrawal, currency, 2)
+              }}</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label" v-tooltip="t('tooltips.netProfit')">{{
+                t('closedProfitCard.netProfitAfter')
+              }}</span>
+              <span class="stat-value font-bold" :class="profitColor(netProfit)">
+                {{ formatPriceCurrency(netProfit, currency, 2) }}
+              </span>
+            </div>
+            <div v-if="roiPercent" class="stat-row">
+              <span class="stat-label" v-tooltip="t('tooltips.roi')">{{
+                t('closedProfitCard.effectiveRoi')
+              }}</span>
+              <span class="stat-value" :class="profitColor(effectiveRoi)">
+                {{ formatPercent(effectiveRoi, 2) }}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-
-      <!-- Bot contribution to total profit -->
-      <div v-if="totalAllBotsProfit > 0" class="mb-3 pb-3 border-b border-black/5 dark:border-white/5">
-        <div class="section-header">
-          <i-mdi-chart-pie class="text-blue-400" />
-          <span>{{ t('summaryCards.shareOfTotalProfit') }}</span>
-        </div>
-        <div class="flex items-center gap-3">
-          <div class="flex-1 h-3 rounded-full overflow-hidden bg-white/5">
-            <div
-              class="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all"
-              :style="{ width: `${Math.min(pctOfTotalProfit, 100)}%` }"
-            />
-          </div>
-          <span class="text-blue-400 font-bold text-sm" style="min-width: 50px; text-align: right">
-            {{ pctOfTotalProfit.toFixed(1) }}%
-          </span>
-        </div>
-        <div class="text-[0.8rem] text-gray-600 dark:text-gray-500 mt-1">
-          {{ t('summaryCards.profitOfTotal', { profit: formatPriceCurrency(totalRealizedProfit, currency, 2), total: formatPriceCurrency(totalAllBotsProfit, currency, 2) }) }}
-        </div>
-      </div>
-
-      <!-- ═══ SECTION 5: Withdrawal Summary ═══ -->
-      <div v-if="capitalWithdrawal > 0">
-        <div class="section-header">
-          <i-mdi-bank-transfer-out class="text-yellow-400" />
-          <span>{{ t('closedProfitCard.withdrawalSummary') }}</span>
-        </div>
-        <div class="space-y-0.5">
-          <div class="stat-row">
-            <span class="stat-label" v-tooltip="t('tooltips.withdrawn')">{{ t('closedProfitCard.totalWithdrawn') }}</span>
-            <span class="stat-value text-yellow-400">{{ formatPriceCurrency(capitalWithdrawal, currency, 2) }}</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label" v-tooltip="t('tooltips.netProfit')">{{ t('closedProfitCard.netProfitAfter') }}</span>
-            <span class="stat-value font-bold" :class="profitColor(netProfit)">
-              {{ formatPriceCurrency(netProfit, currency, 2) }}
-            </span>
-          </div>
-          <div v-if="roiPercent" class="stat-row">
-            <span class="stat-label" v-tooltip="t('tooltips.roi')">{{ t('closedProfitCard.effectiveRoi') }}</span>
-            <span class="stat-value" :class="profitColor(effectiveRoi)">
-              {{ formatPercent(effectiveRoi, 2) }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </template>
+      </template>
     </template>
   </div>
 </template>

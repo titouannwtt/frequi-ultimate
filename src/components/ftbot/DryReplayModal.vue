@@ -32,7 +32,8 @@ const today = new Date().toISOString().slice(0, 10);
 const coverageEarliestDay = computed(() => store.coverage?.earliest?.slice(0, 10) ?? null);
 // No pair has data at the chosen resolution before start_date → replay can't be faithful that early.
 const startBeforeData = computed(
-  () => !!coverageEarliestDay.value && !!store.startDate && store.startDate < coverageEarliestDay.value,
+  () =>
+    !!coverageEarliestDay.value && !!store.startDate && store.startDate < coverageEarliestDay.value,
 );
 const endInFuture = computed(() => !!store.endDate && store.endDate > today);
 
@@ -122,8 +123,10 @@ const tradesOutsideReplay = computed<number | null>(() => {
         <div>{{ t('botComparison.replay.closed') }}: {{ seedResult.closed_trades }}</div>
         <div>{{ t('botComparison.replay.winRate') }}: {{ fmtPct(seedResult.win_rate) }}</div>
         <div :class="(seedResult.total_profit_abs ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'">
-          {{ t('botComparison.replay.pnl') }}: {{ (seedResult.total_profit_abs ?? 0).toFixed(2) }}
-          ({{ fmtPct(seedResult.total_profit_ratio) }})
+          {{ t('botComparison.replay.pnl') }}:
+          {{ (seedResult.total_profit_abs ?? 0).toFixed(2) }} ({{
+            fmtPct(seedResult.total_profit_ratio)
+          }})
         </div>
       </div>
       <!-- Current combined (replay + live-dry since) -->
@@ -168,10 +171,7 @@ const tradesOutsideReplay = computed<number | null>(() => {
         </div>
       </div>
 
-      <p
-        v-if="store.pairs.length === 0 && !store.loadingContext"
-        class="text-xs text-red-500 mb-3"
-      >
+      <p v-if="store.pairs.length === 0 && !store.loadingContext" class="text-xs text-red-500 mb-3">
         ⚠️ {{ t('botComparison.replay.noPairs') }}
       </p>
       <template v-else>
@@ -227,7 +227,9 @@ const tradesOutsideReplay = computed<number | null>(() => {
       <!-- Resolution (segmented buttons — reliable inside the dialog) -->
       <div class="flex flex-col gap-1 text-sm mb-1">
         <span class="font-semibold">{{ t('botComparison.replay.resolution') }}</span>
-        <div class="inline-flex w-fit rounded overflow-hidden border border-surface-300 dark:border-surface-600">
+        <div
+          class="inline-flex w-fit rounded overflow-hidden border border-surface-300 dark:border-surface-600"
+        >
           <button
             v-for="r in resolutions"
             :key="r.value"
@@ -257,16 +259,10 @@ const tradesOutsideReplay = computed<number | null>(() => {
         >
           <i-mdi-loading class="animate-spin" /> {{ t('botComparison.replay.coverageLoading') }}
         </div>
-        <p
-          v-else-if="store.coverage && !store.coverage.earliest"
-          class="text-xs text-red-500 mb-3"
-        >
+        <p v-else-if="store.coverage && !store.coverage.earliest" class="text-xs text-red-500 mb-3">
           ⚠️ {{ t('botComparison.replay.coverageNone', { tf: store.subStepTf }) }}
         </p>
-        <p
-          v-else-if="coverageEarliestDay"
-          class="text-xs text-amber-600 dark:text-amber-400 mb-3"
-        >
+        <p v-else-if="coverageEarliestDay" class="text-xs text-amber-600 dark:text-amber-400 mb-3">
           ⚠️
           {{
             t('botComparison.replay.coverageEarliest', {
@@ -282,7 +278,12 @@ const tradesOutsideReplay = computed<number | null>(() => {
 
       <!-- Reset DB option -->
       <label class="flex items-start gap-2 text-xs mb-3 cursor-pointer">
-        <input v-model="store.resetDb" type="checkbox" :disabled="store.currentActive" class="mt-0.5" />
+        <input
+          v-model="store.resetDb"
+          type="checkbox"
+          :disabled="store.currentActive"
+          class="mt-0.5"
+        />
         <span>
           <span class="font-semibold">{{ t('botComparison.replay.resetDb') }}</span>
           <span class="block text-surface-500">{{ t('botComparison.replay.resetDbHint') }}</span>
@@ -297,8 +298,14 @@ const tradesOutsideReplay = computed<number | null>(() => {
       <!-- Progress / queue state -->
       <div v-if="store.currentActive" class="flex flex-col gap-1 mb-3">
         <div class="text-sm font-semibold flex items-center gap-2">
-          <i-mdi-fast-forward v-if="store.current.status === 'running'" class="animate-pulse text-amber-500" />
-          <i-mdi-pause-circle-outline v-else-if="store.current.status === 'paused'" class="text-amber-500" />
+          <i-mdi-fast-forward
+            v-if="store.current.status === 'running'"
+            class="animate-pulse text-amber-500"
+          />
+          <i-mdi-pause-circle-outline
+            v-else-if="store.current.status === 'paused'"
+            class="text-amber-500"
+          />
           <i-mdi-tray-full v-else class="text-surface-400" />
           {{ stateLabel }}
         </div>
@@ -322,8 +329,13 @@ const tradesOutsideReplay = computed<number | null>(() => {
           class="mt-1 rounded border border-surface-200 dark:border-surface-700 p-2 text-xs flex flex-col gap-1"
         >
           <div class="font-semibold">
-            {{ t('botComparison.replay.queueTitle', {
-              cap: store.queue.capacity, cores: store.queue.cores, hopt: store.queue.hyperopt_cores }) }}
+            {{
+              t('botComparison.replay.queueTitle', {
+                cap: store.queue.capacity,
+                cores: store.queue.cores,
+                hopt: store.queue.hyperopt_cores,
+              })
+            }}
           </div>
           <div
             v-for="r in [...store.queue.running, ...store.queue.paused, ...store.queue.queued]"
@@ -331,8 +343,8 @@ const tradesOutsideReplay = computed<number | null>(() => {
             class="flex items-center justify-between gap-2"
           >
             <span class="font-mono truncate">
-              {{ { running: '⏩', paused: '⏸', queued: '🕒' }[r.state] }} {{ r.bot_id }}
-              · {{ Math.round((r.progress ?? 0) * 100) }}%
+              {{ { running: '⏩', paused: '⏸', queued: '🕒' }[r.state] }} {{ r.bot_id }} ·
+              {{ Math.round((r.progress ?? 0) * 100) }}%
             </span>
             <Button
               size="small"
@@ -357,10 +369,14 @@ const tradesOutsideReplay = computed<number | null>(() => {
       >
         <div class="font-semibold mb-1">{{ t('botComparison.replay.resultTitle') }}</div>
         <div>{{ t('botComparison.replay.closed') }}: {{ store.current.result.closed_trades }}</div>
-        <div>{{ t('botComparison.replay.winRate') }}: {{ fmtPct(store.current.result.win_rate) }}</div>
+        <div>
+          {{ t('botComparison.replay.winRate') }}: {{ fmtPct(store.current.result.win_rate) }}
+        </div>
         <div :class="pnlClass" class="font-semibold">
-          {{ t('botComparison.replay.pnl') }}: {{ store.current.result.total_profit_abs.toFixed(2) }}
-          ({{ fmtPct(store.current.result.total_profit_ratio) }})
+          {{ t('botComparison.replay.pnl') }}:
+          {{ store.current.result.total_profit_abs.toFixed(2) }} ({{
+            fmtPct(store.current.result.total_profit_ratio)
+          }})
         </div>
         <div class="text-green-500 text-xs mt-1">✓ {{ t('botComparison.replay.doneReload') }}</div>
       </div>

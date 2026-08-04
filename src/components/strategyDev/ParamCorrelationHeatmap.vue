@@ -96,11 +96,18 @@ const chartOptions = computed<EChartsOption>(() => {
         const abs = Math.abs(r);
         let strength = t('strategyDev.corrWeak');
         let strengthColor = '#a6e3a1';
-        if (abs > 0.7) { strength = t('strategyDev.corrStrong'); strengthColor = '#f38ba8'; }
-        else if (abs > 0.3) { strength = t('strategyDev.corrMod'); strengthColor = '#f9e2af'; }
-        return `<b>${params[item.value[0]]}</b> × <b>${params[item.value[1]]}</b><br/>`
-          + `${t('strategyDev.corrCoeff')}: <b style="color:${strengthColor}">${r.toFixed(3)}</b><br/>`
-          + `${t('strategyDev.corrStrength')}: <span style="color:${strengthColor}">${strength}</span>`;
+        if (abs > 0.7) {
+          strength = t('strategyDev.corrStrong');
+          strengthColor = '#f38ba8';
+        } else if (abs > 0.3) {
+          strength = t('strategyDev.corrMod');
+          strengthColor = '#f9e2af';
+        }
+        return (
+          `<b>${params[item.value[0]]}</b> × <b>${params[item.value[1]]}</b><br/>` +
+          `${t('strategyDev.corrCoeff')}: <b style="color:${strengthColor}">${r.toFixed(3)}</b><br/>` +
+          `${t('strategyDev.corrStrength')}: <span style="color:${strengthColor}">${strength}</span>`
+        );
       },
     },
     grid: { left: 100, right: 60, top: 40, bottom: 100 },

@@ -17,7 +17,9 @@ const props = defineProps<{
 }>();
 
 const totalCount = computed(() => props.split.long.count + props.split.short.count);
-const longPct = computed(() => (totalCount.value > 0 ? (props.split.long.count / totalCount.value) * 100 : 50));
+const longPct = computed(() =>
+  totalCount.value > 0 ? (props.split.long.count / totalCount.value) * 100 : 50,
+);
 
 function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes.toFixed(0)}m`;
@@ -40,18 +42,10 @@ function winrateColor(val: number): string {
   <div class="ls">
     <!-- Ratio bar -->
     <div class="ls-ratio-bar">
-      <div
-        class="ls-ratio-fill ls-ratio-long"
-        :style="{ width: `${longPct}%` }"
-      >
-        <span v-if="longPct > 15" class="ls-ratio-label">
-          Long {{ longPct.toFixed(0) }}%
-        </span>
+      <div class="ls-ratio-fill ls-ratio-long" :style="{ width: `${longPct}%` }">
+        <span v-if="longPct > 15" class="ls-ratio-label"> Long {{ longPct.toFixed(0) }}% </span>
       </div>
-      <div
-        class="ls-ratio-fill ls-ratio-short"
-        :style="{ width: `${100 - longPct}%` }"
-      >
+      <div class="ls-ratio-fill ls-ratio-short" :style="{ width: `${100 - longPct}%` }">
         <span v-if="100 - longPct > 15" class="ls-ratio-label">
           Short {{ (100 - longPct).toFixed(0) }}%
         </span>

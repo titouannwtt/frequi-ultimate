@@ -85,10 +85,7 @@ const maxNotional = computed(() =>
 );
 
 const netTotal = computed(() =>
-  coins.value.reduce(
-    (acc, c) => acc + (c.mark_price ? c.on_chain * c.mark_price : 0),
-    0,
-  ),
+  coins.value.reduce((acc, c) => acc + (c.mark_price ? c.on_chain * c.mark_price : 0), 0),
 );
 </script>
 
@@ -124,77 +121,83 @@ const netTotal = computed(() =>
     </template>
 
     <template v-else>
-    <div class="flex justify-end">
-      <TradingModeSelect v-model="tradingMode" :show="fleetHasBothModes" />
-    </div>
-    <div class="flex flex-col gap-1">
-      <div class="flex justify-between text-xs font-mono tabular-nums">
-        <span class="text-emerald-500">{{ t('fleet.exposure.long') }} {{ split.long.toFixed(0) }} USDC</span>
-        <span class="text-red-400">{{ t('fleet.exposure.short') }} {{ split.short.toFixed(0) }} USDC</span>
+      <div class="flex justify-end">
+        <TradingModeSelect v-model="tradingMode" :show="fleetHasBothModes" />
       </div>
-      <div class="h-3 rounded overflow-hidden flex bg-surface-200 dark:bg-surface-700">
-        <div
-          class="bg-emerald-500/80 h-full transition-[width] duration-500"
-          :style="{ width: `${split.longPct}%` }"
-        ></div>
-        <div
-          class="bg-red-400/80 h-full transition-[width] duration-500"
-          :style="{ width: `${100 - split.longPct}%` }"
-        ></div>
-      </div>
-      <div class="text-xs text-surface-500 dark:text-surface-400">
-        <span class="font-mono tabular-nums">{{ split.longPct.toFixed(0) }}%</span>
-        {{ t('fleet.exposure.longWord') }} /
-        <span class="font-mono tabular-nums">{{ (100 - split.longPct).toFixed(0) }}%</span>
-        {{ t('fleet.exposure.shortWord') }}
-        {{ t('fleet.exposure.allocatedStake', { total: split.total.toFixed(0) }) }}
-      </div>
-    </div>
-
-    <div class="flex flex-col gap-1">
-      <div class="flex justify-between text-xs text-surface-500 dark:text-surface-400">
-        <span>{{ t('fleet.exposure.topNet') }}</span>
-        <span>
-          {{ t('fleet.exposure.walletNet') }}
-          <span
-            class="font-mono tabular-nums"
-            :class="netTotal >= 0 ? 'text-emerald-500' : 'text-red-400'"
+      <div class="flex flex-col gap-1">
+        <div class="flex justify-between text-xs font-mono tabular-nums">
+          <span class="text-emerald-500"
+            >{{ t('fleet.exposure.long') }} {{ split.long.toFixed(0) }} USDC</span
           >
-            {{ netTotal.toFixed(0) }} USDC
-          </span>
-        </span>
-      </div>
-      <div
-        v-for="e in netExposures"
-        :key="e.coin"
-        class="flex items-center gap-2 text-xs"
-        :title="t('fleet.exposure.upnlTitle', { upnl: e.upnl.toFixed(2) })"
-      >
-        <span class="w-14 shrink-0 font-semibold">{{ e.coin }}</span>
-        <div class="grow h-2.5 rounded bg-surface-200 dark:bg-surface-700 overflow-hidden relative">
+          <span class="text-red-400"
+            >{{ t('fleet.exposure.short') }} {{ split.short.toFixed(0) }} USDC</span
+          >
+        </div>
+        <div class="h-3 rounded overflow-hidden flex bg-surface-200 dark:bg-surface-700">
           <div
-            class="h-full absolute transition-[width] duration-500"
-            :class="e.notional >= 0 ? 'bg-emerald-500/80' : 'bg-red-400/80'"
-            :style="{
-              width: `${Math.max(2, (Math.abs(e.notional) / maxNotional) * 100)}%`,
-            }"
+            class="bg-emerald-500/80 h-full transition-[width] duration-500"
+            :style="{ width: `${split.longPct}%` }"
+          ></div>
+          <div
+            class="bg-red-400/80 h-full transition-[width] duration-500"
+            :style="{ width: `${100 - split.longPct}%` }"
           ></div>
         </div>
-        <span
-          class="w-20 shrink-0 text-right font-mono tabular-nums"
-          :class="e.notional >= 0 ? 'text-emerald-500' : 'text-red-400'"
+        <div class="text-xs text-surface-500 dark:text-surface-400">
+          <span class="font-mono tabular-nums">{{ split.longPct.toFixed(0) }}%</span>
+          {{ t('fleet.exposure.longWord') }} /
+          <span class="font-mono tabular-nums">{{ (100 - split.longPct).toFixed(0) }}%</span>
+          {{ t('fleet.exposure.shortWord') }}
+          {{ t('fleet.exposure.allocatedStake', { total: split.total.toFixed(0) }) }}
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <div class="flex justify-between text-xs text-surface-500 dark:text-surface-400">
+          <span>{{ t('fleet.exposure.topNet') }}</span>
+          <span>
+            {{ t('fleet.exposure.walletNet') }}
+            <span
+              class="font-mono tabular-nums"
+              :class="netTotal >= 0 ? 'text-emerald-500' : 'text-red-400'"
+            >
+              {{ netTotal.toFixed(0) }} USDC
+            </span>
+          </span>
+        </div>
+        <div
+          v-for="e in netExposures"
+          :key="e.coin"
+          class="flex items-center gap-2 text-xs"
+          :title="t('fleet.exposure.upnlTitle', { upnl: e.upnl.toFixed(2) })"
         >
-          {{ e.notional.toFixed(0) }}
-        </span>
+          <span class="w-14 shrink-0 font-semibold">{{ e.coin }}</span>
+          <div
+            class="grow h-2.5 rounded bg-surface-200 dark:bg-surface-700 overflow-hidden relative"
+          >
+            <div
+              class="h-full absolute transition-[width] duration-500"
+              :class="e.notional >= 0 ? 'bg-emerald-500/80' : 'bg-red-400/80'"
+              :style="{
+                width: `${Math.max(2, (Math.abs(e.notional) / maxNotional) * 100)}%`,
+              }"
+            ></div>
+          </div>
+          <span
+            class="w-20 shrink-0 text-right font-mono tabular-nums"
+            :class="e.notional >= 0 ? 'text-emerald-500' : 'text-red-400'"
+          >
+            {{ e.notional.toFixed(0) }}
+          </span>
+        </div>
+        <div
+          v-if="!netExposures.length"
+          class="flex items-center gap-1.5 text-sm text-surface-500 dark:text-surface-400"
+        >
+          <i-mdi-scale-balance class="w-4 h-4" />
+          {{ t('fleet.exposure.noPosition') }}
+        </div>
       </div>
-      <div
-        v-if="!netExposures.length"
-        class="flex items-center gap-1.5 text-sm text-surface-500 dark:text-surface-400"
-      >
-        <i-mdi-scale-balance class="w-4 h-4" />
-        {{ t('fleet.exposure.noPosition') }}
-      </div>
-    </div>
     </template>
   </div>
 </template>

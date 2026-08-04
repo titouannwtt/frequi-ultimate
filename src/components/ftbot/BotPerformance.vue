@@ -98,6 +98,24 @@ onMounted(() => {
   refreshSummary();
 });
 </script>
+<script lang="ts">
+function perfProfitBgClass(profit: number): string {
+  if (profit > 5) return 'bg-green-500/20';
+  if (profit > 2) return 'bg-green-500/15';
+  if (profit > 0) return 'bg-green-500/8';
+  if (profit > -2) return 'bg-red-500/8';
+  if (profit > -5) return 'bg-red-500/15';
+  return 'bg-red-500/20';
+}
+
+function perfRowClass(profit: number): string {
+  if (profit > 3) return 'bg-green-500/8';
+  if (profit > 0) return 'bg-green-500/4';
+  if (profit > -3) return 'bg-red-500/4';
+  return 'bg-red-500/8';
+}
+</script>
+
 <template>
   <div>
     <div class="mb-2">
@@ -138,7 +156,14 @@ onMounted(() => {
         </template>
         <template #body="{ data }">
           <!-- Key column (pair / tag) -->
-          <template v-if="field.key === 'pair' || field.key === 'enter_tag' || field.key === 'exit_reason' || field.key === 'mix_tag'">
+          <template
+            v-if="
+              field.key === 'pair' ||
+              field.key === 'enter_tag' ||
+              field.key === 'exit_reason' ||
+              field.key === 'mix_tag'
+            "
+          >
             <span class="font-semibold text-xs">
               {{ field.formatter ? field.formatter(data[field.key]) : data[field.key] }}
             </span>
@@ -178,21 +203,3 @@ onMounted(() => {
     </DataTable>
   </div>
 </template>
-
-<script lang="ts">
-function perfProfitBgClass(profit: number): string {
-  if (profit > 5) return 'bg-green-500/20';
-  if (profit > 2) return 'bg-green-500/15';
-  if (profit > 0) return 'bg-green-500/8';
-  if (profit > -2) return 'bg-red-500/8';
-  if (profit > -5) return 'bg-red-500/15';
-  return 'bg-red-500/20';
-}
-
-function perfRowClass(profit: number): string {
-  if (profit > 3) return 'bg-green-500/8';
-  if (profit > 0) return 'bg-green-500/4';
-  if (profit > -3) return 'bg-red-500/4';
-  return 'bg-red-500/8';
-}
-</script>

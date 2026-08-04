@@ -336,7 +336,7 @@ const entryMarker = computed(() => {
 <template>
   <div
     class="p-3 min-w-[420px] max-w-[440px] text-xs"
-    style="backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);"
+    style="backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px)"
   >
     <!-- Header -->
     <div class="flex items-center gap-2 mb-2">
@@ -367,21 +367,39 @@ const entryMarker = computed(() => {
       <div v-if="tradeTooOld" class="text-[10px] text-amber-400 opacity-70 mb-1 text-center">
         {{ t('stoplossChart.tradeTooOld') }}
       </div>
-      <svg :width="W" :height="H" class="w-full" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="none">
+      <svg
+        :width="W"
+        :height="H"
+        class="w-full"
+        :viewBox="`0 0 ${W} ${H}`"
+        preserveAspectRatio="none"
+      >
         <!-- Area fill -->
         <path :d="areaPath" :fill="areaFillColor" />
 
         <!-- Entry price line (green dashed) -->
         <line
-          :x1="0" :y1="yToSvg(entryPrice)" :x2="W" :y2="yToSvg(entryPrice)"
-          stroke="#22c55e" stroke-width="0.8" stroke-dasharray="4,3" opacity="0.7"
+          :x1="0"
+          :y1="yToSvg(entryPrice)"
+          :x2="W"
+          :y2="yToSvg(entryPrice)"
+          stroke="#22c55e"
+          stroke-width="0.8"
+          stroke-dasharray="4,3"
+          opacity="0.7"
         />
 
         <!-- Stoploss line (red dashed) - only if within visible range -->
         <line
           v-if="slInRange"
-          :x1="0" :y1="yToSvg(stoplossPrice)" :x2="W" :y2="yToSvg(stoplossPrice)"
-          stroke="#ef4444" stroke-width="0.8" stroke-dasharray="4,3" opacity="0.7"
+          :x1="0"
+          :y1="yToSvg(stoplossPrice)"
+          :x2="W"
+          :y2="yToSvg(stoplossPrice)"
+          stroke="#ef4444"
+          stroke-width="0.8"
+          stroke-dasharray="4,3"
+          opacity="0.7"
         />
 
         <!-- Stoploss arrow indicator (when out of range) -->
@@ -390,24 +408,39 @@ const entryMarker = computed(() => {
           <polygon
             v-if="stoplossPrice < priceRange.min"
             :points="`${W - 12},${H - PAD_Y + 2} ${W - 8},${H - PAD_Y + 8} ${W - 16},${H - PAD_Y + 8}`"
-            fill="#ef4444" opacity="0.8"
+            fill="#ef4444"
+            opacity="0.8"
           />
           <polygon
             v-else
             :points="`${W - 12},${PAD_Y - 2} ${W - 8},${PAD_Y - 8} ${W - 16},${PAD_Y - 8}`"
-            fill="#ef4444" opacity="0.8"
+            fill="#ef4444"
+            opacity="0.8"
           />
           <text
-            :x="W - 20" :y="arrowY(stoplossPrice)"
-            text-anchor="end" fill="#ef4444" font-size="8" font-weight="bold" opacity="0.9"
-          >{{ slArrowLabel }}</text>
+            :x="W - 20"
+            :y="arrowY(stoplossPrice)"
+            text-anchor="end"
+            fill="#ef4444"
+            font-size="8"
+            font-weight="bold"
+            opacity="0.9"
+          >
+            {{ slArrowLabel }}
+          </text>
         </g>
 
         <!-- Liquidation line (orange dashed) - only if within visible range -->
         <line
           v-if="liquidationPrice !== null && liqInRange"
-          :x1="0" :y1="yToSvg(liquidationPrice)" :x2="W" :y2="yToSvg(liquidationPrice)"
-          stroke="#f97316" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.6"
+          :x1="0"
+          :y1="yToSvg(liquidationPrice)"
+          :x2="W"
+          :y2="yToSvg(liquidationPrice)"
+          stroke="#f97316"
+          stroke-width="0.8"
+          stroke-dasharray="2,2"
+          opacity="0.6"
         />
 
         <!-- Liquidation arrow indicator (when out of range) -->
@@ -415,41 +448,69 @@ const entryMarker = computed(() => {
           <polygon
             v-if="liquidationPrice < priceRange.min"
             :points="`${W - 36},${H - PAD_Y + 2} ${W - 32},${H - PAD_Y + 8} ${W - 40},${H - PAD_Y + 8}`"
-            fill="#f97316" opacity="0.8"
+            fill="#f97316"
+            opacity="0.8"
           />
           <polygon
             v-else
             :points="`${W - 36},${PAD_Y - 2} ${W - 32},${PAD_Y - 8} ${W - 40},${PAD_Y - 8}`"
-            fill="#f97316" opacity="0.8"
+            fill="#f97316"
+            opacity="0.8"
           />
           <text
-            :x="W - 44" :y="arrowY(liquidationPrice, bothOutOfRangeSameSide ? 16 : 0)"
-            text-anchor="end" fill="#f97316" font-size="8" font-weight="bold" opacity="0.9"
-          >{{ liqArrowLabel }}</text>
+            :x="W - 44"
+            :y="arrowY(liquidationPrice, bothOutOfRangeSameSide ? 16 : 0)"
+            text-anchor="end"
+            fill="#f97316"
+            font-size="8"
+            font-weight="bold"
+            opacity="0.9"
+          >
+            {{ liqArrowLabel }}
+          </text>
         </g>
 
         <!-- Price line -->
-        <path :d="linePath" fill="none" :stroke="lineColor" stroke-width="1.5" stroke-linejoin="round" />
+        <path
+          :d="linePath"
+          fill="none"
+          :stroke="lineColor"
+          stroke-width="1.5"
+          stroke-linejoin="round"
+        />
 
         <!-- Entry marker (green dot) -->
         <circle
           v-if="entryMarker"
-          :cx="entryMarker.x" :cy="entryMarker.y"
-          r="3.5" fill="#22c55e" stroke="#fff" stroke-width="1"
+          :cx="entryMarker.x"
+          :cy="entryMarker.y"
+          r="3.5"
+          fill="#22c55e"
+          stroke="#fff"
+          stroke-width="1"
         />
 
         <!-- DCA markers (purple dots) -->
         <circle
           v-for="(marker, idx) in dcaMarkers"
           :key="'dca-' + idx"
-          :cx="marker.x" :cy="marker.y"
-          r="2.5" fill="#a855f7" stroke="#fff" stroke-width="0.8" opacity="0.9"
+          :cx="marker.x"
+          :cy="marker.y"
+          r="2.5"
+          fill="#a855f7"
+          stroke="#fff"
+          stroke-width="0.8"
+          opacity="0.9"
         />
 
         <!-- Current price marker (blue dot at the end) -->
         <circle
-          :cx="xToSvg(closePrices.length - 1)" :cy="yToSvg(closePrices[closePrices.length - 1])"
-          r="3" fill="#3b82f6" stroke="#fff" stroke-width="1"
+          :cx="xToSvg(closePrices.length - 1)"
+          :cy="yToSvg(closePrices[closePrices.length - 1])"
+          r="3"
+          fill="#3b82f6"
+          stroke="#fff"
+          stroke-width="1"
         />
       </svg>
 

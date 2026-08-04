@@ -14,9 +14,13 @@ const compStore = useBotComparisonStore();
 // --- Browser Notifications (from store) ---
 const browserNotificationsEnabled = computed({
   get: () => compStore.browserNotificationsEnabled,
-  set: (val: boolean) => { compStore.browserNotificationsEnabled = val; },
+  set: (val: boolean) => {
+    compStore.browserNotificationsEnabled = val;
+  },
 });
-const notificationPermission = ref(typeof Notification !== 'undefined' ? Notification.permission : 'denied');
+const notificationPermission = ref(
+  typeof Notification !== 'undefined' ? Notification.permission : 'denied',
+);
 
 const notifTypes = computed({
   get: () => compStore.notificationTypes,
@@ -119,7 +123,9 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
             class="w-64"
           />
         </div>
-        <small class="text-surface-600 dark:text-surface-400 pl-8">{{ t('settings.showOpenTradesDesc') }}</small>
+        <small class="text-surface-600 dark:text-surface-400 pl-8">{{
+          t('settings.showOpenTradesDesc')
+        }}</small>
 
         <Divider />
 
@@ -135,7 +141,9 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
             size="small"
           />
         </div>
-        <small class="text-surface-600 dark:text-surface-400 pl-8">{{ t('settings.utcTimezoneDesc') }}</small>
+        <small class="text-surface-600 dark:text-surface-400 pl-8">{{
+          t('settings.utcTimezoneDesc')
+        }}</small>
 
         <Divider />
 
@@ -146,7 +154,9 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
           </div>
           <ToggleSwitch v-model="settingsStore.backgroundSync" />
         </div>
-        <small class="text-surface-600 dark:text-surface-400 pl-8">{{ t('settings.backgroundSyncDesc') }}</small>
+        <small class="text-surface-600 dark:text-surface-400 pl-8">{{
+          t('settings.backgroundSyncDesc')
+        }}</small>
 
         <Divider />
 
@@ -157,7 +167,9 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
           </div>
           <ToggleSwitch v-model="settingsStore.confirmDialog" />
         </div>
-        <small class="text-surface-600 dark:text-surface-400 pl-8">{{ t('settings.confirmDialogDesc') }}</small>
+        <small class="text-surface-600 dark:text-surface-400 pl-8">{{
+          t('settings.confirmDialogDesc')
+        }}</small>
 
         <Divider />
 
@@ -168,7 +180,9 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
           </div>
           <ToggleSwitch v-model="settingsStore.multiPaneButtonsShowText" />
         </div>
-        <small class="text-surface-600 dark:text-surface-400 pl-8">{{ t('settings.showMultiPaneTextDesc') }}</small>
+        <small class="text-surface-600 dark:text-surface-400 pl-8">{{
+          t('settings.showMultiPaneTextDesc')
+        }}</small>
       </div>
     </div>
 
@@ -187,7 +201,9 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
           </div>
           <ToggleSwitch v-model="layoutStore.layoutLocked" />
         </div>
-        <small class="text-surface-600 dark:text-surface-400 pl-8">{{ t('settings.lockLayoutsDesc') }}</small>
+        <small class="text-surface-600 dark:text-surface-400 pl-8">{{
+          t('settings.lockLayoutsDesc')
+        }}</small>
 
         <Divider />
 
@@ -200,7 +216,9 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
             {{ t('settings.resetLayout') }}
           </Button>
         </div>
-        <small class="text-surface-600 dark:text-surface-400 pl-8">{{ t('settings.resetLayoutDesc') }}</small>
+        <small class="text-surface-600 dark:text-surface-400 pl-8">{{
+          t('settings.resetLayoutDesc')
+        }}</small>
       </div>
     </div>
 
@@ -228,7 +246,9 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
             </div>
           </div>
         </div>
-        <small class="text-surface-600 dark:text-surface-400 pl-8">{{ t('settings.chartScaleDesc') }}</small>
+        <small class="text-surface-600 dark:text-surface-400 pl-8">{{
+          t('settings.chartScaleDesc')
+        }}</small>
 
         <Divider />
 
@@ -239,7 +259,9 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
           </div>
           <ToggleSwitch v-model="settingsStore.useHeikinAshiCandles" />
         </div>
-        <small class="text-surface-600 dark:text-surface-400 pl-8">{{ t('settings.heikinAshiDesc') }}</small>
+        <small class="text-surface-600 dark:text-surface-400 pl-8">{{
+          t('settings.heikinAshiDesc')
+        }}</small>
 
         <Divider />
 
@@ -250,7 +272,9 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
           </div>
           <ToggleSwitch v-model="settingsStore.useReducedPairCalls" />
         </div>
-        <small class="text-surface-600 dark:text-surface-400 pl-8">{{ t('settings.onlyNecessaryColumnsDesc') }}</small>
+        <small class="text-surface-600 dark:text-surface-400 pl-8">{{
+          t('settings.onlyNecessaryColumnsDesc')
+        }}</small>
 
         <Divider />
 
@@ -382,7 +406,9 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
             @update:model-value="toggleBrowserNotifications"
           />
         </div>
-        <small class="text-surface-600 dark:text-surface-400 pl-8">{{ t('settings.enableBrowserNotificationsDesc') }}</small>
+        <small class="text-surface-600 dark:text-surface-400 pl-8">{{
+          t('settings.enableBrowserNotificationsDesc')
+        }}</small>
 
         <div v-if="notificationPermission === 'denied'" class="text-sm text-red-400 pl-8">
           {{ t('settings.notificationsDenied') }}
@@ -441,7 +467,9 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
               size="small"
               display="chip"
             />
-            <small class="text-surface-600 dark:text-surface-400">{{ t('settings.backtestMetricsDesc') }}</small>
+            <small class="text-surface-600 dark:text-surface-400">{{
+              t('settings.backtestMetricsDesc')
+            }}</small>
           </div>
         </div>
       </div>
@@ -523,10 +551,14 @@ const freqtradeVersion = computed(() => botStore.activeBot?.version ?? '-');
 }
 
 .setting-item {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .setting-label {
-  display: flex; align-items: center; gap: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 </style>

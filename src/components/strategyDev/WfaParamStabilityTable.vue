@@ -30,12 +30,24 @@ const rows = computed(() =>
       <table class="w-full text-sm">
         <thead class="bg-surface-900/50 sticky top-0">
           <tr>
-            <th class="text-left px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.ppParameter') }}</th>
-            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.median') }}</th>
-            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaStd') }}</th>
-            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaStdRange') }}</th>
-            <th class="text-center px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaStatus') }}</th>
-            <th class="px-3 py-2 text-sm text-surface-400 uppercase">{{ t('strategyDev.wfaValues') }}</th>
+            <th class="text-left px-3 py-2 text-sm text-surface-400 uppercase">
+              {{ t('strategyDev.ppParameter') }}
+            </th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">
+              {{ t('strategyDev.median') }}
+            </th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">
+              {{ t('strategyDev.wfaStd') }}
+            </th>
+            <th class="text-right px-3 py-2 text-sm text-surface-400 uppercase">
+              {{ t('strategyDev.wfaStdRange') }}
+            </th>
+            <th class="text-center px-3 py-2 text-sm text-surface-400 uppercase">
+              {{ t('strategyDev.wfaStatus') }}
+            </th>
+            <th class="px-3 py-2 text-sm text-surface-400 uppercase">
+              {{ t('strategyDev.wfaValues') }}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -49,9 +61,7 @@ const rows = computed(() =>
             <td class="px-3 py-2 text-right tabular-nums">{{ r.std.toFixed(4) }}</td>
             <td
               class="px-3 py-2 text-right tabular-nums"
-              :class="
-                r.stable ? 'text-green-400' : r.unstable ? 'text-red-400' : 'text-amber-400'
-              "
+              :class="r.stable ? 'text-green-400' : r.unstable ? 'text-red-400' : 'text-amber-400'"
             >
               {{ r.std_over_range.toFixed(4) }}
             </td>
@@ -66,7 +76,13 @@ const rows = computed(() =>
                       : 'bg-amber-900/30 text-amber-400'
                 "
               >
-                {{ r.stable ? t('strategyDev.wfaStable') : r.unstable ? t('strategyDev.wfaUnstable') : t('strategyDev.wfaMixed') }}
+                {{
+                  r.stable
+                    ? t('strategyDev.wfaStable')
+                    : r.unstable
+                      ? t('strategyDev.wfaUnstable')
+                      : t('strategyDev.wfaMixed')
+                }}
               </span>
             </td>
             <td class="px-3 py-2 text-sm text-surface-400 font-mono">

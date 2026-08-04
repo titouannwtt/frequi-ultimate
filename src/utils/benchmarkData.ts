@@ -126,7 +126,10 @@ export function resolveGeckoId(input: string): string {
 }
 
 /** Fetch benchmark history for a ticker or CoinGecko ID */
-export async function fetchBenchmarkHistory(tickerOrId: string, days: number): Promise<FetchResult> {
+export async function fetchBenchmarkHistory(
+  tickerOrId: string,
+  days: number,
+): Promise<FetchResult> {
   const geckoId = resolveGeckoId(tickerOrId);
   return fetchCoinHistory(geckoId, days);
 }

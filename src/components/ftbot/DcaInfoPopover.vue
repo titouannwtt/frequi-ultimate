@@ -21,20 +21,20 @@ const entryOrders = computed(() => {
   if (!props.trade.orders || !Array.isArray(props.trade.orders)) return [];
 
   // First try: strict entry orders (ft_is_entry === true)
-  const strictEntries = props.trade.orders
-    .filter((o) => {
-      if (!o.ft_is_entry) return false;
-      const hasFillData = (o.filled ?? 0) > 0;
-      const hasFillTs = !!o.order_filled_timestamp;
-      const isClosed = o.status === 'closed' || o.status === 'filled';
-      const notOpen = o.is_open === false;
-      return hasFillData || hasFillTs || isClosed || notOpen;
-    });
+  const strictEntries = props.trade.orders.filter((o) => {
+    if (!o.ft_is_entry) return false;
+    const hasFillData = (o.filled ?? 0) > 0;
+    const hasFillTs = !!o.order_filled_timestamp;
+    const isClosed = o.status === 'closed' || o.status === 'filled';
+    const notOpen = o.is_open === false;
+    return hasFillData || hasFillTs || isClosed || notOpen;
+  });
 
   if (strictEntries.length > 0) {
-    return strictEntries.sort((a, b) =>
-      (a.order_filled_timestamp ?? a.order_timestamp ?? 0) -
-      (b.order_filled_timestamp ?? b.order_timestamp ?? 0)
+    return strictEntries.sort(
+      (a, b) =>
+        (a.order_filled_timestamp ?? a.order_timestamp ?? 0) -
+        (b.order_filled_timestamp ?? b.order_timestamp ?? 0),
     );
   }
 
@@ -49,15 +49,20 @@ const entryOrders = computed(() => {
       const notOpen = o.is_open === false;
       return hasFillData || hasFillTs || isClosed || notOpen;
     })
-    .sort((a, b) =>
-      (a.order_filled_timestamp ?? a.order_timestamp ?? 0) -
-      (b.order_filled_timestamp ?? b.order_timestamp ?? 0)
+    .sort(
+      (a, b) =>
+        (a.order_filled_timestamp ?? a.order_timestamp ?? 0) -
+        (b.order_filled_timestamp ?? b.order_timestamp ?? 0),
     );
 
   // Debug log if fallback kicks in
   if (fallback.length > 0 && typeof window !== 'undefined') {
-    console.debug('[DcaInfoPopover] Used side-based fallback for trade', props.trade.trade_id,
-      { is_short: props.trade.is_short, expectedSide, ordersCount: props.trade.orders.length, entryCount: fallback.length });
+    console.debug('[DcaInfoPopover] Used side-based fallback for trade', props.trade.trade_id, {
+      is_short: props.trade.is_short,
+      expectedSide,
+      ordersCount: props.trade.orders.length,
+      entryCount: fallback.length,
+    });
   }
 
   return fallback;
@@ -65,8 +70,12 @@ const entryOrders = computed(() => {
 
 // Fallback: if orders are not available but nr_of_successful_entries > 1,
 // show a message indicating DCA data is unavailable in this context
-const hasOrderData = computed(() => props.trade.orders && Array.isArray(props.trade.orders) && props.trade.orders.length > 0);
-const dcaCountFromTrade = computed(() => props.trade.nr_of_successful_entries ?? entryOrders.value.length);
+const hasOrderData = computed(
+  () => props.trade.orders && Array.isArray(props.trade.orders) && props.trade.orders.length > 0,
+);
+const dcaCountFromTrade = computed(
+  () => props.trade.nr_of_successful_entries ?? entryOrders.value.length,
+);
 
 const isDca = computed(() => dcaCountFromTrade.value > 1);
 const dcaCount = computed(() => dcaCountFromTrade.value);
@@ -202,7 +211,12 @@ function timeAgo(ts: number): string {
 
 function formatDate(ts: number): string {
   if (!ts) return '—';
-  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(ts).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function formatPrc(v: number): string {
@@ -214,7 +228,9 @@ function formatPrc(v: number): string {
   <div class="p-4 text-xs min-w-[380px] max-w-[460px]">
     <div class="font-bold text-[13px] mb-2">
       {{ t('dcaInfo.title') }}
-      <span class="text-surface-400 font-normal ml-1">({{ dcaCount }} {{ t('dcaInfo.entries') }})</span>
+      <span class="text-surface-400 font-normal ml-1"
+        >({{ dcaCount }} {{ t('dcaInfo.entries') }})</span
+      >
     </div>
 
     <!-- No DCA -->
@@ -229,11 +245,19 @@ function formatPrc(v: number): string {
 
     <template v-else>
       <!-- Last DCA highlight -->
-      <div v-if="lastDca" class="rounded-lg p-2.5 mb-3" style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.2)">
-        <div class="text-[11px] text-purple-300 uppercase tracking-wider mb-1">{{ t('dcaInfo.lastDca') }} (#{{ lastDca.index }})</div>
+      <div
+        v-if="lastDca"
+        class="rounded-lg p-2.5 mb-3"
+        style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.2)"
+      >
+        <div class="text-[11px] text-purple-300 uppercase tracking-wider mb-1">
+          {{ t('dcaInfo.lastDca') }} (#{{ lastDca.index }})
+        </div>
         <div class="grid grid-cols-2 gap-x-3 gap-y-0.5">
           <span class="text-surface-400">{{ t('dcaInfo.price') }}</span>
-          <span class="font-mono font-semibold text-purple-300">{{ formatPrc(lastDca.price) }}</span>
+          <span class="font-mono font-semibold text-purple-300">{{
+            formatPrc(lastDca.price)
+          }}</span>
 
           <span class="text-surface-400">{{ t('dcaInfo.amount') }}</span>
           <span class="font-mono">{{ lastDca.amount.toPrecision(5) }}</span>
@@ -245,7 +269,9 @@ function formatPrc(v: number): string {
           <span class="font-mono text-surface-300">{{ formatPrc(lastDca.avgPriceBefore) }}</span>
 
           <span class="text-surface-400">{{ t('dcaInfo.avgAfter') }}</span>
-          <span class="font-mono text-white font-semibold">{{ formatPrc(lastDca.avgPriceAfter) }}</span>
+          <span class="font-mono text-white font-semibold">{{
+            formatPrc(lastDca.avgPriceAfter)
+          }}</span>
 
           <span class="text-surface-400">{{ t('dcaInfo.timeAgo') }}</span>
           <span class="font-mono">{{ timeAgo(lastDca.timestamp) }}</span>
@@ -278,7 +304,9 @@ function formatPrc(v: number): string {
             :fill="bar.color"
             font-size="9"
             font-weight="bold"
-          >{{ bar.cost.toFixed(0) }}</text>
+          >
+            {{ bar.cost.toFixed(0) }}
+          </text>
           <!-- Index label below bar -->
           <text
             v-for="bar in barData"
@@ -288,13 +316,17 @@ function formatPrc(v: number): string {
             text-anchor="middle"
             fill="#9ca3af"
             font-size="9"
-          >{{ bar.index === 1 ? 'Entry' : 'DCA ' + (bar.index - 1) }}</text>
+          >
+            {{ bar.index === 1 ? 'Entry' : 'DCA ' + (bar.index - 1) }}
+          </text>
         </svg>
       </div>
 
       <!-- Full DCA timeline with dates and colors -->
       <div class="space-y-1 mb-3">
-        <div class="text-[11px] text-surface-400 uppercase tracking-wider mb-0.5">{{ t('dcaInfo.allEntries') }}</div>
+        <div class="text-[11px] text-surface-400 uppercase tracking-wider mb-0.5">
+          {{ t('dcaInfo.allEntries') }}
+        </div>
         <div
           v-for="(step, i) in dcaSteps"
           :key="step.index"
@@ -304,9 +336,13 @@ function formatPrc(v: number): string {
             borderLeft: '3px solid ' + dcaColor(i),
           }"
         >
-          <span class="font-bold w-5 text-right" :style="{ color: dcaColor(i) }">#{{ step.index }}</span>
+          <span class="font-bold w-5 text-right" :style="{ color: dcaColor(i) }"
+            >#{{ step.index }}</span
+          >
           <span class="text-surface-200 w-[70px]">{{ formatPrc(step.price) }}</span>
-          <span class="font-semibold w-[60px]" :style="{ color: dcaColor(i) }">{{ step.cost.toFixed(1) }} {{ currency }}</span>
+          <span class="font-semibold w-[60px]" :style="{ color: dcaColor(i) }"
+            >{{ step.cost.toFixed(1) }} {{ currency }}</span
+          >
           <span class="text-surface-500 text-[11px]">{{ formatDate(step.timestamp) }}</span>
           <span class="text-surface-600 ml-auto text-[10px]">{{ timeAgo(step.timestamp) }}</span>
         </div>
@@ -314,21 +350,45 @@ function formatPrc(v: number): string {
 
       <!-- Cumulative stacked bar -->
       <div v-if="stackedBar.length > 0" class="mb-3">
-        <div class="text-[11px] text-surface-400 mb-1">Total invested: {{ totalInvested.toFixed(1) }} {{ currency }}</div>
-        <div class="flex h-5 rounded-lg overflow-hidden" style="border: 1px solid rgba(255,255,255,0.06)">
+        <div class="text-[11px] text-surface-400 mb-1">
+          Total invested: {{ totalInvested.toFixed(1) }} {{ currency }}
+        </div>
+        <div
+          class="flex h-5 rounded-lg overflow-hidden"
+          style="border: 1px solid rgba(255, 255, 255, 0.06)"
+        >
           <div
             v-for="seg in stackedBar"
             :key="seg.index"
             class="flex items-center justify-center text-[8px] font-bold transition-all"
-            :style="{ width: seg.pct + '%', background: seg.color + '50', color: seg.color, borderRight: '1px solid rgba(0,0,0,0.3)' }"
-            :title="'#' + seg.index + ': ' + seg.cost.toFixed(1) + ' ' + currency + ' (' + seg.pct.toFixed(0) + '%)'"
+            :style="{
+              width: seg.pct + '%',
+              background: seg.color + '50',
+              color: seg.color,
+              borderRight: '1px solid rgba(0,0,0,0.3)',
+            }"
+            :title="
+              '#' +
+              seg.index +
+              ': ' +
+              seg.cost.toFixed(1) +
+              ' ' +
+              currency +
+              ' (' +
+              seg.pct.toFixed(0) +
+              '%)'
+            "
           >
             <span v-if="seg.pct > 8">{{ seg.cost.toFixed(0) }}</span>
           </div>
         </div>
         <!-- Legend -->
         <div class="flex flex-wrap gap-2 mt-1">
-          <span v-for="seg in stackedBar" :key="'leg-' + seg.index" class="flex items-center gap-1 text-[10px]">
+          <span
+            v-for="seg in stackedBar"
+            :key="'leg-' + seg.index"
+            class="flex items-center gap-1 text-[10px]"
+          >
             <span class="w-2 h-2 rounded-sm" :style="{ background: seg.color }" />
             {{ seg.index === 1 ? 'Entry' : 'DCA ' + (seg.index - 1) }}: {{ seg.pct.toFixed(0) }}%
           </span>
@@ -344,7 +404,10 @@ function formatPrc(v: number): string {
         <span class="font-mono">{{ formatPrc(trade.open_rate) }}</span>
 
         <span class="text-surface-400">{{ t('dcaInfo.currentRate') }}</span>
-        <span class="font-mono" :class="(trade.profit_pct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'">
+        <span
+          class="font-mono"
+          :class="(trade.profit_pct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'"
+        >
           {{ trade.current_rate ? formatPrc(trade.current_rate) : '—' }}
         </span>
       </div>

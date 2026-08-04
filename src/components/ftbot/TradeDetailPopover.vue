@@ -43,7 +43,9 @@ const stoplossDistancePct = computed(() => {
 // Price bar visualization
 const priceBarData = computed(() => {
   const entry = props.trade.open_rate;
-  const current = props.isOpen ? (props.trade.current_rate ?? entry) : (props.trade.close_rate ?? entry);
+  const current = props.isOpen
+    ? (props.trade.current_rate ?? entry)
+    : (props.trade.close_rate ?? entry);
   const sl = currentStoploss.value ?? 0;
   const liq = props.trade.liquidation_price ?? null;
 
@@ -74,10 +76,12 @@ const durationStats = computed(() => {
   const trades = props.closedTrades ?? botStore.activeBot?.closedTrades ?? [];
   if (trades.length === 0) return null;
 
-  const durations = trades.map((t) => {
-    if (t.close_timestamp && t.open_timestamp) return t.close_timestamp - t.open_timestamp;
-    return 0;
-  }).filter((d) => d > 0);
+  const durations = trades
+    .map((t) => {
+      if (t.close_timestamp && t.open_timestamp) return t.close_timestamp - t.open_timestamp;
+      return 0;
+    })
+    .filter((d) => d > 0);
 
   if (durations.length === 0) return null;
 
@@ -90,7 +94,7 @@ const durationStats = computed(() => {
     .map((t) => (t.close_timestamp ?? 0) - t.open_timestamp)
     .filter((d) => d > 0);
 
-  const avg = (arr: number[]) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+  const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
   const sorted = [...durations].sort((a, b) => a - b);
 
   const currentMs = tradeDurationMs(props.trade);
@@ -156,8 +160,15 @@ function formatDurationMs(ms: number): string {
       </template>
 
       <span class="text-surface-400">{{ t('tradePopover.profit') }}</span>
-      <span class="font-mono" :class="(trade.profit_pct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'">
-        {{ trade.profit_pct !== null && trade.profit_pct !== undefined ? (trade.profit_pct >= 0 ? '+' : '') + trade.profit_pct.toFixed(2) + '%' : 'N/A' }}
+      <span
+        class="font-mono"
+        :class="(trade.profit_pct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'"
+      >
+        {{
+          trade.profit_pct !== null && trade.profit_pct !== undefined
+            ? (trade.profit_pct >= 0 ? '+' : '') + trade.profit_pct.toFixed(2) + '%'
+            : 'N/A'
+        }}
         <span class="text-surface-500">({{ formatPrice(trade.profit_abs, 3) }})</span>
       </span>
 
@@ -165,7 +176,12 @@ function formatDurationMs(ms: number): string {
       <span>{{ humanizeTradeDuration(trade) }}</span>
 
       <span class="text-surface-400">{{ t('tradePopover.stake') }}</span>
-      <span class="font-mono">{{ formatPrice(trade.max_stake_amount ?? trade.stake_amount, botStore.activeBot?.stakeCurrencyDecimals) }}</span>
+      <span class="font-mono">{{
+        formatPrice(
+          trade.max_stake_amount ?? trade.stake_amount,
+          botStore.activeBot?.stakeCurrencyDecimals,
+        )
+      }}</span>
 
       <template v-if="trade.enter_tag">
         <span class="text-surface-400">{{ t('tradePopover.entryTag') }}</span>
@@ -189,7 +205,14 @@ function formatDurationMs(ms: number): string {
             <span>{{ formatPrice(order.safe_price) }}</span>
             <span class="text-surface-400">{{ order.filled ?? order.amount }}</span>
             <span v-if="order.order_filled_timestamp" class="text-surface-500 ml-auto text-[11px]">
-              {{ new Date(order.order_filled_timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}
+              {{
+                new Date(order.order_filled_timestamp).toLocaleString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              }}
             </span>
           </div>
         </div>
@@ -202,7 +225,9 @@ function formatDurationMs(ms: number): string {
     <!-- Price Level Bar -->
     <div class="border-t border-surface-300 dark:border-surface-600 pt-2 mb-2">
       <div class="font-semibold text-[13px] mb-1.5">{{ t('tradePopover.priceLevels') }}</div>
-      <div class="relative h-3 bg-surface-200 dark:bg-surface-700 rounded-full overflow-visible mb-4">
+      <div
+        class="relative h-3 bg-surface-200 dark:bg-surface-700 rounded-full overflow-visible mb-4"
+      >
         <!-- Entry marker -->
         <div
           class="absolute top-0 w-0.5 h-3 bg-blue-400"
@@ -214,7 +239,11 @@ function formatDurationMs(ms: number): string {
           class="absolute top-0 w-0.5 h-3"
           :class="priceBarData.isProfit ? 'bg-green-400' : 'bg-red-400'"
           :style="{ left: priceBarData.currentPct + '%' }"
-          :title="(isOpen ? t('tradePopover.currentPrice') : t('tradePopover.exitPrice')) + ': ' + formatPrice(isOpen ? trade.current_rate : trade.close_rate)"
+          :title="
+            (isOpen ? t('tradePopover.currentPrice') : t('tradePopover.exitPrice')) +
+            ': ' +
+            formatPrice(isOpen ? trade.current_rate : trade.close_rate)
+          "
         />
         <!-- Stoploss marker -->
         <div
@@ -233,14 +262,19 @@ function formatDurationMs(ms: number): string {
       <!-- Legend -->
       <div class="flex flex-wrap gap-3 text-[12px]">
         <span class="flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full bg-blue-400 inline-block" /> {{ t('tradePopover.entry') }}
+          <span class="w-2 h-2 rounded-full bg-blue-400 inline-block" />
+          {{ t('tradePopover.entry') }}
         </span>
         <span class="flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full inline-block" :class="priceBarData.isProfit ? 'bg-green-400' : 'bg-red-400'" />
+          <span
+            class="w-2 h-2 rounded-full inline-block"
+            :class="priceBarData.isProfit ? 'bg-green-400' : 'bg-red-400'"
+          />
           {{ isOpen ? t('tradePopover.current') : t('tradePopover.exit') }}
         </span>
         <span class="flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full bg-orange-500 inline-block" /> {{ t('tradePopover.sl') }}
+          <span class="w-2 h-2 rounded-full bg-orange-500 inline-block" />
+          {{ t('tradePopover.sl') }}
         </span>
         <span v-if="trade.liquidation_price" class="flex items-center gap-1">
           <span class="w-2 h-2 rounded-full bg-red-600 inline-block" /> {{ t('tradePopover.liq') }}
@@ -259,7 +293,10 @@ function formatDurationMs(ms: number): string {
         <span class="text-surface-400">{{ t('tradePopover.currentSl') }}</span>
         <span class="font-mono">{{ formatPrice(currentStoploss) }}</span>
         <span class="text-surface-400">{{ t('tradePopover.distancePct') }}</span>
-        <span class="font-mono" :class="(stoplossDistancePct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'">
+        <span
+          class="font-mono"
+          :class="(stoplossDistancePct ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'"
+        >
           {{ stoplossDistancePct !== null ? stoplossDistancePct.toFixed(2) + '%' : '-' }}
         </span>
         <template v-if="trade.liquidation_price">
@@ -293,11 +330,15 @@ function formatDurationMs(ms: number): string {
           <span class="font-mono">{{ formatDurationMs(durationStats.avgAll) }}</span>
           <template v-if="durationStats.avgWin !== null">
             <span class="text-surface-400">{{ t('tradePopover.avgWinDuration') }}</span>
-            <span class="font-mono text-green-400">{{ formatDurationMs(durationStats.avgWin) }}</span>
+            <span class="font-mono text-green-400">{{
+              formatDurationMs(durationStats.avgWin)
+            }}</span>
           </template>
           <template v-if="durationStats.avgLose !== null">
             <span class="text-surface-400">{{ t('tradePopover.avgLoseDuration') }}</span>
-            <span class="font-mono text-red-400">{{ formatDurationMs(durationStats.avgLose) }}</span>
+            <span class="font-mono text-red-400">{{
+              formatDurationMs(durationStats.avgLose)
+            }}</span>
           </template>
           <span class="text-surface-400">{{ t('tradePopover.percentile') }}</span>
           <span class="font-mono">{{ durationStats.percentile }}%</span>
@@ -306,7 +347,13 @@ function formatDurationMs(ms: number): string {
         <div class="relative h-2.5 bg-surface-200 dark:bg-surface-700 rounded-full overflow-hidden">
           <div
             class="absolute top-0 left-0 h-full rounded-full transition-all"
-            :class="durationStats.percentile > 90 ? 'bg-red-500' : durationStats.percentile > 70 ? 'bg-orange-400' : 'bg-green-500'"
+            :class="
+              durationStats.percentile > 90
+                ? 'bg-red-500'
+                : durationStats.percentile > 70
+                  ? 'bg-orange-400'
+                  : 'bg-green-500'
+            "
             :style="{ width: durationStats.percentile + '%' }"
           />
         </div>

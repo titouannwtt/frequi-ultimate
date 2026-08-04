@@ -78,11 +78,7 @@ onUnmounted(() => {
           <i-mdi-download v-if="!exportFeedback" class="w-3.5 h-3.5" />
           <i-mdi-check v-else class="w-3.5 h-3.5" />
         </button>
-        <button
-          class="cw-btn"
-          :title="t('strategyDev.chartFullscreen')"
-          @click="toggleFullscreen"
-        >
+        <button class="cw-btn" :title="t('strategyDev.chartFullscreen')" @click="toggleFullscreen">
           <i-mdi-fullscreen class="w-3.5 h-3.5" />
         </button>
       </div>
@@ -233,7 +229,14 @@ onUnmounted(() => {
 }
 
 /* ── Transition ── */
-.cw-fs-enter-active { transition: opacity 0.2s ease; }
-.cw-fs-leave-active { transition: opacity 0.15s ease; }
-.cw-fs-enter-from, .cw-fs-leave-to { opacity: 0; }
+.cw-fs-enter-active {
+  transition: opacity 0.2s ease;
+}
+.cw-fs-leave-active {
+  transition: opacity 0.15s ease;
+}
+.cw-fs-enter-from,
+.cw-fs-leave-to {
+  opacity: 0;
+}
 </style>

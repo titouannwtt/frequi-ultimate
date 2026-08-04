@@ -143,8 +143,9 @@ export const useStrategyDevJobStore = defineStore('strategyDevJobs', () => {
   }
 
   const isJobRunning = computed(
-    () => activeJob.value?.status === JobStatus.running
-      || activeJob.value?.status === JobStatus.pending,
+    () =>
+      activeJob.value?.status === JobStatus.running ||
+      activeJob.value?.status === JobStatus.pending,
   );
 
   const jobProgress = computed(() => {

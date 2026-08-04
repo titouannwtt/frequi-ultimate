@@ -35,16 +35,23 @@ interface MetricRow {
   deltaGood: boolean | null;
 }
 
-function extractMetrics(run: RunListEntry | null, detail: Record<string, unknown> | null): Record<string, number | null> {
+function extractMetrics(
+  run: RunListEntry | null,
+  detail: Record<string, unknown> | null,
+): Record<string, number | null> {
   const m: Record<string, number | null> = {};
   const rm = (detail?.best_epoch_metrics ?? {}) as Record<string, number>;
   const ss = (detail?.strategy_summary ?? {}) as Record<string, unknown>;
 
   m.best_loss = run?.best_loss ?? null;
-  m.profit_total = rm.profit_total ?? asNum(ss.profit_total) ?? (run?.total_profit_pct != null ? run.total_profit_pct / 100 : null);
+  m.profit_total =
+    rm.profit_total ??
+    asNum(ss.profit_total) ??
+    (run?.total_profit_pct != null ? run.total_profit_pct / 100 : null);
   m.total_trades = rm.total_trades ?? asNum(ss.total_trades) ?? run?.total_trades ?? null;
   m.sharpe = rm.sharpe ?? asNum(ss.sharpe) ?? run?.best_sharpe ?? null;
-  m.max_drawdown_account = rm.max_drawdown_account ?? asNum(ss.max_drawdown_account) ?? asNum(ss.max_drawdown) ?? null;
+  m.max_drawdown_account =
+    rm.max_drawdown_account ?? asNum(ss.max_drawdown_account) ?? asNum(ss.max_drawdown) ?? null;
   m.profit_factor = rm.profit_factor ?? asNum(ss.profit_factor) ?? null;
   m.winrate = rm.winrate ?? asNum(ss.winrate) ?? asNum(ss.win_rate) ?? null;
   m.sqn = rm.sqn ?? asNum(ss.sqn) ?? null;
@@ -62,19 +69,60 @@ const currentDetail = computed(() => {
   if (!currentRun.value) return null;
   if (currentRun.value.run_type === RunType.hyperopt) return store.hyperoptDetail;
   if (currentRun.value.run_type === RunType.wfa) return store.wfaDetail;
-  if (currentRun.value.run_type === RunType.backtest) return store.backtestSnapshot as Record<string, unknown> | null;
+  if (currentRun.value.run_type === RunType.backtest)
+    return store.backtestSnapshot as Record<string, unknown> | null;
   return null;
 });
 
 const metricDefs = computed(() => [
-  { key: 'best_loss', label: t('strategyDev.metricBestLoss'), format: (v: number) => v.toFixed(5), higherBetter: false },
-  { key: 'profit_total', label: t('strategyDev.metricTotalProfit'), format: (v: number) => `${(v * 100).toFixed(2)}%`, higherBetter: true },
-  { key: 'total_trades', label: t('strategyDev.metricTrades'), format: (v: number) => String(Math.round(v)), higherBetter: true },
-  { key: 'sharpe', label: t('strategyDev.metricSharpe'), format: (v: number) => v.toFixed(3), higherBetter: true },
-  { key: 'max_drawdown_account', label: t('strategyDev.metricMaxDD'), format: (v: number) => `${(v * 100).toFixed(1)}%`, higherBetter: false },
-  { key: 'profit_factor', label: t('strategyDev.metricProfitFactor'), format: (v: number) => v.toFixed(2), higherBetter: true },
-  { key: 'winrate', label: t('strategyDev.metricWinRate'), format: (v: number) => `${(v * 100).toFixed(1)}%`, higherBetter: true },
-  { key: 'sqn', label: t('strategyDev.metricSQN'), format: (v: number) => v.toFixed(2), higherBetter: true },
+  {
+    key: 'best_loss',
+    label: t('strategyDev.metricBestLoss'),
+    format: (v: number) => v.toFixed(5),
+    higherBetter: false,
+  },
+  {
+    key: 'profit_total',
+    label: t('strategyDev.metricTotalProfit'),
+    format: (v: number) => `${(v * 100).toFixed(2)}%`,
+    higherBetter: true,
+  },
+  {
+    key: 'total_trades',
+    label: t('strategyDev.metricTrades'),
+    format: (v: number) => String(Math.round(v)),
+    higherBetter: true,
+  },
+  {
+    key: 'sharpe',
+    label: t('strategyDev.metricSharpe'),
+    format: (v: number) => v.toFixed(3),
+    higherBetter: true,
+  },
+  {
+    key: 'max_drawdown_account',
+    label: t('strategyDev.metricMaxDD'),
+    format: (v: number) => `${(v * 100).toFixed(1)}%`,
+    higherBetter: false,
+  },
+  {
+    key: 'profit_factor',
+    label: t('strategyDev.metricProfitFactor'),
+    format: (v: number) => v.toFixed(2),
+    higherBetter: true,
+  },
+  {
+    key: 'winrate',
+    label: t('strategyDev.metricWinRate'),
+    format: (v: number) => `${(v * 100).toFixed(1)}%`,
+    higherBetter: true,
+  },
+  {
+    key: 'sqn',
+    label: t('strategyDev.metricSQN'),
+    format: (v: number) => v.toFixed(2),
+    higherBetter: true,
+  },
 ]);
 
 const metricRows = computed<MetricRow[]>(() => {
@@ -114,8 +162,12 @@ interface ParamDiff {
 }
 
 const paramDiffs = computed<ParamDiff[]>(() => {
-  const paramsA = (currentDetail.value?.best_params ?? currentDetail.value?.strategy_params ?? {}) as Record<string, Record<string, unknown>>;
-  const paramsB = (store.compareDetail?.best_params ?? store.compareDetail?.strategy_params ?? {}) as Record<string, Record<string, unknown>>;
+  const paramsA = (currentDetail.value?.best_params ??
+    currentDetail.value?.strategy_params ??
+    {}) as Record<string, Record<string, unknown>>;
+  const paramsB = (store.compareDetail?.best_params ??
+    store.compareDetail?.strategy_params ??
+    {}) as Record<string, Record<string, unknown>>;
 
   const diffs: ParamDiff[] = [];
   const allSpaces = new Set([...Object.keys(paramsA), ...Object.keys(paramsB)]);
@@ -264,7 +316,12 @@ const filteredCompareRuns = computed(() => {
                 <td class="cmp-td cmp-td-val">
                   <span
                     v-if="row.valueA != null"
-                    :style="{ color: row.key !== 'total_trades' ? `var(--sd-${getVerdict(row.key, row.valueA) === 'good' ? 'success' : getVerdict(row.key, row.valueA) === 'bad' ? 'danger' : 'warning'})` : undefined }"
+                    :style="{
+                      color:
+                        row.key !== 'total_trades'
+                          ? `var(--sd-${getVerdict(row.key, row.valueA) === 'good' ? 'success' : getVerdict(row.key, row.valueA) === 'bad' ? 'danger' : 'warning'})`
+                          : undefined,
+                    }"
                   >
                     {{ row.format(row.valueA) }}
                   </span>
@@ -273,7 +330,12 @@ const filteredCompareRuns = computed(() => {
                 <td class="cmp-td cmp-td-val">
                   <span
                     v-if="row.valueB != null"
-                    :style="{ color: row.key !== 'total_trades' ? `var(--sd-${getVerdict(row.key, row.valueB) === 'good' ? 'success' : getVerdict(row.key, row.valueB) === 'bad' ? 'danger' : 'warning'})` : undefined }"
+                    :style="{
+                      color:
+                        row.key !== 'total_trades'
+                          ? `var(--sd-${getVerdict(row.key, row.valueB) === 'good' ? 'success' : getVerdict(row.key, row.valueB) === 'bad' ? 'danger' : 'warning'})`
+                          : undefined,
+                    }"
                   >
                     {{ row.format(row.valueB) }}
                   </span>
@@ -283,7 +345,10 @@ const filteredCompareRuns = computed(() => {
                   <span
                     v-if="row.delta != null"
                     class="cmp-delta"
-                    :class="{ 'cmp-delta--good': row.deltaGood, 'cmp-delta--bad': row.deltaGood === false }"
+                    :class="{
+                      'cmp-delta--good': row.deltaGood,
+                      'cmp-delta--bad': row.deltaGood === false,
+                    }"
                   >
                     {{ row.delta > 0 ? '+' : '' }}{{ row.format(row.delta) }}
                   </span>
@@ -619,13 +684,15 @@ const filteredCompareRuns = computed(() => {
 }
 
 /* ── Metrics table ── */
-.cmp-metrics-table-wrap, .cmp-params-table-wrap {
+.cmp-metrics-table-wrap,
+.cmp-params-table-wrap {
   border-radius: var(--sd-radius-md);
   overflow: hidden;
   border: 1px solid var(--sd-border-subtle);
 }
 
-.cmp-metrics-table, .cmp-params-table {
+.cmp-metrics-table,
+.cmp-params-table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--sd-text-xs);
@@ -656,8 +723,12 @@ const filteredCompareRuns = computed(() => {
 .cmp-tr:hover {
   background: #313244;
 }
-.cmp-tr:nth-child(even) { background: #1a1a2a; }
-.cmp-tr:nth-child(even):hover { background: #313244; }
+.cmp-tr:nth-child(even) {
+  background: #1a1a2a;
+}
+.cmp-tr:nth-child(even):hover {
+  background: #313244;
+}
 
 .cmp-tr--changed {
   background: rgba(249, 226, 175, 0.03) !important;
@@ -714,8 +785,12 @@ const filteredCompareRuns = computed(() => {
   font-weight: 500;
 }
 
-.cmp-val-a { color: var(--sd-info); }
-.cmp-val-b { color: var(--sd-warning); }
+.cmp-val-a {
+  color: var(--sd-info);
+}
+.cmp-val-b {
+  color: var(--sd-warning);
+}
 
 .cmp-toggle-unchanged {
   display: flex;
@@ -734,8 +809,19 @@ const filteredCompareRuns = computed(() => {
 }
 
 /* Transitions */
-.cv-search-enter-active { transition: opacity 0.15s, transform 0.15s; }
-.cv-search-leave-active { transition: opacity 0.1s; }
-.cv-search-enter-from { opacity: 0; transform: translateY(-4px); }
-.cv-search-leave-to { opacity: 0; }
+.cv-search-enter-active {
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+}
+.cv-search-leave-active {
+  transition: opacity 0.1s;
+}
+.cv-search-enter-from {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+.cv-search-leave-to {
+  opacity: 0;
+}
 </style>

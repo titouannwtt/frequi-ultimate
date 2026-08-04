@@ -12,7 +12,14 @@ import {
   MarkLineComponent,
 } from 'echarts/components';
 
-use([ScatterChart, CanvasRenderer, GridComponent, TooltipComponent, DataZoomComponent, MarkLineComponent]);
+use([
+  ScatterChart,
+  CanvasRenderer,
+  GridComponent,
+  TooltipComponent,
+  DataZoomComponent,
+  MarkLineComponent,
+]);
 
 interface DurationPoint {
   duration: number;
@@ -27,12 +34,8 @@ const props = defineProps<{
 const { t } = useI18n();
 
 const chartOptions = computed<EChartsOption>(() => {
-  const green = props.points
-    .filter((p) => p.profit > 0)
-    .map((p) => [p.duration, p.profit]);
-  const red = props.points
-    .filter((p) => p.profit <= 0)
-    .map((p) => [p.duration, p.profit]);
+  const green = props.points.filter((p) => p.profit > 0).map((p) => [p.duration, p.profit]);
+  const red = props.points.filter((p) => p.profit <= 0).map((p) => [p.duration, p.profit]);
 
   const greenMeta = props.points.filter((p) => p.profit > 0);
   const redMeta = props.points.filter((p) => p.profit <= 0);

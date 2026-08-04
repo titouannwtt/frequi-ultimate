@@ -128,9 +128,7 @@ const filteredTrades = computed(() =>
   props.trades.filter((item: Trade) => item.pair === pair.value),
 );
 
-const chartTitle = computed(
-  () => `${strategy.value} - ${pair.value} - ${timeframe.value}`,
-);
+const chartTitle = computed(() => `${strategy.value} - ${pair.value} - ${timeframe.value}`);
 
 const diffCols = computed(() => getDiffColumnsFromPlotConfig(props.plotConfig));
 
@@ -139,7 +137,6 @@ usePercentageTool(
   toRef(() => props.theme),
   toRef(() => props.dataset.timeframe_ms),
 );
-
 
 function registerSeries(
   name: string,
@@ -194,8 +191,7 @@ function isolateSeries(name: string) {
   const allNames = seriesRegistry.value.map((s) => s.name);
   const currentlyHidden = new Set(hiddenSeries.value);
   const isAlreadyIsolated =
-    allNames.filter((n) => !currentlyHidden.has(n)).length === 1 &&
-    !currentlyHidden.has(name);
+    allNames.filter((n) => !currentlyHidden.has(n)).length === 1 && !currentlyHidden.has(name);
 
   if (isAlreadyIsolated) {
     hiddenSeries.value.clear();
@@ -468,8 +464,18 @@ function updateChart(initial = false) {
     xAxis: [
       {
         type: 'time',
-        axisLine: { onZero: false, lineStyle: { color: props.theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' } },
-        axisTick: { show: true, lineStyle: { color: props.theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' } },
+        axisLine: {
+          onZero: false,
+          lineStyle: {
+            color: props.theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+          },
+        },
+        axisTick: {
+          show: true,
+          lineStyle: {
+            color: props.theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+          },
+        },
         axisLabel: {
           show: true,
           color: props.theme === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
@@ -520,7 +526,8 @@ function updateChart(initial = false) {
           show: true,
           label: {
             show: true,
-            backgroundColor: props.theme === 'dark' ? 'rgba(99, 102, 241, 0.85)' : 'rgba(99, 102, 241, 0.9)',
+            backgroundColor:
+              props.theme === 'dark' ? 'rgba(99, 102, 241, 0.85)' : 'rgba(99, 102, 241, 0.9)',
             color: '#fff',
             fontSize: 10,
             padding: [4, 6],
@@ -551,7 +558,8 @@ function updateChart(initial = false) {
           show: true,
           label: {
             show: true,
-            backgroundColor: props.theme === 'dark' ? 'rgba(99, 102, 241, 0.7)' : 'rgba(99, 102, 241, 0.8)',
+            backgroundColor:
+              props.theme === 'dark' ? 'rgba(99, 102, 241, 0.7)' : 'rgba(99, 102, 241, 0.8)',
             fontSize: 9,
             padding: [3, 5],
           },
@@ -698,7 +706,8 @@ function updateChart(initial = false) {
             show: true,
             label: {
               show: true,
-              backgroundColor: props.theme === 'dark' ? 'rgba(99, 102, 241, 0.7)' : 'rgba(99, 102, 241, 0.8)',
+              backgroundColor:
+                props.theme === 'dark' ? 'rgba(99, 102, 241, 0.7)' : 'rgba(99, 102, 241, 0.8)',
               fontSize: 9,
               padding: [3, 5],
             },
@@ -741,7 +750,13 @@ function updateChart(initial = false) {
               const fillColKey = `${sk}-${sv.fill_to}`;
               const fillCol = columns.findIndex((el) => el === fillColKey);
               const fillValue: IndicatorConfig = { color: sv.color, type: ChartType.line };
-              const areaSeries = generateAreaCandleSeries(colDate, fillCol, sk, fillValue, plotIndex);
+              const areaSeries = generateAreaCandleSeries(
+                colDate,
+                fillCol,
+                sk,
+                fillValue,
+                plotIndex,
+              );
               const currentSeries = options.series[options.series.length - 1];
               if (currentSeries) currentSeries['stack'] = sk;
               options.series.push(areaSeries);
@@ -815,7 +830,8 @@ function initializeChartOptions() {
       show: true,
       trigger: 'axis',
       renderMode: 'html',
-      backgroundColor: props.theme === 'dark' ? 'rgba(15, 15, 25, 0.92)' : 'rgba(255, 255, 255, 0.95)',
+      backgroundColor:
+        props.theme === 'dark' ? 'rgba(15, 15, 25, 0.92)' : 'rgba(255, 255, 255, 0.95)',
       borderColor: props.theme === 'dark' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(0, 0, 0, 0.08)',
       borderWidth: 1,
       textStyle: {
@@ -886,18 +902,22 @@ onMounted(() => {
   });
 });
 
-watch([() => props.useUTC, () => props.theme, () => props.plotConfig, () => props.crosshairStyle], () =>
-  initializeChartOptions(),
+watch(
+  [() => props.useUTC, () => props.theme, () => props.plotConfig, () => props.crosshairStyle],
+  () => initializeChartOptions(),
 );
 
-watch([
-  () => props.dataset,
-  () => props.heikinAshi,
-  () => props.showMarkArea,
-  () => props.hideSimultaneousEntryExit,
-  () => props.volumeVisible,
-  () => props.tradeSeriesOptions,
-], () => updateChart());
+watch(
+  [
+    () => props.dataset,
+    () => props.heikinAshi,
+    () => props.showMarkArea,
+    () => props.hideSimultaneousEntryExit,
+    () => props.volumeVisible,
+    () => props.tradeSeriesOptions,
+  ],
+  () => updateChart(),
+);
 
 watch(
   () => props.sliderPosition,
@@ -917,7 +937,14 @@ defineExpose({
 
 <template>
   <div class="h-full w-full">
-    <ECharts v-if="hasData" ref="candleChart" :theme="theme" autoresize manual-update @click="onChartClick" />
+    <ECharts
+      v-if="hasData"
+      ref="candleChart"
+      :theme="theme"
+      autoresize
+      manual-update
+      @click="onChartClick"
+    />
   </div>
 </template>
 

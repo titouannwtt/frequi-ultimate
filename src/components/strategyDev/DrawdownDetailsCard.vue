@@ -73,7 +73,9 @@ function fmtDays(d: number | undefined): string {
             <td class="dd-date">{{ dd.active ? '\u2014' : fmtDate(dd.end) }}</td>
             <td class="dd-days">{{ fmtDays(dd.decline_days) }}</td>
             <td class="dd-days">
-              <span v-if="dd.active" class="dd-active-badge">{{ t('strategyDev.statusActive') }}</span>
+              <span v-if="dd.active" class="dd-active-badge">{{
+                t('strategyDev.statusActive')
+              }}</span>
               <template v-else>{{ fmtDays(dd.recovery_days) }}</template>
             </td>
             <td class="dd-days">{{ dd.active ? '\u2014' : fmtDays(dd.total_days) }}</td>

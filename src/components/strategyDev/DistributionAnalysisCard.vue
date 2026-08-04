@@ -26,7 +26,9 @@ defineProps<{ data: DistData }>();
           {{ data.skewness.toFixed(3) }}
         </div>
         <div class="text-sm text-surface-500 mt-0.5">{{ t('strategyDev.distSkewness') }}</div>
-        <div v-if="data.skew_alert" class="text-sm text-red-400 mt-0.5">{{ t('strategyDev.distHeavyLeftTail') }}</div>
+        <div v-if="data.skew_alert" class="text-sm text-red-400 mt-0.5">
+          {{ t('strategyDev.distHeavyLeftTail') }}
+        </div>
       </div>
       <div>
         <div
@@ -36,7 +38,9 @@ defineProps<{ data: DistData }>();
           {{ data.excess_kurtosis.toFixed(3) }}
         </div>
         <div class="text-sm text-surface-500 mt-0.5">{{ t('strategyDev.distKurtosis') }}</div>
-        <div v-if="data.kurtosis_alert" class="text-sm text-amber-400 mt-0.5">{{ t('strategyDev.distFatTails') }}</div>
+        <div v-if="data.kurtosis_alert" class="text-sm text-amber-400 mt-0.5">
+          {{ t('strategyDev.distFatTails') }}
+        </div>
       </div>
       <div>
         <div class="text-xl font-bold tabular-nums text-surface-300">

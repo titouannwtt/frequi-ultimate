@@ -14,7 +14,15 @@ import {
   LegendComponent,
 } from 'echarts/components';
 
-use([LineChart, CanvasRenderer, GridComponent, TooltipComponent, MarkAreaComponent, DataZoomComponent, LegendComponent]);
+use([
+  LineChart,
+  CanvasRenderer,
+  GridComponent,
+  TooltipComponent,
+  MarkAreaComponent,
+  DataZoomComponent,
+  LegendComponent,
+]);
 
 const { t } = useI18n();
 
@@ -92,7 +100,7 @@ const chartOptions = computed<EChartsOption>(() => {
 
   // Build equity data aligned to timeline dates
   const hasEquity = props.equity && props.equity.length > 0;
-  let equityMap: Record<string, number> = {};
+  const equityMap: Record<string, number> = {};
   if (hasEquity) {
     for (const e of props.equity!) {
       equityMap[e.date] = e.balance;

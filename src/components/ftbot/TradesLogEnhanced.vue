@@ -60,7 +60,8 @@ const logEntries = computed<LogEntry[]>(() => {
   // Closed trades as "close" events
   for (const trade of props.trades) {
     const profitAbs = trade.profit_abs ?? 0;
-    const profitPct = trade.profit_pct ?? trade.profit_ratio ? (trade.profit_ratio ?? 0) * 100 : 0;
+    const profitPct =
+      (trade.profit_pct ?? trade.profit_ratio) ? (trade.profit_ratio ?? 0) * 100 : 0;
     const isProfit = profitAbs >= 0;
 
     entries.push({
@@ -156,8 +157,16 @@ function eventColor(kind: EventKind): string {
 
 // BOT_COLORS palette matching CumulativeProfitEnhanced
 const BOT_COLORS = [
-  '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de',
-  '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc', '#4dc9f6',
+  '#5470c6',
+  '#91cc75',
+  '#fac858',
+  '#ee6666',
+  '#73c0de',
+  '#3ba272',
+  '#fc8452',
+  '#9a60b4',
+  '#ea7ccc',
+  '#4dc9f6',
 ];
 
 function botBadgeColor(botId: string): string {
@@ -244,7 +253,10 @@ function botBadgeColor(botId: string): string {
         :class="rowClass(entry)"
       >
         <!-- Timestamp -->
-        <span class="text-surface-500 w-8 text-right shrink-0" :title="timestampToDateString(entry.timestamp)">
+        <span
+          class="text-surface-500 w-8 text-right shrink-0"
+          :title="timestampToDateString(entry.timestamp)"
+        >
           {{ timeAgo(entry.timestamp) }}
         </span>
 

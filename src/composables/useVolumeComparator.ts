@@ -118,8 +118,7 @@ export function useVolumeComparator(opts: UseVolumeComparatorOptions) {
       .map(([date, vals]) => ({ date, ...vals }));
 
     const totalWhitelist = entries.reduce((s, e) => s + e.whitelist_count, 0);
-    const avgCoverage =
-      entries.reduce((s, e) => s + e.data_coverage_pct, 0) / entries.length;
+    const avgCoverage = entries.reduce((s, e) => s + e.data_coverage_pct, 0) / entries.length;
 
     return {
       buckets,

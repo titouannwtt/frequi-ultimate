@@ -59,8 +59,14 @@ export function useTradePopover() {
   let hideTimeout: ReturnType<typeof setTimeout> | null = null;
 
   function clearTimers() {
-    if (showTimeout) { clearTimeout(showTimeout); showTimeout = null; }
-    if (hideTimeout) { clearTimeout(hideTimeout); hideTimeout = null; }
+    if (showTimeout) {
+      clearTimeout(showTimeout);
+      showTimeout = null;
+    }
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = null;
+    }
   }
 
   /**
@@ -106,7 +112,8 @@ export function useTradePopover() {
       const side = result.placement.split('-')[0]!;
       const staticSide = { top: 'bottom', right: 'left', bottom: 'top', left: 'right' }[side]!;
       // Rotate the arrow so the visible border-left/border-top corner points toward the reference
-      const rotation = { top: '225deg', right: '315deg', bottom: '45deg', left: '135deg' }[side] ?? '45deg';
+      const rotation =
+        { top: '225deg', right: '315deg', bottom: '45deg', left: '135deg' }[side] ?? '45deg';
       arrowStyle.value = {
         position: 'absolute',
         left: ax != null ? `${ax}px` : '',
@@ -133,7 +140,10 @@ export function useTradePopover() {
   }
 
   function stopAutoUpdate() {
-    if (cleanupAutoUpdate) { cleanupAutoUpdate(); cleanupAutoUpdate = null; }
+    if (cleanupAutoUpdate) {
+      cleanupAutoUpdate();
+      cleanupAutoUpdate = null;
+    }
   }
 
   /**
@@ -143,7 +153,10 @@ export function useTradePopover() {
     const target = event.currentTarget as HTMLElement;
     if (!target) return;
 
-    if (hideTimeout) { clearTimeout(hideTimeout); hideTimeout = null; }
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = null;
+    }
 
     // Same popover + same trade → do nothing
     if (activePopover.value === name && activeTrade.value?.trade_id === trade.trade_id) return;
@@ -157,7 +170,10 @@ export function useTradePopover() {
       return;
     }
 
-    if (showTimeout) { clearTimeout(showTimeout); showTimeout = null; }
+    if (showTimeout) {
+      clearTimeout(showTimeout);
+      showTimeout = null;
+    }
 
     const config = POPOVER_CONFIGS[name];
     showTimeout = setTimeout(() => {
@@ -181,8 +197,14 @@ export function useTradePopover() {
   function showStats(name: PopoverName, event: MouseEvent) {
     const target = event.currentTarget as HTMLElement;
     if (!target) return;
-    if (hideTimeout) { clearTimeout(hideTimeout); hideTimeout = null; }
-    if (showTimeout) { clearTimeout(showTimeout); showTimeout = null; }
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = null;
+    }
+    if (showTimeout) {
+      clearTimeout(showTimeout);
+      showTimeout = null;
+    }
 
     const config = POPOVER_CONFIGS[name];
     showTimeout = setTimeout(() => {
@@ -203,7 +225,10 @@ export function useTradePopover() {
    * Hide with 200ms grace period.
    */
   function hide() {
-    if (showTimeout) { clearTimeout(showTimeout); showTimeout = null; }
+    if (showTimeout) {
+      clearTimeout(showTimeout);
+      showTimeout = null;
+    }
     hideTimeout = setTimeout(() => {
       hideTimeout = null;
       stopAutoUpdate();
@@ -215,8 +240,14 @@ export function useTradePopover() {
   }
 
   function keepAlive() {
-    if (hideTimeout) { clearTimeout(hideTimeout); hideTimeout = null; }
-    if (showTimeout) { clearTimeout(showTimeout); showTimeout = null; }
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = null;
+    }
+    if (showTimeout) {
+      clearTimeout(showTimeout);
+      showTimeout = null;
+    }
   }
 
   function close() {

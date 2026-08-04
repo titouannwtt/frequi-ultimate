@@ -325,14 +325,19 @@ function navPointerUp(e: PointerEvent, to: string) {
   router.push(to);
 }
 
-const isDashboard = computed(() => route?.fullPath === '/dashboard' || route?.fullPath === '/trade');
+const isDashboard = computed(
+  () => route?.fullPath === '/dashboard' || route?.fullPath === '/trade',
+);
 
-watch(() => route?.fullPath, () => {
-  if (!isDashboard.value && layoutStore.editMode) {
-    layoutStore.editMode = false;
-    layoutStore.layoutLocked = true;
-  }
-});
+watch(
+  () => route?.fullPath,
+  () => {
+    if (!isDashboard.value && layoutStore.editMode) {
+      layoutStore.editMode = false;
+      layoutStore.layoutLocked = true;
+    }
+  },
+);
 </script>
 
 <template>
@@ -340,7 +345,9 @@ watch(() => route?.fullPath, () => {
     <div class="navbar-glass flex border-b border-black/10 dark:border-white/10">
       <RouterLink class="ms-2 flex flex-row items-center pe-2 gap-2" exact to="/">
         <img class="h-[30px] align-middle" src="@/assets/freqtrade-logo.png" alt="Home Logo" />
-        <span class="text-slate-200 text-xl md:hidden lg:inline text-nowrap font-semibold">Freqtrade Ultimate</span>
+        <span class="text-slate-200 text-xl md:hidden lg:inline text-nowrap font-semibold"
+          >Freqtrade Ultimate</span
+        >
       </RouterLink>
       <div class="flex justify-between w-full text-center items-center ms-3">
         <div class="items-center hidden md:flex gap-1 ms-2">
@@ -358,14 +365,20 @@ watch(() => route?.fullPath, () => {
             @pointerup="navPointerUp($event, item.to)"
           >
             <i-mdi-swap-horizontal v-if="item.icon === 'i-mdi-swap-horizontal'" class="w-4 h-4" />
-            <i-mdi-view-dashboard v-else-if="item.icon === 'i-mdi-view-dashboard'" class="w-4 h-4" />
+            <i-mdi-view-dashboard
+              v-else-if="item.icon === 'i-mdi-view-dashboard'"
+              class="w-4 h-4"
+            />
             <i-mdi-notebook v-else-if="item.icon === 'i-mdi-notebook'" class="w-4 h-4" />
             <i-mdi-chart-line v-else-if="item.icon === 'i-mdi-chart-line'" class="w-4 h-4" />
             <i-mdi-text-box v-else-if="item.icon === 'i-mdi-text-box'" class="w-4 h-4" />
             <i-mdi-cog v-else-if="item.icon === 'i-mdi-cog'" class="w-4 h-4" />
             <i-mdi-flask v-else-if="item.icon === 'i-mdi-flask'" class="w-4 h-4" />
             <i-mdi-download v-else-if="item.icon === 'i-mdi-download'" class="w-4 h-4" />
-            <i-mdi-format-list-numbered-rtl v-else-if="item.icon === 'i-mdi-format-list-numbered-rtl'" class="w-4 h-4" />
+            <i-mdi-format-list-numbered-rtl
+              v-else-if="item.icon === 'i-mdi-format-list-numbered-rtl'"
+              class="w-4 h-4"
+            />
             <i-mdi-flask-outline v-else-if="item.icon === 'i-mdi-flask-outline'" class="w-4 h-4" />
             {{ item.label }}
           </a>
@@ -402,9 +415,11 @@ watch(() => route?.fullPath, () => {
           <button
             v-if="isDashboard"
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 cursor-pointer"
-            :class="layoutStore.editMode
-              ? 'bg-indigo-500/30 text-indigo-300 border border-indigo-400/40'
-              : 'text-surface-300 hover:text-white hover:bg-black/10 dark:hover:bg-white/10'"
+            :class="
+              layoutStore.editMode
+                ? 'bg-indigo-500/30 text-indigo-300 border border-indigo-400/40'
+                : 'text-surface-300 hover:text-white hover:bg-black/10 dark:hover:bg-white/10'
+            "
             @click="layoutStore.toggleEditMode()"
           >
             <i-mdi-pencil-ruler class="w-4 h-4" />
@@ -423,7 +438,12 @@ watch(() => route?.fullPath, () => {
             <div
               v-if="configMenuOpen"
               class="absolute right-0 top-full mt-1 min-w-[260px] rounded-xl shadow-2xl p-3 space-y-2"
-              style="z-index: 9999; background: rgba(15,17,23,0.96); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08)"
+              style="
+                z-index: 9999;
+                background: rgba(15, 17, 23, 0.96);
+                backdrop-filter: blur(16px);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+              "
             >
               <button
                 class="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-xs text-surface-200 hover:bg-surface-700/50 cursor-pointer transition-colors"
@@ -439,7 +459,13 @@ watch(() => route?.fullPath, () => {
                 <i-mdi-upload class="w-4 h-4 text-green-400" />
                 {{ t('nav.importConfig') }}
               </button>
-              <input ref="fileInput" type="file" accept=".json" class="hidden" @change="handleFileSelected" />
+              <input
+                ref="fileInput"
+                type="file"
+                accept=".json"
+                class="hidden"
+                @change="handleFileSelected"
+              />
 
               <hr class="border-surface-700/50" />
               <p class="text-[10px] text-surface-500 px-1 leading-relaxed">
@@ -463,7 +489,8 @@ watch(() => route?.fullPath, () => {
             <span
               class="text-[11px] text-surface-500 font-mono cursor-default"
               :title="`Build ${settingsStore.commitHash}`"
-            >v{{ settingsStore.forkVersion }}</span>
+              >v{{ settingsStore.forkVersion }}</span
+            >
             <a
               v-if="settingsStore.forkUpdateAvailable"
               href="https://github.com/titouannwtt/frequi-ultimate/releases/latest"
@@ -508,7 +535,9 @@ watch(() => route?.fullPath, () => {
           >
             <template #container>
               <div class="flex flex-row items-center">
-                <h3 class="text-xl font-bold w-full text-center text-surface-200">Freqtrade Ultimate</h3>
+                <h3 class="text-xl font-bold w-full text-center text-surface-200">
+                  Freqtrade Ultimate
+                </h3>
                 <Button
                   class="float-right mt-1 me-1"
                   variant="outlined"
@@ -533,7 +562,8 @@ watch(() => route?.fullPath, () => {
                 <span
                   class="text-surface-400 text-xs font-mono"
                   :title="`Build ${settingsStore.commitHash}`"
-                >v{{ settingsStore.forkVersion }}</span>
+                  >v{{ settingsStore.forkVersion }}</span
+                >
                 <a
                   v-if="settingsStore.forkUpdateAvailable"
                   href="https://github.com/titouannwtt/frequi-ultimate/releases/latest"
@@ -584,17 +614,23 @@ watch(() => route?.fullPath, () => {
             max="1"
             step="0.05"
             class="w-20 accent-indigo-500"
-            @input="layoutStore.setWidgetOpacity(parseFloat(($event.target as HTMLInputElement).value))"
+            @input="
+              layoutStore.setWidgetOpacity(parseFloat(($event.target as HTMLInputElement).value))
+            "
           />
-          <span class="text-xs text-surface-500 w-8">{{ Math.round(layoutStore.widgetOpacity * 100) }}%</span>
+          <span class="text-xs text-surface-500 w-8"
+            >{{ Math.round(layoutStore.widgetOpacity * 100) }}%</span
+          >
         </div>
         <div class="w-px h-4 bg-white/10" />
         <div class="relative anim-popover-wrapper">
           <button
             class="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md border transition-colors cursor-pointer"
-            :class="layoutStore.backgroundAnimation
-              ? 'text-indigo-300 bg-indigo-500/15 border-indigo-400/30 hover:bg-indigo-500/25'
-              : 'text-surface-500 border-surface-600 hover:text-surface-300 hover:border-surface-500'"
+            :class="
+              layoutStore.backgroundAnimation
+                ? 'text-indigo-300 bg-indigo-500/15 border-indigo-400/30 hover:bg-indigo-500/25'
+                : 'text-surface-500 border-surface-600 hover:text-surface-300 hover:border-surface-500'
+            "
             @click="layoutStore.backgroundAnimation = !layoutStore.backgroundAnimation"
           >
             <i-mdi-waves class="w-3.5 h-3.5" />
@@ -674,28 +710,38 @@ watch(() => route?.fullPath, () => {
 
         <!-- Password field (required when auth is included) -->
         <div v-if="includeAuthInExport" class="space-y-3">
-          <div class="flex items-start gap-1.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/15">
+          <div
+            class="flex items-start gap-1.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/15"
+          >
             <i-mdi-shield-lock class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
             <p class="text-xs text-amber-300/90 leading-relaxed">
               {{ t('nav.authPasswordRequired') }}
             </p>
           </div>
           <div>
-            <label class="text-xs text-surface-400 mb-1 block">{{ t('nav.encryptionPassword') }}</label>
+            <label class="text-xs text-surface-400 mb-1 block">{{
+              t('nav.encryptionPassword')
+            }}</label>
             <input
               v-model="exportPassword"
               type="password"
               :placeholder="t('nav.passwordMinChars')"
               class="w-full px-3 py-2 text-sm rounded-lg border bg-surface-50 dark:bg-surface-800 border-surface-300 dark:border-surface-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
             />
-            <p v-if="exportPassword.length > 0 && exportPassword.length < 8" class="text-[11px] text-red-400 mt-1">
+            <p
+              v-if="exportPassword.length > 0 && exportPassword.length < 8"
+              class="text-[11px] text-red-400 mt-1"
+            >
               {{ t('nav.passwordMinChars') }}
             </p>
           </div>
         </div>
 
         <!-- Export error -->
-        <div v-if="exportError" class="flex items-center gap-1.5 p-2 rounded-lg bg-red-500/10 border border-red-500/15">
+        <div
+          v-if="exportError"
+          class="flex items-center gap-1.5 p-2 rounded-lg bg-red-500/10 border border-red-500/15"
+        >
           <i-mdi-alert-circle class="w-4 h-4 text-red-400 flex-shrink-0" />
           <p class="text-xs text-red-400">{{ exportError }}</p>
         </div>
@@ -730,7 +776,9 @@ watch(() => route?.fullPath, () => {
       <!-- Preview content -->
       <div v-else-if="configPreview" class="space-y-3">
         <!-- Summary rows -->
-        <div class="divide-y divide-surface-200 dark:divide-surface-700 rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden text-sm">
+        <div
+          class="divide-y divide-surface-200 dark:divide-surface-700 rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden text-sm"
+        >
           <!-- Export date -->
           <div class="flex justify-between px-3 py-2 bg-surface-50 dark:bg-surface-800/50">
             <span class="text-surface-500">{{ t('nav.exportDate') }}</span>
@@ -748,7 +796,9 @@ watch(() => route?.fullPath, () => {
           <!-- Auth status -->
           <div class="flex justify-between px-3 py-2 bg-surface-50 dark:bg-surface-800/50">
             <span class="text-surface-500">{{ t('nav.containsAuth') }}</span>
-            <span v-if="!configPreview.includesAuth" class="text-green-400">{{ t('nav.authNotIncluded') }}</span>
+            <span v-if="!configPreview.includesAuth" class="text-green-400">{{
+              t('nav.authNotIncluded')
+            }}</span>
             <span v-else-if="configPreview.encrypted" class="text-blue-400">
               <i-mdi-lock class="inline w-3.5 h-3.5 mr-0.5" />{{ t('nav.authEncrypted') }}
             </span>
@@ -762,7 +812,10 @@ watch(() => route?.fullPath, () => {
           </div>
 
           <!-- Bot count -->
-          <div v-if="configPreview.botCount > 0" class="flex justify-between px-3 py-2 bg-surface-50 dark:bg-surface-800/50">
+          <div
+            v-if="configPreview.botCount > 0"
+            class="flex justify-between px-3 py-2 bg-surface-50 dark:bg-surface-800/50"
+          >
             <span class="text-surface-500">{{ t('nav.botsCount') }}</span>
             <span>{{ configPreview.botCount }}</span>
           </div>
@@ -773,7 +826,10 @@ watch(() => route?.fullPath, () => {
             <span v-if="configPreview.integrityValid === true" class="text-green-400">
               <i-mdi-check-circle class="inline w-3.5 h-3.5 mr-0.5" />{{ t('nav.integrityValid') }}
             </span>
-            <span v-else-if="configPreview.integrityValid === false" class="text-red-400 font-medium">
+            <span
+              v-else-if="configPreview.integrityValid === false"
+              class="text-red-400 font-medium"
+            >
               <i-mdi-alert class="inline w-3.5 h-3.5 mr-0.5" />{{ t('nav.integrityFailed') }}
             </span>
             <span v-else class="text-surface-400">{{ t('nav.integrityNA') }}</span>
@@ -781,15 +837,23 @@ watch(() => route?.fullPath, () => {
         </div>
 
         <!-- Expiration warning -->
-        <div v-if="configPreview.isExpired" class="flex items-start gap-1.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/15">
+        <div
+          v-if="configPreview.isExpired"
+          class="flex items-start gap-1.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/15"
+        >
           <i-mdi-clock-alert class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
           <p class="text-xs text-amber-300/90 leading-relaxed">{{ t('nav.expiredWarning') }}</p>
         </div>
 
         <!-- Integrity failure warning -->
-        <div v-if="configPreview.integrityValid === false" class="flex items-start gap-1.5 p-2.5 rounded-lg bg-red-500/10 border border-red-500/15">
+        <div
+          v-if="configPreview.integrityValid === false"
+          class="flex items-start gap-1.5 p-2.5 rounded-lg bg-red-500/10 border border-red-500/15"
+        >
           <i-mdi-shield-alert class="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-          <p class="text-xs text-red-300/90 leading-relaxed">{{ t('nav.integrityFailedDetail') }}</p>
+          <p class="text-xs text-red-300/90 leading-relaxed">
+            {{ t('nav.integrityFailedDetail') }}
+          </p>
         </div>
 
         <!-- Password field for encrypted files -->
@@ -805,15 +869,23 @@ watch(() => route?.fullPath, () => {
         </div>
 
         <!-- Import error -->
-        <div v-if="importError" class="flex items-center gap-1.5 p-2 rounded-lg bg-red-500/10 border border-red-500/15">
+        <div
+          v-if="importError"
+          class="flex items-center gap-1.5 p-2 rounded-lg bg-red-500/10 border border-red-500/15"
+        >
           <i-mdi-alert-circle class="w-4 h-4 text-red-400 flex-shrink-0" />
           <p class="text-xs text-red-400">{{ importError }}</p>
         </div>
 
         <!-- Import success -->
-        <div v-if="importSuccess" class="flex items-center gap-1.5 p-2 rounded-lg bg-green-500/10 border border-green-500/15">
+        <div
+          v-if="importSuccess"
+          class="flex items-center gap-1.5 p-2 rounded-lg bg-green-500/10 border border-green-500/15"
+        >
           <i-mdi-check-circle class="w-4 h-4 text-green-400 flex-shrink-0" />
-          <p class="text-xs text-green-400">{{ t('nav.importSuccess') }} — {{ t('nav.reloading') }}</p>
+          <p class="text-xs text-green-400">
+            {{ t('nav.importSuccess') }} — {{ t('nav.reloading') }}
+          </p>
         </div>
 
         <!-- Actions -->
@@ -823,7 +895,11 @@ watch(() => route?.fullPath, () => {
           </Button>
           <Button
             size="small"
-            :disabled="importLoading || (configPreview.encrypted && !importPassword) || configPreview.integrityValid === false"
+            :disabled="
+              importLoading ||
+              (configPreview.encrypted && !importPassword) ||
+              configPreview.integrityValid === false
+            "
             :loading="importLoading"
             @click="confirmImport"
           >
@@ -856,11 +932,7 @@ watch(() => route?.fullPath, () => {
             text
             @click="optimizeConfirmVisible = false"
           />
-          <Button
-            :label="t('nav.optimizeLayout')"
-            severity="info"
-            @click="executeOptimizeLayout"
-          />
+          <Button :label="t('nav.optimizeLayout')" severity="info" @click="executeOptimizeLayout" />
         </div>
       </div>
     </Dialog>
@@ -874,7 +946,9 @@ watch(() => route?.fullPath, () => {
       :pt="{ root: { class: 'config-dialog' } }"
     >
       <div class="space-y-4">
-        <div class="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/15">
+        <div
+          class="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/15"
+        >
           <i-mdi-alert class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
           <p class="text-sm text-surface-300 leading-relaxed">
             {{ t('nav.resetLayoutConfirm') }}
@@ -887,15 +961,10 @@ watch(() => route?.fullPath, () => {
             text
             @click="resetConfirmVisible = false"
           />
-          <Button
-            :label="t('nav.resetLayout')"
-            severity="danger"
-            @click="resetDynamicLayout"
-          />
+          <Button :label="t('nav.resetLayout')" severity="danger" @click="resetDynamicLayout" />
         </div>
       </div>
     </Dialog>
-
   </header>
 </template>
 
@@ -935,8 +1004,13 @@ watch(() => route?.fullPath, () => {
 }
 
 @keyframes fork-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.65; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.65;
+  }
 }
 
 /* ── Hover popover ── */
@@ -1031,7 +1105,12 @@ watch(() => route?.fullPath, () => {
 .anim-demo-on .anim-demo-blob {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3));
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.4),
+    rgba(168, 85, 247, 0.3),
+    rgba(59, 130, 246, 0.3)
+  );
   background-size: 200% 200%;
   animation: anim-gradient-move 3s ease-in-out infinite;
   border-radius: 4px;
@@ -1054,7 +1133,12 @@ watch(() => route?.fullPath, () => {
   border: 1px solid rgba(0, 0, 0, 0.12);
 }
 @keyframes anim-gradient-move {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 </style>

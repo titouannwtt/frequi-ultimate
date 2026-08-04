@@ -12,7 +12,15 @@ import {
 } from 'echarts/components';
 import { useI18n } from 'vue-i18n';
 
-use([BarChart, LineChart, CanvasRenderer, GridComponent, TooltipComponent, LegendComponent, MarkLineComponent]);
+use([
+  BarChart,
+  LineChart,
+  CanvasRenderer,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  MarkLineComponent,
+]);
 
 const { t } = useI18n();
 

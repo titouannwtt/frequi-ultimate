@@ -41,10 +41,7 @@ defineProps<{ data: SansTopData }>();
       >
         <div class="flex justify-between text-sm mb-1">
           <span class="text-surface-500">{{ label }}</span>
-          <span
-            :class="item.val >= 0 ? 'text-green-400' : 'text-red-400'"
-            class="tabular-nums"
-          >
+          <span :class="item.val >= 0 ? 'text-green-400' : 'text-red-400'" class="tabular-nums">
             {{ item.val.toFixed(2) }} ({{ item.pct.toFixed(0) }}%)
           </span>
         </div>

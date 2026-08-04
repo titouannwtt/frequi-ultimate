@@ -50,7 +50,13 @@ function plotConfigFingerprint(cfg: PlotConfig | undefined): string {
   if (!cfg) return '';
   const mainKeys = Object.keys(cfg.main_plot ?? {}).sort();
   const subKeys = Object.keys(cfg.subplots ?? {}).sort();
-  const subIndicators = subKeys.map(k => Object.keys(cfg.subplots[k] ?? {}).sort().join(',')).join('|');
+  const subIndicators = subKeys
+    .map((k) =>
+      Object.keys(cfg.subplots[k] ?? {})
+        .sort()
+        .join(','),
+    )
+    .join('|');
   return `${mainKeys.join(',')}::${subIndicators}`;
 }
 
@@ -75,14 +81,16 @@ async function fetchStrategyPlotConfig() {
 async function loadStrategyIndicators() {
   loadingStrategyIndicators.value = true;
   try {
-    const config = strategyPlotConfig.value ?? await botStore.activeBot.getStrategyPlotConfig();
+    const config = strategyPlotConfig.value ?? (await botStore.activeBot.getStrategyPlotConfig());
     if (config) {
       plotStore.saveCustomPlotConfig(plotStore.plotConfigName, config);
       plotStore.plotConfigChanged();
       strategyPlotConfig.value = config;
       strategyIndicatorsLoaded.value = true;
       if (hideSuccessTimer) clearTimeout(hideSuccessTimer);
-      hideSuccessTimer = setTimeout(() => { strategyIndicatorsLoaded.value = false; }, 5000);
+      hideSuccessTimer = setTimeout(() => {
+        strategyIndicatorsLoaded.value = false;
+      }, 5000);
     }
   } catch {
     // silently fail
@@ -91,13 +99,20 @@ async function loadStrategyIndicators() {
   }
 }
 
-watch(() => botStore.activeBot.strategy?.strategy, () => {
-  fetchStrategyPlotConfig();
-});
+watch(
+  () => botStore.activeBot.strategy?.strategy,
+  () => {
+    fetchStrategyPlotConfig();
+  },
+);
 
-watch(() => plotStore.plotConfig, () => {
-  if (strategyIndicatorsLoaded.value) return;
-}, { deep: true });
+watch(
+  () => plotStore.plotConfig,
+  () => {
+    if (strategyIndicatorsLoaded.value) return;
+  },
+  { deep: true },
+);
 
 onMounted(() => {
   if (!botStore.activeBot.isWebserverMode) {
@@ -109,11 +124,15 @@ const seriesList = ref<SeriesInfo[]>([]);
 const axisValues = ref<AxisPointerValues | undefined>(undefined);
 const legendVisible = computed({
   get: () => settingsStore.chartLegendVisible,
-  set: (v) => { settingsStore.chartLegendVisible = v; },
+  set: (v) => {
+    settingsStore.chartLegendVisible = v;
+  },
 });
 const volumeVisible = computed({
   get: () => settingsStore.chartVolumeVisible,
-  set: (v) => { settingsStore.chartVolumeVisible = v; },
+  set: (v) => {
+    settingsStore.chartVolumeVisible = v;
+  },
 });
 
 const tradeSeriesOptions = computed<TradeSeriesOptions>(() => ({
@@ -148,18 +167,34 @@ function handleShowAll() {
 
 // Keyboard shortcuts
 const shortcutActions = {
-  toggleVolume: () => { volumeVisible.value = !volumeVisible.value; },
-  toggleTrades: () => { chartRef.value?.toggleSeries('Trades'); },
+  toggleVolume: () => {
+    volumeVisible.value = !volumeVisible.value;
+  },
+  toggleTrades: () => {
+    chartRef.value?.toggleSeries('Trades');
+  },
   toggleSignals: () => {
     chartRef.value?.toggleSeries('Entry');
     chartRef.value?.toggleSeries('Exit');
   },
-  toggleLegend: () => { legendVisible.value = !legendVisible.value; },
-  resetZoom: () => { chartRef.value?.resetZoom(); },
-  scrollLeft: () => { chartRef.value?.scrollChart(-10); },
-  scrollRight: () => { chartRef.value?.scrollChart(10); },
-  zoomIn: () => { chartRef.value?.zoomChart(0.7); },
-  zoomOut: () => { chartRef.value?.zoomChart(1.4); },
+  toggleLegend: () => {
+    legendVisible.value = !legendVisible.value;
+  },
+  resetZoom: () => {
+    chartRef.value?.resetZoom();
+  },
+  scrollLeft: () => {
+    chartRef.value?.scrollChart(-10);
+  },
+  scrollRight: () => {
+    chartRef.value?.scrollChart(10);
+  },
+  zoomIn: () => {
+    chartRef.value?.zoomChart(0.7);
+  },
+  zoomOut: () => {
+    chartRef.value?.zoomChart(1.4);
+  },
 };
 
 const { showHelp, shortcuts } = useChartShortcuts(
@@ -194,11 +229,16 @@ const noDatasetText = computed((): string => {
     ? botStore.activeBot.historyStatus
     : botStore.activeBot.candleDataStatus;
   switch (status) {
-    case LoadingStatus.not_loaded: return t('charts.notLoadedYet');
-    case LoadingStatus.loading: return t('charts.loading');
-    case LoadingStatus.success: return t('charts.noData');
-    case LoadingStatus.error: return t('charts.loadError');
-    default: return '';
+    case LoadingStatus.not_loaded:
+      return t('charts.notLoadedYet');
+    case LoadingStatus.loading:
+      return t('charts.loading');
+    case LoadingStatus.success:
+      return t('charts.noData');
+    case LoadingStatus.error:
+      return t('charts.loadError');
+    default:
+      return '';
   }
 });
 
@@ -212,27 +252,42 @@ function refreshIfNecessary() {
 
 function assignFirstPair() {
   const [firstPair] = props.availablePairs;
-  if (firstPair) { /* noop — pair is a prop */ }
+  if (firstPair) {
+    /* noop — pair is a prop */
+  }
 }
 
-watch(() => props.availablePairs, () => {
-  if (!props.availablePairs.find((p) => p === props.pair)) {
-    assignFirstPair();
-    refresh();
-  }
-});
+watch(
+  () => props.availablePairs,
+  () => {
+    if (!props.availablePairs.find((p) => p === props.pair)) {
+      assignFirstPair();
+      refresh();
+    }
+  },
+);
 
-watch(() => plotStore.plotConfig, () => {
-  const hasAllColumns = plotStore.usedColumns.some(
-    (c) => datasetColumns.value.includes(c) && !datasetLoadedColumns.value.includes(c),
-  );
-  if (settingsStore.useReducedPairCalls && hasAllColumns) refresh();
-});
+watch(
+  () => plotStore.plotConfig,
+  () => {
+    const hasAllColumns = plotStore.usedColumns.some(
+      (c) => datasetColumns.value.includes(c) && !datasetLoadedColumns.value.includes(c),
+    );
+    if (settingsStore.useReducedPairCalls && hasAllColumns) refresh();
+  },
+);
 
-watch(() => props.timeframe, () => refreshIfNecessary());
+watch(
+  () => props.timeframe,
+  () => refreshIfNecessary(),
+);
 
-const longEntries = computed(() => dataset.value?.enter_long_signals ?? dataset.value?.buy_signals ?? 0);
-const longExits = computed(() => dataset.value?.exit_long_signals ?? dataset.value?.sell_signals ?? 0);
+const longEntries = computed(
+  () => dataset.value?.enter_long_signals ?? dataset.value?.buy_signals ?? 0,
+);
+const longExits = computed(
+  () => dataset.value?.exit_long_signals ?? dataset.value?.sell_signals ?? 0,
+);
 const shortEntries = computed(() => dataset.value?.enter_short_signals ?? 0);
 const shortExits = computed(() => dataset.value?.exit_short_signals ?? 0);
 const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.value > 0);
@@ -277,7 +332,11 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
         >
           <i-mdi-check v-if="strategyIndicatorsLoaded" class="w-3.5 h-3.5" />
           <i-mdi-chart-line-variant v-else class="w-3.5 h-3.5" />
-          <span>{{ strategyIndicatorsLoaded ? t('charts.strategyIndicatorsLoaded') : t('charts.loadStrategyIndicators') }}</span>
+          <span>{{
+            strategyIndicatorsLoaded
+              ? t('charts.strategyIndicatorsLoaded')
+              : t('charts.loadStrategyIndicators')
+          }}</span>
         </button>
       </Transition>
       <div class="signal-bar-right">
@@ -325,10 +384,16 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
 
       <!-- Keyboard shortcuts help -->
       <Transition name="fade">
-        <div v-if="showHelp" class="shortcuts-overlay" :class="{ 'shortcuts-dark': settingsStore.chartTheme === 'dark' }">
+        <div
+          v-if="showHelp"
+          class="shortcuts-overlay"
+          :class="{ 'shortcuts-dark': settingsStore.chartTheme === 'dark' }"
+        >
           <div class="shortcuts-title">Raccourcis clavier</div>
           <div v-for="s in shortcuts" :key="s.key" class="shortcut-row">
-            <kbd class="shortcut-key">{{ s.key === 'ArrowLeft' ? '←' : s.key === 'ArrowRight' ? '→' : s.key }}</kbd>
+            <kbd class="shortcut-key">{{
+              s.key === 'ArrowLeft' ? '←' : s.key === 'ArrowRight' ? '→' : s.key
+            }}</kbd>
             <span class="shortcut-desc">{{ s.label }}</span>
           </div>
           <div class="shortcut-row">
@@ -406,10 +471,22 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
   font-weight: 600;
   font-family: monospace;
 }
-.signal-pill.long-entry { color: #757575; background: rgba(158, 158, 158, 0.08); }
-.signal-pill.long-exit { color: #757575; background: rgba(158, 158, 158, 0.08); }
-.signal-pill.short-entry { color: #757575; background: rgba(158, 158, 158, 0.08); }
-.signal-pill.short-exit { color: #757575; background: rgba(158, 158, 158, 0.08); }
+.signal-pill.long-entry {
+  color: #757575;
+  background: rgba(158, 158, 158, 0.08);
+}
+.signal-pill.long-exit {
+  color: #757575;
+  background: rgba(158, 158, 158, 0.08);
+}
+.signal-pill.short-entry {
+  color: #757575;
+  background: rgba(158, 158, 158, 0.08);
+}
+.signal-pill.short-exit {
+  color: #757575;
+  background: rgba(158, 158, 158, 0.08);
+}
 
 .pair-label {
   font-size: 0.8125rem;
@@ -452,7 +529,9 @@ const hasShortSignals = computed(() => shortEntries.value > 0 || shortExits.valu
 }
 .strat-btn-enter-active,
 .strat-btn-leave-active {
-  transition: opacity 0.3s, transform 0.3s;
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
 }
 .strat-btn-enter-from,
 .strat-btn-leave-to {

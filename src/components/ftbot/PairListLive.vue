@@ -94,10 +94,7 @@ onMounted(() => {
     <!-- Blacklsit -->
     <div>
       <div class="flex flex-row justify-center mb-1">
-        <label
-          class="text-lg font-bold mb-2 w-full"
-          :title="t('pairlist.blacklistDesc')"
-        >
+        <label class="text-lg font-bold mb-2 w-full" :title="t('pairlist.blacklistDesc')">
           {{ t('pairlist.blacklist') }}
         </label>
         <div class="flex flex-cols items-center gap-1 pe-1">

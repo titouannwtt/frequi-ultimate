@@ -6,11 +6,7 @@ import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { BarChart } from 'echarts/charts';
-import {
-  GridComponent,
-  TitleComponent,
-  TooltipComponent,
-} from 'echarts/components';
+import { GridComponent, TitleComponent, TooltipComponent } from 'echarts/components';
 
 use([BarChart, CanvasRenderer, GridComponent, TitleComponent, TooltipComponent]);
 
@@ -40,9 +36,7 @@ const warnings = computed<string[]>(() => {
   const profitable = traded.filter((d) => (d.profit_abs ?? 0) > 0);
 
   if (profitable.length === 1) {
-    msgs.push(
-      t('strategyDev.pairProfitSingleInstrument', { pair: profitable[0].pair }),
-    );
+    msgs.push(t('strategyDev.pairProfitSingleInstrument', { pair: profitable[0].pair }));
   } else if (totalProfit > 0 && profitable.length > 0) {
     const topPair = profitable.reduce((a, b) =>
       (a.profit_abs ?? 0) > (b.profit_abs ?? 0) ? a : b,
@@ -128,7 +122,9 @@ const displayCount = computed(() => {
       <span class="text-sm text-surface-500">
         {{ t('strategyDev.pairProfitPairsWithTrades', { traded: tradedCount, total: totalCount }) }}
       </span>
-      <label class="flex items-center gap-1.5 text-sm text-surface-500 cursor-pointer select-none whitespace-nowrap">
+      <label
+        class="flex items-center gap-1.5 text-sm text-surface-500 cursor-pointer select-none whitespace-nowrap"
+      >
         <input v-model="showAll" type="checkbox" class="accent-green-400 w-3.5 h-3.5" />
         {{ t('strategyDev.pairProfitShowAll') }}
       </label>

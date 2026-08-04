@@ -15,7 +15,15 @@ import {
 } from 'echarts/components';
 import { useRegimeOverlay, type RegimeTimelineEntry } from '@/composables/useRegimeOverlay';
 
-use([LineChart, CanvasRenderer, GridComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, MarkAreaComponent]);
+use([
+  LineChart,
+  CanvasRenderer,
+  GridComponent,
+  TooltipComponent,
+  DataZoomComponent,
+  MarkLineComponent,
+  MarkAreaComponent,
+]);
 
 const { t } = useI18n();
 
@@ -105,7 +113,9 @@ const option = computed<EChartsOption>(() => {
           label: { show: false },
           data: [{ yAxis: 0 }],
         },
-        markArea: markAreaData.value.length ? { silent: true, data: markAreaData.value as any } : undefined,
+        markArea: markAreaData.value.length
+          ? { silent: true, data: markAreaData.value as any }
+          : undefined,
       },
     ],
   };

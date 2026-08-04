@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { getVerdict, getVerdictText, validationChecklist, type VerdictLevel } from './metricThresholds';
+import {
+  getVerdict,
+  getVerdictText,
+  validationChecklist,
+  type VerdictLevel,
+} from './metricThresholds';
 
 const { t } = useI18n();
 const store = useStrategyDevStore();
@@ -86,7 +91,7 @@ const sentences = computed<SentenceItem[]>(() => {
     const pp = mc.prob_positive;
     const v: VerdictLevel = pp >= 80 ? 'good' : pp >= 60 ? 'warn' : 'bad';
     items.push({
-      text: `Monte Carlo : ${pp.toFixed(0)}% de probabilité de profit positif — ${pp >= 80 ? 'robuste' : pp >= 60 ? 'marginal' : 'pas d\'edge'}.`,
+      text: `Monte Carlo : ${pp.toFixed(0)}% de probabilité de profit positif — ${pp >= 80 ? 'robuste' : pp >= 60 ? 'marginal' : "pas d'edge"}.`,
       verdict: v,
       anchor: 'charts',
     });
@@ -94,7 +99,8 @@ const sentences = computed<SentenceItem[]>(() => {
 
   const dof = a?.dof_analysis as { level?: string; label?: string } | undefined;
   if (dof) {
-    const v: VerdictLevel = dof.level === 'green' ? 'good' : dof.level === 'yellow' ? 'warn' : 'bad';
+    const v: VerdictLevel =
+      dof.level === 'green' ? 'good' : dof.level === 'yellow' ? 'warn' : 'bad';
     items.push({
       text: `Degrés de liberté : ${dof.label?.toLowerCase() ?? 'inconnu'}.`,
       verdict: v,
@@ -158,7 +164,10 @@ const showChecklist = ref(false);
       </div>
       <div
         class="summary-score"
-        :style="{ color: verdictColors[overallVerdict].text, background: verdictColors[overallVerdict].bg }"
+        :style="{
+          color: verdictColors[overallVerdict].text,
+          background: verdictColors[overallVerdict].bg,
+        }"
       >
         {{ checklistScore.passed }}/{{ checklistScore.total }}
       </div>
@@ -172,10 +181,7 @@ const showChecklist = ref(false);
         class="summary-sentence"
         :style="{ borderLeftColor: verdictColors[s.verdict].text }"
       >
-        <span
-          class="summary-dot"
-          :style="{ backgroundColor: verdictColors[s.verdict].text }"
-        />
+        <span class="summary-dot" :style="{ backgroundColor: verdictColors[s.verdict].text }" />
         {{ s.text }}
       </p>
     </div>
@@ -191,15 +197,8 @@ const showChecklist = ref(false);
     <!-- Checklist -->
     <Transition name="sd-group">
       <div v-if="showChecklist" class="summary-checklist">
-        <div
-          v-for="item in checklistResults"
-          :key="item.key"
-          class="checklist-item"
-        >
-          <span
-            class="checklist-status"
-            :style="{ color: statusIcons[item.status].color }"
-          >
+        <div v-for="item in checklistResults" :key="item.key" class="checklist-item">
+          <span class="checklist-status" :style="{ color: statusIcons[item.status].color }">
             {{ statusIcons[item.status].icon }}
           </span>
           <span class="checklist-label">{{ item.label }}</span>
@@ -341,7 +340,9 @@ const showChecklist = ref(false);
 
 /* ── Transitions ── */
 .sd-group-enter-active {
-  transition: opacity 200ms ease, max-height 200ms ease;
+  transition:
+    opacity 200ms ease,
+    max-height 200ms ease;
   overflow: hidden;
 }
 .sd-group-leave-active {

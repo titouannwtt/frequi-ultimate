@@ -60,8 +60,8 @@ const emit = defineEmits<{
 
 const layoutStore = useLayoutStore();
 
-const isHidden = computed(() =>
-  props.widgetId >= 0 && !layoutStore.isWidgetVisible(props.widgetId),
+const isHidden = computed(
+  () => props.widgetId >= 0 && !layoutStore.isWidgetVisible(props.widgetId),
 );
 
 // --- Lazy viewport mounting (opt-in via `lazy`) ---
@@ -110,11 +110,16 @@ const renderContent = computed(() => {
     <div
       class="drag-header py-1.5 px-2.5 rounded-t-lg bg-[#e0dbd3] dark:bg-[rgba(15,15,25,0.6)] dark:backdrop-blur-xl border-b border-[#cdc6bc] dark:border-transparent"
       :class="{ 'ft-drag-handle': layoutStore.editMode && !isHidden }"
-      style="border-image: linear-gradient(to right, transparent, rgba(99, 102, 241, 0.15), transparent) 1"
+      style="
+        border-image: linear-gradient(to right, transparent, rgba(99, 102, 241, 0.15), transparent)
+          1;
+      "
     >
       <div class="flex items-center w-full gap-2">
         <!-- Left: drag icon + title + scope badge + hint + live dot -->
-        <div class="flex items-center gap-1.5 shrink-0 text-[#4a4540] dark:text-surface-200 text-sm whitespace-nowrap">
+        <div
+          class="flex items-center gap-1.5 shrink-0 text-[#4a4540] dark:text-surface-200 text-sm whitespace-nowrap"
+        >
           <i-mdi-drag
             v-if="layoutStore.editMode && !isHidden"
             class="w-4 h-4 text-indigo-400/70 flex-shrink-0"
@@ -127,7 +132,8 @@ const renderContent = computed(() => {
             class="ft-scope-badge"
             :class="SCOPE_CLASSES[scope]"
             :title="scopeTitle"
-          >{{ scopeLabel }}</span>
+            >{{ scopeLabel }}</span
+          >
           <InfoBox v-if="hint" :hint="hint" />
           <span v-if="live" class="ft-live-dot"></span>
           <slot name="header-extra" />
@@ -156,9 +162,11 @@ const renderContent = computed(() => {
           <button
             v-if="hasFilterDefaults"
             class="flex items-center gap-1 px-2 py-1 rounded-md transition-colors"
-            :class="filtersChanged
-              ? 'cursor-pointer hover:bg-indigo-500/15 text-indigo-400'
-              : 'opacity-40 cursor-default text-surface-500'"
+            :class="
+              filtersChanged
+                ? 'cursor-pointer hover:bg-indigo-500/15 text-indigo-400'
+                : 'opacity-40 cursor-default text-surface-500'
+            "
             :title="t('widgetDefaults.saveAsDefault')"
             :disabled="!filtersChanged"
             @click.stop="filtersChanged && emit('save-filter-defaults')"
@@ -188,9 +196,11 @@ const renderContent = computed(() => {
           <button
             v-if="canHide"
             class="p-1 rounded transition-colors cursor-pointer"
-            :class="isHidden
-              ? 'bg-blue-500/20 hover:bg-blue-500/30 ring-1 ring-blue-400/40'
-              : 'hover:bg-black/10 dark:hover:bg-white/10'"
+            :class="
+              isHidden
+                ? 'bg-blue-500/20 hover:bg-blue-500/30 ring-1 ring-blue-400/40'
+                : 'hover:bg-black/10 dark:hover:bg-white/10'
+            "
             :title="isHidden ? 'Show widget' : 'Hide widget'"
             @click.stop="layoutStore.toggleWidgetVisibility(widgetId)"
           >
@@ -222,7 +232,9 @@ const renderContent = computed(() => {
 .ft-widget {
   clip-path: inset(0 round 0.5rem);
   animation: ft-fade-in 300ms ease-out;
-  transition: border 300ms ease, box-shadow 300ms ease;
+  transition:
+    border 300ms ease,
+    box-shadow 300ms ease;
 }
 
 .ft-widget-edit {

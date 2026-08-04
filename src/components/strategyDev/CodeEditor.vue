@@ -2,17 +2,20 @@
 import { monaco } from '@/utils/monacoWorker';
 import type { EditorDiagnostic } from '@/types';
 
-const props = withDefaults(defineProps<{
-  modelValue: string;
-  language: 'json' | 'python';
-  readonly?: boolean;
-  diagnostics?: EditorDiagnostic[];
-  filename?: string;
-}>(), {
-  readonly: false,
-  diagnostics: () => [],
-  filename: '',
-});
+const props = withDefaults(
+  defineProps<{
+    modelValue: string;
+    language: 'json' | 'python';
+    readonly?: boolean;
+    diagnostics?: EditorDiagnostic[];
+    filename?: string;
+  }>(),
+  {
+    readonly: false,
+    diagnostics: () => [],
+    filename: '',
+  },
+);
 
 const emit = defineEmits<{
   'update:modelValue': [value: string];
@@ -132,49 +135,63 @@ function initEditor() {
   });
 }
 
-watch(() => props.modelValue, (newVal) => {
-  if (editor && editor.getValue() !== newVal) {
-    ignoreNextChange = true;
-    editor.setValue(newVal);
-  }
-});
-
-watch(() => props.language, (lang) => {
-  if (editor) {
-    const model = editor.getModel();
-    if (model) {
-      monaco.editor.setModelLanguage(model, lang);
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (editor && editor.getValue() !== newVal) {
+      ignoreNextChange = true;
+      editor.setValue(newVal);
     }
-    editor.updateOptions({
-      tabSize: lang === 'python' ? 4 : 2,
-    });
-  }
-});
+  },
+);
 
-watch(() => props.readonly, (ro) => {
-  editor?.updateOptions({ readOnly: ro });
-});
+watch(
+  () => props.language,
+  (lang) => {
+    if (editor) {
+      const model = editor.getModel();
+      if (model) {
+        monaco.editor.setModelLanguage(model, lang);
+      }
+      editor.updateOptions({
+        tabSize: lang === 'python' ? 4 : 2,
+      });
+    }
+  },
+);
 
-watch(() => props.diagnostics, (diags) => {
-  if (!editor) return;
-  const model = editor.getModel();
-  if (!model) return;
+watch(
+  () => props.readonly,
+  (ro) => {
+    editor?.updateOptions({ readOnly: ro });
+  },
+);
 
-  const markers: monaco.editor.IMarkerData[] = (diags || []).map((d) => ({
-    severity: d.severity === 'error'
-      ? monaco.MarkerSeverity.Error
-      : d.severity === 'warning'
-        ? monaco.MarkerSeverity.Warning
-        : monaco.MarkerSeverity.Info,
-    message: d.message,
-    startLineNumber: d.line,
-    startColumn: d.column,
-    endLineNumber: d.line,
-    endColumn: d.column + 1,
-  }));
+watch(
+  () => props.diagnostics,
+  (diags) => {
+    if (!editor) return;
+    const model = editor.getModel();
+    if (!model) return;
 
-  monaco.editor.setModelMarkers(model, 'editor-validation', markers);
-}, { deep: true });
+    const markers: monaco.editor.IMarkerData[] = (diags || []).map((d) => ({
+      severity:
+        d.severity === 'error'
+          ? monaco.MarkerSeverity.Error
+          : d.severity === 'warning'
+            ? monaco.MarkerSeverity.Warning
+            : monaco.MarkerSeverity.Info,
+      message: d.message,
+      startLineNumber: d.line,
+      startColumn: d.column,
+      endLineNumber: d.line,
+      endColumn: d.column + 1,
+    }));
+
+    monaco.editor.setModelMarkers(model, 'editor-validation', markers);
+  },
+  { deep: true },
+);
 
 let resizeObserver: ResizeObserver | null = null;
 

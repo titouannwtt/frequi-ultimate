@@ -173,8 +173,8 @@ onUnmounted(() => {
     <div class="d-flex justify-content-between align-items-center mb-2">
       <div>
         <span v-if="daemon" class="text-muted small">
-          {{ bots.length }} bots &middot; {{ formatUptime(daemon.uptime_s) }} uptime
-          &middot; {{ daemon.total_series }} series
+          {{ bots.length }} bots &middot; {{ formatUptime(daemon.uptime_s) }} uptime &middot;
+          {{ daemon.total_series }} series
         </span>
       </div>
       <div>
@@ -212,8 +212,12 @@ onUnmounted(() => {
       >
         <span
           class="d-inline-block transition-transform"
-          :style="{ transform: botsExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }"
-        >&#9654;</span>
+          :style="{
+            transform: botsExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s',
+          }"
+          >&#9654;</span
+        >
         Bots ({{ bots.length }})
       </button>
       <div v-if="botsExpanded" class="table-responsive">
@@ -261,7 +265,10 @@ onUnmounted(() => {
     <div v-if="Object.keys(rateLimiters).length > 0" class="mb-2">
       <div v-for="(rl, exchange) in rateLimiters" :key="exchange" class="d-inline-flex me-3">
         <span class="small text-muted">{{ exchange }}:</span>
-        <span class="small ms-1" :class="rl.backoff_active ? 'text-danger fw-bold' : 'text-success'">
+        <span
+          class="small ms-1"
+          :class="rl.backoff_active ? 'text-danger fw-bold' : 'text-success'"
+        >
           {{ rl.tokens_available.toFixed(1) }}/{{ rl.tokens_max }}
           <span v-if="rl.backoff_active" class="text-danger"> BACKOFF</span>
         </span>
@@ -277,8 +284,12 @@ onUnmounted(() => {
       >
         <span
           class="d-inline-block"
-          :style="{ transform: eventsExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }"
-        >&#9654;</span>
+          :style="{
+            transform: eventsExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s',
+          }"
+          >&#9654;</span
+        >
         Events ({{ fleetEvents.length }})
       </button>
       <div v-if="eventsExpanded" class="fleet-events-scroll">

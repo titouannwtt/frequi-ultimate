@@ -40,7 +40,11 @@ const timeframe = computed(() => {
 
 const stakeCurrency = computed(() => {
   const bid = resolvedBotId.value;
-  return (botStore.allBotState[bid] as any)?.stake_currency || botStore.activeBot?.stakeCurrency || 'USDC';
+  return (
+    (botStore.allBotState[bid] as any)?.stake_currency ||
+    botStore.activeBot?.stakeCurrency ||
+    'USDC'
+  );
 });
 
 // Fetch version counter: incremented on each trade change to cancel stale fetches
@@ -66,7 +70,11 @@ async function fetchCandles() {
   }
   try {
     const store = botStore.botStores[bid] ?? botStore.activeBot;
-    if (!store) { error.value = 'Bot not found'; loading.value = false; return; }
+    if (!store) {
+      error.value = 'Bot not found';
+      loading.value = false;
+      return;
+    }
     await store.getPairCandles({ pair: props.trade.pair, timeframe: timeframe.value, limit: 5000 });
     if (myVersion !== fetchVersion) return; // stale — a newer fetch replaced us
     const key = `${props.trade.pair}__${timeframe.value}`;
@@ -96,7 +104,13 @@ watch(() => props.trade.trade_id, fetchCandles);
 // ── Column index helpers ──
 const ci = computed(() => {
   const c = columns.value;
-  return { date: c.indexOf('date'), open: c.indexOf('open'), high: c.indexOf('high'), low: c.indexOf('low'), close: c.indexOf('close') };
+  return {
+    date: c.indexOf('date'),
+    open: c.indexOf('open'),
+    high: c.indexOf('high'),
+    low: c.indexOf('low'),
+    close: c.indexOf('close'),
+  };
 });
 
 // ── Filtered candles: trade open - 100 candles before → now ──
@@ -111,7 +125,9 @@ const tradeCandles = computed(() => {
 
 // ── Key prices ──
 const entryPrice = computed(() => props.trade.open_rate ?? 0);
-const currentPrice = computed(() => props.trade.current_rate ?? props.trade.close_rate ?? entryPrice.value);
+const currentPrice = computed(
+  () => props.trade.current_rate ?? props.trade.close_rate ?? entryPrice.value,
+);
 const slPrice = computed(() => props.trade.stop_loss_abs ?? null);
 const liqPrice = computed(() => props.trade.liquidation_price ?? null);
 const isShort = computed(() => props.trade.is_short ?? false);
@@ -127,7 +143,7 @@ const dcaEntries = computed(() => {
       index: i + 1,
       price: o.safe_price,
       amount: o.filled ?? o.amount ?? 0,
-      cost: o.cost ?? (o.safe_price * (o.filled ?? o.amount ?? 0)),
+      cost: o.cost ?? o.safe_price * (o.filled ?? o.amount ?? 0),
       timestamp: o.order_filled_timestamp ?? 0,
     }));
 });
@@ -147,7 +163,8 @@ const priceRange = computed(() => {
   const tc = tradeCandles.value;
   if (tc.length === 0) return { min: 0, max: 1 };
   const { high: hi, low: lo } = ci.value;
-  let min = Infinity, max = -Infinity;
+  let min = Infinity,
+    max = -Infinity;
   for (const c of tc) {
     if (hi >= 0 && c[hi] > max) max = c[hi];
     if (lo >= 0 && c[lo] < min) min = c[lo];
@@ -155,7 +172,10 @@ const priceRange = computed(() => {
   // Include entry and current
   min = Math.min(min, entryPrice.value, currentPrice.value);
   max = Math.max(max, entryPrice.value, currentPrice.value);
-  dcaEntries.value.forEach((e) => { min = Math.min(min, e.price); max = Math.max(max, e.price); });
+  dcaEntries.value.forEach((e) => {
+    min = Math.min(min, e.price);
+    max = Math.max(max, e.price);
+  });
   const pad = (max - min) * 0.06 || max * 0.01;
   return { min: min - pad, max: max + pad };
 });
@@ -175,8 +195,14 @@ const liqInRange = computed(() => inRange(liqPrice.value));
 // ── Y-axis range: include SL/liq only if in range ──
 const yRange = computed(() => {
   let { min, max } = priceRange.value;
-  if (slInRange.value && slPrice.value) { min = Math.min(min, slPrice.value); max = Math.max(max, slPrice.value); }
-  if (liqInRange.value && liqPrice.value) { min = Math.min(min, liqPrice.value); max = Math.max(max, liqPrice.value); }
+  if (slInRange.value && slPrice.value) {
+    min = Math.min(min, slPrice.value);
+    max = Math.max(max, slPrice.value);
+  }
+  if (liqInRange.value && liqPrice.value) {
+    min = Math.min(min, liqPrice.value);
+    max = Math.max(max, liqPrice.value);
+  }
   const pad = (max - min) * 0.04 || 0.01;
   return { min: min - pad, max: max + pad };
 });
@@ -198,7 +224,10 @@ const candlesticks = computed(() => {
   if (tc.length === 0 || oi < 0) return [];
   const barW = Math.max(1, Math.min(6, CHART_W / tc.length - 1));
   return tc.map((c, i) => {
-    const o = c[oi], h = c[hi], l = c[lo], cl = c[cli];
+    const o = c[oi],
+      h = c[hi],
+      l = c[lo],
+      cl = c[cli];
     const bullish = cl >= o;
     return {
       x: x(i),
@@ -251,10 +280,19 @@ const extremes = computed(() => {
   const { high: hi, low: lo, date: di } = ci.value;
   if (hi < 0 || lo < 0) return null;
 
-  let maxP = -Infinity, minP = Infinity, maxDate = 0, minDate = 0;
+  let maxP = -Infinity,
+    minP = Infinity,
+    maxDate = 0,
+    minDate = 0;
   for (const c of tc) {
-    if (c[hi] > maxP) { maxP = c[hi]; maxDate = c[di]; }
-    if (c[lo] < minP) { minP = c[lo]; minDate = c[di]; }
+    if (c[hi] > maxP) {
+      maxP = c[hi];
+      maxDate = c[di];
+    }
+    if (c[lo] < minP) {
+      minP = c[lo];
+      minDate = c[di];
+    }
   }
 
   const bestPrice = isShort.value ? minP : maxP;
@@ -265,8 +303,12 @@ const extremes = computed(() => {
   const worstPct = profitPctAt(worstPrice);
   const stake = props.trade.stake_amount ?? 0;
   return {
-    bestPrice, worstPrice, bestDate, worstDate,
-    bestPct, worstPct,
+    bestPrice,
+    worstPrice,
+    bestDate,
+    worstDate,
+    bestPct,
+    worstPct,
     bestPnl: stake * leverage.value * (bestPct / 100),
     worstPnl: stake * leverage.value * (worstPct / 100),
   };
@@ -279,8 +321,15 @@ const dcaMarkers = computed(() => {
   const di = ci.value.date;
   const timestamps = tc.map((c) => c[di]);
   return dcaEntries.value.map((entry) => {
-    let closestIdx = 0, closestDist = Infinity;
-    timestamps.forEach((ts, i) => { const d = Math.abs(ts - entry.timestamp); if (d < closestDist) { closestDist = d; closestIdx = i; } });
+    let closestIdx = 0,
+      closestDist = Infinity;
+    timestamps.forEach((ts, i) => {
+      const d = Math.abs(ts - entry.timestamp);
+      if (d < closestDist) {
+        closestDist = d;
+        closestIdx = i;
+      }
+    });
     return { ...entry, x: x(closestIdx), y: y(entry.price) };
   });
 });
@@ -291,8 +340,15 @@ const entryMarkerX = computed(() => {
   if (!tc.length) return W / 2;
   const di = ci.value.date;
   const openTs = props.trade.open_timestamp;
-  let idx = 0, best = Infinity;
-  tc.forEach((c, i) => { const d = Math.abs(c[di] - openTs); if (d < best) { best = d; idx = i; } });
+  let idx = 0,
+    best = Infinity;
+  tc.forEach((c, i) => {
+    const d = Math.abs(c[di] - openTs);
+    if (d < best) {
+      best = d;
+      idx = i;
+    }
+  });
   return x(idx);
 });
 
@@ -303,26 +359,38 @@ function pctLabel(price: number): string {
   return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
 }
 
-function formatPrc(v: number): string { return v.toPrecision(6); }
+function formatPrc(v: number): string {
+  return v.toPrecision(6);
+}
 
 function formatDate(ts: number): string {
   if (!ts) return '';
-  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(ts).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 </script>
 
 <template>
   <div class="p-4 min-w-[560px] max-w-[580px]">
     <!-- Header -->
-    <div class="text-[11px] text-surface-500 uppercase tracking-wider mb-0.5">Price levels & zones</div>
+    <div class="text-[11px] text-surface-500 uppercase tracking-wider mb-0.5">
+      Price levels & zones
+    </div>
     <div class="flex items-center gap-2 mb-2">
       <span class="font-bold text-sm text-surface-100">{{ trade.pair }}</span>
       <span
         v-if="trade.is_short !== undefined"
         class="px-1.5 py-0.5 rounded text-[13px] font-bold"
         :class="trade.is_short ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'"
-      >{{ trade.is_short ? 'SHORT' : 'LONG' }}</span>
-      <span v-if="(trade.leverage ?? 1) > 1" class="text-[13px] font-bold text-yellow-400">{{ trade.leverage }}x</span>
+        >{{ trade.is_short ? 'SHORT' : 'LONG' }}</span
+      >
+      <span v-if="(trade.leverage ?? 1) > 1" class="text-[13px] font-bold text-yellow-400"
+        >{{ trade.leverage }}x</span
+      >
       <span class="ml-auto text-[13px] text-surface-500">{{ timeframe }}</span>
     </div>
 
@@ -347,72 +415,163 @@ function formatDate(ts: number): string {
       <div v-if="extremes" class="flex gap-3 mb-2 text-[13px]">
         <div>
           <span class="text-surface-500">Best:</span>
-          <span class="font-mono font-bold text-green-400 ml-1">+{{ extremes.bestPct.toFixed(1) }}%</span>
-          <span class="text-surface-500 ml-1">(+{{ extremes.bestPnl.toFixed(1) }} {{ stakeCurrency }})</span>
+          <span class="font-mono font-bold text-green-400 ml-1"
+            >+{{ extremes.bestPct.toFixed(1) }}%</span
+          >
+          <span class="text-surface-500 ml-1"
+            >(+{{ extremes.bestPnl.toFixed(1) }} {{ stakeCurrency }})</span
+          >
         </div>
         <div>
           <span class="text-surface-500">Worst:</span>
-          <span class="font-mono font-bold text-red-400 ml-1">{{ extremes.worstPct.toFixed(1) }}%</span>
-          <span class="text-surface-500 ml-1">({{ extremes.worstPnl.toFixed(1) }} {{ stakeCurrency }})</span>
+          <span class="font-mono font-bold text-red-400 ml-1"
+            >{{ extremes.worstPct.toFixed(1) }}%</span
+          >
+          <span class="text-surface-500 ml-1"
+            >({{ extremes.worstPnl.toFixed(1) }} {{ stakeCurrency }})</span
+          >
         </div>
       </div>
 
       <!-- SVG Candlestick Chart -->
-      <svg :width="W" :height="H" class="w-full rounded bg-surface-900/30" :viewBox="`0 0 ${W} ${H}`">
+      <svg
+        :width="W"
+        :height="H"
+        class="w-full rounded bg-surface-900/30"
+        :viewBox="`0 0 ${W} ${H}`"
+      >
         <!-- Heatmap bins (price density) -->
         <rect
-          v-for="(bin, i) in heatmap" :key="'h' + i"
-          :x="PAD_L" :y="bin.y" :width="CHART_W" :height="bin.h"
-          fill="#3b82f6" :opacity="bin.opacity"
+          v-for="(bin, i) in heatmap"
+          :key="'h' + i"
+          :x="PAD_L"
+          :y="bin.y"
+          :width="CHART_W"
+          :height="bin.h"
+          fill="#3b82f6"
+          :opacity="bin.opacity"
         />
 
         <!-- Entry price line -->
-        <line :x1="PAD_L" :x2="W - PAD_R" :y1="y(entryPrice)" :y2="y(entryPrice)"
-          stroke="#94a3b8" stroke-width="0.7" stroke-dasharray="4,3" opacity="0.6" />
+        <line
+          :x1="PAD_L"
+          :x2="W - PAD_R"
+          :y1="y(entryPrice)"
+          :y2="y(entryPrice)"
+          stroke="#94a3b8"
+          stroke-width="0.7"
+          stroke-dasharray="4,3"
+          opacity="0.6"
+        />
 
         <!-- SL line -->
-        <line v-if="slPrice && slInRange"
-          :x1="PAD_L" :x2="W - PAD_R" :y1="y(slPrice)" :y2="y(slPrice)"
-          stroke="#ef4444" stroke-width="0.7" stroke-dasharray="3,2" opacity="0.6" />
+        <line
+          v-if="slPrice && slInRange"
+          :x1="PAD_L"
+          :x2="W - PAD_R"
+          :y1="y(slPrice)"
+          :y2="y(slPrice)"
+          stroke="#ef4444"
+          stroke-width="0.7"
+          stroke-dasharray="3,2"
+          opacity="0.6"
+        />
         <!-- SL arrow if out of range -->
-        <text v-if="slPrice && !slInRange"
-          :x="W - 6" :y="slPrice < priceRange.min ? H - 4 : 10"
-          text-anchor="end" fill="#ef4444" font-size="11" font-weight="bold" opacity="0.8"
-        >SL {{ pctLabel(slPrice) }} {{ slPrice < priceRange.min ? '↓' : '↑' }}</text>
+        <text
+          v-if="slPrice && !slInRange"
+          :x="W - 6"
+          :y="slPrice < priceRange.min ? H - 4 : 10"
+          text-anchor="end"
+          fill="#ef4444"
+          font-size="11"
+          font-weight="bold"
+          opacity="0.8"
+        >
+          SL {{ pctLabel(slPrice) }} {{ slPrice < priceRange.min ? '↓' : '↑' }}
+        </text>
 
         <!-- Liq line -->
-        <line v-if="liqPrice && liqInRange"
-          :x1="PAD_L" :x2="W - PAD_R" :y1="y(liqPrice)" :y2="y(liqPrice)"
-          stroke="#dc2626" stroke-width="1" stroke-dasharray="2,2" opacity="0.5" />
+        <line
+          v-if="liqPrice && liqInRange"
+          :x1="PAD_L"
+          :x2="W - PAD_R"
+          :y1="y(liqPrice)"
+          :y2="y(liqPrice)"
+          stroke="#dc2626"
+          stroke-width="1"
+          stroke-dasharray="2,2"
+          opacity="0.5"
+        />
         <!-- Liq arrow if out of range -->
-        <text v-if="liqPrice && !liqInRange"
-          :x="W - 6" :y="liqPrice < priceRange.min ? H - 14 : 20"
-          text-anchor="end" fill="#dc2626" font-size="11" font-weight="bold" opacity="0.8"
-        >LIQ {{ pctLabel(liqPrice) }} {{ liqPrice < priceRange.min ? '↓' : '↑' }}</text>
+        <text
+          v-if="liqPrice && !liqInRange"
+          :x="W - 6"
+          :y="liqPrice < priceRange.min ? H - 14 : 20"
+          text-anchor="end"
+          fill="#dc2626"
+          font-size="11"
+          font-weight="bold"
+          opacity="0.8"
+        >
+          LIQ {{ pctLabel(liqPrice) }} {{ liqPrice < priceRange.min ? '↓' : '↑' }}
+        </text>
 
         <!-- Candlesticks -->
         <g v-for="(c, i) in candlesticks" :key="'c' + i">
           <!-- Wick -->
-          <line :x1="c.x" :x2="c.x" :y1="c.yHigh" :y2="c.yLow" :stroke="c.wickColor" stroke-width="0.8" />
+          <line
+            :x1="c.x"
+            :x2="c.x"
+            :y1="c.yHigh"
+            :y2="c.yLow"
+            :stroke="c.wickColor"
+            stroke-width="0.8"
+          />
           <!-- Body -->
-          <rect :x="c.x - c.barW / 2" :y="c.bodyTop" :width="c.barW" :height="c.bodyH" :fill="c.color" rx="0.5" />
+          <rect
+            :x="c.x - c.barW / 2"
+            :y="c.bodyTop"
+            :width="c.barW"
+            :height="c.bodyH"
+            :fill="c.color"
+            rx="0.5"
+          />
         </g>
 
         <!-- Entry marker -->
-        <circle :cx="entryMarkerX" :cy="y(entryPrice)" r="4" fill="#22c55e" stroke="#fff" stroke-width="1" />
+        <circle
+          :cx="entryMarkerX"
+          :cy="y(entryPrice)"
+          r="4"
+          fill="#22c55e"
+          stroke="#fff"
+          stroke-width="1"
+        />
 
         <!-- DCA markers with labels -->
         <g v-for="(m, i) in dcaMarkers" :key="'d' + i">
           <circle :cx="m.x" :cy="m.y" r="3" fill="#a855f7" stroke="#fff" stroke-width="0.8" />
-          <text v-if="dcaMarkers.length > 1 && i > 0" :x="m.x" :y="m.y - 6" text-anchor="middle" fill="#c084fc" font-size="9" font-weight="bold">
+          <text
+            v-if="dcaMarkers.length > 1 && i > 0"
+            :x="m.x"
+            :y="m.y - 6"
+            text-anchor="middle"
+            fill="#c084fc"
+            font-size="9"
+            font-weight="bold"
+          >
             #{{ m.index }} {{ m.cost.toFixed(0) }}
           </text>
         </g>
 
         <!-- Current/Exit price marker -->
         <circle
-          :cx="x(tradeCandles.length - 1)" :cy="y(currentPrice)"
-          r="4" fill="#3b82f6" stroke="#fff" stroke-width="1"
+          :cx="x(tradeCandles.length - 1)"
+          :cy="y(currentPrice)"
+          r="4"
+          fill="#3b82f6"
+          stroke="#fff"
+          stroke-width="1"
         />
       </svg>
 
@@ -429,9 +588,14 @@ function formatDate(ts: number): string {
         </span>
         <span class="flex items-center gap-1">
           <span class="w-2 h-2 rounded-full bg-blue-500 inline-block" />
-          {{ isClosed ? 'Exit' : 'Current' }} <span class="font-mono text-surface-400">{{ formatPrc(currentPrice) }}</span>
-          <span :class="profitPctAt(currentPrice) >= 0 ? 'text-green-400' : 'text-red-400'" class="text-[12px]">
-            {{ profitPctAt(currentPrice) >= 0 ? '+' : '' }}{{ profitPctAt(currentPrice).toFixed(2) }}%
+          {{ isClosed ? 'Exit' : 'Current' }}
+          <span class="font-mono text-surface-400">{{ formatPrc(currentPrice) }}</span>
+          <span
+            :class="profitPctAt(currentPrice) >= 0 ? 'text-green-400' : 'text-red-400'"
+            class="text-[12px]"
+          >
+            {{ profitPctAt(currentPrice) >= 0 ? '+' : ''
+            }}{{ profitPctAt(currentPrice).toFixed(2) }}%
           </span>
         </span>
         <span v-if="liqPrice" class="flex items-center gap-1">
@@ -447,7 +611,10 @@ function formatDate(ts: number): string {
       <!-- Candle count + timeframe -->
       <div class="text-[12px] text-surface-500 mt-1">
         {{ tradeCandles.length }} candles · {{ timeframe }}
-        <template v-if="extremes"> · Best: {{ formatDate(extremes.bestDate) }} · Worst: {{ formatDate(extremes.worstDate) }}</template>
+        <template v-if="extremes">
+          · Best: {{ formatDate(extremes.bestDate) }} · Worst:
+          {{ formatDate(extremes.worstDate) }}</template
+        >
       </div>
     </template>
   </div>

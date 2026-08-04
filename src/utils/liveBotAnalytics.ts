@@ -69,12 +69,14 @@ export function buildLiveBotAnalytics(input: LiveBotInput): Record<string, unkno
 
   const profit = input.profitAll?.all;
   const stakeCurrency = input.balance.stake ?? input.botState.stake_currency ?? 'USDT';
-  const startingBalance = input.balance.starting_capital && input.balance.starting_capital > 0
-    ? input.balance.starting_capital
-    : input.balance.total && input.balance.total > 0
-      ? input.balance.total - allTrades.reduce((s, t) => s + (t.profit_abs ?? 0), 0)
-      : 1000;
-  const finalBalance = input.balance.total && input.balance.total > 0 ? input.balance.total : startingBalance;
+  const startingBalance =
+    input.balance.starting_capital && input.balance.starting_capital > 0
+      ? input.balance.starting_capital
+      : input.balance.total && input.balance.total > 0
+        ? input.balance.total - allTrades.reduce((s, t) => s + (t.profit_abs ?? 0), 0)
+        : 1000;
+  const finalBalance =
+    input.balance.total && input.balance.total > 0 ? input.balance.total : startingBalance;
   const firstTs = allTrades[0]?.open_timestamp ?? Date.now();
   const lastTs = Date.now();
   const daySpan = Math.max(1, (lastTs - firstTs) / 86400000);
@@ -140,10 +142,8 @@ export function buildLiveBotAnalytics(input: LiveBotInput): Record<string, unkno
     best_pair: sortedPairs[0] ?? { key: '-', profit_total_pct: 0 },
     worst_pair: sortedPairs[sortedPairs.length - 1] ?? { key: '-', profit_total_pct: 0 },
     holding_avg: formatDuration(
-      allTrades.reduce(
-        (s, t) => s + ((t.close_timestamp ?? 0) - t.open_timestamp),
-        0,
-      ) / Math.max(1, allTrades.length),
+      allTrades.reduce((s, t) => s + ((t.close_timestamp ?? 0) - t.open_timestamp), 0) /
+        Math.max(1, allTrades.length),
     ),
     winner_holding_avg: formatDuration(
       wins.reduce((s, t) => s + ((t.close_timestamp ?? 0) - t.open_timestamp), 0) /
@@ -265,10 +265,7 @@ interface DrawdownEvent {
   active?: boolean;
 }
 
-function findTopDrawdowns(
-  dd: { date: string; dd_pct: number }[],
-  count: number,
-): DrawdownEvent[] {
+function findTopDrawdowns(dd: { date: string; dd_pct: number }[], count: number): DrawdownEvent[] {
   if (dd.length === 0) return [];
   const events: DrawdownEvent[] = [];
   let inDD = false;
@@ -308,7 +305,10 @@ function findTopDrawdowns(
 function buildMonthlyReturns(
   trades: ClosedTrade[],
 ): { year: number; month: number; profit_abs: number; trades: number }[] {
-  const map = new Map<string, { year: number; month: number; profit_abs: number; trades: number }>();
+  const map = new Map<
+    string,
+    { year: number; month: number; profit_abs: number; trades: number }
+  >();
   for (const t of trades) {
     const d = new Date(t.close_timestamp ?? 0);
     const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
@@ -331,8 +331,18 @@ function buildMonthlyReturns(
 function buildRollingMetrics(
   trades: ClosedTrade[],
   window: number,
-): { sharpe: { date: string; value: number }[]; sortino: { date: string; value: number }[]; volatility: { date: string; value: number }[]; window: number } {
-  const result = { sharpe: [] as { date: string; value: number }[], sortino: [] as { date: string; value: number }[], volatility: [] as { date: string; value: number }[], window };
+): {
+  sharpe: { date: string; value: number }[];
+  sortino: { date: string; value: number }[];
+  volatility: { date: string; value: number }[];
+  window: number;
+} {
+  const result = {
+    sharpe: [] as { date: string; value: number }[],
+    sortino: [] as { date: string; value: number }[],
+    volatility: [] as { date: string; value: number }[],
+    window,
+  };
   if (trades.length < window) return result;
 
   for (let i = window; i <= trades.length; i++) {
@@ -379,7 +389,18 @@ function buildHourlyPattern(trades: ClosedTrade[]) {
 function buildPnlDistribution(trades: ClosedTrade[]) {
   const returns = trades.map((t) => (t.profit_ratio ?? 0) * 100);
   if (returns.length === 0)
-    return { bins: [], counts: [], total: 0, mean: 0, median: 0, std: 0, avg_win: 0, avg_loss: 0, best_trade: 0, worst_trade: 0 };
+    return {
+      bins: [],
+      counts: [],
+      total: 0,
+      mean: 0,
+      median: 0,
+      std: 0,
+      avg_win: 0,
+      avg_loss: 0,
+      best_trade: 0,
+      worst_trade: 0,
+    };
 
   const sorted = [...returns].sort((a, b) => a - b);
   const mean = returns.reduce((s, v) => s + v, 0) / returns.length;
@@ -409,7 +430,8 @@ function buildPnlDistribution(trades: ClosedTrade[]) {
     median,
     std,
     avg_win: winReturns.length > 0 ? winReturns.reduce((s, v) => s + v, 0) / winReturns.length : 0,
-    avg_loss: lossReturns.length > 0 ? lossReturns.reduce((s, v) => s + v, 0) / lossReturns.length : 0,
+    avg_loss:
+      lossReturns.length > 0 ? lossReturns.reduce((s, v) => s + v, 0) / lossReturns.length : 0,
     best_trade: max,
     worst_trade: min,
   };
@@ -426,7 +448,10 @@ function buildDurationScatter(
 }
 
 function buildExitReasonDetail(trades: ClosedTrade[]) {
-  const map = new Map<string, { count: number; totalProfit: number; wins: number; losses: number }>();
+  const map = new Map<
+    string,
+    { count: number; totalProfit: number; wins: number; losses: number }
+  >();
   for (const t of trades) {
     const reason = t.exit_reason ?? 'unknown';
     const e = map.get(reason) ?? { count: 0, totalProfit: 0, wins: 0, losses: 0 };
@@ -448,7 +473,10 @@ function buildExitReasonDetail(trades: ClosedTrade[]) {
 }
 
 function buildStreaks(trades: ClosedTrade[]) {
-  let maxWin = 0, maxLoss = 0, curWin = 0, curLoss = 0;
+  let maxWin = 0,
+    maxLoss = 0,
+    curWin = 0,
+    curLoss = 0;
   const winsCount = trades.filter((t) => (t.profit_ratio ?? 0) > 0).length;
   const lossesCount = trades.filter((t) => (t.profit_ratio ?? 0) < 0).length;
   const drawsCount = trades.filter((t) => (t.profit_ratio ?? 0) === 0).length;
@@ -484,7 +512,8 @@ function buildRiskMetrics(trades: ClosedTrade[], startingBalance: number) {
   const idx95 = Math.floor(returns.length * 0.05);
   const var95 = Math.abs(sorted[idx95] ?? 0) * 100;
   const cvar95 =
-    sorted.slice(0, idx95 + 1).reduce((s, v) => s + Math.abs(v), 0) / Math.max(1, idx95 + 1) * 100;
+    (sorted.slice(0, idx95 + 1).reduce((s, v) => s + Math.abs(v), 0) / Math.max(1, idx95 + 1)) *
+    100;
 
   const mean = returns.reduce((s, v) => s + v, 0) / returns.length;
   const totalProfit = returns.reduce((s, v) => s + v, 0);
@@ -519,13 +548,16 @@ function buildLongShortSplit(trades: ClosedTrade[]) {
     return {
       count: tds.length,
       total_profit: tds.reduce((s, t) => s + (t.profit_abs ?? 0), 0),
-      avg_profit: tds.length > 0 ? tds.reduce((s, t) => s + (t.profit_ratio ?? 0), 0) / tds.length : 0,
+      avg_profit:
+        tds.length > 0 ? tds.reduce((s, t) => s + (t.profit_ratio ?? 0), 0) / tds.length : 0,
       wins: wins.length,
       losses: losses.length,
       winrate: tds.length > 0 ? wins.length / tds.length : 0,
       avg_duration:
         tds.length > 0
-          ? tds.reduce((s, t) => s + ((t.close_timestamp ?? 0) - t.open_timestamp), 0) / tds.length / 3600000
+          ? tds.reduce((s, t) => s + ((t.close_timestamp ?? 0) - t.open_timestamp), 0) /
+            tds.length /
+            3600000
           : 0,
     };
   }
@@ -588,11 +620,17 @@ function buildRollingProfitFactor(
   const result: { index: number; date: string; profit_factor: number }[] = [];
   for (let i = window; i <= trades.length; i++) {
     const slice = trades.slice(i - window, i);
-    const gains = slice.filter((t) => (t.profit_ratio ?? 0) > 0).reduce((s, t) => s + (t.profit_ratio ?? 0), 0);
+    const gains = slice
+      .filter((t) => (t.profit_ratio ?? 0) > 0)
+      .reduce((s, t) => s + (t.profit_ratio ?? 0), 0);
     const losses = Math.abs(
       slice.filter((t) => (t.profit_ratio ?? 0) < 0).reduce((s, t) => s + (t.profit_ratio ?? 0), 0),
     );
-    result.push({ index: i, date: slice[slice.length - 1].close_date ?? '', profit_factor: losses > 0 ? gains / losses : gains > 0 ? 10 : 1 });
+    result.push({
+      index: i,
+      date: slice[slice.length - 1].close_date ?? '',
+      profit_factor: losses > 0 ? gains / losses : gains > 0 ? 10 : 1,
+    });
   }
   return result;
 }
@@ -603,16 +641,19 @@ function buildDcaAnalysis(trades: ClosedTrade[]) {
   if (multiTrades.length === 0) return { no_dca: true };
 
   const maxEntries = Math.max(...trades.map((t) => t.nr_of_successful_entries ?? 1));
-  const avgEntries = trades.reduce((s, t) => s + (t.nr_of_successful_entries ?? 1), 0) / trades.length;
+  const avgEntries =
+    trades.reduce((s, t) => s + (t.nr_of_successful_entries ?? 1), 0) / trades.length;
 
   const levelDist = buildDcaLevels(trades);
 
-  const singleAvg = singleTrades.length > 0
-    ? singleTrades.reduce((s, t) => s + (t.profit_ratio ?? 0), 0) / singleTrades.length
-    : 0;
-  const multiAvg = multiTrades.length > 0
-    ? multiTrades.reduce((s, t) => s + (t.profit_ratio ?? 0), 0) / multiTrades.length
-    : 0;
+  const singleAvg =
+    singleTrades.length > 0
+      ? singleTrades.reduce((s, t) => s + (t.profit_ratio ?? 0), 0) / singleTrades.length
+      : 0;
+  const multiAvg =
+    multiTrades.length > 0
+      ? multiTrades.reduce((s, t) => s + (t.profit_ratio ?? 0), 0) / multiTrades.length
+      : 0;
 
   const multiWins = multiTrades.filter((t) => (t.profit_ratio ?? 0) > 0).length;
   const recoveryRate = multiTrades.length > 0 ? multiWins / multiTrades.length : 0;
@@ -653,10 +694,27 @@ function buildDcaAnalysis(trades: ClosedTrade[]) {
 }
 
 function buildDcaLevels(trades: ClosedTrade[]) {
-  const map = new Map<number, { count: number; totalProfit: number; totalProfitAbs: number; wins: number; totalDuration: number; totalStake: number }>();
+  const map = new Map<
+    number,
+    {
+      count: number;
+      totalProfit: number;
+      totalProfitAbs: number;
+      wins: number;
+      totalDuration: number;
+      totalStake: number;
+    }
+  >();
   for (const t of trades) {
     const level = t.nr_of_successful_entries ?? 1;
-    const e = map.get(level) ?? { count: 0, totalProfit: 0, totalProfitAbs: 0, wins: 0, totalDuration: 0, totalStake: 0 };
+    const e = map.get(level) ?? {
+      count: 0,
+      totalProfit: 0,
+      totalProfitAbs: 0,
+      wins: 0,
+      totalDuration: 0,
+      totalStake: 0,
+    };
     e.count++;
     e.totalProfit += t.profit_ratio ?? 0;
     e.totalProfitAbs += t.profit_abs ?? 0;
@@ -715,10 +773,24 @@ function buildDurationBuckets(trades: ClosedTrade[]) {
 function buildPairResults(trades: ClosedTrade[]) {
   const map = new Map<
     string,
-    { trades: number; wins: number; losses: number; draws: number; totalProfit: number; totalProfitAbs: number }
+    {
+      trades: number;
+      wins: number;
+      losses: number;
+      draws: number;
+      totalProfit: number;
+      totalProfitAbs: number;
+    }
   >();
   for (const t of trades) {
-    const e = map.get(t.pair) ?? { trades: 0, wins: 0, losses: 0, draws: 0, totalProfit: 0, totalProfitAbs: 0 };
+    const e = map.get(t.pair) ?? {
+      trades: 0,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      totalProfit: 0,
+      totalProfitAbs: 0,
+    };
     e.trades++;
     e.totalProfit += t.profit_ratio ?? 0;
     e.totalProfitAbs += t.profit_abs ?? 0;
@@ -744,10 +816,27 @@ function buildPairResults(trades: ClosedTrade[]) {
 }
 
 function buildEnterTagResults(trades: ClosedTrade[]) {
-  const map = new Map<string, { trades: number; wins: number; losses: number; draws: number; totalProfit: number; totalProfitAbs: number }>();
+  const map = new Map<
+    string,
+    {
+      trades: number;
+      wins: number;
+      losses: number;
+      draws: number;
+      totalProfit: number;
+      totalProfitAbs: number;
+    }
+  >();
   for (const t of trades) {
     const tag = t.enter_tag ?? '';
-    const e = map.get(tag) ?? { trades: 0, wins: 0, losses: 0, draws: 0, totalProfit: 0, totalProfitAbs: 0 };
+    const e = map.get(tag) ?? {
+      trades: 0,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      totalProfit: 0,
+      totalProfitAbs: 0,
+    };
     e.trades++;
     e.totalProfit += t.profit_ratio ?? 0;
     e.totalProfitAbs += t.profit_abs ?? 0;
@@ -778,7 +867,9 @@ function buildDailyPnl(trades: ClosedTrade[]): { date: string; pnl: number }[] {
     const d = (t.close_date ?? '').slice(0, 10);
     if (d) map.set(d, (map.get(d) ?? 0) + (t.profit_abs ?? 0));
   }
-  return [...map.entries()].map(([date, pnl]) => ({ date, pnl })).sort((a, b) => (a.date > b.date ? 1 : -1));
+  return [...map.entries()]
+    .map(([date, pnl]) => ({ date, pnl }))
+    .sort((a, b) => (a.date > b.date ? 1 : -1));
 }
 
 function countProfitDays(trades: ClosedTrade[], type: 'win' | 'loss' | 'draw'): number {
@@ -815,7 +906,9 @@ function computeSqn(trades: ClosedTrade[]): number {
 }
 
 function computeProfitFactor(trades: ClosedTrade[]): number {
-  const gains = trades.filter((t) => (t.profit_ratio ?? 0) > 0).reduce((s, t) => s + (t.profit_ratio ?? 0), 0);
+  const gains = trades
+    .filter((t) => (t.profit_ratio ?? 0) > 0)
+    .reduce((s, t) => s + (t.profit_ratio ?? 0), 0);
   const losses = Math.abs(
     trades.filter((t) => (t.profit_ratio ?? 0) < 0).reduce((s, t) => s + (t.profit_ratio ?? 0), 0),
   );

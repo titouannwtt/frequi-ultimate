@@ -24,13 +24,17 @@ onMounted(async () => {
 const data = computed(() => store.backtestAnalysis);
 const summary = computed(() => (data.value?.backtest_summary as Record<string, unknown>) ?? null);
 
-const btcEquityInput = computed(() => data.value?.equity_curve as { date: string; balance: number }[] | undefined);
+const btcEquityInput = computed(
+  () => data.value?.equity_curve as { date: string; balance: number }[] | undefined,
+);
 const btcStartBal = computed(() => (data.value?.starting_balance as number) ?? 1000);
 const { benchmarkEquity: btcBenchmark } = useBtcBenchmark(btcEquityInput, btcStartBal);
 
 const regimeTimeline = computed(() => {
   const mr = data.value?.market_regime as Record<string, unknown> | undefined;
-  return mr?.timeline as { date: string; regime: string; volatility: number; trend: number }[] | undefined;
+  return mr?.timeline as
+    | { date: string; regime: string; volatility: number; trend: number }[]
+    | undefined;
 });
 
 const activeSection = ref('summary');
@@ -104,45 +108,72 @@ function fmtNum(v: unknown, decimals = 2): string {
           <i-mdi-test-tube v-else class="w-3.5 h-3.5" />
           {{ isLiveBot ? t('strategyDev.liveScorecardTitle') : t('strategyDev.btScorecardTitle') }}
           <span v-if="summary.timeframe" class="scorecard-tag">{{ summary.timeframe }}</span>
-          <span v-if="summary.backtest_days" class="scorecard-tag">{{ summary.backtest_days }}d</span>
-          <span v-if="isLiveBot && data?.simulated_close_count" class="scorecard-tag scorecard-tag--sim">
+          <span v-if="summary.backtest_days" class="scorecard-tag"
+            >{{ summary.backtest_days }}d</span
+          >
+          <span
+            v-if="isLiveBot && data?.simulated_close_count"
+            class="scorecard-tag scorecard-tag--sim"
+          >
             {{ data.simulated_close_count }} simulated
           </span>
         </div>
         <div class="scorecard-metrics">
           <div class="sc-metric">
             <span class="sc-label">Profit</span>
-            <span class="sc-value" :class="Number(summary.profit_total ?? (data.epoch_info as any)?.total_profit) >= 0 ? 'sc-pos' : 'sc-neg'">
+            <span
+              class="sc-value"
+              :class="
+                Number(summary.profit_total ?? (data.epoch_info as any)?.total_profit) >= 0
+                  ? 'sc-pos'
+                  : 'sc-neg'
+              "
+            >
               {{ fmtPct(summary.profit_total ?? (data.epoch_info as any)?.total_profit) }}
             </span>
           </div>
           <div class="sc-metric">
             <span class="sc-label">Trades</span>
-            <span class="sc-value">{{ summary.total_trades ?? (data.epoch_info as any)?.total_trades ?? '—' }}</span>
+            <span class="sc-value">{{
+              summary.total_trades ?? (data.epoch_info as any)?.total_trades ?? '—'
+            }}</span>
           </div>
           <div class="sc-metric">
             <span class="sc-label">Drawdown</span>
-            <span class="sc-value sc-neg">{{ fmtPct(summary.max_drawdown_account ?? (data.epoch_info as any)?.max_drawdown) }}</span>
+            <span class="sc-value sc-neg">{{
+              fmtPct(summary.max_drawdown_account ?? (data.epoch_info as any)?.max_drawdown)
+            }}</span>
           </div>
           <div class="sc-metric">
             <span class="sc-label">Sharpe</span>
-            <span class="sc-value">{{ fmtNum(summary.sharpe ?? (data.epoch_info as any)?.sharpe) }}</span>
+            <span class="sc-value">{{
+              fmtNum(summary.sharpe ?? (data.epoch_info as any)?.sharpe)
+            }}</span>
           </div>
           <div class="sc-metric">
             <span class="sc-label">Sortino</span>
-            <span class="sc-value">{{ fmtNum(summary.sortino ?? (data.epoch_info as any)?.sortino) }}</span>
+            <span class="sc-value">{{
+              fmtNum(summary.sortino ?? (data.epoch_info as any)?.sortino)
+            }}</span>
           </div>
           <div class="sc-metric">
             <span class="sc-label">Win Rate</span>
             <span class="sc-value">
-              {{ typeof (summary.winrate ?? (data.epoch_info as any)?.winrate) === 'number' && (summary.winrate ?? (data.epoch_info as any)?.winrate) <= 1
-                ? (((summary.winrate ?? (data.epoch_info as any)?.winrate) as number) * 100).toFixed(1)
-                : fmtNum(summary.winrate ?? (data.epoch_info as any)?.winrate, 1) }}%
+              {{
+                typeof (summary.winrate ?? (data.epoch_info as any)?.winrate) === 'number' &&
+                (summary.winrate ?? (data.epoch_info as any)?.winrate) <= 1
+                  ? (
+                      ((summary.winrate ?? (data.epoch_info as any)?.winrate) as number) * 100
+                    ).toFixed(1)
+                  : fmtNum(summary.winrate ?? (data.epoch_info as any)?.winrate, 1)
+              }}%
             </span>
           </div>
           <div class="sc-metric">
             <span class="sc-label">PF</span>
-            <span class="sc-value">{{ fmtNum(summary.profit_factor ?? (data.epoch_info as any)?.profit_factor) }}</span>
+            <span class="sc-value">{{
+              fmtNum(summary.profit_factor ?? (data.epoch_info as any)?.profit_factor)
+            }}</span>
           </div>
           <div v-if="summary.final_balance" class="sc-metric">
             <span class="sc-label">Balance</span>
@@ -170,7 +201,11 @@ function fmtNum(v: unknown, decimals = 2): string {
           <span class="section-num">1</span>
           <h3>{{ t('strategyDev.btNavSummary') }}</h3>
         </div>
-        <BacktestSummaryCards v-if="summary" :summary="summary" :order-stats="data.order_stats as any" />
+        <BacktestSummaryCards
+          v-if="summary"
+          :summary="summary"
+          :order-stats="data.order_stats as any"
+        />
       </section>
 
       <!-- SECTION 2: EQUITY & DRAWDOWNS -->
@@ -236,9 +271,15 @@ function fmtNum(v: unknown, decimals = 2): string {
               :hint="t('strategyDev.hintCumulativeTrades')"
               chart-id="bt-cumulative-trades"
             >
-              <CumulativeTradesChart :trades="data.cumulative_trades as any[]" :regimes="regimeTimeline" />
+              <CumulativeTradesChart
+                :trades="data.cumulative_trades as any[]"
+                :regimes="regimeTimeline"
+              />
               <template #fullscreen>
-                <CumulativeTradesChart :trades="data.cumulative_trades as any[]" :regimes="regimeTimeline" />
+                <CumulativeTradesChart
+                  :trades="data.cumulative_trades as any[]"
+                  :regimes="regimeTimeline"
+                />
               </template>
             </ChartWrapper>
             <ChartEmptyState v-else />
@@ -471,7 +512,10 @@ function fmtNum(v: unknown, decimals = 2): string {
           </ChartWrapper>
 
           <!-- DCA Analysis -->
-          <div v-if="data.dca_analysis && !(data.dca_analysis as any).no_dca" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            v-if="data.dca_analysis && !(data.dca_analysis as any).no_dca"
+            class="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
             <ChartWrapper
               :title="t('strategyDev.aaDcaDistribution')"
               :hint="t('strategyDev.hintDcaDistribution')"
@@ -528,7 +572,9 @@ function fmtNum(v: unknown, decimals = 2): string {
                 :hint="t('strategyDev.hintMaxSimultaneousLoss')"
                 chart-id="bt-max-simul-loss"
               >
-                <MaxSimultaneousLossCard :data="(data.pair_correlation as any).max_simultaneous_loss" />
+                <MaxSimultaneousLossCard
+                  :data="(data.pair_correlation as any).max_simultaneous_loss"
+                />
               </ChartWrapper>
             </div>
           </div>
@@ -550,9 +596,15 @@ function fmtNum(v: unknown, decimals = 2): string {
               :hint="t('strategyDev.hintRegimeTimeline')"
               chart-id="bt-regime-timeline"
             >
-              <RegimeEquityOverlayChart :data="data.market_regime as any" :equity="data.equity_curve as any" />
+              <RegimeEquityOverlayChart
+                :data="data.market_regime as any"
+                :equity="data.equity_curve as any"
+              />
               <template #fullscreen>
-                <RegimeEquityOverlayChart :data="data.market_regime as any" :equity="data.equity_curve as any" />
+                <RegimeEquityOverlayChart
+                  :data="data.market_regime as any"
+                  :equity="data.equity_curve as any"
+                />
               </template>
             </ChartWrapper>
           </div>
@@ -574,7 +626,11 @@ function fmtNum(v: unknown, decimals = 2): string {
           <h3>{{ t('strategyDev.btNavRisk') }}</h3>
         </div>
 
-        <RiskMetricsCard v-if="data.risk_metrics" :metrics="data.risk_metrics as any" class="mb-4" />
+        <RiskMetricsCard
+          v-if="data.risk_metrics"
+          :metrics="data.risk_metrics as any"
+          class="mb-4"
+        />
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ChartWrapper
@@ -595,7 +651,10 @@ function fmtNum(v: unknown, decimals = 2): string {
           >
             <ExposureChart :timeline="data.exposure_timeline as any[]" :regimes="regimeTimeline" />
             <template #fullscreen>
-              <ExposureChart :timeline="data.exposure_timeline as any[]" :regimes="regimeTimeline" />
+              <ExposureChart
+                :timeline="data.exposure_timeline as any[]"
+                :regimes="regimeTimeline"
+              />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -608,9 +667,15 @@ function fmtNum(v: unknown, decimals = 2): string {
           chart-id="bt-capital-util"
           class="mt-4"
         >
-          <CapitalUtilizationChart :data="data.capital_utilization as any[]" :regimes="regimeTimeline" />
+          <CapitalUtilizationChart
+            :data="data.capital_utilization as any[]"
+            :regimes="regimeTimeline"
+          />
           <template #fullscreen>
-            <CapitalUtilizationChart :data="data.capital_utilization as any[]" :regimes="regimeTimeline" />
+            <CapitalUtilizationChart
+              :data="data.capital_utilization as any[]"
+              :regimes="regimeTimeline"
+            />
           </template>
         </ChartWrapper>
         <ChartEmptyState v-else class="mt-4" />
@@ -632,7 +697,10 @@ function fmtNum(v: unknown, decimals = 2): string {
           >
             <RollingWinrateChart :data="data.rolling_winrate as any[]" :regimes="regimeTimeline" />
             <template #fullscreen>
-              <RollingWinrateChart :data="data.rolling_winrate as any[]" :regimes="regimeTimeline" />
+              <RollingWinrateChart
+                :data="data.rolling_winrate as any[]"
+                :regimes="regimeTimeline"
+              />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -643,9 +711,15 @@ function fmtNum(v: unknown, decimals = 2): string {
             :hint="t('strategyDev.hintRollingProfitFactor')"
             chart-id="bt-rolling-pf"
           >
-            <RollingProfitFactorChart :data="data.rolling_profit_factor as any[]" :regimes="regimeTimeline" />
+            <RollingProfitFactorChart
+              :data="data.rolling_profit_factor as any[]"
+              :regimes="regimeTimeline"
+            />
             <template #fullscreen>
-              <RollingProfitFactorChart :data="data.rolling_profit_factor as any[]" :regimes="regimeTimeline" />
+              <RollingProfitFactorChart
+                :data="data.rolling_profit_factor as any[]"
+                :regimes="regimeTimeline"
+              />
             </template>
           </ChartWrapper>
           <ChartEmptyState v-else />
@@ -768,8 +842,12 @@ function fmtNum(v: unknown, decimals = 2): string {
   color: #cdd6f4;
 }
 
-.sc-pos { color: #a6e3a1; }
-.sc-neg { color: #f38ba8; }
+.sc-pos {
+  color: #a6e3a1;
+}
+.sc-neg {
+  color: #f38ba8;
+}
 
 .analyse-nav {
   position: sticky;

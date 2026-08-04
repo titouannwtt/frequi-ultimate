@@ -65,33 +65,73 @@ const segments = computed<CmdSegment[]>(() => {
     const snap = store.backtestSnapshot;
     if (!snap) return [];
 
-    segs.push({ flag: '', value: 'freqtrade backtesting', description: 'Freqtrade command', copyText: 'freqtrade backtesting' });
+    segs.push({
+      flag: '',
+      value: 'freqtrade backtesting',
+      description: 'Freqtrade command',
+      copyText: 'freqtrade backtesting',
+    });
 
     if (run.value.strategy) {
-      segs.push({ flag: '--strategy', value: String(run.value.strategy), description: flagDescriptions['--strategy'], copyText: `--strategy ${run.value.strategy}` });
+      segs.push({
+        flag: '--strategy',
+        value: String(run.value.strategy),
+        description: flagDescriptions['--strategy'],
+        copyText: `--strategy ${run.value.strategy}`,
+      });
     }
     if (run.value.timeframe) {
-      segs.push({ flag: '--timeframe', value: String(run.value.timeframe), description: flagDescriptions['--timeframe'], copyText: `--timeframe ${run.value.timeframe}` });
+      segs.push({
+        flag: '--timeframe',
+        value: String(run.value.timeframe),
+        description: flagDescriptions['--timeframe'],
+        copyText: `--timeframe ${run.value.timeframe}`,
+      });
     }
     if (run.value.timerange) {
-      segs.push({ flag: '--timerange', value: String(run.value.timerange), description: flagDescriptions['--timerange'], copyText: `--timerange ${run.value.timerange}` });
+      segs.push({
+        flag: '--timerange',
+        value: String(run.value.timerange),
+        description: flagDescriptions['--timerange'],
+        copyText: `--timerange ${run.value.timerange}`,
+      });
     }
     const cfg = snap.config as Record<string, unknown> | null;
     if (cfg) {
       const configFiles = cfg.config_files as string[] | undefined;
       if (configFiles?.length) {
         for (const f of configFiles) {
-          segs.push({ flag: '-c', value: String(f), description: 'Configuration file path', copyText: `-c ${f}` });
+          segs.push({
+            flag: '-c',
+            value: String(f),
+            description: 'Configuration file path',
+            copyText: `-c ${f}`,
+          });
         }
       }
       if (cfg.max_open_trades != null) {
-        segs.push({ flag: '--max-open-trades', value: String(cfg.max_open_trades), description: flagDescriptions['--max-open-trades'], copyText: `--max-open-trades ${cfg.max_open_trades}` });
+        segs.push({
+          flag: '--max-open-trades',
+          value: String(cfg.max_open_trades),
+          description: flagDescriptions['--max-open-trades'],
+          copyText: `--max-open-trades ${cfg.max_open_trades}`,
+        });
       }
       if (cfg.dry_run_wallet != null) {
-        segs.push({ flag: '--dry-run-wallet', value: String(cfg.dry_run_wallet), description: flagDescriptions['--dry-run-wallet'], copyText: `--dry-run-wallet ${cfg.dry_run_wallet}` });
+        segs.push({
+          flag: '--dry-run-wallet',
+          value: String(cfg.dry_run_wallet),
+          description: flagDescriptions['--dry-run-wallet'],
+          copyText: `--dry-run-wallet ${cfg.dry_run_wallet}`,
+        });
       }
       if (cfg.stake_amount != null) {
-        segs.push({ flag: '--stake-amount', value: String(cfg.stake_amount), description: flagDescriptions['--stake-amount'], copyText: `--stake-amount ${cfg.stake_amount}` });
+        segs.push({
+          flag: '--stake-amount',
+          value: String(cfg.stake_amount),
+          description: flagDescriptions['--stake-amount'],
+          copyText: `--stake-amount ${cfg.stake_amount}`,
+        });
       }
     }
     return segs;
@@ -100,44 +140,100 @@ const segments = computed<CmdSegment[]>(() => {
   // Hyperopt / WFA: read from detail object
   const d = run.value?.run_type === RunType.hyperopt ? store.hyperoptDetail : store.wfaDetail;
   if (!d) return [];
-  const cmdName = run.value?.run_type === RunType.hyperopt ? 'freqtrade hyperopt' : 'freqtrade walk-forward';
+  const cmdName =
+    run.value?.run_type === RunType.hyperopt ? 'freqtrade hyperopt' : 'freqtrade walk-forward';
   segs.push({ flag: '', value: cmdName, description: 'Freqtrade command', copyText: cmdName });
 
   if (d.strategy) {
-    segs.push({ flag: '--strategy', value: String(d.strategy), description: flagDescriptions['--strategy'], copyText: `--strategy ${d.strategy}` });
+    segs.push({
+      flag: '--strategy',
+      value: String(d.strategy),
+      description: flagDescriptions['--strategy'],
+      copyText: `--strategy ${d.strategy}`,
+    });
   }
   if (d.timeframe) {
-    segs.push({ flag: '--timeframe', value: String(d.timeframe), description: flagDescriptions['--timeframe'], copyText: `--timeframe ${d.timeframe}` });
+    segs.push({
+      flag: '--timeframe',
+      value: String(d.timeframe),
+      description: flagDescriptions['--timeframe'],
+      copyText: `--timeframe ${d.timeframe}`,
+    });
   }
   if (d.timerange) {
-    segs.push({ flag: '--timerange', value: String(d.timerange), description: flagDescriptions['--timerange'], copyText: `--timerange ${d.timerange}` });
+    segs.push({
+      flag: '--timerange',
+      value: String(d.timerange),
+      description: flagDescriptions['--timerange'],
+      copyText: `--timerange ${d.timerange}`,
+    });
   }
   if (d.hyperopt_loss) {
-    segs.push({ flag: '--hyperopt-loss', value: String(d.hyperopt_loss), description: flagDescriptions['--hyperopt-loss'], copyText: `--hyperopt-loss ${d.hyperopt_loss}` });
+    segs.push({
+      flag: '--hyperopt-loss',
+      value: String(d.hyperopt_loss),
+      description: flagDescriptions['--hyperopt-loss'],
+      copyText: `--hyperopt-loss ${d.hyperopt_loss}`,
+    });
   }
   if (run.value?.run_type === RunType.hyperopt && d.epochs_total) {
-    segs.push({ flag: '--epochs', value: String(d.epochs_total), description: flagDescriptions['--epochs'], copyText: `--epochs ${d.epochs_total}` });
+    segs.push({
+      flag: '--epochs',
+      value: String(d.epochs_total),
+      description: flagDescriptions['--epochs'],
+      copyText: `--epochs ${d.epochs_total}`,
+    });
   }
   if (run.value?.run_type === RunType.wfa) {
     if ((d as any).n_windows) {
-      segs.push({ flag: '--wf-windows', value: String((d as any).n_windows), description: flagDescriptions['--wf-windows'], copyText: `--wf-windows ${(d as any).n_windows}` });
+      segs.push({
+        flag: '--wf-windows',
+        value: String((d as any).n_windows),
+        description: flagDescriptions['--wf-windows'],
+        copyText: `--wf-windows ${(d as any).n_windows}`,
+      });
     }
     if ((d as any).epochs_per_window) {
-      segs.push({ flag: '--epochs', value: String((d as any).epochs_per_window), description: flagDescriptions['--epochs'], copyText: `--epochs ${(d as any).epochs_per_window}` });
+      segs.push({
+        flag: '--epochs',
+        value: String((d as any).epochs_per_window),
+        description: flagDescriptions['--epochs'],
+        copyText: `--epochs ${(d as any).epochs_per_window}`,
+      });
     }
   }
   const spaces = d.spaces as string[] | undefined;
   if (spaces?.length) {
-    segs.push({ flag: '--spaces', value: spaces.join(' '), description: flagDescriptions['--spaces'], copyText: `--spaces ${spaces.join(' ')}` });
+    segs.push({
+      flag: '--spaces',
+      value: spaces.join(' '),
+      description: flagDescriptions['--spaces'],
+      copyText: `--spaces ${spaces.join(' ')}`,
+    });
   }
   if (d.max_open_trades != null) {
-    segs.push({ flag: '--max-open-trades', value: String(d.max_open_trades), description: flagDescriptions['--max-open-trades'], copyText: `--max-open-trades ${d.max_open_trades}` });
+    segs.push({
+      flag: '--max-open-trades',
+      value: String(d.max_open_trades),
+      description: flagDescriptions['--max-open-trades'],
+      copyText: `--max-open-trades ${d.max_open_trades}`,
+    });
   }
   if (d.dry_run_wallet != null) {
-    segs.push({ flag: '--dry-run-wallet', value: String(d.dry_run_wallet), description: flagDescriptions['--dry-run-wallet'], copyText: `--dry-run-wallet ${d.dry_run_wallet}` });
+    segs.push({
+      flag: '--dry-run-wallet',
+      value: String(d.dry_run_wallet),
+      description: flagDescriptions['--dry-run-wallet'],
+      copyText: `--dry-run-wallet ${d.dry_run_wallet}`,
+    });
   }
   if (d.stake_amount != null) {
-    segs.push({ flag: '--stake-amount', value: String(d.stake_amount), description: flagDescriptions['--stake-amount'], copyText: `--stake-amount ${d.stake_amount}` });
+    segs.push({
+      flag: '--stake-amount',
+      value: String(d.stake_amount),
+      description: flagDescriptions['--stake-amount'],
+      copyText: `--stake-amount ${d.stake_amount}`,
+    });
   }
 
   return segs;
@@ -167,16 +263,22 @@ const fullCommandText = computed(() => {
 async function copyCommand() {
   const text = fullCommandText.value;
   if (text) {
-    try { await navigator.clipboard.writeText(text); }
-    catch { /* fallback handled below */ }
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      /* fallback handled below */
+    }
     copied.value = true;
     setTimeout(() => (copied.value = false), 2000);
   }
 }
 
 async function copySegment(idx: number, text: string) {
-  try { await navigator.clipboard.writeText(text); }
-  catch { /* silent */ }
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    /* silent */
+  }
   copiedSegment.value = idx;
   setTimeout(() => (copiedSegment.value = null), 1500);
 }
@@ -211,10 +313,7 @@ function handleReconstitute() {
 <template>
   <div class="cmd-panel sd-panel-enter">
     <!-- Warning: no snapshot -->
-    <div
-      v-if="!hasSnapshot && (segments.length > 0 || displayCommand)"
-      class="cmd-warning"
-    >
+    <div v-if="!hasSnapshot && (segments.length > 0 || displayCommand)" class="cmd-warning">
       <i-mdi-alert class="w-4 h-4 cmd-warning-icon" />
       <div>
         <span class="cmd-warning-title">{{ t('strategyDev.noSnapshotWarningTitle') }}</span>
@@ -230,18 +329,10 @@ function handleReconstitute() {
         </h4>
         <div class="cmd-actions">
           <div class="cmd-toggle">
-            <button
-              class="cmd-toggle-btn"
-              :class="{ active: !monoLine }"
-              @click="monoLine = false"
-            >
+            <button class="cmd-toggle-btn" :class="{ active: !monoLine }" @click="monoLine = false">
               <i-mdi-format-list-bulleted class="w-3 h-3" />
             </button>
-            <button
-              class="cmd-toggle-btn"
-              :class="{ active: monoLine }"
-              @click="monoLine = true"
-            >
+            <button class="cmd-toggle-btn" :class="{ active: monoLine }" @click="monoLine = true">
               <i-mdi-minus class="w-3 h-3" />
             </button>
           </div>
@@ -278,7 +369,11 @@ function handleReconstitute() {
                 <div class="cmd-tooltip-desc">{{ seg.description }}</div>
                 <div class="cmd-tooltip-hint">
                   <i-mdi-content-copy class="w-2.5 h-2.5" />
-                  {{ copiedSegment === i ? t('strategyDev.cvCopied') : t('strategyDev.cmdClickToCopy') }}
+                  {{
+                    copiedSegment === i
+                      ? t('strategyDev.cvCopied')
+                      : t('strategyDev.cmdClickToCopy')
+                  }}
                 </div>
               </div>
             </Transition>
@@ -301,7 +396,10 @@ function handleReconstitute() {
     </div>
 
     <!-- Reconstitute button -->
-    <div v-if="reconstitutionJobType && (segments.length > 0 || displayCommand)" class="cmd-reconstitute">
+    <div
+      v-if="reconstitutionJobType && (segments.length > 0 || displayCommand)"
+      class="cmd-reconstitute"
+    >
       <button class="cmd-reconstitute-btn" @click="handleReconstitute">
         <i-mdi-replay class="w-4 h-4" />
         {{ reconstitutionLabel }}
@@ -390,7 +488,9 @@ function handleReconstitute() {
   cursor: pointer;
   transition: all 0.15s;
 }
-.cmd-toggle-btn:first-child { border-right: 1px solid #45475a; }
+.cmd-toggle-btn:first-child {
+  border-right: 1px solid #45475a;
+}
 .cmd-toggle-btn.active {
   background: #313244;
   color: #cdd6f4;
@@ -566,8 +666,19 @@ function handleReconstitute() {
 }
 
 /* ── Transition reuse ── */
-.cv-search-enter-active { transition: opacity 0.15s, transform 0.15s; }
-.cv-search-leave-active { transition: opacity 0.1s; }
-.cv-search-enter-from { opacity: 0; transform: translateY(-4px); }
-.cv-search-leave-to { opacity: 0; }
+.cv-search-enter-active {
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+}
+.cv-search-leave-active {
+  transition: opacity 0.1s;
+}
+.cv-search-enter-from {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+.cv-search-leave-to {
+  opacity: 0;
+}
 </style>

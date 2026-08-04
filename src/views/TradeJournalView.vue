@@ -30,18 +30,31 @@ function getBotMode(trade: ClosedTrade): string {
 }
 
 const uniqueModes = computed(() => {
-  const modes = new Set(allTrades.value.map(t => getBotMode(t)));
+  const modes = new Set(allTrades.value.map((t) => getBotMode(t)));
   return [...modes].sort();
 });
 
-const uniqueBots = computed(() => [...new Set(allTrades.value.map(t => t.botName))].sort());
-const uniquePairs = computed(() => [...new Set(allTrades.value.map(t => t.pair))].sort());
-const uniqueExchanges = computed(() => [...new Set(allTrades.value.map(t => t.exchange).filter(Boolean))].sort());
-const uniqueExitReasons = computed(() => [...new Set(allTrades.value.map(t => t.exit_reason).filter(Boolean))].sort());
+const uniqueBots = computed(() => [...new Set(allTrades.value.map((t) => t.botName))].sort());
+const uniquePairs = computed(() => [...new Set(allTrades.value.map((t) => t.pair))].sort());
+const uniqueExchanges = computed(() =>
+  [...new Set(allTrades.value.map((t) => t.exchange).filter(Boolean))].sort(),
+);
+const uniqueExitReasons = computed(() =>
+  [...new Set(allTrades.value.map((t) => t.exit_reason).filter(Boolean))].sort(),
+);
 
 const rowsPerPage = ref(100);
 
-type TimeFilter = 'all' | 'today' | '24h' | 'this_week' | '7d' | 'this_month' | '30d' | 'this_year' | '1y';
+type TimeFilter =
+  | 'all'
+  | 'today'
+  | '24h'
+  | 'this_week'
+  | '7d'
+  | 'this_month'
+  | '30d'
+  | 'this_year'
+  | '1y';
 const activeTimeFilter = ref<TimeFilter>('all');
 
 const timeFilterOptions: { key: TimeFilter; label: string }[] = [
@@ -64,29 +77,40 @@ function getTimeFilterCutoff(filter: TimeFilter): number {
       const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       return d.getTime();
     }
-    case '24h': return now.getTime() - 24 * 3600_000;
+    case '24h':
+      return now.getTime() - 24 * 3600_000;
     case 'this_week': {
       const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
       return d.getTime();
     }
-    case '7d': return now.getTime() - 7 * 24 * 3600_000;
-    case 'this_month': return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    case '30d': return now.getTime() - 30 * 24 * 3600_000;
-    case 'this_year': return new Date(now.getFullYear(), 0, 1).getTime();
-    case '1y': return now.getTime() - 365 * 24 * 3600_000;
+    case '7d':
+      return now.getTime() - 7 * 24 * 3600_000;
+    case 'this_month':
+      return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    case '30d':
+      return now.getTime() - 30 * 24 * 3600_000;
+    case 'this_year':
+      return new Date(now.getFullYear(), 0, 1).getTime();
+    case '1y':
+      return now.getTime() - 365 * 24 * 3600_000;
   }
 }
 
 const filteredTrades = computed(() => {
   const cutoff = getTimeFilterCutoff(activeTimeFilter.value);
   if (cutoff === 0) return allTrades.value;
-  return allTrades.value.filter(t => (t.close_timestamp ?? 0) >= cutoff);
+  return allTrades.value.filter((t) => (t.close_timestamp ?? 0) >= cutoff);
 });
 
 function formatDate(ts?: number): string {
   if (!ts) return '-';
-  return new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(ts).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function tradeDuration(trade: ClosedTrade): string {
@@ -115,18 +139,41 @@ function dcaCount(trade: ClosedTrade): number {
 
 function concurrentPositions(trade: ClosedTrade): number {
   if (!trade.open_timestamp || !trade.close_timestamp) return 0;
-  return allTrades.value.filter(t =>
-    t.botId === trade.botId &&
-    t.botTradeId !== trade.botTradeId &&
-    t.open_timestamp < trade.close_timestamp! &&
-    (t.close_timestamp ?? Date.now()) > trade.open_timestamp,
+  return allTrades.value.filter(
+    (t) =>
+      t.botId === trade.botId &&
+      t.botTradeId !== trade.botTradeId &&
+      t.open_timestamp < trade.close_timestamp! &&
+      (t.close_timestamp ?? Date.now()) > trade.open_timestamp,
   ).length;
 }
 
 function exportCSV() {
-  const sorted = [...filteredTrades.value].sort((a, b) => (a.close_timestamp ?? 0) - (b.close_timestamp ?? 0));
-  const headers = ['Trade ID', 'Mode', 'Bot', 'Exchange', 'Pair', 'Direction', 'Leverage', 'Open Date', 'Close Date', 'Duration', 'Entry Price', 'Exit Price', 'Fees', 'Profit', 'Profit %', 'DCA', 'Exit Reason', 'Stake', 'Concurrent'];
-  const rows = sorted.map(t => [
+  const sorted = [...filteredTrades.value].sort(
+    (a, b) => (a.close_timestamp ?? 0) - (b.close_timestamp ?? 0),
+  );
+  const headers = [
+    'Trade ID',
+    'Mode',
+    'Bot',
+    'Exchange',
+    'Pair',
+    'Direction',
+    'Leverage',
+    'Open Date',
+    'Close Date',
+    'Duration',
+    'Entry Price',
+    'Exit Price',
+    'Fees',
+    'Profit',
+    'Profit %',
+    'DCA',
+    'Exit Reason',
+    'Stake',
+    'Concurrent',
+  ];
+  const rows = sorted.map((t) => [
     (t.trade_id ?? '').toString(),
     t.botMode ?? '',
     t.botName,
@@ -147,8 +194,9 @@ function exportCSV() {
     t.stake_amount?.toString() ?? '',
     concurrentPositions(t).toString(),
   ]);
-  const esc = (f: string) => f.includes(',') || f.includes('"') ? `"${f.replace(/"/g, '""')}"` : f;
-  const csv = [headers.join(','), ...rows.map(r => r.map(esc).join(','))].join('\n');
+  const esc = (f: string) =>
+    f.includes(',') || f.includes('"') ? `"${f.replace(/"/g, '""')}"` : f;
+  const csv = [headers.join(','), ...rows.map((r) => r.map(esc).join(','))].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -160,9 +208,31 @@ function exportCSV() {
 
 async function exportExcel() {
   const xlsx = await import('xlsx');
-  const sorted = [...filteredTrades.value].sort((a, b) => (a.close_timestamp ?? 0) - (b.close_timestamp ?? 0));
-  const headers = ['Trade ID', 'Mode', 'Bot', 'Exchange', 'Pair', 'Direction', 'Leverage', 'Open Date', 'Close Date', 'Duration', 'Entry Price', 'Exit Price', 'Fees', 'Profit', 'Profit %', 'DCA', 'Exit Reason', 'Stake', 'Concurrent'];
-  const rows = sorted.map(t => [
+  const sorted = [...filteredTrades.value].sort(
+    (a, b) => (a.close_timestamp ?? 0) - (b.close_timestamp ?? 0),
+  );
+  const headers = [
+    'Trade ID',
+    'Mode',
+    'Bot',
+    'Exchange',
+    'Pair',
+    'Direction',
+    'Leverage',
+    'Open Date',
+    'Close Date',
+    'Duration',
+    'Entry Price',
+    'Exit Price',
+    'Fees',
+    'Profit',
+    'Profit %',
+    'DCA',
+    'Exit Reason',
+    'Stake',
+    'Concurrent',
+  ];
+  const rows = sorted.map((t) => [
     t.trade_id ?? '',
     t.botMode ?? '',
     t.botName,
@@ -240,7 +310,13 @@ async function exportExcel() {
       <Column field="trade_id" header="ID" sortable style="max-width: 5rem">
         <template #body="{ data }">{{ data.trade_id ?? '-' }}</template>
       </Column>
-      <Column field="botMode" header="Mode" sortable :show-filter-menu="false" style="max-width: 6rem">
+      <Column
+        field="botMode"
+        header="Mode"
+        sortable
+        :show-filter-menu="false"
+        style="max-width: 6rem"
+      >
         <template #filter="{ filterModel, filterCallback }">
           <MultiSelect
             v-model="filterModel.value"
@@ -254,7 +330,11 @@ async function exportExcel() {
         <template #body="{ data }">
           <span
             class="px-1.5 py-0.5 rounded text-[10px] font-semibold"
-            :class="data.botMode === 'Dry' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'"
+            :class="
+              data.botMode === 'Dry'
+                ? 'bg-green-500/20 text-green-400'
+                : 'bg-blue-500/20 text-blue-400'
+            "
           >
             {{ data.botMode }}
           </span>
@@ -328,7 +408,10 @@ async function exportExcel() {
       </Column>
       <Column field="profit_abs" header="Profit" sortable>
         <template #body="{ data }">
-          <span :class="(data.profit_abs ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'" class="font-semibold">
+          <span
+            :class="(data.profit_abs ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'"
+            class="font-semibold"
+          >
             {{ (data.profit_abs ?? 0) >= 0 ? '+' : '' }}{{ (data.profit_abs ?? 0).toFixed(2) }}
           </span>
         </template>

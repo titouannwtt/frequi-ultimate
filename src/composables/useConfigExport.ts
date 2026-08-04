@@ -119,7 +119,10 @@ function hashIntegrity(data: string): string {
   return 'sha512:' + hex;
 }
 
-function encrypt(plaintext: string, password: string): { salt: string; nonce: string; ciphertext: string } {
+function encrypt(
+  plaintext: string,
+  password: string,
+): { salt: string; nonce: string; ciphertext: string } {
   const salt = nacl.randomBytes(16);
   const nonce = nacl.randomBytes(nacl.secretbox.nonceLength);
   const key = deriveKey(password, salt);
@@ -140,10 +143,7 @@ function decrypt(ciphertext: string, salt: string, nonce: string, password: stri
 
 // ── Export ──
 
-export function exportConfig(options: {
-  includeAuth: boolean;
-  password?: string;
-}): void {
+export function exportConfig(options: { includeAuth: boolean; password?: string }): void {
   const keys = options.includeAuth ? ALL_KEYS : LAYOUT_KEYS;
   const data: Record<string, string> = {};
 
@@ -209,7 +209,9 @@ export function previewConfig(file: File): Promise<ConfigPreview> {
       if (hasAuth) {
         try {
           botCount = Object.keys(JSON.parse(v1.data['ftAuthLoginInfo'])).length;
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
       return {
         exportedAt,
@@ -250,7 +252,9 @@ export function previewConfig(file: File): Promise<ConfigPreview> {
     if (authData) {
       try {
         botCount = Object.keys(JSON.parse(authData)).length;
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     return {
@@ -331,7 +335,9 @@ export function importConfig(
     if (authData) {
       try {
         botCount = Object.keys(JSON.parse(authData)).length;
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     return { keysRestored, botCount };

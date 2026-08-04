@@ -38,13 +38,8 @@ const props = withDefaults(
 
 const settingsStore = useSettingsStore();
 
-const {
-  selectedWindow,
-  selectedExchange,
-  windowOptions,
-  exchangeOptions,
-  primaryMetrics,
-} = useRateMetrics({ multiBotView: props.multiBotView });
+const { selectedWindow, selectedExchange, windowOptions, exchangeOptions, primaryMetrics } =
+  useRateMetrics({ multiBotView: props.multiBotView });
 
 const timeline = computed((): RateTimelineBucket[] => {
   return primaryMetrics.value?.timeline ?? [];
@@ -240,12 +235,15 @@ const chartOption = computed((): EChartsOption => {
           {{ primaryMetrics.summary.total }} {{ t('rateMonitor.req') }}
         </span>
         <span
-          :class="(primaryMetrics.summary.errors_429 ?? 0) > 0 ? 'text-red-400' : 'text-surface-500'"
+          :class="
+            (primaryMetrics.summary.errors_429 ?? 0) > 0 ? 'text-red-400' : 'text-surface-500'
+          "
         >
           {{ primaryMetrics.summary.errors_429 ?? 0 }} {{ t('rateMonitor.429s') }}
         </span>
         <span class="text-surface-500" :title="t('rateMonitor.avgResponseTime')">
-          {{ t('rateMonitor.avgResponse') }} {{ formatLatency(primaryMetrics.summary.avg_latency_ms ?? 0) }}
+          {{ t('rateMonitor.avgResponse') }}
+          {{ formatLatency(primaryMetrics.summary.avg_latency_ms ?? 0) }}
         </span>
       </div>
     </div>

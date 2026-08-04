@@ -128,7 +128,10 @@ const viewMode = ref<'tree' | 'raw'>('tree');
       </div>
 
       <!-- Tree view -->
-      <div v-if="viewMode === 'tree'" class="bg-surface-50 dark:bg-surface-800 rounded-lg p-3 max-h-[60vh] overflow-auto">
+      <div
+        v-if="viewMode === 'tree'"
+        class="bg-surface-50 dark:bg-surface-800 rounded-lg p-3 max-h-[60vh] overflow-auto"
+      >
         <JsonViewer :data="displayConfig" />
       </div>
 

@@ -61,11 +61,15 @@ function maxCount(hist: { length: number; count: number }[]): number {
     <div class="sk-summary">
       <div class="sk-stat">
         <span class="sk-stat-label">{{ t('strategyDev.skMaxWinStreak') }}</span>
-        <span class="sk-stat-value" :class="streakDominance === 'win' ? 'sk-stat-win' : ''">{{ streaks.max_consecutive_wins }}</span>
+        <span class="sk-stat-value" :class="streakDominance === 'win' ? 'sk-stat-win' : ''">{{
+          streaks.max_consecutive_wins
+        }}</span>
       </div>
       <div class="sk-stat">
         <span class="sk-stat-label">{{ t('strategyDev.skMaxLossStreak') }}</span>
-        <span class="sk-stat-value" :class="streakDominance === 'loss' ? 'sk-stat-loss' : ''">{{ streaks.max_consecutive_losses }}</span>
+        <span class="sk-stat-value" :class="streakDominance === 'loss' ? 'sk-stat-loss' : ''">{{
+          streaks.max_consecutive_losses
+        }}</span>
       </div>
       <div class="sk-stat">
         <span class="sk-stat-label">{{ t('strategyDev.skWins') }}</span>
@@ -77,7 +81,9 @@ function maxCount(hist: { length: number; count: number }[]): number {
       </div>
       <div class="sk-stat">
         <span class="sk-stat-label">{{ t('strategyDev.skWinRate') }}</span>
-        <span class="sk-stat-value">{{ totalTrades > 0 ? ((streaks.wins / totalTrades) * 100).toFixed(1) : 0 }}%</span>
+        <span class="sk-stat-value"
+          >{{ totalTrades > 0 ? ((streaks.wins / totalTrades) * 100).toFixed(1) : 0 }}%</span
+        >
       </div>
     </div>
 
@@ -105,7 +111,13 @@ function maxCount(hist: { length: number; count: number }[]): number {
               v-for="h in winStreakHist"
               :key="'w' + h.length"
               class="sk-bar-row"
-              v-tooltip.top="t('strategyDev.skBarTooltip', { count: h.count, length: h.length, type: t('strategyDev.skBarWinType') })"
+              v-tooltip.top="
+                t('strategyDev.skBarTooltip', {
+                  count: h.count,
+                  length: h.length,
+                  type: t('strategyDev.skBarWinType'),
+                })
+              "
             >
               <span class="sk-bar-label">{{ h.length }}</span>
               <div class="sk-bar-track">
@@ -130,7 +142,13 @@ function maxCount(hist: { length: number; count: number }[]): number {
               v-for="h in lossStreakHist"
               :key="'l' + h.length"
               class="sk-bar-row"
-              v-tooltip.top="t('strategyDev.skBarTooltip', { count: h.count, length: h.length, type: t('strategyDev.skBarLossType') })"
+              v-tooltip.top="
+                t('strategyDev.skBarTooltip', {
+                  count: h.count,
+                  length: h.length,
+                  type: t('strategyDev.skBarLossType'),
+                })
+              "
             >
               <span class="sk-bar-label">{{ h.length }}</span>
               <div class="sk-bar-track">
@@ -191,8 +209,12 @@ function maxCount(hist: { length: number; count: number }[]): number {
   color: var(--sd-text);
 }
 
-.sk-stat-win { color: var(--sd-success); }
-.sk-stat-loss { color: var(--sd-danger); }
+.sk-stat-win {
+  color: var(--sd-success);
+}
+.sk-stat-loss {
+  color: var(--sd-danger);
+}
 
 .sk-distributions {
   display: grid;
@@ -270,8 +292,14 @@ function maxCount(hist: { length: number; count: number }[]): number {
   transition: width 0.5s ease;
 }
 
-.sk-bar-win { background: var(--sd-success); opacity: 0.7; }
-.sk-bar-loss { background: var(--sd-danger); opacity: 0.7; }
+.sk-bar-win {
+  background: var(--sd-success);
+  opacity: 0.7;
+}
+.sk-bar-loss {
+  background: var(--sd-danger);
+  opacity: 0.7;
+}
 
 .sk-bar-count {
   font-size: 10px;

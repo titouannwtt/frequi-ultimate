@@ -11,13 +11,13 @@ const isProfitable = computed<boolean | null>(() => {
   }
   const ratio = props.profitRatio;
   const abs = props.profitAbs;
-  if ((ratio !== undefined && ratio !== null && ratio === 0) || (ratio === undefined && abs === 0)) {
+  if (
+    (ratio !== undefined && ratio !== null && ratio === 0) ||
+    (ratio === undefined && abs === 0)
+  ) {
     return null;
   }
-  return (
-    (isDefined(ratio) && ratio > 0) ||
-    (ratio === undefined && abs !== undefined && abs > 0)
-  );
+  return (isDefined(ratio) && ratio > 0) || (ratio === undefined && abs !== undefined && abs > 0);
 });
 
 const profitString = computed((): string => {

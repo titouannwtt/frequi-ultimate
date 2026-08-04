@@ -101,12 +101,8 @@ const chartOptions = computed<EChartsOption>(() => {
     }
   }
 
-  const aLabels = Array.from({ length: g.n_bins }, (_, i) =>
-    (g.a_range[0] + i * aStep).toFixed(2),
-  );
-  const bLabels = Array.from({ length: g.n_bins }, (_, i) =>
-    (g.b_range[0] + i * bStep).toFixed(2),
-  );
+  const aLabels = Array.from({ length: g.n_bins }, (_, i) => (g.a_range[0] + i * aStep).toFixed(2));
+  const bLabels = Array.from({ length: g.n_bins }, (_, i) => (g.b_range[0] + i * bStep).toFixed(2));
 
   return {
     title: {

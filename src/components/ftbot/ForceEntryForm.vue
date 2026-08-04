@@ -95,7 +95,9 @@ const handleEntry = () => {
 <template>
   <Dialog
     v-model:visible="model"
-    :header="positionIncrease ? t('forceEntry.increasingPosition', { pair }) : t('forceEntry.title')"
+    :header="
+      positionIncrease ? t('forceEntry.increasingPosition', { pair }) : t('forceEntry.title')
+    "
     modal
     @show="resetForm"
     @hide="resetForm"
@@ -157,9 +159,9 @@ const handleEntry = () => {
       </div>
 
       <div v-if="botStore.activeBot.botFeatures.forceEnterShort && botStore.activeBot.shortAllowed">
-        <label for="leverage-input" class="block font-medium mb-1"
-          >{{ t('forceEntry.leverage') }}</label
-        >
+        <label for="leverage-input" class="block font-medium mb-1">{{
+          t('forceEntry.leverage')
+        }}</label>
         <InputNumber
           id="leverage-input"
           v-model="leverage"
@@ -194,8 +196,12 @@ const handleEntry = () => {
 
     <template #footer>
       <div class="flex justify-end gap-2">
-        <Button severity="secondary" size="small" @click="model = false"> {{ t('forceEntry.cancel') }} </Button>
-        <Button severity="primary" size="small" @click="handleEntry"> {{ t('forceEntry.enterPosition') }} </Button>
+        <Button severity="secondary" size="small" @click="model = false">
+          {{ t('forceEntry.cancel') }}
+        </Button>
+        <Button severity="primary" size="small" @click="handleEntry">
+          {{ t('forceEntry.enterPosition') }}
+        </Button>
       </div>
     </template>
   </Dialog>

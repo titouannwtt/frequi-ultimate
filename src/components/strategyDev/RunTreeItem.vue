@@ -69,17 +69,9 @@ const verdictDot = computed<string | null>(() => {
 </script>
 
 <template>
-  <button
-    class="run-item"
-    :class="{ 'run-item--selected': selected }"
-    @click="$emit('click')"
-  >
+  <button class="run-item" :class="{ 'run-item--selected': selected }" @click="$emit('click')">
     <!-- Verdict dot -->
-    <span
-      v-if="verdictDot"
-      class="run-verdict-dot"
-      :style="{ backgroundColor: verdictDot }"
-    />
+    <span v-if="verdictDot" class="run-verdict-dot" :style="{ backgroundColor: verdictDot }" />
 
     <!-- Type tag -->
     <Tag
@@ -94,7 +86,11 @@ const verdictDot = computed<string | null>(() => {
         <span class="run-strategy">{{ run.strategy }}</span>
         <i-mdi-star v-if="run.favorite" class="run-fav-star" />
         <i-mdi-cached v-if="isCached" class="run-cached-icon" />
-        <span v-if="isLiveBot" class="run-live-badge" :class="{ 'run-live-badge--dry': run.dry_run }">
+        <span
+          v-if="isLiveBot"
+          class="run-live-badge"
+          :class="{ 'run-live-badge--dry': run.dry_run }"
+        >
           <span class="run-live-dot" :class="{ 'run-live-dot--dry': run.dry_run }" />
           {{ run.dry_run ? 'dry' : 'live' }}
         </span>
@@ -241,8 +237,13 @@ const verdictDot = computed<string | null>(() => {
 }
 
 @keyframes live-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .run-time {

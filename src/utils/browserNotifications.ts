@@ -59,7 +59,11 @@ export function checkAndNotifyAlerts(
 
       const botName = botStores[botId]?.uiBotName || botId;
       const severityIcon =
-        alert.severity === 'critical' ? '\u{1F534}' : alert.severity === 'warning' ? '\u{1F7E0}' : '\u{1F535}';
+        alert.severity === 'critical'
+          ? '\u{1F534}'
+          : alert.severity === 'warning'
+            ? '\u{1F7E0}'
+            : '\u{1F535}';
 
       new Notification(`FreqUI Alert: ${botName}`, {
         body: `${severityIcon} ${alert.message}`,

@@ -35,8 +35,7 @@ const filteredBots = computed(() => {
   const q = globalFilter.value.trim().toLowerCase();
   if (q) {
     rows = rows.filter(
-      (b) =>
-        b.bot_name.toLowerCase().includes(q) || (b.strategy ?? '').toLowerCase().includes(q),
+      (b) => b.bot_name.toLowerCase().includes(q) || (b.strategy ?? '').toLowerCase().includes(q),
     );
   }
   return rows;
@@ -135,194 +134,246 @@ function maxLeverage(bot: FleetviewBot): number {
     </div>
 
     <template v-else>
-    <div class="flex items-center justify-between flex-wrap gap-2">
-      <div class="flex flex-wrap items-center gap-1.5 text-xs text-surface-500 dark:text-surface-400">
-        <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
-          {{ t('fleet.botsTable.botCount', { count: filteredBots.length }) }}
-        </span>
-        <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
-          {{ t('fleet.botsTable.capital') }}
-          <span class="font-mono tabular-nums font-semibold text-surface-700 dark:text-surface-200">
-            {{ totals.effective.toFixed(0) }}
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div
+          class="flex flex-wrap items-center gap-1.5 text-xs text-surface-500 dark:text-surface-400"
+        >
+          <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
+            {{ t('fleet.botsTable.botCount', { count: filteredBots.length }) }}
           </span>
-        </span>
-        <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
-          {{ t('fleet.botsTable.label1d') }}
-          <span class="font-mono tabular-nums" :class="pnlClass(totals.pnl1d)">
-            {{ totals.pnl1d.toFixed(2) }}
+          <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
+            {{ t('fleet.botsTable.capital') }}
+            <span
+              class="font-mono tabular-nums font-semibold text-surface-700 dark:text-surface-200"
+            >
+              {{ totals.effective.toFixed(0) }}
+            </span>
           </span>
-        </span>
-        <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
-          {{ t('fleet.botsTable.label7d') }}
-          <span class="font-mono tabular-nums" :class="pnlClass(totals.pnl7d)">
-            {{ totals.pnl7d.toFixed(2) }}
+          <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
+            {{ t('fleet.botsTable.label1d') }}
+            <span class="font-mono tabular-nums" :class="pnlClass(totals.pnl1d)">
+              {{ totals.pnl1d.toFixed(2) }}
+            </span>
           </span>
-        </span>
-        <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
-          {{ t('fleet.botsTable.label30d') }}
-          <span class="font-mono tabular-nums" :class="pnlClass(totals.pnl30d)">
-            {{ totals.pnl30d.toFixed(2) }}
+          <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
+            {{ t('fleet.botsTable.label7d') }}
+            <span class="font-mono tabular-nums" :class="pnlClass(totals.pnl7d)">
+              {{ totals.pnl7d.toFixed(2) }}
+            </span>
           </span>
-        </span>
-        <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
-          {{ t('fleet.botsTable.total') }}
-          <span class="font-mono tabular-nums" :class="pnlClass(totals.pnlTotal)">
-            {{ totals.pnlTotal.toFixed(2) }}
+          <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
+            {{ t('fleet.botsTable.label30d') }}
+            <span class="font-mono tabular-nums" :class="pnlClass(totals.pnl30d)">
+              {{ totals.pnl30d.toFixed(2) }}
+            </span>
           </span>
-        </span>
-        <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
-          {{ t('fleet.botsTable.open') }}
-          <span class="font-mono tabular-nums">{{ totals.open }}</span>
-        </span>
-      </div>
-      <div class="flex items-center gap-2">
-        <InputText
-          v-model="globalFilter"
-          :placeholder="t('fleet.botsTable.filterPlaceholder')"
-          size="small"
-        />
-        <SelectButton
-          v-model="modeFilter"
-          :options="modeOptions"
-          size="small"
-          :allow-empty="false"
-          option-label="text"
-          option-value="value"
-        />
-      </div>
-    </div>
-    <div class="flex-1 min-h-0">
-    <DataTable
-      :value="filteredBots"
-      sort-field="capital.effective"
-      :sort-order="-1"
-      striped-rows
-      removable-sort
-      size="small"
-      class="text-xs"
-      scrollable
-      scroll-height="flex"
-      :virtual-scroller-options="{ itemSize: 37 }"
-    >
-      <template #empty>
-        <div class="flex flex-col items-center gap-1.5 py-6 text-center">
-          <i-mdi-robot-off class="w-8 h-8 text-surface-500" />
-          <span class="text-sm text-surface-500 dark:text-surface-400">
-            {{ t('fleet.botsTable.botCount', { count: 0 }) }}
+          <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
+            {{ t('fleet.botsTable.total') }}
+            <span class="font-mono tabular-nums" :class="pnlClass(totals.pnlTotal)">
+              {{ totals.pnlTotal.toFixed(2) }}
+            </span>
+          </span>
+          <span class="inline-block px-1.5 py-0.5 rounded bg-surface-500/10">
+            {{ t('fleet.botsTable.open') }}
+            <span class="font-mono tabular-nums">{{ totals.open }}</span>
           </span>
         </div>
-      </template>
-      <Column field="bot_name" :header="t('fleet.botsTable.colBot')" sortable frozen>
-        <template #body="{ data }">
-          <span class="font-semibold">{{ data.bot_name }}</span>
-          <Tag
-            v-if="data.dry_run"
-            :value="t('fleet.botsTable.dryTag')"
-            severity="secondary"
-            class="ml-1 !text-[0.6rem] !py-0"
+        <div class="flex items-center gap-2">
+          <InputText
+            v-model="globalFilter"
+            :placeholder="t('fleet.botsTable.filterPlaceholder')"
+            size="small"
           />
-          <span v-if="data.badges.frozen" :title="t('fleet.botsTable.frozenTitle')">&#129482;</span>
-          <span v-if="data.badges.inert" :title="t('fleet.botsTable.inertTitle')">&#128164;</span>
-          <span
-            v-if="maxLeverage(data) > 1"
-            :title="t('fleet.botsTable.leverageTitle', { leverage: maxLeverage(data) })"
-            >&#9888;&#65039;</span
-          >
-          <span v-if="!data.db_ok" class="text-red-400" :title="t('fleet.botsTable.dbUnreadable')"
-            >DB!</span
-          >
-        </template>
-      </Column>
-      <Column v-if="showMedium" field="strategy" :header="t('fleet.botsTable.colStrategy')" sortable>
-        <template #body="{ data }">
-          <span
-            class="text-surface-500 dark:text-surface-400 truncate inline-block max-w-40"
-            :title="data.strategy"
-          >
-            {{ data.strategy ?? '-' }}
-          </span>
-        </template>
-      </Column>
-      <Column field="direction" :header="t('fleet.botsTable.colDirection')" sortable>
-        <template #body="{ data }">
-          <Tag
-            :value="data.direction"
-            :severity="directionSeverity(data.direction)"
-            class="!text-[0.65rem] !py-0"
+          <SelectButton
+            v-model="modeFilter"
+            :options="modeOptions"
+            size="small"
+            :allow-empty="false"
+            option-label="text"
+            option-value="value"
           />
-        </template>
-      </Column>
-      <Column field="capital.effective" :header="t('fleet.botsTable.colCapital')" sortable>
-        <template #body="{ data }">
-          <span
-            class="block text-right font-mono tabular-nums"
-            :class="{ 'text-surface-500': data.capital.effective === null }"
+        </div>
+      </div>
+      <div class="flex-1 min-h-0">
+        <DataTable
+          :value="filteredBots"
+          sort-field="capital.effective"
+          :sort-order="-1"
+          striped-rows
+          removable-sort
+          size="small"
+          class="text-xs"
+          scrollable
+          scroll-height="flex"
+          :virtual-scroller-options="{ itemSize: 37 }"
+        >
+          <template #empty>
+            <div class="flex flex-col items-center gap-1.5 py-6 text-center">
+              <i-mdi-robot-off class="w-8 h-8 text-surface-500" />
+              <span class="text-sm text-surface-500 dark:text-surface-400">
+                {{ t('fleet.botsTable.botCount', { count: 0 }) }}
+              </span>
+            </div>
+          </template>
+          <Column field="bot_name" :header="t('fleet.botsTable.colBot')" sortable frozen>
+            <template #body="{ data }">
+              <span class="font-semibold">{{ data.bot_name }}</span>
+              <Tag
+                v-if="data.dry_run"
+                :value="t('fleet.botsTable.dryTag')"
+                severity="secondary"
+                class="ml-1 !text-[0.6rem] !py-0"
+              />
+              <span v-if="data.badges.frozen" :title="t('fleet.botsTable.frozenTitle')"
+                >&#129482;</span
+              >
+              <span v-if="data.badges.inert" :title="t('fleet.botsTable.inertTitle')"
+                >&#128164;</span
+              >
+              <span
+                v-if="maxLeverage(data) > 1"
+                :title="t('fleet.botsTable.leverageTitle', { leverage: maxLeverage(data) })"
+                >&#9888;&#65039;</span
+              >
+              <span
+                v-if="!data.db_ok"
+                class="text-red-400"
+                :title="t('fleet.botsTable.dbUnreadable')"
+                >DB!</span
+              >
+            </template>
+          </Column>
+          <Column
+            v-if="showMedium"
+            field="strategy"
+            :header="t('fleet.botsTable.colStrategy')"
+            sortable
           >
-            {{ fmt(data.capital.effective, 0) }}
-          </span>
-        </template>
-      </Column>
-      <Column field="pnl.realized_1d" :header="t('fleet.botsTable.colPnl1d')" sortable>
-        <template #body="{ data }">
-          <span class="block text-right font-mono tabular-nums" :class="pnlClass(data.pnl.realized_1d)">
-            {{ fmt(data.pnl.realized_1d) }}
-          </span>
-        </template>
-      </Column>
-      <Column v-if="showMedium" field="pnl.realized_7d" :header="t('fleet.botsTable.label7d')" sortable>
-        <template #body="{ data }">
-          <span class="block text-right font-mono tabular-nums" :class="pnlClass(data.pnl.realized_7d)">
-            {{ fmt(data.pnl.realized_7d) }}
-          </span>
-        </template>
-      </Column>
-      <Column v-if="showMedium" field="pnl.realized_30d" :header="t('fleet.botsTable.label30d')" sortable>
-        <template #body="{ data }">
-          <span class="block text-right font-mono tabular-nums" :class="pnlClass(data.pnl.realized_30d)">
-            {{ fmt(data.pnl.realized_30d) }}
-          </span>
-        </template>
-      </Column>
-      <Column field="pnl.realized_total" :header="t('fleet.botsTable.total')" sortable>
-        <template #body="{ data }">
-          <span class="block text-right font-mono tabular-nums" :class="pnlClass(data.pnl.realized_total)">
-            {{ fmt(data.pnl.realized_total) }}
-          </span>
-        </template>
-      </Column>
-      <Column field="trades.open_count" :header="t('fleet.botsTable.colOpen')" sortable>
-        <template #body="{ data }">
-          <span class="block text-right font-mono tabular-nums">{{ data.trades.open_count }}</span>
-        </template>
-      </Column>
-      <Column v-if="showWide" field="trades.count_30d" :header="t('fleet.botsTable.colTrades30d')" sortable>
-        <template #body="{ data }">
-          <span class="block text-right font-mono tabular-nums">{{ data.trades.count_30d }}</span>
-        </template>
-      </Column>
-      <Column
-        v-if="showWide"
-        :header="t('fleet.botsTable.colUptime')"
-        sortable
-        field="uptime.process_start"
-        :sort-order="1"
-      >
-        <template #body="{ data }">
-          <span class="font-mono tabular-nums">{{ processUptime(data) }}</span>
-        </template>
-      </Column>
-      <Column v-if="showWide" :header="t('fleet.botsTable.colAge')" sortable field="uptime.first_trade">
-        <template #body="{ data }">
-          <span class="font-mono tabular-nums">{{ botAge(data) }}</span>
-        </template>
-      </Column>
-      <Column v-if="showWide" field="port" :header="t('fleet.botsTable.colPort')" sortable>
-        <template #body="{ data }">
-          <span class="text-surface-500 font-mono tabular-nums">{{ data.port ?? '-' }}</span>
-        </template>
-      </Column>
-    </DataTable>
-    </div>
+            <template #body="{ data }">
+              <span
+                class="text-surface-500 dark:text-surface-400 truncate inline-block max-w-40"
+                :title="data.strategy"
+              >
+                {{ data.strategy ?? '-' }}
+              </span>
+            </template>
+          </Column>
+          <Column field="direction" :header="t('fleet.botsTable.colDirection')" sortable>
+            <template #body="{ data }">
+              <Tag
+                :value="data.direction"
+                :severity="directionSeverity(data.direction)"
+                class="!text-[0.65rem] !py-0"
+              />
+            </template>
+          </Column>
+          <Column field="capital.effective" :header="t('fleet.botsTable.colCapital')" sortable>
+            <template #body="{ data }">
+              <span
+                class="block text-right font-mono tabular-nums"
+                :class="{ 'text-surface-500': data.capital.effective === null }"
+              >
+                {{ fmt(data.capital.effective, 0) }}
+              </span>
+            </template>
+          </Column>
+          <Column field="pnl.realized_1d" :header="t('fleet.botsTable.colPnl1d')" sortable>
+            <template #body="{ data }">
+              <span
+                class="block text-right font-mono tabular-nums"
+                :class="pnlClass(data.pnl.realized_1d)"
+              >
+                {{ fmt(data.pnl.realized_1d) }}
+              </span>
+            </template>
+          </Column>
+          <Column
+            v-if="showMedium"
+            field="pnl.realized_7d"
+            :header="t('fleet.botsTable.label7d')"
+            sortable
+          >
+            <template #body="{ data }">
+              <span
+                class="block text-right font-mono tabular-nums"
+                :class="pnlClass(data.pnl.realized_7d)"
+              >
+                {{ fmt(data.pnl.realized_7d) }}
+              </span>
+            </template>
+          </Column>
+          <Column
+            v-if="showMedium"
+            field="pnl.realized_30d"
+            :header="t('fleet.botsTable.label30d')"
+            sortable
+          >
+            <template #body="{ data }">
+              <span
+                class="block text-right font-mono tabular-nums"
+                :class="pnlClass(data.pnl.realized_30d)"
+              >
+                {{ fmt(data.pnl.realized_30d) }}
+              </span>
+            </template>
+          </Column>
+          <Column field="pnl.realized_total" :header="t('fleet.botsTable.total')" sortable>
+            <template #body="{ data }">
+              <span
+                class="block text-right font-mono tabular-nums"
+                :class="pnlClass(data.pnl.realized_total)"
+              >
+                {{ fmt(data.pnl.realized_total) }}
+              </span>
+            </template>
+          </Column>
+          <Column field="trades.open_count" :header="t('fleet.botsTable.colOpen')" sortable>
+            <template #body="{ data }">
+              <span class="block text-right font-mono tabular-nums">{{
+                data.trades.open_count
+              }}</span>
+            </template>
+          </Column>
+          <Column
+            v-if="showWide"
+            field="trades.count_30d"
+            :header="t('fleet.botsTable.colTrades30d')"
+            sortable
+          >
+            <template #body="{ data }">
+              <span class="block text-right font-mono tabular-nums">{{
+                data.trades.count_30d
+              }}</span>
+            </template>
+          </Column>
+          <Column
+            v-if="showWide"
+            :header="t('fleet.botsTable.colUptime')"
+            sortable
+            field="uptime.process_start"
+            :sort-order="1"
+          >
+            <template #body="{ data }">
+              <span class="font-mono tabular-nums">{{ processUptime(data) }}</span>
+            </template>
+          </Column>
+          <Column
+            v-if="showWide"
+            :header="t('fleet.botsTable.colAge')"
+            sortable
+            field="uptime.first_trade"
+          >
+            <template #body="{ data }">
+              <span class="font-mono tabular-nums">{{ botAge(data) }}</span>
+            </template>
+          </Column>
+          <Column v-if="showWide" field="port" :header="t('fleet.botsTable.colPort')" sortable>
+            <template #body="{ data }">
+              <span class="text-surface-500 font-mono tabular-nums">{{ data.port ?? '-' }}</span>
+            </template>
+          </Column>
+        </DataTable>
+      </div>
     </template>
   </div>
 </template>

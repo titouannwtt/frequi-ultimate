@@ -23,7 +23,11 @@ const metrics = computed(() => {
     },
     { label: t('strategyDev.metricTrades'), value: String(m.trades ?? 0) },
     { label: t('strategyDev.metricWinRate'), value: `${((m.win_rate ?? 0) * 100).toFixed(1)}%` },
-    { label: t('strategyDev.metricMaxDD'), value: `${(m.max_dd_pct ?? 0).toFixed(2)}%`, color: 'text-red-400' },
+    {
+      label: t('strategyDev.metricMaxDD'),
+      value: `${(m.max_dd_pct ?? 0).toFixed(2)}%`,
+      color: 'text-red-400',
+    },
     { label: t('strategyDev.metricSharpe'), value: (m.sharpe ?? 0).toFixed(3) },
     { label: t('strategyDev.metricCalmar'), value: (m.calmar ?? 0).toFixed(2) },
   ].filter((x) => x.value !== '0' && x.value !== '0.00%' && x.value !== '0.000');

@@ -271,7 +271,12 @@ const hitRateBarsOption = computed((): EChartsOption => {
           >
             <i-mdi-timer-sand class="w-4 h-4 animate-pulse" />
             <span>
-              {{ t('rateMonitor.backoff', { factor: backoffFactor.toFixed(1), remaining: backoffRemaining.toFixed(0) }) }}
+              {{
+                t('rateMonitor.backoff', {
+                  factor: backoffFactor.toFixed(1),
+                  remaining: backoffRemaining.toFixed(0),
+                })
+              }}
             </span>
             <span
               v-if="consecutiveBackoffs > 1"
@@ -298,18 +303,12 @@ const hitRateBarsOption = computed((): EChartsOption => {
 
           <!-- Stats grid -->
           <div class="grid grid-cols-2 gap-x-3 gap-y-1">
-            <div
-              class="flex items-center gap-1 cursor-help"
-              :title="t('rateMonitor.requestsDesc')"
-            >
+            <div class="flex items-center gap-1 cursor-help" :title="t('rateMonitor.requestsDesc')">
               <i-mdi-swap-horizontal class="w-4 h-4 text-blue-400" />
               <span class="text-surface-500">{{ t('rateMonitor.requests') }}</span>
               <span class="font-semibold ml-auto">{{ summaryTotal }}</span>
             </div>
-            <div
-              class="flex items-center gap-1 cursor-help"
-              :title="t('rateMonitor.errorsDesc')"
-            >
+            <div class="flex items-center gap-1 cursor-help" :title="t('rateMonitor.errorsDesc')">
               <i-mdi-alert-outline class="w-4 h-4 text-red-400" />
               <span class="text-surface-500">{{ t('rateMonitor.errors') }}</span>
               <span class="font-semibold ml-auto">{{ summaryErrors }}</span>
@@ -330,18 +329,12 @@ const hitRateBarsOption = computed((): EChartsOption => {
               <span class="text-surface-500">{{ t('rateMonitor.p95Response') }}</span>
               <span class="font-semibold ml-auto">{{ formatLatency(summaryP95Latency) }}</span>
             </div>
-            <div
-              class="flex items-center gap-1 cursor-help"
-              :title="t('rateMonitor.queueDesc')"
-            >
+            <div class="flex items-center gap-1 cursor-help" :title="t('rateMonitor.queueDesc')">
               <i-mdi-tray-full class="w-4 h-4 text-purple-400" />
               <span class="text-surface-500">{{ t('rateMonitor.queue') }}</span>
               <span class="font-semibold ml-auto">{{ queueTotal }}</span>
             </div>
-            <div
-              class="flex items-center gap-1 cursor-help"
-              :title="t('rateMonitor.exchangeDesc')"
-            >
+            <div class="flex items-center gap-1 cursor-help" :title="t('rateMonitor.exchangeDesc')">
               <i-mdi-server class="w-4 h-4 text-cyan-400" />
               <span class="text-surface-500">{{ t('rateMonitor.exchange') }}</span>
               <span class="font-semibold ml-auto text-xs">{{
@@ -378,14 +371,18 @@ const hitRateBarsOption = computed((): EChartsOption => {
         </span>
         <div class="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 gap-y-0.5 mt-1">
           <span class="text-surface-500 font-semibold">{{ t('rateMonitor.method') }}</span>
-          <span class="text-surface-500 font-semibold text-right">{{ t('rateMonitor.count') }}</span>
+          <span class="text-surface-500 font-semibold text-right">{{
+            t('rateMonitor.count')
+          }}</span>
           <span
             class="text-surface-500 font-semibold text-right cursor-help"
             :title="t('rateMonitor.avgResponseDesc')"
           >
             {{ t('rateMonitor.avgResponse') }}
           </span>
-          <span class="text-surface-500 font-semibold text-right">{{ t('rateMonitor.cached') }}</span>
+          <span class="text-surface-500 font-semibold text-right">{{
+            t('rateMonitor.cached')
+          }}</span>
           <template
             v-for="[method, stats] in Object.entries(primaryMetrics.summary.by_method)
               .sort((a, b) => (b[1] as any).count - (a[1] as any).count)

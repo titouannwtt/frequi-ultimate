@@ -56,23 +56,107 @@ interface Token {
 }
 
 const PY_KEYWORDS = new Set([
-  'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await',
-  'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except',
-  'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is',
-  'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return',
-  'try', 'while', 'with', 'yield',
+  'False',
+  'None',
+  'True',
+  'and',
+  'as',
+  'assert',
+  'async',
+  'await',
+  'break',
+  'class',
+  'continue',
+  'def',
+  'del',
+  'elif',
+  'else',
+  'except',
+  'finally',
+  'for',
+  'from',
+  'global',
+  'if',
+  'import',
+  'in',
+  'is',
+  'lambda',
+  'nonlocal',
+  'not',
+  'or',
+  'pass',
+  'raise',
+  'return',
+  'try',
+  'while',
+  'with',
+  'yield',
 ]);
 
 const PY_BUILTINS = new Set([
-  'abs', 'all', 'any', 'bin', 'bool', 'bytes', 'callable', 'chr',
-  'classmethod', 'compile', 'complex', 'dict', 'dir', 'divmod',
-  'enumerate', 'eval', 'exec', 'filter', 'float', 'format', 'frozenset',
-  'getattr', 'globals', 'hasattr', 'hash', 'hex', 'id', 'input', 'int',
-  'isinstance', 'issubclass', 'iter', 'len', 'list', 'locals', 'map',
-  'max', 'min', 'next', 'object', 'oct', 'open', 'ord', 'pow', 'print',
-  'property', 'range', 'repr', 'reversed', 'round', 'set', 'setattr',
-  'slice', 'sorted', 'staticmethod', 'str', 'sum', 'super', 'tuple',
-  'type', 'vars', 'zip', 'self',
+  'abs',
+  'all',
+  'any',
+  'bin',
+  'bool',
+  'bytes',
+  'callable',
+  'chr',
+  'classmethod',
+  'compile',
+  'complex',
+  'dict',
+  'dir',
+  'divmod',
+  'enumerate',
+  'eval',
+  'exec',
+  'filter',
+  'float',
+  'format',
+  'frozenset',
+  'getattr',
+  'globals',
+  'hasattr',
+  'hash',
+  'hex',
+  'id',
+  'input',
+  'int',
+  'isinstance',
+  'issubclass',
+  'iter',
+  'len',
+  'list',
+  'locals',
+  'map',
+  'max',
+  'min',
+  'next',
+  'object',
+  'oct',
+  'open',
+  'ord',
+  'pow',
+  'print',
+  'property',
+  'range',
+  'repr',
+  'reversed',
+  'round',
+  'set',
+  'setattr',
+  'slice',
+  'sorted',
+  'staticmethod',
+  'str',
+  'sum',
+  'super',
+  'tuple',
+  'type',
+  'vars',
+  'zip',
+  'self',
 ]);
 
 function tokenizePython(line: string): Token[] {
@@ -107,10 +191,13 @@ function tokenizePython(line: string): Token[] {
       continue;
     }
 
-    if (line[i] === '"' || line[i] === "'" ||
-        ((line[i] === 'f' || line[i] === 'r' || line[i] === 'b') &&
-         (line[i + 1] === '"' || line[i + 1] === "'"))) {
-      let start = i;
+    if (
+      line[i] === '"' ||
+      line[i] === "'" ||
+      ((line[i] === 'f' || line[i] === 'r' || line[i] === 'b') &&
+        (line[i + 1] === '"' || line[i + 1] === "'"))
+    ) {
+      const start = i;
       if (line[i] !== '"' && line[i] !== "'") i++;
       const q = line[i];
       i++;
@@ -123,7 +210,10 @@ function tokenizePython(line: string): Token[] {
       continue;
     }
 
-    if (/[0-9]/.test(line[i]) || (line[i] === '.' && i + 1 < line.length && /[0-9]/.test(line[i + 1]))) {
+    if (
+      /[0-9]/.test(line[i]) ||
+      (line[i] === '.' && i + 1 < line.length && /[0-9]/.test(line[i + 1]))
+    ) {
       const m = line.slice(i).match(/^(0[xXoObB][\da-fA-F_]+|[\d_]*\.?[\d_]+([eE][+-]?\d+)?)/);
       if (m) {
         tokens.push({ text: m[0], cls: 'tk-number' });
@@ -176,14 +266,14 @@ function tokenizeJson(line: string): Token[] {
 
   while (i < line.length) {
     if (/\s/.test(line[i])) {
-      let start = i;
+      const start = i;
       while (i < line.length && /\s/.test(line[i])) i++;
       tokens.push({ text: line.slice(start, i), cls: '' });
       continue;
     }
 
     if (line[i] === '"') {
-      let start = i;
+      const start = i;
       i++;
       while (i < line.length && line[i] !== '"') {
         if (line[i] === '\\') i++;
@@ -263,12 +353,19 @@ const foldableRanges = computed<FoldRange[]>(() => {
   if (lang === 'python') {
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i].trimStart();
-      if (/^(def |class |if |elif |else:|for |while |try:|except |finally:|with |async def |async for |async with )/.test(trimmed)) {
+      if (
+        /^(def |class |if |elif |else:|for |while |try:|except |finally:|with |async def |async for |async with )/.test(
+          trimmed,
+        )
+      ) {
         const indent = lines[i].length - trimmed.length;
         let end = i + 1;
         while (end < lines.length) {
           const nextTrimmed = lines[end].trimStart();
-          if (nextTrimmed.length === 0) { end++; continue; }
+          if (nextTrimmed.length === 0) {
+            end++;
+            continue;
+          }
           const nextIndent = lines[end].length - nextTrimmed.length;
           if (nextIndent <= indent) break;
           end++;
@@ -379,7 +476,8 @@ function nextMatch() {
 
 function prevMatch() {
   if (searchMatchCount.value === 0) return;
-  searchMatchIndex.value = (searchMatchIndex.value - 1 + searchMatchCount.value) % searchMatchCount.value;
+  searchMatchIndex.value =
+    (searchMatchIndex.value - 1 + searchMatchCount.value) % searchMatchCount.value;
   scrollToMatch();
 }
 
@@ -481,11 +579,19 @@ function hasSearchMatch(lineIdx: number): boolean {
       <div class="cv-toolbar-right">
         <!-- Font size -->
         <div class="cv-font-controls">
-          <button class="cv-btn-icon" :title="t('strategyDev.cvFontSmaller')" @click="changeFontSize(-1)">
+          <button
+            class="cv-btn-icon"
+            :title="t('strategyDev.cvFontSmaller')"
+            @click="changeFontSize(-1)"
+          >
             <i-mdi-format-font-size-decrease class="w-3.5 h-3.5" />
           </button>
           <span class="cv-font-size">{{ fontSize }}px</span>
-          <button class="cv-btn-icon" :title="t('strategyDev.cvFontLarger')" @click="changeFontSize(1)">
+          <button
+            class="cv-btn-icon"
+            :title="t('strategyDev.cvFontLarger')"
+            @click="changeFontSize(1)"
+          >
             <i-mdi-format-font-size-increase class="w-3.5 h-3.5" />
           </button>
         </div>
@@ -528,7 +634,11 @@ function hasSearchMatch(lineIdx: number): boolean {
             @keydown="onSearchKeydown"
           />
           <span v-if="searchQuery" class="cv-search-count">
-            {{ searchMatchCount > 0 ? `${searchMatchIndex + 1}/${searchMatchCount}` : t('strategyDev.cvNoResults') }}
+            {{
+              searchMatchCount > 0
+                ? `${searchMatchIndex + 1}/${searchMatchCount}`
+                : t('strategyDev.cvNoResults')
+            }}
           </span>
         </div>
         <button class="cv-btn-icon" :disabled="searchMatchCount === 0" @click="prevMatch">
@@ -558,7 +668,7 @@ function hasSearchMatch(lineIdx: number): boolean {
             :data-line="vl.lineIdx"
           >
             <!-- Gutter -->
-            <td class="cv-gutter" :style="{ width: (gutterWidth + 2) + 'ch' }">
+            <td class="cv-gutter" :style="{ width: gutterWidth + 2 + 'ch' }">
               <!-- Fold button -->
               <span
                 v-if="vl.isFoldStart"
@@ -569,10 +679,7 @@ function hasSearchMatch(lineIdx: number): boolean {
                 <i-mdi-chevron-down v-if="!isFolded(vl.lineIdx)" class="w-3 h-3" />
                 <i-mdi-chevron-right v-else class="w-3 h-3" />
               </span>
-              <span
-                class="cv-line-num"
-                @click="toggleLineHighlight(vl.lineIdx)"
-              >
+              <span class="cv-line-num" @click="toggleLineHighlight(vl.lineIdx)">
                 {{ vl.lineIdx + 1 }}
               </span>
             </td>
@@ -761,10 +868,21 @@ function hasSearchMatch(lineIdx: number): boolean {
   white-space: nowrap;
 }
 
-.cv-search-enter-active { transition: opacity 0.15s, transform 0.15s; }
-.cv-search-leave-active { transition: opacity 0.1s; }
-.cv-search-enter-from { opacity: 0; transform: translateY(-4px); }
-.cv-search-leave-to { opacity: 0; }
+.cv-search-enter-active {
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+}
+.cv-search-leave-active {
+  transition: opacity 0.1s;
+}
+.cv-search-enter-from {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+.cv-search-leave-to {
+  opacity: 0;
+}
 
 /* ── Code area ── */
 .cv-scroll {
@@ -856,16 +974,39 @@ function hasSearchMatch(lineIdx: number): boolean {
 }
 
 /* ── Syntax tokens — Catppuccin Mocha ── */
-:deep(.tk-keyword) { color: #cba6f7; font-weight: 500; }
-:deep(.tk-builtin) { color: #f9e2af; }
-:deep(.tk-string) { color: #a6e3a1; }
-:deep(.tk-comment) { color: #6c7086; font-style: italic; }
-:deep(.tk-number) { color: #fab387; }
-:deep(.tk-decorator) { color: #f5c2e7; }
-:deep(.tk-operator) { color: #89dceb; }
-:deep(.tk-punct) { color: #6c7086; }
-:deep(.tk-json-key) { color: #89b4fa; }
-:deep(.tk-null) { color: #f38ba8; font-style: italic; }
+:deep(.tk-keyword) {
+  color: #cba6f7;
+  font-weight: 500;
+}
+:deep(.tk-builtin) {
+  color: #f9e2af;
+}
+:deep(.tk-string) {
+  color: #a6e3a1;
+}
+:deep(.tk-comment) {
+  color: #6c7086;
+  font-style: italic;
+}
+:deep(.tk-number) {
+  color: #fab387;
+}
+:deep(.tk-decorator) {
+  color: #f5c2e7;
+}
+:deep(.tk-operator) {
+  color: #89dceb;
+}
+:deep(.tk-punct) {
+  color: #6c7086;
+}
+:deep(.tk-json-key) {
+  color: #89b4fa;
+}
+:deep(.tk-null) {
+  color: #f38ba8;
+  font-style: italic;
+}
 
 /* ── Search highlights ── */
 :deep(.cv-search-hl) {

@@ -6,7 +6,13 @@ const { t } = useI18n();
 const botStore = useBotStore();
 
 // --- Types ---
-type EventType = 'trade_opened' | 'trade_closed_profit' | 'trade_closed_loss' | 'bot_status' | 'alert' | 'dca';
+type EventType =
+  | 'trade_opened'
+  | 'trade_closed_profit'
+  | 'trade_closed_loss'
+  | 'bot_status'
+  | 'alert'
+  | 'dca';
 type TimeGroup = 'today' | 'yesterday' | 'thisWeek' | 'earlier';
 
 type TradingModeFilter = 'all' | 'live' | 'dry';
@@ -33,13 +39,24 @@ import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
 import { DashboardLayout } from '@/stores/layout';
 import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 
-const ALL_EVENT_TYPES: EventType[] = ['trade_opened', 'trade_closed_profit', 'trade_closed_loss', 'bot_status', 'alert', 'dca'];
+const ALL_EVENT_TYPES: EventType[] = [
+  'trade_opened',
+  'trade_closed_profit',
+  'trade_closed_loss',
+  'bot_status',
+  'alert',
+  'dca',
+];
 
 // --- State ---
 const compactMode = ref(true);
 const searchQuery = ref('');
 const selectedBotFilter = ref<string>('all');
-const { tradingMode: tradingModeFilter, hasMultipleModes, restorePersistedTradingMode } = useTradingModeFilter('activityTimeline');
+const {
+  tradingMode: tradingModeFilter,
+  hasMultipleModes,
+  restorePersistedTradingMode,
+} = useTradingModeFilter('activityTimeline');
 const { initialLoading } = useInitialBotLoading();
 const enabledEventTypes = ref<Set<EventType>>(new Set(ALL_EVENT_TYPES));
 const maxEvents = ref(100);
@@ -59,24 +76,52 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   }),
   (d) => {
     if (d.compactMode !== undefined) compactMode.value = d.compactMode as boolean;
-    if (d.tradingModeFilter !== undefined) tradingModeFilter.value = d.tradingModeFilter as typeof tradingModeFilter.value;
+    if (d.tradingModeFilter !== undefined)
+      tradingModeFilter.value = d.tradingModeFilter as typeof tradingModeFilter.value;
     if (d.enabledEventTypes) enabledEventTypes.value = new Set(d.enabledEventTypes as EventType[]);
   },
   HARDCODED_DEFAULTS_ACT,
 );
 
-onMounted(() => { loadDefaults(); restorePersistedTradingMode(); });
+onMounted(() => {
+  loadDefaults();
+  restorePersistedTradingMode();
+});
 
 defineExpose({ filtersChanged, saveCurrentAsDefault });
 
 // --- Event type config ---
 const eventTypeConfig: Record<EventType, { icon: string; color: string; dotClass: string }> = {
-  trade_opened: { icon: 'i-mdi-plus-circle', color: 'text-blue-400', dotClass: 'bg-blue-400 shadow-blue-400/40' },
-  trade_closed_profit: { icon: 'i-mdi-check-circle', color: 'text-green-400', dotClass: 'bg-green-400 shadow-green-400/40' },
-  trade_closed_loss: { icon: 'i-mdi-close-circle', color: 'text-red-400', dotClass: 'bg-red-400 shadow-red-400/40' },
-  bot_status: { icon: 'i-mdi-power', color: 'text-gray-600 dark:text-gray-400', dotClass: 'bg-gray-400 shadow-gray-400/40' },
-  alert: { icon: 'i-mdi-bell-alert', color: 'text-amber-400', dotClass: 'bg-amber-400 shadow-amber-400/40' },
-  dca: { icon: 'i-mdi-layers', color: 'text-purple-400', dotClass: 'bg-purple-400 shadow-purple-400/40' },
+  trade_opened: {
+    icon: 'i-mdi-plus-circle',
+    color: 'text-blue-400',
+    dotClass: 'bg-blue-400 shadow-blue-400/40',
+  },
+  trade_closed_profit: {
+    icon: 'i-mdi-check-circle',
+    color: 'text-green-400',
+    dotClass: 'bg-green-400 shadow-green-400/40',
+  },
+  trade_closed_loss: {
+    icon: 'i-mdi-close-circle',
+    color: 'text-red-400',
+    dotClass: 'bg-red-400 shadow-red-400/40',
+  },
+  bot_status: {
+    icon: 'i-mdi-power',
+    color: 'text-gray-600 dark:text-gray-400',
+    dotClass: 'bg-gray-400 shadow-gray-400/40',
+  },
+  alert: {
+    icon: 'i-mdi-bell-alert',
+    color: 'text-amber-400',
+    dotClass: 'bg-amber-400 shadow-amber-400/40',
+  },
+  dca: {
+    icon: 'i-mdi-layers',
+    color: 'text-purple-400',
+    dotClass: 'bg-purple-400 shadow-purple-400/40',
+  },
 };
 
 const eventTypeLabels: { key: EventType; labelKey: string }[] = [
@@ -118,7 +163,7 @@ function getTimeGroup(ts: number): TimeGroup {
   const date = new Date(ts);
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const yesterdayStart = todayStart - 86400000;
-  const weekStart = todayStart - (now.getDay() * 86400000);
+  const weekStart = todayStart - now.getDay() * 86400000;
 
   if (ts >= todayStart) return 'today';
   if (ts >= yesterdayStart) return 'yesterday';
@@ -364,17 +409,23 @@ function toggleEventType(type: EventType) {
 function eventDescription(event: TimelineEvent): string {
   switch (event.type) {
     case 'trade_opened': {
-      const dir = event.direction === 'short' ? t('activityTimeline.short') : t('activityTimeline.long');
+      const dir =
+        event.direction === 'short' ? t('activityTimeline.short') : t('activityTimeline.long');
       return `${t('activityTimeline.opened')} ${dir} ${event.pair}`;
     }
     case 'trade_closed_profit':
     case 'trade_closed_loss': {
-      const dir = event.direction === 'short' ? t('activityTimeline.short') : t('activityTimeline.long');
-      const pct = event.profitPct !== undefined ? `${event.profitPct >= 0 ? '+' : ''}${event.profitPct.toFixed(2)}%` : '';
+      const dir =
+        event.direction === 'short' ? t('activityTimeline.short') : t('activityTimeline.long');
+      const pct =
+        event.profitPct !== undefined
+          ? `${event.profitPct >= 0 ? '+' : ''}${event.profitPct.toFixed(2)}%`
+          : '';
       return `${t('activityTimeline.closed')} ${dir} ${event.pair} ${pct}`;
     }
     case 'dca': {
-      const dir = event.direction === 'short' ? t('activityTimeline.short') : t('activityTimeline.long');
+      const dir =
+        event.direction === 'short' ? t('activityTimeline.short') : t('activityTimeline.long');
       const stakeStr = event.stakeAmount
         ? ` +${formatPrice(event.stakeAmount, 2)}${event.currency ? ` ${event.currency}` : ''}`
         : '';
@@ -399,10 +450,7 @@ function eventDescription(event: TimelineEvent): string {
         <!-- Search -->
         <div
           class="flex items-center flex-1 rounded-lg px-2 py-1"
-          style="
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-          "
+          style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08)"
         >
           <i class="i-mdi-magnify text-surface-400 text-sm mr-1.5" />
           <input
@@ -440,10 +488,7 @@ function eventDescription(event: TimelineEvent): string {
               ? 'bg-primary text-white shadow-sm'
               : 'text-surface-400 hover:text-surface-200 hover:bg-surface-700/50'
           "
-          style="
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-          "
+          style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06)"
           :style="compactMode ? 'background: rgba(99, 102, 241, 0.85)' : ''"
           :title="t('activityTimeline.compactMode')"
           @click="compactMode = !compactMode"
@@ -459,20 +504,23 @@ function eventDescription(event: TimelineEvent): string {
           v-for="et in eventTypeLabels"
           :key="et.key"
           class="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-all duration-200 cursor-pointer"
-          :class="
-            enabledEventTypes.has(et.key)
-              ? 'opacity-100'
-              : 'opacity-40 hover:opacity-60'
-          "
+          :class="enabledEventTypes.has(et.key) ? 'opacity-100' : 'opacity-40 hover:opacity-60'"
           :style="{
             background: enabledEventTypes.has(et.key)
               ? 'rgba(255, 255, 255, 0.08)'
               : 'rgba(255, 255, 255, 0.02)',
-            border: '1px solid ' + (enabledEventTypes.has(et.key) ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.04)'),
+            border:
+              '1px solid ' +
+              (enabledEventTypes.has(et.key)
+                ? 'rgba(255, 255, 255, 0.12)'
+                : 'rgba(255, 255, 255, 0.04)'),
           }"
           @click="toggleEventType(et.key)"
         >
-          <i :class="[eventTypeConfig[et.key].icon, eventTypeConfig[et.key].color]" style="font-size: 0.7rem" />
+          <i
+            :class="[eventTypeConfig[et.key].icon, eventTypeConfig[et.key].color]"
+            style="font-size: 0.7rem"
+          />
           <span :class="eventTypeConfig[et.key].color">{{ t(et.labelKey) }}</span>
         </button>
       </div>
@@ -513,7 +561,13 @@ function eventDescription(event: TimelineEvent): string {
           <!-- Vertical timeline line -->
           <div
             class="absolute left-[9px] top-2 bottom-2 w-px"
-            style="background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.03))"
+            style="
+              background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.1),
+                rgba(255, 255, 255, 0.03)
+              );
+            "
           />
 
           <!-- Event cards -->
@@ -523,7 +577,15 @@ function eventDescription(event: TimelineEvent): string {
             class="relative flex items-start gap-3 group rounded-sm"
             :class="[
               compactMode ? 'py-0.5 pl-1 border-l-2' : 'py-1.5',
-              compactMode ? (event.type === 'trade_closed_profit' ? 'border-green-500/40' : event.type === 'trade_closed_loss' ? 'border-red-500/40' : event.type === 'trade_opened' ? 'border-blue-500/40' : 'border-surface-500/20') : '',
+              compactMode
+                ? event.type === 'trade_closed_profit'
+                  ? 'border-green-500/40'
+                  : event.type === 'trade_closed_loss'
+                    ? 'border-red-500/40'
+                    : event.type === 'trade_opened'
+                      ? 'border-blue-500/40'
+                      : 'border-surface-500/20'
+                : '',
             ]"
           >
             <!-- Timeline dot -->
@@ -544,11 +606,11 @@ function eventDescription(event: TimelineEvent): string {
             </div>
 
             <!-- Compact mode: single line -->
-            <div
-              v-if="compactMode"
-              class="flex-1 flex items-center gap-2 min-w-0 text-xs"
-            >
-              <span class="text-surface-500 flex-shrink-0" style="font-size: 0.65rem; min-width: 40px">
+            <div v-if="compactMode" class="flex-1 flex items-center gap-2 min-w-0 text-xs">
+              <span
+                class="text-surface-500 flex-shrink-0"
+                style="font-size: 0.65rem; min-width: 40px"
+              >
                 {{ timeAgo(event.timestamp) }}
               </span>
               <span
@@ -565,12 +627,16 @@ function eventDescription(event: TimelineEvent): string {
                 {{ eventDescription(event) }}
               </span>
               <span
-                v-if="event.profitAbs !== undefined && (event.type === 'trade_closed_profit' || event.type === 'trade_closed_loss')"
+                v-if="
+                  event.profitAbs !== undefined &&
+                  (event.type === 'trade_closed_profit' || event.type === 'trade_closed_loss')
+                "
                 class="flex-shrink-0 font-mono font-semibold"
                 :class="(event.profitAbs ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'"
                 style="font-size: 0.65rem"
               >
-                {{ (event.profitAbs ?? 0) >= 0 ? '+' : '' }}{{ (event.profitAbs ?? 0).toFixed(2) }}<template v-if="event.currency"> {{ event.currency }}</template>
+                {{ (event.profitAbs ?? 0) >= 0 ? '+' : '' }}{{ (event.profitAbs ?? 0).toFixed(2)
+                }}<template v-if="event.currency"> {{ event.currency }}</template>
               </span>
             </div>
 
@@ -625,11 +691,19 @@ function eventDescription(event: TimelineEvent): string {
                 <!-- Direction -->
                 <div class="flex items-center gap-1">
                   <i
-                    :class="event.direction === 'short' ? 'i-mdi-arrow-down text-red-400' : 'i-mdi-arrow-up text-green-400'"
+                    :class="
+                      event.direction === 'short'
+                        ? 'i-mdi-arrow-down text-red-400'
+                        : 'i-mdi-arrow-up text-green-400'
+                    "
                     style="font-size: 0.7rem"
                   />
                   <span class="text-xs text-surface-400">
-                    {{ event.direction === 'short' ? t('activityTimeline.short') : t('activityTimeline.long') }}
+                    {{
+                      event.direction === 'short'
+                        ? t('activityTimeline.short')
+                        : t('activityTimeline.long')
+                    }}
                   </span>
                 </div>
                 <!-- Profit -->
@@ -638,53 +712,69 @@ function eventDescription(event: TimelineEvent): string {
                     class="text-xs font-mono font-semibold"
                     :class="(event.profitAbs ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'"
                   >
-                    {{ (event.profitPct ?? 0) >= 0 ? '+' : '' }}{{ (event.profitPct ?? 0).toFixed(2) }}%
+                    {{ (event.profitPct ?? 0) >= 0 ? '+' : ''
+                    }}{{ (event.profitPct ?? 0).toFixed(2) }}%
                   </span>
                 </div>
                 <!-- Duration -->
-                <div v-if="event.durationMs && event.durationMs > 0" class="flex items-center gap-1">
+                <div
+                  v-if="event.durationMs && event.durationMs > 0"
+                  class="flex items-center gap-1"
+                >
                   <i class="i-mdi-clock-outline text-surface-500" style="font-size: 0.7rem" />
-                  <span class="text-xs text-surface-400">{{ formatDuration(event.durationMs) }}</span>
+                  <span class="text-xs text-surface-400">{{
+                    formatDuration(event.durationMs)
+                  }}</span>
                 </div>
               </div>
 
               <!-- Trade details for open events -->
-              <div
-                v-if="event.type === 'trade_opened'"
-                class="flex items-center gap-3 mt-1.5"
-              >
+              <div v-if="event.type === 'trade_opened'" class="flex items-center gap-3 mt-1.5">
                 <div class="flex items-center gap-1">
                   <i class="i-mdi-swap-horizontal text-surface-500" style="font-size: 0.7rem" />
                   <span class="text-xs text-surface-300">{{ event.pair }}</span>
                 </div>
                 <div class="flex items-center gap-1">
                   <i
-                    :class="event.direction === 'short' ? 'i-mdi-arrow-down text-red-400' : 'i-mdi-arrow-up text-green-400'"
+                    :class="
+                      event.direction === 'short'
+                        ? 'i-mdi-arrow-down text-red-400'
+                        : 'i-mdi-arrow-up text-green-400'
+                    "
                     style="font-size: 0.7rem"
                   />
                   <span class="text-xs text-surface-400">
-                    {{ event.direction === 'short' ? t('activityTimeline.short') : t('activityTimeline.long') }}
+                    {{
+                      event.direction === 'short'
+                        ? t('activityTimeline.short')
+                        : t('activityTimeline.long')
+                    }}
                   </span>
                 </div>
               </div>
 
               <!-- DCA details -->
-              <div
-                v-if="event.type === 'dca'"
-                class="flex items-center gap-3 mt-1.5"
-              >
+              <div v-if="event.type === 'dca'" class="flex items-center gap-3 mt-1.5">
                 <div class="flex items-center gap-1">
                   <i class="i-mdi-swap-horizontal text-surface-500" style="font-size: 0.7rem" />
                   <span class="text-xs text-surface-300">{{ event.pair }}</span>
                 </div>
                 <div class="flex items-center gap-1">
                   <i
-                    :class="event.direction === 'short' ? 'i-mdi-arrow-down text-red-400' : 'i-mdi-arrow-up text-green-400'"
+                    :class="
+                      event.direction === 'short'
+                        ? 'i-mdi-arrow-down text-red-400'
+                        : 'i-mdi-arrow-up text-green-400'
+                    "
                     style="font-size: 0.7rem"
                   />
                   <span
                     class="text-xs font-medium rounded px-1 py-px"
-                    :class="event.direction === 'short' ? 'text-red-400 bg-red-400/10' : 'text-green-400 bg-green-400/10'"
+                    :class="
+                      event.direction === 'short'
+                        ? 'text-red-400 bg-red-400/10'
+                        : 'text-green-400 bg-green-400/10'
+                    "
                     style="font-size: 0.6rem"
                   >
                     {{ event.direction === 'short' ? 'S' : 'L' }}
@@ -699,7 +789,8 @@ function eventDescription(event: TimelineEvent): string {
                 <div v-if="event.stakeAmount" class="flex items-center gap-1">
                   <i class="i-mdi-cash-plus text-surface-500" style="font-size: 0.7rem" />
                   <span class="text-xs text-surface-400">
-                    +{{ formatPrice(event.stakeAmount, 2) }}<template v-if="event.currency"> {{ event.currency }}</template>
+                    +{{ formatPrice(event.stakeAmount, 2)
+                    }}<template v-if="event.currency"> {{ event.currency }}</template>
                   </span>
                 </div>
               </div>

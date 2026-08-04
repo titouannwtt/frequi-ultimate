@@ -66,7 +66,7 @@ const globalCacheHitPct = computed(() => {
   const pHits = pl?.hits || 0;
   const total = oTotal + tTotal + pTotal;
   const hits = oHits + tHits + pHits;
-  return total > 0 ? Math.round(hits / total * 100) : 0;
+  return total > 0 ? Math.round((hits / total) * 100) : 0;
 });
 
 const directRequests = computed(() => summary.value?.direct ?? 0);
@@ -126,25 +126,40 @@ function makeGauge(pct: number, color: string, width = 10): EChartsOption {
   return {
     backgroundColor: 'rgba(0, 0, 0, 0)',
     tooltip: { show: false },
-    series: [{
-      type: 'gauge', startAngle: 220, endAngle: -40,
-      min: 0, max: 100, radius: '100%', center: ['50%', '62%'],
-      progress: { show: true, width, roundCap: true, itemStyle: { color } },
-      axisLine: { lineStyle: { width, color: [[1, '#1e293b']] } },
-      axisTick: { show: false }, splitLine: { show: false },
-      axisLabel: { show: false }, pointer: { show: false },
-      title: { show: false },
-      detail: {
-        valueAnimation: true, fontSize: 18, fontWeight: 'bold',
-        color, offsetCenter: [0, '-2%'], formatter: '{value}%',
+    series: [
+      {
+        type: 'gauge',
+        startAngle: 220,
+        endAngle: -40,
+        min: 0,
+        max: 100,
+        radius: '100%',
+        center: ['50%', '62%'],
+        progress: { show: true, width, roundCap: true, itemStyle: { color } },
+        axisLine: { lineStyle: { width, color: [[1, '#1e293b']] } },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { show: false },
+        pointer: { show: false },
+        title: { show: false },
+        detail: {
+          valueAnimation: true,
+          fontSize: 18,
+          fontWeight: 'bold',
+          color,
+          offsetCenter: [0, '-2%'],
+          formatter: '{value}%',
+        },
+        data: [{ value: pct }],
       },
-      data: [{ value: pct }],
-    }],
+    ],
   };
 }
 
 const budgetGauge = computed(() => makeGauge(tokenPct.value, bucketColor(tokenPct.value), 12));
-const cacheGauge = computed(() => makeGauge(globalCacheHitPct.value, hitColor(globalCacheHitPct.value)));
+const cacheGauge = computed(() =>
+  makeGauge(globalCacheHitPct.value, hitColor(globalCacheHitPct.value)),
+);
 const loadGauge = computed(() => makeGauge(loadPct.value, loadColor(loadPct.value)));
 
 // --- hit bars for cache card ---
@@ -157,18 +172,23 @@ const hitBarsOption = computed((): EChartsOption => {
     grid: { left: 50, right: 32, top: 0, bottom: 0 },
     xAxis: { type: 'value', max: 100, show: false },
     yAxis: {
-      type: 'category', data: cats,
-      axisLine: { show: false }, axisTick: { show: false },
+      type: 'category',
+      data: cats,
+      axisLine: { show: false },
+      axisTick: { show: false },
       axisLabel: { fontSize: 9, color: '#94a3b8' },
     },
-    series: [{
-      type: 'bar', barWidth: 8,
-      data: vals.map(v => ({
-        value: v,
-        itemStyle: { color: hitColor(v), borderRadius: [0, 3, 3, 0] },
-      })),
-      label: { show: true, position: 'right', formatter: '{c}%', fontSize: 9, color: '#94a3b8' },
-    }],
+    series: [
+      {
+        type: 'bar',
+        barWidth: 8,
+        data: vals.map((v) => ({
+          value: v,
+          itemStyle: { color: hitColor(v), borderRadius: [0, 3, 3, 0] },
+        })),
+        label: { show: true, position: 'right', formatter: '{c}%', fontSize: 9, color: '#94a3b8' },
+      },
+    ],
   };
 });
 </script>
@@ -223,7 +243,9 @@ const hitBarsOption = computed((): EChartsOption => {
           <div class="grow mx-2 h-1.5 bg-amber-900/30 rounded-full overflow-hidden">
             <div
               class="h-full bg-amber-400 rounded-full transition-all"
-              :style="{ width: `${Math.max(5, 100 - (current.backoff_remaining_s / (current.current_backoff_duration_s || 30)) * 100)}%` }"
+              :style="{
+                width: `${Math.max(5, 100 - (current.backoff_remaining_s / (current.current_backoff_duration_s || 30)) * 100)}%`,
+              }"
             />
           </div>
           <span
@@ -239,11 +261,16 @@ const hitBarsOption = computed((): EChartsOption => {
           <!-- Card 1: Rate Budget -->
           <div
             class="flex flex-col items-center p-1.5 rounded-lg cursor-help transition-colors hover:bg-surface-800/50"
-            style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04)"
+            style="
+              background: rgba(255, 255, 255, 0.02);
+              border: 1px solid rgba(255, 255, 255, 0.04);
+            "
             @mouseenter="showCardPopover($event, 'budget')"
             @mouseleave="hideCardPopover"
           >
-            <span class="text-[9px] text-surface-500 mb-0.5">{{ t('rateMonitor.rateBudget') }}</span>
+            <span class="text-[9px] text-surface-500 mb-0.5">{{
+              t('rateMonitor.rateBudget')
+            }}</span>
             <ECharts
               :option="budgetGauge"
               :theme="settingsStore.chartTheme"
@@ -258,11 +285,16 @@ const hitBarsOption = computed((): EChartsOption => {
           <!-- Card 2: Cache Hit Rate -->
           <div
             class="flex flex-col items-center p-1.5 rounded-lg cursor-help transition-colors hover:bg-surface-800/50"
-            style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04)"
+            style="
+              background: rgba(255, 255, 255, 0.02);
+              border: 1px solid rgba(255, 255, 255, 0.04);
+            "
             @mouseenter="showCardPopover($event, 'cache')"
             @mouseleave="hideCardPopover"
           >
-            <span class="text-[9px] text-surface-500 mb-0.5">{{ t('rateMonitor.cacheHitRates') }}</span>
+            <span class="text-[9px] text-surface-500 mb-0.5">{{
+              t('rateMonitor.cacheHitRates')
+            }}</span>
             <ECharts
               :option="cacheGauge"
               :theme="settingsStore.chartTheme"
@@ -280,11 +312,16 @@ const hitBarsOption = computed((): EChartsOption => {
           <!-- Card 3: Exchange Load -->
           <div
             class="flex flex-col items-center p-1.5 rounded-lg cursor-help transition-colors hover:bg-surface-800/50"
-            style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04)"
+            style="
+              background: rgba(255, 255, 255, 0.02);
+              border: 1px solid rgba(255, 255, 255, 0.04);
+            "
             @mouseenter="showCardPopover($event, 'load')"
             @mouseleave="hideCardPopover"
           >
-            <span class="text-[9px] text-surface-500 mb-0.5">{{ t('cacheHealth.exchangeCapacity') }}</span>
+            <span class="text-[9px] text-surface-500 mb-0.5">{{
+              t('cacheHealth.exchangeCapacity')
+            }}</span>
             <ECharts
               :option="loadGauge"
               :theme="settingsStore.chartTheme"
@@ -316,24 +353,50 @@ const hitBarsOption = computed((): EChartsOption => {
               <div
                 v-if="(summary?.cached ?? 0) > 0"
                 class="h-full bg-green-500/80"
-                :style="{ width: `${((summary?.cached ?? 0) / ((summary?.total ?? 0) + (ftpairlist?.hits ?? 0) || 1)) * 100}%` }"
+                :style="{
+                  width: `${((summary?.cached ?? 0) / ((summary?.total ?? 0) + (ftpairlist?.hits ?? 0) || 1)) * 100}%`,
+                }"
               />
               <div
                 v-if="(ftpairlist?.hits ?? 0) > 0"
                 class="h-full bg-blue-500/80"
-                :style="{ width: `${((ftpairlist?.hits ?? 0) / ((summary?.total ?? 0) + (ftpairlist?.hits ?? 0) || 1)) * 100}%` }"
+                :style="{
+                  width: `${((ftpairlist?.hits ?? 0) / ((summary?.total ?? 0) + (ftpairlist?.hits ?? 0) || 1)) * 100}%`,
+                }"
               />
               <div
                 v-if="(summary?.direct ?? 0) > 0"
                 class="h-full bg-amber-500/80"
-                :style="{ width: `${((summary?.direct ?? 0) / ((summary?.total ?? 0) + (ftpairlist?.hits ?? 0) || 1)) * 100}%` }"
+                :style="{
+                  width: `${((summary?.direct ?? 0) / ((summary?.total ?? 0) + (ftpairlist?.hits ?? 0) || 1)) * 100}%`,
+                }"
               />
             </div>
             <div class="flex gap-3 mt-1 text-[10px] text-surface-500 flex-wrap">
-              <span><span class="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-0.5" />{{ t('cacheHealth.cachedFtcache') }} {{ fmt(summary?.cached ?? 0) }}</span>
-              <span v-if="(ftpairlist?.hits ?? 0) > 0"><span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-0.5" />{{ t('cacheHealth.cachedFtpairlist') }} {{ fmt(ftpairlist?.hits ?? 0) }}</span>
-              <span><span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-0.5" />{{ t('cacheHealth.directToExchange') }} {{ fmt(summary?.direct ?? 0) }}</span>
-              <span v-if="(summary?.errors ?? 0) > 0" class="text-red-400"><span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 mr-0.5" />{{ t('rateMonitor.errors') }} {{ summary?.errors }}</span>
+              <span
+                ><span class="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-0.5" />{{
+                  t('cacheHealth.cachedFtcache')
+                }}
+                {{ fmt(summary?.cached ?? 0) }}</span
+              >
+              <span v-if="(ftpairlist?.hits ?? 0) > 0"
+                ><span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-0.5" />{{
+                  t('cacheHealth.cachedFtpairlist')
+                }}
+                {{ fmt(ftpairlist?.hits ?? 0) }}</span
+              >
+              <span
+                ><span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-0.5" />{{
+                  t('cacheHealth.directToExchange')
+                }}
+                {{ fmt(summary?.direct ?? 0) }}</span
+              >
+              <span v-if="(summary?.errors ?? 0) > 0" class="text-red-400"
+                ><span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 mr-0.5" />{{
+                  t('rateMonitor.errors')
+                }}
+                {{ summary?.errors }}</span
+              >
             </div>
           </div>
 
@@ -355,9 +418,22 @@ const hitBarsOption = computed((): EChartsOption => {
               <i-mdi-filter-remove-outline class="w-3 h-3 inline text-orange-400" />
               {{ fmt(current?.shed_count ?? 0) }} shed
             </span>
-            <span v-if="Object.values(current?.queue_depths ?? {}).reduce((s: number, v: number) => s + v, 0) > 0">
+            <span
+              v-if="
+                Object.values(current?.queue_depths ?? {}).reduce(
+                  (s: number, v: number) => s + v,
+                  0,
+                ) > 0
+              "
+            >
               <i-mdi-tray-full class="w-3 h-3 inline text-purple-400" />
-              queue {{ Object.values(current?.queue_depths ?? {}).reduce((s: number, v: number) => s + v, 0) }}
+              queue
+              {{
+                Object.values(current?.queue_depths ?? {}).reduce(
+                  (s: number, v: number) => s + v,
+                  0,
+                )
+              }}
             </span>
           </div>
         </template>
@@ -387,7 +463,8 @@ const hitBarsOption = computed((): EChartsOption => {
             <div class="flex justify-between">
               <span class="text-surface-400">Tokens</span>
               <span class="font-mono font-bold" :style="{ color: bucketColor(tokenPct) }">
-                {{ current?.tokens_available?.toFixed(1) ?? '?' }} / {{ current?.tokens_max ?? '?' }}
+                {{ current?.tokens_available?.toFixed(1) ?? '?' }} /
+                {{ current?.tokens_max ?? '?' }}
               </span>
             </div>
             <div v-if="current?.refill_rate" class="flex justify-between">
@@ -416,15 +493,21 @@ const hitBarsOption = computed((): EChartsOption => {
           <div class="space-y-0.5">
             <div class="flex justify-between">
               <span class="text-surface-400">OHLCV</span>
-              <span class="font-mono" :style="{ color: hitColor(ohlcvHitPct) }">{{ ohlcvHitPct }}%</span>
+              <span class="font-mono" :style="{ color: hitColor(ohlcvHitPct) }"
+                >{{ ohlcvHitPct }}%</span
+              >
             </div>
             <div class="flex justify-between">
               <span class="text-surface-400">Tickers</span>
-              <span class="font-mono" :style="{ color: hitColor(tickersHitPct) }">{{ tickersHitPct }}%</span>
+              <span class="font-mono" :style="{ color: hitColor(tickersHitPct) }"
+                >{{ tickersHitPct }}%</span
+              >
             </div>
             <div class="flex justify-between">
               <span class="text-surface-400">Pairlist</span>
-              <span class="font-mono" :style="{ color: hitColor(pairlistHitPct) }">{{ pairlistHitPct }}%</span>
+              <span class="font-mono" :style="{ color: hitColor(pairlistHitPct) }"
+                >{{ pairlistHitPct }}%</span
+              >
             </div>
             <div v-if="ftcache" class="border-t border-surface-700 mt-1 pt-1 space-y-0.5">
               <div class="flex justify-between">

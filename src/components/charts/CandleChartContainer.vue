@@ -157,10 +157,7 @@ const activeOptionsCount = computed(() => {
         </span>
         <span class="tf-badge">{{ timeframe || '' }}</span>
 
-        <PairSelectorAdvanced
-          v-model="singlePairSelection"
-          :available-pairs="availablePairs"
-        />
+        <PairSelectorAdvanced v-model="singlePairSelection" :available-pairs="availablePairs" />
 
         <button
           class="toolbar-btn"
@@ -189,11 +186,7 @@ const activeOptionsCount = computed(() => {
         <PlotConfigSelect />
 
         <!-- Plot configurator -->
-        <button
-          class="toolbar-btn"
-          :title="t('charts.plotConfigurator')"
-          @click="showConfigurator"
-        >
+        <button class="toolbar-btn" :title="t('charts.plotConfigurator')" @click="showConfigurator">
           <i-mdi-chart-timeline-variant-shimmer class="w-4 h-4" />
         </button>
       </div>
@@ -204,19 +197,33 @@ const activeOptionsCount = computed(() => {
       <div v-if="showSettingsPanel" class="settings-panel-wrap">
         <div class="settings-panel">
           <label class="toggle-option">
-            <span class="toggle-track" :class="{ on: settingsStore.hideSimultaneousEntryExit }" @click="settingsStore.hideSimultaneousEntryExit = !settingsStore.hideSimultaneousEntryExit">
+            <span
+              class="toggle-track"
+              :class="{ on: settingsStore.hideSimultaneousEntryExit }"
+              @click="
+                settingsStore.hideSimultaneousEntryExit = !settingsStore.hideSimultaneousEntryExit
+              "
+            >
               <span class="toggle-thumb" />
             </span>
             <span>{{ t('charts.hideSimultaneous') }}</span>
           </label>
           <label class="toggle-option">
-            <span class="toggle-track" :class="{ on: settingsStore.showMarkArea }" @click="settingsStore.showMarkArea = !settingsStore.showMarkArea">
+            <span
+              class="toggle-track"
+              :class="{ on: settingsStore.showMarkArea }"
+              @click="settingsStore.showMarkArea = !settingsStore.showMarkArea"
+            >
               <span class="toggle-thumb" />
             </span>
             <span>{{ t('charts.showChartAreas') }}</span>
           </label>
           <label class="toggle-option">
-            <span class="toggle-track" :class="{ on: settingsStore.useHeikinAshiCandles }" @click="settingsStore.useHeikinAshiCandles = !settingsStore.useHeikinAshiCandles">
+            <span
+              class="toggle-track"
+              :class="{ on: settingsStore.useHeikinAshiCandles }"
+              @click="settingsStore.useHeikinAshiCandles = !settingsStore.useHeikinAshiCandles"
+            >
               <span class="toggle-thumb" />
             </span>
             <span>{{ t('charts.heikinAshi') }}</span>
@@ -224,43 +231,75 @@ const activeOptionsCount = computed(() => {
         </div>
         <div class="settings-panel">
           <label class="toggle-option">
-            <span class="toggle-track" :class="{ on: settingsStore.chartLegendVisible }" @click="settingsStore.chartLegendVisible = !settingsStore.chartLegendVisible">
+            <span
+              class="toggle-track"
+              :class="{ on: settingsStore.chartLegendVisible }"
+              @click="settingsStore.chartLegendVisible = !settingsStore.chartLegendVisible"
+            >
               <span class="toggle-thumb" />
             </span>
             <span>Légende</span>
           </label>
           <label class="toggle-option">
-            <span class="toggle-track" :class="{ on: settingsStore.chartLegendRealtimeValues }" @click="settingsStore.chartLegendRealtimeValues = !settingsStore.chartLegendRealtimeValues">
+            <span
+              class="toggle-track"
+              :class="{ on: settingsStore.chartLegendRealtimeValues }"
+              @click="
+                settingsStore.chartLegendRealtimeValues = !settingsStore.chartLegendRealtimeValues
+              "
+            >
               <span class="toggle-thumb" />
             </span>
             <span>Valeurs temps réel</span>
           </label>
           <label class="toggle-option">
-            <span class="toggle-track" :class="{ on: settingsStore.chartVolumeVisible }" @click="settingsStore.chartVolumeVisible = !settingsStore.chartVolumeVisible">
+            <span
+              class="toggle-track"
+              :class="{ on: settingsStore.chartVolumeVisible }"
+              @click="settingsStore.chartVolumeVisible = !settingsStore.chartVolumeVisible"
+            >
               <span class="toggle-thumb" />
             </span>
             <span>Volume</span>
           </label>
           <label class="toggle-option">
-            <span class="toggle-track" :class="{ on: settingsStore.chartShowLiquidation }" @click="settingsStore.chartShowLiquidation = !settingsStore.chartShowLiquidation">
+            <span
+              class="toggle-track"
+              :class="{ on: settingsStore.chartShowLiquidation }"
+              @click="settingsStore.chartShowLiquidation = !settingsStore.chartShowLiquidation"
+            >
               <span class="toggle-thumb" />
             </span>
             <span>Zone liquidation</span>
           </label>
           <label class="toggle-option">
-            <span class="toggle-track" :class="{ on: settingsStore.chartShowLeverage }" @click="settingsStore.chartShowLeverage = !settingsStore.chartShowLeverage">
+            <span
+              class="toggle-track"
+              :class="{ on: settingsStore.chartShowLeverage }"
+              @click="settingsStore.chartShowLeverage = !settingsStore.chartShowLeverage"
+            >
               <span class="toggle-thumb" />
             </span>
             <span>Levier</span>
           </label>
           <label class="toggle-option">
-            <span class="toggle-track" :class="{ on: settingsStore.chartShowInitialStoploss }" @click="settingsStore.chartShowInitialStoploss = !settingsStore.chartShowInitialStoploss">
+            <span
+              class="toggle-track"
+              :class="{ on: settingsStore.chartShowInitialStoploss }"
+              @click="
+                settingsStore.chartShowInitialStoploss = !settingsStore.chartShowInitialStoploss
+              "
+            >
               <span class="toggle-thumb" />
             </span>
             <span>SL initial</span>
           </label>
           <label class="toggle-option">
-            <span class="toggle-track" :class="{ on: settingsStore.chartKeyboardShortcuts }" @click="settingsStore.chartKeyboardShortcuts = !settingsStore.chartKeyboardShortcuts">
+            <span
+              class="toggle-track"
+              :class="{ on: settingsStore.chartKeyboardShortcuts }"
+              @click="settingsStore.chartKeyboardShortcuts = !settingsStore.chartKeyboardShortcuts"
+            >
               <span class="toggle-thumb" />
             </span>
             <span>Raccourcis clavier</span>
@@ -281,10 +320,7 @@ const activeOptionsCount = computed(() => {
     </Transition>
 
     <!-- ── Chart area ── -->
-    <div
-      v-if="botStore.activeBot.plotMultiPairs?.length > 0"
-      class="chart-area-single"
-    >
+    <div v-if="botStore.activeBot.plotMultiPairs?.length > 0" class="chart-area-single">
       <SingleCandleChartContainer
         v-for="pair in botStore.activeBot.plotMultiPairs"
         :key="pair"
@@ -312,7 +348,11 @@ const activeOptionsCount = computed(() => {
       ok-only
       hide-backdrop
     >
-      <PlotConfigurator :is-visible="showPlotConfigModal" :columns="datasetColumns" :focus-subplot="focusSubplot" />
+      <PlotConfigurator
+        :is-visible="showPlotConfigModal"
+        :columns="datasetColumns"
+        :focus-subplot="focusSubplot"
+      />
     </Dialog>
   </div>
 </template>

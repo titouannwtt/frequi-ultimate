@@ -57,7 +57,8 @@ import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
 import { DashboardLayout } from '@/stores/layout';
 import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 
-const { tradingMode, hasMultipleModes, isBotInMode, restorePersistedTradingMode } = useTradingModeFilter('volumeComparator');
+const { tradingMode, hasMultipleModes, isBotInMode, restorePersistedTradingMode } =
+  useTradingModeFilter('volumeComparator');
 
 const showTradeCount = ref(false);
 const showProfit = ref(false);
@@ -97,7 +98,10 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   HARDCODED_DEFAULTS_VOL,
 );
 
-onMounted(() => { loadDefaults(); restorePersistedTradingMode(); });
+onMounted(() => {
+  loadDefaults();
+  restorePersistedTradingMode();
+});
 
 defineExpose({ filtersChanged, saveCurrentAsDefault });
 
@@ -280,7 +284,7 @@ const chartOptions = computed((): EChartsOption => {
           const val =
             item.seriesName.includes('Volume') || item.seriesName.includes('Profit')
               ? formatVolume(item.value)
-              : item.value?.toFixed?.(2) ?? item.value;
+              : (item.value?.toFixed?.(2) ?? item.value);
           html += `<div>${item.marker} ${item.seriesName}: <b>${val}</b></div>`;
         }
         return html;

@@ -73,6 +73,15 @@ onMounted(() => {
 });
 </script>
 
+<script lang="ts">
+function balanceValueBgClass(val: number): string {
+  if (val > 100) return 'bg-green-500/15';
+  if (val > 10) return 'bg-green-500/10';
+  if (val > 0) return 'bg-green-500/5';
+  return 'bg-surface-500/10';
+}
+</script>
+
 <template>
   <div>
     <div class="flex flex-wrap flex-row mb-2 justify-end items-center">
@@ -136,9 +145,17 @@ onMounted(() => {
           <template #body="{ data }">
             <span
               class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold"
-              :class="balanceValueBgClass(data[showBotOnly && canUseBotBalance ? 'est_stake_bot' : 'est_stake'])"
+              :class="
+                balanceValueBgClass(
+                  data[showBotOnly && canUseBotBalance ? 'est_stake_bot' : 'est_stake'],
+                )
+              "
             >
-              {{ formatCurrency(data[showBotOnly && canUseBotBalance ? 'est_stake_bot' : 'est_stake']) }}
+              {{
+                formatCurrency(
+                  data[showBotOnly && canUseBotBalance ? 'est_stake_bot' : 'est_stake'],
+                )
+              }}
             </span>
           </template>
         </Column>
@@ -149,12 +166,17 @@ onMounted(() => {
               <template #footer>
                 <span
                   class="inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold"
-                  :class="botStore.activeBot.balance.starting_capital_ratio >= 0 ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'"
+                  :class="
+                    botStore.activeBot.balance.starting_capital_ratio >= 0
+                      ? 'bg-green-500/15 text-green-400'
+                      : 'bg-red-500/15 text-red-400'
+                  "
                   :title="`${t('balance.increaseOverCapital')} ${formatCurrency(
                     botStore.activeBot.balance.starting_capital,
                   )} ${botStore.activeBot.balance.stake}`"
                 >
-                  {{ botStore.activeBot.balance.starting_capital_ratio >= 0 ? '+' : '' }}{{ formatPercent(botStore.activeBot.balance.starting_capital_ratio) }}
+                  {{ botStore.activeBot.balance.starting_capital_ratio >= 0 ? '+' : ''
+                  }}{{ formatPercent(botStore.activeBot.balance.starting_capital_ratio) }}
                 </span>
               </template>
             </Column>
@@ -175,12 +197,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<script lang="ts">
-function balanceValueBgClass(val: number): string {
-  if (val > 100) return 'bg-green-500/15';
-  if (val > 10) return 'bg-green-500/10';
-  if (val > 0) return 'bg-green-500/5';
-  return 'bg-surface-500/10';
-}
-</script>

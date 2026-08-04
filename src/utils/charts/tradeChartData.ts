@@ -29,10 +29,14 @@ function markerSymbol(isShort: boolean, kind: MarkerKind): string {
 
 function markerColor(kind: MarkerKind): string {
   switch (kind) {
-    case 'entry': return COLOR_ENTRY;
-    case 'dca': return COLOR_DCA;
-    case 'exit-win': return COLOR_EXIT_WIN;
-    case 'exit-loss': return COLOR_EXIT_LOSS;
+    case 'entry':
+      return COLOR_ENTRY;
+    case 'dca':
+      return COLOR_DCA;
+    case 'exit-win':
+      return COLOR_EXIT_WIN;
+    case 'exit-loss':
+      return COLOR_EXIT_LOSS;
   }
 }
 
@@ -57,11 +61,7 @@ function fmtTs(ts: number): string {
   return d.toISOString().replace('T', ' ').substring(0, 16) + ' UTC';
 }
 
-function buildEntryTooltip(
-  trade: Trade,
-  order: Order | BTOrder,
-  quoteCurrency: string,
-): string {
+function buildEntryTooltip(trade: Trade, order: Order | BTOrder, quoteCurrency: string): string {
   const side = trade.is_short ? 'Short' : 'Long';
   const cost = 'cost' in order ? order.cost : order.amount * order.safe_price;
   const lines = [
@@ -71,19 +71,19 @@ function buildEntryTooltip(
   ];
   if (trade.profit_ratio != null && trade.profit_abs != null) {
     const sign = trade.profit_ratio >= 0 ? '+' : '';
-    lines.push(`P&L: ${sign}${formatPriceCurrency(trade.profit_abs, quoteCurrency)} (${sign}${(trade.profit_ratio * 100).toFixed(2)}%)`);
+    lines.push(
+      `P&L: ${sign}${formatPriceCurrency(trade.profit_abs, quoteCurrency)} (${sign}${(trade.profit_ratio * 100).toFixed(2)}%)`,
+    );
   }
-  const ts = order.order_filled_timestamp ?? ('order_timestamp' in order ? order.order_timestamp : trade.open_timestamp);
+  const ts =
+    order.order_filled_timestamp ??
+    ('order_timestamp' in order ? order.order_timestamp : trade.open_timestamp);
   lines.push(fmtTs(ts));
   if (trade.enter_tag) lines.push(`Tag: ${trade.enter_tag}`);
   return lines.join('<br>');
 }
 
-function buildExitTooltip(
-  trade: Trade,
-  order: Order | BTOrder,
-  quoteCurrency: string,
-): string {
+function buildExitTooltip(trade: Trade, order: Order | BTOrder, quoteCurrency: string): string {
   const side = trade.is_short ? 'Short' : 'Long';
   const lines = [
     `${side} Exit · ${trade.pair?.split('/')[0] ?? ''}/${quoteCurrency}`,
@@ -91,7 +91,9 @@ function buildExitTooltip(
   ];
   if (trade.profit_ratio != null && trade.profit_abs != null) {
     const sign = trade.profit_ratio >= 0 ? '+' : '';
-    lines.push(`P&L: ${sign}${formatPriceCurrency(trade.profit_abs, quoteCurrency)} (${sign}${(trade.profit_ratio * 100).toFixed(2)}%)`);
+    lines.push(
+      `P&L: ${sign}${formatPriceCurrency(trade.profit_abs, quoteCurrency)} (${sign}${(trade.profit_ratio * 100).toFixed(2)}%)`,
+    );
   }
   if (trade.open_timestamp && trade.close_timestamp) {
     lines.push(`Durée: ${fmtDuration(trade.open_timestamp, trade.close_timestamp)}`);
@@ -117,9 +119,13 @@ function buildDcaTooltip(
   ];
   if (trade.profit_ratio != null && trade.profit_abs != null) {
     const sign = trade.profit_ratio >= 0 ? '+' : '';
-    lines.push(`P&L cumulé: ${sign}${formatPriceCurrency(trade.profit_abs, quoteCurrency)} (${sign}${(trade.profit_ratio * 100).toFixed(2)}%)`);
+    lines.push(
+      `P&L cumulé: ${sign}${formatPriceCurrency(trade.profit_abs, quoteCurrency)} (${sign}${(trade.profit_ratio * 100).toFixed(2)}%)`,
+    );
   }
-  const ts = order.order_filled_timestamp ?? ('order_timestamp' in order ? order.order_timestamp : trade.open_timestamp);
+  const ts =
+    order.order_filled_timestamp ??
+    ('order_timestamp' in order ? order.order_timestamp : trade.open_timestamp);
   lines.push(fmtTs(ts));
   if ('ft_order_tag' in order && order.ft_order_tag) lines.push(`Tag: ${order.ft_order_tag}`);
   return lines.join('<br>');
@@ -254,10 +260,14 @@ export function generateTradeSeries(
   if (options.showLeverage) {
     for (const td of tradeData) {
       const label = td[5] as string;
-      if (label && (label.startsWith('Long') || label.startsWith('Short')) && !label.includes('×')) {
+      if (
+        label &&
+        (label.startsWith('Long') || label.startsWith('Short')) &&
+        !label.includes('×')
+      ) {
         const trade = trades.find(
-          (t) => t.leverage && t.leverage > 1 &&
-            (t.open_fill_timestamp ?? t.open_timestamp) != null,
+          (t) =>
+            t.leverage && t.leverage > 1 && (t.open_fill_timestamp ?? t.open_timestamp) != null,
         );
         if (trade) {
           td[5] = `${label} ×${trade.leverage}`;

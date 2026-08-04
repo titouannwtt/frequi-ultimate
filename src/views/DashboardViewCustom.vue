@@ -157,595 +157,628 @@ onMounted(async () => {
       @layout-updated="layoutUpdatedEvent"
       @update:breakpoint="breakpointChanged"
     >
-    <template #default="{ gridItemProps }">
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.dailyChart)"
-        v-bind="gridItemProps"
-        :i="gridLayoutProfitBenchmark.i"
-        :x="gridLayoutProfitBenchmark.x"
-        :y="gridLayoutProfitBenchmark.y"
-        :w="gridLayoutProfitBenchmark.w"
-        :h="gridLayoutProfitBenchmark.h"
-        :min-w="12"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.profitBenchmark')"
-          scope="selection"
-          :hint="t('dashboard.profitBenchmarkDesc')"
-          :widget-id="DashboardLayout.dailyChart"
-          has-filter-defaults
-          :filters-changed="profitBenchmarkRef?.filtersChanged ?? false"
-          @save-filter-defaults="profitBenchmarkRef?.saveCurrentAsDefault()"
+      <template #default="{ gridItemProps }">
+        <GridItem
+          v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.dailyChart)"
+          v-bind="gridItemProps"
+          :i="gridLayoutProfitBenchmark.i"
+          :x="gridLayoutProfitBenchmark.x"
+          :y="gridLayoutProfitBenchmark.y"
+          :w="gridLayoutProfitBenchmark.w"
+          :h="gridLayoutProfitBenchmark.h"
+          :min-w="12"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
         >
-          <ProfitBenchmarkChart
-            ref="profitBenchmarkRef"
-            :trades="botStore.allTradesSelectedBots"
-            :open-trades="botStore.allOpenTradesSelectedBots"
-          />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-bind="gridItemProps"
-        :i="gridLayoutBotComparison.i"
-        :x="gridLayoutBotComparison.x"
-        :y="gridLayoutBotComparison.y"
-        :w="gridLayoutBotComparison.w"
-        :h="gridLayoutBotComparison.h"
-        :min-w="12"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.botComparison')"
-          scope="all"
-          :hint="t('dashboard.botComparisonDesc')"
-          :widget-id="DashboardLayout.botComparison"
-          :can-hide="false"
-          has-column-settings
-          @column-settings-click="botComparisonRef?.showColumnPopover($event)"
-        >
-          <template #header-right>
-            <button
-              class="p-1 text-xs rounded hover:bg-white/10 cursor-pointer"
-              :title="t('botComparison.filtersTitle')"
-              @click="botComparisonRef?.showFilterPopover($event)"
-            >
-              <i-mdi-filter-variant class="inline" />
-            </button>
-            <button
-              class="p-1 text-xs rounded hover:bg-white/10 cursor-pointer"
-              :title="t('botComparison.groupsTitle')"
-              @click="botComparisonRef?.showGroupsPopover($event)"
-            >
-              <i-mdi-folder-multiple class="inline" />
-            </button>
-            <button
-              class="p-1 text-xs rounded cursor-pointer"
-              :class="
-                botComparisonRef?.fitToScreen
-                  ? 'bg-indigo-500/25 text-indigo-300 ring-1 ring-indigo-400/40'
-                  : 'hover:bg-white/10'
-              "
-              :title="
-                botComparisonRef?.fitToScreen
-                  ? t('botComparison.fitScreenOn')
-                  : t('botComparison.fitScreenOff')
-              "
-              @click="botComparisonRef?.toggleFitToScreen()"
-            >
-              <i-mdi-fullscreen v-if="!botComparisonRef?.fitToScreen" class="inline" />
-              <i-mdi-fullscreen-exit v-else class="inline" />
-            </button>
-          </template>
-          <BotComparisonList ref="botComparisonRef" />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.allOpenTrades)"
-        v-bind="gridItemProps"
-        :i="gridLayoutAllOpenTrades.i"
-        :x="gridLayoutAllOpenTrades.x"
-        :y="gridLayoutAllOpenTrades.y"
-        :w="gridLayoutAllOpenTrades.w"
-        :h="gridLayoutAllOpenTrades.h"
-        :min-w="12"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.openTrades')"
-          scope="selection"
-          :hint="t('dashboard.openTradesDesc')"
-          :widget-id="DashboardLayout.allOpenTrades"
-          has-column-settings
-          @column-settings-click="openTradesRef?.showColumnPopover($event)"
-        >
-          <template #header-right>
-            <button
-              class="p-1 text-xs rounded cursor-pointer"
-              :class="
-                openTradesRef?.fitToScreen
-                  ? 'bg-indigo-500/25 text-indigo-300 ring-1 ring-indigo-400/40'
-                  : 'hover:bg-white/10'
-              "
-              :title="
-                openTradesRef?.fitToScreen
-                  ? t('botComparison.fitScreenOn')
-                  : t('botComparison.fitScreenOff')
-              "
-              @click="openTradesRef?.toggleFitToScreen()"
-            >
-              <i-mdi-fullscreen v-if="!openTradesRef?.fitToScreen" class="inline" />
-              <i-mdi-fullscreen-exit v-else class="inline" />
-            </button>
-          </template>
-          <OpenTradesEnhanced ref="openTradesRef" :trades="botStore.allOpenTradesSelectedBots" multi-bot-view />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.allClosedTrades)"
-        v-bind="gridItemProps"
-        :i="gridLayoutAllClosedTrades.i"
-        :x="gridLayoutAllClosedTrades.x"
-        :y="gridLayoutAllClosedTrades.y"
-        :w="gridLayoutAllClosedTrades.w"
-        :h="gridLayoutAllClosedTrades.h"
-        :min-w="12"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.closedTrades')"
-          scope="selection"
-          :hint="t('dashboard.closedTradesDesc')"
-          :widget-id="DashboardLayout.allClosedTrades"
-          has-column-settings
-          @column-settings-click="closedTradesRef?.showColumnPopover($event)"
-        >
-          <template #header-right>
-            <button
-              class="p-1 text-xs rounded cursor-pointer"
-              :class="
-                closedTradesRef?.fitToScreen
-                  ? 'bg-indigo-500/25 text-indigo-300 ring-1 ring-indigo-400/40'
-                  : 'hover:bg-white/10'
-              "
-              :title="
-                closedTradesRef?.fitToScreen
-                  ? t('botComparison.fitScreenOn')
-                  : t('botComparison.fitScreenOff')
-              "
-              @click="closedTradesRef?.toggleFitToScreen()"
-            >
-              <i-mdi-fullscreen v-if="!closedTradesRef?.fitToScreen" class="inline" />
-              <i-mdi-fullscreen-exit v-else class="inline" />
-            </button>
-          </template>
-          <ClosedTradesEnhanced ref="closedTradesRef" :trades="botStore.allClosedTradesSelectedBots" multi-bot-view />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.profitDistributionChart)"
-        v-bind="gridItemProps"
-        :i="gridLayoutProfitDistribution.i"
-        :x="gridLayoutProfitDistribution.x"
-        :y="gridLayoutProfitDistribution.y"
-        :w="gridLayoutProfitDistribution.w"
-        :h="gridLayoutProfitDistribution.h"
-        :min-w="12"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.profitDistribution')"
-          scope="selection"
-          :hint="t('dashboard.profitDistributionDesc')"
-          :widget-id="DashboardLayout.profitDistributionChart"
-          has-filter-defaults
-          :filters-changed="profitDistRef?.filtersChanged ?? false"
-          @save-filter-defaults="profitDistRef?.saveCurrentAsDefault()"
-        >
-          <ProfitDistributionEnhanced ref="profitDistRef" :trades="botStore.allTradesSelectedBots" :show-title="false" />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.activityTimeline)"
-        v-bind="gridItemProps"
-        :i="gridLayoutActivityTimeline.i"
-        :x="gridLayoutActivityTimeline.x"
-        :y="gridLayoutActivityTimeline.y"
-        :w="gridLayoutActivityTimeline.w"
-        :h="gridLayoutActivityTimeline.h"
-        :min-w="8"
-        :min-h="12"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.activityTimeline')"
-          scope="all"
-          :hint="t('dashboard.activityTimelineDesc')"
-          :widget-id="DashboardLayout.activityTimeline"
-          has-filter-defaults
-          :filters-changed="activityTimelineRef?.filtersChanged ?? false"
-          @save-filter-defaults="activityTimelineRef?.saveCurrentAsDefault()"
-        >
-          <ActivityTimeline ref="activityTimelineRef" />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.marketPulse)"
-        v-bind="gridItemProps"
-        :i="gridLayoutMarketPulse.i"
-        :x="gridLayoutMarketPulse.x"
-        :y="gridLayoutMarketPulse.y"
-        :w="gridLayoutMarketPulse.w"
-        :h="gridLayoutMarketPulse.h"
-        :min-w="16"
-        :min-h="24"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.marketOverview')"
-          scope="all"
-          :hint="t('dashboard.marketOverviewDesc')"
-          live
-          :widget-id="DashboardLayout.marketPulse"
-        >
-          <MarketPulse />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.riskOverview)"
-        v-bind="gridItemProps"
-        :i="gridLayoutRiskOverview.i"
-        :x="gridLayoutRiskOverview.x"
-        :y="gridLayoutRiskOverview.y"
-        :w="gridLayoutRiskOverview.w"
-        :h="gridLayoutRiskOverview.h"
-        :min-w="12"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.riskOverview')"
-          scope="all"
-          :hint="t('dashboard.riskOverviewDesc')"
-          :widget-id="DashboardLayout.riskOverview"
-        >
-          <RiskOverview />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.stressTest)"
-        v-bind="gridItemProps"
-        :i="gridLayoutStressTest.i"
-        :x="gridLayoutStressTest.x"
-        :y="gridLayoutStressTest.y"
-        :w="gridLayoutStressTest.w"
-        :h="gridLayoutStressTest.h"
-        :min-w="12"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.stressTest')"
-          scope="all"
-          :hint="t('dashboard.stressTestDesc')"
-          live
-          :widget-id="DashboardLayout.stressTest"
-        >
-          <StressTestCard />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.logConsole)"
-        v-bind="gridItemProps"
-        :i="gridLayoutLogConsole.i"
-        :x="gridLayoutLogConsole.x"
-        :y="gridLayoutLogConsole.y"
-        :w="gridLayoutLogConsole.w"
-        :h="gridLayoutLogConsole.h"
-        :min-w="16"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.logConsole')"
-          scope="system"
-          :hint="t('dashboard.logConsoleDesc')"
-          live
-          :widget-id="DashboardLayout.logConsole"
-          has-filter-defaults
-          :filters-changed="logConsoleRef?.filtersChanged ?? false"
-          @save-filter-defaults="logConsoleRef?.saveCurrentAsDefault()"
-        >
-          <LogConsoleWidget ref="logConsoleRef" />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.rateBudget)"
-        v-bind="gridItemProps"
-        :i="gridLayoutRateBudget.i"
-        :x="gridLayoutRateBudget.x"
-        :y="gridLayoutRateBudget.y"
-        :w="gridLayoutRateBudget.w"
-        :h="gridLayoutRateBudget.h"
-        :min-w="12"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.rateMonitor')"
-          scope="system"
-          :hint="t('dashboard.rateMonitorDesc')"
-          live
-          :widget-id="DashboardLayout.rateBudget"
-        >
-          <CacheRateMonitor multi-bot-view />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.ratePulse)"
-        v-bind="gridItemProps"
-        :i="gridLayoutRatePulse.i"
-        :x="gridLayoutRatePulse.x"
-        :y="gridLayoutRatePulse.y"
-        :w="gridLayoutRatePulse.w"
-        :h="gridLayoutRatePulse.h"
-        :min-w="16"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.requestTimeline')"
-          scope="system"
-          :hint="t('dashboard.requestTimelineDesc')"
-          live
-          :widget-id="DashboardLayout.ratePulse"
-          has-filter-defaults
-          :filters-changed="requestTimelineRef?.filtersChanged ?? false"
-          @save-filter-defaults="requestTimelineRef?.saveCurrentAsDefault()"
-        >
-          <RequestTimeline ref="requestTimelineRef" multi-bot-view />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetOverview)"
-        v-bind="gridItemProps"
-        :i="gridLayoutFleetOverview.i"
-        :x="gridLayoutFleetOverview.x"
-        :y="gridLayoutFleetOverview.y"
-        :w="gridLayoutFleetOverview.w"
-        :h="gridLayoutFleetOverview.h"
-        :min-w="16"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.infraHealth')"
-          scope="system"
-          :hint="t('dashboard.infraHealthDesc')"
-          live
-          :widget-id="DashboardLayout.fleetOverview"
-        >
-          <InfrastructureHealth />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.volumeComparator)"
-        v-bind="gridItemProps"
-        :i="gridLayoutVolumeComparator.i"
-        :x="gridLayoutVolumeComparator.x"
-        :y="gridLayoutVolumeComparator.y"
-        :w="gridLayoutVolumeComparator.w"
-        :h="gridLayoutVolumeComparator.h"
-        :min-w="16"
-        :min-h="20"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.volumeComparator')"
-          scope="all"
-          :hint="t('dashboard.volumeComparatorDesc')"
-          :widget-id="DashboardLayout.volumeComparator"
-          has-filter-defaults
-          :filters-changed="volumeComparatorRef?.filtersChanged ?? false"
-          @save-filter-defaults="volumeComparatorRef?.saveCurrentAsDefault()"
-        >
-          <VolumeComparatorChart ref="volumeComparatorRef" multi-bot-view />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.periodBreakdown)"
-        v-bind="gridItemProps"
-        :i="gridLayoutPeriodBreakdown.i"
-        :x="gridLayoutPeriodBreakdown.x"
-        :y="gridLayoutPeriodBreakdown.y"
-        :w="gridLayoutPeriodBreakdown.w"
-        :h="gridLayoutPeriodBreakdown.h"
-        :min-w="12"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.periodBreakdown')"
-          scope="all"
-          :hint="t('dashboard.periodBreakdownDesc')"
-          :widget-id="DashboardLayout.periodBreakdown"
-          has-filter-defaults
-          :filters-changed="periodBreakdownRef?.filtersChanged ?? false"
-          @save-filter-defaults="periodBreakdownRef?.saveCurrentAsDefault()"
-        >
-          <PeriodBreakdown ref="periodBreakdownRef" multi-bot-view />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.botProfitComparison)"
-        v-bind="gridItemProps"
-        :i="gridLayoutBotProfit.i"
-        :x="gridLayoutBotProfit.x"
-        :y="gridLayoutBotProfit.y"
-        :w="gridLayoutBotProfit.w"
-        :h="gridLayoutBotProfit.h"
-        :min-w="12"
-        :min-h="16"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('dashboard.botProfitComparison')"
-          scope="selection"
-          :hint="t('dashboard.botProfitComparisonDesc')"
-          :widget-id="DashboardLayout.botProfitComparison"
-          has-filter-defaults
-          :filters-changed="botProfitRef?.filtersChanged ?? false"
-          @save-filter-defaults="botProfitRef?.saveCurrentAsDefault()"
-        >
-          <BotProfitComparisonChart ref="botProfitRef" :trades="botStore.allTradesSelectedBots" />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetReconciliation)"
-        v-bind="gridItemProps"
-        :i="gridLayoutFleetReconciliation.i"
-        :x="gridLayoutFleetReconciliation.x"
-        :y="gridLayoutFleetReconciliation.y"
-        :w="gridLayoutFleetReconciliation.w"
-        :h="gridLayoutFleetReconciliation.h"
-        :min-w="12"
-        :min-h="10"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('fleet.walletReconciliation')"
-          scope="fleet"
-          :hint="t('fleet.reconciliationDesc')"
-          live
-          :widget-id="DashboardLayout.fleetReconciliation"
-        >
-          <template #header-extra>
-            <Tag
-              v-if="fleetRecon"
-              :value="
-                fleetRecon.issues === 0
-                  ? t('fleet.allClear')
-                  : t('fleet.issueCount', { count: fleetRecon.issues })
-              "
-              :severity="fleetRecon.issues === 0 ? 'success' : 'danger'"
-              class="!text-[0.65rem]"
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.profitBenchmark')"
+            scope="selection"
+            :hint="t('dashboard.profitBenchmarkDesc')"
+            :widget-id="DashboardLayout.dailyChart"
+            has-filter-defaults
+            :filters-changed="profitBenchmarkRef?.filtersChanged ?? false"
+            @save-filter-defaults="profitBenchmarkRef?.saveCurrentAsDefault()"
+          >
+            <ProfitBenchmarkChart
+              ref="profitBenchmarkRef"
+              :trades="botStore.allTradesSelectedBots"
+              :open-trades="botStore.allOpenTradesSelectedBots"
             />
-          </template>
-          <FleetviewReconciliation />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetExposure)"
-        v-bind="gridItemProps"
-        :i="gridLayoutFleetExposure.i"
-        :x="gridLayoutFleetExposure.x"
-        :y="gridLayoutFleetExposure.y"
-        :w="gridLayoutFleetExposure.w"
-        :h="gridLayoutFleetExposure.h"
-        :min-w="10"
-        :min-h="12"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('fleet.directionalExposure')"
-          scope="fleet"
-          :hint="t('fleet.exposureDesc')"
-          live
-          :widget-id="DashboardLayout.fleetExposure"
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-bind="gridItemProps"
+          :i="gridLayoutBotComparison.i"
+          :x="gridLayoutBotComparison.x"
+          :y="gridLayoutBotComparison.y"
+          :w="gridLayoutBotComparison.w"
+          :h="gridLayoutBotComparison.h"
+          :min-w="12"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
         >
-          <FleetviewExposure />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetPnl)"
-        v-bind="gridItemProps"
-        :i="gridLayoutFleetPnl.i"
-        :x="gridLayoutFleetPnl.x"
-        :y="gridLayoutFleetPnl.y"
-        :w="gridLayoutFleetPnl.w"
-        :h="gridLayoutFleetPnl.h"
-        :min-w="10"
-        :min-h="14"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('fleet.pnlContribution')"
-          scope="fleet"
-          :hint="t('fleet.pnlDesc')"
-          live
-          :widget-id="DashboardLayout.fleetPnl"
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.botComparison')"
+            scope="all"
+            :hint="t('dashboard.botComparisonDesc')"
+            :widget-id="DashboardLayout.botComparison"
+            :can-hide="false"
+            has-column-settings
+            @column-settings-click="botComparisonRef?.showColumnPopover($event)"
+          >
+            <template #header-right>
+              <button
+                class="p-1 text-xs rounded hover:bg-white/10 cursor-pointer"
+                :title="t('botComparison.filtersTitle')"
+                @click="botComparisonRef?.showFilterPopover($event)"
+              >
+                <i-mdi-filter-variant class="inline" />
+              </button>
+              <button
+                class="p-1 text-xs rounded hover:bg-white/10 cursor-pointer"
+                :title="t('botComparison.groupsTitle')"
+                @click="botComparisonRef?.showGroupsPopover($event)"
+              >
+                <i-mdi-folder-multiple class="inline" />
+              </button>
+              <button
+                class="p-1 text-xs rounded cursor-pointer"
+                :class="
+                  botComparisonRef?.fitToScreen
+                    ? 'bg-indigo-500/25 text-indigo-300 ring-1 ring-indigo-400/40'
+                    : 'hover:bg-white/10'
+                "
+                :title="
+                  botComparisonRef?.fitToScreen
+                    ? t('botComparison.fitScreenOn')
+                    : t('botComparison.fitScreenOff')
+                "
+                @click="botComparisonRef?.toggleFitToScreen()"
+              >
+                <i-mdi-fullscreen v-if="!botComparisonRef?.fitToScreen" class="inline" />
+                <i-mdi-fullscreen-exit v-else class="inline" />
+              </button>
+            </template>
+            <BotComparisonList ref="botComparisonRef" />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="
+            layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.allOpenTrades)
+          "
+          v-bind="gridItemProps"
+          :i="gridLayoutAllOpenTrades.i"
+          :x="gridLayoutAllOpenTrades.x"
+          :y="gridLayoutAllOpenTrades.y"
+          :w="gridLayoutAllOpenTrades.w"
+          :h="gridLayoutAllOpenTrades.h"
+          :min-w="12"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
         >
-          <FleetviewPnlChart />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetBots)"
-        v-bind="gridItemProps"
-        :i="gridLayoutFleetBots.i"
-        :x="gridLayoutFleetBots.x"
-        :y="gridLayoutFleetBots.y"
-        :w="gridLayoutFleetBots.w"
-        :h="gridLayoutFleetBots.h"
-        :min-w="12"
-        :min-h="14"
-        drag-allow-from=".drag-header"
-        drag-ignore-from=".ft-no-drag"
-      >
-        <DraggableContainer
-          lazy
-          :header="t('fleet.botsPanel')"
-          scope="fleet"
-          :hint="t('fleet.botsDesc')"
-          live
-          :widget-id="DashboardLayout.fleetBots"
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.openTrades')"
+            scope="selection"
+            :hint="t('dashboard.openTradesDesc')"
+            :widget-id="DashboardLayout.allOpenTrades"
+            has-column-settings
+            @column-settings-click="openTradesRef?.showColumnPopover($event)"
+          >
+            <template #header-right>
+              <button
+                class="p-1 text-xs rounded cursor-pointer"
+                :class="
+                  openTradesRef?.fitToScreen
+                    ? 'bg-indigo-500/25 text-indigo-300 ring-1 ring-indigo-400/40'
+                    : 'hover:bg-white/10'
+                "
+                :title="
+                  openTradesRef?.fitToScreen
+                    ? t('botComparison.fitScreenOn')
+                    : t('botComparison.fitScreenOff')
+                "
+                @click="openTradesRef?.toggleFitToScreen()"
+              >
+                <i-mdi-fullscreen v-if="!openTradesRef?.fitToScreen" class="inline" />
+                <i-mdi-fullscreen-exit v-else class="inline" />
+              </button>
+            </template>
+            <OpenTradesEnhanced
+              ref="openTradesRef"
+              :trades="botStore.allOpenTradesSelectedBots"
+              multi-bot-view
+            />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="
+            layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.allClosedTrades)
+          "
+          v-bind="gridItemProps"
+          :i="gridLayoutAllClosedTrades.i"
+          :x="gridLayoutAllClosedTrades.x"
+          :y="gridLayoutAllClosedTrades.y"
+          :w="gridLayoutAllClosedTrades.w"
+          :h="gridLayoutAllClosedTrades.h"
+          :min-w="12"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
         >
-          <FleetviewBotsTable />
-        </DraggableContainer>
-      </GridItem>
-    </template>
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.closedTrades')"
+            scope="selection"
+            :hint="t('dashboard.closedTradesDesc')"
+            :widget-id="DashboardLayout.allClosedTrades"
+            has-column-settings
+            @column-settings-click="closedTradesRef?.showColumnPopover($event)"
+          >
+            <template #header-right>
+              <button
+                class="p-1 text-xs rounded cursor-pointer"
+                :class="
+                  closedTradesRef?.fitToScreen
+                    ? 'bg-indigo-500/25 text-indigo-300 ring-1 ring-indigo-400/40'
+                    : 'hover:bg-white/10'
+                "
+                :title="
+                  closedTradesRef?.fitToScreen
+                    ? t('botComparison.fitScreenOn')
+                    : t('botComparison.fitScreenOff')
+                "
+                @click="closedTradesRef?.toggleFitToScreen()"
+              >
+                <i-mdi-fullscreen v-if="!closedTradesRef?.fitToScreen" class="inline" />
+                <i-mdi-fullscreen-exit v-else class="inline" />
+              </button>
+            </template>
+            <ClosedTradesEnhanced
+              ref="closedTradesRef"
+              :trades="botStore.allClosedTradesSelectedBots"
+              multi-bot-view
+            />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="
+            layoutStore.editMode ||
+            layoutStore.isWidgetVisible(DashboardLayout.profitDistributionChart)
+          "
+          v-bind="gridItemProps"
+          :i="gridLayoutProfitDistribution.i"
+          :x="gridLayoutProfitDistribution.x"
+          :y="gridLayoutProfitDistribution.y"
+          :w="gridLayoutProfitDistribution.w"
+          :h="gridLayoutProfitDistribution.h"
+          :min-w="12"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.profitDistribution')"
+            scope="selection"
+            :hint="t('dashboard.profitDistributionDesc')"
+            :widget-id="DashboardLayout.profitDistributionChart"
+            has-filter-defaults
+            :filters-changed="profitDistRef?.filtersChanged ?? false"
+            @save-filter-defaults="profitDistRef?.saveCurrentAsDefault()"
+          >
+            <ProfitDistributionEnhanced
+              ref="profitDistRef"
+              :trades="botStore.allTradesSelectedBots"
+              :show-title="false"
+            />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="
+            layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.activityTimeline)
+          "
+          v-bind="gridItemProps"
+          :i="gridLayoutActivityTimeline.i"
+          :x="gridLayoutActivityTimeline.x"
+          :y="gridLayoutActivityTimeline.y"
+          :w="gridLayoutActivityTimeline.w"
+          :h="gridLayoutActivityTimeline.h"
+          :min-w="8"
+          :min-h="12"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.activityTimeline')"
+            scope="all"
+            :hint="t('dashboard.activityTimelineDesc')"
+            :widget-id="DashboardLayout.activityTimeline"
+            has-filter-defaults
+            :filters-changed="activityTimelineRef?.filtersChanged ?? false"
+            @save-filter-defaults="activityTimelineRef?.saveCurrentAsDefault()"
+          >
+            <ActivityTimeline ref="activityTimelineRef" />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.marketPulse)"
+          v-bind="gridItemProps"
+          :i="gridLayoutMarketPulse.i"
+          :x="gridLayoutMarketPulse.x"
+          :y="gridLayoutMarketPulse.y"
+          :w="gridLayoutMarketPulse.w"
+          :h="gridLayoutMarketPulse.h"
+          :min-w="16"
+          :min-h="24"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.marketOverview')"
+            scope="all"
+            :hint="t('dashboard.marketOverviewDesc')"
+            live
+            :widget-id="DashboardLayout.marketPulse"
+          >
+            <MarketPulse />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.riskOverview)"
+          v-bind="gridItemProps"
+          :i="gridLayoutRiskOverview.i"
+          :x="gridLayoutRiskOverview.x"
+          :y="gridLayoutRiskOverview.y"
+          :w="gridLayoutRiskOverview.w"
+          :h="gridLayoutRiskOverview.h"
+          :min-w="12"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.riskOverview')"
+            scope="all"
+            :hint="t('dashboard.riskOverviewDesc')"
+            :widget-id="DashboardLayout.riskOverview"
+          >
+            <RiskOverview />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.stressTest)"
+          v-bind="gridItemProps"
+          :i="gridLayoutStressTest.i"
+          :x="gridLayoutStressTest.x"
+          :y="gridLayoutStressTest.y"
+          :w="gridLayoutStressTest.w"
+          :h="gridLayoutStressTest.h"
+          :min-w="12"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.stressTest')"
+            scope="all"
+            :hint="t('dashboard.stressTestDesc')"
+            live
+            :widget-id="DashboardLayout.stressTest"
+          >
+            <StressTestCard />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.logConsole)"
+          v-bind="gridItemProps"
+          :i="gridLayoutLogConsole.i"
+          :x="gridLayoutLogConsole.x"
+          :y="gridLayoutLogConsole.y"
+          :w="gridLayoutLogConsole.w"
+          :h="gridLayoutLogConsole.h"
+          :min-w="16"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.logConsole')"
+            scope="system"
+            :hint="t('dashboard.logConsoleDesc')"
+            live
+            :widget-id="DashboardLayout.logConsole"
+            has-filter-defaults
+            :filters-changed="logConsoleRef?.filtersChanged ?? false"
+            @save-filter-defaults="logConsoleRef?.saveCurrentAsDefault()"
+          >
+            <LogConsoleWidget ref="logConsoleRef" />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.rateBudget)"
+          v-bind="gridItemProps"
+          :i="gridLayoutRateBudget.i"
+          :x="gridLayoutRateBudget.x"
+          :y="gridLayoutRateBudget.y"
+          :w="gridLayoutRateBudget.w"
+          :h="gridLayoutRateBudget.h"
+          :min-w="12"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.rateMonitor')"
+            scope="system"
+            :hint="t('dashboard.rateMonitorDesc')"
+            live
+            :widget-id="DashboardLayout.rateBudget"
+          >
+            <CacheRateMonitor multi-bot-view />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.ratePulse)"
+          v-bind="gridItemProps"
+          :i="gridLayoutRatePulse.i"
+          :x="gridLayoutRatePulse.x"
+          :y="gridLayoutRatePulse.y"
+          :w="gridLayoutRatePulse.w"
+          :h="gridLayoutRatePulse.h"
+          :min-w="16"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.requestTimeline')"
+            scope="system"
+            :hint="t('dashboard.requestTimelineDesc')"
+            live
+            :widget-id="DashboardLayout.ratePulse"
+            has-filter-defaults
+            :filters-changed="requestTimelineRef?.filtersChanged ?? false"
+            @save-filter-defaults="requestTimelineRef?.saveCurrentAsDefault()"
+          >
+            <RequestTimeline ref="requestTimelineRef" multi-bot-view />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="
+            layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetOverview)
+          "
+          v-bind="gridItemProps"
+          :i="gridLayoutFleetOverview.i"
+          :x="gridLayoutFleetOverview.x"
+          :y="gridLayoutFleetOverview.y"
+          :w="gridLayoutFleetOverview.w"
+          :h="gridLayoutFleetOverview.h"
+          :min-w="16"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.infraHealth')"
+            scope="system"
+            :hint="t('dashboard.infraHealthDesc')"
+            live
+            :widget-id="DashboardLayout.fleetOverview"
+          >
+            <InfrastructureHealth />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="
+            layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.volumeComparator)
+          "
+          v-bind="gridItemProps"
+          :i="gridLayoutVolumeComparator.i"
+          :x="gridLayoutVolumeComparator.x"
+          :y="gridLayoutVolumeComparator.y"
+          :w="gridLayoutVolumeComparator.w"
+          :h="gridLayoutVolumeComparator.h"
+          :min-w="16"
+          :min-h="20"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.volumeComparator')"
+            scope="all"
+            :hint="t('dashboard.volumeComparatorDesc')"
+            :widget-id="DashboardLayout.volumeComparator"
+            has-filter-defaults
+            :filters-changed="volumeComparatorRef?.filtersChanged ?? false"
+            @save-filter-defaults="volumeComparatorRef?.saveCurrentAsDefault()"
+          >
+            <VolumeComparatorChart ref="volumeComparatorRef" multi-bot-view />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="
+            layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.periodBreakdown)
+          "
+          v-bind="gridItemProps"
+          :i="gridLayoutPeriodBreakdown.i"
+          :x="gridLayoutPeriodBreakdown.x"
+          :y="gridLayoutPeriodBreakdown.y"
+          :w="gridLayoutPeriodBreakdown.w"
+          :h="gridLayoutPeriodBreakdown.h"
+          :min-w="12"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.periodBreakdown')"
+            scope="all"
+            :hint="t('dashboard.periodBreakdownDesc')"
+            :widget-id="DashboardLayout.periodBreakdown"
+            has-filter-defaults
+            :filters-changed="periodBreakdownRef?.filtersChanged ?? false"
+            @save-filter-defaults="periodBreakdownRef?.saveCurrentAsDefault()"
+          >
+            <PeriodBreakdown ref="periodBreakdownRef" multi-bot-view />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="
+            layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.botProfitComparison)
+          "
+          v-bind="gridItemProps"
+          :i="gridLayoutBotProfit.i"
+          :x="gridLayoutBotProfit.x"
+          :y="gridLayoutBotProfit.y"
+          :w="gridLayoutBotProfit.w"
+          :h="gridLayoutBotProfit.h"
+          :min-w="12"
+          :min-h="16"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('dashboard.botProfitComparison')"
+            scope="selection"
+            :hint="t('dashboard.botProfitComparisonDesc')"
+            :widget-id="DashboardLayout.botProfitComparison"
+            has-filter-defaults
+            :filters-changed="botProfitRef?.filtersChanged ?? false"
+            @save-filter-defaults="botProfitRef?.saveCurrentAsDefault()"
+          >
+            <BotProfitComparisonChart ref="botProfitRef" :trades="botStore.allTradesSelectedBots" />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="
+            layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetReconciliation)
+          "
+          v-bind="gridItemProps"
+          :i="gridLayoutFleetReconciliation.i"
+          :x="gridLayoutFleetReconciliation.x"
+          :y="gridLayoutFleetReconciliation.y"
+          :w="gridLayoutFleetReconciliation.w"
+          :h="gridLayoutFleetReconciliation.h"
+          :min-w="12"
+          :min-h="10"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('fleet.walletReconciliation')"
+            scope="fleet"
+            :hint="t('fleet.reconciliationDesc')"
+            live
+            :widget-id="DashboardLayout.fleetReconciliation"
+          >
+            <template #header-extra>
+              <Tag
+                v-if="fleetRecon"
+                :value="
+                  fleetRecon.issues === 0
+                    ? t('fleet.allClear')
+                    : t('fleet.issueCount', { count: fleetRecon.issues })
+                "
+                :severity="fleetRecon.issues === 0 ? 'success' : 'danger'"
+                class="!text-[0.65rem]"
+              />
+            </template>
+            <FleetviewReconciliation />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="
+            layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetExposure)
+          "
+          v-bind="gridItemProps"
+          :i="gridLayoutFleetExposure.i"
+          :x="gridLayoutFleetExposure.x"
+          :y="gridLayoutFleetExposure.y"
+          :w="gridLayoutFleetExposure.w"
+          :h="gridLayoutFleetExposure.h"
+          :min-w="10"
+          :min-h="12"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('fleet.directionalExposure')"
+            scope="fleet"
+            :hint="t('fleet.exposureDesc')"
+            live
+            :widget-id="DashboardLayout.fleetExposure"
+          >
+            <FleetviewExposure />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetPnl)"
+          v-bind="gridItemProps"
+          :i="gridLayoutFleetPnl.i"
+          :x="gridLayoutFleetPnl.x"
+          :y="gridLayoutFleetPnl.y"
+          :w="gridLayoutFleetPnl.w"
+          :h="gridLayoutFleetPnl.h"
+          :min-w="10"
+          :min-h="14"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('fleet.pnlContribution')"
+            scope="fleet"
+            :hint="t('fleet.pnlDesc')"
+            live
+            :widget-id="DashboardLayout.fleetPnl"
+          >
+            <FleetviewPnlChart />
+          </DraggableContainer>
+        </GridItem>
+        <GridItem
+          v-show="layoutStore.editMode || layoutStore.isWidgetVisible(DashboardLayout.fleetBots)"
+          v-bind="gridItemProps"
+          :i="gridLayoutFleetBots.i"
+          :x="gridLayoutFleetBots.x"
+          :y="gridLayoutFleetBots.y"
+          :w="gridLayoutFleetBots.w"
+          :h="gridLayoutFleetBots.h"
+          :min-w="12"
+          :min-h="14"
+          drag-allow-from=".drag-header"
+          drag-ignore-from=".ft-no-drag"
+        >
+          <DraggableContainer
+            lazy
+            :header="t('fleet.botsPanel')"
+            scope="fleet"
+            :hint="t('fleet.botsDesc')"
+            live
+            :widget-id="DashboardLayout.fleetBots"
+          >
+            <FleetviewBotsTable />
+          </DraggableContainer>
+        </GridItem>
+      </template>
     </GridLayout>
   </div>
 </template>
@@ -766,11 +799,27 @@ onMounted(async () => {
   position: absolute;
   inset: -60% -40%;
   background:
-    repeating-linear-gradient(115deg, transparent, transparent 40%, rgba(180, 170, 150, 0.08) 42%, transparent 44%),
-    repeating-linear-gradient(155deg, transparent, transparent 45%, rgba(160, 150, 135, 0.06) 47%, transparent 49%),
+    repeating-linear-gradient(
+      115deg,
+      transparent,
+      transparent 40%,
+      rgba(180, 170, 150, 0.08) 42%,
+      transparent 44%
+    ),
+    repeating-linear-gradient(
+      155deg,
+      transparent,
+      transparent 45%,
+      rgba(160, 150, 135, 0.06) 47%,
+      transparent 49%
+    ),
     radial-gradient(ellipse 800px 600px at 30% 40%, rgba(180, 160, 130, 0.06), transparent 70%),
     radial-gradient(ellipse 600px 800px at 70% 60%, rgba(160, 140, 120, 0.04), transparent 70%);
-  background-size: 300% 300%, 250% 250%, 100% 100%, 100% 100%;
+  background-size:
+    300% 300%,
+    250% 250%,
+    100% 100%,
+    100% 100%;
   animation: ft-dash-drift-1 60s ease-in-out infinite;
   transform-origin: center center;
   pointer-events: none;
@@ -781,10 +830,25 @@ onMounted(async () => {
   position: absolute;
   inset: -50% -30%;
   background:
-    repeating-linear-gradient(135deg, transparent, transparent 44%, rgba(170, 155, 130, 0.05) 46%, transparent 48%),
-    repeating-linear-gradient(170deg, transparent, transparent 46%, rgba(155, 140, 120, 0.04) 48%, transparent 50%),
+    repeating-linear-gradient(
+      135deg,
+      transparent,
+      transparent 44%,
+      rgba(170, 155, 130, 0.05) 46%,
+      transparent 48%
+    ),
+    repeating-linear-gradient(
+      170deg,
+      transparent,
+      transparent 46%,
+      rgba(155, 140, 120, 0.04) 48%,
+      transparent 50%
+    ),
     radial-gradient(ellipse 500px 700px at 60% 30%, rgba(170, 150, 120, 0.05), transparent 60%);
-  background-size: 200% 200%, 250% 250%, 100% 100%;
+  background-size:
+    200% 200%,
+    250% 250%,
+    100% 100%;
   animation: ft-dash-drift-2 75s ease-in-out infinite;
   transform-origin: center center;
   pointer-events: none;
@@ -801,11 +865,29 @@ onMounted(async () => {
   position: absolute;
   inset: -60% -40%;
   background:
-    repeating-linear-gradient(115deg, transparent, transparent 38%, rgba(45, 50, 80, 0.30) 40%, rgba(35, 40, 70, 0.15) 42%, transparent 44%),
-    repeating-linear-gradient(155deg, transparent, transparent 42%, rgba(30, 35, 65, 0.22) 44%, rgba(25, 30, 55, 0.10) 46%, transparent 48%),
+    repeating-linear-gradient(
+      115deg,
+      transparent,
+      transparent 38%,
+      rgba(45, 50, 80, 0.3) 40%,
+      rgba(35, 40, 70, 0.15) 42%,
+      transparent 44%
+    ),
+    repeating-linear-gradient(
+      155deg,
+      transparent,
+      transparent 42%,
+      rgba(30, 35, 65, 0.22) 44%,
+      rgba(25, 30, 55, 0.1) 46%,
+      transparent 48%
+    ),
     radial-gradient(ellipse 800px 600px at 30% 40%, rgba(99, 102, 241, 0.06), transparent 70%),
     radial-gradient(ellipse 600px 800px at 70% 60%, rgba(6, 182, 212, 0.04), transparent 70%);
-  background-size: 300% 300%, 250% 250%, 100% 100%, 100% 100%;
+  background-size:
+    300% 300%,
+    250% 250%,
+    100% 100%,
+    100% 100%;
   animation: ft-dash-drift-1 60s ease-in-out infinite;
   transform-origin: center center;
   pointer-events: none;
@@ -818,11 +900,27 @@ onMounted(async () => {
   position: absolute;
   inset: -50% -30%;
   background:
-    repeating-linear-gradient(135deg, transparent, transparent 44%, rgba(99, 102, 241, 0.05) 46%, transparent 48%),
-    repeating-linear-gradient(170deg, transparent, transparent 46%, rgba(6, 182, 212, 0.04) 48%, transparent 50%),
+    repeating-linear-gradient(
+      135deg,
+      transparent,
+      transparent 44%,
+      rgba(99, 102, 241, 0.05) 46%,
+      transparent 48%
+    ),
+    repeating-linear-gradient(
+      170deg,
+      transparent,
+      transparent 46%,
+      rgba(6, 182, 212, 0.04) 48%,
+      transparent 50%
+    ),
     radial-gradient(ellipse 500px 700px at 60% 30%, rgba(139, 92, 246, 0.05), transparent 60%),
     radial-gradient(ellipse 700px 500px at 40% 70%, rgba(20, 184, 166, 0.03), transparent 60%);
-  background-size: 200% 200%, 250% 250%, 100% 100%, 100% 100%;
+  background-size:
+    200% 200%,
+    250% 250%,
+    100% 100%,
+    100% 100%;
   animation: ft-dash-drift-2 75s ease-in-out infinite;
   transform-origin: center center;
   pointer-events: none;

@@ -104,10 +104,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
 <template>
   <div class="sd-tree">
     <div v-for="group in groups" :key="group.key" class="sd-tree-group">
-      <button
-        class="sd-tree-header"
-        @click="toggleGroup(group.key)"
-      >
+      <button class="sd-tree-header" @click="toggleGroup(group.key)">
         <i-mdi-chevron-down v-if="isExpanded(group.key)" class="sd-tree-chevron" />
         <i-mdi-chevron-right v-else class="sd-tree-chevron" />
         <span class="sd-tree-label">{{ group.label }}</span>
@@ -133,11 +130,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
 
           <!-- Skeleton placeholders while type is loading -->
           <template v-if="group.loading">
-            <div
-              v-for="n in 3"
-              :key="'skel-' + n"
-              class="sd-skeleton-item"
-            >
+            <div v-for="n in 3" :key="'skel-' + n" class="sd-skeleton-item">
               <div class="sd-skeleton-line sd-skeleton-line--title" />
               <div class="sd-skeleton-line sd-skeleton-line--sub" />
             </div>
@@ -241,11 +234,15 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
 
 /* ── Item stagger animation ── */
 .sd-item-enter-active {
-  transition: opacity 250ms ease, transform 250ms ease;
+  transition:
+    opacity 250ms ease,
+    transform 250ms ease;
   transition-delay: calc(var(--stagger, 0) * 30ms);
 }
 .sd-item-leave-active {
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
 }
 .sd-item-enter-from {
   opacity: 0;
@@ -291,17 +288,25 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
 }
 
 @keyframes sd-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* ── Group expand transition ── */
 .sd-group-enter-active {
-  transition: opacity 200ms ease, max-height 200ms ease;
+  transition:
+    opacity 200ms ease,
+    max-height 200ms ease;
   overflow: hidden;
 }
 .sd-group-leave-active {
-  transition: opacity 150ms ease, max-height 150ms ease;
+  transition:
+    opacity 150ms ease,
+    max-height 150ms ease;
   overflow: hidden;
 }
 .sd-group-enter-from,

@@ -16,7 +16,9 @@ defineProps<{ data: DsrData }>();
 <template>
   <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-4">
     <div class="flex items-center justify-between mb-3">
-      <h4 class="text-sm font-semibold flex items-center gap-1.5">{{ t('strategyDev.dsrTitle') }} <InfoTip :text="t('strategyDev.hintDsr')" /></h4>
+      <h4 class="text-sm font-semibold flex items-center gap-1.5">
+        {{ t('strategyDev.dsrTitle') }} <InfoTip :text="t('strategyDev.hintDsr')" />
+      </h4>
       <span
         class="text-sm px-2 py-0.5 rounded-full"
         :class="

@@ -34,7 +34,13 @@ export const metricThresholds: Record<string, MetricThreshold> = {
     good: (v) => v >= 60,
     warn: (v) => v >= 30,
     verdictText: (v) =>
-      v >= 100 ? 'High confidence' : v >= 60 ? 'Sufficient' : v >= 30 ? 'Low — results may not be stable' : 'Too few (<30)',
+      v >= 100
+        ? 'High confidence'
+        : v >= 60
+          ? 'Sufficient'
+          : v >= 30
+            ? 'Low — results may not be stable'
+            : 'Too few (<30)',
   },
   winrate: {
     key: 'winrate',
@@ -43,7 +49,15 @@ export const metricThresholds: Record<string, MetricThreshold> = {
     good: (v) => v >= 0.55 && v < 0.95,
     warn: (v) => v >= 0.45,
     verdictText: (v) =>
-      v >= 0.95 ? 'Suspiciously high — likely overfit' : v >= 0.65 ? 'Strong' : v >= 0.55 ? 'Good' : v >= 0.45 ? 'Marginal' : 'Low (<45%)',
+      v >= 0.95
+        ? 'Suspiciously high — likely overfit'
+        : v >= 0.65
+          ? 'Strong'
+          : v >= 0.55
+            ? 'Good'
+            : v >= 0.45
+              ? 'Marginal'
+              : 'Low (<45%)',
   },
   sharpe: {
     key: 'sharpe',
@@ -51,7 +65,13 @@ export const metricThresholds: Record<string, MetricThreshold> = {
     good: (v) => v > 1.5,
     warn: (v) => v > 0.5,
     verdictText: (v) =>
-      v > 3 ? 'Excellent — verify not overfit' : v > 1.5 ? 'Good' : v > 0.5 ? 'Marginal' : 'Poor (<0.5)',
+      v > 3
+        ? 'Excellent — verify not overfit'
+        : v > 1.5
+          ? 'Good'
+          : v > 0.5
+            ? 'Marginal'
+            : 'Poor (<0.5)',
   },
   profit_factor: {
     key: 'profit_factor',
@@ -75,7 +95,13 @@ export const metricThresholds: Record<string, MetricThreshold> = {
     good: (v) => v < -0.05,
     warn: (v) => v < 0,
     verdictText: (v) =>
-      v < -0.1 ? 'Strong optimization' : v < -0.05 ? 'Good' : v < 0 ? 'Marginal' : 'No improvement found',
+      v < -0.1
+        ? 'Strong optimization'
+        : v < -0.05
+          ? 'Good'
+          : v < 0
+            ? 'Marginal'
+            : 'No improvement found',
   },
 };
 
@@ -96,7 +122,10 @@ export function getVerdictText(key: string, value: number): string {
 export interface ChecklistItem {
   key: string;
   label: string;
-  check: (metrics: Record<string, number>, run: Record<string, unknown>) => 'pass' | 'warn' | 'fail' | 'skip';
+  check: (
+    metrics: Record<string, number>,
+    run: Record<string, unknown>,
+  ) => 'pass' | 'warn' | 'fail' | 'skip';
   reason: (metrics: Record<string, number>) => string;
 }
 
@@ -104,44 +133,86 @@ export const validationChecklist: ChecklistItem[] = [
   {
     key: 'trades_count',
     label: 'Trades > 60',
-    check: (m) => m.total_trades == null ? 'skip' : m.total_trades >= 60 ? 'pass' : m.total_trades >= 30 ? 'warn' : 'fail',
-    reason: (m) => m.total_trades != null ? `${m.total_trades} trades` : 'No data',
+    check: (m) =>
+      m.total_trades == null
+        ? 'skip'
+        : m.total_trades >= 60
+          ? 'pass'
+          : m.total_trades >= 30
+            ? 'warn'
+            : 'fail',
+    reason: (m) => (m.total_trades != null ? `${m.total_trades} trades` : 'No data'),
   },
   {
     key: 'drawdown',
     label: 'Drawdown < 45%',
-    check: (m) => m.max_drawdown_account == null ? 'skip' : m.max_drawdown_account < 0.35 ? 'pass' : m.max_drawdown_account < 0.45 ? 'warn' : 'fail',
-    reason: (m) => m.max_drawdown_account != null ? `${(m.max_drawdown_account * 100).toFixed(1)}%` : 'No data',
+    check: (m) =>
+      m.max_drawdown_account == null
+        ? 'skip'
+        : m.max_drawdown_account < 0.35
+          ? 'pass'
+          : m.max_drawdown_account < 0.45
+            ? 'warn'
+            : 'fail',
+    reason: (m) =>
+      m.max_drawdown_account != null ? `${(m.max_drawdown_account * 100).toFixed(1)}%` : 'No data',
   },
   {
     key: 'winrate_check',
     label: 'Win rate 45-95%',
-    check: (m) => m.winrate == null ? 'skip' : (m.winrate >= 0.45 && m.winrate < 0.95) ? 'pass' : m.winrate >= 0.95 ? 'fail' : 'warn',
-    reason: (m) => m.winrate != null ? `${(m.winrate * 100).toFixed(1)}%` : 'No data',
+    check: (m) =>
+      m.winrate == null
+        ? 'skip'
+        : m.winrate >= 0.45 && m.winrate < 0.95
+          ? 'pass'
+          : m.winrate >= 0.95
+            ? 'fail'
+            : 'warn',
+    reason: (m) => (m.winrate != null ? `${(m.winrate * 100).toFixed(1)}%` : 'No data'),
   },
   {
     key: 'no_100_winrate',
     label: 'No 100% win rate',
-    check: (m) => m.winrate == null ? 'skip' : m.winrate >= 1.0 ? 'fail' : 'pass',
-    reason: (m) => m.winrate != null ? (m.winrate >= 1.0 ? 'All trades winning — extreme overfit' : 'OK') : 'No data',
+    check: (m) => (m.winrate == null ? 'skip' : m.winrate >= 1.0 ? 'fail' : 'pass'),
+    reason: (m) =>
+      m.winrate != null
+        ? m.winrate >= 1.0
+          ? 'All trades winning — extreme overfit'
+          : 'OK'
+        : 'No data',
   },
   {
     key: 'profit_positive',
     label: 'Profit > 0%',
-    check: (m) => m.profit_total == null ? 'skip' : m.profit_total > 0.05 ? 'pass' : m.profit_total > 0 ? 'warn' : 'fail',
-    reason: (m) => m.profit_total != null ? `${(m.profit_total * 100).toFixed(2)}%` : 'No data',
+    check: (m) =>
+      m.profit_total == null
+        ? 'skip'
+        : m.profit_total > 0.05
+          ? 'pass'
+          : m.profit_total > 0
+            ? 'warn'
+            : 'fail',
+    reason: (m) => (m.profit_total != null ? `${(m.profit_total * 100).toFixed(2)}%` : 'No data'),
   },
   {
     key: 'sharpe_check',
     label: 'Sharpe > 0.5',
-    check: (m) => m.sharpe == null ? 'skip' : m.sharpe > 1.5 ? 'pass' : m.sharpe > 0.5 ? 'warn' : 'fail',
-    reason: (m) => m.sharpe != null ? m.sharpe.toFixed(2) : 'No data',
+    check: (m) =>
+      m.sharpe == null ? 'skip' : m.sharpe > 1.5 ? 'pass' : m.sharpe > 0.5 ? 'warn' : 'fail',
+    reason: (m) => (m.sharpe != null ? m.sharpe.toFixed(2) : 'No data'),
   },
   {
     key: 'profit_factor_check',
     label: 'Profit Factor > 1.1',
-    check: (m) => m.profit_factor == null ? 'skip' : m.profit_factor > 1.5 ? 'pass' : m.profit_factor > 1.1 ? 'warn' : 'fail',
-    reason: (m) => m.profit_factor != null ? m.profit_factor.toFixed(2) : 'No data',
+    check: (m) =>
+      m.profit_factor == null
+        ? 'skip'
+        : m.profit_factor > 1.5
+          ? 'pass'
+          : m.profit_factor > 1.1
+            ? 'warn'
+            : 'fail',
+    reason: (m) => (m.profit_factor != null ? m.profit_factor.toFixed(2) : 'No data'),
   },
   {
     key: 'loss_negative',

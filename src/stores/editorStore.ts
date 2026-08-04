@@ -35,9 +35,9 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   const activeFile = computed(() => openFiles.value[activeIndex.value] ?? null);
-  const isDirty = computed(() => activeFile.value
-    ? activeFile.value.content !== activeFile.value.originalContent
-    : false);
+  const isDirty = computed(() =>
+    activeFile.value ? activeFile.value.content !== activeFile.value.originalContent : false,
+  );
 
   async function openFile(filePath: string, language: 'json' | 'python', createCustomCopy = false) {
     const existingIdx = openFiles.value.findIndex((f) => f.path === filePath);

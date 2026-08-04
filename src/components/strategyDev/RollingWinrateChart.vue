@@ -14,7 +14,15 @@ import {
 import { useRegimeOverlay, type RegimeTimelineEntry } from '@/composables/useRegimeOverlay';
 import { useI18n } from 'vue-i18n';
 
-use([LineChart, CanvasRenderer, GridComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, MarkAreaComponent]);
+use([
+  LineChart,
+  CanvasRenderer,
+  GridComponent,
+  TooltipComponent,
+  DataZoomComponent,
+  MarkLineComponent,
+  MarkAreaComponent,
+]);
 
 const { t } = useI18n();
 
@@ -39,7 +47,11 @@ const option = computed<EChartsOption>(() => {
       formatter: (params: unknown) => {
         const p = (params as { data: [string, number]; axisValue: string }[])[0];
         const val = Array.isArray(p.data) ? p.data[1] : p.data;
-        const dateStr = new Date(p.axisValue).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        const dateStr = new Date(p.axisValue).toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
         const wr = typeof val === 'number' && !isNaN(val) ? (val * 100).toFixed(1) : '—';
         return `<b>${dateStr}</b><br/>Win Rate: ${wr}%`;
       },
@@ -111,7 +123,9 @@ const option = computed<EChartsOption>(() => {
           },
           data: [{ yAxis: 0.5 }],
         },
-        markArea: markAreaData.value.length ? { silent: true, data: markAreaData.value as any } : undefined,
+        markArea: markAreaData.value.length
+          ? { silent: true, data: markAreaData.value as any }
+          : undefined,
       },
     ],
   };

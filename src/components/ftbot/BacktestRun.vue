@@ -64,9 +64,7 @@ function clickBacktest() {
     <TimeframeSelect id="timeframe-select" v-model="btStore.selectedTimeframe" size="small" />
     <label for="timeframe-detail-select" class="flex justify-end items-center gap-2"
       >{{ t('backtest.detailTimeframe') }}:
-      <InfoBox
-        :hint="t('backtest.detailTimeframeDesc')"
-      />
+      <InfoBox :hint="t('backtest.detailTimeframeDesc')" />
     </label>
     <TimeframeSelect
       id="timeframe-detail-select"
@@ -95,9 +93,9 @@ function clickBacktest() {
     <label for="stake-amount-bool">{{ t('backtest.stakeAmount') }}:</label>
     <div class="flex items-center">
       <div class="flex basis-full">
-        <BaseCheckbox id="stake-amount-bool" v-model="btStore.stakeAmountUnlimited"
-          >{{ t('backtest.unlimitedStake') }}</BaseCheckbox
-        >
+        <BaseCheckbox id="stake-amount-bool" v-model="btStore.stakeAmountUnlimited">{{
+          t('backtest.unlimitedStake')
+        }}</BaseCheckbox>
       </div>
       <InputNumber
         id="stake-amount"
@@ -119,9 +117,7 @@ function clickBacktest() {
     <template v-if="botStore.activeBot.botFeatures.backtestFreqAI">
       <div class="flex justify-end items-center">
         <span class="me-2">{{ t('backtest.enableFreqAI') }}:</span>
-        <InfoBox
-          :hint="t('backtest.enableFreqAIDesc')"
-        />
+        <InfoBox :hint="t('backtest.enableFreqAIDesc')" />
       </div>
       <BaseCheckbox id="enable-freqai" v-model="btStore.freqAI.enabled"></BaseCheckbox>
 

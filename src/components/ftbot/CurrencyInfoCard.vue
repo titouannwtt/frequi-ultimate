@@ -283,15 +283,21 @@ const typeBadgeStyle = computed(() => {
       <div class="flex items-center gap-2 py-4">
         <i-mdi-help-circle class="text-gray-600 dark:text-gray-400" style="font-size: 1.5rem" />
         <div>
-          <div class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ currency || 'Unknown' }}</div>
-          <div class="text-gray-600 dark:text-gray-400 mt-1">{{ t('currencyCard.currencyInfoUnavailable') }}</div>
+          <div class="text-sm font-bold text-gray-800 dark:text-gray-200">
+            {{ currency || 'Unknown' }}
+          </div>
+          <div class="text-gray-600 dark:text-gray-400 mt-1">
+            {{ t('currencyCard.currencyInfoUnavailable') }}
+          </div>
         </div>
       </div>
     </template>
 
     <template v-else>
       <!-- Header -->
-      <div class="flex items-center justify-between mb-2.5 pb-2 border-b border-gray-300 dark:border-gray-700">
+      <div
+        class="flex items-center justify-between mb-2.5 pb-2 border-b border-gray-300 dark:border-gray-700"
+      >
         <div class="flex items-center gap-2">
           <div
             class="flex items-center justify-center rounded-lg font-black text-sm"
@@ -306,17 +312,21 @@ const typeBadgeStyle = computed(() => {
               class="text-[0.8rem] text-gray-600 dark:text-gray-400 cursor-pointer hover:text-blue-400 transition-colors"
               v-tooltip.top="t('currencyCard.filterByCurrency', { currency: info.symbol })"
               @click="emit('filter-currency', info.symbol)"
-            >{{ info.symbol }}</div>
+            >
+              {{ info.symbol }}
+            </div>
           </div>
         </div>
-        <span
-          class="text-[0.8rem] font-bold px-2 py-0.5 rounded-full"
-          :style="typeBadgeStyle"
-        >{{ info.type }}</span>
+        <span class="text-[0.8rem] font-bold px-2 py-0.5 rounded-full" :style="typeBadgeStyle">{{
+          info.type
+        }}</span>
       </div>
 
       <!-- Description -->
-      <div class="text-gray-700 dark:text-gray-300 mb-2.5 leading-relaxed" style="font-size: 0.95rem">
+      <div
+        class="text-gray-700 dark:text-gray-300 mb-2.5 leading-relaxed"
+        style="font-size: 0.95rem"
+      >
         {{ info.description }}
       </div>
 
@@ -324,12 +334,24 @@ const typeBadgeStyle = computed(() => {
       <div
         v-if="info.type === 'Stablecoin'"
         class="flex items-center gap-2 mb-2.5 px-2.5 py-1.5 rounded-lg"
-        style="background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2)"
+        style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2)"
       >
         <i-mdi-link-variant class="text-green-400" style="font-size: 1rem" />
         <div>
-          <div class="text-green-400 font-bold" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.pegInfo')">{{ t('currencyCard.peggedTo', { peg: info.peg }) }}</div>
-          <div class="text-gray-600 dark:text-gray-400" style="font-size: 0.95rem" v-tooltip.top="t('tooltips.backing')">{{ info.backing }}</div>
+          <div
+            class="text-green-400 font-bold"
+            style="font-size: 0.95rem"
+            v-tooltip.top="t('tooltips.pegInfo')"
+          >
+            {{ t('currencyCard.peggedTo', { peg: info.peg }) }}
+          </div>
+          <div
+            class="text-gray-600 dark:text-gray-400"
+            style="font-size: 0.95rem"
+            v-tooltip.top="t('tooltips.backing')"
+          >
+            {{ info.backing }}
+          </div>
         </div>
       </div>
 
@@ -340,11 +362,15 @@ const typeBadgeStyle = computed(() => {
           <span class="text-gray-800 dark:text-gray-200 font-semibold">{{ info.issuer }}</span>
         </div>
         <div v-if="info.type !== 'Stablecoin'" class="flex justify-between">
-          <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.pegInfo')">{{ t('currencyCard.peg') }}</span>
+          <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.pegInfo')">{{
+            t('currencyCard.peg')
+          }}</span>
           <span class="text-gray-800 dark:text-gray-200">{{ info.peg }}</span>
         </div>
         <div v-if="info.type !== 'Stablecoin'" class="flex justify-between">
-          <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.backing')">{{ t('currencyCard.backing') }}</span>
+          <span class="text-gray-600 dark:text-gray-400" v-tooltip.top="t('tooltips.backing')">{{
+            t('currencyCard.backing')
+          }}</span>
           <span class="text-gray-800 dark:text-gray-200">{{ info.backing }}</span>
         </div>
         <div class="flex justify-between">
@@ -354,19 +380,32 @@ const typeBadgeStyle = computed(() => {
       </div>
 
       <!-- Bot impact note -->
-      <div class="flex items-start gap-1.5 mb-2 px-2 py-1.5 rounded-lg" style="background: rgba(96,165,250,0.08); border: 1px solid rgba(96,165,250,0.15)">
+      <div
+        class="flex items-start gap-1.5 mb-2 px-2 py-1.5 rounded-lg"
+        style="background: rgba(96, 165, 250, 0.08); border: 1px solid rgba(96, 165, 250, 0.15)"
+      >
         <i-mdi-robot class="text-blue-400 mt-0.5 flex-shrink-0" style="font-size: 0.9rem" />
         <span class="text-blue-300" style="font-size: 0.9rem">{{ info.botImpact }}</span>
       </div>
 
       <!-- Risks note -->
-      <div class="flex items-start gap-1.5 text-gray-600 dark:text-gray-500" style="font-size: 0.95rem">
+      <div
+        class="flex items-start gap-1.5 text-gray-600 dark:text-gray-500"
+        style="font-size: 0.95rem"
+      >
         <i-mdi-alert-circle-outline class="mt-0.5 flex-shrink-0" style="font-size: 0.95rem" />
         <span>{{ info.risks }}</span>
       </div>
 
       <!-- CMC link -->
-      <a v-if="info.cmcUrl" :href="info.cmcUrl" target="_blank" rel="noopener" class="block text-center text-blue-400 hover:underline cursor-pointer mt-2" style="font-size: 0.95rem">
+      <a
+        v-if="info.cmcUrl"
+        :href="info.cmcUrl"
+        target="_blank"
+        rel="noopener"
+        class="block text-center text-blue-400 hover:underline cursor-pointer mt-2"
+        style="font-size: 0.95rem"
+      >
         <i-mdi-open-in-new style="font-size: 0.9rem; vertical-align: middle" />
         CoinMarketCap ↗
       </a>

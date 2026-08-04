@@ -110,9 +110,25 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
 
     const timelineBuckets: Record<number, RateTimelineBucket> = {};
     const all429s: RateLimitEvent[] = [];
-    const methodAgg: Record<string, { count: number; cached: number; direct: number; errors: number; latSum: number; latCount: number; p95Max: number }> = {};
-    let sumTotal = 0, sumCached = 0, sumDirect = 0, sumErrors = 0, sumErrors429 = 0;
-    let latWeightedSum = 0, latWeightedCount = 0;
+    const methodAgg: Record<
+      string,
+      {
+        count: number;
+        cached: number;
+        direct: number;
+        errors: number;
+        latSum: number;
+        latCount: number;
+        p95Max: number;
+      }
+    > = {};
+    let sumTotal = 0,
+      sumCached = 0,
+      sumDirect = 0,
+      sumErrors = 0,
+      sumErrors429 = 0;
+    let latWeightedSum = 0,
+      latWeightedCount = 0;
     let p95Max = 0;
     const exchanges = new Set<string>();
 
@@ -130,9 +146,12 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
           existing.errors_429 += b.errors_429;
           const totalDirect = prevDirect + b.direct;
           if (totalDirect > 0) {
-            existing.avg_latency_ms = Math.round(
-              ((existing.avg_latency_ms * prevDirect) + (b.avg_latency_ms * b.direct)) / totalDirect * 10,
-            ) / 10;
+            existing.avg_latency_ms =
+              Math.round(
+                ((existing.avg_latency_ms * prevDirect + b.avg_latency_ms * b.direct) /
+                  totalDirect) *
+                  10,
+              ) / 10;
           }
           for (const [method, count] of Object.entries(b.by_method)) {
             existing.by_method[method] = (existing.by_method[method] ?? 0) + count;
@@ -170,8 +189,13 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
           if (method.startsWith('pl:')) {
             if (!methodAgg[method]) {
               methodAgg[method] = {
-                count: stats.count, cached: stats.cached, direct: stats.direct,
-                errors: stats.errors, latSum: 0, latCount: 0, p95Max: 0,
+                count: stats.count,
+                cached: stats.cached,
+                direct: stats.direct,
+                errors: stats.errors,
+                latSum: 0,
+                latCount: 0,
+                p95Max: 0,
               };
             }
             continue;
@@ -209,7 +233,7 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
         cached: agg.cached,
         direct: agg.direct,
         errors: agg.errors,
-        avg_latency_ms: agg.latCount > 0 ? Math.round(agg.latSum / agg.latCount * 10) / 10 : 0,
+        avg_latency_ms: agg.latCount > 0 ? Math.round((agg.latSum / agg.latCount) * 10) / 10 : 0,
         p95_latency_ms: agg.p95Max,
       };
     }
@@ -220,7 +244,8 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
       direct: sumDirect,
       errors: sumErrors,
       errors_429: sumErrors429,
-      avg_latency_ms: latWeightedCount > 0 ? Math.round(latWeightedSum / latWeightedCount * 10) / 10 : 0,
+      avg_latency_ms:
+        latWeightedCount > 0 ? Math.round((latWeightedSum / latWeightedCount) * 10) / 10 : 0,
       p95_latency_ms: p95Max,
       by_method: mergedByMethod,
     };

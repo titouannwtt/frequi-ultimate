@@ -107,9 +107,7 @@ const kpis = computed<KpiItem[]>(() => {
 });
 
 const topPairs = computed(() =>
-  [...props.data.pair_stats]
-    .sort((a, b) => b.volume_pct - a.volume_pct)
-    .slice(0, 5),
+  [...props.data.pair_stats].sort((a, b) => b.volume_pct - a.volume_pct).slice(0, 5),
 );
 
 const maxVolumePct = computed(() => {
@@ -143,10 +141,7 @@ const maxVolumePct = computed(() => {
 
     <!-- Pair volume distribution bars -->
     <div v-if="topPairs.length">
-      <div
-        class="text-xs font-semibold uppercase tracking-wide mb-2"
-        :style="{ color: C.subtext }"
-      >
+      <div class="text-xs font-semibold uppercase tracking-wide mb-2" :style="{ color: C.subtext }">
         {{ t('strategyDev.concVolumeDistribution') }}
       </div>
       <div class="space-y-1.5">
@@ -157,7 +152,10 @@ const maxVolumePct = computed(() => {
           >
             {{ pair.pair.replace(/\/USDC:USDC$/, '') }}
           </span>
-          <div class="flex-1 h-3 rounded-full overflow-hidden" :style="{ backgroundColor: C.overlay + '40' }">
+          <div
+            class="flex-1 h-3 rounded-full overflow-hidden"
+            :style="{ backgroundColor: C.overlay + '40' }"
+          >
             <div
               class="h-full rounded-full transition-all"
               :style="{
