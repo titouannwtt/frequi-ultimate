@@ -57,6 +57,7 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       refreshInterval: null as number | null,
       refreshIntervalSlow: null as number | null,
       tradesRefreshInterval: null as number | null,
+      visibilityHandler: null as (() => void) | null,
       botStores: {} as SubStores,
     };
   },
@@ -372,24 +373,52 @@ export const useBotStore = defineStore('ftbot-wrapper', {
     startRefresh() {
       console.log('Starting automatic refresh.');
       this.allRefreshFull();
+      this.startPollingIntervals();
+      this.startTradesBackgroundFetch();
+      // Pause the two heavy polling loops while the browser tab is hidden. With many
+      // bots the standing request volume (per-bot /status every 10s + refreshSlow) is
+      // the dominant cost, and there is no point refreshing a dashboard nobody is
+      // looking at. On return we refresh immediately so the view is fresh the instant
+      // the tab regains focus. The 10-min trades sweep is left running (negligible).
+      if (!this.visibilityHandler) {
+        const handler = () => {
+          if (document.hidden) {
+            this.stopPollingIntervals();
+          } else if (!this.refreshInterval) {
+            this.allRefreshFrequent();
+            this.startPollingIntervals();
+          }
+        };
+        this.visibilityHandler = handler;
+        document.addEventListener('visibilitychange', handler);
+      }
+    },
+    startPollingIntervals() {
       if (!this.refreshInterval) {
         // Set interval for refresh.
         // 10s (was 5s): with ~30 bots each /status hit calls exchange.get_rate per
         // open trade (expensive) and every response reassigns openTrades, triggering
         // the multi-bot dashboard's reactive recompute storm. 10s halves both the
         // request volume and the churn; imperceptible for 15m-candle strategies.
-        const refreshInterval = window.setInterval(() => {
+        this.refreshInterval = window.setInterval(() => {
           this.allRefreshFrequent();
         }, 10000);
-        this.refreshInterval = refreshInterval;
       }
       if (!this.refreshIntervalSlow) {
-        const refreshIntervalSlow = window.setInterval(() => {
+        this.refreshIntervalSlow = window.setInterval(() => {
           this.allRefreshSlow(false);
         }, 60000);
-        this.refreshIntervalSlow = refreshIntervalSlow;
       }
-      this.startTradesBackgroundFetch();
+    },
+    stopPollingIntervals() {
+      if (this.refreshInterval) {
+        window.clearInterval(this.refreshInterval);
+        this.refreshInterval = null;
+      }
+      if (this.refreshIntervalSlow) {
+        window.clearInterval(this.refreshIntervalSlow);
+        this.refreshIntervalSlow = null;
+      }
     },
     startTradesBackgroundFetch() {
       if (this.tradesRefreshInterval) {
@@ -413,14 +442,11 @@ export const useBotStore = defineStore('ftbot-wrapper', {
     },
     stopRefresh() {
       console.log('Stopping automatic refresh.');
-      if (this.refreshInterval) {
-        window.clearInterval(this.refreshInterval);
-        this.refreshInterval = null;
+      if (this.visibilityHandler) {
+        document.removeEventListener('visibilitychange', this.visibilityHandler);
+        this.visibilityHandler = null;
       }
-      if (this.refreshIntervalSlow) {
-        window.clearInterval(this.refreshIntervalSlow);
-        this.refreshIntervalSlow = null;
-      }
+      this.stopPollingIntervals();
       if (this.tradesRefreshInterval) {
         window.clearInterval(this.tradesRefreshInterval);
         this.tradesRefreshInterval = null;

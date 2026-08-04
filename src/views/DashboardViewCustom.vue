@@ -225,6 +225,23 @@ onMounted(async () => {
             >
               <i-mdi-folder-multiple class="inline" />
             </button>
+            <button
+              class="p-1 text-xs rounded cursor-pointer"
+              :class="
+                botComparisonRef?.fitToScreen
+                  ? 'bg-indigo-500/25 text-indigo-300 ring-1 ring-indigo-400/40'
+                  : 'hover:bg-white/10'
+              "
+              :title="
+                botComparisonRef?.fitToScreen
+                  ? t('botComparison.fitScreenOn')
+                  : t('botComparison.fitScreenOff')
+              "
+              @click="botComparisonRef?.toggleFitToScreen()"
+            >
+              <i-mdi-fullscreen v-if="!botComparisonRef?.fitToScreen" class="inline" />
+              <i-mdi-fullscreen-exit v-else class="inline" />
+            </button>
           </template>
           <BotComparisonList ref="botComparisonRef" />
         </DraggableContainer>
@@ -251,6 +268,25 @@ onMounted(async () => {
           has-column-settings
           @column-settings-click="openTradesRef?.showColumnPopover($event)"
         >
+          <template #header-right>
+            <button
+              class="p-1 text-xs rounded cursor-pointer"
+              :class="
+                openTradesRef?.fitToScreen
+                  ? 'bg-indigo-500/25 text-indigo-300 ring-1 ring-indigo-400/40'
+                  : 'hover:bg-white/10'
+              "
+              :title="
+                openTradesRef?.fitToScreen
+                  ? t('botComparison.fitScreenOn')
+                  : t('botComparison.fitScreenOff')
+              "
+              @click="openTradesRef?.toggleFitToScreen()"
+            >
+              <i-mdi-fullscreen v-if="!openTradesRef?.fitToScreen" class="inline" />
+              <i-mdi-fullscreen-exit v-else class="inline" />
+            </button>
+          </template>
           <OpenTradesEnhanced ref="openTradesRef" :trades="botStore.allOpenTradesSelectedBots" multi-bot-view />
         </DraggableContainer>
       </GridItem>
@@ -276,6 +312,25 @@ onMounted(async () => {
           has-column-settings
           @column-settings-click="closedTradesRef?.showColumnPopover($event)"
         >
+          <template #header-right>
+            <button
+              class="p-1 text-xs rounded cursor-pointer"
+              :class="
+                closedTradesRef?.fitToScreen
+                  ? 'bg-indigo-500/25 text-indigo-300 ring-1 ring-indigo-400/40'
+                  : 'hover:bg-white/10'
+              "
+              :title="
+                closedTradesRef?.fitToScreen
+                  ? t('botComparison.fitScreenOn')
+                  : t('botComparison.fitScreenOff')
+              "
+              @click="closedTradesRef?.toggleFitToScreen()"
+            >
+              <i-mdi-fullscreen v-if="!closedTradesRef?.fitToScreen" class="inline" />
+              <i-mdi-fullscreen-exit v-else class="inline" />
+            </button>
+          </template>
           <ClosedTradesEnhanced ref="closedTradesRef" :trades="botStore.allClosedTradesSelectedBots" multi-bot-view />
         </DraggableContainer>
       </GridItem>

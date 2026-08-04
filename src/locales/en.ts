@@ -251,10 +251,19 @@ export default {
 
   // Profit Benchmark Chart (merged profit + cumulative + benchmarks)
   profitBenchmark: {
+    periodDD: 'Drawdown',
+    toggleRealizedHint: 'Realized profit (closed trades) accumulated over the period.',
+    hoverOpenBook: 'Open positions',
+    hoverFromHigh: 'From high',
+    hoverAtHigh: 'at high',
+    periodDDHint: 'Max drawdown within the displayed period, measured on the visible curve (latent when enabled). % of peak equity and amount.',
+    latentToggle: 'Latent profit',
+    latentCurve: 'Current profit (incl. latent)',
+    latentCurveHint: 'Blue curve: closed + open unrealized profit, sampled over time (profit_history series).',
     tabCombined: 'Combined',
     tabPerBot: 'Per Bot',
     tabCumulative: 'Cumulative',
-    combined: 'Combined',
+    combined: 'Realized profit',
     projected: 'Projected (incl. open)',
     highWaterMark: 'High Water Mark',
     normAbsolute: 'Absolute',
@@ -308,6 +317,8 @@ export default {
 
   // Bot comparison table
   botComparison: {
+    fitScreenOff: 'Fit columns to screen (removes horizontal scrolling)',
+    fitScreenOn: 'Fit-to-screen enabled — click to restore natural widths',
     botName: 'Bot Name',
     all: 'All',
     showInDashboard: 'Show this bot in Dashboard',
@@ -403,6 +414,16 @@ export default {
     tagCurrency: 'Stake Currency',
     tagPort: 'Port',
     tagTradingMode: 'Trading mode (Futures/Spot)',
+    tagMarket: 'Market (Crypto/XYZ)',
+    marketLabel: 'Market',
+    marketTagTitle: 'Market traded by this bot (derived from its whitelist)',
+    marketNames: {
+      crypto: 'Crypto',
+      xyzStocks: 'XYZ Stocks',
+      xyzIndices: 'XYZ Indices',
+      xyzCommodities: 'XYZ Commodities',
+      mixed: 'Mixed',
+    },
     byTradingMode: 'By trading mode',
     filtersTitle: 'Filters',
     resetSort: 'Reset sort',
@@ -595,6 +616,8 @@ export default {
     realizedCurve: 'Realized — closed trades',
     openCurve: 'Including open positions at their lowest',
     openCurveHint: 'The tail projects the open book down to the lowest it reached.',
+    openCurveHintHistory:
+      'Sampled current profit (closed + open) over time; the tail projects the open book down to the lowest it reached.',
     notEnoughData: 'Not enough closed trades to draw the curve.',
     peak: 'Peak',
     trough: 'Trough',

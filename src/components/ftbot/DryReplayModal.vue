@@ -148,7 +148,7 @@ const tradesOutsideReplay = computed<number | null>(() => {
         </div>
         <div>
           <span class="text-surface-500">{{ t('botComparison.replay.wallet') }}:</span>
-          {{ store.wallet }}
+          {{ store.wallet ?? '…' }}
         </div>
         <div>
           <span class="text-surface-500"

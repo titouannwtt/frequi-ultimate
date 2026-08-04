@@ -27,6 +27,7 @@ export interface ComparisonTableItems {
   availableFunds?: number;
   exchange?: string;
   tradingMode?: string;
+  market?: string;
   stakeAmount?: string;
   port?: number;
   strategy?: string;

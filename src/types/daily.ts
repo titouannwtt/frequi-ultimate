@@ -46,3 +46,11 @@ export interface WalletHistory {
 export interface WalletHistoryPerBot {
   [botId: string]: WalletHistory;
 }
+
+/** Fork-specific: sampled current-profit time series (backend profit_history table). */
+export interface ProfitHistoryResponse {
+  currency: string;
+  /** Rows of [timestamp_ms, profit_closed_abs, profit_open_abs, open_trades] */
+  data: [number, number, number, number][];
+  length: number;
+}

@@ -58,7 +58,7 @@ export const useReplayStore = defineStore('replayStore', () => {
   const strategy = ref('');
   const pairs = ref<string[]>([]);
   const pairsSource = ref(''); // 'whitelist' | 'trades' | 'logs' | '' — where pairs came from
-  const wallet = ref(1000);
+  const wallet = ref<number | null>(null); // resolved from the bot config (dry_run_wallet)
   const loadingContext = ref(false);
   const alreadySeeded = ref(false);
   const seedInfo = ref<Record<string, unknown> | null>(null);
@@ -240,7 +240,7 @@ export const useReplayStore = defineStore('replayStore', () => {
     botName.value = botStore.botStores[id]?.botName ?? id;
     visible.value = true; // show the modal immediately; everything below loads in background
     strategy.value = botStore.allBotState[id]?.strategy ?? '';
-    wallet.value = 1000; // dry-run starting capital for the seed (auto; not bot-exposed)
+    wallet.value = null; // resolved below from /replay/seeded (config's dry_run_wallet)
     coverageByTf.value = {}; // coverage depends on this bot's pairs
     alreadySeeded.value = false;
     backupAvailable.value = false;
@@ -257,6 +257,7 @@ export const useReplayStore = defineStore('replayStore', () => {
       alreadySeeded.value = !!seeded?.seeded;
       seedInfo.value = (seeded?.info as Record<string, unknown> | null) ?? null;
       backupAvailable.value = !!seeded?.backup_available;
+      wallet.value = seeded?.dry_run_wallet ?? null;
     });
     pollBot(id);
 
@@ -334,7 +335,7 @@ export const useReplayStore = defineStore('replayStore', () => {
       strategy: strategy.value,
       timerange: `${startDate.value.replaceAll('-', '')}-${endDate.value.replaceAll('-', '')}`,
       pairs: pairs.value,
-      wallet: wallet.value,
+      wallet: null, // let the backend resolve the config's dry_run_wallet (authoritative)
       slippage: 0.0005,
       sub_step: subStep.value,
       reset_db: resetDb.value,

@@ -256,10 +256,19 @@ export default {
 
   // Graphique Profit & Benchmarks
   profitBenchmark: {
+    periodDD: 'Drawdown',
+    toggleRealizedHint: 'Profit réalisé (trades fermés) cumulé sur la période.',
+    hoverOpenBook: 'Positions ouvertes',
+    hoverFromHigh: 'Écart au plus haut',
+    hoverAtHigh: 'au plus haut',
+    periodDDHint: 'Drawdown maximum atteint sur la période affichée, mesuré sur la courbe visible (latente si activée). % du pic d\'équité et montant.',
+    latentToggle: 'Profit latent',
+    latentCurve: 'Profit courant (latent inclus)',
+    latentCurveHint: 'Courbe bleue : profit fermé + latent des positions ouvertes, échantillonné dans le temps (série profit_history).',
     tabCombined: 'Combiné',
     tabPerBot: 'Par bot',
     tabCumulative: 'Cumulatif',
-    combined: 'Combiné',
+    combined: 'Profit réalisé',
     projected: 'Projeté (incl. ouverts)',
     highWaterMark: 'High Water Mark',
     normAbsolute: 'Absolu',
@@ -314,6 +323,8 @@ export default {
 
   // Bot comparison table
   botComparison: {
+    fitScreenOff: 'Ajuster les colonnes à l\'écran (supprime le défilement horizontal)',
+    fitScreenOn: 'Ajustement écran activé — cliquer pour revenir aux largeurs normales',
     botName: 'Nom du bot',
     all: 'Tous',
     showInDashboard: 'Afficher ce bot dans le tableau de bord',
@@ -410,6 +421,16 @@ export default {
     tagCurrency: 'Devise de mise',
     tagPort: 'Port',
     tagTradingMode: 'Mode de trading (Futures/Spot)',
+    tagMarket: 'Marché (Crypto/XYZ)',
+    marketLabel: 'Marché',
+    marketTagTitle: 'Marché tradé par ce bot (dérivé de sa whitelist)',
+    marketNames: {
+      crypto: 'Crypto-monnaie',
+      xyzStocks: 'Stocks XYZ',
+      xyzIndices: 'Indices XYZ',
+      xyzCommodities: 'Mat. premières XYZ',
+      mixed: 'Mixte',
+    },
     byTradingMode: 'Par mode de trading',
     filtersTitle: 'Filtres',
     resetSort: 'Réinitialiser le tri',
@@ -606,6 +627,8 @@ export default {
     realizedCurve: 'Réalisé — trades fermés',
     openCurve: 'Incluant les positions ouvertes à leur plus bas',
     openCurveHint: 'La queue projette les positions ouvertes jusqu’au plus bas atteint.',
+    openCurveHintHistory:
+      'Profit courant (fermé + ouvert) échantillonné dans le temps ; la queue projette les positions ouvertes jusqu’au plus bas atteint.',
     notEnoughData: 'Pas assez de trades fermés pour tracer la courbe.',
     peak: 'Plus haut',
     trough: 'Plus bas',

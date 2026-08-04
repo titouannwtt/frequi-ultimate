@@ -8,6 +8,9 @@ import type {
   AlertConfigV2,
   AlertSettingConfig,
   DetectedAlert,
+  ClosedTrade,
+  Trade,
+  ProfitStats,
 } from '@/types';
 import type Popover from 'primevue/popover';
 import { useI18n } from 'vue-i18n';
@@ -614,10 +617,29 @@ function cancelMaxDrawdownHoverKeepPopover() {
 }
 
 // Per-bot drawdown: realized from /profit, open extended by open positions at their lows.
+// Memoised per bot on input identity: computeMaxDrawdown scans every closed trade, and
+// this computed is invalidated on each batch of ~6 bots refreshing (openTrades is
+// reassigned on every /status tick), so a naive version re-scans all 70 bots ~12× per
+// 10s cycle. The cache recomputes only the bots whose trades/openTrades/profit reference
+// actually changed since the last run; the rest are O(1) cache hits. Same output.
+const _ddCache = new Map<
+  string,
+  { trades: ClosedTrade[]; open: Trade[]; profit: ProfitStats | undefined; result: MaxDrawdownResult }
+>();
 const drawdownByBot = computed<Record<string, MaxDrawdownResult>>(() => {
   const out: Record<string, MaxDrawdownResult> = {};
   for (const [id, sub] of Object.entries(botStore.botStores)) {
-    out[id] = computeMaxDrawdown(botStore.allProfit[id], sub.trades ?? [], sub.openTrades ?? []);
+    const trades = sub.trades ?? [];
+    const open = sub.openTrades ?? [];
+    const profit = botStore.allProfit[id];
+    const cached = _ddCache.get(id);
+    if (cached && cached.trades === trades && cached.open === open && cached.profit === profit) {
+      out[id] = cached.result;
+      continue;
+    }
+    const result = computeMaxDrawdown(profit, trades, open);
+    _ddCache.set(id, { trades, open, profit, result });
+    out[id] = result;
   }
   return out;
 });
@@ -646,6 +668,58 @@ function ddColor(ratio: number): string {
   if (ratio >= 0.1) return 'text-orange-400';
   if (ratio > 0) return 'text-amber-400';
   return 'text-surface-400';
+}
+
+
+// --- Market classification (crypto vs HIP-3 builder-dex universes) -----------
+// Derived from each bot's whitelist. XYZ- prefixed pairs live on the xyz
+// builder dex (TradFi perps); we split them into indices / commodities / stocks
+// via small symbol sets (unknown XYZ symbols default to stocks).
+const XYZ_INDEX_BASES = new Set([
+  'SP500', 'XYZ100', 'JP225', 'KR200', 'DAX', 'FTSE100', 'EU50', 'US2000', 'HSI', 'NIKKEI',
+]);
+const XYZ_COMMODITY_BASES = new Set([
+  'GOLD', 'SILVER', 'COPPER', 'PLATINUM', 'PALLADIUM', 'BRENTOIL', 'WTI', 'CL', 'NATGAS',
+  'GAS', 'CORN', 'WHEAT', 'SUGAR', 'COFFEE', 'COCOA', 'SOYBEAN',
+]);
+type MarketId = 'crypto' | 'xyzStocks' | 'xyzIndices' | 'xyzCommodities' | 'mixed';
+function classifyPairMarket(pair: string): Exclude<MarketId, 'mixed'> {
+  const base = pair.split('/')[0];
+  if (base.startsWith('XYZ-')) {
+    const sym = base.slice(4);
+    if (XYZ_INDEX_BASES.has(sym)) return 'xyzIndices';
+    if (XYZ_COMMODITY_BASES.has(sym)) return 'xyzCommodities';
+    return 'xyzStocks';
+  }
+  return 'crypto';
+}
+function marketOfWhitelist(whitelist: string[] | undefined): string {
+  if (!whitelist || whitelist.length === 0) return '';
+  const cats = new Set<string>();
+  for (const p of whitelist) {
+    cats.add(classifyPairMarket(p));
+    if (cats.size > 1) return 'mixed';
+  }
+  return [...cats][0];
+}
+function marketLabel(m: string | undefined): string {
+  return m ? t(`botComparison.marketNames.${m}`) : '';
+}
+function getMarketStyle(m: string | undefined): Record<string, string> {
+  switch (m) {
+    case 'crypto':
+      return { background: '#2b2010', color: '#f7931a' }; // bitcoin orange
+    case 'xyzStocks':
+      return { background: '#101c2e', color: '#60a5fa' }; // blue
+    case 'xyzIndices':
+      return { background: '#1c102e', color: '#c084fc' }; // purple
+    case 'xyzCommodities':
+      return { background: '#2e2410', color: '#fbbf24' }; // amber
+    case 'mixed':
+      return { background: '#1f2937', color: '#9ca3af' }; // gray
+    default:
+      return {};
+  }
 }
 
 // --- Last closed trade per bot (for the optional `lastTrade` column) ---
@@ -1270,8 +1344,9 @@ function getRowClass(data: ComparisonTableItems) {
   let base: string;
   if (data.isGroupRow) {
     const group = botGroups.value.find((g) => g.id === data.groupId);
+    const gIds = groupSelectableIds(data.groupId);
     base =
-      group && group.botIds.every((id) => !botStore.botStores[id]?.isSelected)
+      group && (gIds.length === 0 || gIds.every((id) => !botStore.botStores[id]?.isSelected))
         ? 'bot-row-unselected'
         : 'bot-row-group';
   } else if (data.botId && !botStore.botStores[data.botId]?.isSelected) {
@@ -1346,6 +1421,13 @@ const allColumns: ColumnDefinition[] = [
     id: 'status',
     labelKey: 'botComparison.statusLabel',
     icon: 'i-mdi-circle',
+    default: false,
+    removable: true,
+  },
+  {
+    id: 'market',
+    labelKey: 'botComparison.marketLabel',
+    icon: 'i-mdi-earth',
     default: false,
     removable: true,
   },
@@ -1660,11 +1742,12 @@ function getCustomTagBotCount(tagId: string): number {
 }
 
 // --- Tag ordering (from store) ---
-const ALL_TAG_IDS = ['status', 'tradingMode', 'exchange', 'stakeCurrency', 'port'] as const;
+const ALL_TAG_IDS = ['status', 'tradingMode', 'market', 'exchange', 'stakeCurrency', 'port'] as const;
 
 const tagLabels: Record<TagId, string> = {
   status: 'botComparison.tagStatus',
   tradingMode: 'botComparison.tagTradingMode',
+  market: 'botComparison.tagMarket',
   exchange: 'botComparison.tagExchange',
   stakeCurrency: 'botComparison.tagCurrency',
   port: 'botComparison.tagPort',
@@ -1986,6 +2069,46 @@ function showAlertsPopover(event: MouseEvent) {
   alertsPopover.value?.toggle(event);
 }
 
+// Relative column weights used ONLY in fit-to-screen mode: roughly how much
+// horizontal room each column's content actually needs. Without them every
+// column gets an equal share, so numeric columns (Trades, W/L) waste space on
+// their gauges while name/strategy columns get truncated.
+const FIT_COL_WEIGHTS: Record<string, number> = {
+  botName: 2.8,
+  // Status is a short badge (dry/live) + a dot: it only needs one line.
+  status: 0.8,
+  market: 1.15,
+  // Exchange names are spelled out ("Hyperliquid") — keep a full line for them.
+  exchange: 1.15,
+  trades: 0.85,
+  winLoss: 0.85,
+  port: 0.55,
+  pairCount: 0.7,
+  stakeCurrency: 0.75,
+  // Profit pills stack percentage over amount in fit mode, so they need less width.
+  openProfit: 1.1,
+  closedProfit: 1.1,
+  profitCurrent: 1.1,
+  maxDrawdown: 1.1,
+  balance: 1.3,
+  lastTrade: 1.8,
+  stakeAmount: 1,
+  strategy: 1.6,
+  availableCapital: 1.15,
+  tradableBalanceRatio: 0.95,
+  weeklyProfit: 1.1,
+  monthlyProfit: 1.1,
+};
+function fitColWidth(id: string): string {
+  const cols = visibleOrderedColumns.value;
+  const total = cols.reduce((a, c) => a + (FIT_COL_WEIGHTS[c.id] ?? 1), 0) || 1;
+  // Leave ~3% for the fixed control column so a row never overflows.
+  return `${(((FIT_COL_WEIGHTS[id] ?? 1) / total) * 97).toFixed(2)}%`;
+}
+
+// --- Fit-to-screen mode (shared composable, styles in styles/fit-screen.css) ---
+const { fitToScreen, toggleFitToScreen } = useFitToScreen('botComparison');
+
 // --- Groups popover ---
 const groupsPopover = ref<InstanceType<typeof Popover>>();
 function showGroupsPopover(event: MouseEvent) {
@@ -2087,6 +2210,7 @@ function handleKeyboard(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
     e.preventDefault();
     const visibleBots = tableItems.value.filter((i) => i.botId && !i.isGroupRow);
+    if (visibleBots.length === 0) return;
     const allSelected = visibleBots.every((i) => botStore.botStores[i.botId!]?.isSelected);
     visibleBots.forEach((i) => {
       if (botStore.botStores[i.botId!]) {
@@ -2156,6 +2280,8 @@ function botWasReplayed(botId: string): boolean {
 }
 
 defineExpose({
+  fitToScreen,
+  toggleFitToScreen,
   showColumnPopover,
   showSortPopover,
   showFilterPopover,
@@ -2363,11 +2489,11 @@ function parseTradesPercent(trades: string): number {
 
 const allToggled = computed<boolean>({
   get: () => {
-    // Only check visible (non-filtered) bots
-    return Object.entries(botStore.botStores).every(([id, bot]) => {
-      if (!isBotVisibleByFilter(id)) return true; // Skip hidden bots
-      return bot.isSelected;
-    });
+    // Only consider visible (non-filtered) bots; an empty visible set must not
+    // read as "all selected" (vacuous truth would show a checked master box).
+    const visible = Object.entries(botStore.botStores).filter(([id]) => isBotVisibleByFilter(id));
+    if (visible.length === 0) return false;
+    return visible.every(([, bot]) => bot.isSelected);
   },
   set: (val) => {
     for (const [id, bot] of Object.entries(botStore.botStores)) {
@@ -2377,6 +2503,12 @@ const allToggled = computed<boolean>({
       // Hidden bots stay deselected
     }
   },
+});
+
+const someToggled = computed<boolean>(() => {
+  const visible = Object.entries(botStore.botStores).filter(([id]) => isBotVisibleByFilter(id));
+  const sel = visible.filter(([, bot]) => bot.isSelected).length;
+  return sel > 0 && sel < visible.length;
 });
 
 // --- Inline bot rename ---
@@ -2400,20 +2532,43 @@ function cancelRename() {
 }
 
 // --- Group toggle (only toggles bots within this group) ---
-function isGroupAllSelected(groupId: string): boolean {
+/**
+ * Bots of a group that can actually be toggled: they must still be connected
+ * (a group can reference a bot that was removed) AND visible under the current
+ * filters (hidden bots are force-deselected by applyFilterSelection, so
+ * including them would make the group checkbox permanently out of sync).
+ */
+function groupSelectableIds(groupId: string | undefined): string[] {
+  if (!groupId) return [];
   const group = botGroups.value.find((g) => g.id === groupId);
-  if (!group) return false;
-  return group.botIds.every((id) => botStore.botStores[id]?.isSelected);
+  if (!group) return [];
+  return group.botIds.filter((id) => botStore.botStores[id] && isBotVisibleByFilter(id));
+}
+
+function isGroupAllSelected(groupId: string): boolean {
+  const ids = groupSelectableIds(groupId);
+  // An empty set must NOT read as "all selected" ([].every() === true), otherwise
+  // an empty/fully-filtered group shows a checked box that nothing can uncheck.
+  if (ids.length === 0) return false;
+  return ids.every((id) => botStore.botStores[id]?.isSelected);
+}
+
+function isGroupPartiallySelected(groupId: string): boolean {
+  const ids = groupSelectableIds(groupId);
+  if (ids.length === 0) return false;
+  const sel = ids.filter((id) => botStore.botStores[id]?.isSelected).length;
+  return sel > 0 && sel < ids.length;
 }
 
 function toggleGroup(groupId: string) {
-  const group = botGroups.value.find((g) => g.id === groupId);
-  if (!group) return;
-  const allSelected = group.botIds.every((id) => botStore.botStores[id]?.isSelected);
-  group.botIds.forEach((id) => {
-    if (botStore.botStores[id]) {
-      botStore.botStores[id].isSelected = !allSelected;
-    }
+  const ids = groupSelectableIds(groupId);
+  if (ids.length === 0) return;
+  // Partial selection resolves to "select all" first (standard tri-state
+  // behaviour), so a second click then clears the whole group.
+  const allSelected = ids.every((id) => botStore.botStores[id]?.isSelected);
+  ids.forEach((id) => {
+    const bot = botStore.botStores[id];
+    if (bot) bot.isSelected = !allSelected;
   });
 }
 
@@ -2761,6 +2916,9 @@ function comparatorForField(
       case 'exchange':
         cmp = (a.exchange || '').localeCompare(b.exchange || '');
         break;
+      case 'market':
+        cmp = (a.market || '').localeCompare(b.market || '');
+        break;
       case 'status': {
         const statusOrder = { live: 0, dry: 1, offline: 2 };
         const aStatus = a.botId ? getBotStatus(a.botId) : 'offline';
@@ -2839,6 +2997,19 @@ function onColumnReorder(event: { dragIndex: number; dropIndex: number }) {
   columnOrder.value = [...newOrder, ...hidden];
 }
 
+// Element-wise identity comparison of two input signatures (see the per-bot row cache).
+function sameSig(a: readonly unknown[], b: readonly unknown[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+const _rowCache = new Map<
+  string,
+  { sig: readonly unknown[]; profitOpen: number; row: ComparisonTableItems }
+>();
+
 const tableItems = computed<ComparisonTableItems[]>(() => {
   const val: ComparisonTableItems[] = [];
   const summary: ComparisonTableItems = {
@@ -2872,87 +3043,117 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
 
     const allOpenTrades = botStore.allOpenTrades[k];
     if (!allOpenTrades) return;
-    const allStakes = allOpenTrades.reduce((a, b) => a + b.stake_amount, 0);
-    const profitOpenRatio =
-      allStakes > 0
-        ? allOpenTrades.reduce(
-            (a, b) => a + (b.total_profit_ratio ?? b.profit_ratio ?? 0) * b.stake_amount,
-            0,
-          ) / allStakes
-        : 0;
-    const profitOpen = allOpenTrades.reduce(
-      (a, b) => a + (b.total_profit_abs ?? b.profit_abs ?? 0),
-      0,
-    );
+    // Per-bot row memoisation. The row and profitOpen are pure functions of the inputs
+    // below; profit/openTrades/botState/balance are reassigned wholesale on update so
+    // their refs are reliable change markers, and the remaining sub-store values are
+    // primitives read directly. On each per-batch invalidation only the ~6 bots that
+    // actually changed rebuild; the other ~64 reuse the cached row. Output is identical.
+    const botState = botStore.allBotState[k];
+    const balance = botStore.allBalance[k];
+    const descriptor = botStore.availableBots[k];
+    const whitelist = thisBotStore.whitelist;
+    const sig = [
+      v,
+      allOpenTrades,
+      botState,
+      balance,
+      descriptor,
+      whitelist,
+      thisBotStore.uiBotName,
+      thisBotStore.uiBotIcon,
+      thisBotStore.isBotOnline,
+      thisBotStore.isBotStarting,
+      thisBotStore.lastSeenOnline,
+    ] as const;
+    let profitOpen: number;
+    let row: ComparisonTableItems;
+    const cachedRow = _rowCache.get(k);
+    if (cachedRow && sameSig(cachedRow.sig, sig)) {
+      profitOpen = cachedRow.profitOpen;
+      row = cachedRow.row;
+    } else {
+      const allStakes = allOpenTrades.reduce((a, b) => a + b.stake_amount, 0);
+      const profitOpenRatio =
+        allStakes > 0
+          ? allOpenTrades.reduce(
+              (a, b) => a + (b.total_profit_ratio ?? b.profit_ratio ?? 0) * b.stake_amount,
+              0,
+            ) / allStakes
+          : 0;
+      profitOpen = allOpenTrades.reduce(
+        (a, b) => a + (b.total_profit_abs ?? b.profit_abs ?? 0),
+        0,
+      );
 
-    // Extract port from botUrl
-    let port: number | undefined;
-    const botDescriptor = botStore.availableBots[k];
-    if (botDescriptor?.botUrl) {
-      try {
-        const urlPort = new URL(botDescriptor.botUrl).port;
-        if (urlPort) port = parseInt(urlPort, 10);
-      } catch {
-        // ignore invalid URL
+      // Extract port from botUrl
+      let port: number | undefined;
+      if (descriptor?.botUrl) {
+        try {
+          const urlPort = new URL(descriptor.botUrl).port;
+          if (urlPort) port = parseInt(urlPort, 10);
+        } catch {
+          // ignore invalid URL
+        }
       }
-    }
 
-    val.push({
-      botId: k,
-      botName: thisBotStore.uiBotName || thisBotStore.botId,
-      botIcon: thisBotStore.uiBotIcon || '',
-      trades: `${botStore.allOpenTradeCount[k]} / ${
-        (botStore.allBotState[k]?.max_open_trades ?? 0) > 0
-          ? botStore.allBotState[k]?.max_open_trades
-          : '∞'
-      }`,
-      profitClosed: v?.profit_closed_coin ?? 0,
-      profitClosedRatio: (() => {
-        const ac = botStore.allBotState[k]?.available_capital;
-        if (ac && ac > 0) {
-          return (v?.profit_closed_coin ?? 0) / ac;
-        }
-        return v?.profit_closed_ratio ?? 0;
-      })(),
-      capitalWithdrawal: v?.capital_withdrawal ?? 0,
-      stakeCurrency: botStore.allBotState[k]?.stake_currency || '',
-      profitOpenRatio,
-      profitOpen,
-      profitCurrent: profitOpen + (v?.profit_closed_coin ?? 0),
-      profitCurrentRatio: (() => {
-        const ac = botStore.allBotState[k]?.available_capital;
-        if (ac && ac > 0) {
-          return (profitOpen + (v?.profit_closed_coin ?? 0)) / ac;
-        }
-        return undefined;
-      })(),
-      wins: v?.winning_trades ?? 0,
-      losses: v?.losing_trades ?? 0,
-      balance: botStore.allBalance[k]?.total_bot ?? botStore.allBalance[k]?.total ?? 0,
-      stakeCurrencyDecimals: botStore.allBotState[k]?.stake_currency_decimals || 3,
-      isDryRun: botStore.allBotState[k]?.dry_run,
-      isOnline: botStore.botStores[k]?.isBotOnline,
-      isStarting: botStore.botStores[k]?.isBotStarting,
-      lastSeenOnline: botStore.botStores[k]?.lastSeenOnline ?? 0,
-      exchange: botStore.allBotState[k]?.exchange || '',
-      balanceAppendix: botStore.allBotState[k]?.dry_run ? '(dry)' : '',
-      stakeAmount: botStore.allBotState[k]?.stake_amount || '',
-      port,
-      strategy: botStore.allBotState[k]?.strategy || '',
-      pairCount: botStore.botStores[k]?.whitelist?.length ?? 0,
-      tradingMode: (botStore.allBotState[k]?.trading_mode as string) || 'spot',
-      availableCapital: botStore.allBotState[k]?.available_capital,
-      tradableBalanceRatio: botStore.allBotState[k]?.tradable_balance_ratio,
-      availableFunds: (() => {
-        const ac = botStore.allBotState[k]?.available_capital;
-        if (ac === undefined || ac === null) return undefined;
-        const gain = v?.profit_closed_coin ?? 0;
-        const withdraw = v?.capital_withdrawal ?? 0;
-        return ac + gain - withdraw;
-      })(),
-      yearlyProfit: calculatePeriodProfit(v, 365)?.abs,
-      monthlyProfit: calculateMonthlyProfit(v),
-    });
+      row = {
+        botId: k,
+        botName: thisBotStore.uiBotName || thisBotStore.botId,
+        botIcon: thisBotStore.uiBotIcon || '',
+        trades: `${botStore.allOpenTradeCount[k]} / ${
+          (botState?.max_open_trades ?? 0) > 0 ? botState?.max_open_trades : '∞'
+        }`,
+        profitClosed: v?.profit_closed_coin ?? 0,
+        profitClosedRatio: (() => {
+          const ac = botState?.available_capital;
+          if (ac && ac > 0) {
+            return (v?.profit_closed_coin ?? 0) / ac;
+          }
+          return v?.profit_closed_ratio ?? 0;
+        })(),
+        capitalWithdrawal: v?.capital_withdrawal ?? 0,
+        stakeCurrency: botState?.stake_currency || '',
+        profitOpenRatio,
+        profitOpen,
+        profitCurrent: profitOpen + (v?.profit_closed_coin ?? 0),
+        profitCurrentRatio: (() => {
+          const ac = botState?.available_capital;
+          if (ac && ac > 0) {
+            return (profitOpen + (v?.profit_closed_coin ?? 0)) / ac;
+          }
+          return undefined;
+        })(),
+        wins: v?.winning_trades ?? 0,
+        losses: v?.losing_trades ?? 0,
+        balance: balance?.total_bot ?? balance?.total ?? 0,
+        stakeCurrencyDecimals: botState?.stake_currency_decimals || 3,
+        isDryRun: botState?.dry_run,
+        isOnline: thisBotStore.isBotOnline,
+        isStarting: thisBotStore.isBotStarting,
+        lastSeenOnline: thisBotStore.lastSeenOnline ?? 0,
+        exchange: botState?.exchange || '',
+        balanceAppendix: botState?.dry_run ? '(dry)' : '',
+        stakeAmount: botState?.stake_amount || '',
+        port,
+        strategy: botState?.strategy || '',
+        pairCount: whitelist?.length ?? 0,
+        market: marketOfWhitelist(whitelist),
+        tradingMode: (botState?.trading_mode as string) || 'spot',
+        availableCapital: botState?.available_capital,
+        tradableBalanceRatio: botState?.tradable_balance_ratio,
+        availableFunds: (() => {
+          const ac = botState?.available_capital;
+          if (ac === undefined || ac === null) return undefined;
+          const gain = v?.profit_closed_coin ?? 0;
+          const withdraw = v?.capital_withdrawal ?? 0;
+          return ac + gain - withdraw;
+        })(),
+        yearlyProfit: calculatePeriodProfit(v, 365)?.abs,
+        monthlyProfit: calculateMonthlyProfit(v),
+      };
+      _rowCache.set(k, { sig, profitOpen, row });
+    }
+    val.push(row);
     if (v?.profit_closed_coin !== undefined) {
       if (thisBotStore.isSelected) {
         const cur = botStore.allBotState[k]?.stake_currency || 'USDT';
@@ -3129,6 +3330,9 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
           break;
         case 'exchange':
           cmp = (a.exchange || '').localeCompare(b.exchange || '');
+          break;
+        case 'market':
+          cmp = (a.market || '').localeCompare(b.market || '');
           break;
         case 'status': {
           const statusOrder = { live: 0, dry: 1, offline: 2 };
@@ -4105,14 +4309,6 @@ const correlatedPairs = computed(() => {
             </span>
           </div>
           <div class="space-y-1">
-            <div
-              v-for="[botId, store] in Object.entries(botStore.botStores).filter(
-                ([id]) =>
-                  (store) =>
-                    store.isSelected,
-              )"
-              :key="botId"
-            ></div>
             <!-- Per-bot breakdown -->
             <template
               v-for="item in tableItems.filter((i) => i.botId)"
@@ -4739,7 +4935,12 @@ const correlatedPairs = computed(() => {
 
     <!-- ProfitGoalBar removed -->
 
-    <DataTable size="small" :value="tableItems" :row-class="getRowClass" class="">
+    <DataTable
+      size="small"
+      :value="tableItems"
+      :row-class="getRowClass"
+      :class="fitToScreen ? 'ft-fit-screen ft-fit-screen--compact-first' : ''"
+    >
       <!-- Fixed checkbox column -->
       <Column style="width: 2rem; min-width: 2rem" :reorderable-column="false" frozen>
         <template #body="{ data }">
@@ -4795,8 +4996,9 @@ const correlatedPairs = computed(() => {
             <BaseCheckbox
               v-else-if="(data as ComparisonTableItems).isGroupRow && botStore.botCount > 1"
               :model-value="isGroupAllSelected((data as ComparisonTableItems).groupId!)"
-              @update:model-value="toggleGroup((data as ComparisonTableItems).groupId!)"
+              :indeterminate="isGroupPartiallySelected((data as ComparisonTableItems).groupId!)"
               :title="t('botComparison.toggleAll')"
+              @update:model-value="toggleGroup((data as ComparisonTableItems).groupId!)"
             />
             <!-- Summary row: checkbox toggles all bots -->
             <BaseCheckbox
@@ -4804,6 +5006,7 @@ const correlatedPairs = computed(() => {
                 !data.botId && !(data as ComparisonTableItems).isGroupRow && botStore.botCount > 1
               "
               v-model="allToggled"
+              :indeterminate="someToggled"
               :title="t('botComparison.toggleAll')"
             />
           </div>
@@ -4812,11 +5015,13 @@ const correlatedPairs = computed(() => {
       <Column
         v-for="col in visibleOrderedColumns"
         :key="col.id"
+        :style="fitToScreen ? { width: fitColWidth(col.id) } : undefined"
         :field="
           col.id === 'winLoss'
             ? 'winVsLoss'
             : [
                   'status',
+                  'market',
                   'exchange',
                   'openProfit',
                   'closedProfit',
@@ -4834,6 +5039,7 @@ const correlatedPairs = computed(() => {
           <div class="col-header-removable group">
             <i-mdi-robot v-if="col.id === 'botName'" class="text-xs opacity-50" />
             <i-mdi-circle v-else-if="col.id === 'status'" class="text-xs opacity-50" />
+            <i-mdi-earth v-else-if="col.id === 'market'" class="text-xs opacity-50" />
             <i-mdi-swap-horizontal v-else-if="col.id === 'exchange'" class="text-xs opacity-50" />
             <i-mdi-chart-box v-else-if="col.id === 'trades'" class="text-xs opacity-50" />
             <i-mdi-trending-up v-else-if="col.id === 'openProfit'" class="text-xs opacity-50" />
@@ -5192,6 +5398,15 @@ const correlatedPairs = computed(() => {
                             : 'Spot'
                         }}</span
                       >
+                      <!-- Market tag -->
+                      <span
+                        v-else-if="tagId === 'market' && (data as ComparisonTableItems).market"
+                        class="inline-flex items-center rounded-sm text-[0.55rem] font-bold"
+                        style="padding: 1px 5px; line-height: 1.2"
+                        :style="getMarketStyle((data as ComparisonTableItems).market)"
+                        :title="t('botComparison.marketTagTitle')"
+                        >{{ marketLabel((data as ComparisonTableItems).market) }}</span
+                      >
                       <!-- Exchange tag -->
                       <span
                         v-else-if="tagId === 'exchange' && (data as ComparisonTableItems).exchange"
@@ -5419,6 +5634,18 @@ const correlatedPairs = computed(() => {
               </div>
             </template>
 
+            <!-- market -->
+            <template v-else-if="col.id === 'market'">
+              <span
+                v-if="data.botId && (data as ComparisonTableItems).market"
+                class="inline-flex items-center rounded-sm text-[0.65rem] font-bold whitespace-nowrap"
+                style="padding: 2px 7px; line-height: 1.3"
+                :style="getMarketStyle((data as ComparisonTableItems).market)"
+                :title="marketLabel((data as ComparisonTableItems).market)"
+                >{{ marketLabel((data as ComparisonTableItems).market) }}</span
+              >
+            </template>
+
             <!-- exchange -->
             <template v-else-if="col.id === 'exchange'">
               <span
@@ -5461,7 +5688,7 @@ const correlatedPairs = computed(() => {
                 </div>
                 <div
                   v-if="(data as ComparisonTableItems).summaryTradesMax! > 0"
-                  class="flex h-1.5 rounded-full overflow-hidden mt-1 bg-surface-300 dark:bg-surface-600"
+                  class="ft-gauge flex h-1.5 rounded-full overflow-hidden mt-1 bg-surface-300 dark:bg-surface-600"
                   style="min-width: 50px"
                 >
                   <div
@@ -5486,7 +5713,7 @@ const correlatedPairs = computed(() => {
                 <div>{{ data.trades }}</div>
                 <div
                   v-if="data.botId && data.trades?.includes('/') && !data.trades?.includes('∞')"
-                  class="flex h-1.5 rounded-full overflow-hidden mt-1 bg-surface-300 dark:bg-surface-600"
+                  class="ft-gauge flex h-1.5 rounded-full overflow-hidden mt-1 bg-surface-300 dark:bg-surface-600"
                   style="min-width: 50px"
                 >
                   <div
@@ -5889,7 +6116,7 @@ const correlatedPairs = computed(() => {
                 </div>
                 <div
                   v-if="data.wins + data.losses > 0"
-                  class="flex h-1.5 rounded-full overflow-hidden mt-1"
+                  class="ft-gauge flex h-1.5 rounded-full overflow-hidden mt-1"
                   style="min-width: 50px"
                   :title="`${((data.wins / (data.wins + data.losses)) * 100).toFixed(1)}% winrate`"
                 >
