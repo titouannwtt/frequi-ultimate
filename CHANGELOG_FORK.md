@@ -4,6 +4,61 @@
 **Fork** : `titouannwtt/frequi`
 **Total** : 98 fichiers, +31 224 / -1 313 lignes
 
+---
+
+## Suivi upstream — FreqUI 3.1.1 (2026-07-31)
+
+**Upstream release** : [freqtrade/frequi 3.1.1](https://github.com/freqtrade/frequi/releases/tag/3.1.1)
+**Base fork** : cherry-picks jusqu'à 3.1.0 (`57ba2a21`, `7e7cce62`, `ec4a8ebb`, `c7e0c184`)
+**Compare** : https://github.com/freqtrade/frequi/compare/3.1.0...3.1.1 — 103 commits, 38 fichiers
+
+### TL;DR — impact fork
+
+Malgré la note upstream laconique ("aligned with freqtrade monthly release"), 3.1.1 contient une **refonte structurelle majeure** : migration vers le **file-based routing (Nuxt-style)**, `src/views/*.vue` → `src/pages/*.vue`, réécriture complète de `src/router/index.ts`.
+
+Cette refonte est **incompatible en l'état** avec les vues custom du fork (`DashboardViewCustom.vue`, `SettingsViewCustom.vue`, `StrategyDevView.vue`, `TradeJournalView.vue`, `ChartsView.vue`) et son `router/index.ts` custom.
+
+Un `git merge 3.1.1 --allow-unrelated-histories` produit **146 conflits** — la stratégie merge n'est pas viable. On reste sur la stratégie **cherry-pick sélectif** déjà utilisée pour 3.0.x / 3.1.0.
+
+### Découpage des changements upstream
+
+**🔴 Rupture / architecture (à décider avant tout portage)**
+
+| Commit | Sujet | Impact fork |
+|--------|-------|-------------|
+| `4471057a` (PR #2966) | `feat: file_router` (merge) | ⚠️ Migre `views/` → `pages/`. Le fork garde ses vues custom sous `views/`. Router upstream réécrit 99 lignes vs 112 lignes custom du fork. |
+| `918e71a7` | `feat: convert final views to file based routing` | ⚠️ Idem |
+| `341ba694` | `feat: add missing routes as base files` | ⚠️ Idem |
+| `7e4250a3` | `feat: rename existing routes` | ⚠️ Idem |
+| `6a3f7868` | `feat: first steps to move to file based routing` | ⚠️ Idem |
+| `cc6270fc` | `feat: update typechecking and HMR` | Coupé au routing — à porter avec |
+
+Ne **pas** porter la migration file-router dans une PR "sync auto". Elle mérite sa propre décision produit + PR dédiée + validation e2e sur toutes les vues custom.
+
+**🟡 Fonctionnel (portable mais avec conflit)**
+
+| Commit | Sujet | Impact fork |
+|--------|-------|-------------|
+| `6bb0c095` | `feat: differentiate between offline and loggedout bots` | Touche `BotComparisonList.vue` (48 lignes) + `botComparison.ts`. Le fork a déjà customisé lourdement `BotComparisonList.vue` (colonne Max Drawdown, éditeur de config par bot). Cherry-pick à faire à la main. ~30 min. |
+
+**🟢 Sûr / trivial (dep bumps et CI)**
+
+À laisser à Dependabot du fork (déjà son mode d'opération, cf. PRs `#22`, `#23`, `#24`, `#25`, `#26`, `#33`) :
+
+- npm : `@nuxt/ui` 4.9→4.10, groupe `vue` (5 bumps), `reka-ui` 2.9.10→2.10.1, `humanize-duration` 3.33.2→3.34.0, `axios` 1.18.0→1.18.1
+- dev : `vite` 8.1.0→8.1.5, `prettier` 3.8.4→3.9.6, `happy-dom` 20.10.5→20.11.0, groupe `tailwindcss`, `eslint` 10.5→10.6, `vitest` 4.1.9→4.1.10, `@vitejs/plugin-vue` 6.0.7→6.0.8, `@types/node` 25.9.3→26.1.1, `globals` 17.6→17.7, `@playwright/test` 1.61.0→1.61.1
+- toolchain : `pnpm` 11.11→11.17
+- CI/Docker : `actions/checkout`, `actions/setup-node`, `docker/login-action`, `zizmorcore/zizmor-action` 0.5.6→0.6.1, `nginx` 1.31.2→1.31.3, `node` 26.4→26.5, `alexellis/upload-assets` 0.4.1→0.5.0
+
+### Plan d'action
+
+1. **Cette PR** : ajoute ce suivi. Ne modifie **aucun code** applicatif. Zéro risque.
+2. **PR suivi 1 — `feat: offline vs loggedout bots`** : cherry-pick manuel de `6bb0c095` avec merge à la main sur `BotComparisonList.vue`.
+3. **PR suivi 2 — architecturale** : décider si on adopte le file-based routing upstream. Si non, geler ce point de divergence.
+4. **Dependabot** : laisser tourner.
+
+---
+
 ## Fichiers AJOUTÉS (40 fichiers, ~19 000 lignes)
 
 | Fichier | Lignes | Résumé | Risque |
