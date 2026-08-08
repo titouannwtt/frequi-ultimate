@@ -71,6 +71,7 @@ import type {
   WhitelistResponse,
 } from '@/types';
 import { BacktestSteps, LoadingStatus, RunModes, TimeSummaryOptions } from '@/types';
+import type { FleetSnapshotResponse } from '@/types/fleetSnapshot';
 import type { FTWsMessage } from '@/types/wsMessageTypes';
 import { FtWsMessageTypes } from '@/types/wsMessageTypes';
 import { markRaw } from 'vue';
@@ -1361,6 +1362,15 @@ export function createBotSubStore(botId: string, botName: string) {
           FleetviewRealignPayload,
           AxiosResponse<FleetviewRealignPreview>
         >('/fleetview/reconciliation/realign', payload);
+        return data;
+      },
+      async getFleetSnapshot(maxAgeS = 0) {
+        // One request describing every bot in the fleet, served from the shared daemon
+        // (see docs/fleet-snapshot.md). Any bot can answer it, so a client needs only one
+        // reachable bot instead of one request per bot per datum.
+        const { data } = await api.get<FleetSnapshotResponse>('/fleet/snapshot', {
+          params: maxAgeS ? { max_age_s: maxAgeS } : {},
+        });
         return data;
       },
       async getRateMetrics(window = 3600, bucket_s = 10) {
