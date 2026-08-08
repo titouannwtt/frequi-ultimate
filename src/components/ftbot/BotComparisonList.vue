@@ -34,7 +34,11 @@ import {
   cleanupAllTimeouts,
 } from '@/composables/usePopoverHover';
 import { computePosition, flip, shift, offset, arrow as arrowMiddleware } from '@floating-ui/dom';
-import BotConfigEditorModal from './configEditor/BotConfigEditorModal.vue';
+// Loaded on demand: this modal pulls in Monaco, which is 895 KB gzip — 45% of the
+// dashboard's payload — for an editor that is not on screen until the user opens it.
+const BotConfigEditorModal = defineAsyncComponent(
+  () => import('./configEditor/BotConfigEditorModal.vue'),
+);
 import DryReplayModal from './DryReplayModal.vue';
 import {
   computeMaxDrawdown,
@@ -4974,6 +4978,18 @@ const correlatedPairs = computed(() => {
     >
       <!-- Fixed checkbox column -->
       <Column style="width: 2rem; min-width: 2rem" :reorderable-column="false" frozen>
+        <!-- Master checkbox: selects/deselects every bot the current filters leave
+             visible. Tri-state, so a partial selection is visually distinct from none
+             and the first click completes it rather than clearing it. -->
+        <template #header>
+          <div v-if="botStore.botCount > 1" class="flex items-center justify-center px-1">
+            <BaseCheckbox
+              v-model="allToggled"
+              :indeterminate="someToggled"
+              :title="t('botComparison.toggleAll')"
+            />
+          </div>
+        </template>
         <template #body="{ data }">
           <div
             class="flex items-center gap-0.5 px-1"

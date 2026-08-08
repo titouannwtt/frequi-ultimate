@@ -56,7 +56,10 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 700, // Default is 500
-    sourcemap: true,
+    // 'hidden' still emits the maps (so a build can be symbolicated after the fact)
+    // but stops referencing them from the bundles, so browsers never fetch them.
+    // They were 64 MB of the 86 MB dist.
+    sourcemap: 'hidden',
   },
   server: {
     proxy: {

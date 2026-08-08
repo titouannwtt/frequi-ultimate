@@ -15,7 +15,7 @@ import {
   VisualMapComponent,
 } from 'echarts/components';
 
-import { registerTransform } from 'echarts';
+import { registerTransform } from 'echarts/core';
 
 import type { TimeSummaryCols, TimeSummaryReturnValue } from '@/types';
 import type { EChartsOption, LinearGradientObject } from 'echarts';
