@@ -6976,7 +6976,10 @@ const correlatedPairs = computed(() => {
 }
 .bot-row-group > td {
   background-color: #eef2f7 !important;
-  border-top: 2px solid #cbd5e1 !important;
+  /* inset shadow rather than a border: a border adds 2px of height to group
+     rows only, and virtual scrolling assumes every row is the same height —
+     the drift accumulates down the list. */
+  box-shadow: inset 0 2px 0 0 #cbd5e1 !important;
 }
 /* Dark mode */
 .ft-dark-theme .bot-row-selected > td {
@@ -6988,7 +6991,7 @@ const correlatedPairs = computed(() => {
 }
 .ft-dark-theme .bot-row-group > td {
   background-color: #181c24 !important;
-  border-top: 2px solid #2d3748 !important;
+  box-shadow: inset 0 2px 0 0 #2d3748 !important;
 }
 
 /* Ensure popovers don't overflow viewport */
