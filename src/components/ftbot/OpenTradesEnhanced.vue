@@ -182,6 +182,17 @@ function showColumnPopover(event: Event) {
 
 const { fitToScreen, toggleFitToScreen } = useFitToScreen('openTrades');
 
+// Virtualised so only the visible rows exist in the DOM. This table carried
+// `:rows="200"` without `:paginator`, which makes the prop inert — so every open trade in
+// the fleet was rendered at once (150-500 rows across 50 bots), each with popover handlers
+// attached.
+//
+// itemSize must match the real row height or the scrollbar drifts, and that height depends
+// on the compact "fit to screen" mode — hence two values rather than a constant.
+const virtualScrollerOptions = computed(() => ({
+  itemSize: fitToScreen.value ? 26 : 34,
+}));
+
 defineExpose({ showColumnPopover, tradingMode, hasMultipleModes, fitToScreen, toggleFitToScreen });
 
 const filteredTrades = computed(() => {
@@ -338,7 +349,7 @@ watch(
     <DataTable
       v-model:selection="selectedItem"
       :value="filteredTrades"
-      :rows="200"
+      :virtual-scroller-options="virtualScrollerOptions"
       selection-mode="single"
       :class="['text-center text-xs flex-1 min-h-0', fitToScreen ? 'ft-fit-screen' : '']"
       size="small"
