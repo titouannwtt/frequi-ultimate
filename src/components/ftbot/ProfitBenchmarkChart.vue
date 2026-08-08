@@ -841,6 +841,10 @@ function buildCombinedSeries(): any[] {
       name: t('profitBenchmark.combined'),
       smooth: true,
       symbol: 'none',
+      // Above the latent curve (z: 6): realized profit is the headline series, and the
+      // latent band would otherwise hide it wherever the two run close together.
+      // Drawdown markers stay on top regardless — same z, but pushed later in the array.
+      z: 7,
       lineStyle: { width: 2.5, color: colorStore.colorProfit },
       itemStyle: { color: colorStore.colorProfit },
       areaStyle: {

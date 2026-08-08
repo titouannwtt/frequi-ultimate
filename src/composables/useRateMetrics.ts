@@ -1,3 +1,4 @@
+import { useVisibleInterval } from '@/composables/useVisibleInterval';
 import type {
   MethodStats,
   RateMetricsResponse,
@@ -25,6 +26,7 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
   const selectedExchange = ref('__all__');
   const localMetrics = ref<Record<string, RateMetricsResponse>>({});
   const refreshInterval = ref<number | null>(null);
+  let visibleHandle: ReturnType<typeof useVisibleInterval> | null = null;
 
   let fetchVersion = 0;
 
@@ -288,7 +290,10 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
   function startRefresh() {
     stopRefresh();
     fetchMetrics();
-    refreshInterval.value = window.setInterval(fetchMetrics, opts.refreshMs ?? 30000);
+    // Skipped while the tab is hidden: this poller fans out across every bot, and a
+    // dashboard left open in a background tab was spending the fleet's rate-limit
+    // budget refreshing numbers nobody was reading.
+    visibleHandle = useVisibleInterval(fetchMetricsWithTs, opts.refreshMs ?? 30000);
     freshnessInterval.value = window.setInterval(() => {
       secondsSinceRefresh.value = lastRefreshTs.value
         ? Math.round((Date.now() - lastRefreshTs.value) / 1000)
@@ -297,6 +302,8 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
   }
 
   function stopRefresh() {
+    visibleHandle?.stop();
+    visibleHandle = null;
     if (refreshInterval.value) {
       clearInterval(refreshInterval.value);
       refreshInterval.value = null;

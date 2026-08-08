@@ -73,11 +73,17 @@ import type {
 import { BacktestSteps, LoadingStatus, RunModes, TimeSummaryOptions } from '@/types';
 import type { FTWsMessage } from '@/types/wsMessageTypes';
 import { FtWsMessageTypes } from '@/types/wsMessageTypes';
+import { markRaw } from 'vue';
 import { useWebSocket } from '@vueuse/core';
 import type { AxiosResponse } from 'axios';
 import axios from 'axios';
 
 import { evaluateFeatures } from '@/utils/features';
+
+// Shared across every consumer of getRateMetrics: /rate_metrics is polled by four
+// separate widgets, and without this each one fans out across the whole fleet.
+const RATE_METRICS_COALESCE_MS = 10_000;
+const rateMetricsCache = new Map<string, { ts: number; promise: Promise<RateMetricsResponse> }>();
 
 export function createBotSubStore(botId: string, botName: string) {
   const loginInfo = useLoginInfo(botId);
@@ -112,6 +118,7 @@ export function createBotSubStore(botId: string, botName: string) {
         trades: [] as ClosedTrade[],
         openTrades: [] as Trade[],
         tradeCount: 0,
+        tradesSignature: '',
         closedTradesLoaded: false,
         closedTradesLoading: false,
         performanceStats: [] as PerformanceEntry[],
@@ -350,14 +357,30 @@ export function createBotSubStore(botId: string, botName: string) {
               } while (trades.length !== totalTrades);
             }
             const tradesCount = trades.length;
-            // Add botId to all trades
-            trades = trades.map((t) => ({
-              ...t,
-              botId,
-              botName,
-              botTradeId: `${botId}__${t.trade_id}`,
-            }));
-            this.trades = trades;
+            // markRaw: a closed trade is immutable once fetched — we replace the whole
+            // array, never mutate a field. Without it Vue proxies every trade *and*
+            // every nested order: ~36 000 proxies on a 50-bot fleet, rebuilt on each
+            // refresh, for reactivity nothing ever uses.
+            trades = trades.map((t) =>
+              markRaw({
+                ...t,
+                botId,
+                botName,
+                botTradeId: `${botId}__${t.trade_id}`,
+              }),
+            );
+            // Keep the array identity when nothing changed. Downstream memoisation
+            // (drawdown caches, the fleet-wide aggregates) is keyed on identity, so
+            // reassigning an identical array silently invalidates all of it — which is
+            // why those caches never hit today.
+            const lastClosed = trades.length ? trades[trades.length - 1] : undefined;
+            const signature = `${tradesCount}:${lastClosed?.trade_id ?? ''}:${
+              lastClosed?.close_timestamp ?? ''
+            }`;
+            if (signature !== this.tradesSignature) {
+              this.trades = trades;
+              this.tradesSignature = signature;
+            }
             this.tradeCount = tradesCount;
             this.closedTradesLoaded = true;
           }
@@ -386,12 +409,17 @@ export function createBotSubStore(botId: string, botName: string) {
             this.refreshSlow(false);
           }
           if (Array.isArray(data)) {
-            const openTrades = data.map((t) => ({
-              ...t,
-              botId,
-              botName,
-              botTradeId: `${botId}__${t.trade_id}`,
-            }));
+            // markRaw for the same reason as closed trades; open trades legitimately
+            // change every tick, so their array identity cannot be stabilised — but
+            // their contents still need not be proxied.
+            const openTrades = data.map((t) =>
+              markRaw({
+                ...t,
+                botId,
+                botName,
+                botTradeId: `${botId}__${t.trade_id}`,
+              }),
+            );
             this.openTrades = openTrades;
             if (this.selectedPair === '') {
               this.selectedPair = openTrades[0]?.pair || '';
@@ -1325,14 +1353,27 @@ export function createBotSubStore(botId: string, botName: string) {
         return data;
       },
       async getRateMetrics(window = 3600, bucket_s = 10) {
-        try {
-          const { data } = await api.get<RateMetricsResponse>('/rate_metrics', {
-            params: { window, bucket_s },
-          });
-          return Promise.resolve(data);
-        } catch (err) {
-          return Promise.reject(err);
+        // Four independent dashboard widgets poll this, each on its own timer, each
+        // fanning out across every bot — the same figures fetched four times over.
+        // Coalescing here rather than forcing a shared cadence keeps each widget's
+        // own refresh rate intact: a caller still gets data no older than the most
+        // demanding consumer asked for, it just stops being fetched more than once.
+        const key = `${botId}:${window}:${bucket_s}`;
+        const cached = rateMetricsCache.get(key);
+        if (cached && Date.now() - cached.ts < RATE_METRICS_COALESCE_MS) {
+          return cached.promise;
         }
+        const promise = api
+          .get<RateMetricsResponse>('/rate_metrics', { params: { window, bucket_s } })
+          .then((r) => r.data)
+          .catch((err) => {
+            // A failure must not be cached: the next widget should retry, not inherit
+            // the error for the whole window.
+            rateMetricsCache.delete(key);
+            throw err;
+          });
+        rateMetricsCache.set(key, { ts: Date.now(), promise });
+        return promise;
       },
       async getVolumeHistory(days = 90, bucket = '1d') {
         try {

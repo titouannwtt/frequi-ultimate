@@ -451,6 +451,7 @@ declare global {
   const useVModels: typeof import('@vueuse/core').useVModels
   const useVibrate: typeof import('@vueuse/core').useVibrate
   const useVirtualList: typeof import('@vueuse/core').useVirtualList
+  const useVisibleInterval: typeof import('./composables/useVisibleInterval').useVisibleInterval
   const useVolumeComparator: typeof import('./composables/useVolumeComparator').useVolumeComparator
   const useWakeLock: typeof import('@vueuse/core').useWakeLock
   const useWebNotification: typeof import('@vueuse/core').useWebNotification
@@ -516,6 +517,9 @@ declare global {
   // @ts-ignore
   export type { TradingModeFilter } from './composables/useTradingModeFilter'
   import('./composables/useTradingModeFilter')
+  // @ts-ignore
+  export type { VisibleIntervalHandle } from './composables/useVisibleInterval'
+  import('./composables/useVisibleInterval')
   // @ts-ignore
   export type { BotTagVisibility, BotFilters, ActiveSort, SortDirection, TagId } from './stores/botComparison'
   import('./stores/botComparison')
@@ -1015,6 +1019,7 @@ declare module 'vue' {
     readonly useVModels: UnwrapRef<typeof import('@vueuse/core')['useVModels']>
     readonly useVibrate: UnwrapRef<typeof import('@vueuse/core')['useVibrate']>
     readonly useVirtualList: UnwrapRef<typeof import('@vueuse/core')['useVirtualList']>
+    readonly useVisibleInterval: UnwrapRef<typeof import('./composables/useVisibleInterval')['useVisibleInterval']>
     readonly useVolumeComparator: UnwrapRef<typeof import('./composables/useVolumeComparator')['useVolumeComparator']>
     readonly useWakeLock: UnwrapRef<typeof import('@vueuse/core')['useWakeLock']>
     readonly useWebNotification: UnwrapRef<typeof import('@vueuse/core')['useWebNotification']>

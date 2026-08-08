@@ -16,7 +16,7 @@ import {
   VisualMapComponent,
   TransformComponent,
 } from 'echarts/components';
-import { registerTransform } from 'echarts';
+import { registerTransform } from 'echarts/core';
 
 import type { BacktestMarketChange } from '@/types';
 import type { EChartsOption } from 'echarts';
