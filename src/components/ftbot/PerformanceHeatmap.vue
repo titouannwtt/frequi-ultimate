@@ -137,6 +137,7 @@ const chartOptions = computed<EChartsOption>(() => {
   const maxVal = Math.max(...profits.map(Math.abs), 1);
 
   return {
+    animation: false,
     backgroundColor: 'rgba(0, 0, 0, 0)',
     tooltip: {
       backgroundColor: 'rgba(20, 20, 30, 0.92)',

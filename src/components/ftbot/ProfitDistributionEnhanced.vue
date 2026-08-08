@@ -453,6 +453,7 @@ function buildHistogramChart(): EChartsOption {
   const mean = stats.value.mean;
 
   return {
+    animation: false,
     tooltip: {
       trigger: 'axis',
       ...tooltipStyle.value,
@@ -554,6 +555,7 @@ function buildPerBotChart(): EChartsOption {
   }));
 
   return {
+    animation: false,
     tooltip: {
       trigger: 'axis',
       ...tooltipStyle.value,
@@ -594,6 +596,7 @@ function buildPerPairChart(): EChartsOption {
   const reversed = [...data].reverse();
 
   return {
+    animation: false,
     tooltip: {
       trigger: 'axis',
       ...tooltipStyle.value,
@@ -751,6 +754,7 @@ function buildLeverageChart(): EChartsOption {
     }));
 
   return {
+    animation: false,
     tooltip: {
       trigger: 'axis',
       ...tooltipStyle.value,

@@ -464,6 +464,7 @@ const chartOptions = computed<EChartsOption>(() => {
   }
 
   return {
+    animation: false,
     backgroundColor: 'rgba(0, 0, 0, 0)',
     dataset: {
       dimensions: buildDimensions(),

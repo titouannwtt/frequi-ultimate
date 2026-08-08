@@ -124,6 +124,7 @@ function fmtLatency(ms: number): string {
 // --- gauge builders ---
 function makeGauge(pct: number, color: string, width = 10): EChartsOption {
   return {
+    animation: false,
     backgroundColor: 'rgba(0, 0, 0, 0)',
     tooltip: { show: false },
     series: [
