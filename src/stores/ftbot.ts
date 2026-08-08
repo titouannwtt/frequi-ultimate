@@ -340,6 +340,17 @@ export function createBotSubStore(botId: string, botName: string) {
               params: { limit, offset },
             });
           };
+          // Probe the count before pulling history. Closed trades only change when a
+          // trade closes, yet this swept every page on a timer: ~8 MB across a 50-bot
+          // fleet, re-fetched to rebuild an identical list. One tiny request now tells
+          // us whether anything moved, and the early return also preserves the array
+          // identity that downstream memoisation depends on.
+          if (this.closedTradesLoaded && this.trades.length > 0) {
+            const probe = await fetchTrades(1, 0);
+            if (probe.data.total_trades === this.tradeCount) {
+              return Promise.resolve();
+            }
+          }
           const res = await fetchTrades(pageLength, 0);
           const result: TradeResponse = res.data;
           let { trades } = result;
