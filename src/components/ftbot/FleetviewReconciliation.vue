@@ -32,8 +32,20 @@ function refresh() {
 
 const okExpanded = ref(false);
 
-const issueCoins = computed(() => (recon.value?.coins ?? []).filter((c) => c.status !== 'ok'));
-const okCoins = computed(() => (recon.value?.coins ?? []).filter((c) => c.status === 'ok'));
+// A sub-cent notional gap is float/rounding noise, not a position: burying real
+// breaks under rows worth fractions of a cent teaches the eye to skip the panel.
+// Unknown notional (no mark price) is NOT noise — it stays visible.
+const NOISE_NOTIONAL_USDC = 0.01;
+function isNoiseGap(c: FleetviewCoin): boolean {
+  const n = diffNotionalOf(c);
+  return n !== null && Math.abs(n) < NOISE_NOTIONAL_USDC;
+}
+const issueCoins = computed(() =>
+  (recon.value?.coins ?? []).filter((c) => c.status !== 'ok' && !isNoiseGap(c)),
+);
+const okCoins = computed(() =>
+  (recon.value?.coins ?? []).filter((c) => c.status === 'ok' || isNoiseGap(c)),
+);
 
 const dataAge = computed(() => {
   if (!recon.value) return '';

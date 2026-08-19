@@ -2322,6 +2322,8 @@ export default {
 
   // Correlation / Double Exposure
   corrPopover: {
+    summary: '{n} pair(s) with double exposure',
+    dismissAll: 'Ignore all',
     doubleExposure: 'Double exposure detected',
     combinedMargin: 'Combined margin',
     combinedNotional: 'Combined notional',

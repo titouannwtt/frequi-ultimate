@@ -2295,6 +2295,8 @@ export default {
   tradeOverview: 'Aperçu du trade',
 
   corrPopover: {
+    summary: '{n} paire(s) en double exposition',
+    dismissAll: 'Tout ignorer',
     doubleExposure: 'Double exposition détectée',
     combinedMargin: 'Marge combinée',
     combinedNotional: 'Notionnel combiné',
