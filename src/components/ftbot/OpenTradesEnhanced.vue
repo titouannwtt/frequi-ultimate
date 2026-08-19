@@ -102,6 +102,13 @@ function dismissCorrelation(key: string) {
   localStorage.setItem(DISMISSED_KEY, JSON.stringify([...dismissedCorrelations.value]));
 }
 
+function dismissAllCorrelations() {
+  // One click instead of N: with 30+ bots the banner turns into a wall, and the
+  // per-row ✕ makes clearing it a chore. Same persistence as the unit dismiss.
+  for (const c of correlatedTrades.value) dismissedCorrelations.value.add(c.key);
+  localStorage.setItem(DISMISSED_KEY, JSON.stringify([...dismissedCorrelations.value]));
+}
+
 // Map of pair → detailed correlation info for badge + popover
 const CORR_COLORS = ['#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#22c55e'];
 
@@ -325,25 +332,31 @@ watch(
       </span>
     </div>
 
-    <!-- Correlation alerts with dismiss -->
-    <div v-if="correlatedTrades.length > 0" class="overflow-y-auto flex-shrink-0" style="max-height: 80px">
-      <div
+    <!-- Correlation alerts — one compact row, not one banner per pair. With 30+ bots
+         the stacked banners became a wall; the detail (which bots) lives in each
+         chip's title and in the existing hover popover on the table rows. -->
+    <div
+      v-if="correlatedTrades.length > 0"
+      class="flex items-center gap-1.5 flex-wrap mx-2 mb-1 px-2 py-1 rounded text-[11px] flex-shrink-0"
+      style="background: rgba(120, 80, 0, 0.2); border: 1px solid rgba(180, 130, 0, 0.25); color: #fbbf24"
+    >
+      <i-mdi-alert class="flex-shrink-0" style="font-size: 0.75rem" />
+      <span class="flex-shrink-0 font-semibold">
+        {{ t('corrPopover.summary', { n: correlatedTrades.length }) }}
+      </span>
+      <button
         v-for="corr in correlatedTrades"
         :key="corr.key"
-        class="flex items-center gap-2 mx-2 mb-1 px-2 py-1 rounded text-[11px]"
-        style="background: rgba(120, 80, 0, 0.2); border: 1px solid rgba(180, 130, 0, 0.25); color: #fbbf24"
-      >
-        <i-mdi-alert class="flex-shrink-0" style="font-size: 0.75rem" />
-        <span class="flex-1">
-          <strong>{{ corr.pair }}</strong> — {{ t('corrPopover.tradedBy', { bots: corr.entries.map(e => e.botName).join(' & ') }) }}
-        </span>
-        <button
-          class="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] cursor-pointer hover:bg-amber-500/20 transition-colors"
-          style="color: #92700a"
-          :title="t('corrPopover.dismiss')"
-          @click="dismissCorrelation(corr.key)"
-        >✕ {{ t('corrPopover.dismiss') }}</button>
-      </div>
+        class="px-1.5 py-0.5 rounded-full text-[10px] cursor-pointer hover:bg-amber-500/25 transition-colors"
+        style="border: 1px solid rgba(180, 130, 0, 0.45)"
+        :title="t('corrPopover.tradedBy', { bots: corr.entries.map(e => e.botName).join(' & ') }) + ' — ' + t('corrPopover.dismiss')"
+        @click="dismissCorrelation(corr.key)"
+      >{{ corr.pair.split('/')[0] }} ×{{ corr.entries.length }}</button>
+      <button
+        class="ms-auto flex-shrink-0 px-2 py-0.5 rounded text-[10px] font-semibold cursor-pointer hover:bg-amber-500/25 transition-colors"
+        style="border: 1px solid rgba(180, 130, 0, 0.45); color: #fbbf24"
+        @click="dismissAllCorrelations()"
+      >✕ {{ t('corrPopover.dismissAll') }}</button>
     </div>
 
     <DataTable
