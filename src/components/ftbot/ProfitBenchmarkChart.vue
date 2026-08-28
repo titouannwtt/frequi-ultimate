@@ -429,10 +429,15 @@ watch(
   },
 );
 
-// Merged current-profit series across the mode-filtered bots (same merge rules as
-// the drawdown card: forward-fill from the first COMMON sample so no bot is
-// silently missing from the sum), converted to the summary currency, clipped to
-// the selected timeframe, and normalized in % mode.
+// Merged current-profit series across the mode-filtered bots: forward-filled from zero
+// over the full window, converted to the summary currency, clipped to the selected
+// timeframe, and normalized in % mode.
+//
+// NOTE: this deliberately DIFFERS from BotMaxDrawdownCard, which still merges from the
+// first common sample. A cumulative profit curve is correct starting at zero — a bot
+// that did not exist contributed nothing. A drawdown curve is not: an artificially low
+// start fabricates a trough and anchors the max-drawdown marker on the zero line. Same
+// data, opposite trade-off; do not "harmonise" the two.
 /** Latent (closed+open) curve in STAKE CURRENCY, rebased on the selected window. */
 const latentAbs = computed<{ t: number; v: number }[]>(() => {
   if (!showLatent.value) return [];
@@ -463,13 +468,20 @@ const latentAbs = computed<{ t: number; v: number }[]>(() => {
     const only = perBot[0]!;
     merged = only.rows.map((r) => ({ t: r[0], v: convertProfit(r[1] + r[2], only.id) }));
   } else {
-    // Merge from the first COMMON sample so no bot is silently missing from the sum.
+    // Merge over the FULL window: a bot contributes 0 until its first sample, which is
+    // what it really contributed — it did not exist yet. `last` starts at 0, so the
+    // forward-fill below already gives that for free.
+    //
+    // This used to start at the newest first-sample across bots (max), to avoid a step
+    // when a late bot joined the sum. But profit_history restarts at zero whenever a bot
+    // is (re)deployed, so ONE young bot truncated the curve for ALL the others: on
+    // 2026-08-27, seven bots redeployed on 08-22 capped a 33-day history at 4 days.
+    // Hiding 29 days of history to avoid one honest step is the worse trade.
     const seriesList = perBot.map((e) => e.rows);
     const ids = perBot.map((e) => e.id);
-    const startT = Math.max(...seriesList.map((sr) => sr[0]![0]));
-    const allTs = [...new Set(seriesList.flatMap((sr) => sr.map((r) => r[0])))]
-      .filter((t_) => t_ >= startT)
-      .sort((a, b) => a - b);
+    const allTs = [...new Set(seriesList.flatMap((sr) => sr.map((r) => r[0])))].sort(
+      (a, b) => a - b,
+    );
     const idx = seriesList.map(() => 0);
     const last = seriesList.map(() => 0);
     merged = allTs.map((t_) => {
