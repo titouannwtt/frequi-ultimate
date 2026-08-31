@@ -44,6 +44,12 @@ const {
 } = useRateMetrics({
   multiBotView: props.multiBotView,
   botFilter: (botId: string) => isBotInMode(botId),
+  // 24 h par défaut : sur une heure, la timeline ne montre qu'une tranche trop
+  // courte pour lire un régime (pics de rafraîchissement de pairlist, rafales de
+  // 429, effet d'un changement de cadence). Doit rester ALIGNÉ sur
+  // `HARDCODED_DEFAULTS_RT.selectedWindow` plus bas, sinon le défaut dépend de la
+  // présence ou non d'un réglage enregistré.
+  defaultWindow: 86400,
 });
 
 import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
@@ -62,7 +68,8 @@ const sortAsc = ref(false);
 
 const HARDCODED_DEFAULTS_RT = {
   viewMode: 'timeline' as string,
-  selectedWindow: 3600,
+  // ⚠️ Aligné sur le `defaultWindow` passé à `useRateMetrics` ci-dessus.
+  selectedWindow: 86400,
   sortKey: 'count' as string,
   sortAsc: false,
   tradingMode: 'all' as string,
