@@ -19,7 +19,46 @@ import type {
 } from '@/types';
 import { TimeSummaryOptions } from '@/types';
 import { createBotSubStore } from './ftbot';
+import { activeBotIdForTrades, closedTradesDemand, closedTradesWanted } from './closedTradesPolicy';
+import { registerSlowRefreshRunner } from './slowRefreshScheduler';
 const AUTH_SELECTED_BOT = 'ftSelectedBot';
+
+/**
+ * Identity-keyed memo for the fleet-wide trade aggregates.
+ *
+ * These getters flatten (and, for the closed list, sort) every selected bot's history: on a
+ * 45-bot fleet that is an O(T log T) pass over ~180 000 elements. Pinia caches a getter, but
+ * the cache is dropped as soon as *any* reactive dep it touched moves, and iterating 45
+ * sub-stores touches a lot. The result was a full re-sort on invalidations where the trade
+ * arrays themselves were untouched.
+ *
+ * Keying on the array *identities* is exact rather than heuristic: `getTrades` already
+ * preserves the identity of an unchanged history (`tradesSignature`), so same identities
+ * provably means same contents, and a real change swaps the identity and misses the memo.
+ */
+function memoByParts<T>(compute: (parts: T[][]) => T[]) {
+  let lastParts: T[][] = [];
+  let lastResult: T[] = [];
+  return (parts: T[][]): T[] => {
+    if (parts.length === lastParts.length && parts.every((p, i) => p === lastParts[i])) {
+      return lastResult;
+    }
+    lastParts = parts;
+    lastResult = compute(parts);
+    return lastResult;
+  };
+}
+
+const memoOpenTrades = memoByParts<Trade>((parts) => parts.flat());
+const memoAllTrades = memoByParts<ClosedTrade>((parts) => parts.flat());
+const memoClosedTrades = memoByParts<Trade>((parts) =>
+  parts.flat().sort((a, b) =>
+    // Sort by close timestamp, then by tradeid
+    b.close_timestamp && a.close_timestamp
+      ? b.close_timestamp - a.close_timestamp
+      : b.trade_id - a.trade_id,
+  ),
+);
 
 // Import axios for type inference only
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -135,38 +174,24 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       return result;
     },
 
-    allOpenTradesSelectedBots: (state): Trade[] => {
-      const result: Trade[] = [];
-      Object.entries(state.botStores).forEach(([, botStore]) => {
-        if (botStore.isSelected) {
-          result.push(...botStore.openTrades);
-        }
-      });
-      return result;
-    },
-    allClosedTradesSelectedBots: (state): Trade[] => {
-      const result: Trade[] = [];
-      Object.entries(state.botStores).forEach(([, botStore]) => {
-        if (botStore.isSelected) {
-          result.push(...botStore.trades);
-        }
-      });
-      return result.sort((a, b) =>
-        // Sort by close timestamp, then by tradeid
-        b.close_timestamp && a.close_timestamp
-          ? b.close_timestamp - a.close_timestamp
-          : b.trade_id - a.trade_id,
-      );
-    },
-    allTradesSelectedBots: (state): ClosedTrade[] => {
-      const result: ClosedTrade[] = [];
-      Object.entries(state.botStores).forEach(([, botStore]) => {
-        if (botStore.isSelected) {
-          result.push(...botStore.trades);
-        }
-      });
-      return result;
-    },
+    allOpenTradesSelectedBots: (state): Trade[] =>
+      memoOpenTrades(
+        Object.values(state.botStores)
+          .filter((b) => b.isSelected)
+          .map((b) => b.openTrades),
+      ),
+    allClosedTradesSelectedBots: (state): Trade[] =>
+      memoClosedTrades(
+        Object.values(state.botStores)
+          .filter((b) => b.isSelected)
+          .map((b) => b.trades),
+      ),
+    allTradesSelectedBots: (state): ClosedTrade[] =>
+      memoAllTrades(
+        Object.values(state.botStores)
+          .filter((b) => b.isSelected)
+          .map((b) => b.trades),
+      ),
     allBalanceHistory: (state): WalletHistoryPerBot => {
       const result: WalletHistoryPerBot = {};
       Object.entries(state.botStores).forEach(([k, botStore]) => {
@@ -264,6 +289,10 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       if (botId in this.availableBots) {
         localStorage.setItem(AUTH_SELECTED_BOT, botId);
         this.selectedBot = botId;
+        // Single-bot views read `activeBot.trades` directly, so the bot on screen is
+        // always allowed its own closed history — the gating below only removes the
+        // fan-out to the other forty-odd bots.
+        activeBotIdForTrades.value = botId;
       } else {
         console.warn(`Botid ${botId} not available, but selected.`);
       }
@@ -280,8 +309,9 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       botStore.botAdded();
       this.botStores[bot.botId] = botStore;
       this.availableBots[bot.botId] = bot;
-      this.botStores = { ...this.botStores };
-      this.availableBots = { ...this.availableBots };
+      // No `{ ...this.botStores }` reclone here: Vue 3 tracks key addition on a reactive
+      // object on its own, so the clone bought nothing and invalidated every fleet-wide
+      // getter — including the O(T log T) trade aggregates — once per bot at startup.
     },
     updateBot(botId: string, bot: Partial<BotDescriptor>) {
       const botInstance = this.botStores[botId];
@@ -307,8 +337,7 @@ export const useBotStore = defineStore('ftbot-wrapper', {
         if (this.selectedBot === botId) {
           this.selectFirstBot();
         }
-        this.botStores = { ...this.botStores };
-        this.availableBots = { ...this.availableBots };
+        // Key deletion is tracked too — see addBot.
       } else {
         console.warn(`bot ${botId} not found! could not remove`);
       }
@@ -372,6 +401,9 @@ export const useBotStore = defineStore('ftbot-wrapper', {
     },
     startRefresh() {
       console.log('Starting automatic refresh.');
+      // A sub-store that sees its open trades move arms this instead of running its own
+      // off-cadence slow refresh; see stores/slowRefreshScheduler.
+      registerSlowRefreshRunner(() => void this.allRefreshSlow(false));
       this.allRefreshFull();
       this.startPollingIntervals();
       this.startTradesBackgroundFetch();
@@ -439,9 +471,25 @@ export const useBotStore = defineStore('ftbot-wrapper', {
     },
     async fetchAllBotsTrades() {
       const tasks = Object.values(this.botStores)
-        .filter((bot) => bot.isBotOnline && bot.isBotLoggedIn)
+        .filter((bot) => bot.isBotOnline && bot.isBotLoggedIn && closedTradesWanted(bot.botId))
         .map((bot) => () => bot.getTrades().catch(() => {}));
       await batchedAll(tasks);
+    },
+    /**
+     * A component that needs every selected bot's closed history is mounting. Pairs with
+     * `releaseClosedTrades`; use the `useClosedTradesFeed()` composable rather than calling
+     * these by hand, so the release cannot be forgotten.
+     */
+    requestClosedTrades() {
+      closedTradesDemand.value += 1;
+      // Fetch straight away rather than waiting for the next slow tick: a widget that just
+      // scrolled into view must not sit empty for a minute. The per-bot call is guarded by
+      // a one-row count probe, so when the history is already loaded this costs 45 tiny
+      // requests, not 11 MB.
+      void this.fetchAllBotsTrades();
+    },
+    releaseClosedTrades() {
+      closedTradesDemand.value = Math.max(0, closedTradesDemand.value - 1);
     },
     stopRefresh() {
       console.log('Stopping automatic refresh.');

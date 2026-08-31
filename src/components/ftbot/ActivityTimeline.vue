@@ -1,4 +1,9 @@
 <script setup lang="ts">
+// Fleet-wide closed history is fetched on demand (see composables/useClosedTradesFeed):
+// this widget reduces over every selected bot's trades, so it declares that need while
+// it is mounted and releases it when it scrolls out of view.
+useClosedTradesFeed();
+
 import { useI18n } from 'vue-i18n';
 import type { ClosedTrade, Trade } from '@/types';
 

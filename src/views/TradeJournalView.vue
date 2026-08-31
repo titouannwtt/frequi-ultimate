@@ -1,4 +1,8 @@
 <script setup lang="ts">
+// This view renders fleet-wide trade history; declare the need for the whole view
+// (its widgets are not viewport-lazy here). See composables/useClosedTradesFeed.
+useClosedTradesFeed();
+
 import type { ClosedTrade } from '@/types';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';

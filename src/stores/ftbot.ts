@@ -80,6 +80,18 @@ import type { AxiosResponse } from 'axios';
 import axios from 'axios';
 
 import { evaluateFeatures } from '@/utils/features';
+import { closedTradesWanted } from '@/stores/closedTradesPolicy';
+import { scheduleSlowRefresh } from '@/stores/slowRefreshScheduler';
+
+/**
+ * Runaway guard on the closed-trade pagination, per bot.
+ *
+ * NOT a retention policy: cumulative-profit and drawdown curves are only correct over the
+ * full history, so silently dropping the oldest trades would produce a wrong money figure —
+ * worse than a slow one. This ceiling exists so a bot reporting an absurd `total_trades`
+ * cannot page the browser to death. It is an order of magnitude above any real fleet bot.
+ */
+const MAX_RETAINED_TRADES = 50_000;
 
 // Shared across every consumer of getRateMetrics: /rate_metrics is polled by four
 // separate widgets, and without this each one fans out across the whole fleet.
@@ -120,6 +132,7 @@ export function createBotSubStore(botId: string, botName: string) {
         openTrades: [] as Trade[],
         tradeCount: 0,
         tradesSignature: '',
+        openTradesSignature: '',
         closedTradesLoaded: false,
         closedTradesLoading: false,
         performanceStats: [] as PerformanceEntry[],
@@ -303,7 +316,12 @@ export function createBotSubStore(botId: string, botName: string) {
             const updates: Promise<unknown>[] = [];
             updates.push(this.getState());
             updates.push(this.getProfit());
-            updates.push(this.getTrades());
+            // Closed history is pulled only for the bot on screen or when a multi-bot
+            // widget asked for it (see stores/closedTradesPolicy). It used to be pulled
+            // for every bot on every slow tick, which is most of the dashboard's bytes.
+            if (closedTradesWanted(botId)) {
+              updates.push(this.getTrades());
+            }
             updates.push(this.getBalance());
             updates.push(this.updateWalletChange());
             //     /* white/blacklist might be refreshed more often as they are not expensive on the backend */
@@ -361,12 +379,20 @@ export function createBotSubStore(botId: string, botName: string) {
               // Don't use Promise.all - this would fire all requests at once, which can
               // cause problems for big sqlite databases
               do {
+                const before = trades.length;
                 const res = await fetchTrades(pageLength, trades.length);
 
                 const result: TradeResponse = res.data;
                 trades = trades.concat(result.trades);
                 totalTrades = res.data.total_trades;
-              } while (trades.length !== totalTrades);
+                // Three independent exit guards, because `!==` alone could not terminate:
+                // a trade closing mid-pagination moves `total_trades` and the equality is
+                // then never met, so the loop kept paging forever against a live bot.
+                // `>=` handles the count moving up, an empty page handles it moving down,
+                // and the hard cap is a runaway guard that must never fire in practice.
+                if (trades.length === before) break;
+                if (trades.length >= MAX_RETAINED_TRADES) break;
+              } while (trades.length < totalTrades);
             }
             const tradesCount = trades.length;
             // markRaw: a closed trade is immutable once fetched — we replace the whole
@@ -409,16 +435,21 @@ export function createBotSubStore(botId: string, botName: string) {
       async getOpenTrades() {
         try {
           const { data } = await api.get<never, AxiosResponse<Trade[]>>('/status');
-          // Check if trade-id's are different in this call, then trigger a full refresh
+          // Check if trade-id's are different in this call, then flag a full refresh.
+          //
+          // It used to *run* that full refresh here, off-cadence and per bot. Across 45
+          // bots there is almost always one whose open-trade list just moved, so the
+          // eight-endpoint "every 60 s" tier ran essentially continuously — the single
+          // largest amplifier of the request fan-out. The flag plus a coalesced sweep
+          // keeps the responsiveness (a few seconds, not a minute) without the storm.
           if (
             Array.isArray(this.openTrades) &&
             Array.isArray(data) &&
             (this.openTrades.length !== data.length ||
               !this.openTrades.every((val, index) => val.trade_id === data[index]?.trade_id))
           ) {
-            // Open trades changed, so we should refresh now.
             this.refreshRequired = true;
-            this.refreshSlow(false);
+            scheduleSlowRefresh();
           }
           if (Array.isArray(data)) {
             // markRaw for the same reason as closed trades; open trades legitimately
@@ -432,7 +463,25 @@ export function createBotSubStore(botId: string, botName: string) {
                 botTradeId: `${botId}__${t.trade_id}`,
               }),
             );
-            this.openTrades = openTrades;
+            // Keep the array identity when nothing a viewer could see has moved.
+            // `openTrades` was reassigned on every 10 s tick for every bot, i.e. ~270
+            // invalidations a minute on a 45-bot fleet, each one cascading through
+            // `allOpenTradesSelectedBots` into every chart that reads it — including the
+            // ticks where a bot holds no position at all and the payload is literally `[]`.
+            // The signature covers the fields the UI renders, so a genuine price move
+            // still propagates immediately: this trades no liveness away.
+            const signature = openTrades
+              .map(
+                (t) =>
+                  `${t.trade_id}:${t.amount}:${t.stake_amount}:${t.current_rate ?? ''}:` +
+                  `${t.total_profit_abs ?? ''}:${t.profit_abs ?? ''}:` +
+                  `${t.has_open_orders ?? ''}:${t.nr_of_successful_entries ?? ''}:${t.is_open}`,
+              )
+              .join('|');
+            if (signature !== this.openTradesSignature) {
+              this.openTrades = openTrades;
+              this.openTradesSignature = signature;
+            }
             if (this.selectedPair === '') {
               this.selectedPair = openTrades[0]?.pair || '';
             }
