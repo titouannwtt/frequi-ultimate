@@ -314,9 +314,27 @@ function timeframeToDays(tf: TimeframeKey): number {
 }
 
 // --- Compute unique bot IDs ---
+/**
+ * Les bots à interroger pour la courbe latente.
+ *
+ * ⚠️ Dérivé des trades CLOS **et OUVERTS**, jamais des seuls clos. L'historique
+ * clos est désormais chargé à la demande : au montage il est vide, donc un
+ * `botIds` construit sur lui seul rendait un tableau vide, `loadLatentHistories`
+ * n'interrogeait aucun bot et la courbe de profit latent DISPARAISSAIT (régression
+ * constatée en production le 2026-08-31, « le profit latent n'est plus affiché »).
+ *
+ * Les trades ouverts, eux, arrivent avec `/status` et ne sont jamais paresseux :
+ * ils suffisent à découvrir immédiatement les bots qui portent effectivement du
+ * latent. Les autres s'ajoutent dès que leur historique clos arrive, et le `watch`
+ * sur `botIds` relance alors le chargement.
+ *
+ * On garde le passage par les trades plutôt que `botStore.selectedBots` pour ne pas
+ * perdre le filtre par mode de trading, qui s'applique aux trades et non aux bots.
+ */
 const botIds = computed<string[]>(() => {
   const ids = new Set<string>();
   modeFilteredTrades.value.forEach((tr) => ids.add(tr.botId));
+  modeFilteredOpenTrades.value.forEach((tr) => ids.add(tr.botId));
   return Array.from(ids);
 });
 
