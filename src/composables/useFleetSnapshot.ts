@@ -43,6 +43,20 @@ let inFlight: Promise<void> | null = null;
 const GIVE_UP_AFTER = 3;
 let failures = 0;
 
+/**
+ * Default staleness ceiling for `digestFor`, in seconds.
+ *
+ * Measured on the real fleet, the digest ages are min 0 / median 63 / max 2619 seconds: a
+ * bot only pushes once per bot cycle, and that cycle was just moved from 5 s to 60 s. A 60 s
+ * ceiling therefore rejected half the fleet even though the data was there and perfectly
+ * usable, which reads to the user as "the feature is broken".
+ *
+ * So the ceiling is generous and the age is EXPOSED instead of hidden: `ageFor()` lets a
+ * widget render "il y a 3 min" next to the figure. A visible old number beats a missing one;
+ * an old number presented as current is the only unacceptable outcome.
+ */
+export const FLEET_DIGEST_MAX_AGE_S = 600;
+
 async function fetchSnapshot(): Promise<void> {
   if (inFlight) return inFlight;
   const botStore = useBotStore();
@@ -116,11 +130,21 @@ export function useFleetSnapshot(refreshMs = 10_000) {
    * Returns undefined rather than a stale figure — the caller's fallback is authoritative
    * per-bot data, which is always preferable to an old aggregate.
    */
-  const digestFor = (botName: string, maxAgeS = 60): FleetBotDigest | undefined => {
+  const digestFor = (
+    botName: string,
+    maxAgeS = FLEET_DIGEST_MAX_AGE_S,
+  ): FleetBotDigest | undefined => {
     const d = digests.value[botName];
     if (!d) return undefined;
     return d.age_s <= maxAgeS ? d : undefined;
   };
+
+  /**
+   * Age in seconds of the digest we hold for a bot, whatever its freshness.
+   * Undefined when we have no digest at all — absent rather than zero, because zero would
+   * read as "just now", the exact lie this module exists to avoid.
+   */
+  const ageFor = (botName: string): number | undefined => digests.value[botName]?.age_s;
 
   return {
     digests: computed(() => digests.value),
@@ -132,7 +156,14 @@ export function useFleetSnapshot(refreshMs = 10_000) {
       lastFetchTs.value ? Math.round((Date.now() - lastFetchTs.value) / 1000) : 0,
     ),
     botCount: computed(() => Object.keys(digests.value).length),
+    /** Oldest digest age across the fleet; undefined when the snapshot is empty. */
+    oldestAgeS: computed(() => {
+      const ages = Object.values(digests.value).map((d) => d.age_s);
+      return ages.length ? Math.max(...ages) : undefined;
+    }),
     digestFor,
+    ageFor,
+    maxAgeS: FLEET_DIGEST_MAX_AGE_S,
     refresh: fetchSnapshot,
     release,
   };
