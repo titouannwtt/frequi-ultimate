@@ -17,7 +17,9 @@ declare global {
   const ColorPreferences: typeof import('./stores/colors').ColorPreferences
   const DashboardLayout: typeof import('./stores/layout').DashboardLayout
   const EffectScope: typeof import('vue').EffectScope
+  const FLEET_DIGEST_MAX_AGE_S: typeof import('./composables/useFleetSnapshot').FLEET_DIGEST_MAX_AGE_S
   const KNOWN_BENCHMARKS: typeof import('./utils/benchmarkData').KNOWN_BENCHMARKS
+  const OFFLINE_AFTER_CONSECUTIVE_FAILURES: typeof import('./composables/api').OFFLINE_AFTER_CONSECUTIVE_FAILURES
   const OpenTradeVizOptions: typeof import('./stores/settings').OpenTradeVizOptions
   const PROFIT_PERIODS: typeof import('./utils/botProfit').PROFIT_PERIODS
   const REGIME_COLORS: typeof import('./composables/useRegimeOverlay').REGIME_COLORS
@@ -28,6 +30,7 @@ declare global {
   const TradeLayout: typeof import('./stores/layout').TradeLayout
   const acceptHMRUpdate: typeof import('pinia').acceptHMRUpdate
   const accountBaseFromProfit: typeof import('./utils/maxDrawdown').accountBaseFromProfit
+  const activeBotIdForTrades: typeof import('./stores/closedTradesPolicy').activeBotIdForTrades
   const aggregateProfitByBot: typeof import('./utils/botProfit').aggregateProfitByBot
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
@@ -45,6 +48,8 @@ declare global {
   const cleanupAllTimeouts: typeof import('./composables/usePopoverHover').cleanupAllTimeouts
   const clearBenchmarkCache: typeof import('./utils/benchmarkData').clearBenchmarkCache
   const clone: typeof import('./utils/configEditorObject').clone
+  const closedTradesDemand: typeof import('./stores/closedTradesPolicy').closedTradesDemand
+  const closedTradesWanted: typeof import('./stores/closedTradesPolicy').closedTradesWanted
   const computeAggregateDrawdown: typeof import('./utils/maxDrawdown').computeAggregateDrawdown
   const computeMaxDrawdown: typeof import('./utils/maxDrawdown').computeMaxDrawdown
   const computed: typeof import('vue').computed
@@ -60,6 +65,7 @@ declare global {
   const createEventHook: typeof import('@vueuse/core').createEventHook
   const createGlobalState: typeof import('@vueuse/core').createGlobalState
   const createInjectionState: typeof import('@vueuse/core').createInjectionState
+  const createOfflineDetector: typeof import('./composables/api').createOfflineDetector
   const createPinia: typeof import('pinia').createPinia
   const createReactiveFn: typeof import('@vueuse/core').createReactiveFn
   const createRef: typeof import('@vueuse/core').createRef
@@ -145,6 +151,7 @@ declare global {
   const isReadonly: typeof import('vue').isReadonly
   const isRef: typeof import('vue').isRef
   const isShallow: typeof import('vue').isShallow
+  const isTransportFailure: typeof import('./composables/api').isTransportFailure
   const loggedInBots: typeof import('./composables/loginInfo').loggedInBots
   const makeDestructurable: typeof import('@vueuse/core').makeDestructurable
   const mapActions: typeof import('pinia').mapActions
@@ -200,6 +207,7 @@ declare global {
   const refManualReset: typeof import('@vueuse/core').refManualReset
   const refThrottled: typeof import('@vueuse/core').refThrottled
   const refWithControl: typeof import('@vueuse/core').refWithControl
+  const registerSlowRefreshRunner: typeof import('./stores/slowRefreshScheduler').registerSlowRefreshRunner
   const requestNotificationPermission: typeof import('./utils/browserNotifications').requestNotificationPermission
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveGeckoId: typeof import('./utils/benchmarkData').resolveGeckoId
@@ -207,6 +215,7 @@ declare global {
   const roundTimeframe: typeof import('./utils/roundTimeframe').default
   const rowBgClass: typeof import('./composables/tradeColumns').rowBgClass
   const runTypeToJobType: typeof import('./utils/reconstitute').runTypeToJobType
+  const scheduleSlowRefresh: typeof import('./stores/slowRefreshScheduler').scheduleSlowRefresh
   const setActivePinia: typeof import('pinia').setActivePinia
   const setMapStoreSuffix: typeof import('pinia').setMapStoreSuffix
   const setTimezone: typeof import('./utils/formatters/timeformat').setTimezone
@@ -288,6 +297,7 @@ declare global {
   const useClipboard: typeof import('@vueuse/core').useClipboard
   const useClipboardItems: typeof import('@vueuse/core').useClipboardItems
   const useCloned: typeof import('@vueuse/core').useCloned
+  const useClosedTradesFeed: typeof import('./composables/useClosedTradesFeed').useClosedTradesFeed
   const useColorMode: typeof import('@vueuse/core').useColorMode
   const useColorStore: typeof import('./stores/colors').useColorStore
   const useConfirmDialog: typeof import('@vueuse/core').useConfirmDialog
@@ -587,7 +597,9 @@ declare module 'vue' {
     readonly ColorPreferences: UnwrapRef<typeof import('./stores/colors')['ColorPreferences']>
     readonly DashboardLayout: UnwrapRef<typeof import('./stores/layout')['DashboardLayout']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
+    readonly FLEET_DIGEST_MAX_AGE_S: UnwrapRef<typeof import('./composables/useFleetSnapshot')['FLEET_DIGEST_MAX_AGE_S']>
     readonly KNOWN_BENCHMARKS: UnwrapRef<typeof import('./utils/benchmarkData')['KNOWN_BENCHMARKS']>
+    readonly OFFLINE_AFTER_CONSECUTIVE_FAILURES: UnwrapRef<typeof import('./composables/api')['OFFLINE_AFTER_CONSECUTIVE_FAILURES']>
     readonly OpenTradeVizOptions: UnwrapRef<typeof import('./stores/settings')['OpenTradeVizOptions']>
     readonly PROFIT_PERIODS: UnwrapRef<typeof import('./utils/botProfit')['PROFIT_PERIODS']>
     readonly REGIME_COLORS: UnwrapRef<typeof import('./composables/useRegimeOverlay')['REGIME_COLORS']>
@@ -598,6 +610,7 @@ declare module 'vue' {
     readonly TradeLayout: UnwrapRef<typeof import('./stores/layout')['TradeLayout']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
     readonly accountBaseFromProfit: UnwrapRef<typeof import('./utils/maxDrawdown')['accountBaseFromProfit']>
+    readonly activeBotIdForTrades: UnwrapRef<typeof import('./stores/closedTradesPolicy')['activeBotIdForTrades']>
     readonly aggregateProfitByBot: UnwrapRef<typeof import('./utils/botProfit')['aggregateProfitByBot']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
@@ -615,6 +628,8 @@ declare module 'vue' {
     readonly cleanupAllTimeouts: UnwrapRef<typeof import('./composables/usePopoverHover')['cleanupAllTimeouts']>
     readonly clearBenchmarkCache: UnwrapRef<typeof import('./utils/benchmarkData')['clearBenchmarkCache']>
     readonly clone: UnwrapRef<typeof import('./utils/configEditorObject')['clone']>
+    readonly closedTradesDemand: UnwrapRef<typeof import('./stores/closedTradesPolicy')['closedTradesDemand']>
+    readonly closedTradesWanted: UnwrapRef<typeof import('./stores/closedTradesPolicy')['closedTradesWanted']>
     readonly computeAggregateDrawdown: UnwrapRef<typeof import('./utils/maxDrawdown')['computeAggregateDrawdown']>
     readonly computeMaxDrawdown: UnwrapRef<typeof import('./utils/maxDrawdown')['computeMaxDrawdown']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
@@ -630,6 +645,7 @@ declare module 'vue' {
     readonly createEventHook: UnwrapRef<typeof import('@vueuse/core')['createEventHook']>
     readonly createGlobalState: UnwrapRef<typeof import('@vueuse/core')['createGlobalState']>
     readonly createInjectionState: UnwrapRef<typeof import('@vueuse/core')['createInjectionState']>
+    readonly createOfflineDetector: UnwrapRef<typeof import('./composables/api')['createOfflineDetector']>
     readonly createPinia: UnwrapRef<typeof import('pinia')['createPinia']>
     readonly createReactiveFn: UnwrapRef<typeof import('@vueuse/core')['createReactiveFn']>
     readonly createRef: UnwrapRef<typeof import('@vueuse/core')['createRef']>
@@ -715,6 +731,7 @@ declare module 'vue' {
     readonly isReadonly: UnwrapRef<typeof import('vue')['isReadonly']>
     readonly isRef: UnwrapRef<typeof import('vue')['isRef']>
     readonly isShallow: UnwrapRef<typeof import('vue')['isShallow']>
+    readonly isTransportFailure: UnwrapRef<typeof import('./composables/api')['isTransportFailure']>
     readonly loggedInBots: UnwrapRef<typeof import('./composables/loginInfo')['loggedInBots']>
     readonly makeDestructurable: UnwrapRef<typeof import('@vueuse/core')['makeDestructurable']>
     readonly mapActions: UnwrapRef<typeof import('pinia')['mapActions']>
@@ -770,12 +787,14 @@ declare module 'vue' {
     readonly refManualReset: UnwrapRef<typeof import('@vueuse/core')['refManualReset']>
     readonly refThrottled: UnwrapRef<typeof import('@vueuse/core')['refThrottled']>
     readonly refWithControl: UnwrapRef<typeof import('@vueuse/core')['refWithControl']>
+    readonly registerSlowRefreshRunner: UnwrapRef<typeof import('./stores/slowRefreshScheduler')['registerSlowRefreshRunner']>
     readonly requestNotificationPermission: UnwrapRef<typeof import('./utils/browserNotifications')['requestNotificationPermission']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
     readonly resolveGeckoId: UnwrapRef<typeof import('./utils/benchmarkData')['resolveGeckoId']>
     readonly roundTimeframe: UnwrapRef<typeof import('./utils/roundTimeframe')['default']>
     readonly rowBgClass: UnwrapRef<typeof import('./composables/tradeColumns')['rowBgClass']>
     readonly runTypeToJobType: UnwrapRef<typeof import('./utils/reconstitute')['runTypeToJobType']>
+    readonly scheduleSlowRefresh: UnwrapRef<typeof import('./stores/slowRefreshScheduler')['scheduleSlowRefresh']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>
     readonly setTimezone: UnwrapRef<typeof import('./utils/formatters/timeformat')['setTimezone']>
@@ -857,6 +876,7 @@ declare module 'vue' {
     readonly useClipboard: UnwrapRef<typeof import('@vueuse/core')['useClipboard']>
     readonly useClipboardItems: UnwrapRef<typeof import('@vueuse/core')['useClipboardItems']>
     readonly useCloned: UnwrapRef<typeof import('@vueuse/core')['useCloned']>
+    readonly useClosedTradesFeed: UnwrapRef<typeof import('./composables/useClosedTradesFeed')['useClosedTradesFeed']>
     readonly useColorMode: UnwrapRef<typeof import('@vueuse/core')['useColorMode']>
     readonly useColorStore: UnwrapRef<typeof import('./stores/colors')['useColorStore']>
     readonly useConfirmDialog: UnwrapRef<typeof import('@vueuse/core')['useConfirmDialog']>

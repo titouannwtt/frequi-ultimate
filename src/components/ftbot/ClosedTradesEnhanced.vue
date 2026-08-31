@@ -33,6 +33,14 @@ const props = withDefaults(
   { multiBotView: false },
 );
 
+// In multi-bot mode the rows come from every selected bot, so declare the fleet-wide
+// closed-history need while mounted. In single-bot mode the active bot's history is
+// always loaded anyway (see stores/closedTradesPolicy), so nothing to ask for.
+// Registering the hooks conditionally is fine: setup() runs once and the prop is static.
+if (props.multiBotView) {
+  useClosedTradesFeed();
+}
+
 import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 
 const botStore = useBotStore();

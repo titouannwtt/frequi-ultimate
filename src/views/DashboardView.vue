@@ -1,4 +1,8 @@
 <script setup lang="ts">
+// This view renders fleet-wide trade history; declare the need for the whole view
+// (its widgets are not viewport-lazy here). See composables/useClosedTradesFeed.
+useClosedTradesFeed();
+
 import type { GridItemData } from '@/types';
 
 const botStore = useBotStore();
