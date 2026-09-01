@@ -50,6 +50,11 @@ import {
 const router = useRouter();
 const { t, locale } = useI18n();
 const botStore = useBotStore();
+
+// The "pairs" and "market" columns are derived from every bot's whitelist, so this widget is
+// the fleet-wide consumer of /whitelist and declares it. Outside the dashboard the sweep
+// stops. See composables/useWhitelistFeed.
+useWhitelistFeed();
 const compStore = useBotComparisonStore();
 const stratDevStore = useStrategyDevStore();
 const configEditorStore = useBotConfigEditorStore();

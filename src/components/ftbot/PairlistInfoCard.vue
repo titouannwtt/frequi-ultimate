@@ -6,10 +6,10 @@ const botStore = useBotStore();
 
 const store = computed(() => botStore.botStores[props.botId]);
 
-// This card opens on hover over an arbitrary row of the comparison list, so it is the only
-// consumer of a non-active bot's pairlist. The fleet-wide /whitelist sweep was removed
-// (stores/perBotFetchPolicy) precisely because this is the one moment it is looked at:
-// one request when the user asks, instead of 188 at bots nobody hovered.
+// This card opens on hover over an arbitrary row of the comparison list. The fleet-wide
+// /whitelist sweep is now gated (stores/perBotFetchPolicy), so make sure the bot being
+// hovered has its pairlist even when no other widget asked for the fleet: one request when
+// the user points at a row.
 onMounted(() => {
   const s = store.value;
   if (s?.isBotOnline && s.isBotLoggedIn && s.whitelist.length === 0) {

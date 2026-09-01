@@ -81,7 +81,7 @@ import axios from 'axios';
 
 import { evaluateFeatures } from '@/utils/features';
 import { closedTradesWanted } from '@/stores/closedTradesPolicy';
-import { locksWanted, pairlistWanted } from '@/stores/perBotFetchPolicy';
+import { blacklistWanted, locksWanted, whitelistWanted } from '@/stores/perBotFetchPolicy';
 import { scheduleSlowRefresh } from '@/stores/slowRefreshScheduler';
 
 /**
@@ -328,8 +328,10 @@ export function createBotSubStore(botId: string, botName: string) {
             // Pairlists are read by single-bot views only (PairListLive on the active bot,
             // PairlistInfoCard which fetches its own on hover), so they follow the same
             // on-demand rule as closed trades. See stores/perBotFetchPolicy.
-            if (pairlistWanted(botId)) {
+            if (whitelistWanted(botId)) {
               updates.push(this.getWhitelist());
+            }
+            if (blacklistWanted(botId)) {
               updates.push(this.getBlacklist());
             }
             updates.push(this.getCurrentStrategy());
