@@ -152,6 +152,8 @@ declare global {
   const isRef: typeof import('vue').isRef
   const isShallow: typeof import('vue').isShallow
   const isTransportFailure: typeof import('./composables/api').isTransportFailure
+  const locksDemand: typeof import('./stores/perBotFetchPolicy').locksDemand
+  const locksWanted: typeof import('./stores/perBotFetchPolicy').locksWanted
   const loggedInBots: typeof import('./composables/loginInfo').loggedInBots
   const makeDestructurable: typeof import('@vueuse/core').makeDestructurable
   const mapActions: typeof import('pinia').mapActions
@@ -184,6 +186,8 @@ declare global {
   const onUnmounted: typeof import('vue').onUnmounted
   const onUpdated: typeof import('vue').onUpdated
   const onWatcherCleanup: typeof import('vue').onWatcherCleanup
+  const pairlistDemand: typeof import('./stores/perBotFetchPolicy').pairlistDemand
+  const pairlistWanted: typeof import('./stores/perBotFetchPolicy').pairlistWanted
   const parseTimerangeToDates: typeof import('./utils/reconstitute').parseTimerangeToDates
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
   const plotConfigColumns: typeof import('./utils/charts/plotConfigColumns').plotConfigColumns
@@ -732,6 +736,8 @@ declare module 'vue' {
     readonly isRef: UnwrapRef<typeof import('vue')['isRef']>
     readonly isShallow: UnwrapRef<typeof import('vue')['isShallow']>
     readonly isTransportFailure: UnwrapRef<typeof import('./composables/api')['isTransportFailure']>
+    readonly locksDemand: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['locksDemand']>
+    readonly locksWanted: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['locksWanted']>
     readonly loggedInBots: UnwrapRef<typeof import('./composables/loginInfo')['loggedInBots']>
     readonly makeDestructurable: UnwrapRef<typeof import('@vueuse/core')['makeDestructurable']>
     readonly mapActions: UnwrapRef<typeof import('pinia')['mapActions']>
@@ -764,6 +770,8 @@ declare module 'vue' {
     readonly onUnmounted: UnwrapRef<typeof import('vue')['onUnmounted']>
     readonly onUpdated: UnwrapRef<typeof import('vue')['onUpdated']>
     readonly onWatcherCleanup: UnwrapRef<typeof import('vue')['onWatcherCleanup']>
+    readonly pairlistDemand: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['pairlistDemand']>
+    readonly pairlistWanted: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['pairlistWanted']>
     readonly parseTimerangeToDates: UnwrapRef<typeof import('./utils/reconstitute')['parseTimerangeToDates']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
     readonly plotConfigColumns: UnwrapRef<typeof import('./utils/charts/plotConfigColumns')['plotConfigColumns']>
