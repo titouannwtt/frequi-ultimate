@@ -110,6 +110,8 @@ export const useLogConsoleStore = defineStore('logConsole', {
     botStatuses: {} as Record<string, BotLogStatus>,
     /** Polling interval handle */
     _pollInterval: null as ReturnType<typeof setInterval> | null,
+    /** Mounted components asking for the feed; the interval lives while this is above zero. */
+    _consumers: 0,
     /** Whether the first fetch has completed */
     initialLoadDone: false,
     /** Whether a fetch is currently in progress */
@@ -149,6 +151,9 @@ export const useLogConsoleStore = defineStore('logConsole', {
   actions: {
     /** Fetch logs from all online bots and merge into entries */
     async fetchAllLogs() {
+      // A sweep touches every bot and can outlast the poll cadence on a slow fleet; letting
+      // a second one start would double the heaviest download on the dashboard.
+      if (this.fetching) return;
       const botStore = useBotStore();
       this.fetching = true;
 
@@ -187,7 +192,10 @@ export const useLogConsoleStore = defineStore('logConsole', {
               const controller = new AbortController();
               const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-              await store.getLogs();
+              // Ask for exactly what we keep. The extra 300 lines the default window
+              // returned were parsed and dropped, and /logs is the dashboard's biggest
+              // payload by a wide margin.
+              await store.getLogs(LOG_LIMIT_PER_BOT);
               clearTimeout(timeoutId);
 
               const logs: LogLine[] = store.lastLogs ?? [];
@@ -247,9 +255,29 @@ export const useLogConsoleStore = defineStore('logConsole', {
       }
     },
 
-    /** Start periodic polling */
+    /**
+     * Start periodic polling, reference-counted.
+     *
+     * Two components want this feed (the dashboard console widget and the enhanced log
+     * viewer) and the dashboard's widgets are viewport-lazy, so mounts and unmounts
+     * interleave. Without a counter the first unmount stopped the poll for a consumer that
+     * was still on screen, and every mount fired an immediate fleet-wide sweep — which is
+     * why a 30 s cadence produced a request every 16 s per bot in the capture.
+     *
+     * So: the interval belongs to the first consumer and is only torn down by the last, and
+     * the eager first fetch is skipped when a sweep already landed recently. Scrolling the
+     * widget in and out of view no longer costs 45 requests each way.
+     */
     startPolling() {
-      if (this._pollInterval) return;
+      this._consumers += 1;
+      if (this._pollInterval) {
+        // Already running. Refresh eagerly only if what we hold is getting old, so a
+        // remount shows data at once without re-downloading the fleet for nothing.
+        if (Date.now() - this.lastFetchTimestamp > POLL_INTERVAL_MS / 2) {
+          this.fetchAllLogs();
+        }
+        return;
+      }
       // Immediate first fetch
       this.fetchAllLogs();
       this._pollInterval = setInterval(() => {
@@ -257,8 +285,10 @@ export const useLogConsoleStore = defineStore('logConsole', {
       }, POLL_INTERVAL_MS);
     },
 
-    /** Stop periodic polling */
+    /** Release one consumer; stops polling when the last one leaves. */
     stopPolling() {
+      this._consumers = Math.max(0, this._consumers - 1);
+      if (this._consumers > 0) return;
       if (this._pollInterval) {
         clearInterval(this._pollInterval);
         this._pollInterval = null;

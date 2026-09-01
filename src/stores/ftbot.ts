@@ -909,9 +909,15 @@ export function createBotSubStore(botId: string, botName: string) {
           return Promise.reject(error);
         }
       },
-      async getLogs() {
+      /**
+       * @param limit lines to ask for. The multi-bot console keeps only the last 200 per
+       *   bot, so it asks for 200: downloading 500 and throwing 300 away was 60 % of the
+       *   heaviest payload on the dashboard (29,4 MB over a 4 min capture). Single-bot views
+       *   keep the deeper window.
+       */
+      async getLogs(limit = 500) {
         try {
-          const { data } = await api.get('/logs', { params: { limit: 500 } });
+          const { data } = await api.get('/logs', { params: { limit } });
           this.lastLogs = data.logs;
           return Promise.resolve(data);
         } catch (error) {
