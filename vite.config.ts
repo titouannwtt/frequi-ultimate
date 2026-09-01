@@ -60,6 +60,40 @@ export default defineConfig({
     // but stops referencing them from the bundles, so browsers never fetch them.
     // They were 64 MB of the 86 MB dist.
     sourcemap: 'hidden',
+    rollupOptions: {
+      output: {
+        /**
+         * Stop code-splitting things that are far smaller than an HTTP request.
+         *
+         * Measured on a browser capture of the multi-bot dashboard: 56 of the 79 static
+         * files were under 20 kB, at a 441 ms median each, and they accounted for 23,7 s of
+         * `blocked` time. Most were single icons at 300 to 700 bytes (`stop`, `play`,
+         * `plus`, `chevron-down`, `pencil`, `robot`…), each one its own chunk because
+         * unplugin-icons compiles every icon to its own module.
+         *
+         * They are slow for a reason that has nothing to do with their size: the UI is
+         * served from the same origin as one of the bots, so those files queue behind that
+         * bot's API calls in the same six-connection pool. On this capture the API calls on
+         * that origin held 264 s of server wait between them. A 400-byte file waiting behind
+         * a four-second aggregate is the whole problem, and the only fix is to ask for
+         * fewer files.
+         *
+         * Icons and the PrimeVue runtime are the two families that are always needed
+         * together and never alone, so each becomes one chunk. Route-level and widget-level
+         * splitting is untouched: the point is to stop splitting BELOW the cost of a
+         * request, not to stop splitting.
+         */
+        manualChunks(id: string) {
+          if (id.includes('~icons/') || id.includes('unplugin-icons')) {
+            return 'icons';
+          }
+          if (id.includes('node_modules/@primevue/') || id.includes('node_modules/primevue/')) {
+            return 'primevue';
+          }
+          return undefined;
+        },
+      },
+    },
   },
   server: {
     proxy: {
