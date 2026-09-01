@@ -20,6 +20,7 @@ import type {
 import { TimeSummaryOptions } from '@/types';
 import { createBotSubStore } from './ftbot';
 import { activeBotIdForTrades, closedTradesDemand, closedTradesWanted } from './closedTradesPolicy';
+import { forgetBotName } from './botNameRegistry';
 import { registerSlowRefreshRunner } from './slowRefreshScheduler';
 const AUTH_SELECTED_BOT = 'ftSelectedBot';
 
@@ -346,6 +347,9 @@ export const useBotStore = defineStore('ftbot-wrapper', {
 
         delete this.botStores[botId];
         delete this.availableBots[botId];
+        // Drop the remembered bot_name too, so a botId reused later cannot inherit the
+        // previous occupant's fleet digest. See stores/botNameRegistry.
+        forgetBotName(botId);
         if (this.selectedBot === botId) {
           this.selectFirstBot();
         }

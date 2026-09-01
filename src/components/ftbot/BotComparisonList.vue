@@ -55,6 +55,18 @@ const botStore = useBotStore();
 // the fleet-wide consumer of /whitelist and declares it. Outside the dashboard the sweep
 // stops. See composables/useWhitelistFeed.
 useWhitelistFeed();
+
+// One 16 kB request describes the whole fleet, served from digests the bots pushed on their
+// own cycles. It is used here for the rows the per-bot fan-out has not reached or cannot
+// reach at all (a bot that is offline still has a last known state), and every such row
+// carries its age. When the endpoint is absent (older bot, no daemon) `available` goes false
+// and the table behaves exactly as it did before.
+const {
+  available: fleetAvailable,
+  digestFor: fleetDigestFor,
+  release: releaseFleetSnapshot,
+} = useFleetSnapshot();
+onUnmounted(() => releaseFleetSnapshot());
 const compStore = useBotComparisonStore();
 const stratDevStore = useStrategyDevStore();
 const configEditorStore = useBotConfigEditorStore();
@@ -84,6 +96,24 @@ const {
 } = useAlertDetection();
 function getAlertTooltip(alertId: string) {
   return _getAlertTooltip(alertId, t);
+}
+
+/**
+ * L'âge d'un chiffre issu du condensé de flotte, en clair.
+ *
+ * ⚠️ Cette fonction EXISTE pour que l'âge soit lisible, jamais masqué. Une ligne
+ * bâtie sur le condensé porte ce que le bot a poussé pour la dernière fois au
+ * daemon partagé : la présenter comme un chiffre courant est le seul résultat
+ * inacceptable sur un tableau de bord d'argent réel.
+ *
+ * Rend une durée courte plutôt que des secondes brutes : « 4 min » se lit d'un
+ * coup d'œil, « 247 s » demande une conversion mentale à chaque lecture.
+ */
+function formatDigestAge(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return '?';
+  if (seconds < 60) return `${Math.round(seconds)} s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)} min`;
+  return `${Math.round((seconds / 3600) * 10) / 10} h`;
 }
 
 function isHostBot(botId: string): boolean {
@@ -3257,6 +3287,67 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       }
     }
   });
+
+  // ── Bots the fan-out has not reached (or cannot reach) ──
+  //
+  // The loop above iterates `allProfit`, so a bot appears only once its own /profit_all has
+  // answered. Two situations leave a bot out for good reason and one bad one: it is offline
+  // (its endpoints will never answer), it is still starting, or the startup fan-out simply
+  // has not got to it yet. In all three cases the fleet digest still holds what that bot last
+  // pushed to the shared daemon, in a single 16 kB request that has already been made.
+  //
+  // Those rows are built from the digest and carry `digestAgeS`, so the table can say how old
+  // the figures are. They are deliberately NOT folded into the Summary row: mixing a figure
+  // from thirty seconds ago into a live total would make the total wrong in a way nobody
+  // could see. A bot with no digest either is left out entirely — absent beats invented.
+  if (fleetAvailable.value) {
+    const present = new Set(val.map((r) => r.botId).filter(Boolean));
+    for (const [botId, sub] of Object.entries(botStore.botStores)) {
+      if (present.has(botId)) continue;
+      // Never join on `sub.botName`: it falls back to the literal 'freqtrade' before
+      // /show_config answers, which would attribute one bot's figures to another.
+      const reported = reportedBotName(botId);
+      if (!reported) continue;
+      const digest = fleetDigestFor(reported);
+      if (!digest) continue;
+      const descriptor = botStore.availableBots[botId];
+      let port: number | undefined;
+      if (descriptor?.botUrl) {
+        try {
+          const urlPort = new URL(descriptor.botUrl).port;
+          if (urlPort) port = parseInt(urlPort, 10);
+        } catch {
+          // ignore invalid URL
+        }
+      }
+      val.push({
+        botId,
+        botName: sub.uiBotName || sub.botId,
+        botIcon: sub.uiBotIcon || '',
+        trades: `${digest.open_trade_count} / ${
+          digest.max_open_trades > 0 ? digest.max_open_trades : '∞'
+        }`,
+        profitClosed: digest.closed_profit_abs,
+        profitOpen: digest.open_profit_abs ?? 0,
+        profitCurrent: digest.closed_profit_abs + (digest.open_profit_abs ?? 0),
+        stakeCurrency: digest.stake_currency,
+        wins: 0,
+        losses: 0,
+        balance: digest.balance_total,
+        isDryRun: digest.dry_run,
+        isOnline: sub.isBotOnline,
+        isStarting: sub.isBotStarting,
+        lastSeenOnline: sub.lastSeenOnline ?? 0,
+        exchange: digest.exchange,
+        tradingMode: digest.trading_mode,
+        strategy: digest.strategy,
+        balanceAppendix: digest.dry_run ? '(dry)' : '',
+        port,
+        digestAgeS: digest.age_s,
+      });
+    }
+  }
+
   // Finalize summary row data
   summary.trades = `${summary.summaryTradesCount} positions`;
   const currencyKeys = Object.keys(summary.perCurrencyBalances ?? {});
@@ -5282,6 +5373,22 @@ const correlatedPairs = computed(() => {
                       @mouseenter="startHoverInfo($event, data.botId)"
                       @mouseleave="cancelHoverInfo()"
                       >{{ data[field as string] }}</span
+                    >
+                    <!--
+                      This row has no live per-bot data: its figures come from the fleet
+                      snapshot, which is what the bot last pushed to the shared daemon. The
+                      age is shown, never hidden. A stale figure that looks current is the one
+                      unacceptable outcome on a money dashboard.
+                    -->
+                    <span
+                      v-if="(data as ComparisonTableItems).digestAgeS !== undefined"
+                      class="ml-1 text-[0.6rem] px-1 rounded bg-surface-200 dark:bg-surface-700 opacity-80 whitespace-nowrap"
+                      :title="t('botComparison.fromFleetSnapshotHint')"
+                      >{{
+                        t('botComparison.fromFleetSnapshot', {
+                          age: formatDigestAge((data as ComparisonTableItems).digestAgeS!),
+                        })
+                      }}</span
                     >
                     <span
                       v-if="data.botId && isHostBot(data.botId)"

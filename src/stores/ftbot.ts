@@ -82,6 +82,7 @@ import axios from 'axios';
 import { evaluateFeatures } from '@/utils/features';
 import { closedTradesWanted } from '@/stores/closedTradesPolicy';
 import { blacklistWanted, locksWanted, whitelistWanted } from '@/stores/perBotFetchPolicy';
+import { rememberBotName } from '@/stores/botNameRegistry';
 import { scheduleSlowRefresh } from '@/stores/slowRefreshScheduler';
 
 /**
@@ -901,6 +902,10 @@ export function createBotSubStore(botId: string, botName: string) {
           const { data } = await api.get<BotState>('/show_config');
           this.botState = data;
           this.botStatusAvailable = true;
+          // The only moment the local botId and the bot's own bot_name meet. Remembered so
+          // the fleet snapshot can be joined on a later page load, before this request has
+          // answered. See stores/botNameRegistry.
+          rememberBotName(botId, data.bot_name as string | undefined);
           this.startWebSocket();
           if (this.isWebserverMode) {
             const { recoverBgJobs } = useBackgroundJob();

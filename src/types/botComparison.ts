@@ -32,6 +32,15 @@ export interface ComparisonTableItems {
   port?: number;
   strategy?: string;
   pairCount?: number;
+  /**
+   * Age, in seconds, of the fleet digest this row was built from.
+   *
+   * Set only on rows that have no per-bot data at all: a bot that is offline, or one whose
+   * own endpoints have not answered yet. The figures then come from `GET /fleet/snapshot`,
+   * which is what the bot last pushed to the shared daemon, so the row must say how old that
+   * is. Undefined on every row backed by the bot's own live answers.
+   */
+  digestAgeS?: number;
   monthlyProfit?: number;
   yearlyProfit?: number;
   /** Summary row: total open positions count */
