@@ -36,6 +36,7 @@ declare global {
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
   const availableBacktestMetrics: typeof import('./utils/backtestMetrics').availableBacktestMetrics
   const binData: typeof import('./utils/charts/binCount').binData
+  const blacklistWanted: typeof import('./stores/perBotFetchPolicy').blacklistWanted
   const buildLiveBotAnalytics: typeof import('./utils/liveBotAnalytics').buildLiveBotAnalytics
   const buildPrefillFromBacktest: typeof import('./utils/reconstitute').buildPrefillFromBacktest
   const buildPrefillFromHyperopt: typeof import('./utils/reconstitute').buildPrefillFromHyperopt
@@ -107,6 +108,7 @@ declare global {
   const fetchBenchmarkHistory: typeof import('./utils/benchmarkData').fetchBenchmarkHistory
   const fetchCoinHistory: typeof import('./utils/benchmarkData').fetchCoinHistory
   const findGridLayout: typeof import('./stores/layout').findGridLayout
+  const forgetBotName: typeof import('./stores/botNameRegistry').forgetBotName
   const formatDateToTimerange: typeof import('./utils/reconstitute').formatDateToTimerange
   const formatDecimal: typeof import('./utils/formatters/numberformat').formatDecimal
   const formatNumber: typeof import('./utils/formatters/numberformat').formatNumber
@@ -212,6 +214,8 @@ declare global {
   const refThrottled: typeof import('@vueuse/core').refThrottled
   const refWithControl: typeof import('@vueuse/core').refWithControl
   const registerSlowRefreshRunner: typeof import('./stores/slowRefreshScheduler').registerSlowRefreshRunner
+  const rememberBotName: typeof import('./stores/botNameRegistry').rememberBotName
+  const reportedBotName: typeof import('./stores/botNameRegistry').reportedBotName
   const requestNotificationPermission: typeof import('./utils/browserNotifications').requestNotificationPermission
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveGeckoId: typeof import('./utils/benchmarkData').resolveGeckoId
@@ -473,6 +477,7 @@ declare global {
   const useWebSocket: typeof import('@vueuse/core').useWebSocket
   const useWebWorker: typeof import('@vueuse/core').useWebWorker
   const useWebWorkerFn: typeof import('@vueuse/core').useWebWorkerFn
+  const useWhitelistFeed: typeof import('./composables/useWhitelistFeed').useWhitelistFeed
   const useWidgetDefaults: typeof import('./composables/useWidgetDefaults').useWidgetDefaults
   const useWindowFocus: typeof import('@vueuse/core').useWindowFocus
   const useWindowScroll: typeof import('@vueuse/core').useWindowScroll
@@ -493,6 +498,8 @@ declare global {
   const watchTriggerable: typeof import('@vueuse/core').watchTriggerable
   const watchWithFilter: typeof import('@vueuse/core').watchWithFilter
   const whenever: typeof import('@vueuse/core').whenever
+  const whitelistDemand: typeof import('./stores/perBotFetchPolicy').whitelistDemand
+  const whitelistWanted: typeof import('./stores/perBotFetchPolicy').whitelistWanted
 }
 // for type re-export
 declare global {
@@ -620,6 +627,7 @@ declare module 'vue' {
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly availableBacktestMetrics: UnwrapRef<typeof import('./utils/backtestMetrics')['availableBacktestMetrics']>
     readonly binData: UnwrapRef<typeof import('./utils/charts/binCount')['binData']>
+    readonly blacklistWanted: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['blacklistWanted']>
     readonly buildLiveBotAnalytics: UnwrapRef<typeof import('./utils/liveBotAnalytics')['buildLiveBotAnalytics']>
     readonly buildPrefillFromBacktest: UnwrapRef<typeof import('./utils/reconstitute')['buildPrefillFromBacktest']>
     readonly buildPrefillFromHyperopt: UnwrapRef<typeof import('./utils/reconstitute')['buildPrefillFromHyperopt']>
@@ -691,6 +699,7 @@ declare module 'vue' {
     readonly fetchBenchmarkHistory: UnwrapRef<typeof import('./utils/benchmarkData')['fetchBenchmarkHistory']>
     readonly fetchCoinHistory: UnwrapRef<typeof import('./utils/benchmarkData')['fetchCoinHistory']>
     readonly findGridLayout: UnwrapRef<typeof import('./stores/layout')['findGridLayout']>
+    readonly forgetBotName: UnwrapRef<typeof import('./stores/botNameRegistry')['forgetBotName']>
     readonly formatDateToTimerange: UnwrapRef<typeof import('./utils/reconstitute')['formatDateToTimerange']>
     readonly formatDecimal: UnwrapRef<typeof import('./utils/formatters/numberformat')['formatDecimal']>
     readonly formatNumber: UnwrapRef<typeof import('./utils/formatters/numberformat')['formatNumber']>
@@ -770,8 +779,6 @@ declare module 'vue' {
     readonly onUnmounted: UnwrapRef<typeof import('vue')['onUnmounted']>
     readonly onUpdated: UnwrapRef<typeof import('vue')['onUpdated']>
     readonly onWatcherCleanup: UnwrapRef<typeof import('vue')['onWatcherCleanup']>
-    readonly pairlistDemand: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['pairlistDemand']>
-    readonly pairlistWanted: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['pairlistWanted']>
     readonly parseTimerangeToDates: UnwrapRef<typeof import('./utils/reconstitute')['parseTimerangeToDates']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
     readonly plotConfigColumns: UnwrapRef<typeof import('./utils/charts/plotConfigColumns')['plotConfigColumns']>
@@ -796,6 +803,8 @@ declare module 'vue' {
     readonly refThrottled: UnwrapRef<typeof import('@vueuse/core')['refThrottled']>
     readonly refWithControl: UnwrapRef<typeof import('@vueuse/core')['refWithControl']>
     readonly registerSlowRefreshRunner: UnwrapRef<typeof import('./stores/slowRefreshScheduler')['registerSlowRefreshRunner']>
+    readonly rememberBotName: UnwrapRef<typeof import('./stores/botNameRegistry')['rememberBotName']>
+    readonly reportedBotName: UnwrapRef<typeof import('./stores/botNameRegistry')['reportedBotName']>
     readonly requestNotificationPermission: UnwrapRef<typeof import('./utils/browserNotifications')['requestNotificationPermission']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
     readonly resolveGeckoId: UnwrapRef<typeof import('./utils/benchmarkData')['resolveGeckoId']>
@@ -1056,6 +1065,7 @@ declare module 'vue' {
     readonly useWebSocket: UnwrapRef<typeof import('@vueuse/core')['useWebSocket']>
     readonly useWebWorker: UnwrapRef<typeof import('@vueuse/core')['useWebWorker']>
     readonly useWebWorkerFn: UnwrapRef<typeof import('@vueuse/core')['useWebWorkerFn']>
+    readonly useWhitelistFeed: UnwrapRef<typeof import('./composables/useWhitelistFeed')['useWhitelistFeed']>
     readonly useWidgetDefaults: UnwrapRef<typeof import('./composables/useWidgetDefaults')['useWidgetDefaults']>
     readonly useWindowFocus: UnwrapRef<typeof import('@vueuse/core')['useWindowFocus']>
     readonly useWindowScroll: UnwrapRef<typeof import('@vueuse/core')['useWindowScroll']>
@@ -1076,5 +1086,7 @@ declare module 'vue' {
     readonly watchTriggerable: UnwrapRef<typeof import('@vueuse/core')['watchTriggerable']>
     readonly watchWithFilter: UnwrapRef<typeof import('@vueuse/core')['watchWithFilter']>
     readonly whenever: UnwrapRef<typeof import('@vueuse/core')['whenever']>
+    readonly whitelistDemand: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['whitelistDemand']>
+    readonly whitelistWanted: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['whitelistWanted']>
   }
 }

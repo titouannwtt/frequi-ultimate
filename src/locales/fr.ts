@@ -366,6 +366,9 @@ export default {
     fundsGain: 'Gains réalisés',
     fundsWithdraw: 'Retraits',
     fundsTotal: 'Capital disponible',
+    fromFleetSnapshot: 'instantané de flotte (il y a {age})',
+    fromFleetSnapshotHint:
+      "Ce bot ne répond pas en direct : les chiffres viennent de ce qu'il a poussé en dernier au daemon partagé.",
     hostBotBadge: 'hôte',
     hostBotTooltip: 'Ce bot héberge FreqUI',
     addColumn: 'Ajouter une colonne',

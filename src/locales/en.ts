@@ -361,6 +361,8 @@ export default {
     fundsGain: 'Realized gains',
     fundsWithdraw: 'Withdrawals',
     fundsTotal: 'Available funds',
+    fromFleetSnapshot: 'from fleet snapshot ({age} old)',
+    fromFleetSnapshotHint: 'No live answer from this bot: figures come from what it last pushed to the shared daemon.',
     hostBotBadge: 'host',
     hostBotTooltip: 'This bot serves FreqUI',
     addColumn: 'Add column',
