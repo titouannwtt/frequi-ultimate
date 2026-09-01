@@ -5,6 +5,18 @@ const props = defineProps<{ botId: string }>();
 const botStore = useBotStore();
 
 const store = computed(() => botStore.botStores[props.botId]);
+
+// This card opens on hover over an arbitrary row of the comparison list, so it is the only
+// consumer of a non-active bot's pairlist. The fleet-wide /whitelist sweep was removed
+// (stores/perBotFetchPolicy) precisely because this is the one moment it is looked at:
+// one request when the user asks, instead of 188 at bots nobody hovered.
+onMounted(() => {
+  const s = store.value;
+  if (s?.isBotOnline && s.isBotLoggedIn && s.whitelist.length === 0) {
+    void s.getWhitelist().catch(() => {});
+  }
+});
+
 const whitelist = computed(() => store.value?.whitelist ?? []);
 const pipeline = computed<PipelineStep[]>(() => store.value?.pairlistPipeline ?? []);
 const handlerConfigs = computed<Record<string, any>[]>(() => store.value?.handlerConfigs ?? []);

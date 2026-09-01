@@ -81,6 +81,7 @@ import axios from 'axios';
 
 import { evaluateFeatures } from '@/utils/features';
 import { closedTradesWanted } from '@/stores/closedTradesPolicy';
+import { locksWanted, pairlistWanted } from '@/stores/perBotFetchPolicy';
 import { scheduleSlowRefresh } from '@/stores/slowRefreshScheduler';
 
 /**
@@ -324,9 +325,13 @@ export function createBotSubStore(botId: string, botName: string) {
             }
             updates.push(this.getBalance());
             updates.push(this.updateWalletChange());
-            //     /* white/blacklist might be refreshed more often as they are not expensive on the backend */
-            updates.push(this.getWhitelist());
-            updates.push(this.getBlacklist());
+            // Pairlists are read by single-bot views only (PairListLive on the active bot,
+            // PairlistInfoCard which fetches its own on hover), so they follow the same
+            // on-demand rule as closed trades. See stores/perBotFetchPolicy.
+            if (pairlistWanted(botId)) {
+              updates.push(this.getWhitelist());
+              updates.push(this.getBlacklist());
+            }
             updates.push(this.getCurrentStrategy());
             await Promise.all(updates);
             this.refreshRequired = false;
@@ -342,7 +347,12 @@ export function createBotSubStore(botId: string, botName: string) {
         }
         // Refresh data that's needed in near realtime
         await this.getOpenTrades();
-        await this.getLocks();
+        // Lock state is read by TradingView and PairLockList only, both through
+        // `activeBot`. Polling it for the whole fleet was a quarter of the dashboard's API
+        // calls for pixels that never existed. See stores/perBotFetchPolicy.
+        if (locksWanted(botId)) {
+          await this.getLocks();
+        }
       },
 
       setDetailTrade(trade: Trade | null) {
