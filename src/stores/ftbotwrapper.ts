@@ -293,6 +293,18 @@ export const useBotStore = defineStore('ftbot-wrapper', {
         // always allowed its own closed history — the gating below only removes the
         // fan-out to the other forty-odd bots.
         activeBotIdForTrades.value = botId;
+        // The on-demand endpoints (locks, pairlists, closed history) are skipped for bots
+        // nobody is looking at, so becoming the active bot has to fetch them now. Waiting
+        // for the next tick would leave the pairlist panel empty for a minute, and the slow
+        // refresh only runs when something else marked the bot dirty, so it might never
+        // arrive at all.
+        const store = this.botStores[botId];
+        if (store?.isBotOnline && store.isBotLoggedIn) {
+          void store.getLocks().catch(() => {});
+          void store.getWhitelist().catch(() => {});
+          void store.getBlacklist().catch(() => {});
+          void store.getTrades().catch(() => {});
+        }
       } else {
         console.warn(`Botid ${botId} not available, but selected.`);
       }
