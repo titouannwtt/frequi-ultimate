@@ -72,6 +72,7 @@ import type {
 } from '@/types';
 import { BacktestSteps, LoadingStatus, RunModes, TimeSummaryOptions } from '@/types';
 import type { FleetSnapshotResponse } from '@/types/fleetSnapshot';
+import type { FleetProfitHistoryResponse } from '@/types/fleetProfitHistory';
 import type { FTWsMessage } from '@/types/wsMessageTypes';
 import { FtWsMessageTypes } from '@/types/wsMessageTypes';
 import { markRaw } from 'vue';
@@ -1442,6 +1443,15 @@ export function createBotSubStore(botId: string, botName: string) {
         // reachable bot instead of one request per bot per datum.
         const { data } = await api.get<FleetSnapshotResponse>('/fleet/snapshot', {
           params: maxAgeS ? { max_age_s: maxAgeS } : {},
+        });
+        return data;
+      },
+      async getFleetProfitHistory(since = 0) {
+        // Every local bot's decimated profit curve in one request (see
+        // types/fleetProfitHistory.ts). Any bot on the host can answer it, which is what
+        // replaces the per-bot /profit_history fan-out — by far the dashboard's heaviest.
+        const { data } = await api.get<FleetProfitHistoryResponse>('/fleetview/profit_history', {
+          params: since ? { since } : {},
         });
         return data;
       },

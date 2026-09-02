@@ -62,7 +62,9 @@ const props = withDefaults(
 import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
 import { DashboardLayout } from '@/stores/layout';
 import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
+import { useFleetProfitHistory } from '@/composables/useFleetProfitHistory';
 
+const { loadHistories: loadFleetHistories } = useFleetProfitHistory();
 const botStore = useBotStore();
 const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
@@ -433,14 +435,9 @@ watch(showLatent, (v) => {
 
 const latentHistories = ref<Record<string, [number, number, number, number][]>>({});
 async function loadLatentHistories() {
-  const res: Record<string, [number, number, number, number][]> = {};
-  await Promise.all(
-    botIds.value.map(async (id) => {
-      const h = await botStore.botStores[id]?.getProfitHistory?.();
-      if (h?.data?.length) res[id] = h.data;
-    }),
-  );
-  latentHistories.value = res;
+  // One aggregate request for the whole fleet, with a per-bot fallback for anything it
+  // cannot cover. See composables/useFleetProfitHistory.
+  latentHistories.value = await loadFleetHistories(botIds.value);
 }
 onMounted(() => {
   if (showLatent.value) loadLatentHistories();

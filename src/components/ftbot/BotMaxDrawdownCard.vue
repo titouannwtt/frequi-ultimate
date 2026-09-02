@@ -7,8 +7,10 @@ import {
   tradeWorstAbs,
 } from '@/utils/maxDrawdown';
 import { useI18n } from 'vue-i18n';
+import { useFleetProfitHistory } from '@/composables/useFleetProfitHistory';
 
 const { t } = useI18n();
+const { loadHistories: loadFleetHistories } = useFleetProfitHistory();
 
 const props = defineProps<{
   botIds: string[];
@@ -83,14 +85,9 @@ interface Point {
 // legacy projection (realized curve + one point at the open positions' worst).
 const histories = ref<Record<string, [number, number, number, number][]>>({});
 async function loadHistories() {
-  const res: Record<string, [number, number, number, number][]> = {};
-  await Promise.all(
-    props.botIds.map(async (id) => {
-      const h = await botStore.botStores[id]?.getProfitHistory?.();
-      if (h?.data?.length) res[id] = h.data;
-    }),
-  );
-  histories.value = res;
+  // One aggregate request for the whole fleet, with a per-bot fallback for anything it
+  // cannot cover. See composables/useFleetProfitHistory.
+  histories.value = await loadFleetHistories(props.botIds);
 }
 onMounted(loadHistories);
 watch(() => props.botIds.join(','), loadHistories);
