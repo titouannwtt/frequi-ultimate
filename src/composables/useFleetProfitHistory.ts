@@ -29,7 +29,7 @@ import type { FleetProfitHistoryResponse, ProfitHistoryPoints } from '@/types/fl
 
 import { computed, ref } from 'vue';
 
-import { reportedBotName } from '@/stores/botNameRegistry';
+import { fleetDigestKeyFor } from '@/stores/fleetDigestPolicy';
 import { useBotStore } from '@/stores/ftbotwrapper';
 
 /** How long an aggregate answer is reused. Matches the per-bot cache in `getProfitHistory`. */
@@ -91,7 +91,10 @@ export function useFleetProfitHistory() {
 
     const missing: string[] = [];
     for (const id of botIds) {
-      const reported = available.value ? reportedBotName(id) : undefined;
+      // Same keyspace as the fleet snapshot (each bot's reported bot_name), so the same
+      // join applies: by API port when the snapshot published one, by remembered name
+      // otherwise. The port path is what makes this work on a cold load.
+      const reported = available.value ? fleetDigestKeyFor(id) : undefined;
       const points = reported ? byBotName.value[reported] : undefined;
       if (points) {
         res[id] = points;

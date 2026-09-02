@@ -20,8 +20,8 @@ import type {
 import { TimeSummaryOptions } from '@/types';
 import { createBotSubStore } from './ftbot';
 import { activeBotIdForTrades, closedTradesDemand, closedTradesWanted } from './closedTradesPolicy';
-import { forgetBotName, reportedBotName } from './botNameRegistry';
-import { fleetDigestCovers, publishFleetDigests } from './fleetDigestPolicy';
+import { forgetBotName } from './botNameRegistry';
+import { fleetDigestCoversBot, publishFleetDigests } from './fleetDigestPolicy';
 import { registerSlowRefreshRunner } from './slowRefreshScheduler';
 const AUTH_SELECTED_BOT = 'ftSelectedBot';
 
@@ -426,8 +426,11 @@ export const useBotStore = defineStore('ftbot-wrapper', {
      *
      * - the bot is NOT the one on screen. The active bot is being read in detail, on
      *   endpoints the digest does not cover (trade rows, orders, locks). It always polls.
-     * - a fresh digest exists for it. A missing or stale digest means the snapshot cannot
-     *   answer for this bot, so the bot must answer for itself.
+     * - a fresh digest exists for it, joined by API port or by remembered bot_name (see
+     *   `fleetDigestKeyFor`). A missing or stale digest means the snapshot cannot answer
+     *   for this bot, so the bot must answer for itself. The port join is what makes this
+     *   fire on the FIRST tick of a cold load: the name is only learned from /show_config,
+     *   which is itself one of the per-bot requests being decimated here.
      * - it is not this bot's turn. The decimation keeps one real fetch in N, so the
      *   per-bot state the digest does NOT cover (open-trade rows, win/loss counts) still
      *   refreshes, just at a slower cadence. Never skipping forever is the whole point:
@@ -448,7 +451,7 @@ export const useBotStore = defineStore('ftbot-wrapper', {
      */
     digestCoversTier(botId: string, tick: number, decimation: number): boolean {
       if (botId === this.selectedBot) return false;
-      if (!fleetDigestCovers(reportedBotName(botId))) return false;
+      if (!fleetDigestCoversBot(botId)) return false;
       let spread = 0;
       for (let i = 0; i < botId.length; i++) spread = (spread * 31 + botId.charCodeAt(i)) >>> 0;
       return (tick + spread) % decimation !== 0;
@@ -622,7 +625,7 @@ export const useBotStore = defineStore('ftbot-wrapper', {
           // remote bot the host's daemon does not know, a push that has not landed yet)
           // and wrongly greying out a live bot is the costlier mistake. Those bots fall
           // through to a real ping below.
-          if (v.isBotLoggedIn && fleetDigestCovers(reportedBotName(v.botId))) {
+          if (v.isBotLoggedIn && fleetDigestCoversBot(v.botId)) {
             v.setIsBotOnline(true);
             return;
           }

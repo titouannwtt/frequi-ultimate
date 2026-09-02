@@ -3331,22 +3331,14 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
     const present = new Set(val.map((r) => r.botId).filter(Boolean));
     for (const [botId, sub] of Object.entries(botStore.botStores)) {
       if (present.has(botId)) continue;
-      // Never join on `sub.botName`: it falls back to the literal 'freqtrade' before
-      // /show_config answers, which would attribute one bot's figures to another.
-      const reported = reportedBotName(botId);
-      if (!reported) continue;
-      const digest = fleetDigestFor(reported);
+      // The join is by API port first, then by the bot_name this bot once reported — never
+      // by `sub.botName`, which falls back to the literal 'freqtrade' before /show_config
+      // answers and would attribute one bot's figures to another. See fleetDigestKeyFor.
+      const digestKey = fleetDigestKeyFor(botId);
+      if (!digestKey) continue;
+      const digest = fleetDigestFor(digestKey);
       if (!digest) continue;
-      const descriptor = botStore.availableBots[botId];
-      let port: number | undefined;
-      if (descriptor?.botUrl) {
-        try {
-          const urlPort = new URL(descriptor.botUrl).port;
-          if (urlPort) port = parseInt(urlPort, 10);
-        } catch {
-          // ignore invalid URL
-        }
-      }
+      const port = apiPortFromUrl(botStore.availableBots[botId]?.botUrl);
       val.push({
         botId,
         botName: sub.uiBotName || sub.botId,

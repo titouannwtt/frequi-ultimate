@@ -26,6 +26,15 @@ export interface FleetBotDigest {
   open_profit_abs?: number;
   /** Seconds since this bot last pushed. Always present. */
   age_s: number;
+  /**
+   * API port the daemon's registry says this bot serves on.
+   *
+   * Lets a client join a bot to its digest without first asking that bot its name — the
+   * chicken-and-egg that defeated the join on a cold page load. Omitted, never zero, when
+   * the daemon does not know the port or the bot has no API server: a 0 would match every
+   * client that has no port either.
+   */
+  api_port?: number;
 }
 
 export interface FleetSnapshotResponse {
