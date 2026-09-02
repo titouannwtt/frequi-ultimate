@@ -434,20 +434,59 @@ watch(showLatent, (v) => {
 });
 
 const latentHistories = ref<Record<string, [number, number, number, number][]>>({});
+/** Bots dont la série est déjà chargée : on ne redemande jamais ce qu'on a. */
+const latentLoaded = new Set<string>();
+let latentInFlight = false;
+
+/**
+ * Charge les séries manquantes et les FUSIONNE, sans jamais tout remplacer.
+ *
+ * ⚠️ Deux propriétés, et chacune corrige un défaut observé à l'écran.
+ *
+ * 1. FUSION plutôt que remplacement. `latentHistories.value = ...` réassignait
+ *    l'objet entier à chaque passage, donc ECharts reconstruisait toute la
+ *    courbe même quand une seule série s'ajoutait : c'est l'aller-retour visuel
+ *    signalé.
+ * 2. INCRÉMENTAL. `botIds` dérive des trades, qui arrivent maintenant par
+ *    vagues à cause du chargement paresseux. Le `watch` se déclenche donc
+ *    plusieurs fois de suite, et sans ce filtre chaque déclenchement relançait
+ *    un chargement COMPLET de toute la flotte : d'où « ça charge en plusieurs
+ *    fois ».
+ *
+ * Le verrou `latentInFlight` évite deux chargements concurrents qui se
+ * marcheraient dessus, le second écrasant le premier.
+ */
 async function loadLatentHistories() {
-  // One aggregate request for the whole fleet, with a per-bot fallback for anything it
-  // cannot cover. See composables/useFleetProfitHistory.
-  latentHistories.value = await loadFleetHistories(botIds.value);
+  const manquants = botIds.value.filter((id) => !latentLoaded.has(id));
+  if (!manquants.length || latentInFlight) return;
+  latentInFlight = true;
+  try {
+    // Une requête agrégée pour toute la flotte, avec repli par bot pour ce
+    // qu'elle ne couvre pas. Cf. composables/useFleetProfitHistory.
+    const res = await loadFleetHistories(manquants);
+    manquants.forEach((id) => latentLoaded.add(id));
+    // Une seule réassignation, après fusion : ECharts ne redessine qu'une fois.
+    latentHistories.value = { ...latentHistories.value, ...res };
+  } finally {
+    latentInFlight = false;
+  }
 }
 onMounted(() => {
-  if (showLatent.value) loadLatentHistories();
+  if (showLatent.value) void loadLatentHistories();
 });
-watch(
-  () => botIds.value.join(','),
-  () => {
-    if (showLatent.value) loadLatentHistories();
-  },
+/**
+ * Le débounce est ici l'essentiel : `botIds` grossit par à-coups pendant que les
+ * trades arrivent. Sans lui, on déclencherait un chargement par vague. 400 ms
+ * suffisent à recoller les vagues sans que l'attente soit perceptible.
+ */
+const botIdsKey = refDebounced(
+  computed(() => botIds.value.join(',')),
+  400,
+  { maxWait: 2000 },
 );
+watch(botIdsKey, () => {
+  if (showLatent.value) void loadLatentHistories();
+});
 
 // Merged current-profit series across the mode-filtered bots: forward-filled from zero
 // over the full window, converted to the summary currency, clipped to the selected
