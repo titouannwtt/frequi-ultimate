@@ -33,12 +33,15 @@ declare global {
   const accountBaseFromProfit: typeof import('./utils/maxDrawdown').accountBaseFromProfit
   const activeBotIdForTrades: typeof import('./stores/closedTradesPolicy').activeBotIdForTrades
   const aggregateProfitByBot: typeof import('./utils/botProfit').aggregateProfitByBot
+  const apiPortFromUrl: typeof import('./stores/botApiPort').apiPortFromUrl
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
   const availableBacktestMetrics: typeof import('./utils/backtestMetrics').availableBacktestMetrics
   const binData: typeof import('./utils/charts/binCount').binData
   const blacklistWanted: typeof import('./stores/perBotFetchPolicy').blacklistWanted
+  const botApiPort: typeof import('./stores/botApiPort').botApiPort
   const buildLiveBotAnalytics: typeof import('./utils/liveBotAnalytics').buildLiveBotAnalytics
+  const buildPortIndex: typeof import('./stores/fleetDigestPolicy').buildPortIndex
   const buildPrefillFromBacktest: typeof import('./utils/reconstitute').buildPrefillFromBacktest
   const buildPrefillFromHyperopt: typeof import('./utils/reconstitute').buildPrefillFromHyperopt
   const buildPrefillFromLiveBot: typeof import('./utils/reconstitute').buildPrefillFromLiveBot
@@ -110,7 +113,10 @@ declare global {
   const fetchCoinHistory: typeof import('./utils/benchmarkData').fetchCoinHistory
   const findGridLayout: typeof import('./stores/layout').findGridLayout
   const fleetDigestAgeFor: typeof import('./stores/fleetDigestPolicy').fleetDigestAgeFor
+  const fleetDigestAgeForBot: typeof import('./stores/fleetDigestPolicy').fleetDigestAgeForBot
   const fleetDigestCovers: typeof import('./stores/fleetDigestPolicy').fleetDigestCovers
+  const fleetDigestCoversBot: typeof import('./stores/fleetDigestPolicy').fleetDigestCoversBot
+  const fleetDigestKeyFor: typeof import('./stores/fleetDigestPolicy').fleetDigestKeyFor
   const fleetDigestsUsable: typeof import('./stores/fleetDigestPolicy').fleetDigestsUsable
   const forgetBotName: typeof import('./stores/botNameRegistry').forgetBotName
   const formatDateToTimerange: typeof import('./utils/reconstitute').formatDateToTimerange
@@ -630,12 +636,15 @@ declare module 'vue' {
     readonly accountBaseFromProfit: UnwrapRef<typeof import('./utils/maxDrawdown')['accountBaseFromProfit']>
     readonly activeBotIdForTrades: UnwrapRef<typeof import('./stores/closedTradesPolicy')['activeBotIdForTrades']>
     readonly aggregateProfitByBot: UnwrapRef<typeof import('./utils/botProfit')['aggregateProfitByBot']>
+    readonly apiPortFromUrl: UnwrapRef<typeof import('./stores/botApiPort')['apiPortFromUrl']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly availableBacktestMetrics: UnwrapRef<typeof import('./utils/backtestMetrics')['availableBacktestMetrics']>
     readonly binData: UnwrapRef<typeof import('./utils/charts/binCount')['binData']>
     readonly blacklistWanted: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['blacklistWanted']>
+    readonly botApiPort: UnwrapRef<typeof import('./stores/botApiPort')['botApiPort']>
     readonly buildLiveBotAnalytics: UnwrapRef<typeof import('./utils/liveBotAnalytics')['buildLiveBotAnalytics']>
+    readonly buildPortIndex: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['buildPortIndex']>
     readonly buildPrefillFromBacktest: UnwrapRef<typeof import('./utils/reconstitute')['buildPrefillFromBacktest']>
     readonly buildPrefillFromHyperopt: UnwrapRef<typeof import('./utils/reconstitute')['buildPrefillFromHyperopt']>
     readonly buildPrefillFromLiveBot: UnwrapRef<typeof import('./utils/reconstitute')['buildPrefillFromLiveBot']>
@@ -707,7 +716,10 @@ declare module 'vue' {
     readonly fetchCoinHistory: UnwrapRef<typeof import('./utils/benchmarkData')['fetchCoinHistory']>
     readonly findGridLayout: UnwrapRef<typeof import('./stores/layout')['findGridLayout']>
     readonly fleetDigestAgeFor: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['fleetDigestAgeFor']>
+    readonly fleetDigestAgeForBot: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['fleetDigestAgeForBot']>
     readonly fleetDigestCovers: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['fleetDigestCovers']>
+    readonly fleetDigestCoversBot: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['fleetDigestCoversBot']>
+    readonly fleetDigestKeyFor: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['fleetDigestKeyFor']>
     readonly fleetDigestsUsable: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['fleetDigestsUsable']>
     readonly forgetBotName: UnwrapRef<typeof import('./stores/botNameRegistry')['forgetBotName']>
     readonly formatDateToTimerange: UnwrapRef<typeof import('./utils/reconstitute')['formatDateToTimerange']>
