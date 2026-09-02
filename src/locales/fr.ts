@@ -369,6 +369,9 @@ export default {
     fromFleetSnapshot: 'instantané de flotte (il y a {age})',
     fromFleetSnapshotHint:
       "Ce bot ne répond pas en direct : les chiffres viennent de ce qu'il a poussé en dernier au daemon partagé.",
+    staleRow: 'actualisé il y a {age}',
+    staleRowHint:
+      'Les chiffres propres de ce bot, relevés il y a un moment : les bots non sélectionnés sont interrogés moins souvent. Sélectionnez le bot pour le rafraîchir tout de suite.',
     hostBotBadge: 'hôte',
     hostBotTooltip: 'Ce bot héberge FreqUI',
     addColumn: 'Ajouter une colonne',

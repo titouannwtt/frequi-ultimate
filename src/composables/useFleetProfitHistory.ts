@@ -84,9 +84,7 @@ export function useFleetProfitHistory() {
    * requests. On a fleet where the aggregate works this is one request instead of N; where
    * it does not, it is the N requests that were being made anyway.
    */
-  const loadHistories = async (
-    botIds: string[],
-  ): Promise<Record<string, ProfitHistoryPoints>> => {
+  const loadHistories = async (botIds: string[]): Promise<Record<string, ProfitHistoryPoints>> => {
     const botStore = useBotStore();
     const res: Record<string, ProfitHistoryPoints> = {};
     await fetchFleet(false);

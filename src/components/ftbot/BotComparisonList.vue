@@ -116,6 +116,29 @@ function formatDigestAge(seconds: number): string {
   return `${Math.round((seconds / 3600) * 10) / 10} h`;
 }
 
+/**
+ * Seuil au-delà duquel l'âge des données propres d'un bot est affiché, en secondes.
+ *
+ * Le palier lent tourne à 60 s et il est décimé (une vraie requête sur trois) pour les
+ * bots que personne ne regarde, donc une ligne à 150 s est normale et attendue. Baliser
+ * chaque ligne en permanence noierait le signal : le bandeau doit vouloir dire « ce
+ * chiffre a pris du retard », pas « le tableau se rafraîchit ».
+ */
+const STALE_ROW_AGE_S = 200;
+
+/**
+ * L'âge des données propres d'une ligne, seulement quand il dépasse le seuil.
+ *
+ * Rend `undefined` dans le cas courant, ce qui laisse la ligne sans bandeau. Rend aussi
+ * `undefined` quand le bot n'a jamais répondu : la ligne est alors bâtie sur le condensé
+ * et porte déjà `digestAgeS`, ou elle n'existe pas du tout.
+ */
+function staleDataAgeS(slowRefreshedAt: number): number | undefined {
+  if (!slowRefreshedAt) return undefined;
+  const age = (Date.now() - slowRefreshedAt) / 1000;
+  return age > STALE_ROW_AGE_S ? age : undefined;
+}
+
 function isHostBot(botId: string): boolean {
   const descriptor = botStore.availableBots[botId];
   if (!descriptor?.botUrl) return false;
@@ -3223,7 +3246,11 @@ const tableItems = computed<ComparisonTableItems[]>(() => {
       };
       _rowCache.set(k, { sig, profitOpen, row });
     }
-    val.push(row);
+    // A decimated bot's row is its own data, just older than one refresh cycle. Say so
+    // rather than let it pass for current. Cloning keeps the row cache holding the plain
+    // row: the age moves on every tick and would otherwise invalidate the cache for good.
+    const dataAgeS = staleDataAgeS(thisBotStore.slowRefreshedAt);
+    val.push(dataAgeS === undefined ? row : { ...row, dataAgeS });
     if (v?.profit_closed_coin !== undefined) {
       if (thisBotStore.isSelected) {
         const cur = botStore.allBotState[k]?.stake_currency || 'USDT';
@@ -5387,6 +5414,22 @@ const correlatedPairs = computed(() => {
                       >{{
                         t('botComparison.fromFleetSnapshot', {
                           age: formatDigestAge((data as ComparisonTableItems).digestAgeS!),
+                        })
+                      }}</span
+                    >
+                    <!--
+                      This row IS the bot's own data, but it was fetched a while ago: the
+                      slow tier is decimated for bots nobody selected. Same rule as above,
+                      different source, so a different wording: the figures are not from
+                      the snapshot, they are simply behind.
+                    -->
+                    <span
+                      v-else-if="(data as ComparisonTableItems).dataAgeS !== undefined"
+                      class="ml-1 text-[0.6rem] px-1 rounded bg-surface-200 dark:bg-surface-700 opacity-80 whitespace-nowrap"
+                      :title="t('botComparison.staleRowHint')"
+                      >{{
+                        t('botComparison.staleRow', {
+                          age: formatDigestAge((data as ComparisonTableItems).dataAgeS!),
                         })
                       }}</span
                     >

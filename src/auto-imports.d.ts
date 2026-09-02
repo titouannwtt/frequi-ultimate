@@ -15,6 +15,7 @@ declare global {
   const CATALOG_PATHS: typeof import('./utils/configEditorCatalog').CATALOG_PATHS
   const CONFIG_CATALOG: typeof import('./utils/configEditorCatalog').CONFIG_CATALOG
   const ColorPreferences: typeof import('./stores/colors').ColorPreferences
+  const DIGEST_SUBSTITUTION_MAX_AGE_S: typeof import('./stores/fleetDigestPolicy').DIGEST_SUBSTITUTION_MAX_AGE_S
   const DashboardLayout: typeof import('./stores/layout').DashboardLayout
   const EffectScope: typeof import('vue').EffectScope
   const FLEET_DIGEST_MAX_AGE_S: typeof import('./composables/useFleetSnapshot').FLEET_DIGEST_MAX_AGE_S
@@ -108,6 +109,9 @@ declare global {
   const fetchBenchmarkHistory: typeof import('./utils/benchmarkData').fetchBenchmarkHistory
   const fetchCoinHistory: typeof import('./utils/benchmarkData').fetchCoinHistory
   const findGridLayout: typeof import('./stores/layout').findGridLayout
+  const fleetDigestAgeFor: typeof import('./stores/fleetDigestPolicy').fleetDigestAgeFor
+  const fleetDigestCovers: typeof import('./stores/fleetDigestPolicy').fleetDigestCovers
+  const fleetDigestsUsable: typeof import('./stores/fleetDigestPolicy').fleetDigestsUsable
   const forgetBotName: typeof import('./stores/botNameRegistry').forgetBotName
   const formatDateToTimerange: typeof import('./utils/reconstitute').formatDateToTimerange
   const formatDecimal: typeof import('./utils/formatters/numberformat').formatDecimal
@@ -198,6 +202,7 @@ declare global {
   const provide: typeof import('vue').provide
   const provideLocal: typeof import('@vueuse/core').provideLocal
   const pruneNotifiedAlerts: typeof import('./utils/browserNotifications').pruneNotifiedAlerts
+  const publishFleetDigests: typeof import('./stores/fleetDigestPolicy').publishFleetDigests
   const randomColor: typeof import('./utils/randomColor').randomColor
   const reactify: typeof import('@vueuse/core').reactify
   const reactifyObject: typeof import('@vueuse/core').reactifyObject
@@ -607,6 +612,7 @@ declare module 'vue' {
     readonly CATALOG_PATHS: UnwrapRef<typeof import('./utils/configEditorCatalog')['CATALOG_PATHS']>
     readonly CONFIG_CATALOG: UnwrapRef<typeof import('./utils/configEditorCatalog')['CONFIG_CATALOG']>
     readonly ColorPreferences: UnwrapRef<typeof import('./stores/colors')['ColorPreferences']>
+    readonly DIGEST_SUBSTITUTION_MAX_AGE_S: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['DIGEST_SUBSTITUTION_MAX_AGE_S']>
     readonly DashboardLayout: UnwrapRef<typeof import('./stores/layout')['DashboardLayout']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly FLEET_DIGEST_MAX_AGE_S: UnwrapRef<typeof import('./composables/useFleetSnapshot')['FLEET_DIGEST_MAX_AGE_S']>
@@ -700,6 +706,9 @@ declare module 'vue' {
     readonly fetchBenchmarkHistory: UnwrapRef<typeof import('./utils/benchmarkData')['fetchBenchmarkHistory']>
     readonly fetchCoinHistory: UnwrapRef<typeof import('./utils/benchmarkData')['fetchCoinHistory']>
     readonly findGridLayout: UnwrapRef<typeof import('./stores/layout')['findGridLayout']>
+    readonly fleetDigestAgeFor: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['fleetDigestAgeFor']>
+    readonly fleetDigestCovers: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['fleetDigestCovers']>
+    readonly fleetDigestsUsable: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['fleetDigestsUsable']>
     readonly forgetBotName: UnwrapRef<typeof import('./stores/botNameRegistry')['forgetBotName']>
     readonly formatDateToTimerange: UnwrapRef<typeof import('./utils/reconstitute')['formatDateToTimerange']>
     readonly formatDecimal: UnwrapRef<typeof import('./utils/formatters/numberformat')['formatDecimal']>
@@ -788,6 +797,7 @@ declare module 'vue' {
     readonly provide: UnwrapRef<typeof import('vue')['provide']>
     readonly provideLocal: UnwrapRef<typeof import('@vueuse/core')['provideLocal']>
     readonly pruneNotifiedAlerts: UnwrapRef<typeof import('./utils/browserNotifications')['pruneNotifiedAlerts']>
+    readonly publishFleetDigests: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['publishFleetDigests']>
     readonly randomColor: UnwrapRef<typeof import('./utils/randomColor')['randomColor']>
     readonly reactify: UnwrapRef<typeof import('@vueuse/core')['reactify']>
     readonly reactifyObject: UnwrapRef<typeof import('@vueuse/core')['reactifyObject']>
