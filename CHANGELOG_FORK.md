@@ -59,6 +59,64 @@ Ne **pas** porter la migration file-router dans une PR "sync auto". Elle mérite
 
 ---
 
+## Suivi upstream — FreqUI 3.1.2 (2026-08-29)
+
+**Upstream release** : [freqtrade/frequi 3.1.2](https://github.com/freqtrade/frequi/releases/tag/3.1.2)
+**Compare** : https://github.com/freqtrade/frequi/compare/3.1.1...3.1.2 — 30 fichiers, +1 271 / -894 lignes
+**Note** : la description upstream mentionne uniquement "mobile dashboard layout fixes" et "timerange select UX", mais le diff contient davantage — surtout une refonte du sélecteur de plage temporelle et l'affichage du solde disponible dans la boîte de saisie forcée.
+
+### TL;DR — impact fork
+
+Aucun changement bloquant. Deux petits fonctionnels valent un cherry-pick si l'on veut les fonctionnalités :
+
+- **Sélecteur de timerange refondu** (support minute, date-input, bouton clear, formatage temps) — le fork possède déjà son `src/components/ftbot/TimeRangeSelect.vue` custom et il est **très probablement incompatible** avec l'upstream. Décision produit : garder le picker fork ou adopter l'upstream ? Pas de portage automatique.
+- **Solde disponible dans la boîte de force-enter** (`abb65fda`) — fonctionnalité isolée, cherry-pick propre (le fork n'a pas de fichier `*ForceEnter*` sous `src/`, à vérifier avant portage — probablement un composant Nuxt/UI upstream).
+- **Fix dashboard mobile grid cards** (`8c9cf363`) — le fork réécrit ses cartes dashboard, à évaluer visuellement.
+- **Correctif `TradeDetail.vue`** (`93bd7bbd fix: implement the same fix for trade pane`) — 10 lignes, propre s'il ne touche pas de fork-code.
+
+Les dépendances (node 26.7 → 26.8.1, pnpm 11.22 → 11.24, nginx 1.31.3 → 1.31.4, sass-embedded 1.100→1.102, @tsconfig/node22 22.0.5→22.0.6, globals 17.10→17.11, vitest 4.1.10→4.1.11, docker/setup-buildx-action, groupe vue) sont safe et suivent leur propre cadence. Dependabot est désactivé côté fork (`ci: drop Dependabot` — `17364b1b`) : ces bumps sont donc à faire manuellement si souhaité.
+
+### Découpage des changements upstream
+
+**🔴 Rupture / architecture** — aucun.
+
+**🟡 Fonctionnel (portable avec décision produit)**
+
+| Commit | Sujet | Impact fork |
+|--------|-------|-------------|
+| `7f3f7b42` | `feat: Add Minute based Timerange select` | Refonte du sélecteur — collision avec `TimeRangeSelect.vue` custom du fork. Décision : garder ou adopter. |
+| `7a6dc577` | `feat: use dateInput for timeRange select` | Idem, coupé au précédent. |
+| `a328588c` | `feat: support time based formatting for timerange` | Idem. |
+| `75c56d4f` | `feat: add slider bar and quickselect buttons for simpler usage` | Idem — améliore l'ergonomie du picker refondu. |
+| `154f3a73` | `feat: add "clear" button to "time" component` | Petit ajout au composant Time, isolé. |
+| `abb65fda` | `feat: show free balance in force enter dialog` | Isolé — cherry-pick si le composant existe encore côté fork. |
+
+**🟠 Fixes**
+
+| Commit | Sujet | Impact fork |
+|--------|-------|-------------|
+| `93bd7bbd` | `fix: implement the same fix for trade pane` | 10 lignes sur `TradeDetail.vue`, propre s'il ne collide pas. |
+| `8c9cf363` | `fix(dashboard): make grid cards fit the viewport on small screens` | Le fork a sa propre grille dashboard — visuel à re-tester. |
+| `e59ddbd4` | `fix: update echarts-induced type-error` | Safe. |
+| `91ce0f9d` | `chore: use formatDecimal for funding fees to remove non-significant spaces` | Safe. |
+| `f50c3a9d` | `chore: add help to funding fee detail visualization` | Safe. |
+
+**🟢 Sûr / trivial (deps, CI, docker)**
+
+- npm : `sass-embedded` 1.100→1.102, `@tsconfig/node22` 22.0.5→22.0.6, `globals` 17.10→17.11, `vitest` 4.1.10→4.1.11, groupe `vue` (2 bumps).
+- toolchain : `pnpm` 11.22→11.24.
+- CI/Docker : `docker/setup-buildx-action`, `nginx` 1.31.3→1.31.4, `node` 26.7.0-alpine→26.8.1-alpine, `b645daa5 chore: replace 3 action steps with pnpm/setup`.
+- Divers : `6951900a chore: add Agents stuff to gitignore`, `c17fd2be chore: update vercel.json`.
+
+### Plan d'action
+
+1. **Cette PR** : ajoute ce suivi. Ne modifie **aucun code** applicatif. Zéro risque.
+2. **PR suivi 1 (optionnelle) — timerange picker** : décider si le fork adopte le picker upstream refondu (minute + date-input + clear + slider) ou garde son `TimeRangeSelect.vue` custom. Si adoption, c'est un chantier UX qui embarque `75c56d4f`, `7a6dc577`, `a328588c`, `7f3f7b42`, `154f3a73`.
+3. **PR suivi 2 (optionnelle) — force-enter free balance** : cherry-pick `abb65fda` si le composant existe encore côté fork.
+4. **Deps** : Dependabot ayant été coupé (`17364b1b`), les bumps upstream sont facultatifs. Batchable dans une seule PR mensuelle si souhaité.
+
+---
+
 ## Fichiers AJOUTÉS (40 fichiers, ~19 000 lignes)
 
 | Fichier | Lignes | Résumé | Risque |
