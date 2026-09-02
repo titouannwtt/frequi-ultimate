@@ -153,6 +153,15 @@ export function createBotSubStore(botId: string, botName: string) {
         balanceHistory: undefined as WalletHistory | undefined,
         profitHistory: undefined as ProfitHistoryResponse | undefined,
         profitHistoryFetchedAt: 0,
+        /**
+         * Wall-clock ms of the last successful slow refresh, 0 when never.
+         *
+         * The slow tier is decimated for bots nobody is looking at, so a figure on screen
+         * can now be several minutes old. Widgets compare this against the fleet digest's
+         * age to show whichever is fresher, and to say so. Without it, "old" and "current"
+         * would be indistinguishable on a money dashboard.
+         */
+        slowRefreshedAt: 0,
         pairlistMethods: [] as string[],
         pairlistPipeline: [] as import('@/types/blacklist').PipelineStep[],
         handlerConfigs: [] as Record<string, any>[],
@@ -339,6 +348,7 @@ export function createBotSubStore(botId: string, botName: string) {
             updates.push(this.getCurrentStrategy());
             await Promise.all(updates);
             this.refreshRequired = false;
+            this.slowRefreshedAt = Date.now();
           } finally {
             this.refreshing = false;
           }

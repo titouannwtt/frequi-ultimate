@@ -28,6 +28,7 @@ import { computed, ref } from 'vue';
 
 import { useVisibleInterval } from '@/composables/useVisibleInterval';
 import { useBotStore } from '@/stores/ftbotwrapper';
+import { publishFleetDigests } from '@/stores/fleetDigestPolicy';
 
 const digests = ref<Record<string, FleetBotDigest>>({});
 const available = ref<boolean | null>(null); // null = not tried yet
@@ -75,6 +76,7 @@ async function fetchSnapshot(): Promise<void> {
         available.value = false;
         lastError.value = data.error ?? 'no bots in snapshot';
         failures += 1;
+        publishFleetDigests({}, false);
         return;
       }
       digests.value = data.bots;
@@ -83,12 +85,17 @@ async function fetchSnapshot(): Promise<void> {
       available.value = true;
       lastError.value = '';
       failures = 0;
+      // Hand the ages to the refresh tiers, which cannot import this module without a
+      // cycle (see stores/fleetDigestPolicy).
+      publishFleetDigests(data.bots, true);
     } catch (err) {
       // A 404 means this bot predates the endpoint — a normal state in a fleet that is
       // being rolled over, not an error worth surfacing to the user.
       available.value = false;
       lastError.value = err instanceof Error ? err.message : String(err);
       failures += 1;
+      // Stop the refresh tiers leaning on a snapshot we can no longer refresh.
+      publishFleetDigests({}, false);
     } finally {
       inFlight = null;
     }

@@ -20,9 +20,33 @@ import type {
 import { TimeSummaryOptions } from '@/types';
 import { createBotSubStore } from './ftbot';
 import { activeBotIdForTrades, closedTradesDemand, closedTradesWanted } from './closedTradesPolicy';
-import { forgetBotName } from './botNameRegistry';
+import { forgetBotName, reportedBotName } from './botNameRegistry';
+import { fleetDigestCovers, publishFleetDigests } from './fleetDigestPolicy';
 import { registerSlowRefreshRunner } from './slowRefreshScheduler';
 const AUTH_SELECTED_BOT = 'ftSelectedBot';
+
+/**
+ * Decimation of the two refresh tiers for bots the fleet snapshot already covers.
+ *
+ * The startup burst and the standing load are both dominated by per-bot polling: /status
+ * every 10 s and eight endpoints every 60 s, times the whole fleet. `/fleet/snapshot`
+ * carries the scalars those tiers exist to keep current (state, open-trade counts, closed
+ * and open profit, balance, strategy) for every bot in one 16 kB request that is already
+ * being made every 10 s.
+ *
+ * So a covered bot keeps ONE real fetch in N and reads the snapshot in between. The
+ * factors are deliberately unequal. The frequent tier is 6, taking /status from 10 s to
+ * 60 s per bot, because everything it feeds beyond the trade rows is in the digest. The
+ * slow tier is only 3, taking it from 60 s to 180 s, because /profit_all also carries
+ * win/loss counts and ratios that the digest does NOT have, and those must not drift far.
+ *
+ * Nothing here applies to the bot on screen, to a forced refresh, or to a fleet with no
+ * snapshot: in all three cases every bot polls exactly as it did before.
+ */
+const FREQUENT_DECIMATION = 6;
+const SLOW_DECIMATION = 3;
+let frequentTick = 0;
+let slowTick = 0;
 
 /**
  * Identity-keyed memo for the fleet-wide trade aggregates.
@@ -377,18 +401,57 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       this.globalAutoRefresh = value;
     },
     async allRefreshFrequent(forceUpdate = false) {
+      frequentTick += 1;
       const tasks = this.allBotStores
         .filter(
           (e) => e.refreshNow && e.botStatusAvailable && (this.globalAutoRefresh || forceUpdate),
         )
+        .filter((e) => !this.digestCoversTier(e.botId, frequentTick, FREQUENT_DECIMATION))
         .map((e) => () => e.refreshFrequent());
       await batchedAll(tasks);
     },
     async allRefreshSlow(forceUpdate = false) {
+      slowTick += 1;
       const tasks = this.allBotStores
         .filter((e) => e.refreshNow && (this.globalAutoRefresh || forceUpdate))
+        .filter((e) => !this.digestCoversTier(e.botId, slowTick, SLOW_DECIMATION))
         .map((e) => () => e.refreshSlow(forceUpdate));
       await batchedAll(tasks);
+    },
+    /**
+     * Whether this tick's request for `botId` can be dropped because the fleet snapshot
+     * already carries what the tier would have fetched.
+     *
+     * Three conditions, and all three must hold:
+     *
+     * - the bot is NOT the one on screen. The active bot is being read in detail, on
+     *   endpoints the digest does not cover (trade rows, orders, locks). It always polls.
+     * - a fresh digest exists for it. A missing or stale digest means the snapshot cannot
+     *   answer for this bot, so the bot must answer for itself.
+     * - it is not this bot's turn. The decimation keeps one real fetch in N, so the
+     *   per-bot state the digest does NOT cover (open-trade rows, win/loss counts) still
+     *   refreshes, just at a slower cadence. Never skipping forever is the whole point:
+     *   the digest is a stand-in between fetches, not a replacement for them.
+     *
+     * The turn is spread by bot NAME, not by array index, and that is what turns the
+     * startup fan-out into a ramp instead of a burst. Every covered bot is still filled,
+     * within one N-tick window, but in N groups rather than all at once: the queueing that
+     * made 400 simultaneous requests take two minutes to drain is what actually hurt.
+     * The digest holds the comparison table's figures up in the meantime, badged with
+     * their age, so nothing on screen is blank while the ramp runs.
+     *
+     * Note this ignores `forceUpdate`. That flag exists to bypass the auto-refresh
+     * setting, not to override the snapshot: a forced refresh of the whole fleet is the
+     * burst. The paths that must be immediate for one bot (selecting it, it coming back
+     * online, toggling auto-refresh) call that bot's own `refreshSlow` directly and never
+     * pass through here.
+     */
+    digestCoversTier(botId: string, tick: number, decimation: number): boolean {
+      if (botId === this.selectedBot) return false;
+      if (!fleetDigestCovers(reportedBotName(botId))) return false;
+      let spread = 0;
+      for (let i = 0; i < botId.length; i++) spread = (spread * 31 + botId.charCodeAt(i)) >>> 0;
+      return (tick + spread) % decimation !== 0;
     },
     async allRefreshFull() {
       if (this.refreshing) {
@@ -398,6 +461,10 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       try {
         // Ensure all bots status is correct.
         await this.pingAll();
+        // Before fanning out, ask one bot for the whole fleet. This has to happen FIRST:
+        // the tiers below only stagger the bots the snapshot covers, and a snapshot that
+        // arrives after them saves nothing on the load everyone actually feels.
+        await this.primeFleetSnapshot();
 
         const stateTasks = this.allBotStores
           .filter((bot) => bot.isBotLoggedIn && bot.isBotOnline && !bot.botStatusAvailable)
@@ -519,10 +586,46 @@ export const useBotStore = defineStore('ftbot-wrapper', {
         this.tradesRefreshInterval = null;
       }
     },
+    /**
+     * Fetch the fleet snapshot once and publish it, so the refresh tiers can lean on it
+     * from the very first cycle.
+     *
+     * `useFleetSnapshot` is the steady-state poller, but it lives in a component and
+     * cannot be imported here (it imports this store). This is the startup shortcut, not
+     * a second poller: one request, and every failure mode simply leaves the tiers with
+     * no coverage, which is the full per-bot fan-out they did before.
+     */
+    async primeFleetSnapshot() {
+      const candidate =
+        this.activeBot?.isBotOnline === true
+          ? this.activeBot
+          : this.allBotStores.find((b) => b.isBotOnline);
+      if (!candidate) return;
+      try {
+        const data = await candidate.getFleetSnapshot();
+        publishFleetDigests(data?.bots ?? {}, Boolean(data?.bots) && !data?.error);
+      } catch {
+        // Older bot, or a fleet without the daemon: fall back to per-bot polling.
+        publishFleetDigests({}, false);
+      }
+    },
     async pingAll() {
       const bots = Object.values(this.botStores);
       await batchedAll(
         bots.map((v) => async () => {
+          // A bot that pushed a digest seconds ago is demonstrably alive, and the snapshot
+          // that says so was fetched in one request for the whole fleet. Pinging it again
+          // asks a question already answered, once per bot, every minute.
+          //
+          // Strictly one-way: a fresh digest can only mark a bot ONLINE. It is never used
+          // to mark one offline, because a missing digest has several innocent causes (a
+          // remote bot the host's daemon does not know, a push that has not landed yet)
+          // and wrongly greying out a live bot is the costlier mistake. Those bots fall
+          // through to a real ping below.
+          if (v.isBotLoggedIn && fleetDigestCovers(reportedBotName(v.botId))) {
+            v.setIsBotOnline(true);
+            return;
+          }
           try {
             await v.fetchPing();
           } catch {

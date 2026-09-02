@@ -362,7 +362,11 @@ export default {
     fundsWithdraw: 'Withdrawals',
     fundsTotal: 'Available funds',
     fromFleetSnapshot: 'from fleet snapshot ({age} old)',
-    fromFleetSnapshotHint: 'No live answer from this bot: figures come from what it last pushed to the shared daemon.',
+    fromFleetSnapshotHint:
+      'No live answer from this bot: figures come from what it last pushed to the shared daemon.',
+    staleRow: 'updated {age} ago',
+    staleRowHint:
+      "This bot's own figures, fetched a while ago: bots you have not selected are polled less often. Select the bot to refresh it now.",
     hostBotBadge: 'host',
     hostBotTooltip: 'This bot serves FreqUI',
     addColumn: 'Add column',

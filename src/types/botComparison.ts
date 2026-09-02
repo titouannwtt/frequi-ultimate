@@ -41,6 +41,20 @@ export interface ComparisonTableItems {
    * is. Undefined on every row backed by the bot's own live answers.
    */
   digestAgeS?: number;
+  /**
+   * Age, in seconds, of this row's OWN per-bot data, when that data is noticeably old.
+   *
+   * Distinct from `digestAgeS`: these figures do come from the bot itself, they were just
+   * fetched a while ago. The slow tier is decimated for bots nobody has selected (the fleet
+   * snapshot stands in between fetches), so a row can legitimately be a few minutes behind.
+   * Undefined while the row is within its normal refresh cadence, which is the usual case.
+   *
+   * Money figures that are quietly old are the failure mode this exists to prevent. The
+   * values are never mixed with the digest's: blending a fresh total with a stale ratio
+   * derived from an older one would produce a row that is internally inconsistent and
+   * impossible to spot. The row stays entirely the bot's own, and says how old it is.
+   */
+  dataAgeS?: number;
   monthlyProfit?: number;
   yearlyProfit?: number;
   /** Summary row: total open positions count */
