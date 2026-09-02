@@ -348,6 +348,7 @@ declare global {
   const useFileDialog: typeof import('@vueuse/core').useFileDialog
   const useFileSystemAccess: typeof import('@vueuse/core').useFileSystemAccess
   const useFitToScreen: typeof import('./composables/useFitToScreen').useFitToScreen
+  const useFleetProfitHistory: typeof import('./composables/useFleetProfitHistory').useFleetProfitHistory
   const useFleetSnapshot: typeof import('./composables/useFleetSnapshot').useFleetSnapshot
   const useFleetView: typeof import('./composables/useFleetView').useFleetView
   const useFocus: typeof import('@vueuse/core').useFocus
@@ -936,6 +937,7 @@ declare module 'vue' {
     readonly useFileDialog: UnwrapRef<typeof import('@vueuse/core')['useFileDialog']>
     readonly useFileSystemAccess: UnwrapRef<typeof import('@vueuse/core')['useFileSystemAccess']>
     readonly useFitToScreen: UnwrapRef<typeof import('./composables/useFitToScreen')['useFitToScreen']>
+    readonly useFleetProfitHistory: UnwrapRef<typeof import('./composables/useFleetProfitHistory')['useFleetProfitHistory']>
     readonly useFleetSnapshot: UnwrapRef<typeof import('./composables/useFleetSnapshot')['useFleetSnapshot']>
     readonly useFleetView: UnwrapRef<typeof import('./composables/useFleetView')['useFleetView']>
     readonly useFocus: UnwrapRef<typeof import('@vueuse/core')['useFocus']>
