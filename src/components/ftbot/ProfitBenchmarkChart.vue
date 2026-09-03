@@ -433,6 +433,27 @@ watch(showLatent, (v) => {
   if (v) loadLatentHistories();
 });
 
+/**
+ * REMPLACER les séries, ne jamais les fusionner.
+ *
+ * ⚠️ Sans ceci, ECharts apparie les séries de l'ancienne option et de la nouvelle
+ * PAR INDICE. Or la liste est construite par `push` conditionnels : cocher ou
+ * décocher « Profit latent », « Profit réalisé » ou « Drawdown » change sa
+ * LONGUEUR, donc décale tous les indices suivants. La série 2 d'avant se voit
+ * alors fusionnée avec une courbe qui n'a rien à voir.
+ *
+ * Symptômes constatés (retour utilisateur 2026-09-03), tous expliqués par ce seul
+ * mécanisme : le profit latent qui n'apparaît qu'après avoir décoché autre chose,
+ * la courbe de profit réalisé qui « se réinitialise » toute seule, et la légende
+ * qui ne correspond pas à ce qui est tracé.
+ *
+ * `replaceMerge: ['series']` jette l'ancien tableau et prend le nouveau tel quel :
+ * ce qui est coché est tracé, immédiatement. On ne remplace QUE `series` : les
+ * axes, le zoom et l'info-bulle gardent leur fusion, sinon un changement de case
+ * à cocher réinitialiserait la plage temporelle que l'utilisateur vient de régler.
+ */
+const CHART_UPDATE = { replaceMerge: ['series'] } as const;
+
 const latentHistories = ref<Record<string, [number, number, number, number][]>>({});
 /** Bots dont la série est déjà chargée : on ne redemande jamais ce qu'on a. */
 const latentLoaded = new Set<string>();
@@ -1751,6 +1772,7 @@ watch(
         v-if="activeChartData.length > 0"
         ref="chart"
         :option="chartOptions"
+        :update-options="CHART_UPDATE"
         @datazoom="onDataZoom"
         :theme="settingsStore.chartTheme"
         autoresize
