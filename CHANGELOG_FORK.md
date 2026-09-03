@@ -6,6 +6,65 @@
 
 ---
 
+## Suivi upstream — FreqUI 3.1.2 (2026-09-03)
+
+**Upstream release** : [freqtrade/frequi 3.1.2](https://github.com/freqtrade/frequi/releases/tag/3.1.2)
+**Base fork** : commit `1ec764d2` + cherry-picks 3.1.0
+**Compare** : https://github.com/freqtrade/frequi/compare/3.1.1...3.1.2 — 98 commits, 30 fichiers
+
+### TL;DR — impact fork
+
+3.1.2 est un release **stabilisation + features UX ciblées**, sans rupture architecturale. Contrairement à 3.1.1 (migration file-router), 3.1.2 se cherry-pick sans conflit majeur.
+
+Les changements se concentrent sur trois thèmes fonctionnels alignés avec la nouveauté freqtrade 2026.8 (timerange à la minute) :
+
+1. **Timerange refonte** (`TimeRangeSelect.vue` : 261 lignes) — support minute, dateInput, bouton "clear", slider + quickselect. À porter avec le sync backend 2026.8 si les endpoints minute-timerange sont adoptés.
+2. **Force enter dialog** (`ForceEntryForm.vue` : 110 lignes) — affiche le free balance. UX pure, portable tel quel.
+3. **Fix responsive dashboard** (`dashboard.vue` : 2 lignes) — grid cards s'ajustent aux petits écrans. Trivial.
+
+### Découpage des changements upstream
+
+**🔴 Rupture / architecture**
+
+Aucun. 3.1.2 ne contient pas de refonte structurelle.
+
+**🟡 Fonctionnel (portable avec vigilance)**
+
+| Commit | Sujet | Impact fork |
+|--------|-------|-------------|
+| `7f3f7b42` + `a328588c` + `7a6dc577` | `feat: Add Minute based Timerange select` + support time-based formatting + dateInput | Touche `TimeRangeSelect.vue` (261 lignes). Le fork n'a pas customisé ce fichier, donc portage direct possible. **À aligner avec le sync backend freqtrade 2026.8** (API v2.50 supporte le minute-based timerange). |
+| `75c56d4f` | `feat: add slider bar and quickselect buttons for simpler usage` | UX du timerange — livré avec le pack minute-timerange. |
+| `154f3a73` | `feat: add "clear" button to "time" component` | Livré avec le pack minute-timerange. |
+| `abb65fda` | `feat: show free balance in force enter dialog` | Touche `ForceEntryForm.vue` (110 lignes). Le fork a un patch lint mineur mais pas de customisation métier ; cherry-pick direct possible. |
+| `8c9cf363` | `fix(dashboard): make grid cards fit the viewport on small screens` | 2 lignes dans `dashboard.vue`. Trivial. Cherry-pick direct. |
+| `93bd7bbd` | `fix: implement the same fix for trade pane` (dashboard mobile grid) | Suite du fix responsive. |
+| `e59ddbd4` | `fix: update echarts-induced type-error` | Type fix, sans impact runtime. |
+| `91ce0f9d` + `f50c3a9d` | Funding fee : `formatDecimal` + help visualisation | Cosmétique — porter avec le lot backend funding rate. |
+
+**🟢 Sûr / trivial (dep bumps et CI)**
+
+À laisser à Dependabot (ou porter en batch) :
+
+- **npm** : `vue` (2 bumps), `reka-ui` 2.10.1→2.10.4, `humanize-duration` 3.34.0→3.34.1, `vue-echarts` 8.0.1→8.1.0, `@nuxt/ui` 4.10.0→4.11.0, `@vitejs/plugin-vue`, `sass-embedded` 1.100→1.103.1
+- **dev** : `vite` 8.2.0→8.2.2, `happy-dom` 20.11.0→20.11.6, `vitest` 4.1.10→4.1.11, `globals` 17.9→17.11, `@types/node` 26.1.2→26.3.0, `@tsconfig/node22` 22.0.5→22.0.6, eslint (2 bumps)
+- **toolchain** : `pnpm` 11.21→11.25
+- **CI/Docker** : `docker/setup-buildx-action`, `nginx` 1.31.3→1.31.5, `node` 26.7→26.8.1, ajout `vercel.json`
+
+### Plan d'action
+
+1. **Cette PR** : ajoute ce suivi. Ne modifie **aucun code** applicatif. Zéro risque.
+2. **PR suivi 1 — pack minute-timerange** : cherry-pick coordonné frontend + backend (`freqtrade` 2026.8 API v2.50). `TimeRangeSelect.vue` + `timeformat.ts` + `timeRange.ts` + tests. À faire quand le sync backend 2026.8 est validé.
+3. **PR suivi 2 — quick wins UX** : `abb65fda` (free balance) + `8c9cf363` + `93bd7bbd` (dashboard responsive). Portage direct, ~15 min.
+4. **PR suivi 3 — deps** : batch des bumps npm + toolchain. À faire dans une PR séparée (ou attendre Dependabot si réactivé).
+
+### Ce qui n'est PAS traité par cette PR
+
+- Le portage effectif du code — chaque item ci-dessus mérite sa propre PR, testée séparément.
+- Le bump de version dans `package.json`.
+- Le build (`npm run build`) et validation e2e sur les vues custom du fork.
+
+---
+
 ## Suivi upstream — FreqUI 3.1.1 (2026-07-31)
 
 **Upstream release** : [freqtrade/frequi 3.1.1](https://github.com/freqtrade/frequi/releases/tag/3.1.1)
