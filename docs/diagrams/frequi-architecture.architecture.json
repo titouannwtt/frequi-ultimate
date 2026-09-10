@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "FreqUI Ultimate — Data Flow",
+    "output": "frequi-architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      { "id": "fleet-polling", "label": "Fleet polling", "focus": ["app", "store", "bot_api"], "note": "Every bot in the fleet is polled independently and merged client-side into one dashboard." }
+    ]
+  },
+  "components": [
+    { "id": "user", "type": "external", "label": "Trader", "sublabel": "browser", "pos": [40, 160], "size": [120, 60] },
+    { "id": "app", "type": "frontend", "label": "FreqUI Ultimate", "sublabel": "dashboard, fleet, strategy dev", "pos": [260, 160], "size": [170, 60] },
+    { "id": "store", "type": "frontend", "label": "Pinia Stores", "sublabel": "per-bot polling", "pos": [530, 160], "size": [150, 60] },
+    { "id": "bot_api", "type": "backend", "label": "Bot REST API", "sublabel": "one per bot, × N", "pos": [790, 60], "size": [170, 60] },
+    { "id": "ext_api", "type": "backend", "label": "Fork-only endpoints", "sublabel": "/fleet/*, /stratdev/*", "pos": [790, 260], "size": [170, 60] }
+  ],
+  "connections": [
+    { "id": "user-app", "from": "user", "to": "app", "label": "browser" },
+    { "id": "app-store", "from": "app", "to": "store", "label": "read/write state" },
+    { "id": "store-bot-api", "from": "store", "to": "bot_api", "label": "poll every bot", "fromSide": "right", "toSide": "left" },
+    { "id": "store-ext-api", "from": "store", "to": "ext_api", "label": "fleet-wide widgets", "fromSide": "right", "toSide": "left" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Fan-out polling", "items": ["Each bot is a separate Freqtrade REST API instance with its own auth", "Pinia stores poll every bot independently and merge results client-side for the fleet view"] },
+    { "dot": "rose", "title": "Fork-only widgets", "items": ["Market Pulse, Risk Overview, StrategyDev and fleet status only populate against freqtrade-ultimate", "A stock Freqtrade backend leaves those panels empty"] }
+  ]
+}

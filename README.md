@@ -28,6 +28,8 @@ A fork of [FreqUI](https://github.com/freqtrade/frequi) rebuilt around two needs
 
 148 files modified, +38 413 lines added, 50+ enhanced components, 6 languages out of the box. Designed to pair with [freqtrade-ultimate](https://github.com/titouannwtt/freqtrade-ultimate) but compatible with any standard Freqtrade instance.
 
+**Architecture:** [`docs/diagrams/frequi-architecture.html`](docs/diagrams/frequi-architecture.html) shows how the fleet dashboard polls every bot's REST API and where the fork-only widgets plug in.
+
 ## ✨ Highlights
 
 ### Dashboard redesign
