@@ -129,7 +129,7 @@ Hover any metric for a glassmorphism context card — open/closed profit, win/lo
 
 - 🎥 YouTube: [@freqtrade_france](https://www.youtube.com/@freqtrade_france)
 - 🐦 Twitter: [@MoutonCrypto](https://x.com/MoutonCrypto)
-- 💎 Member access: 9 € / month or 90 € / year
+- Member tutorials: see [Freqtrade France](https://buymeacoffee.com/freqtrade_france) for the current offer and pricing. The public forks remain free to use.
 
 If you don't want to subscribe but want to support the fork, the simplest free way is to use the [Hyperliquid referral link](https://app.hyperliquid.xyz/join/MOUTON) when creating your account.
 
