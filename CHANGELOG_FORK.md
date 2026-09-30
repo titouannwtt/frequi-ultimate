@@ -6,6 +6,86 @@
 
 ---
 
+## Suivi upstream — FreqUI 3.1.3 (2026-09-24)
+
+**Upstream release** : [freqtrade/frequi 3.1.3](https://github.com/freqtrade/frequi/releases/tag/3.1.3)
+**Base fork** : cherry-picks jusqu'à 3.1.0 (`57ba2a21`, `7e7cce62`, `ec4a8ebb`, `c7e0c184`) ; **la dette 3.1.1 et 3.1.2 n'est pas encore portée** (voir sections ci-dessous et PR #46).
+**Compare** : https://github.com/freqtrade/frequi/compare/3.1.2...3.1.3 — 102 commits, 21 fichiers, +1 368 / -1 602 lignes.
+
+### TL;DR — impact fork
+
+**3.1.3 est une release d'alignement au cycle mensuel freqtrade 2026.9.**
+Une seule vraie amélioration produit :
+
+- **`fix: apply fixed height to backtest graphs`** (`728061cd`) — hauteur
+  fixe pour les graphes de backtest, correction de reflow.
+
+Le reste est **exclusivement** de la maintenance :
+- Vague dep bumps notable : vitest 4.1.11 → 5.0.1 (major), vite 8.2.2 →
+  8.3.0, @vitejs/plugin-vue 6.0.8 → 6.0.9, playwright 1.62.1 → 1.63.0,
+  happy-dom 20.11.6 → 20.14.5, sass-embedded 1.103.1 → 1.104.1, node
+  base image (Docker), nginx 1.31.5 → 1.31.6, vue-router, vue-echarts
+  8.3.0, humanize-duration 3.35.0, unplugin-icons.
+- `chore: use githubs new self-repository syntax` (`04bef376`) — CI only.
+- `chore: pnpm dedupe` (`0de01a0c`) — nettoyage lockfile.
+- `chore: group docker updates, change timing` (`73ea8be1`) — Dependabot
+  config.
+
+**Aucun changement d'architecture** — le blocage file-router hérité de
+3.1.1 reste ouvert et couvre 3.1.2 + 3.1.3. On continue en cherry-pick
+sélectif, stratégie validée pour 3.0.x / 3.1.0.
+
+### Fichiers en overlap amont ↔ fork (3.1.2 → 3.1.3)
+
+`comm -12` entre `git diff --name-only 3.1.2..3.1.3` et
+`git diff --name-only 3.1.0 main` donne **19 fichiers** sur 21 modifiés
+amont :
+
+**Code applicatif** :
+- `src/components/ftbot/BacktestGraphs.vue` — **cible du seul fix
+  produit** (`728061cd`). À porter en cherry-pick, très localisé.
+- `src/components/ftbot/TradeList.vue` — refactor amont mineur (dep
+  bump indirect). À rejouer si un rebase déclenche un conflit.
+- `src/components/ftbot/ForceEntryForm.vue` — hérité de la vague 3.1.2
+  (déjà tracé PR #46).
+- `src/components/BotLogin.vue`, `src/composables/api.ts`,
+  `src/composables/loginInfo.ts`, `src/stores/ftbot.ts`,
+  `src/stores/ftbotwrapper.ts`, `src/stores/settings.ts`,
+  `src/types/backgroundtasks.ts`, `src/types/strategy.ts`,
+  `src/types/types.ts` — retouches amont indirectes (dep bumps
+  entraînant des refresh de types). À vérifier si un conflit apparaît
+  lors des cherry-picks 3.1.1/3.1.2/3.1.3.
+
+**Infra / build** (dependabot friendly, à laisser Dependabot fork
+gérer) :
+- `.github/dependabot.yml`, `.github/workflows/ci.yml`,
+  `.github/workflows/docker.yml`, `.github/workflows/zizmor_action.yml`,
+  `Dockerfile`, `docker/Dockerfile`, `package.json`, `pnpm-lock.yaml`,
+  `vite.config.ts`.
+
+### Plan d'action recommandé
+
+1. **Cherry-pick isolé `728061cd`** (fix backtest graph height) sur
+   `src/components/ftbot/BacktestGraphs.vue` — safe, localisé, teste
+   directement en dry-run FreqUI.
+2. **Laisser Dependabot** absorber la vague dep bumps de 3.1.3.
+3. **Ne pas ré-ouvrir** la migration file-router (voir 3.1.1) tant
+   que les vues custom du fork n'ont pas été refactorisées.
+4. **Reporter au sprint 3.1.4/3.2.0** l'harmonisation `TradeList.vue`
+   et les stores/types secondaires.
+
+### Points d'attention avant merge
+
+- **vitest 4.x → 5.x** : major bump — vérifier la compat des tests
+  existants du fork avant merge du bump (Dependabot devrait ouvrir la
+  PR séparée).
+- **playwright 1.63** : rejouer la suite e2e du fork si elle utilise
+  `test.step` ou les nouveaux fixtures 1.63.
+- **BacktestGraphs.vue** : si le fork a déjà customisé ce composant,
+  merger le fix à la main plutôt que via cherry-pick brut.
+
+---
+
 ## Suivi upstream — FreqUI 3.1.1 (2026-07-31)
 
 **Upstream release** : [freqtrade/frequi 3.1.1](https://github.com/freqtrade/frequi/releases/tag/3.1.1)
