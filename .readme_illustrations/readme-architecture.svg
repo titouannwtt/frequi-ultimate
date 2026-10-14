@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="t d">
+  <title id="t">How FreqUI Ultimate talks to a Freqtrade fleet</title>
+  <desc id="d">The trader's browser runs FreqUI Ultimate. Pinia stores poll the REST API of every bot independently and merge the results client-side. Fleet-wide widgets call extra endpoints that only exist on freqtrade-ultimate.</desc>
+  <defs>
+    <style>
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+      .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+      .flow { stroke-dasharray: 3 9; stroke-linecap: round; animation: dash 1.2s linear infinite; }
+      .eye { animation: blink 5s infinite; transform-box: fill-box; transform-origin: center; }
+      .antenna { animation: sway 4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+      @keyframes dash { to { stroke-dashoffset: -24; } }
+      @keyframes blink { 0%, 90%, 100% { transform: scaleY(1); } 93% { transform: scaleY(0.12); } }
+      @keyframes sway { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+      @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+    </style>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="12" r="1.4" fill="#FDF1DC" opacity="0.06"/>
+    </pattern>
+    <marker id="arrC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5BC0CB"/>
+    </marker>
+    <marker id="arrO" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#F7901E"/>
+    </marker>
+    <clipPath id="avatar"><circle cx="1176" cy="80" r="50"/></clipPath>
+    <!-- Mascot, drawn on the 400 x 400 grid of docs/assets/logo_frequi_ultimate.jpg -->
+    <g id="robot" stroke="#0B2545" stroke-width="8" stroke-linejoin="round" stroke-linecap="round">
+      <g class="antenna">
+        <line x1="200" y1="66" x2="200" y2="108" fill="none"/>
+        <circle cx="200" cy="44" r="21" fill="#F7901E"/>
+      </g>
+      <path d="M126 300 C96 284 64 296 55 332 C50 352 48 376 48 404 L126 404 Z" fill="#F7901E"/>
+      <path d="M274 300 C304 284 336 296 345 332 C350 352 352 376 352 404 L274 404 Z" fill="#F7901E"/>
+      <path d="M54 346 C76 340 98 336 120 336 M346 346 C324 340 302 336 280 336" fill="none"/>
+      <path d="M120 404 L120 314 C120 292 152 278 200 278 C248 278 280 292 280 314 L280 404 Z" fill="#F7901E"/>
+      <ellipse cx="86" cy="200" rx="27" ry="37" fill="#F7901E"/>
+      <ellipse cx="314" cy="200" rx="27" ry="37" fill="#F7901E"/>
+      <path d="M200 102 C278 102 316 142 316 192 C316 248 272 282 200 282 C128 282 84 248 84 192 C84 142 122 102 200 102 Z" fill="#F7901E"/>
+      <rect x="112" y="142" width="176" height="96" rx="48" fill="#0B2545"/>
+      <ellipse class="eye" cx="158" cy="194" rx="12" ry="18" fill="#FDF1DC" stroke="none"/>
+      <ellipse class="eye" cx="242" cy="194" rx="12" ry="18" fill="#FDF1DC" stroke="none"/>
+    </g>
+  </defs>
+
+  <rect width="1280" height="640" rx="28" fill="#0B2545"/>
+  <rect width="1280" height="640" rx="28" fill="url(#dots)"/>
+
+  <!-- Header -->
+  <text x="48" y="66" class="mono" font-size="17" letter-spacing="3" font-weight="700" fill="#5BC0CB">HOW IT WORKS</text>
+  <text x="48" y="110" class="sans" font-size="34" font-weight="700" fill="#FDF1DC">One dashboard, the REST API of every bot</text>
+  <circle cx="1176" cy="80" r="50" fill="#5BC0CB"/>
+  <g clip-path="url(#avatar)"><use href="#robot" transform="translate(1124 34) scale(0.26)"/></g>
+  <circle cx="1176" cy="80" r="50" fill="none" stroke="#0B2545" stroke-width="3"/>
+
+  <!-- Trader -->
+  <g class="sans">
+    <rect x="48" y="252" width="152" height="104" rx="16" fill="#133A63"/>
+    <rect x="70" y="272" width="44" height="32" rx="5" fill="none" stroke="#5BC0CB" stroke-width="3"/>
+    <line x1="70" y1="281" x2="114" y2="281" stroke="#5BC0CB" stroke-width="3"/>
+    <text x="70" y="330" font-size="21" font-weight="700" fill="#FDF1DC">Trader</text>
+    <text x="70" y="348" font-size="15" fill="#FDF1DC" opacity="0.7">in a browser</text>
+  </g>
+
+  <!-- FreqUI Ultimate -->
+  <g class="sans">
+    <rect x="262" y="222" width="228" height="164" rx="16" fill="#133A63"/>
+    <path d="M262 238 a16 16 0 0 1 16 -16 h196 a16 16 0 0 1 16 16 v10 h-228 z" fill="#F7901E"/>
+    <text x="282" y="280" font-size="21" font-weight="700" fill="#FDF1DC">FreqUI Ultimate</text>
+    <text x="282" y="304" font-size="15" fill="#FDF1DC" opacity="0.7">Vue 3 app</text>
+    <g class="mono" font-size="15" fill="#FDF1DC">
+      <rect x="282" y="318" width="104" height="26" rx="13" fill="#0B2545"/>
+      <text x="334" y="336" text-anchor="middle">dashboard</text>
+      <rect x="394" y="318" width="72" height="26" rx="13" fill="#0B2545"/>
+      <text x="430" y="336" text-anchor="middle">fleet</text>
+      <rect x="282" y="350" width="136" height="26" rx="13" fill="#0B2545"/>
+      <text x="350" y="368" text-anchor="middle">strategy dev</text>
+    </g>
+  </g>
+
+  <!-- Pinia stores -->
+  <g class="sans">
+    <rect x="566" y="232" width="206" height="144" rx="16" fill="#133A63"/>
+    <path d="M566 248 a16 16 0 0 1 16 -16 h174 a16 16 0 0 1 16 16 v10 h-206 z" fill="#5BC0CB"/>
+    <text x="586" y="290" font-size="21" font-weight="700" fill="#FDF1DC">Pinia stores</text>
+    <text x="586" y="320" font-size="16" fill="#FDF1DC" opacity="0.85">one poller per bot,</text>
+    <text x="586" y="344" font-size="16" fill="#FDF1DC" opacity="0.85">merged client-side</text>
+  </g>
+
+  <!-- Main row arrows -->
+  <g fill="none" stroke-width="3">
+    <path class="flow" d="M202 304 H256" stroke="#5BC0CB" marker-end="url(#arrC)"/>
+    <path class="flow" d="M492 304 H560" stroke="#5BC0CB" marker-end="url(#arrC)"/>
+  </g>
+  <g class="sans" font-size="16" fill="#FDF1DC" opacity="0.75" text-anchor="middle">
+    <text x="528" y="282">read /</text>
+    <text x="528" y="296">write</text>
+  </g>
+
+  <!-- Group A: any Freqtrade bot -->
+  <g>
+    <rect x="900" y="150" width="332" height="196" rx="16" fill="none" stroke="#5BC0CB" stroke-width="2" stroke-dasharray="6 6" opacity="0.7"/>
+    <text x="920" y="178" class="mono" font-size="15" font-weight="700" letter-spacing="2" fill="#5BC0CB">ANY FREQTRADE BOT</text>
+    <g class="sans" font-size="17" fill="#FDF1DC">
+      <rect x="916" y="192" width="300" height="42" rx="10" fill="#133A63"/>
+      <circle cx="936" cy="213" r="6" fill="#3FB68B"/>
+      <text x="952" y="219">Bot 1 · REST API</text>
+      <text x="1200" y="219" font-size="15" opacity="0.7" text-anchor="end">own auth</text>
+      <rect x="916" y="242" width="300" height="42" rx="10" fill="#133A63"/>
+      <circle cx="936" cy="263" r="6" fill="#3FB68B"/>
+      <text x="952" y="269">Bot 2 · REST API</text>
+      <text x="1200" y="269" font-size="15" opacity="0.7" text-anchor="end">own auth</text>
+      <rect x="916" y="292" width="300" height="42" rx="10" fill="#133A63"/>
+      <circle cx="936" cy="313" r="6" fill="#F7901E"/>
+      <text x="952" y="319">Bot N · REST API</text>
+      <text x="1200" y="319" font-size="15" opacity="0.7" text-anchor="end">own auth</text>
+    </g>
+  </g>
+
+  <!-- Group B: freqtrade-ultimate only -->
+  <g>
+    <rect x="900" y="368" width="332" height="170" rx="16" fill="none" stroke="#F7901E" stroke-width="2" stroke-dasharray="6 6" opacity="0.85"/>
+    <text x="920" y="396" class="mono" font-size="15" font-weight="700" letter-spacing="2" fill="#F7901E">FREQTRADE-ULTIMATE ONLY</text>
+    <rect x="916" y="410" width="300" height="114" rx="10" fill="#133A63"/>
+    <g class="mono" font-size="16" fill="#FDF1DC">
+      <text x="934" y="438">/fleet/*   /fleetview/*</text>
+      <text x="934" y="464">/stratdev/*</text>
+      <text x="934" y="490">/volume_history</text>
+      <text x="934" y="514">/signal_summary</text>
+    </g>
+  </g>
+
+  <!-- Fan-out arrows -->
+  <g fill="none" stroke-width="3">
+    <path class="flow" d="M774 290 C836 290 846 213 908 213" stroke="#5BC0CB" marker-end="url(#arrC)"/>
+    <path class="flow" d="M774 300 C836 300 846 263 908 263" stroke="#5BC0CB" marker-end="url(#arrC)"/>
+    <path class="flow" d="M774 310 C836 310 846 313 908 313" stroke="#5BC0CB" marker-end="url(#arrC)"/>
+    <path class="flow" d="M774 340 C836 340 846 466 908 466" stroke="#F7901E" marker-end="url(#arrO)"/>
+  </g>
+  <g class="sans" font-size="16" fill="#FDF1DC" opacity="0.8">
+    <text x="782" y="214">poll every</text>
+    <text x="782" y="232">bot</text>
+    <text x="782" y="452">fleet-wide</text>
+    <text x="782" y="470">widgets</text>
+  </g>
+
+  <!-- Bottom band -->
+  <rect x="48" y="562" width="1184" height="50" rx="14" fill="#133A63"/>
+  <circle cx="74" cy="587" r="7" fill="#F7901E"/>
+  <text x="92" y="593" class="sans" font-size="17" fill="#FDF1DC">On a stock Freqtrade bot, Market Pulse, Risk Overview, fleet status, volume/signal context and the strategy editor stay empty.</text>
+</svg>

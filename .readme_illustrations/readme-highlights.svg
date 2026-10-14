@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" width="1280" height="400" role="img" aria-labelledby="t d">
+  <title id="t">What FreqUI Ultimate adds</title>
+  <desc id="d">Five areas: dashboard redesign, multi-bot fleet management with 13 alert types, a strategy development UI with a Monaco editor, six languages, and redesigned settings.</desc>
+  <defs>
+    <style>
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+      .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+      .float { animation: float 4s ease-in-out infinite; }
+      .f2 { animation-delay: -0.8s; } .f3 { animation-delay: -1.6s; } .f4 { animation-delay: -2.4s; } .f5 { animation-delay: -3.2s; }
+      .caret { animation: caret 1s steps(1) infinite; }
+      @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+      @keyframes caret { 50% { opacity: 0; } }
+      @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+    </style>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="12" r="1.4" fill="#FDF1DC" opacity="0.06"/>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="400" rx="28" fill="#0B2545"/>
+  <rect width="1280" height="400" rx="28" fill="url(#dots)"/>
+
+  <text x="48" y="66" class="mono" font-size="17" letter-spacing="3" font-weight="700" fill="#5BC0CB">HIGHLIGHTS</text>
+  <text x="48" y="108" class="sans" font-size="34" font-weight="700" fill="#FDF1DC">What the fork adds on top of FreqUI</text>
+
+  <g class="sans">
+    <!-- 1. Dashboard -->
+    <g transform="translate(48 140)">
+      <rect width="220" height="216" rx="18" fill="#133A63"/>
+      <rect x="22" width="176" height="5" rx="2.5" fill="#F7901E"/>
+      <g class="float" fill="none" stroke-width="3">
+        <rect x="22" y="26" width="24" height="18" rx="4" stroke="#F7901E"/>
+        <rect x="52" y="26" width="24" height="18" rx="4" stroke="#5BC0CB"/>
+        <rect x="22" y="50" width="54" height="18" rx="4" stroke="#5BC0CB"/>
+      </g>
+      <text x="22" y="108" font-size="21" font-weight="700" fill="#FDF1DC">Dashboard</text>
+      <g font-size="16" fill="#FDF1DC" opacity="0.8">
+        <text x="22" y="140">Glassmorphism redesign</text>
+        <text x="22" y="164">Persistent layouts</text>
+        <text x="22" y="188">Enhanced widgets</text>
+      </g>
+    </g>
+    <!-- 2. Fleet -->
+    <g transform="translate(289 140)">
+      <rect width="220" height="216" rx="18" fill="#133A63"/>
+      <rect x="22" width="176" height="5" rx="2.5" fill="#F7901E"/>
+      <g class="float f2" fill="none" stroke-width="3" stroke-linecap="round">
+        <circle cx="32" cy="36" r="9" stroke="#3FB68B"/>
+        <circle cx="32" cy="62" r="9" stroke="#3FB68B"/>
+        <circle cx="62" cy="49" r="9" stroke="#E5534B"/>
+        <path d="M80 30 v14 M80 52 v2" stroke="#F7901E"/>
+      </g>
+      <text x="22" y="108" font-size="21" font-weight="700" fill="#FDF1DC">Fleet</text>
+      <g font-size="16" fill="#FDF1DC" opacity="0.8">
+        <text x="22" y="140">Bots side by side</text>
+        <text x="22" y="164"><tspan fill="#F7901E" font-weight="700">13</tspan> cross-bot alerts</text>
+        <text x="22" y="188">Browser notifications</text>
+      </g>
+    </g>
+    <!-- 3. Strategy dev -->
+    <g transform="translate(530 140)">
+      <rect width="220" height="216" rx="18" fill="#133A63"/>
+      <rect x="22" width="176" height="5" rx="2.5" fill="#F7901E"/>
+      <g class="float f3">
+        <rect x="22" y="26" width="64" height="42" rx="6" fill="#0B2545" stroke="#5BC0CB" stroke-width="3"/>
+        <text x="32" y="53" class="mono" font-size="16" font-weight="700" fill="#F7901E">&lt;/&gt;</text>
+        <rect class="caret" x="70" y="40" width="3" height="16" fill="#FDF1DC"/>
+      </g>
+      <text x="22" y="108" font-size="21" font-weight="700" fill="#FDF1DC">Strategy dev</text>
+      <g font-size="16" fill="#FDF1DC" opacity="0.8">
+        <text x="22" y="140">Monaco editor</text>
+        <text x="22" y="164">Backtest and hyperopt</text>
+        <text x="22" y="188">from the UI</text>
+      </g>
+    </g>
+    <!-- 4. Languages -->
+    <g transform="translate(771 140)">
+      <rect width="220" height="216" rx="18" fill="#133A63"/>
+      <rect x="22" width="176" height="5" rx="2.5" fill="#F7901E"/>
+      <g class="float f4 mono" font-size="14" font-weight="700" text-anchor="middle">
+        <rect x="22" y="24" width="38" height="22" rx="6" fill="#5BC0CB"/><text x="41" y="40" fill="#0B2545">EN</text>
+        <rect x="66" y="24" width="38" height="22" rx="6" fill="#F7901E"/><text x="85" y="40" fill="#0B2545">FR</text>
+        <rect x="110" y="24" width="38" height="22" rx="6" fill="#5BC0CB"/><text x="129" y="40" fill="#0B2545">DE</text>
+        <rect x="22" y="52" width="38" height="22" rx="6" fill="#5BC0CB"/><text x="41" y="68" fill="#0B2545">ES</text>
+        <rect x="66" y="52" width="38" height="22" rx="6" fill="#5BC0CB"/><text x="85" y="68" fill="#0B2545">IT</text>
+        <rect x="110" y="52" width="38" height="22" rx="6" fill="#5BC0CB"/><text x="129" y="68" fill="#0B2545">PT</text>
+      </g>
+      <text x="22" y="108" font-size="21" font-weight="700" fill="#FDF1DC"><tspan fill="#F7901E">6</tspan> languages</text>
+      <g font-size="16" fill="#FDF1DC" opacity="0.8">
+        <text x="22" y="140">English, French,</text>
+        <text x="22" y="164">German, Spanish,</text>
+        <text x="22" y="188">Italian, Portuguese</text>
+      </g>
+    </g>
+    <!-- 5. Settings -->
+    <g transform="translate(1012 140)">
+      <rect width="220" height="216" rx="18" fill="#133A63"/>
+      <rect x="22" width="176" height="5" rx="2.5" fill="#F7901E"/>
+      <g class="float f5" stroke-width="3" stroke-linecap="round">
+        <line x1="22" y1="32" x2="86" y2="32" stroke="#5BC0CB"/>
+        <line x1="22" y1="50" x2="86" y2="50" stroke="#5BC0CB"/>
+        <line x1="22" y1="68" x2="86" y2="68" stroke="#5BC0CB"/>
+        <circle cx="38" cy="32" r="6" fill="#F7901E" stroke="#0B2545" stroke-width="2"/>
+        <circle cx="70" cy="50" r="6" fill="#F7901E" stroke="#0B2545" stroke-width="2"/>
+        <circle cx="50" cy="68" r="6" fill="#F7901E" stroke="#0B2545" stroke-width="2"/>
+      </g>
+      <text x="22" y="108" font-size="21" font-weight="700" fill="#FDF1DC">Settings and UX</text>
+      <g font-size="16" fill="#FDF1DC" opacity="0.8">
+        <text x="22" y="140">Section cards</text>
+        <text x="22" y="164">PDF and config export</text>
+        <text x="22" y="188">Notification settings</text>
+      </g>
+    </g>
+  </g>
+</svg>
