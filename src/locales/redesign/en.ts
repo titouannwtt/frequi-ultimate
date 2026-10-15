@@ -1,0 +1,147 @@
+/**
+ * Messages of the redesigned UI, merged under the `fq` namespace (docs/redesign/02-design.md, section 16).
+ * French is the reference for the owner; English must define exactly the same keys
+ * (tests/unit/redesignLocales.spec.ts). No em dash, no hard-coded string in components.
+ */
+export default {
+  nav: {
+    fleet: 'Fleet',
+    bot: 'Bot',
+    charts: 'Charts',
+    journal: 'Journal',
+    tools: 'Tools',
+    settings: 'Settings',
+  },
+  attention: {
+    title: 'Needs attention',
+    active: 'Active',
+    acknowledged: 'Acknowledged',
+    silenced: 'Silenced',
+    events: 'Events',
+    sinceLastVisit: 'Since your last visit',
+    markSeen: 'Mark as seen',
+    allClear: 'All clear',
+  },
+  kpi: {
+    equityOpen: 'Equity incl. open',
+    equityRealized: 'Realized equity',
+    drawdownOpen: 'Drawdown incl. open',
+    pnlOpen: 'Open P&L',
+    realizedToday: 'Realized today',
+    excluded: '{n} excluded',
+    excludingReplay: 'Excluding replay',
+  },
+  status: {
+    stale: 'Stale',
+    offline: 'Offline',
+    starting: 'Starting',
+    stopped: 'Stopped',
+    sessionExpired: 'Session expired',
+    reconnect: 'Reconnect',
+  },
+  action: {
+    pauseEntries: 'Pause entries',
+    resumeEntries: 'Resume entries',
+    reload: 'Reload',
+    exitMarket: 'Exit at market…',
+    addToPosition: 'Add to position…',
+    exitAll: 'Exit all…',
+    holdToExitLive: 'Hold to exit with real money',
+    targetBot: 'Target bot',
+    sentOnce: 'Sent once, never retried automatically. Logged.',
+  },
+  result: {
+    sent: 'Sent',
+    filled: 'Filled',
+    needsChecking: 'Needs checking',
+    rejected: 'Rejected by bot',
+  },
+  freshness: {
+    dataFrom: 'Data from {n} min ago',
+    frozenAt: 'Values frozen at {time}',
+  },
+  connection: {
+    direct: 'Direct mode',
+    gateway: 'Gateway',
+    degraded: 'Degraded',
+    connecting: 'Connecting',
+    unavailableDirect: 'Unavailable in direct mode',
+  },
+  reconcile: {
+    orphan: 'Orphan position',
+    reconcile: 'Reconcile (preview)',
+  },
+  origin: {
+    unknown: 'unknown',
+    since: 'since {date}',
+    manual: 'manual',
+  },
+  side: {
+    long: 'Long',
+    short: 'Short',
+    longLetter: 'L',
+    shortLetter: 'S',
+  },
+  theme: {
+    system: 'System',
+    dark: 'Dark',
+    light: 'Light',
+    cycle: 'Theme: {mode}. Click to change.',
+  },
+  ds: {
+    close: 'Close',
+    clear: 'Clear',
+    search: 'Search',
+    remove: 'Remove {name}',
+    loading: 'Loading',
+    notAvailable: 'n/a',
+    realMoney: 'Real money',
+    logs: 'Logs',
+    dcaFilled: '{filled} of {max} orders filled',
+    excludedTitle: 'Excluded from totals ({n})',
+    excludedNote: 'A stale value is never summed.',
+    badge: {
+      live: 'Live',
+      dry: 'Dry',
+      replay: 'Replay',
+      xyz: 'HIP-3',
+      orphan: 'Orphan',
+    },
+    state: {
+      online: 'Online',
+    },
+    hold: {
+      hint: 'Hold the button for 1 second to confirm (or hold Enter).',
+    },
+    ladder: {
+      title: 'DCA ladder',
+      liquidation: 'Liquidation',
+      tp: 'TP',
+      avg: 'Avg',
+      price: 'Price',
+      pending: 'pending',
+      at: 'at',
+    },
+    pane: {
+      empty: 'Nothing to show.',
+      error: 'Update failed',
+      lastValues: 'last known values',
+      stale: 'Stale data, not counted in totals.',
+    },
+    pill: {
+      direct: 'Direct',
+      offlineFrozen: 'Offline \u00b7 frozen {time}',
+      resync: 'Resynchronising',
+    },
+    health: {
+      title: 'Health',
+      ok: 'OK',
+      degraded: 'Degraded',
+      crit: 'Critical',
+    },
+    density: {
+      compact: 'Compact',
+      comfortable: 'Comfortable',
+    },
+  },
+};

@@ -1,49 +1,70 @@
 import { createI18n } from 'vue-i18n';
 import en from './en';
 import fr from './fr';
-import pt from './pt';
+import fqEn from './redesign/en';
+import fqFr from './redesign/fr';
+import { isSupportedLocale, resolveInitialLocale } from './localePolicy';
 
-// ES, DE, IT are lazy-loaded
+const STORAGE_KEY = 'ft_locale';
+
+function readStoredLocale(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredLocale(lang: string) {
+  try {
+    localStorage.setItem(STORAGE_KEY, lang);
+  } catch {
+    // storage unavailable (private mode): the choice only lasts for the session
+  }
+}
+
+// A stored language that no longer exists (de, es, it, pt) is migrated to English
+const initial = resolveInitialLocale(
+  readStoredLocale(),
+  typeof navigator === 'undefined'
+    ? []
+    : navigator.languages?.length
+      ? navigator.languages
+      : [navigator.language],
+);
+if (initial.migrated) {
+  writeStoredLocale(initial.locale);
+}
+
 const i18n = createI18n({
   legacy: false,
-  locale: localStorage.getItem('ft_locale') || 'en',
+  locale: initial.locale,
   fallbackLocale: 'en',
   messages: {
-    en,
-    fr,
-    pt,
+    // Redesign keys live in the `fq` namespace so the legacy message files stay untouched
+    en: { ...en, fq: fqEn },
+    fr: { ...fr, fq: fqFr },
   },
 });
 
-// Lazy load additional languages
-const lazyLanguages: Record<string, () => Promise<{ default: Record<string, unknown> }>> = {
-  es: () => import('./es'),
-  de: () => import('./de'),
-  it: () => import('./it'),
-};
+if (typeof document !== 'undefined') {
+  document.documentElement.lang = initial.locale;
+}
 
 export async function loadLanguage(lang: string) {
-  if (i18n.global.availableLocales.includes(lang)) {
-    i18n.global.locale.value = lang;
-    localStorage.setItem('ft_locale', lang);
+  if (!isSupportedLocale(lang)) {
     return;
   }
-
-  if (lazyLanguages[lang]) {
-    const messages = await lazyLanguages[lang]();
-    i18n.global.setLocaleMessage(lang, messages.default);
-    i18n.global.locale.value = lang;
-    localStorage.setItem('ft_locale', lang);
+  i18n.global.locale.value = lang;
+  writeStoredLocale(lang);
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = lang;
   }
 }
 
 export const availableLocales = [
   { value: 'en', label: 'English' },
   { value: 'fr', label: 'Français' },
-  { value: 'es', label: 'Español' },
-  { value: 'de', label: 'Deutsch' },
-  { value: 'it', label: 'Italiano' },
-  { value: 'pt', label: 'Português' },
 ];
 
 export default i18n;
