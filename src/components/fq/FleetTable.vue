@@ -37,6 +37,7 @@ import {
   isStaleGroup,
   minutesSince,
   slotsRatio,
+  drawdownPct,
   stableOrder,
   sumBots,
   UNGROUPED_ID,
@@ -585,15 +586,19 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
               <template v-else-if="c.id === 'drawdown'">
                 <div v-if="item.bot.metrics.drawdown_with_open" class="dd">
                   <PnlValue :value="-item.bot.metrics.drawdown_with_open.abs" :decimals="0" />
-                  <span v-if="item.bot.metrics.drawdown_with_open.pct !== null" class="pct">{{
-                    fmt.percent(-item.bot.metrics.drawdown_with_open.pct, 1)
-                  }}</span>
+                  <span
+                    v-if="drawdownPct(item.bot.metrics.drawdown_with_open) !== null"
+                    class="pct"
+                    >{{
+                      fmt.percent(-(drawdownPct(item.bot.metrics.drawdown_with_open) as number), 1)
+                    }}</span
+                  >
                   <Meter
-                    v-if="item.bot.metrics.drawdown_with_open.pct !== null"
-                    :value="item.bot.metrics.drawdown_with_open.pct"
+                    v-if="drawdownPct(item.bot.metrics.drawdown_with_open) !== null"
+                    :value="drawdownPct(item.bot.metrics.drawdown_with_open) as number"
                     :max="ddThreshold * 1.5"
                     :threshold="ddThreshold"
-                    :tone="ddTone(item.bot.metrics.drawdown_with_open.pct)"
+                    :tone="ddTone(drawdownPct(item.bot.metrics.drawdown_with_open))"
                     :label="t('fq.col.drawdown')"
                   />
                 </div>

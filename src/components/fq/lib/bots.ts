@@ -5,10 +5,25 @@
 import type { BotState } from '@/components/ds/types';
 import { DIGEST_STALE_MS, sumFresh, type FreshSum } from '@/datasource/calc/freshness';
 import { SEVERITY_RANK } from '@/datasource/calc/alerts/rules';
-import type { BotRow, FreshnessGroup, Severity, WalletRow } from '@/gateway/types.gen';
+import type {
+  BotRow,
+  DrawdownValue,
+  FreshnessGroup,
+  Severity,
+  WalletRow,
+} from '@/gateway/types.gen';
 import type { BotGroupPrefs } from '@/migration/schema';
 
 export type FleetSort = 'attention' | 'latent' | 'name';
+
+/**
+ * Drawdown of a bot or a scope in percent, or null without a starting capital. The contract carries
+ * it as a ratio like every other ratio (`0.024` is 2.4 %, `abs / base`), while the alert threshold
+ * (`highDrawdown`) and the display are in percent: this is the one place that converts (bug B73).
+ */
+export function drawdownPct(d: Pick<DrawdownValue, 'pct'> | null | undefined): number | null {
+  return d?.pct == null || !Number.isFinite(d.pct) ? null : d.pct * 100;
+}
 
 /** Server clock at this instant: browser time corrected by the skew learnt from the heartbeat. */
 export function serverNow(nowMs: number, skewMs: number): number {
