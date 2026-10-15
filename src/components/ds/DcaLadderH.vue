@@ -8,7 +8,8 @@ export interface DcaLadderHPosition {
   max: number;
   /** Normalised 0..1: 0 is the liquidation side, 1 the take-profit side, for a long or a short. */
   avg: number;
-  tp: number;
+  /** Normalised take profit; absent when the bot's take profit is not known (no marker drawn). */
+  tp?: number;
   price: number;
   /** Optional normalised position of each level; evenly spread from the entry by default. */
   levels?: number[];
@@ -41,6 +42,7 @@ const label = computed(() =>
     <span class="rail"></span>
     <span class="liq" :title="t('fq.ds.ladder.liquidation')"></span>
     <span
+      v-if="position.tp !== undefined"
       class="gain"
       :style="{
         left: pct(position.avg),
@@ -55,7 +57,7 @@ const label = computed(() =>
       :style="{ left: pct(lv.x) }"
     ></span>
     <span class="avg" :style="{ left: pct(position.avg) }"></span>
-    <span class="tp" :style="{ left: pct(position.tp) }"></span>
+    <span v-if="position.tp !== undefined" class="tp" :style="{ left: pct(position.tp) }"></span>
     <span class="px" :style="{ left: pct(position.price) }"></span>
     <span class="t l0" style="left: 0">{{
       position.liqText ?? t('fq.ds.ladder.liquidation')
@@ -63,7 +65,9 @@ const label = computed(() =>
     <span class="t mid" :style="{ left: `${Math.max(30, Math.min(70, position.avg * 100))}%` }">{{
       label
     }}</span>
-    <span class="t r0" style="left: 100%">{{ t('fq.ds.ladder.tp') }}</span>
+    <span v-if="position.tp !== undefined" class="t r0" style="left: 100%">{{
+      t('fq.ds.ladder.tp')
+    }}</span>
   </div>
 </template>
 

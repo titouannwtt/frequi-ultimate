@@ -255,7 +255,9 @@ declare global {
   const registerSlowRefreshRunner: typeof import('./stores/slowRefreshScheduler').registerSlowRefreshRunner
   const rememberBotName: typeof import('./stores/botNameRegistry').rememberBotName
   const reportedBotName: typeof import('./stores/botNameRegistry').reportedBotName
+  const requestAction: typeof import('./composables/useActionDialog').requestAction
   const requestNotificationPermission: typeof import('./utils/browserNotifications').requestNotificationPermission
+  const resetActionDialog: typeof import('./composables/useActionDialog').resetActionDialog
   const resetBotActionState: typeof import('./composables/useBotAction').resetBotActionState
   const resolveColumns: typeof import('./composables/useColumns').resolveColumns
   const resolveComponent: typeof import('vue').resolveComponent
@@ -311,6 +313,7 @@ declare global {
   const unref: typeof import('vue').unref
   const unrefElement: typeof import('@vueuse/core').unrefElement
   const until: typeof import('@vueuse/core').until
+  const useActionDialog: typeof import('./composables/useActionDialog').useActionDialog
   const useActiveElement: typeof import('@vueuse/core').useActiveElement
   const useAlertDetection: typeof import('./composables/useAlertDetection').useAlertDetection
   const useAlertForBot: typeof import('./utils/alerts').useAlertForBot
@@ -356,6 +359,7 @@ declare global {
   const useColorMode: typeof import('@vueuse/core').useColorMode
   const useColorStore: typeof import('./stores/colors').useColorStore
   const useColumns: typeof import('./composables/useColumns').useColumns
+  const useCommandPalette: typeof import('./composables/useCommandPalette').useCommandPalette
   const useConfirmDialog: typeof import('@vueuse/core').useConfirmDialog
   const useCountdown: typeof import('@vueuse/core').useCountdown
   const useCounter: typeof import('@vueuse/core').useCounter
@@ -419,6 +423,7 @@ declare global {
   const useIntervalFn: typeof import('@vueuse/core').useIntervalFn
   const useKeyModifier: typeof import('@vueuse/core').useKeyModifier
   const useLastChanged: typeof import('@vueuse/core').useLastChanged
+  const useLastVisit: typeof import('./composables/useLastVisit').useLastVisit
   const useLayoutStore: typeof import('./stores/layout').useLayoutStore
   const useLink: typeof import('vue-router').useLink
   const useLocalStorage: typeof import('@vueuse/core').useLocalStorage
@@ -475,6 +480,7 @@ declare global {
   const useRouter: typeof import('vue-router').useRouter
   const useSSRWidth: typeof import('@vueuse/core').useSSRWidth
   const useScope: typeof import('./composables/useScope').useScope
+  const useScopeDetail: typeof import('./composables/useScopeDetail').useScopeDetail
   const useScreenOrientation: typeof import('@vueuse/core').useScreenOrientation
   const useScreenSafeArea: typeof import('@vueuse/core').useScreenSafeArea
   const useScriptTag: typeof import('@vueuse/core').useScriptTag
@@ -568,6 +574,9 @@ declare global {
   // @ts-ignore
   export type { TradeColumnDef } from './composables/tradeColumns'
   import('./composables/tradeColumns')
+  // @ts-ignore
+  export type { ActionContext, ActionRequest, RequestRefusal, RequestResult } from './composables/useActionDialog'
+  import('./composables/useActionDialog')
   // @ts-ignore
   export type { ConfirmLevel, PendingAction, ActionOutcome } from './composables/useBotAction'
   import('./composables/useBotAction')
@@ -930,7 +939,9 @@ declare module 'vue' {
     readonly registerSlowRefreshRunner: UnwrapRef<typeof import('./stores/slowRefreshScheduler')['registerSlowRefreshRunner']>
     readonly rememberBotName: UnwrapRef<typeof import('./stores/botNameRegistry')['rememberBotName']>
     readonly reportedBotName: UnwrapRef<typeof import('./stores/botNameRegistry')['reportedBotName']>
+    readonly requestAction: UnwrapRef<typeof import('./composables/useActionDialog')['requestAction']>
     readonly requestNotificationPermission: UnwrapRef<typeof import('./utils/browserNotifications')['requestNotificationPermission']>
+    readonly resetActionDialog: UnwrapRef<typeof import('./composables/useActionDialog')['resetActionDialog']>
     readonly resetBotActionState: UnwrapRef<typeof import('./composables/useBotAction')['resetBotActionState']>
     readonly resolveColumns: UnwrapRef<typeof import('./composables/useColumns')['resolveColumns']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
@@ -985,6 +996,7 @@ declare module 'vue' {
     readonly unref: UnwrapRef<typeof import('vue')['unref']>
     readonly unrefElement: UnwrapRef<typeof import('@vueuse/core')['unrefElement']>
     readonly until: UnwrapRef<typeof import('@vueuse/core')['until']>
+    readonly useActionDialog: UnwrapRef<typeof import('./composables/useActionDialog')['useActionDialog']>
     readonly useActiveElement: UnwrapRef<typeof import('@vueuse/core')['useActiveElement']>
     readonly useAlertDetection: UnwrapRef<typeof import('./composables/useAlertDetection')['useAlertDetection']>
     readonly useAlertForBot: UnwrapRef<typeof import('./utils/alerts')['useAlertForBot']>
@@ -1030,6 +1042,7 @@ declare module 'vue' {
     readonly useColorMode: UnwrapRef<typeof import('@vueuse/core')['useColorMode']>
     readonly useColorStore: UnwrapRef<typeof import('./stores/colors')['useColorStore']>
     readonly useColumns: UnwrapRef<typeof import('./composables/useColumns')['useColumns']>
+    readonly useCommandPalette: UnwrapRef<typeof import('./composables/useCommandPalette')['useCommandPalette']>
     readonly useConfirmDialog: UnwrapRef<typeof import('@vueuse/core')['useConfirmDialog']>
     readonly useCountdown: UnwrapRef<typeof import('@vueuse/core')['useCountdown']>
     readonly useCounter: UnwrapRef<typeof import('@vueuse/core')['useCounter']>
@@ -1093,6 +1106,7 @@ declare module 'vue' {
     readonly useIntervalFn: UnwrapRef<typeof import('@vueuse/core')['useIntervalFn']>
     readonly useKeyModifier: UnwrapRef<typeof import('@vueuse/core')['useKeyModifier']>
     readonly useLastChanged: UnwrapRef<typeof import('@vueuse/core')['useLastChanged']>
+    readonly useLastVisit: UnwrapRef<typeof import('./composables/useLastVisit')['useLastVisit']>
     readonly useLayoutStore: UnwrapRef<typeof import('./stores/layout')['useLayoutStore']>
     readonly useLink: UnwrapRef<typeof import('vue-router')['useLink']>
     readonly useLocalStorage: UnwrapRef<typeof import('@vueuse/core')['useLocalStorage']>
@@ -1149,6 +1163,7 @@ declare module 'vue' {
     readonly useRouter: UnwrapRef<typeof import('vue-router')['useRouter']>
     readonly useSSRWidth: UnwrapRef<typeof import('@vueuse/core')['useSSRWidth']>
     readonly useScope: UnwrapRef<typeof import('./composables/useScope')['useScope']>
+    readonly useScopeDetail: UnwrapRef<typeof import('./composables/useScopeDetail')['useScopeDetail']>
     readonly useScreenOrientation: UnwrapRef<typeof import('@vueuse/core')['useScreenOrientation']>
     readonly useScreenSafeArea: UnwrapRef<typeof import('@vueuse/core')['useScreenSafeArea']>
     readonly useScriptTag: UnwrapRef<typeof import('@vueuse/core')['useScriptTag']>

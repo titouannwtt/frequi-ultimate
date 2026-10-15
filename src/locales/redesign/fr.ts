@@ -3,7 +3,10 @@
  * section 16). Same keys as en.ts (tests/unit/redesignLocales.spec.ts). No em dash; no-break space
  * before : ? ! and thin no-break space before %.
  */
+import composites from './composites/fr';
+
 export default {
+  ...composites,
   nav: {
     fleet: 'Flotte',
     bot: 'Bot',
@@ -11,6 +14,7 @@ export default {
     journal: 'Journal',
     tools: 'Outils',
     settings: 'Réglages',
+    more: 'Plus',
   },
   attention: {
     title: 'À traiter',
@@ -21,6 +25,7 @@ export default {
     sinceLastVisit: 'Depuis votre passage',
     markSeen: 'Marquer vu',
     allClear: 'Rien à signaler',
+    level: { calm: 'Calme', watch: 'Vigilance', critical: 'Critique' },
   },
   kpi: {
     equityOpen: 'Équité avec latent',
@@ -114,6 +119,7 @@ export default {
     remove: 'Retirer {name}',
     loading: 'Chargement',
     notAvailable: 'n/d',
+    dash: '-',
     realMoney: 'Argent réel',
     logs: 'Logs',
     dcaFilled: '{filled} ordres remplis sur {max}',

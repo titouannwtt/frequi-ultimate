@@ -20,6 +20,7 @@ import IconPlugZap from '~icons/lucide/plug-zap';
 import IconKeyRound from '~icons/lucide/key-round';
 import IconLoader from '~icons/lucide/loader';
 import IconCheck from '~icons/lucide/check';
+import IconBell from '~icons/lucide/bell';
 import IconBellOff from '~icons/lucide/bell-off';
 import IconTerminal from '~icons/lucide/terminal';
 import IconActivity from '~icons/lucide/activity';
@@ -36,6 +37,7 @@ import IconHand from '~icons/lucide/hand';
 import IconX from '~icons/lucide/x';
 import IconSearch from '~icons/lucide/search';
 import IconChevronDown from '~icons/lucide/chevron-down';
+import IconChevronLeft from '~icons/lucide/chevron-left';
 import IconChevronRight from '~icons/lucide/chevron-right';
 import IconChevronUp from '~icons/lucide/chevron-up';
 import IconEllipsis from '~icons/lucide/ellipsis';
@@ -77,6 +79,7 @@ export const DS_ICONS = {
   'key-round': IconKeyRound,
   loader: IconLoader,
   check: IconCheck,
+  bell: IconBell,
   'bell-off': IconBellOff,
   terminal: IconTerminal,
   activity: IconActivity,
@@ -93,6 +96,7 @@ export const DS_ICONS = {
   x: IconX,
   search: IconSearch,
   'chevron-down': IconChevronDown,
+  'chevron-left': IconChevronLeft,
   'chevron-right': IconChevronRight,
   'chevron-up': IconChevronUp,
   ellipsis: IconEllipsis,

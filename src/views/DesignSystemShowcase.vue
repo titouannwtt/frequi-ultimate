@@ -46,6 +46,7 @@ import {
   TextInput,
   Toaster,
 } from '@/components/ds';
+import CompositesShowcase from './ds/CompositesShowcase.vue';
 import type {
   BotRef,
   BotState,
@@ -812,6 +813,9 @@ function ageLabel(ms: number) {
         <h2 id="s-chart">BaseChart</h2>
         <div class="chart-box"><BaseChart :option="chartOption" label="Equity" /></div>
       </section>
+
+      <!-- 11. Composites (batch A) -->
+      <CompositesShowcase />
     </main>
   </div>
 </template>

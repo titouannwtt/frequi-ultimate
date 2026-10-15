@@ -3,7 +3,10 @@
  * French is the reference for the owner; English must define exactly the same keys
  * (tests/unit/redesignLocales.spec.ts). No em dash, no hard-coded string in components.
  */
+import composites from './composites/en';
+
 export default {
+  ...composites,
   nav: {
     fleet: 'Fleet',
     bot: 'Bot',
@@ -11,6 +14,7 @@ export default {
     journal: 'Journal',
     tools: 'Tools',
     settings: 'Settings',
+    more: 'More',
   },
   attention: {
     title: 'Needs attention',
@@ -21,6 +25,7 @@ export default {
     sinceLastVisit: 'Since your last visit',
     markSeen: 'Mark as seen',
     allClear: 'All clear',
+    level: { calm: 'Calm', watch: 'Watch', critical: 'Critical' },
   },
   kpi: {
     equityOpen: 'Equity incl. open',
@@ -114,6 +119,7 @@ export default {
     remove: 'Remove {name}',
     loading: 'Loading',
     notAvailable: 'n/a',
+    dash: '-',
     realMoney: 'Real money',
     logs: 'Logs',
     dcaFilled: '{filled} of {max} orders filled',

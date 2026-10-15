@@ -50,46 +50,56 @@ const c = (
 });
 
 export const COLUMN_REGISTRY: readonly ColumnSpec[] = [
-  // ---- FleetTable ----
+  // ---- FleetTable: the thresholds are the container widths of 02 section 3.1 ----
   c('bot', 'left', true, 0, ['fleet', ...TRADES], ['fleet', 'open', 'journal'], { required: true }),
-  c('state', 'center', true, 0, ['fleet'], ['fleet']),
-  c('mode', 'center', true, 520, ['fleet'], ['fleet']),
-  c('market', 'left', true, 760, ['fleet'], ['fleet']),
+  // The name cell already carries the state dot, the mode and market badges and the alert icon:
+  // these columns stay available for users who want them apart.
+  c('state', 'center', true, 0, ['fleet'], []),
+  c('mode', 'center', true, 520, ['fleet'], []),
+  c('market', 'left', true, 760, ['fleet'], []),
+  c(
+    'side',
+    'center',
+    true,
+    600,
+    ['fleet', ...TRADES],
+    ['fleet', 'open', 'bot', 'closed', 'journal'],
+  ),
+  c('latent', 'right', true, 0, ['fleet'], ['fleet']),
+  c('realized_1d', 'right', true, 600, ['fleet'], ['fleet']),
+  c('realized_7d', 'right', true, 760, ['fleet'], []),
+  c('realized_30d', 'right', true, 800, ['fleet'], ['fleet']),
+  c('realized_total', 'right', true, 880, ['fleet'], []),
+  c('spark24h', 'center', false, 940, ['fleet'], ['fleet'], { gatewayOnly: true }),
+  c('exposure', 'right', true, 800, ['fleet'], ['fleet']),
+  // Open slots (gauge), "slots" in the design
+  c('trades', 'right', true, 600, ['fleet'], ['fleet']),
+  c('drawdown', 'right', true, 480, ['fleet'], ['fleet']),
+  c('last_trade', 'right', true, 1080, ['fleet'], ['fleet']),
+  c('alerts', 'center', true, 0, ['fleet'], []),
+  c('age', 'right', true, 520, ['fleet'], ['fleet']),
   c('exchange', 'left', true, 900, ['fleet'], []),
   c('strategy', 'left', true, 900, ['fleet'], []),
-  c('trades', 'right', true, 480, ['fleet'], ['fleet']),
-  c('latent', 'right', true, 0, ['fleet'], ['fleet']),
-  c('realized_1d', 'right', true, 640, ['fleet'], ['fleet']),
-  c('realized_7d', 'right', true, 760, ['fleet'], []),
-  c('realized_30d', 'right', true, 760, ['fleet'], []),
-  c('realized_total', 'right', true, 880, ['fleet'], ['fleet']),
-  c('drawdown', 'right', true, 820, ['fleet'], ['fleet']),
-  c('exposure', 'right', true, 960, ['fleet'], ['fleet']),
   c('capital', 'right', true, 960, ['fleet'], []),
   c('winrate', 'right', true, 1000, ['fleet'], []),
-  c('last_trade', 'right', true, 1000, ['fleet'], []),
-  c('spark24h', 'center', false, 900, ['fleet'], ['fleet'], { gatewayOnly: true }),
-  c('alerts', 'center', true, 0, ['fleet'], ['fleet']),
-  c('age', 'right', true, 700, ['fleet'], ['fleet']),
   c('port', 'right', true, 1100, ['fleet'], []),
   // ---- trades (open positions, closed trades, journal) ----
-  c('trade_id', 'right', true, 640, TRADES, ['open', 'bot', 'closed', 'journal']),
+  c('trade_id', 'right', true, 640, TRADES, ['journal']),
   c('pair', 'left', true, 0, TRADES, ['open', 'bot', 'closed', 'journal'], { required: true }),
-  c('side', 'center', true, 0, TRADES, ['open', 'bot', 'closed', 'journal']),
   c('leverage', 'right', true, 760, TRADES, []),
+  c('dca', 'center', true, 700, TRADES, ['open', 'bot']),
   c('entry', 'right', false, 640, TRADES, ['open', 'bot', 'closed', 'journal']),
   c('current', 'right', true, 560, OPEN, ['open', 'bot']),
-  c('pnl_pct', 'right', true, 0, TRADES, ['open', 'bot', 'closed', 'journal']),
   c('pnl_abs', 'right', true, 0, TRADES, ['open', 'bot', 'closed', 'journal']),
-  c('stake', 'right', true, 700, TRADES, ['open', 'bot']),
-  c('tag', 'left', true, 880, TRADES, ['open']),
-  c('duration', 'right', true, 520, TRADES, ['open', 'bot', 'closed', 'journal']),
-  c('duration_pct', 'right', true, 880, OPEN, ['open', 'bot'], { gatewayOnly: true }),
+  c('pnl_pct', 'right', true, 0, TRADES, ['open', 'bot', 'closed', 'journal']),
+  c('stake', 'right', true, 700, TRADES, []),
+  c('tag', 'left', true, 880, TRADES, []),
   c('liq_distance', 'right', true, 760, OPEN, ['open', 'bot']),
+  c('duration', 'right', true, 520, TRADES, ['open', 'bot', 'closed', 'journal']),
+  c('duration_pct', 'right', true, 880, OPEN, [], { gatewayOnly: true }),
   c('stoploss', 'right', true, 960, OPEN, []),
-  c('dca', 'center', true, 700, TRADES, ['open', 'bot']),
   c('replay', 'center', false, 1000, OPEN, []),
-  c('opened', 'right', true, 880, TRADES, ['open', 'bot']),
+  c('opened', 'right', true, 880, TRADES, []),
   c('actions', 'center', false, 0, OPEN, ['open', 'bot'], { required: true }),
   // ---- closed trades and journal only ----
   c('exit_price', 'right', false, 760, CLOSED, ['closed', 'journal']),
@@ -106,8 +116,35 @@ export function columnSpec(id: string): ColumnSpec | undefined {
   return BY_ID.get(id);
 }
 
+/**
+ * Display order of the columns of a preset, when the user has not chosen one. The registry order
+ * can not serve every preset (`bot` leads the fleet table but follows `pair` in the trade tables).
+ */
+const PRESET_ORDER: Record<ColumnPreset, readonly string[]> = {
+  fleet: [],
+  open: ['pair', 'bot', 'side', 'dca', 'entry', 'current', 'pnl_abs', 'pnl_pct', 'liq_distance'],
+  bot: ['pair', 'bot', 'side', 'dca', 'entry', 'current', 'pnl_abs', 'pnl_pct', 'liq_distance'],
+  closed: ['pair', 'bot', 'side', 'entry', 'exit_price', 'pnl_abs', 'pnl_pct', 'duration'],
+  journal: ['pair', 'bot', 'side', 'entry', 'exit_price', 'pnl_abs', 'pnl_pct', 'duration'],
+};
+
 export function columnsFor(preset: ColumnPreset): ColumnSpec[] {
-  return COLUMN_REGISTRY.filter((col) => col.presets.includes(preset));
+  const wanted = PRESET_ORDER[preset];
+  const rank = (id: string) => {
+    const i = wanted.indexOf(id);
+    return i < 0 ? wanted.length : i;
+  };
+  const all = COLUMN_REGISTRY.filter((col) => col.presets.includes(preset));
+  // `actions` always closes the row; the other ids keep registry order after the listed ones
+  return all
+    .map((col, index) => ({ col, index }))
+    .sort((a, b) => {
+      if (a.col.id === 'actions' || b.col.id === 'actions') {
+        return a.col.id === 'actions' ? 1 : -1;
+      }
+      return rank(a.col.id) - rank(b.col.id) || a.index - b.index;
+    })
+    .map((e) => e.col);
 }
 
 export function defaultColumnIds(preset: ColumnPreset): string[] {
