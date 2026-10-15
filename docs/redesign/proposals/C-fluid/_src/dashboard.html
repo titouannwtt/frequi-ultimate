@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090B0E">
+<title>Flotte · FreqUI Ultimate (proposition C « Pouls »)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+/*@CSS*/
+
+/* ================= Page Flotte ================= */
+.hero { display: grid; gap: var(--s-4); padding: var(--s-4); border-radius: var(--r-xl); margin: var(--s-1) 0 var(--s-3);
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--profit) 9%, transparent), transparent 55%),
+    var(--surface);
+  border: 1px solid var(--line); box-shadow: var(--shadow-1); }
+.hero.neg { background: radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--loss) 9%, transparent), transparent 55%), var(--surface); }
+.hero-v { font-size: var(--fs-display); line-height: var(--lh-display); font-weight: 650; letter-spacing: -.035em; margin: 6px 0 4px; white-space: nowrap; }
+.hero-v .unit { font-size: 15px; letter-spacing: 0; }
+.hero-sub { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--text-2); font-size: var(--fs-sm); }
+.hero-sub b { font-weight: 600; }
+.excl { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 4px 10px 4px 8px; border-radius: var(--r-full); background: var(--warn-soft); color: var(--warn); font-size: 12px; font-weight: 550; cursor: pointer; }
+.hero-chart { height: 76px; margin: 0 -4px; }
+.hero-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border-radius: var(--r-md); overflow: hidden; }
+.hero-kpis .kpi { background: var(--surface); padding: 12px 14px; }
+.hero-kpis .split { margin-top: 8px; height: 6px; }
+@media (min-width: 768px) {
+  .hero { grid-template-columns: minmax(260px, 1fr) minmax(0, 1.2fr); padding: var(--s-5) var(--s-6); }
+  .hero-kpis { grid-column: 1 / -1; grid-template-columns: repeat(4, 1fr); }
+  .hero-chart { height: 112px; align-self: end; }
+}
+@media (min-width: 1280px) {
+  .hero { grid-template-columns: minmax(280px, 1fr) minmax(0, 1.25fr) minmax(360px, 1.15fr); align-items: center; }
+  .hero-kpis { grid-column: auto; grid-template-columns: 1fr 1fr; }
+}
+
+/* périmètre (FleetScope) */
+.scope { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: var(--s-2); margin: 0 calc(var(--s-4) * -1) var(--s-3); padding: var(--s-2) var(--s-4);
+  background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  transition: top var(--d-base) var(--e-dec); }
+body.is-compact .scope { top: var(--compact-h); }
+.scope .chips { display: flex; gap: var(--s-2); overflow-x: auto; scrollbar-width: none; flex: 1; mask-image: linear-gradient(90deg, #000 92%, transparent); }
+.scope .chips::-webkit-scrollbar { display: none; }
+.scope .vis { color: var(--text-3); font-size: var(--fs-sm); white-space: nowrap; display: none; }
+@media (min-width: 768px) { .scope { margin: 0 calc(var(--s-6) * -1) var(--s-3); padding: var(--s-2) var(--s-6); } .scope .vis { display: block; } }
+@media (min-width: 1920px) { .scope { margin: 0 calc(var(--s-8) * -1) var(--s-3); padding: var(--s-2) var(--s-8); } }
+
+/* colonnes adaptatives */
+.cols { display: grid; gap: var(--s-3); }
+.col { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
+.cols[data-mode="lg"] { grid-template-columns: minmax(0, 1fr) 340px; }
+@media (min-width: 1440px) { .cols[data-mode="lg"] { grid-template-columns: minmax(0, 1fr) 372px; } }
+.cols[data-mode="xl"] { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 400px; gap: var(--s-4); }
+.cols[data-mode="xl"] .col { gap: var(--s-4); }
+
+/* rail d'alertes */
+.alerts { margin-bottom: var(--s-3); }
+.alerts-h { display: flex; align-items: center; gap: 8px; margin: 4px 0 8px; }
+.alerts-h h2 { font-size: var(--fs-h2); margin: 0; font-weight: 620; }
+.rail-x { display: flex; gap: var(--s-3); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 calc(var(--s-4) * -1); padding: 2px var(--s-4) 6px; scroll-padding: 0 var(--s-4); }
+.rail-x::-webkit-scrollbar { display: none; }
+@media (min-width: 768px) { .rail-x { margin: 0; padding: 2px 0 6px; } }
+.al { scroll-snap-align: start; flex: 0 0 min(300px, 82vw); display: flex; flex-direction: column; gap: 8px; padding: 14px 14px 12px 16px; border-radius: var(--r-lg);
+  background: var(--surface); border: 1px solid var(--line); position: relative; overflow: hidden; transition: transform var(--d-base) var(--e-dec), opacity var(--d-base); }
+.al::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--loss); }
+.al.mid::before { background: var(--warn); }
+.al .top { display: flex; align-items: center; gap: 10px; }
+.al .ico { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--loss-soft); color: var(--loss); flex: none; }
+.al.mid .ico { background: var(--warn-soft); color: var(--warn); }
+.al .ico .lucide { width: 18px; height: 18px; }
+.al .ttl { font-weight: 600; font-size: 14px; line-height: 18px; }
+.al .who { font-size: 12.5px; color: var(--text-2); display: flex; gap: 6px; align-items: center; }
+.al .val { display: flex; align-items: baseline; gap: 8px; }
+.al .val b { font-size: 19px; font-weight: 650; letter-spacing: -.02em; }
+.al .acts { display: flex; gap: 6px; margin-top: 2px; }
+.al .acts .btn { flex: 1; }
+.al.gone { transform: translateY(-8px) scale(.96); opacity: 0; }
+@media (min-width: 768px) { .al { flex-basis: 288px; } }
+@media (min-width: 1800px) { .rail-x { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); overflow: visible; } .al { flex: auto; } }
+@media (min-width: 1024px) { .fleet-list .tblwrap { max-height: 620px; overflow: auto; margin: 0 -16px -16px; border-top: 1px solid var(--line); } }
+.pclose { color: var(--text-2); }
+#posDesk tr:hover .pclose { background: var(--loss-soft); color: var(--loss); border-color: color-mix(in srgb, var(--loss) 25%, transparent); }
+
+/* mosaïque de flotte */
+.mosaic-g + .mosaic-g { margin-top: 14px; }
+.mg-h { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 12.5px; color: var(--text-2); }
+.mg-h b { color: var(--text); font-weight: 600; }
+.mg-h .sp { flex: 1; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+.tile { --t: 0; position: relative; padding: 9px 10px 8px; border-radius: 12px; min-height: 64px; cursor: pointer; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--tc, var(--profit)) calc(var(--t) * 30%), var(--surface-2));
+  transition: transform var(--d-press) var(--e-std), border-color var(--d-fast), background-color var(--d-slow) var(--e-std); text-align: left; color: var(--text); }
+.tile:hover { border-color: var(--line-strong); }
+.tile:active { transform: scale(.96); }
+.tile.neg { --tc: var(--loss); }
+.tile .n { display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 550; color: var(--text-2); white-space: nowrap; overflow: hidden; }
+.tile .n span { overflow: hidden; text-overflow: ellipsis; }
+.tile .v { font-size: 16px; font-weight: 650; letter-spacing: -.02em; margin-top: 6px; white-space: nowrap; }
+.tile .s { font-size: 11px; color: var(--text-3); white-space: nowrap; margin-top: 1px; display: flex; justify-content: space-between; gap: 4px; }
+.tile.dry { border-style: dashed; border-color: color-mix(in srgb, var(--dry) 40%, transparent); }
+.tile.off { background: var(--hatch), var(--surface); }
+.tile.off .v, .tile.stale .v { color: var(--text-3) !important; }
+.tile.stale { background: var(--hatch), color-mix(in srgb, var(--warn) 8%, var(--surface)); }
+/* le drapeau ne recouvre jamais le nom */
+.tile .flag ~ .n { padding-right: 20px; }
+.tile .flag { position: absolute; top: 7px; right: 7px; width: 18px; height: 18px; border-radius: 6px; display: grid; place-items: center; }
+.tile .flag .lucide { width: 12px; height: 12px; }
+.tile .flag.r { background: var(--loss); color: var(--loss-ink); }
+.tile .flag.a { background: var(--warn); color: #1d1300; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: var(--text-3); margin-top: 12px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+/* tableau de flotte responsive par conteneur */
+.cq { container-type: inline-size; }
+.tblwrap { overflow-x: auto; }
+.botcell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.botcell .av { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; color: #fff; font-size: 10px; font-weight: 700; flex: none; }
+.botcell .nm { font-weight: 560; color: var(--text); }
+.botcell .st { font-size: 11.5px; color: var(--text-3); }
+.slots { display: inline-flex; gap: 2px; vertical-align: middle; }
+.slots i { width: 6px; height: 12px; border-radius: 2px; background: var(--surface-3); }
+.slots i.f { background: var(--text-2); }
+.ddm { display: inline-flex; align-items: center; gap: 8px; }
+.ddm .meter { width: 54px; }
+@container (max-width: 860px) { .c-trend, .c-expo { display: none; } }
+@container (max-width: 700px) { .c-7j, .c-age { display: none; } }
+.fleet-list { display: none; }
+.fleet-mosaic { display: block; }
+[data-view="list"] .fleet-list { display: block; }
+[data-view="list"] .fleet-mosaic { display: none; }
+
+/* positions */
+.pcard .over { display: flex; gap: 12px; align-items: center; padding: 12px 16px; min-height: 72px; }
+.pcard + .pcard { border-top: 1px solid var(--line); }
+.pcard .pair { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+.pcard .meta { font-size: 12.5px; color: var(--text-3); display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+.pcard .r { margin-left: auto; text-align: right; }
+.pcard .r .v { font-weight: 650; font-size: 16px; letter-spacing: -.01em; }
+.pcard .r .p { font-size: 12.5px; }
+.dca { display: inline-flex; gap: 3px; align-items: center; }
+.dca i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--text-3); }
+.dca i.f { background: var(--text-2); border-color: var(--text-2); }
+.dca i.f.last { background: var(--warn); border-color: var(--warn); }
+.pos-desk { display: none; }
+@media (min-width: 1024px) { .pos-desk { display: block; } .pos-mob { display: none; } }
+@container (max-width: 760px) { .c-liq, .c-dur { display: none; } }
+@container (max-width: 600px) { .c-pct { display: none; } }
+.durp { display: inline-block; min-width: 34px; padding: 1px 6px; border-radius: 5px; font-size: 11px; text-align: center; }
+.durp.hi { background: var(--warn-soft); color: var(--warn); }
+.durp.vhi { background: var(--loss-soft); color: var(--loss); }
+
+/* classement */
+.lb { display: grid; grid-template-columns: minmax(0, 1fr) 1fr auto; align-items: center; gap: 4px 10px; font-size: 13px; }
+.lb .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-2); }
+.lb .bar { height: 14px; position: relative; }
+.lb .bar::before { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--line-strong); }
+.lb .bar i { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; transition: width var(--d-slow) var(--e-dec); }
+.lb .v { text-align: right; font-weight: 600; min-width: 64px; }
+.lb .gap { grid-column: 1 / -1; height: 1px; background: var(--line); margin: 4px 0; }
+
+/* risque, santé */
+.kv { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; font-size: 13.5px; }
+.kv + .kv { border-top: 1px solid var(--line); }
+.kv .k { color: var(--text-2); display: flex; align-items: center; gap: 8px; }
+.kv .v { font-weight: 600; }
+.health-lvl { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--r-md); background: var(--profit-soft); margin-bottom: 8px; }
+.health-lvl .ring { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--profit); color: var(--profit-ink); }
+.shared { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+
+/* événements et logs */
+.ev { display: grid; grid-template-columns: 40px 20px 1fr auto; align-items: center; gap: 10px; padding: 9px 16px; font-size: 13px; }
+.ev + .ev { border-top: 1px solid var(--line); }
+.ev .t { color: var(--text-3); font-size: 12px; }
+.ev .lucide { width: 16px; height: 16px; }
+.ev b { font-weight: 560; }
+.log { font: 12px/18px var(--font-mono); padding: 8px 16px; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+.log .lv { font-weight: 600; }
+.log .lv.e { color: var(--loss); } .log .lv.w { color: var(--warn); }
+.log .m { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* personnalisation */
+.edit-tools { display: none; gap: 2px; }
+body.editing .edit-tools { display: inline-flex; }
+body.editing [data-card] { outline: 1.5px dashed var(--line-strong); outline-offset: 3px; animation: jiggle 260ms var(--e-std); }
+@keyframes jiggle { 30% { transform: rotate(-.4deg); } 60% { transform: rotate(.4deg); } }
+body.editing [data-card].hidden-card { opacity: .4; }
+[data-card].hidden-card:not(:is(body.editing *)) { display: none; }
+.customize { display: flex; justify-content: center; gap: 8px; margin: var(--s-6) 0 var(--s-2); }
+
+/* feuille bot */
+.bs-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border-radius: var(--r-md); overflow: hidden; }
+.bs-kpis > div { background: var(--surface); padding: 12px; }
+.bs-acts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0 4px; }
+.bs-acts .btn { flex-direction: column; height: 68px; gap: 6px; font-size: 12px; padding: 0 4px; }
+.bs-acts .btn .lucide { width: 20px; height: 20px; }
+.sec-t { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 8px; }
+.sec-t h3 { margin: 0; font-size: 14px; font-weight: 620; }
+.stale-note { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: var(--r-md); background: var(--hatch), var(--loss-soft); font-size: 13px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<!-- barre compacte : apparaît quand le héros sort de l'écran -->
+<div class="compact" aria-hidden="true">
+  <span class="logo" style="width:26px;height:26px;border-radius:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M3 13h4l2.5-6 4 11 2.5-5H21"/></svg></span>
+  <span class="t">Flotte</span>
+  <span class="v num" id="cDay">+0,00</span>
+  <span class="faint" style="font-size:13px">latent <b class="num" id="cLat">0,00</b></span>
+  <span class="sp"></span>
+  <span class="conn-slot"></span>
+</div>
+
+<main class="main">
+  <header class="topbar">
+    <div>
+      <h1>Flotte</h1>
+      <div class="sub">Mer. 15 oct. · <span class="num" id="clock">18:42:10</span><span class="hide-mob"> · UTC+2</span></div>
+    </div>
+    <span class="sp"></span>
+    <span class="conn-slot"></span>
+    <button class="btn icon ghost" aria-label="Rechercher (Ctrl K)" title="Rechercher, aller à un bot (Ctrl K)"><i data-lucide="search"></i></button>
+    <button class="btn icon ghost hide-desk" data-theme-toggle aria-label="Thème"><i data-lucide="sun-moon"></i></button>
+  </header>
+
+  <div class="banner offline"><i data-lucide="wifi-off"></i><div><b>Connexion perdue.</b> Valeurs figées à 18:42:10, actions désactivées. Reconnexion automatique.</div></div>
+  <div class="banner direct"><i data-lucide="radio-tower"></i><div><b>Mode direct.</b> Passerelle injoignable : le navigateur interroge les 28 bots (10 s). Alertes calculées seulement quand l'onglet est ouvert.</div></div>
+
+  <!-- POULS : le héros -->
+  <section class="hero" id="hero">
+    <div>
+      <div class="label">P&amp;L réalisé du jour · flotte</div>
+      <div class="hero-v"><span class="tick num" id="hDay">0,00</span><span class="unit">USDC</span></div>
+      <div class="hero-sub">
+        <span>Live <b class="num" id="hLive">0,00</b></span>
+        <span>Dry <b class="num" id="hDry">0,00</b></span>
+        <span>30 j <b class="num up" id="h30">0</b></span>
+      </div>
+      <button class="excl" id="exclBtn"><i data-lucide="eye-off" class="i14"></i><span id="exclTxt">2 bots exclus des totaux</span></button>
+    </div>
+    <div class="hero-chart" id="heroChart" aria-label="P&L du jour, par quart d'heure"></div>
+    <div class="hero-kpis">
+      <div class="kpi"><div class="label">Latent</div><div class="v num tick" id="hLat">0,00</div><div class="s"><span id="hPos">31</span> positions</div></div>
+      <div class="kpi"><div class="label">7 jours</div><div class="v num tick" id="h7">0,00</div><div class="s">réalisé</div></div>
+      <div class="kpi"><div class="label">Exposition</div><div class="v num" id="hExpo">0</div>
+        <div class="split" id="hSplit"><i style="background:var(--profit)"></i><i style="background:var(--loss)"></i></div></div>
+      <div class="kpi"><div class="label">Bots</div><div class="v num"><span id="hOn">27</span><span class="faint" style="font-weight:500">/<span id="hTot">28</span></span></div><div class="s">en ligne · <span id="hLD">17 live, 11 dry</span></div></div>
+    </div>
+  </section>
+
+  <!-- PÉRIMÈTRE (FleetScope) partagé par toutes les cartes -->
+  <div class="scope" id="scope">
+    <div class="chips" id="chips"></div>
+    <span class="vis" id="vis">28 bots sur 28</span>
+    <button class="btn sm" aria-label="Filtres"><i data-lucide="sliders-horizontal" class="i16"></i><span class="hide-mob">Filtres</span></button>
+  </div>
+
+  <!-- À TRAITER (AlertRail) -->
+  <section class="alerts" data-alerts>
+    <div class="alerts-h"><h2>À traiter</h2><span class="badge" style="background:var(--loss);color:var(--loss-ink)" id="alN">5</span><span style="flex:1"></span><a class="faint" href="#" style="font-size:13px">Historique</a></div>
+    <div class="rail-x" id="alerts"></div>
+  </section>
+
+  <div class="cols" id="cols">
+    <!-- BOTS : mosaïque (mobile) ou liste dense (desktop) -->
+    <section class="card cq" data-card="fleet" data-o="1" data-lg="main" data-xl="a" id="fleetCard">
+      <div class="card-h">
+        <h2>Bots</h2><span class="meta" id="fleetMeta">28 · 7 groupes</span><span class="sp"></span>
+        <span class="edit-tools"></span>
+        <div class="seg" id="viewSeg"><button data-v="mosaic">Mosaïque</button><button data-v="list">Liste</button></div>
+      </div>
+      <div class="card-b">
+        <div class="fleet-mosaic" id="mosaic"><div class="skel" style="height:220px"></div></div>
+        <div class="fleet-list"><div class="tblwrap" id="fleetTbl"></div></div>
+      </div>
+    </section>
+
+    <!-- POSITIONS OUVERTES (TradeTable preset open) -->
+    <section class="card cq" data-card="positions" data-o="2" data-lg="main" data-xl="b">
+      <div class="card-h">
+        <h2>Positions</h2><span class="meta" id="posMeta">31</span><span class="sp"></span>
+        <span class="edit-tools"></span>
+        <div class="seg" id="posSeg"><button data-v="worst" class="on">Pires</button><button data-v="dca">DCA</button><button data-v="old">Âge</button></div>
+      </div>
+      <div class="pos-mob" id="posMob"><div class="card-b"><div class="skel" style="height:260px"></div></div></div>
+      <div class="pos-desk tblwrap" id="posDesk"></div>
+      <div class="card-f"><span class="pos-mob">Glisser une ligne vers la gauche pour agir</span><span class="pos-desk">Clic : détail du bot · Fermer : confirmation obligatoire</span><span style="flex:1"></span><a href="journal.html">Toutes <i data-lucide="arrow-right" class="i14"></i></a></div>
+    </section>
+
+    <!-- COURBE DE CAPITAL (EquityCurve) -->
+    <section class="card" data-card="equity" data-o="3" data-lg="main" data-xl="a">
+      <div class="card-h"><h2>Capital</h2><span class="meta">réalisé + latent</span><span class="sp"></span><span class="edit-tools"></span>
+        <div class="seg" id="eqSeg"><button data-v="1">1J</button><button data-v="7">7J</button><button data-v="30" class="on">30J</button><button data-v="365">Tout</button></div></div>
+      <div class="card-b"><div id="eqChart" style="height:240px"><div class="skel" style="height:240px"></div></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
+          <div class="kpi"><div class="label">Drawdown max</div><div class="v num down" style="font-size:17px">−412,80</div><div class="s">open-inclusive, 3 oct.</div></div>
+          <div class="kpi"><div class="label">Meilleur jour</div><div class="v num up" style="font-size:17px">+188,40</div><div class="s">29 sept.</div></div>
+          <div class="kpi"><div class="label">Pire jour</div><div class="v num down" style="font-size:17px">−141,25</div><div class="s">3 oct.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RISQUE (RiskPanel) -->
+    <section class="card" data-card="risk" data-o="4" data-lg="side" data-xl="side">
+      <div class="card-h"><h2>Risque</h2><span class="meta">wallet partagé</span><span class="sp"></span><span class="edit-tools"></span></div>
+      <div class="card-b" id="risk"><div class="skel" style="height:180px"></div></div>
+    </section>
+
+    <!-- CLASSEMENT (Leaderboard) -->
+    <section class="card" data-card="leader" data-o="5" data-lg="side" data-xl="side">
+      <div class="card-h"><h2>Classement</h2><span class="sp"></span><span class="edit-tools"></span>
+        <div class="seg" id="lbSeg"><button data-v="day">1J</button><button data-v="d7" class="on">7J</button><button data-v="d30">30J</button></div></div>
+      <div class="card-b"><div class="lb" id="lb"><div class="skel" style="height:200px;grid-column:1/-1"></div></div></div>
+    </section>
+
+    <!-- ÉVÉNEMENTS (EventFeed) -->
+    <section class="card" data-card="events" data-o="6" data-lg="side" data-xl="b">
+      <div class="card-h"><h2>Événements</h2><span class="meta">poussés en direct</span><span class="sp"></span><span class="edit-tools"></span></div>
+      <div id="events" style="padding-bottom:6px"><div class="card-b"><div class="skel" style="height:180px"></div></div></div>
+    </section>
+
+    <!-- SANTÉ (SystemHealth compact) -->
+    <section class="card" data-card="health" data-o="7" data-lg="side" data-xl="side">
+      <div class="card-h"><h2>Santé</h2><span class="sp"></span><span class="edit-tools"></span><a class="btn sm ghost" href="#">Diagnostic <i data-lucide="arrow-right" class="i14"></i></a></div>
+      <div class="card-b" id="health"><div class="skel" style="height:160px"></div></div>
+    </section>
+
+    <!-- LOGS (LogStream compact, erreurs seulement) -->
+    <section class="card" data-card="logs" data-o="8" data-lg="side" data-xl="side">
+      <div class="card-h"><h2>Logs</h2><span class="meta">erreurs et alertes</span><span class="sp"></span><span class="edit-tools"></span><a class="btn sm ghost" href="#">Flux <i data-lucide="arrow-right" class="i14"></i></a></div>
+      <div id="logs" style="padding-bottom:8px"></div>
+    </section>
+  </div>
+
+  <div class="customize">
+    <button class="btn" id="editBtn"><i data-lucide="layout-panel-left" class="i16"></i><span>Personnaliser</span></button>
+    <div class="seg" id="presetSeg" style="display:none"><button data-v="surv" class="on">Surveillance</button><button data-v="trade">Trading</button><button data-v="ana">Analyse</button></div>
+  </div>
+</main>
+
+<!-- feuille bot (BotPulse / ScopeDrilldown) -->
+<div class="sheet" id="botSheet" role="dialog" aria-label="Bot"></div>
+
+<script>
+/*@CORE*/
+</script>
+<script>
+(() => {
+  const P = Pouls;
+  const $ = (s, r = document) => r.querySelector(s);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+  document.querySelectorAll('.conn-slot').forEach((s) => (s.outerHTML = P.connHtml()));
+  P.boot('dashboard', render);
+  P.compactOn($('#hero'));
+  // horloge
+  setInterval(() => { const d = new Date(); $('#clock').textContent = d.toTimeString().slice(0, 8); }, 1000);
+
+  /* ---------- placement en colonnes selon la largeur ---------- */
+  function layout(force) {
+    const w = innerWidth, cols = $('#cols');
+    const mode = w >= 1800 ? 'xl' : w >= 1024 ? 'lg' : 'sm';
+    if (!force && cols.dataset.mode === mode) return;
+    cols.dataset.mode = mode;
+    const cards = [...document.querySelectorAll('[data-card]')].sort((a, b) => a.dataset.o - b.dataset.o);
+    cols.innerHTML = '';
+    const names = mode === 'xl' ? ['a', 'b', 'side'] : mode === 'lg' ? ['main', 'side'] : ['one'];
+    const el = {};
+    names.forEach((n) => { const d = document.createElement('div'); d.className = 'col col-' + n; cols.appendChild(d); el[n] = d; });
+    cards.forEach((c) => el[mode === 'xl' ? c.dataset.xl : mode === 'lg' ? c.dataset.lg : 'one'].appendChild(c));
+    setTimeout(() => charts.forEach((c) => c.resize()), 30);
+  }
+  layout();
+  addEventListener('resize', () => { layout(); charts.forEach((c) => c.resize()); });
+
+  /* ---------- périmètre ---------- */
+  const A = P.agg();
+  const scopes = [['all', 'Tout', A.total], ['live', 'Live', A.live], ['dry', 'Dry', A.dry], ...P.groups.map((g) => [g, g, P.bots.filter((b) => b.group === g).length])];
+  $('#chips').innerHTML = scopes.map(([k, l, n], i) => `<button class="chip ${i === 0 ? 'on' : ''}" data-k="${k}">${l} <span class="n">${n}</span></button>`).join('');
+  $('#chips').addEventListener('click', (e) => {
+    const c = e.target.closest('.chip'); if (!c) return;
+    $('#chips').querySelectorAll('.chip').forEach((x) => x.classList.toggle('on', x === c));
+    const k = c.dataset.k;
+    const vis = P.bots.filter((b) => k === 'all' || b.mode === k || b.group === k);
+    $('#vis').textContent = `${vis.length} bots sur ${P.bots.length}`;
+    document.querySelectorAll('.tile, #fleetTbl tbody tr[data-bot]').forEach((t) => {
+      const b = P.bot(t.dataset.bot); t.style.display = vis.includes(b) ? '' : 'none';
+    });
+    document.querySelectorAll('.mosaic-g').forEach((g) => { g.style.display = [...g.querySelectorAll('.tile')].some((t) => t.style.display !== 'none') ? '' : 'none'; });
+  });
+
+  /* ---------- vues ---------- */
+  const fleetCard = $('#fleetCard');
+  fleetCard.dataset.view = innerWidth >= 1024 ? 'list' : 'mosaic';
+  $('#viewSeg').querySelector(`[data-v="${fleetCard.dataset.view}"]`).classList.add('on');
+  P.seg($('#viewSeg'), (v) => { fleetCard.dataset.view = v; });
+  P.seg($('#posSeg'), (v) => renderPositions(v));
+  P.seg($('#eqSeg'), (v) => drawEquity(+v));
+  P.seg($('#lbSeg'), (v) => renderLeader(v));
+
+  const charts = [];
+
+  function render() {
+    renderHero(true);
+    renderAlerts();
+    renderMosaic();
+    renderFleetTable();
+    renderPositions('worst');
+    drawEquity(30);
+    renderRisk();
+    renderLeader('d7');
+    renderEvents();
+    renderHealth();
+    renderLogs();
+    document.querySelectorAll('.card, .hero, .al').forEach((c, i) => { c.classList.add('reveal'); c.style.setProperty('--i', Math.min(i, 6)); });
+    drawHero();
+    P.icons();
+    live();
+  }
+
+  /* ---------- héros ---------- */
+  function renderHero(first) {
+    const a = P.agg();
+    const liveDay = a.dayLive, dryDay = a.day - a.dayLive;
+    P.tick($('#hDay'), a.day, { from: first ? 0 : undefined });
+    P.tick($('#cDay'), a.day, { from: first ? 0 : undefined, flash: false });
+    P.tick($('#cLat'), a.latent, { from: first ? 0 : undefined, flash: false });
+    P.tick($('#hLat'), a.latent, { from: first ? 0 : undefined });
+    P.tick($('#h7'), a.d7, { from: first ? 0 : undefined });
+    $('#hLive').textContent = P.fmt(liveDay, 2, true); $('#hLive').className = 'num ' + P.cls(liveDay);
+    $('#hDry').textContent = P.fmt(dryDay, 2, true); $('#hDry').className = 'num ' + P.cls(dryDay);
+    $('#h30').textContent = P.fmt(a.d30, 0, true);
+    $('#hero').classList.toggle('neg', a.day < 0);
+    $('#hExpo').innerHTML = P.fmt(a.longN + a.shortN, 0) + '<span class="unit">USDC</span>';
+    const t = a.longN + a.shortN; const s = $('#hSplit').children;
+    s[0].style.flex = a.longN / t; s[1].style.flex = a.shortN / t;
+    $('#hPos').textContent = a.positions;
+    $('#hOn').textContent = a.online; $('#hTot').textContent = a.total;
+    $('#hLD').textContent = `${a.live} live, ${a.dry} dry`;
+    $('#exclTxt').textContent = `${a.excluded} bots exclus des totaux`;
+  }
+  $('#exclBtn').addEventListener('click', () => P.toast('ok', 'Exclus des totaux', 'dynv2_short (hors ligne 14 min), xyz_silver_mr (périmé 7 min). Jamais de somme sur une donnée périmée.', 6000));
+
+  function drawHero() {
+    const el = $('#heroChart'); const c = echarts.init(el, null, { renderer: 'svg' }); charts.push(c);
+    const a = P.agg(); const n = 75; let v = 0; const data = [];
+    for (let i = 0; i < n; i++) { v += (a.day / n) + (P.rnd() - .5) * 14; data.push(+(i === n - 1 ? a.day : v).toFixed(2)); }
+    const paint = () => {
+      const col = a.day >= 0 ? css('--profit') : css('--loss');
+      c.setOption({
+        animationDuration: 700, animationEasing: 'cubicOut', grid: { left: 0, right: 8, top: 6, bottom: 4 },
+        xAxis: { type: 'category', show: false, boundaryGap: false, data: data.map((_, i) => i) },
+        yAxis: { type: 'value', show: false, scale: true },
+        tooltip: { trigger: 'axis', backgroundColor: css('--surface-3'), borderColor: css('--line-strong'), textStyle: { color: css('--text'), fontFamily: 'Geist', fontSize: 12 },
+          formatter: (p) => { const m = p[0].dataIndex * 15; return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}  <b>${P.fmt(p[0].value, 2, true)}</b>`; } },
+        series: [{ type: 'line', data, smooth: .3, symbol: 'none', lineStyle: { width: 2, color: col },
+          areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: col + '44' }, { offset: 1, color: col + '00' }]) },
+          markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: css('--line-strong'), type: [3, 4] }, data: [{ yAxis: 0 }] },
+          markPoint: { symbol: 'circle', symbolSize: 8, itemStyle: { color: col, borderColor: css('--surface'), borderWidth: 2 }, label: { show: false }, data: [{ coord: [n - 1, data[n - 1]] }] } }],
+      }, true);
+    };
+    paint(); document.addEventListener('themechange', paint);
+  }
+
+  /* ---------- alertes ---------- */
+  function renderAlerts() {
+    $('#alerts').innerHTML = P.alerts.map((a) => `
+      <article class="al ${a.sev}" data-id="${a.id}">
+        <div class="top"><span class="ico">${P.ic(a.icon)}</span><div style="min-width:0"><div class="ttl">${a.title}</div>
+          <div class="who">${a.bot ? `<span class="sdot ${a.type === 'offline' ? 'off' : a.type === 'stale' ? 'stale' : ''}"></span>${a.bot}` : 'wallet partagé'}<span class="faint">· ${a.since}</span></div></div></div>
+        <div class="val"><b class="num">${a.value}</b><span class="faint" style="font-size:12.5px">${a.thr}</span></div>
+        <div class="acts"><button class="btn sm" data-open="${a.bot || ''}">${a.act}</button><button class="btn sm ghost" data-ack="${a.id}" title="Acquitter, silence 1 h">Acquitter</button></div>
+      </article>`).join('');
+    $('#alerts').addEventListener('click', (e) => {
+      const ack = e.target.closest('[data-ack]');
+      if (ack) { const card = ack.closest('.al'); card.classList.add('gone'); setTimeout(() => { card.remove(); const n = document.querySelectorAll('.al').length; $('#alN').textContent = n; document.querySelectorAll('.tab .dot, .nav .badge-n').forEach((d, i) => { if (i < 2 && d.closest('[href="dashboard.html"]')) d.textContent = n; }); }, 260); P.toast('ok', 'Alerte acquittée', 'Silence 1 h, réactivée si la valeur empire', 2600); return; }
+      const op = e.target.closest('[data-open]'); if (op && op.dataset.open) openBot(op.dataset.open);
+      else if (op) P.toast('ok', 'Réconciliation', 'Ouvre la page Santé > Réconciliation (aperçu puis confirmation).', 3000);
+    });
+  }
+
+  /* ---------- mosaïque ---------- */
+  const tileHtml = (b) => {
+    const t = Math.min(1, Math.abs(b.latent) / (b.cap * 0.03));
+    const flag = b.state === 'off' ? `<span class="flag r">${P.ic('unplug')}</span>` : b.state === 'stale' ? `<span class="flag a">${P.ic('hourglass')}</span>` : b.dd < b.ddMax ? `<span class="flag r">${P.ic('trending-down')}</span>` : b.state === 'paused' ? `<span class="flag" style="background:var(--surface-3)">${P.ic('pause')}</span>` : '';
+    return `<button class="tile ${b.latent < 0 ? 'neg' : ''} ${b.mode} ${b.state}" style="--t:${P.isFresh(b) ? t.toFixed(2) : 0}" data-bot="${b.name}">
+      ${flag}<div class="n"><span class="sdot ${b.mode === 'dry' ? 'dry' : ''} ${b.state === 'off' ? 'off' : b.state === 'stale' ? 'stale' : ''}" style="width:6px;height:6px"></span><span>${b.name}</span></div>
+      <div class="v num ${P.cls(b.latent)}" data-lat="${b.name}">${b.slots[0] ? P.fmt(b.latent, 2, true) : '<span class="faint" style="font-weight:500;font-size:13px">à plat</span>'}</div>
+      <div class="s"><span>${b.slots[0]}/${b.slots[1]} pos.</span><span class="${P.cls(b.day)}">${P.fmt(b.day, 1, true)}</span></div></button>`;
+  };
+  function renderMosaic() {
+    $('#mosaic').innerHTML = P.groups.map((g) => {
+      const bs = P.bots.filter((b) => b.group === g); const fresh = bs.filter(P.isFresh);
+      const lat = fresh.reduce((a, b) => a + b.latent, 0), day = fresh.reduce((a, b) => a + b.day, 0);
+      return `<div class="mosaic-g"><div class="mg-h"><b>${g}</b><span>${bs.length}</span><span class="sp"></span><span class="num ${P.cls(lat)}">${P.fmt(lat, 2, true)}</span><span class="faint">·</span><span class="num ${P.cls(day)}">${P.fmt(day, 1, true)} j</span></div>
+        <div class="tiles">${bs.map(tileHtml).join('')}</div></div>`;
+    }).join('') + `<div class="legend"><span><i style="background:var(--profit)"></i>latent positif</span><span><i style="background:var(--loss)"></i>latent négatif</span><span><i style="border:1px dashed var(--dry)"></i>dry</span><span><i style="background:var(--hatch),var(--surface-3)"></i>hors ligne ou périmé</span><span>grand chiffre : latent · petit : réalisé du jour</span></div>`;
+    $('#mosaic').addEventListener('click', (e) => { const t = e.target.closest('.tile'); if (t) openBot(t.dataset.bot); });
+  }
+
+  /* ---------- liste dense ---------- */
+  function renderFleetTable() {
+    const rows = P.groups.map((g) => {
+      const bs = P.bots.filter((b) => b.group === g);
+      const fr = bs.filter(P.isFresh); const s = (k) => fr.reduce((a, b) => a + b[k], 0);
+      return `<tr class="grp"><td colspan="3">${g} · ${bs.length}</td><td class="${P.cls(s('latent'))}">${P.fmt(s('latent'), 2, true)}</td><td class="${P.cls(s('day'))}">${P.fmt(s('day'), 2, true)}</td><td class="c-7j ${P.cls(s('d7'))}">${P.fmt(s('d7'), 1, true)}</td><td class="c-trend"></td><td></td><td class="c-expo"></td><td class="c-age"></td><td></td></tr>` +
+        bs.map((b) => {
+          const off = !P.isFresh(b);
+          const dd = Math.min(1, b.dd / b.ddMax);
+          return `<tr data-bot="${b.name}" class="${off ? 'alert-off' : ''}">
+            <td><div class="botcell"><span class="av" style="background:${P.color(b.name)}">${P.initials(b.name)}</span><div style="min-width:0"><div style="display:flex;gap:6px;align-items:center"><span class="nm">${b.name}</span><span class="badge ${b.mode}">${b.mode === 'live' ? 'Live' : 'Dry'}</span></div>
+              <div class="st">${b.state === 'off' ? '<span class="down">Hors ligne 14 min</span>' : b.state === 'stale' ? '<span class="warn">Périmé 7 min</span>' : b.state === 'paused' ? 'Entrées en pause' : b.strat + ' · ' + (b.dir === 'short' ? 'short' : 'long')}</div></div></div></td>
+            <td class="l"><span class="slots">${Array.from({ length: b.slots[1] }, (_, i) => `<i class="${i < b.slots[0] ? 'f' : ''}"></i>`).join('')}</span></td>
+            <td></td>
+            <td class="num ${P.cls(b.latent)}" data-lat="${b.name}">${P.fmt(b.latent, 2, true)}</td>
+            <td class="num ${P.cls(b.day)}">${P.fmt(b.day, 2, true)}</td>
+            <td class="num c-7j ${P.cls(b.d7)}">${P.fmt(b.d7, 1, true)}</td>
+            <td class="c-trend">${P.spark(b.spark, 72, 20)}</td>
+            <td><span class="ddm"><span class="num ${b.dd < b.ddMax ? 'down' : 'muted'}">${P.pct(b.dd, 1, false)}</span><span class="meter ${dd >= 1 ? 'bad' : dd > .6 ? 'warn' : ''}"><i style="width:${Math.min(100, dd * 100)}%"></i></span></span></td>
+            <td class="num c-expo muted">${P.fmt(b.expo, 0)}</td>
+            <td class="c-age"><span class="age ${b.state === 'off' ? 'dead' : b.state === 'stale' ? 'stale' : ''}">${P.ago(b.age)}</span></td>
+            <td><button class="btn icon ghost sm" data-menu="${b.name}" aria-label="Actions ${b.name}"><i data-lucide="ellipsis" class="i16"></i></button></td></tr>`;
+        }).join('');
+    }).join('');
+    $('#fleetTbl').innerHTML = `<table class="tbl"><thead><tr><th>Bot</th><th class="l">Pos.</th><th style="width:0;padding:0"></th><th>Latent</th><th>Jour</th><th class="c-7j">7 j</th><th class="c-trend">Tendance</th><th>Drawdown</th><th class="c-expo">Expo.</th><th class="c-age">Donnée</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+    $('#fleetTbl').addEventListener('click', (e) => { const tr = e.target.closest('tr[data-bot]'); if (tr) openBot(tr.dataset.bot); });
+  }
+
+  /* ---------- positions ---------- */
+  function sortPos(v) {
+    const ps = [...P.positions];
+    if (v === 'dca') ps.sort((a, b) => b.dca / b.dcaMax - a.dca / a.dcaMax || a.latent - b.latent);
+    else if (v === 'old') ps.sort((a, b) => b.hours - a.hours);
+    else ps.sort((a, b) => a.latent - b.latent);
+    return ps;
+  }
+  const dcaDots = (p) => `<span class="dca" title="DCA ${p.dca}/${p.dcaMax}">${Array.from({ length: p.dcaMax }, (_, i) => `<i class="${i < p.dca ? 'f' : ''} ${i === p.dca - 1 && p.dca === p.dcaMax ? 'last' : ''}"></i>`).join('')}</span>`;
+  function renderPositions(v) {
+    const ps = sortPos(v);
+    const tot = ps.reduce((a, p) => a + (P.isFresh(P.bot(p.bot)) ? p.latent : 0), 0);
+    $('#posMeta').innerHTML = `${ps.length} · <span class="${P.cls(tot)}">${P.fmt(tot, 2, true)}</span>`;
+    $('#posMob').innerHTML = ps.slice(0, 6).map((p) => `
+      <div class="swipe pcard"><div class="under"><button class="a1" data-pact="detail" data-id="${p.id}">${P.ic('panel-right-open')}Détail</button><button class="a2" data-pact="close" data-id="${p.id}" data-money>${P.ic('x')}Fermer</button></div>
+        <div class="over" data-id="${p.id}">
+          <div style="min-width:0">
+            <div class="pair">${p.pair.replace('/USDC', '')}<span class="badge ${p.short ? 'short' : 'long'}">${p.short ? 'Short' : 'Long'}</span><span class="badge lev">${p.lev}x</span></div>
+            <div class="meta"><span class="sdot ${p.mode === 'dry' ? 'dry' : ''} ${p.state === 'off' ? 'off' : p.state === 'stale' ? 'stale' : ''}" style="width:6px;height:6px"></span>${p.bot}<span>·</span>${dcaDots(p)}<span>·</span>${P.dur(p.hours)}</div>
+          </div>
+          <div class="r"><div class="v num ${P.cls(p.latent)}">${P.fmt(p.latent, 2, true)}</div><div class="p num ${P.cls(p.pct)}">${P.pct(p.pct)}</div></div>
+        </div></div>`).join('');
+    $('#posDesk').innerHTML = `<table class="tbl"><thead><tr><th>Paire</th><th class="l">Bot</th><th>Latent</th><th class="c-pct">%</th><th class="l">DCA</th><th class="c-dur">Durée</th><th class="c-liq">Liq.</th><th></th></tr></thead><tbody>${
+      ps.slice(0, 9).map((p) => `<tr data-id="${p.id}"><td><div style="display:flex;gap:6px;align-items:center"><b style="font-weight:600">${p.pair.replace('/USDC', '')}</b><span class="badge ${p.short ? 'short' : 'long'}">${p.short ? 'S' : 'L'} ${p.lev}x</span></div></td>
+        <td class="l"><span style="display:inline-flex;gap:6px;align-items:center"><span class="sdot ${p.mode === 'dry' ? 'dry' : ''} ${p.state === 'off' ? 'off' : p.state === 'stale' ? 'stale' : ''}" style="width:6px;height:6px"></span><span class="muted">${p.bot}</span></span></td>
+        <td class="num ${P.cls(p.latent)}" style="font-weight:600">${P.fmt(p.latent, 2, true)}</td><td class="num c-pct ${P.cls(p.pct)}">${P.pct(p.pct)}</td>
+        <td class="l">${dcaDots(p)}</td><td class="c-dur"><span class="muted">${P.dur(p.hours)}</span> <span class="durp ${p.durPct > 90 ? 'vhi' : p.durPct > 70 ? 'hi' : ''}">p${p.durPct}</span></td>
+        <td class="num c-liq ${p.liq < 20 ? 'warn' : 'muted'}">${P.fmt(p.liq, 0)} %</td>
+        <td><button class="btn sm ghost pclose" data-pact="close" data-id="${p.id}" data-money data-key="${p.bot}:close:${p.id}">Fermer</button></td></tr>`).join('')}</tbody></table>`;
+    P.swipe($('#posMob'));
+    P.icons($('#posMob')); P.icons($('#posDesk'));
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-pact]');
+    if (b) {
+      const p = P.positions.find((x) => x.id === +b.dataset.id);
+      if (b.dataset.pact === 'close') closePos(p); else openBot(p.bot);
+      return;
+    }
+    const ov = e.target.closest('.pcard .over'); if (ov) openBot(P.positions.find((x) => x.id === +ov.dataset.id).bot);
+    const tr = e.target.closest('#posDesk tr[data-id]'); if (tr && !e.target.closest('button')) openBot(P.positions.find((x) => x.id === +tr.dataset.id).bot);
+  });
+  function closePos(p) {
+    const b = P.bot(p.bot);
+    P.confirm({
+      title: 'Fermer la position au marché', verb: 'fermer', icon: 'x', bot: p.bot, pair: `${p.pair} ${p.short ? 'short' : 'long'} ${p.lev}x`, key: `${p.bot}:close:${p.id}`,
+      rows: [['P&L estimé', P.fmt(p.latent, 2, true) + ' USDC', P.cls(p.latent)], ['Mise engagée', P.fmt(p.stake, 2) + ' USDC'], ['Prix actuel', P.fmt(p.price, p.price < 1 ? 4 : 2)], ['Renforts DCA', `${p.dca}/${p.dcaMax}`]],
+      notes: p.pair.startsWith('SOL') ? ['sol_mr_short détient aussi SOL short sur le même wallet : la fermeture est faite en reduceOnly sur la quantité de ce trade uniquement.'] : [],
+      pendingTxt: 'Fermeture envoyée', okTxt: 'Position fermée', okSub: `réalisé ${P.fmt(p.latent * 0.98, 2, true)} USDC`,
+    });
+  }
+
+  /* ---------- courbe de capital ---------- */
+  let eq;
+  function drawEquity(days) {
+    const el = $('#eqChart'); if (!eq) { el.innerHTML = ''; eq = echarts.init(el, null, { renderer: 'canvas' }); charts.push(eq); }
+    const n = days === 1 ? 96 : days === 7 ? 7 * 24 : days === 30 ? 30 * 6 : 120;
+    let r = 0, peak = 0; const real = [], lat = [], dd = [], x = [];
+    for (let i = 0; i < n; i++) {
+      r += (days === 365 ? 22 : days === 30 ? 6.6 : days === 7 ? 1.3 : .9) + (P.rnd() - .48) * (days === 365 ? 90 : 28);
+      const l = r + Math.sin(i / 11) * 34 + Math.sin(i / 3.7) * 8 - 40;
+      peak = Math.max(peak, l); real.push(+r.toFixed(1)); lat.push(+l.toFixed(1)); dd.push(+(l - peak).toFixed(1)); x.push(i);
+    }
+    const paint = () => eq.setOption({
+      animationDuration: 650, animationEasing: 'cubicOut',
+      grid: [{ left: 44, right: 10, top: 10, height: '62%' }, { left: 44, right: 10, top: '76%', bottom: 18 }],
+      tooltip: { trigger: 'axis', backgroundColor: css('--surface-3'), borderColor: css('--line-strong'), textStyle: { color: css('--text'), fontFamily: 'Geist', fontSize: 12 }, valueFormatter: (v) => P.fmt(v, 2, true) },
+      axisPointer: { link: [{ xAxisIndex: 'all' }], lineStyle: { color: css('--line-strong') } },
+      xAxis: [{ type: 'category', data: x, show: false, boundaryGap: false }, { type: 'category', gridIndex: 1, data: x, show: false, boundaryGap: false }],
+      yAxis: [{ type: 'value', scale: true, splitNumber: 3, axisLabel: { color: css('--text-3'), fontSize: 10, fontFamily: 'Geist Mono', formatter: (v) => P.fmt(v, 0) }, splitLine: { lineStyle: { color: css('--line') } } },
+        { type: 'value', gridIndex: 1, splitNumber: 1, max: 0, axisLabel: { color: css('--text-3'), fontSize: 10, fontFamily: 'Geist Mono', formatter: (v) => P.fmt(v, 0) }, splitLine: { show: false } }],
+      series: [
+        { name: 'Réalisé', id: 'real', type: 'line', data: real, symbol: 'none', smooth: .2, lineStyle: { width: 2, color: css('--text') },
+          areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: css('--text') + '22' }, { offset: 1, color: css('--text') + '00' }]) } },
+        { name: 'Réalisé + latent', id: 'lat', type: 'line', data: lat, symbol: 'none', smooth: .2, lineStyle: { width: 1.5, type: [4, 3], color: css('--info') } },
+        { name: 'Drawdown', id: 'dd', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: dd, symbol: 'none', lineStyle: { width: 1, color: css('--loss') }, areaStyle: { color: css('--loss') + '33' } },
+      ],
+    }, { replaceMerge: ['series'] });
+    paint(); document.addEventListener('themechange', paint);
+  }
+
+  /* ---------- risque ---------- */
+  function renderRisk() {
+    const a = P.agg(); const t = a.longN + a.shortN;
+    $('#risk').innerHTML = `
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px"><span class="up">Long <b class="num">${P.fmt(a.longN, 0)}</b></span><span class="muted">Net <b class="num" style="color:var(--text)">${P.fmt(a.longN - a.shortN, 0, true)}</b></span><span class="down">Short <b class="num">${P.fmt(a.shortN, 0)}</b></span></div>
+      <div class="split"><i style="flex:${a.longN / t};background:var(--profit)"></i><i style="flex:${a.shortN / t};background:var(--loss)"></i></div>
+      <div style="margin-top:10px">
+        <div class="kv"><span class="k">${P.ic('gauge', 'i16')}Levier moyen pondéré</span><span class="v num">2,7x</span></div>
+        <div class="kv"><span class="k">${P.ic('layers', 'i16')}Slots utilisés</span><span class="v num">${a.positions}/${a.slots[1]} <span class="faint" style="font-weight:500">${P.pct(a.positions / a.slots[1] * 100, 0, false)}</span></span></div>
+        <div class="kv"><span class="k">${P.ic('shield-alert', 'i16')}Liquidation la plus proche</span><span class="v num warn">14,2 % <span class="faint" style="font-weight:500">SOL · dynv1_short</span></span></div>
+        <div class="kv"><span class="k">${P.ic('wallet', 'i16')}Marge utilisée</span><span class="v num">38 %</span></div>
+      </div>
+      <div class="label" style="margin-top:10px">Paires tenues par plusieurs bots</div>
+      <div class="shared"><span class="badge warn">SOL · 2 bots, même sens</span><span class="badge warn">ETH · long et short (netté)</span><span class="badge neutral">BTC · 3 bots</span></div>`;
+  }
+
+  /* ---------- classement ---------- */
+  function renderLeader(k) {
+    const bs = [...P.bots].sort((a, b) => b[k] - a[k]);
+    const top = bs.slice(0, 5), bot = bs.slice(-3);
+    const max = Math.max(...bs.map((b) => Math.abs(b[k])));
+    const row = (b) => { const w = Math.abs(b[k]) / max * 50; return `<span class="nm">${b.name}</span><span class="bar"><i style="${b[k] >= 0 ? `left:50%;width:${w}%;background:var(--profit)` : `right:50%;width:${w}%;background:var(--loss)`}"></i></span><span class="v num ${P.cls(b[k])}">${P.fmt(b[k], 1, true)}</span>`; };
+    $('#lb').innerHTML = top.map(row).join('') + '<span class="gap"></span>' + bot.map(row).join('');
+  }
+
+  /* ---------- événements ---------- */
+  function renderEvents() {
+    $('#events').innerHTML = P.events.map((e) => `<div class="ev"><span class="t num">${e.t}</span><span class="${e.k}">${P.ic(e.icon)}</span><span>${e.txt}</span><span class="num ${e.v.startsWith('+') ? 'up' : e.v.startsWith('−') ? 'down' : 'faint'}">${e.v}</span></div>`).join('');
+  }
+
+  /* ---------- santé ---------- */
+  function renderHealth() {
+    $('#health').innerHTML = `
+      <div class="health-lvl"><span class="ring">${P.ic('check')}</span><div><div style="font-weight:620">Sain, 1 point d'attention</div><div class="muted" style="font-size:12.5px">1 bot hors ligne, aucune tempête de 429</div></div></div>
+      <div class="kv"><span class="k">Budget rate-limit HL</span><span class="v" style="display:flex;align-items:center;gap:8px"><span class="meter warn" style="width:80px"><i style="width:62%"></i></span><span class="num">62 %</span></span></div>
+      <div class="kv"><span class="k">Cache ftcache</span><span class="v" style="display:flex;align-items:center;gap:8px"><span class="meter good" style="width:80px"><i style="width:94%"></i></span><span class="num">94 %</span></span></div>
+      <div class="kv"><span class="k">Dernier 429</span><span class="v muted">il y a 2 h 14</span></div>
+      <div class="kv"><span class="k">Passerelle</span><span class="v num">42 ms · 28 bots sondés</span></div>`;
+  }
+  function renderLogs() {
+    const L = [['E', 'dynv2_short', 'Connection refused 127.0.0.1:9019'], ['W', 'cci_ao_short', 'Refusing to exit ENA/USDC: confirm_trade_exit'], ['W', 'xyz_silver_mr', 'Dataframe stale, last candle 18:30'], ['E', 'rsi_dip_long', 'ExchangeError: order below min notional'], ['W', 'hippo_multi', 'Rate budget 62 %, pacing ON']];
+    $('#logs').innerHTML = L.map(([l, b, m]) => `<div class="log"><span class="lv ${l === 'E' ? 'e' : 'w'}">${l === 'E' ? 'ERR' : 'WARN'} <span class="faint" style="font-weight:400">${b}</span></span><span class="m">${m}</span></div>`).join('');
+  }
+
+  /* ---------- feuille bot (BotPulse) ---------- */
+  function openBot(name) {
+    const b = P.bot(name); const ps = P.positions.filter((p) => p.bot === name);
+    const off = !P.isFresh(b);
+    const ddr = Math.min(1, b.dd / b.ddMax);
+    $('#botSheet').innerHTML = `
+      <div class="grab"></div>
+      <div class="sh-h">
+        <div class="avatar" style="background:${P.color(b.name)}">${P.initials(b.name)}</div>
+        <div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center"><b style="font-size:17px">${b.name}</b><span class="badge ${b.mode}">${b.mode === 'live' ? 'Live' : 'Dry'}</span></div>
+          <div class="faint" style="font-size:12.5px">${b.strat} · ${b.group} · port ${b.port} · <span class="age ${b.state === 'off' ? 'dead' : b.state === 'stale' ? 'stale' : ''}">${P.ago(b.age)}</span></div></div>
+        <button class="btn icon ghost" data-close aria-label="Fermer">${P.ic('x')}</button>
+      </div>
+      <div class="sh-b">
+        ${off ? `<div class="stale-note">${P.ic('unplug', 'i16')}<div><b>${b.state === 'off' ? 'Hors ligne depuis 14 min.' : 'Données périmées (7 min).'}</b> Dernières valeurs connues, exclues des totaux de flotte. Ne pas relancer un bot uniquement pour forcer une sortie.</div></div>` : ''}
+        <div class="bs-kpis">
+          <div><div class="label">Latent</div><div class="num ${P.cls(b.latent)}" style="font-size:22px;font-weight:650;margin-top:4px">${P.fmt(b.latent, 2, true)}</div></div>
+          <div><div class="label">Réalisé jour</div><div class="num ${P.cls(b.day)}" style="font-size:22px;font-weight:650;margin-top:4px">${P.fmt(b.day, 2, true)}</div></div>
+          <div><div class="label">7 jours</div><div class="num ${P.cls(b.d7)}" style="font-size:17px;font-weight:600;margin-top:4px">${P.fmt(b.d7, 2, true)}</div>${P.spark(b.spark, 130, 26)}</div>
+          <div><div class="label">Drawdown</div><div class="num ${b.dd < b.ddMax ? 'down' : ''}" style="font-size:17px;font-weight:600;margin-top:4px">${P.pct(b.dd, 1, false)} <span class="faint" style="font-size:12px;font-weight:500">/ ${P.pct(b.ddMax, 0, false)}</span></div>
+            <div class="meter ${ddr >= 1 ? 'bad' : ddr > .6 ? 'warn' : ''}" style="margin-top:10px"><i style="width:${ddr * 100}%"></i></div></div>
+        </div>
+        <div class="bs-acts">
+          <button class="btn" data-act="pause" data-money data-key="${b.name}:pause">${P.ic('pause')}Pause entrées</button>
+          <button class="btn" data-act="reload" data-money data-key="${b.name}:reload">${P.ic('rotate-cw')}Recharger</button>
+          <button class="btn warn-soft" data-act="stop" data-money data-key="${b.name}:stop">${P.ic('square')}Arrêter</button>
+          <button class="btn danger-soft" data-act="exitall" data-money data-key="${b.name}:exitall" ${ps.length ? '' : 'disabled'}>${P.ic('log-out')}Tout fermer</button>
+        </div>
+        <div class="sec-t"><h3>Positions · ${ps.length}/${b.slots[1]}</h3><span class="faint" style="font-size:12.5px">capital alloué ${P.fmt(b.cap, 0)} USDC</span></div>
+        <div class="card">${ps.length ? ps.map((p) => `<div class="row"><div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center;font-weight:600">${p.pair.replace('/USDC', '')}<span class="badge ${p.short ? 'short' : 'long'}">${p.short ? 'Short' : 'Long'} ${p.lev}x</span></div>
+          <div class="faint" style="font-size:12.5px;display:flex;gap:6px;align-items:center;margin-top:2px">${dcaDots(p)} DCA ${p.dca}/${p.dcaMax} · ${P.dur(p.hours)}</div></div>
+          <div style="text-align:right"><div class="num ${P.cls(p.latent)}" style="font-weight:620">${P.fmt(p.latent, 2, true)}</div><div class="num faint" style="font-size:12px">${P.pct(p.pct)}</div></div></div>`).join('') : `<div class="row faint" style="justify-content:center;min-height:72px">${P.ic('circle-dashed', 'i16')} Aucune position. Le bot attend un signal.</div>`}</div>
+      </div>
+      <div class="sh-f"><a class="btn lg primary" style="flex:1" href="bot-detail.html?bot=${b.name}">${P.ic('panel-right-open', 'i16')}Ouvrir la page du bot</a><a class="btn lg icon" href="charts.html" aria-label="Graphique">${P.ic('chart-candlestick')}</a></div>`;
+    P.openSheet('botSheet');
+    $('#botSheet').onclick = (e) => {
+      const a = e.target.closest('[data-act]'); if (!a) return;
+      const A = {
+        pause: { title: 'Mettre les entrées en pause', verb: 'mettre en pause', icon: 'pause', rows: [['Positions ouvertes', `${ps.length}, gérées normalement`], ['Nouvelles entrées', 'bloquées']], okTxt: 'Entrées en pause', pendingTxt: 'Pause envoyée' },
+        reload: { title: 'Recharger la configuration', verb: 'recharger', icon: 'rotate-cw', notes: ['Un rechargement à la fois sur la flotte. Prochain autorisé dans 10 min (échelonnement anti-429).'], okTxt: 'Configuration rechargée', pendingTxt: 'Rechargement envoyé' },
+        stop: { title: 'Arrêter le bot', verb: 'arrêter', icon: 'square', notes: ['Lancé via launch_bot.sh, un arrêt par l’API provoque un redémarrage automatique. Pour un arrêt réel, passer par la session screen.'], okTxt: 'Arrêt demandé', pendingTxt: 'Arrêt envoyé' },
+        exitall: { title: `Fermer les ${ps.length} positions`, verb: 'tout fermer', icon: 'log-out', typeName: true, rows: [['P&L latent', P.fmt(b.latent, 2, true) + ' USDC', P.cls(b.latent)], ['Positions', String(ps.length)]], notes: ['Ordres au marché, un par position, envoyés une seule fois. Les sorties refusées par la stratégie seront signalées une par une.'], okTxt: 'Positions fermées', pendingTxt: 'Fermeture envoyée' },
+      }[a.dataset.act];
+      P.confirm({ ...A, bot: b.name, key: `${b.name}:${a.dataset.act}` });
+    };
+  }
+
+  /* ---------- simulation de deltas WebSocket ---------- */
+  function live() {
+    setInterval(() => {
+      if (document.body.dataset.conn === 'offline') return;
+      const fresh = P.bots.filter((b) => P.isFresh(b) && b.slots[0]);
+      const b = fresh[Math.floor(P.rnd() * fresh.length)];
+      const d = (P.rnd() - .45) * 3.2; b.latent += d;
+      if (P.rnd() < .25) b.day += Math.abs(d);
+      document.querySelectorAll(`[data-lat="${b.name}"]`).forEach((el) => P.tick(el, b.latent, { from: b.latent - d }));
+      document.querySelectorAll(`[data-lat="${b.name}"]`).forEach((el) => { el.classList.remove('flash-up', 'flash-down'); void el.offsetWidth; el.classList.add('tick', d > 0 ? 'flash-up' : 'flash-down'); });
+      renderHero(false);
+    }, 2600);
+  }
+
+  /* ---------- personnalisation ---------- */
+  $('#editBtn').addEventListener('click', () => {
+    const on = document.body.classList.toggle('editing');
+    $('#editBtn').querySelector('span').textContent = on ? 'Terminer' : 'Personnaliser';
+    $('#editBtn').classList.toggle('primary', on);
+    $('#presetSeg').style.display = on ? '' : 'none';
+    if (on && !$('#presetSeg .thumb')) P.seg($('#presetSeg'));
+    document.querySelectorAll('[data-card] .edit-tools').forEach((t) => {
+      t.innerHTML = `<button class="btn icon ghost sm" data-mv="-1" aria-label="Monter">${P.ic('arrow-up', 'i16')}</button><button class="btn icon ghost sm" data-mv="1" aria-label="Descendre">${P.ic('arrow-down', 'i16')}</button><button class="btn icon ghost sm" data-hide aria-label="Masquer">${P.ic('eye-off', 'i16')}</button>`;
+    });
+    P.icons();
+  });
+  document.addEventListener('click', (e) => {
+    const mv = e.target.closest('[data-mv]');
+    if (mv) {
+      const card = mv.closest('[data-card]'); const cards = [...document.querySelectorAll('[data-card]')].sort((a, b) => a.dataset.o - b.dataset.o);
+      const i = cards.indexOf(card), j = i + +mv.dataset.mv; if (j < 0 || j >= cards.length) return;
+      [cards[i].dataset.o, cards[j].dataset.o] = [cards[j].dataset.o, cards[i].dataset.o];
+      const r0 = card.getBoundingClientRect(); layout(true); const r1 = card.getBoundingClientRect();
+      card.animate([{ transform: `translate(${r0.left - r1.left}px, ${r0.top - r1.top}px)` }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.05,.7,.1,1)' });
+    }
+    const hd = e.target.closest('[data-hide]'); if (hd) hd.closest('[data-card]').classList.toggle('hidden-card');
+  });
+})();
+</script>
+<style>
+@media (min-width: 768px) { .hide-desk { display: none; } }
+@media (max-width: 479px) { .hide-mob { display: none; } }
+</style>
+</body>
+</html>

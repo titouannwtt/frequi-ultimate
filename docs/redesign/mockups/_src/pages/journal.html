@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<!--@HEAD-->
+<title>Journal · FreqUI Ultimate (maquette finale)</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+/*@CSS*/
+.fbar { display: flex; align-items: center; gap: 6px; padding: 6px var(--s3); border-bottom: 1px solid var(--line); background: var(--bg); flex: none; overflow-x: auto; scrollbar-width: none; }
+.fbar::-webkit-scrollbar { display: none; }
+.fbar .right { margin-left: auto; display: flex; gap: 6px; }
+main.jg { display: grid; gap: var(--gut); padding: var(--gut); min-height: 0; grid-template-columns: minmax(0, 1fr) clamp(380px, 32vw, 480px); }
+#p-an { display: flex; flex-direction: column; }
+@media (max-width: 1023px) { main.jg { grid-template-columns: minmax(0, 1fr); } #p-list { max-height: none; } #p-an { min-height: 520px; } }
+@media (max-width: 599px) { main.jg { padding: 8px 0; gap: 8px; } main.jg .pane { border-radius: 0; border-left: 0; border-right: 0; }
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; } .kpi { min-width: 0; border-bottom: 1px solid var(--line); } .kpi:nth-child(2n) { border-right: 0; } .kpi.k-x { display: none; } }
+@media (min-width: 600px) and (max-width: 1023px) { .kpis { display: grid; grid-template-columns: repeat(4, 1fr); } .kpi { border-bottom: 1px solid var(--line); } }
+.kpi .v { font-size: var(--t-lg); }
+.dayh td { position: sticky; top: 30px; z-index: 1; background: var(--bg-2) !important; height: 28px; font-family: var(--font-ui); font-weight: 600; color: var(--fg); }
+.dayh td .num { font-weight: 600; }
+#p-list .tbl tbody tr:not(.dayh) { cursor: pointer; }
+.maemfe { display: inline-block; position: relative; width: 96px; height: 10px; vertical-align: -1px; }
+.maemfe::before { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--line-2); }
+.maemfe .a { position: absolute; top: 2px; height: 6px; right: 50%; background: var(--loss); opacity: .75; border-radius: 1px 0 0 1px; }
+.maemfe .f { position: absolute; top: 2px; height: 6px; left: 50%; background: var(--profit); opacity: .75; border-radius: 0 1px 1px 0; }
+.maemfe .x { position: absolute; top: -1px; width: 2px; height: 12px; background: var(--fg); margin-left: -1px; }
+@container (max-width: 900px) { .c-dur, .c-pct { display: none; } }
+@container (max-width: 760px) { .c-mae { display: none; } }
+@container (max-width: 560px) { .as-table { display: none; } .as-cards { display: block !important; } }
+.as-cards { display: none; }
+.dayc { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; padding: 8px var(--s3); background: var(--bg-2); font-weight: 600; font-size: var(--t-sm); border-bottom: 1px solid var(--line); }
+.an-sent { padding: 10px var(--s3); font-size: var(--t-sm); color: var(--fg-2); border-bottom: 1px solid var(--line); }
+.an-sent b { color: var(--fg); }
+#dist { flex: 1; min-height: 230px; }
+.dtab { width: 100%; }
+.dtab .barc { width: 34%; }
+.dtab .hb { height: 8px; border-radius: 2px; display: block; }
+.pager { display: flex; align-items: center; gap: 8px; padding: 8px var(--s3); border-top: 1px solid var(--line); font-size: var(--t-xs); color: var(--fg-3); flex: none; }
+.pager .btn { margin-left: auto; }
+@container (max-width: 560px) { .pager { display: none; } } /* une seule pagination : « Charger les jours précédents » en mode cartes */
+</style>
+</head>
+<body>
+<div class="app fit">
+  <header class="top" id="top"></header>
+  <div id="banners"></div>
+  <div class="fbar" role="toolbar" aria-label="Filtres du journal">
+    <div class="seg" id="per"><button>24 h</button><button aria-pressed="true">7 j</button><button>30 j</button><button>Mois</button><button>Année</button><button>Tout</button></div>
+    <div class="seg"><button aria-pressed="true">Live</button><button>Dry</button><button>Tout</button></div>
+    <button class="chip on" title="Les trades de replay sont exclus par défaut"><i data-lucide="rewind"></i>Sans replay<i data-lucide="x" class="x"></i></button>
+    <button class="chip"><i data-lucide="bot"></i>Bots</button><button class="chip">Sens</button><button class="chip">Raison de sortie</button><button class="chip">Profondeur DCA</button>
+    <label class="search hide-m" style="width:160px"><i data-lucide="search" class="sm"></i><input placeholder="Paire" aria-label="Paire"></label>
+    <div class="right"><button class="btn sm ghost"><i data-lucide="bookmark"></i>Vues</button><button class="btn sm" id="exportBtn" onclick="FQ.exportPop(this)"><i data-lucide="download"></i>Exporter</button></div>
+  </div>
+  <section class="kpis" id="tot" aria-label="Totaux filtrés"></section>
+  <main class="jg">
+    <section class="pane" id="p-list" aria-label="Trades fermés">
+      <div class="ph"><h2><i data-lucide="book-open-text"></i>Trades fermés</h2><span class="meta" id="lMeta"></span><div class="tools"><div class="seg sm"><button aria-pressed="true">Par jour</button><button>Par bot</button><button>Par paire</button></div></div></div>
+      <div class="pb" id="list"></div>
+      <div class="pager"><span>Page 1, curseur passerelle (tri par date de fermeture)</span><button class="btn xs">Plus ancien</button></div>
+    </section>
+    <section class="pane" id="p-an" aria-label="Analyse">
+      <div class="ph"><div class="tabs scroll-x" id="anTabs"><button data-t="dist" aria-selected="true">Distribution</button><button data-t="dca">Profondeur DCA</button><button data-t="why">Raisons</button><button data-t="bot">Par bot</button></div></div>
+      <div class="pb" id="an" style="display:flex;flex-direction:column"></div>
+    </section>
+  </main>
+  <footer class="status" id="status"></footer>
+  <nav class="tabbar" id="tabbar" aria-label="Navigation"></nav>
+</div>
+<script>/*@CORE*/</script>
+<script>
+(function () {
+const { $, $$ } = FQ, i = FQ.i, n = FQ.n, s = FQ.s, p = FQ.p, cls = FQ.cls, R = FQ.R;
+const live = FQ.bots.filter(b => b.mode === 'live' && b.state !== 'starting');
+const reasons = ['roi', 'roi', 'roi', 'exit_signal', 'exit_signal', 'trailing_stop_loss', 'stoploss', 'force_exit'];
+const T = [];
+for (let k = 0; k < 96; k++) {
+  const b = live[Math.floor(R() * live.length)];
+  const dca = 1 + Math.floor(Math.pow(R(), 1.7) * 6);
+  let pct = dca >= 5 ? (R() < 0.3 ? -(4 + R() * 8) : 0.8 + R() * 2.2) : (R() < 0.12 ? -(0.5 + R() * 4) : 0.6 + R() * 2.6);
+  const stake = 20 + R() * 120 * dca / 2;
+  let reason = pct < -3 ? (R() < 0.6 ? 'stoploss' : 'force_exit') : reasons[Math.floor(R() * 6)];
+  if (k === 7 || k === 41) reason = null;
+  const unknown = k === 23;
+  T.push({ k, b, pair: Object.keys(FQ.PRICES)[Math.floor(R() * 24)], isShort: b.side === 's' || (b.side === 'ls' && R() < 0.5), lev: b.lev, dca, pct, pnl: unknown ? null : stake * pct / 100, mae: Math.min(pct, -(0.3 + R() * (dca * 1.8))), mfe: Math.max(pct, R() * 2.6), reason, manual: reason === 'force_exit', durH: dca * (2 + R() * 9), close: new Date(FQ.now - (k * 1.7 + R()) * 3600000) });
+}
+FQ.trades = T;
+const known = T.filter(t => t.pnl !== null);
+const wins = known.filter(t => t.pnl > 0), losses = known.filter(t => t.pnl <= 0);
+const net = known.reduce((a, t) => a + t.pnl, 0), gw = wins.reduce((a, t) => a + t.pnl, 0), gl = losses.reduce((a, t) => a + t.pnl, 0);
+const worst = known.slice().sort((a, b) => a.pnl - b.pnl)[0];
+function totals() {
+  const tiles = [['P&L net <span class="muted">frais inclus</span>', `<span class="${cls(net)}">${s(net)}</span><small>USDC</small>`, `${T.length} trades dont ${T.length - known.length} sans P&L`],
+    ['Taux de réussite', FQ.pu(wins.length / known.length * 100, 1), `<span class="num">${wins.length}</span> G / <span class="num">${losses.length}</span> P`],
+    ['Facteur de profit', FQ.n(gw / -gl, 2), `gain moy. <span class="num up">${s(gw / wins.length)}</span>`],
+    ['Espérance / trade', `<span class="${cls(net / known.length)}">${s(net / known.length)}</span>`, `perte moy. <span class="num down">${s(gl / losses.length)}</span>`],
+    ['Pire trade', `<span class="down">${s(worst.pnl)}</span>`, `${worst.pair.replace('xyz:', '')} · ${worst.b.name}`],
+    ['Pire moins-value <span class="muted">absolue</span>', `<span class="down">${s(-142.1)}</span><small>USDC</small>`, 'MAE max, en USDC'],
+    ['Durée médiane', FQ.dur(6.2), 'P90 ' + FQ.dur(52)], ['Trades / jour', FQ.n(T.length / 7, 1), 'sur 7 j']];
+  $('#tot').innerHTML = tiles.map((t, k) => `<div class="kpi ${k > 5 ? 'k-x' : ''}"><span class="k">${t[0]}</span><span class="v num">${t[1]}</span><span class="s">${t[2]}</span></div>`).join('');
+}
+const dayKey = d => d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+const hm = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+function mm(t) { const sc = 8; return FQ.conn.kind === 'direct' ? '<span class="muted" title="Calcul passerelle">indisponible</span>' : `<span class="maemfe" title="MAE ${p(t.mae, 1)} · MFE ${p(t.mfe, 1)} · sortie ${p(t.pct, 1)}"><span class="a" style="width:${Math.min(50, -t.mae / sc * 50)}%"></span><span class="f" style="width:${Math.min(50, t.mfe / sc * 50)}%"></span><span class="x" style="left:${50 + Math.max(-50, Math.min(50, t.pct / sc * 50))}%"></span></span>`; }
+const rchip = t => FQ.reason(t.reason) + (t.manual ? ' <span class="badge manual" title="Sortie forcée par un humain">manuel</span>' : '');
+function list() {
+  const groups = {}; T.forEach(t => (groups[dayKey(t.close)] = groups[dayKey(t.close)] || []).push(t));
+  $('#lMeta').textContent = `${T.length} trades sur 7 j · 0 replay exclu`;
+  let h = `<div class="as-table"><table class="tbl"><thead><tr><th class="l colh">Fermé</th><th class="l colh">Bot</th><th class="l colh">Paire</th><th class="colh">Sens</th><th class="colh">DCA</th><th class="colh">P&L</th><th class="c-pct colh">%</th><th class="c-mae colh" title="Pire et meilleure excursion, trait = sortie">MAE · MFE</th><th class="l colh">Raison</th><th class="c-dur colh">Durée</th></tr></thead><tbody>`;
+  let c = '<div class="as-cards">';
+  let nd = 0;
+  Object.entries(groups).forEach(([d, ts]) => {
+    nd++; const mob = nd > 2;
+    const sum = ts.filter(t => t.pnl !== null).reduce((a, t) => a + t.pnl, 0);
+    h += `<tr class="dayh"><td class="l" colspan="5"><span style="text-transform:capitalize">${d}</span> <span class="muted" style="font-weight:400">${ts.length} trades</span></td><td class="${cls(sum)} num">${s(sum)}</td><td class="c-pct"></td><td class="c-mae"></td><td></td><td class="c-dur"></td></tr>`;
+    if (!mob) c += `<div class="dayc"><span style="text-transform:capitalize">${d}</span><span class="num ${cls(sum)}">${s(sum)}</span></div>`;
+    ts.forEach(t => {
+      h += `<tr class="is-live" data-t="${t.k}" tabindex="0"><td class="l">${hm(t.close)}</td><td class="l ui">${t.b.name}</td><td class="l ui" style="font-weight:600">${t.pair.replace('xyz:', '')}${t.pair.startsWith('xyz:') ? ' <span class="badge xyz">xyz</span>' : ''}</td><td class="ui">${FQ.ui.dir(t)}</td><td class="${t.dca >= 4 ? 'warn-t' : ''}">${t.dca}</td><td>${t.pnl === null ? '<span class="muted ui">inconnu</span>' : `<span class="${cls(t.pnl)}">${s(t.pnl)}</span>`}</td><td class="c-pct ${cls(t.pct)}">${p(t.pct)}</td><td class="c-mae">${mm(t)}</td><td class="l ui">${rchip(t)}</td><td class="c-dur">${FQ.dur(t.durH)}</td></tr>`;
+      if (!mob) c += `<button class="card is-live" data-t="${t.k}"><span class="m1">${t.pair.replace('xyz:', '')} ${FQ.ui.dir(t)}<span class="muted" style="font-weight:400;font-size:var(--t-xs)">DCA ${t.dca}</span></span><span class="m2 ${t.pnl === null ? 'muted' : cls(t.pnl)}">${t.pnl === null ? 'inconnu' : s(t.pnl)}</span><span class="m3">${hm(t.close)} · ${t.b.name} · ${rchip(t)}</span><span class="m4">${mm(t)}</span></button>`;
+    });
+  });
+  $('#list').innerHTML = h + '</tbody></table></div>' + c + '<button class="more" style="width:100%;height:44px;border:0;border-top:1px solid var(--line);background:none;color:var(--accent)">Charger les jours précédents</button></div>';
+  $$('#list [data-t]').forEach(r => r.onclick = () => openClosed(T[+r.dataset.t]));
+}
+function openClosed(t) {
+  FQ.sheetOpen(`<div class="grab"></div><div class="td-h"><span class="pair">${t.pair}</span>${FQ.ui.dir(t)}<span class="target" style="padding:3px 8px;gap:6px;margin-left:auto">${i('bot', 'sm')}<b style="font-size:var(--t-sm)">${t.b.name}</b><span class="badge live">Live</span></span><button class="btn ghost icon" onclick="FQ.sheetClose()" aria-label="Fermer">${i('x')}</button></div>
+  <div class="sh-b"><div class="td-pnl"><span class="big ${t.pnl === null ? 'muted' : cls(t.pnl)}">${t.pnl === null ? 'inconnu' : s(t.pnl)}</span><span class="num ${cls(t.pct)}">${p(t.pct)}</span><span class="muted" style="font-size:var(--t-xs)">fermé ${hm(t.close)} · ${FQ.dur(t.durH)}</span></div>
+  <div class="facts"><div><span class="lab">DCA</span><span class="num">${t.dca}</span></div><div><span class="lab">MAE</span><span class="num down">${p(t.mae, 1)}</span></div><div><span class="lab">MFE</span><span class="num up">${p(t.mfe, 1)}</span></div><div><span class="lab">Raison</span><span>${rchip(t)}</span></div><div><span class="lab">Sortie</span><span>${t.manual ? 'humaine (audit)' : 'stratégie'}</span></div><div><span class="lab">Levier</span><span class="num">×${t.lev}</span></div></div>
+  <div class="note" style="padding:12px">${i('info')}<span>MAE/MFE calculés par la passerelle sur les bougies du trade (indisponibles en mode direct).</span></div></div>`);
+}
+let dchart;
+function analysis(tab) {
+  if (dchart) { dchart.dispose(); dchart = null; }
+  const an = $('#an');
+  if (tab === 'dist') {
+    const tail = known.filter(t => t.pct <= -5), tailSum = tail.reduce((a, t) => a + t.pnl, 0);
+    an.innerHTML = `<div class="an-sent">Les <b>${tail.length} trades</b> sous ${FQ.p(-5, 0)} pèsent <b class="down">${s(tailSum)} USDC</b>, soit <b>${FQ.pu(tailSum / gl * 100, 0)}</b> des pertes brutes : la queue gauche domine.</div><div id="dist"></div>`;
+    if (!window.echarts) return;
+    const bins = []; for (let x = -14; x <= 4; x += 1) bins.push([x, known.filter(t => t.pct >= x && t.pct < x + 1).length]);
+    dchart = echarts.init($('#dist')); const c = v => FQ.css(v);
+    dchart.setOption({ animationDuration: FQ.RM ? 0 : 500, grid: { left: 34, right: 12, top: 14, bottom: 30 }, xAxis: { type: 'category', data: bins.map(b => b[0] + ' %'), axisLabel: { color: c('--fg-3'), fontSize: 11, interval: 2 }, axisLine: { lineStyle: { color: c('--line-2') } }, axisTick: { show: false } }, yAxis: { type: 'log', logBase: 2, min: 1, axisLabel: { color: c('--fg-3'), fontSize: 11 }, splitLine: { lineStyle: { color: c('--line') } } }, tooltip: { trigger: 'axis', backgroundColor: c('--bg-1'), borderColor: c('--line-2'), textStyle: { color: c('--fg') } },
+      series: [{ type: 'bar', barCategoryGap: '18%', data: bins.map(b => ({ value: Math.max(b[1], 0.0001) || null, itemStyle: { color: b[0] < -5 ? c('--loss') : b[0] < 0 ? c('--fg-3') : c('--fg-2'), borderRadius: [2, 2, 0, 0] } })) }] });
+  } else if (tab === 'dca') {
+    const rows = [1, 2, 3, 4, 5, 6].map(d => { const ts = known.filter(t => t.dca === d); const w = ts.filter(t => t.pnl > 0).length; return [d, ts.length, ts.length ? w / ts.length * 100 : 0, ts.reduce((a, t) => a + t.pnl, 0)]; });
+    const mx = Math.max(...rows.map(r => Math.abs(r[3])));
+    an.innerHTML = `<div class="an-sent">P&L par nombre d'ordres remplis. Au-delà de <b>4 renforts</b>, le taux de réussite chute et le P&L devient négatif.</div><table class="tbl dtab"><thead><tr><th class="l colh">Ordres remplis</th><th class="colh">Trades</th><th class="colh">Réussite</th><th class="colh">P&L</th><th class="colh barc"></th></tr></thead><tbody>${rows.map(r => `<tr><td class="l">${r[0]}</td><td>${r[1]}</td><td class="${r[2] < 60 ? 'warn-t' : ''}">${FQ.pu(r[2], 0)}</td><td class="${cls(r[3])}">${s(r[3])}</td><td class="barc"><span class="hb" style="width:${Math.abs(r[3]) / mx * 100}%;background:var(${r[3] >= 0 ? '--profit' : '--loss'});margin-left:auto"></span></td></tr>`).join('')}</tbody></table>`;
+  } else if (tab === 'why') {
+    const g = {}; T.forEach(t => { const r = t.reason || 'inconnu'; g[r] = g[r] || [0, 0]; g[r][0]++; g[r][1] += t.pnl || 0; });
+    const rows = Object.entries(g).sort((a, b) => b[1][1] - a[1][1]); const mx = Math.max(...rows.map(r => Math.abs(r[1][1])));
+    an.innerHTML = `<div class="an-sent">P&L par raison de sortie. <b>Sortie forcée</b> regroupe les sorties manuelles (marquées « manuel » dans la liste).</div><table class="tbl dtab"><thead><tr><th class="l colh">Raison</th><th class="colh">Trades</th><th class="colh">P&L</th><th class="colh barc"></th></tr></thead><tbody>${rows.map(r => `<tr><td class="l ui">${FQ.reason(r[0] === 'inconnu' ? null : r[0])}</td><td>${r[1][0]}</td><td class="${cls(r[1][1])}">${s(r[1][1])}</td><td class="barc"><span class="hb" style="width:${Math.abs(r[1][1]) / mx * 100}%;background:var(${r[1][1] >= 0 ? '--profit' : '--loss'})"></span></td></tr>`).join('')}</tbody></table>`;
+  } else {
+    const g = {}; known.forEach(t => { g[t.b.name] = (g[t.b.name] || 0) + t.pnl; }); const rows = Object.entries(g).sort((a, b) => b[1] - a[1]); const mx = Math.max(...rows.map(r => Math.abs(r[1])));
+    an.innerHTML = `<table class="tbl dtab"><thead><tr><th class="l colh">Bot</th><th class="colh">P&L</th><th class="colh barc"></th></tr></thead><tbody>${rows.map(r => `<tr class="is-live"><td class="l ui">${r[0]}</td><td class="${cls(r[1])}">${s(r[1])}</td><td class="barc"><span class="hb" style="width:${Math.abs(r[1]) / mx * 100}%;background:var(${r[1] >= 0 ? '--profit' : '--loss'})"></span></td></tr>`).join('')}</tbody></table>`;
+  }
+}
+let anTab = 'dist';
+$$('#anTabs button').forEach(b => b.onclick = () => { $$('#anTabs button').forEach(x => x.setAttribute('aria-selected', x === b)); anTab = b.dataset.t; analysis(anTab); });
+document.addEventListener('fq:theme', () => analysis(anTab));
+addEventListener('resize', () => dchart && dchart.resize());
+FQ.exportPop = btn => FQ.pop(btn, FQ.conn.kind === 'direct' ? `<h4>Export (mode direct)</h4><button class="mi">${i('file-text')}CSV de la page affichée</button><div class="mi muted" style="pointer-events:none;white-space:normal">Export serveur de l'ensemble filtré indisponible sans passerelle.</div>` : `<h4>Export de l'ensemble filtré</h4><button class="mi">${i('file-text')}CSV (passerelle)</button><button class="mi">${i('sheet')}XLSX</button>`);
+const _rc = FQ.renderConn; FQ.renderConn = function () { _rc(); if ($('#list')) list(); };
+FQ.boot('journal', () => { totals(); list(); analysis('dist'); });
+if (location.hash === '#dca') setTimeout(() => $('#anTabs [data-t="dca"]').click(), 200);
+})();
+</script>
+</body>
+</html>

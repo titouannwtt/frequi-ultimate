@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<!--@HEAD-->
+<title>Outils et réglages · FreqUI Ultimate (maquette finale)</title>
+<style>
+/*@CSS*/
+main.tg { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 0; }
+.side { border-right: 1px solid var(--line); background: var(--bg-1); padding: 10px 8px; overflow: auto; }
+.side h4 { margin: 12px 8px 4px; font-size: var(--t-xs); color: var(--fg-3); font-weight: 600; }
+.side a { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--r-2); color: var(--fg-2); font-size: var(--t-sm); }
+.side a:hover { background: var(--bg-2); color: var(--fg); text-decoration: none; }
+.side a.on { background: var(--bg-3); color: var(--fg); }
+.content { overflow: auto; padding: var(--s4) var(--s5) 60px; scroll-behavior: smooth; }
+.content > section { max-width: 1080px; margin: 0 auto 28px; scroll-margin-top: 12px; }
+.content h2 { font-size: var(--t-lg); margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+.content h2 + p { margin: 0 0 12px; color: var(--fg-3); font-size: var(--t-sm); }
+.tcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.tcard { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-2); background: var(--bg-1); color: var(--fg); align-content: start; }
+.tcard:hover { border-color: var(--fg-4); text-decoration: none; }
+.tcard .h { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.tcard .h svg { color: var(--fg-3); }
+.tcard p { margin: 0; color: var(--fg-3); font-size: var(--t-sm); }
+.tcard .tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.form { border: 1px solid var(--line); border-radius: var(--r-2); background: var(--bg-1); }
+.fr { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.fr:last-child { border-bottom: 0; }
+.fr .l b { display: block; font-weight: 500; }
+.fr .l span { color: var(--fg-3); font-size: var(--t-xs); }
+.fr .c { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.tbl-wrap { border: 1px solid var(--line); border-radius: var(--r-2); background: var(--bg-1); overflow: auto; container-type: inline-size; }
+.lvls td { white-space: normal; font-family: var(--font-ui); text-align: left; padding: 8px; height: auto; }
+.lvls th { text-align: left; }
+@container (max-width: 640px) { .c-key, .c-tags, .c-grp { display: none; } }
+@media (max-width: 1023px) {
+  main.tg { grid-template-columns: minmax(0, 1fr); }
+  .side { position: sticky; top: var(--hdr); z-index: 5; display: flex; gap: 4px; overflow-x: auto; padding: 8px; border-right: 0; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+  .side::-webkit-scrollbar { display: none; }
+  .side h4 { display: none; }
+  .side a { white-space: nowrap; flex: none; border: 1px solid var(--line-2); min-height: 36px; }
+  .content { overflow: visible; padding: 14px 12px 24px; }
+  .fr { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+}
+</style>
+</head>
+<body>
+<div class="app fit">
+  <header class="top" id="top"></header>
+  <div id="banners"></div>
+  <main class="tg">
+    <nav class="side" aria-label="Sections">
+      <h4>Outils</h4>
+      <a href="#outils" class="on"><i data-lucide="wrench"></i>Tous les outils</a>
+      <a href="#reconciliation"><i data-lucide="git-compare-arrows"></i>Réconciliation</a>
+      <a href="#diagnostic"><i data-lucide="gauge"></i>Diagnostic</a>
+      <h4>Réglages</h4>
+      <a href="#reglages"><i data-lucide="bot"></i>Bots</a>
+      <a href="#passerelle"><i data-lucide="radio-tower"></i>Passerelle</a>
+      <a href="#affichage"><i data-lucide="monitor"></i>Affichage</a>
+      <a href="#alertes"><i data-lucide="bell"></i>Alertes</a>
+      <a href="#securite"><i data-lucide="shield-check"></i>Sécurité des actions</a>
+      <a href="#espaces"><i data-lucide="panels-top-left"></i>Espaces de travail</a>
+      <a href="#apropos"><i data-lucide="info"></i>À propos et audit</a>
+    </nav>
+    <div class="content" id="content">
+      <section id="outils">
+        <h2><i data-lucide="wrench"></i>Outils</h2><p>Hors du pilotage quotidien. Conservés pour les utilisateurs open source. Les outils Python passent par le proxy de la passerelle (liste blanche, délais longs).</p>
+        <div class="tcards">
+          <a class="tcard" href="#reconciliation"><span class="h"><i data-lucide="git-compare-arrows"></i>Réconciliation du wallet</span><p>Orphelins, fantômes et netting entre bots. Aperçu puis confirmation, écritures en Python.</p><span class="tags"><span class="badge crit">1 orpheline</span><span class="badge neutral">Python</span></span></a>
+          <a class="tcard" href="#diagnostic"><span class="h"><i data-lucide="gauge"></i>Diagnostic</span><p>Timeline des requêtes et des 429 d'un bot, Sankey par méthode, budget détaillé, cache.</p><span class="tags"><span class="badge neutral">par bot</span></span></a>
+          <a class="tcard"><span class="h"><i data-lucide="shield-alert"></i>Risque avancé</span><p>Stress test avec les vrais prix de liquidation, exposition par coin et par dex HIP-3.</p></a>
+          <a class="tcard" id="logs"><span class="h"><i data-lucide="terminal"></i>Logs</span><p>Flux de logs en mode page : filtres serveur, recherche, tampon des bots.</p></a>
+          <a class="tcard" id="stratdev"><span class="h"><i data-lucide="flask-conical"></i>Labo de stratégie</span><p>Laboratoire de stratégie existant, recâblé sur les jetons.</p><span class="tags"><span class="badge neutral">Python</span></span></a>
+          <a class="tcard" id="backtest"><span class="h"><i data-lucide="history"></i>Backtest</span><p>Serveur web de backtest freqtrade. Jamais proposé depuis le pilotage.</p><span class="tags"><span class="badge neutral">Python</span></span></a>
+          <a class="tcard" id="data"><span class="h"><i data-lucide="download"></i>Télécharger des données</span><p>download_data par proxy, délai long.</p></a>
+          <a class="tcard" id="pairlist"><span class="h"><i data-lucide="list-filter"></i>Configuration de pairlist</span><p>Évaluation de pairlists.</p></a>
+          <a class="tcard" id="replay"><span class="h"><i data-lucide="rewind"></i>Replay dry</span><p>Harnais de replay. reset_db exige la saisie du nom du bot.</p></a>
+          <a class="tcard"><span class="h"><i data-lucide="bar-chart-3"></i>Comparateur de volume</span><p>Une seule requête cachée côté passerelle (5 min).</p></a>
+        </div>
+      </section>
+      <section id="reconciliation">
+        <h2><i data-lucide="git-compare-arrows"></i>Réconciliation du wallet</h2><p>Lecture : balayage au plus une fois par 60 s par wallet (endpoint Python existant). Écriture : aperçu, puis confirmation nommée avec maintien et saisie du nom. Jamais de forceexit direct sur une position sans bot propriétaire.</p>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th class="l colh">Coin</th><th class="colh">Wallet</th><th class="colh">Bots (somme)</th><th class="l colh">Classification</th><th class="l colh">Proposition</th><th></th></tr></thead><tbody>
+          <tr class="orph"><td class="l ui" style="font-weight:600">PENGU</td><td>S 212,40</td><td>0,00</td><td class="l ui"><span class="badge orph">Orpheline</span></td><td class="l ui">Fermer la position du wallet (close_unowned)</td><td><button class="btn xs" onclick="FQ.reconPreview()">Aperçu…</button></td></tr>
+          <tr><td class="l ui" style="font-weight:600">HYPE</td><td>L 230,0</td><td>L 230,0</td><td class="l ui"><span class="badge neutral">Netting cohérent (3 bots)</span></td><td class="l ui muted">Rien à faire</td><td></td></tr>
+          <tr><td class="l ui" style="font-weight:600">WIF</td><td>S 312,1</td><td>S 312,1</td><td class="l ui"><span class="badge neutral">Netting cohérent (4 bots)</span></td><td class="l ui muted">Rien à faire</td><td></td></tr>
+        </tbody></table></div>
+        <p class="muted" style="font-size:var(--t-xs);margin-top:6px">Dernier balayage il y a 41 s · prochain possible dans 19 s.</p>
+      </section>
+      <section id="diagnostic">
+        <h2><i data-lucide="gauge"></i>Diagnostic</h2><p>Les chiffres de flotte sont agrégés par la passerelle ; la timeline 429 n'existe que par bot (proxy du bot choisi).</p>
+        <div class="form"><div class="fr"><div class="l"><b>Bot</b><span>timeline de ses requêtes</span></div><div class="c"><button class="btn sm">dynv1_long<i data-lucide="chevron-down"></i></button><span class="badge warn">2 backoffs en 10 min</span></div></div>
+        <div class="fr"><div class="l"><b>Budget Hyperliquid</b><span>agrégé passerelle</span></div><div class="c"><div class="meter" style="width:220px"><i class="warn" style="width:61%"></i></div><span class="num">61 %</span></div></div>
+        <div class="fr"><div class="l"><b>Cache ftcache</b><span>taux de succès</span></div><div class="c"><div class="meter" style="width:220px"><i class="ok" style="width:97%"></i></div><span class="num">97,2 %</span></div></div></div>
+      </section>
+
+      <section id="reglages">
+        <h2><i data-lucide="bot"></i>Bots (registre)</h2><p>Une seule liste de bots, servie par la passerelle (ou ce navigateur en mode direct). Import et export uniques ici.</p>
+        <div class="banner" style="border:1px solid var(--line);border-radius:var(--r-2);margin-bottom:8px;animation:none"><i data-lucide="circle-check" style="color:var(--profit)"></i><span class="grow"><b>Migration automatique faite le 15/10 à 18:02.</b> 32 bots, groupes, tags et seuils importés depuis ce navigateur (ftAuthLoginInfo, ftBotComparison). Les ids ftbot.N restent des alias de cet appareil, jamais renumérotés. Anciennes clés intactes : l'ancienne interface fonctionne toujours.</span></div>
+        <div class="banner" style="border:1px solid var(--line);border-radius:var(--r-2);margin-bottom:8px;animation:none"><i data-lucide="radar" style="color:var(--info)"></i><span class="grow"><b>2 bots détectés sur ce serveur, absents du registre</b> (ports 9496, 9508).</span><button class="btn sm">Ajouter</button></div>
+        <div class="tbl-wrap"><table class="tbl" id="reg"></table></div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn sm"><i data-lucide="plus"></i>Ajouter un bot</button><button class="btn sm"><i data-lucide="upload"></i>Importer (v1, v2, v3)</button><button class="btn sm"><i data-lucide="download"></i>Exporter (v3 chiffré)</button></div>
+      </section>
+      <section id="passerelle">
+        <h2><i data-lucide="radio-tower"></i>Passerelle</h2><p>Sans passerelle, l'interface fonctionne en mode direct, y compris contre des bots freqtrade amont.</p>
+        <div class="form">
+          <div class="fr"><div class="l"><b>Source</b><span>auto : sonde puis repli</span></div><div class="c"><div class="seg"><button aria-pressed="true">Auto</button><button>Passerelle</button><button>Direct</button></div></div></div>
+          <div class="fr"><div class="l"><b>Adresse</b><span>par défaut : même hôte, port 9399</span></div><div class="c"><input class="input num" value="http://votre-hote:9399" style="width:260px" aria-label="Adresse de la passerelle"><button class="btn sm" onclick="FQ.demoConn('live')">Sonder maintenant</button></div></div>
+          <div class="fr"><div class="l"><b>État</b><span>4 états + mode direct</span></div><div class="c" id="connStates"></div></div>
+          <div class="fr"><div class="l"><b>Dernière sonde</b><span>toutes les 60 s en mode direct</span></div><div class="c"><span class="num">18:55:31</span><span class="muted">· protocole v1 · passerelle 0.1.0 · décalage d'horloge corrigé −0,4 s</span></div></div>
+        </div>
+      </section>
+      <section id="affichage">
+        <h2><i data-lucide="monitor"></i>Affichage</h2><p>Préférences par appareil (fqu2.settings), synchronisées par la passerelle si validé.</p>
+        <div class="form">
+          <div class="fr"><div class="l"><b>Langue</b><span>es, de, it, pt retombent sur EN</span></div><div class="c"><div class="seg"><button aria-pressed="true">Français</button><button>English</button></div></div></div>
+          <div class="fr"><div class="l"><b>Thème</b></div><div class="c"><div class="seg" id="thSeg"><button data-t="dark">Sombre</button><button data-t="light">Clair</button><button>Système</button></div></div></div>
+          <div class="fr"><div class="l"><b>Densité</b><span>tactile automatique sous 600 px</span></div><div class="c"><div class="seg"><button aria-pressed="true">Compacte</button><button>Confort</button></div></div></div>
+          <div class="fr"><div class="l"><b>Fuseau du P&L quotidien</b></div><div class="c"><div class="seg"><button aria-pressed="true">Europe/Paris</button><button>UTC</button></div></div></div>
+          <div class="fr"><div class="l"><b>Palette daltonien</b><span>gain bleu, perte orange ; signe toujours affiché</span></div><div class="c"><button class="switch" role="switch" aria-checked="false" id="cvd" aria-label="Palette daltonien"></button></div></div>
+          <div class="fr"><div class="l"><b>Mouvement réduit</b><span>suit le système ; le maintien de 1 s reste</span></div><div class="c"><button class="switch" role="switch" aria-checked="false" aria-label="Mouvement réduit"></button></div></div>
+          <div class="fr"><div class="l"><b>Ticker BTC · ETH</b><span>désactivé par défaut, barre d'état seulement</span></div><div class="c"><button class="switch" role="switch" aria-checked="false" aria-label="Ticker"></button></div></div>
+        </div>
+      </section>
+      <section id="alertes">
+        <h2><i data-lucide="bell"></i>Alertes et notifications</h2><p>Règles évaluées 24/7 par la passerelle (14 types portés). Seuils globaux, surcharge par bot dans le registre.</p>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th class="l colh">Règle</th><th class="colh">Seuil</th><th class="l colh">Sévérité</th><th class="colh">Actif</th></tr></thead><tbody>
+          <tr><td class="l ui">Drawdown du bot (avec latent)</td><td>−12 %</td><td class="l ui"><span class="badge crit">Critique</span></td><td class="ui">oui</td></tr>
+          <tr><td class="l ui">Bot hors ligne (hors démarrage, 20 min de grâce)</td><td>2 min</td><td class="l ui"><span class="badge crit">Critique</span></td><td class="ui">oui</td></tr>
+          <tr><td class="l ui">Liquidation proche</td><td>15 %</td><td class="l ui"><span class="badge crit">Critique</span></td><td class="ui">oui</td></tr>
+          <tr><td class="l ui">Donnée périmée</td><td>3 × cadence</td><td class="l ui"><span class="badge warn">Vigilance</span></td><td class="ui">oui</td></tr>
+          <tr><td class="l ui">Backoff 429 répété</td><td>3 / 10 min</td><td class="l ui"><span class="badge warn">Vigilance</span></td><td class="ui">oui</td></tr>
+          <tr><td class="l ui">Aucun trade (bot long en marché baissier : info)</td><td>24 h</td><td class="l ui"><span class="badge info">Info</span></td><td class="ui">oui</td></tr>
+        </tbody></table></div>
+        <div class="note warn" style="margin-top:8px"><i data-lucide="triangle-alert"></i><span>Notifications navigateur indisponibles : le tableau de bord est servi en HTTP (elles exigent HTTPS). Aucune notification hors onglet ouvert.</span></div>
+      </section>
+      <section id="securite">
+        <h2><i data-lucide="shield-check"></i>Sécurité des actions</h2><p>Non désactivable pour un bot live. Une seule durée de maintien : 1 s, jamais raccourcie (même en mouvement réduit).</p>
+        <div class="tbl-wrap"><table class="tbl lvls"><thead><tr><th class="colh">Niveau</th><th class="colh">Actions</th><th class="colh">Geste</th></tr></thead><tbody>
+          <tr><td><b>Réduire le risque</b></td><td>Pause des entrées, acquitter, silence</td><td>Confirmation nommée (bot + Live/Dry), un clic</td></tr>
+          <tr><td><b>Dry</b></td><td>Toutes les actions sur un bot dry</td><td>Confirmation nommée, un clic</td></tr>
+          <tr><td><b>Live</b></td><td>Sortie totale ou partielle, renfort, entrée forcée, reprise, recharger, blacklist, lever un verrou, annuler un ordre, écriture de config</td><td>Maintien 1 s du bouton « Maintenir pour … en réel »</td></tr>
+          <tr><td><b>Live destructif</b></td><td>Tout sortir, arrêter, supprimer de la base, reset_db de replay, réalignement et fermeture par réconciliation</td><td>Saisie du nom du bot (vérifiée côté serveur) + maintien 1 s</td></tr>
+        </tbody></table></div>
+        <div style="margin-top:10px"><div class="lab" style="margin-bottom:6px">Voir chaque résultat d'action (démo sur un trade dry)</div><div style="display:flex;gap:6px;flex-wrap:wrap" id="resDemo"></div></div>
+      </section>
+      <section id="espaces">
+        <h2><i data-lucide="panels-top-left"></i>Espaces de travail</h2><p>Trois préréglages, panneaux redimensionnables par zone ; pas de glisser-déposer libre.</p>
+        <div class="form"><div class="fr"><div class="l"><b>Surveillance</b><span>défaut, Alt 1</span></div><div class="c"><button class="btn sm">Réinitialiser</button></div></div><div class="fr"><div class="l"><b>Incident</b><span>Alt 2</span></div><div class="c"><button class="btn sm">Réinitialiser</button></div></div><div class="fr"><div class="l"><b>Analyse</b><span>Alt 3</span></div><div class="c"><button class="btn sm">Réinitialiser</button></div></div></div>
+      </section>
+      <section id="apropos">
+        <h2><i data-lucide="info"></i>À propos et audit</h2><p>Chaque mutation est journalisée par la passerelle (jamais de token).</p>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th class="l colh">Heure</th><th class="l colh">Bot</th><th class="l colh">Action</th><th class="l colh">Appareil</th><th class="l colh">Résultat</th></tr></thead><tbody>
+          <tr><td class="l">17:01</td><td class="l ui"><span class="livemark"></span> hippo_short_sharpe</td><td class="l ui">forceexit SEI #1162, 100 %</td><td class="l ui">téléphone</td><td class="l ui">rempli (0,7 s)</td></tr>
+          <tr><td class="l">17:52</td><td class="l ui"><span class="livemark"></span> hippo_ladder_long</td><td class="l ui">reload_config</td><td class="l ui">ordinateur</td><td class="l ui">transmis</td></tr>
+          <tr><td class="l">12:14</td><td class="l ui"><span class="badge dry">Dry</span> casino_dry</td><td class="l ui">stopbuy</td><td class="l ui">ordinateur</td><td class="l ui">transmis</td></tr>
+        </tbody></table></div>
+        <p class="muted" style="font-size:var(--t-xs)">Interface 2.0.0-maquette · passerelle 0.1.0 · clés fqu2.settings, fqu2.gateway, fqu2.migration, IndexedDB fqu2-cache.</p>
+      </section>
+    </div>
+  </main>
+  <footer class="status" id="status"></footer>
+  <nav class="tabbar" id="tabbar" aria-label="Navigation"></nav>
+</div>
+<script>/*@CORE*/</script>
+<script>
+(function () {
+const { $, $$ } = FQ, i = FQ.i;
+function reg() {
+  const rows = FQ.bots.slice(0, 12).concat([FQ.bot('kelt_dpo_long'), FQ.bot('zscore_pairs'), FQ.bot('hippo_ladder_long')].filter((b, k, a) => a.indexOf(b) === k && FQ.bots.indexOf(b) >= 12));
+  $('#reg').innerHTML = `<thead><tr><th class="l colh">Bot</th><th class="l colh c-key">Alias · bot_key</th><th class="l colh c-grp">Groupe</th><th class="l colh">État</th><th class="l colh c-tags">Tags</th><th></th></tr></thead><tbody>${rows.map(b => `<tr class="${b.mode === 'live' ? 'is-live' : 'is-dry'}"><td class="l"><span class="botcell">${FQ.ui.stateDot(b)}<span class="nm">${b.name}</span>${FQ.ui.modeBadge(b, true)}</span></td><td class="l c-key muted">${b.id} · ${b.key}</td><td class="l ui c-grp">${b.groupName}</td><td class="l ui">${FQ.ui.stateText(b) || (b.stale ? '<span class="warn-t">périmé</span>' : 'en ligne')}${b.seeded ? ` <span class="muted">depuis le ${b.seeded}</span>` : ''}</td><td class="l ui c-tags">${b.market === 'hip3' ? '<span class="badge xyz">HIP-3</span>' : '<span class="badge neutral">crypto</span>'}</td><td>${b.state === 'auth_expired' ? '<button class="btn xs" style="border-color:var(--warn)">Se reconnecter</button>' : `<button class="btn xs ghost icon" aria-label="Modifier ${b.name}">${i('pencil')}</button>`}</td></tr>`).join('')}</tbody>`;
+}
+function connStates() {
+  $('#connStates').innerHTML = [['connecting', 'gateway', 'Connexion'], ['live', 'gateway', 'Passerelle'], ['degraded', 'gateway', 'Dégradée'], ['offline', 'gateway', 'Hors ligne'], ['live', 'direct', 'Direct']].map(c => `<span class="conn" data-state="${c[0]}" data-kind="${c[1]}"><span class="d"></span><b>${c[2]}</b></span>`).join('');
+}
+function resDemo() {
+  const x = FQ.positions.find(q => q.bot && q.bot.mode === 'dry' && q.bot.state === 'online');
+  $('#resDemo').innerHTML = [['fill', 'Transmis puis rempli'], ['unknown', 'À vérifier'], ['mismatch', '409 état changé'], ['inprogress', '409 déjà en cours'], ['401', '401 session'], ['rejected', 'Refusé']].map(r => `<button class="btn sm" data-r="${r[0]}">${r[1]}</button>`).join('');
+  $$('#resDemo button').forEach(b => b.onclick = () => { FQ.resultMode = b.dataset.r; FQ.exitTrade(x); });
+}
+$('#thSeg').onclick = e => { const b = e.target.closest('button'); if (b && b.dataset.t) FQ.setTheme(b.dataset.t); syncTh(); };
+const syncTh = () => $$('#thSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === document.documentElement.dataset.theme));
+$('#cvd').onclick = e => { const on = e.currentTarget.getAttribute('aria-checked') !== 'true'; e.currentTarget.setAttribute('aria-checked', on); document.documentElement.dataset.cvd = on ? '1' : ''; };
+$$('.side a').forEach(a => a.onclick = () => { $$('.side a').forEach(x => x.classList.toggle('on', x === a)); });
+FQ.reconPreview = () => FQ.act({ action: 'recon_close_unowned', verb: 'fermer', verbCap: 'Fermer', title: 'Fermer la position orpheline PENGU', sub: 'Aperçu reconstruit à l\'instant par le service Python : short 212,40 USDC, aucun bot propriétaire.', icon: 'git-compare-arrows', bot: { name: 'PENGU', key: 'wallet partagé · close_unowned', mode: 'live', state: 'online' }, level: 'destroy', est: [['P&L estimé', FQ.s(-26.12) + ' USDC', 'down'], ['Plafond', '1 000 USDC']], notes: [['warn', 'Ordre marché signé (reduceOnly) sur le wallet partagé. Aucun bot ne sera modifié.']], okTitle: 'Position fermée' });
+document.addEventListener('fq:theme', syncTh);
+FQ.boot('tools', () => { reg(); connStates(); resDemo(); syncTh(); });
+if (location.hash) setTimeout(() => { const t = document.querySelector(location.hash); t && t.scrollIntoView(); }, 150);
+})();
+</script>
+</body>
+</html>

@@ -54,3 +54,6 @@ frequi-dist.zip
 *secret*
 *.key
 *.pem
+
+# Redesign screenshots are regenerated locally, not versioned
+docs/redesign/**/*.png

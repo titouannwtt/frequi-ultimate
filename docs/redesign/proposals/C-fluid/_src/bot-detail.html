@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090B0E">
+<title>dynv1_short · FreqUI Ultimate (proposition C « Pouls »)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+/*@CSS*/
+
+/* ================= Page bot ================= */
+.switcher { display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 10px 0 4px; border-radius: var(--r-md); border: 0; background: none; cursor: pointer; min-width: 0; }
+.switcher:hover { background: var(--surface-2); }
+.switcher .avatar { width: 36px; height: 36px; border-radius: 11px; font-size: 12px; }
+.switcher b { font-size: 19px; font-weight: 650; letter-spacing: -.02em; white-space: nowrap; }
+.idline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; color: var(--text-3); font-size: var(--fs-sm); margin: 0 0 var(--s-3); }
+.idline .st { display: inline-flex; align-items: center; gap: 6px; color: var(--profit); font-weight: 550; }
+
+.alertbar { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--r-lg); background: var(--loss-soft); border: 1px solid color-mix(in srgb, var(--loss) 30%, transparent); margin-bottom: var(--s-3); }
+.alertbar .ico { width: 34px; height: 34px; border-radius: 10px; background: var(--loss); color: var(--loss-ink); display: grid; place-items: center; flex: none; }
+.alertbar .txt { flex: 1; min-width: 0; font-size: 13.5px; }
+.alertbar .txt b { display: block; font-size: 14.5px; }
+.alertbar .acts { display: flex; gap: 6px; }
+@media (max-width: 599px) { .alertbar { flex-wrap: wrap; } .alertbar .acts { width: 100%; } .alertbar .acts .btn { flex: 1; } }
+
+.kstrip { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--line); margin-bottom: var(--s-3); }
+.kstrip .kpi { background: var(--surface); padding: 12px 14px; }
+.kstrip .kpi .v { font-size: 20px; }
+@media (min-width: 768px) { .kstrip { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1280px) { .kstrip { grid-template-columns: repeat(6, 1fr); } }
+
+.actbar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: var(--s-4); }
+.actbar .btn { flex-direction: column; height: 64px; gap: 5px; font-size: 12px; }
+@media (min-width: 768px) { .actbar { display: flex; } .actbar .btn { flex-direction: row; height: var(--ctl-md); font-size: var(--fs-sm); } .actbar .sp { flex: 1; } }
+
+.tabs { position: sticky; top: 0; z-index: 25; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(var(--s-4) * -1) var(--s-3); padding: 6px var(--s-4); background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { position: relative; height: 40px; padding: 0 14px; border: 0; background: none; color: var(--text-2); font-weight: 550; border-radius: var(--r-sm); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.tabs button .n { font-size: 11px; color: var(--text-3); background: var(--surface-3); border-radius: 9px; padding: 1px 6px; }
+.tabs button.on { color: var(--text); }
+.tabs button::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -7px; height: 2px; border-radius: 2px; background: var(--text); transform: scaleX(0); transition: transform var(--d-base) var(--e-dec); }
+.tabs button.on::after { transform: none; }
+@media (min-width: 768px) { .tabs { margin: 0 calc(var(--s-6) * -1) var(--s-4); padding: 6px var(--s-6); } }
+
+.panel { display: none; }
+.panel.on { display: block; animation: rise var(--d-base) var(--e-dec); }
+
+.pos-layout { display: grid; gap: var(--s-3); }
+@media (min-width: 1024px) { .pos-layout { grid-template-columns: minmax(0, 1fr) 400px; gap: var(--s-4); align-items: start; } .drawer-inline { position: sticky; top: 64px; } }
+@media (min-width: 1920px) { .pos-layout { grid-template-columns: minmax(0, 1fr) 460px; } }
+.drawer-inline { display: none; }
+@media (min-width: 1024px) { .drawer-inline { display: block; } }
+.chartcard { display: none; }
+@media (min-width: 1024px) { .chartcard { display: block; } }
+
+/* cartes de position */
+.pc { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; padding: 14px 16px; cursor: pointer; position: relative; transition: background-color var(--d-fast); }
+.pc + .pc { border-top: 1px solid var(--line); }
+.pc:hover { background: var(--surface-2); }
+.pc.sel { background: var(--surface-2); }
+.pc.sel::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--text); }
+.pc .pair { font-weight: 620; font-size: 16px; display: flex; gap: 6px; align-items: center; }
+.pc .v { text-align: right; font-weight: 650; font-size: 17px; }
+.pc .sub { font-size: 12.5px; color: var(--text-3); }
+.pc .track { grid-column: 1 / -1; }
+.track { position: relative; height: 26px; }
+.track .trk { position: absolute; left: 0; right: 0; top: 11px; height: 4px; border-radius: 2px; background: var(--surface-3); }
+.track .fill { position: absolute; left: 0; top: 11px; height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--text-2) 60%, transparent); }
+.track .lv { position: absolute; top: 7px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; border: 2px solid var(--text-3); background: var(--surface); }
+.track .lv.f { background: var(--text-2); border-color: var(--text-2); }
+.track .px { position: absolute; top: 2px; width: 3px; height: 22px; margin-left: -1.5px; border-radius: 2px; background: var(--loss); box-shadow: 0 0 0 3px var(--loss-soft); transition: left var(--d-tick) var(--e-dec); }
+.track .px.up { background: var(--profit); box-shadow: 0 0 0 3px var(--profit-soft); }
+.track .tp { position: absolute; top: 5px; width: 2px; height: 16px; background: var(--profit); opacity: .8; }
+.tl { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+/* tiroir de trade + échelle DCA */
+.td-h { display: flex; align-items: center; gap: 8px; }
+.td-h .pair { font-size: 20px; font-weight: 650; letter-spacing: -.02em; }
+.td-big { font-size: 34px; font-weight: 650; letter-spacing: -.03em; margin: 10px 0 2px; }
+.td-sub { font-size: 13px; color: var(--text-3); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.ladder { position: relative; height: 300px; margin: 16px 0 8px; border-radius: var(--r-md); background: var(--bg-raised); border: 1px solid var(--line); overflow: hidden; }
+.ladder .zone { position: absolute; left: 0; right: 0; }
+.ladder .lvl { position: absolute; left: 0; right: 0; height: 0; }
+.ladder .lvl .ln { position: absolute; left: 74px; right: 8px; top: 0; border-top: 1.5px solid var(--line-strong); }
+.ladder .lvl .tag { position: absolute; left: 8px; top: -9px; height: 18px; padding: 0 6px; border-radius: 5px; font-size: 10.5px; font-weight: 650; display: inline-flex; align-items: center; background: var(--surface-3); color: var(--text-2); letter-spacing: .03em; }
+.ladder .lvl .r { position: absolute; right: 10px; top: -9px; line-height: 18px; padding: 0 4px; border-radius: 4px; background: var(--bg-raised); font-size: 11.5px; color: var(--text-2); white-space: nowrap; }
+.ladder .lvl.f .ln { border-top-color: var(--text-2); }
+.ladder .lvl.f .tag { background: var(--text-2); color: var(--bg); }
+.ladder .lvl.pend .ln { border-top-style: dashed; border-top-color: var(--warn); }
+.ladder .lvl.pend .tag { background: var(--warn-soft); color: var(--warn); }
+.ladder .lvl.avg .ln { border-top: 1.5px dashed var(--info); }
+.ladder .lvl.avg .tag { background: var(--info-soft); color: var(--info); }
+.ladder .lvl.tp .ln { border-top: 1.5px dashed var(--profit); }
+.ladder .lvl.tp .tag { background: var(--profit-soft); color: var(--profit); }
+.ladder .lvl.nowl { z-index: 2; }
+.ladder .lvl.nowl .ln { left: 0; border-top: 2px solid var(--loss); }
+.ladder .lvl.nowl .tag { background: var(--loss); color: var(--loss-ink); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0; }
+.ladder .lvl.nowl .r { color: var(--loss); font-weight: 600; }
+.ladder .now { position: absolute; left: 60px; right: 0; height: 0; z-index: 2; transition: top var(--d-tick) var(--e-dec); }
+.ladder .now::before { content: ""; position: absolute; left: 4px; right: 0; top: -1px; height: 2px; background: var(--loss); }
+.ladder .now .pill { position: absolute; right: 8px; top: -12px; height: 24px; padding: 0 8px; border-radius: 7px; background: var(--loss); color: var(--loss-ink); font: 600 12px/24px var(--font-mono); }
+.ladder .now .dot { position: absolute; left: 0; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--loss); }
+.ladder .liq { position: absolute; left: 0; right: 0; top: 0; height: 26px; display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 11.5px; color: var(--loss); background: linear-gradient(180deg, var(--loss-soft), transparent); font-weight: 550; }
+.ladder .band { position: absolute; left: 74px; right: 8px; background: var(--loss-soft); opacity: .7; }
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border-radius: var(--r-md); overflow: hidden; }
+.facts > div { background: var(--surface); padding: 10px 12px; }
+.facts .v { font-weight: 600; margin-top: 2px; font-size: 14px; }
+.td-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.td-acts .wide { grid-column: 1 / -1; }
+.danger-zone { margin-top: 14px; border: 1px dashed color-mix(in srgb, var(--loss) 35%, transparent); border-radius: var(--r-md); }
+.danger-zone summary { list-style: none; cursor: pointer; padding: 10px 12px; font-size: 13px; color: var(--text-2); display: flex; align-items: center; gap: 8px; }
+.danger-zone summary::-webkit-details-marker { display: none; }
+.danger-zone .in { padding: 0 12px 12px; display: grid; gap: 8px; }
+.orders { font-size: 13px; }
+.orders .o { display: grid; grid-template-columns: 54px 1fr auto auto; gap: 10px; align-items: center; padding: 8px 0; }
+.orders .o + .o { border-top: 1px solid var(--line); }
+
+/* autres onglets */
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal div { aspect-ratio: 1.4; border-radius: 6px; font-size: 10.5px; padding: 4px 5px; color: var(--text-2); display: flex; flex-direction: column; justify-content: space-between; }
+.grid2 { display: grid; gap: var(--s-3); }
+@media (min-width: 1024px) { .grid2 { grid-template-columns: 1fr 1fr; gap: var(--s-4); } }
+.field { display: flex; justify-content: space-between; gap: 12px; padding: 11px 16px; font-size: 13.5px; }
+.field + .field { border-top: 1px solid var(--line); }
+.field .k { color: var(--text-2); }
+.field .v { font-family: var(--font-mono); font-size: 12.5px; }
+.pairrow { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 10px 16px; font-size: 13.5px; }
+.pairrow + .pairrow { border-top: 1px solid var(--line); }
+@media (min-width: 768px) { .hide-desk { display: none; } }
+@media (max-width: 479px) { .hide-mob { display: none; } }
+@media (min-width: 480px) { .show-mob { display: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="compact" aria-hidden="true">
+  <a class="btn icon ghost sm" href="dashboard.html"><i data-lucide="chevron-left"></i></a>
+  <span class="t" id="cName">dynv1_short</span><span class="badge live">Live</span>
+  <span class="v num down" id="cLat">−58,37</span>
+  <span class="sp"></span>
+  <span class="conn-slot"></span>
+</div>
+
+<main class="main">
+  <header class="topbar" style="gap:4px">
+    <a class="btn icon ghost" href="dashboard.html" aria-label="Retour à la flotte"><i data-lucide="chevron-left"></i></a>
+    <button class="switcher" id="switcher" aria-label="Changer de bot">
+      <span class="avatar" id="av">DS</span>
+      <span style="display:flex;flex-direction:column;align-items:flex-start;min-width:0"><b id="bName">dynv1_short</b></span>
+      <span class="badge live hide-mob" id="bMode">Live</span>
+      <i data-lucide="chevrons-up-down" class="i16 faint"></i>
+    </button>
+    <span class="sp"></span>
+    <span class="conn-slot"></span>
+  </header>
+  <div class="idline" id="idline"></div>
+
+  <div class="banner offline"><i data-lucide="wifi-off"></i><div><b>Connexion perdue.</b> Valeurs figées, actions désactivées.</div></div>
+  <div class="banner direct"><i data-lucide="radio-tower"></i><div><b>Mode direct.</b> Ce bot est interrogé par le navigateur toutes les 10 s.</div></div>
+
+  <div class="alertbar" id="alertbar">
+    <span class="ico"><i data-lucide="trending-down"></i></span>
+    <div class="txt"><b>Drawdown −17,8 % (seuil −15 %)</b><span class="muted">Depuis 38 min. 4 positions short, dont 2 au 4e renfort DCA.</span></div>
+    <div class="acts"><button class="btn sm" data-act="pause" data-money data-key="dynv1_short:pause"><i data-lucide="pause" class="i16"></i>Pause entrées</button><button class="btn sm ghost">Acquitter</button></div>
+  </div>
+
+  <section class="kstrip" id="hero">
+    <div class="kpi"><div class="label">Latent</div><div class="v num tick" id="kLat">0,00</div><div class="s">4 positions</div></div>
+    <div class="kpi"><div class="label">Réalisé jour</div><div class="v num tick" id="kDay">0,00</div><div class="s">3 sorties</div></div>
+    <div class="kpi"><div class="label">7 jours</div><div class="v num tick" id="k7">0,00</div><div class="s">winrate 71 %</div></div>
+    <div class="kpi"><div class="label">Drawdown</div><div class="v num down">−17,8<span class="unit">%</span></div><div class="meter bad" style="margin-top:8px"><i style="width:100%"></i></div></div>
+    <div class="kpi"><div class="label">Slots</div><div class="v num">4<span class="faint" style="font-weight:500">/5</span></div><div class="s">capital 900 USDC</div></div>
+    <div class="kpi"><div class="label">Exposition</div><div class="v num">909<span class="unit">USDC</span></div><div class="s">short · levier 3x</div></div>
+  </section>
+
+  <div class="actbar">
+    <button class="btn" data-act="pause" data-money data-key="dynv1_short:pause"><i data-lucide="pause"></i>Pause entrées</button>
+    <button class="btn" data-act="reload" data-money data-key="dynv1_short:reload"><i data-lucide="rotate-cw"></i>Recharger</button>
+    <button class="btn" data-act="entry" data-money><i data-lucide="circle-plus"></i>Entrée forcée</button>
+    <span class="sp hide-mob"></span>
+    <button class="btn warn-soft hide-mob" data-act="stop" data-money data-key="dynv1_short:stop"><i data-lucide="square"></i>Arrêter</button>
+    <button class="btn danger-soft" data-act="exitall" data-money data-key="dynv1_short:exitall"><i data-lucide="log-out"></i>Tout fermer</button>
+  </div>
+
+  <nav class="tabs" id="tabs" role="tablist">
+    <button class="on" data-p="pos"><i data-lucide="layers" class="i16"></i>Positions <span class="n">4</span></button>
+    <button data-p="perf"><i data-lucide="chart-no-axes-column" class="i16"></i>Performance</button>
+    <button data-p="pairs"><i data-lucide="list" class="i16"></i>Paires <span class="n">34</span></button>
+    <button data-p="cfg"><i data-lucide="file-cog" class="i16"></i>Config</button>
+    <button data-p="logs"><i data-lucide="scroll-text" class="i16"></i>Logs</button>
+  </nav>
+
+  <!-- POSITIONS -->
+  <section class="panel on" id="p-pos">
+    <div class="pos-layout">
+      <div style="display:flex;flex-direction:column;gap:var(--s-4);min-width:0">
+        <div class="card chartcard">
+          <div class="card-h">
+            <button class="btn sm" id="pairBtn"><b id="chPair">ENA/USDC</b><i data-lucide="chevron-down" class="i14"></i></button>
+            <span class="meta" id="chMeta">0,3315 · 15m</span><span class="sp"></span>
+            <div class="seg" id="tfSeg"><button data-v="5m">5m</button><button data-v="15m" class="on">15m</button><button data-v="1h">1h</button><button data-v="4h">4h</button></div>
+            <a class="btn sm icon ghost" href="charts.html" aria-label="Plein écran"><i data-lucide="maximize-2" class="i16"></i></a>
+          </div>
+          <div id="chart" style="height:340px"></div>
+        </div>
+        <div class="card" id="posList"></div>
+      </div>
+      <aside class="card drawer-inline" id="drawerInline"><div class="card-b" style="padding-top:16px" id="drawerBody"></div></aside>
+    </div>
+  </section>
+
+  <!-- PERFORMANCE -->
+  <section class="panel" id="p-perf">
+    <div class="grid2">
+      <div class="card"><div class="card-h"><h2>Octobre</h2><span class="meta">P&amp;L réalisé par jour</span><span class="sp"></span><div class="seg" id="calSeg"><button class="on">Jour</button><button>Semaine</button><button>Mois</button></div></div><div class="card-b"><div class="cal" id="cal"></div></div></div>
+      <div class="card"><div class="card-h"><h2>Par paire</h2><span class="meta">30 jours</span></div><div id="perfPairs"></div></div>
+      <div class="card"><div class="card-h"><h2>Raisons de sortie</h2></div><div class="card-b" id="exitR"></div></div>
+      <div class="card"><div class="card-h"><h2>Profil</h2></div><div id="prof"></div></div>
+    </div>
+  </section>
+
+  <!-- PAIRES -->
+  <section class="panel" id="p-pairs">
+    <div class="grid2">
+      <div class="card"><div class="card-h"><h2>Whitelist</h2><span class="meta">VolumePairList, 34 paires</span><span class="sp"></span><button class="btn sm">Méthodes</button></div><div id="wl"></div></div>
+      <div style="display:flex;flex-direction:column;gap:var(--s-4)">
+        <div class="card"><div class="card-h"><h2>Verrous</h2><span class="meta">2 actifs</span></div>
+          <div class="pairrow"><span><b>WIF</b> <span class="faint">jusqu'à 20:15</span></span><span class="badge neutral">cooldown</span><button class="btn sm ghost" data-money>Lever</button></div>
+          <div class="pairrow"><span><b>PENGU</b> <span class="faint">jusqu'à 22:00</span></span><span class="badge warn">stoploss guard</span><button class="btn sm ghost" data-money>Lever</button></div></div>
+        <div class="card"><div class="card-h"><h2>Blacklist</h2><span class="meta">3</span><span class="sp"></span><button class="btn sm" data-money><i data-lucide="plus" class="i14"></i>Ajouter</button></div>
+          <div class="card-b" style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">BTC <i data-lucide="x" class="i14"></i></span><span class="chip">ETH <i data-lucide="x" class="i14"></i></span><span class="chip">xyz:* <i data-lucide="x" class="i14"></i></span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONFIG -->
+  <section class="panel" id="p-cfg">
+    <div class="grid2">
+      <div class="card"><div class="card-h"><h2>Configuration en service</h2><span class="sp"></span><button class="btn sm"><i data-lucide="file-pen-line" class="i14"></i>Éditer</button></div>
+        <div id="cfgList"></div></div>
+      <div class="card"><div class="card-h"><h2>Paramètres de stratégie</h2><span class="meta">JSON hyperopt prioritaire</span></div><div id="cfgParams"></div></div>
+    </div>
+  </section>
+
+  <!-- LOGS -->
+  <section class="panel" id="p-logs"><div class="card" id="botLogs" style="padding:8px 0"></div></section>
+</main>
+
+<div class="sheet" id="tradeSheet" role="dialog" aria-label="Détail de la position">
+  <div class="grab"></div>
+  <div class="sh-b" id="sheetBody" style="padding-top:8px"></div>
+</div>
+<div class="sheet" id="partialSheet" role="dialog" aria-label="Sortie partielle"></div>
+
+<script>
+/*@CORE*/
+</script>
+<script>
+(() => {
+  const P = Pouls;
+  const $ = (s, r = document) => r.querySelector(s);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const q = new URLSearchParams(location.search);
+  const bot = P.bot('dynv1_short');
+  const ps = P.positions.filter((p) => p.bot === bot.name).sort((a, b) => a.latent - b.latent);
+  let sel = ps[0];
+
+  document.querySelectorAll('.conn-slot').forEach((s) => (s.outerHTML = P.connHtml()));
+  P.boot('bot', render);
+  P.compactOn($('#hero'));
+
+  $('#av').style.background = P.color(bot.name); $('#av').textContent = P.initials(bot.name);
+  $('#idline').innerHTML = `<span class="badge live show-mob">Live</span><span class="st"><span class="sdot"></span>En marche</span><span>${bot.strat}</span><span>15m · short · 3x</span><span>port ${bot.port}</span><span class="age">donnée ${P.ago(4)}</span><span class="hide-mob">démarré il y a 6 j 4 h</span>`;
+
+  /* ---------- échelle DCA d'une position ---------- */
+  const STEPS = [0, 2, 5, 9, 14], SIZES = [1, 1.35, 1.8, 2.4, 3.2];
+  function ladder(p) {
+    const dir = p.short ? 1 : -1;
+    const base = p.stake / SIZES.slice(0, p.dca).reduce((a, b) => a + b, 0);
+    const rel = STEPS.map((s) => 1 + dir * s / 100);
+    const avgRel = SIZES.slice(0, p.dca).reduce((a, s, i) => a + s * base * rel[i], 0) / p.stake;
+    const N = p.stake * p.lev;
+    const nowRel = avgRel * (1 - dir * p.latent / N);
+    const k = p.price / nowRel;
+    const lv = rel.map((r, i) => ({ i: i + 1, price: r * k, size: SIZES[i] * base, filled: i < p.dca }));
+    const avg = avgRel * k, tp = avg * (1 - dir * 0.015), liq = p.price * (1 + dir * p.liq / 100);
+    const next = lv[p.dca];
+    return { lv, avg, tp, liq, now: p.price, next, N };
+  }
+  const fp = (x) => P.fmt(x, x < 1 ? 4 : x < 100 ? 3 : 2);
+
+  function drawerHtml(p, inSheet) {
+    const L = ladder(p);
+    const prices = [...L.lv.map((l) => l.price), L.tp, L.now];
+    let lo = Math.min(...prices), hi = Math.max(...prices); const pad = (hi - lo) * .08; lo -= pad; hi += pad;
+    const H = 300, top = (x) => (26 + (1 - (x - lo) / (hi - lo)) * (H - 40)).toFixed(1);
+    const nextDist = L.next ? (L.next.price / L.now - 1) * 100 : null;
+    return `
+      <div class="td-h">
+        <span class="pair">${p.pair.replace('/USDC', '')}</span><span class="badge ${p.short ? 'short' : 'long'}">${p.short ? 'Short' : 'Long'} ${p.lev}x</span>
+        <span class="faint" style="font-size:12.5px">#${p.id}</span><span style="flex:1"></span>
+        ${inSheet ? `<button class="btn icon ghost sm" data-close aria-label="Fermer">${P.ic('x')}</button>` : ''}
+      </div>
+      <div class="target live" style="margin-top:10px;padding:8px 10px"><div class="avatar" style="width:28px;height:28px;border-radius:8px;font-size:10px;background:${P.color(bot.name)}">${P.initials(bot.name)}</div>
+        <div style="flex:1;font-size:13px"><b>${bot.name}</b> <span class="faint">· port ${bot.port}</span></div><span class="badge live">Live</span></div>
+      <div class="td-big num ${P.cls(p.latent)}"><span class="tick" data-v="${p.latent}" id="tdLat">${P.fmt(p.latent, 2, true)}</span><span class="unit" style="font-size:14px">USDC</span></div>
+      <div class="td-sub"><span class="${P.cls(p.pct)} num">${P.pct(p.pct)} sur la mise</span><span>${P.dur(p.hours)} <span class="durp ${p.durPct > 90 ? 'vhi' : p.durPct > 70 ? 'hi' : ''}" style="display:inline-block;padding:0 5px;border-radius:5px;font-size:11px;${p.durPct > 70 ? 'background:var(--warn-soft);color:var(--warn)' : ''}">p${p.durPct}</span></span></div>
+
+      <div class="ladder" aria-label="Échelle DCA">
+        <div class="liq">${P.ic('arrow-up', 'i14')}Liquidation ${fp(L.liq)} · ${P.pct(p.liq, 1, true)} au-dessus</div>
+        <div class="band" style="top:${Math.min(top(L.avg), top(L.now))}px;height:${Math.abs(top(L.avg) - top(L.now))}px"></div>
+        ${(() => {
+          // anti-collision : la ligne reste au vrai prix, l'étiquette glisse d'au moins 19 px
+          const items = [
+            ...L.lv.map((l) => ({ y: +top(l.price), cls: l.filled ? 'f' : l.i === p.dca + 1 ? 'pend' : '', tag: 'DCA ' + l.i, r: `${fp(l.price)} · ${P.fmt(l.size, 0)} USDC${l.filled ? '' : l.i === p.dca + 1 ? ' · en attente' : ''}` })),
+            { y: +top(L.avg), cls: 'avg', tag: 'MOY', r: fp(L.avg) },
+            { y: +top(L.tp), cls: 'tp', tag: 'SORTIE', r: fp(L.tp) + ' · ROI 1,5 %' },
+            { y: +top(L.now), cls: 'nowl', tag: fp(L.now), r: 'prix actuel' },
+          ].sort((a, b) => a.y - b.y);
+          let last = 34; items.forEach((it) => { it.ly = Math.max(it.y, last + 19); last = it.ly; });
+          let lim = H - 12; for (let i = items.length - 1; i >= 0; i--) { items[i].ly = Math.min(items[i].ly, lim); lim = items[i].ly - 19; }
+          return items.map((it) => `<div class="lvl ${it.cls}" style="top:${it.y}px"><span class="ln"></span><span class="tag" style="transform:translateY(${(it.ly - it.y).toFixed(1)}px)">${it.tag}</span><span class="r num" style="transform:translateY(${(it.ly - it.y).toFixed(1)}px)">${it.r}</span></div>`).join('');
+        })()}
+      </div>
+
+      <div class="facts">
+        <div><div class="label">Mise engagée</div><div class="v num">${P.fmt(p.stake, 2)} <span class="faint" style="font-weight:500">/ ${P.fmt(L.lv.reduce((a, l) => a + l.size, 0), 0)}</span></div></div>
+        <div><div class="label">Notionnel</div><div class="v num">${P.fmt(L.N, 2)}</div></div>
+        <div><div class="label">Prochain renfort</div><div class="v num ${L.next && nextDist < 1.5 ? 'warn' : ''}">${L.next ? `DCA ${L.next.i} à ${P.pct(nextDist, 1, true)}` : 'échelle pleine'}</div></div>
+        <div><div class="label">Prix moyen</div><div class="v num">${fp(L.avg)}</div></div>
+      </div>
+
+      <div class="td-acts">
+        <button class="btn lg danger wide" data-money data-key="${p.bot}:close:${p.id}" data-tact="close">${P.ic('x', 'i16')}Fermer au marché</button>
+        <button class="btn" data-money data-tact="partial">${P.ic('scissors', 'i16')}Sortie partielle</button>
+        <button class="btn" data-money data-tact="increase">${P.ic('circle-plus', 'i16')}Renforcer</button>
+      </div>
+      <details class="danger-zone"><summary>${P.ic('shield-alert', 'i16')}Actions sur la base du bot<span style="flex:1"></span>${P.ic('chevron-down', 'i14')}</summary>
+        <div class="in">
+          <button class="btn sm" data-money>${P.ic('ban', 'i14')}Annuler l'ordre ouvert</button>
+          <button class="btn sm" data-money>${P.ic('refresh-cw', 'i14')}Recharger le trade depuis l'exchange</button>
+          <button class="btn sm danger-soft" data-money data-tact="delete">${P.ic('trash-2', 'i14')}Supprimer de la base (ne ferme pas la position)</button>
+        </div></details>
+      <div class="sec-t" style="display:flex;justify-content:space-between;margin:16px 0 4px"><b style="font-size:14px">Ordres</b><span class="faint" style="font-size:12px">${p.dca} remplis</span></div>
+      <div class="orders">${L.lv.filter((l) => l.filled).map((l, i) => `<div class="o"><span class="badge neutral">DCA ${l.i}</span><span class="faint">${['il y a ' + P.dur(p.hours), 'il y a ' + P.dur(p.hours * .7), 'il y a ' + P.dur(p.hours * .4), '18:39'][i]}</span><span class="num">${fp(l.price)}</span><span class="num muted">${P.fmt(l.size, 2)}</span></div>`).join('')}</div>`;
+  }
+
+  function track(p) {
+    const L = ladder(p);
+    const lo = Math.min(L.tp, L.lv[0].price), hi = L.lv[4].price;
+    const x = (v) => Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100));
+    const pos = (v) => p.short ? x(v) : 100 - x(v);
+    return `<div class="track"><span class="trk"></span><span class="fill" style="width:${pos(L.lv[p.dca - 1].price)}%"></span>
+      <span class="tp" style="left:${pos(L.tp)}%"></span>
+      ${L.lv.map((l) => `<span class="lv ${l.filled ? 'f' : ''}" style="left:${pos(l.price)}%"></span>`).join('')}
+      <span class="px ${p.latent >= 0 ? 'up' : ''}" style="left:${pos(L.now)}%" data-px="${p.id}"></span></div>
+      <div class="tl"><span>sortie ${fp(L.tp)}</span><span>DCA ${p.dca}/${p.dcaMax}</span><span>${L.next ? 'prochain ' + fp(L.next.price) : 'échelle pleine'}</span></div>`;
+  }
+
+  function renderList() {
+    $('#posList').innerHTML = `<div class="card-h"><h2>Positions ouvertes</h2><span class="meta">4/5 slots</span><span class="sp"></span><div class="seg" id="sortSeg"><button class="on">Latent</button><button>DCA</button><button>Âge</button></div></div>` +
+      ps.map((p) => `<div class="pc ${p === sel ? 'sel' : ''}" data-id="${p.id}">
+        <div><div class="pair">${p.pair.replace('/USDC', '')}<span class="badge short">Short ${p.lev}x</span>${p.dca >= 4 ? '<span class="badge warn">DCA profond</span>' : ''}</div>
+          <div class="sub">${P.dur(p.hours)} · mise ${P.fmt(p.stake, 0)} USDC · liq. ${P.pct(p.liq, 1, true)}</div></div>
+        <div><div class="v num ${P.cls(p.latent)}" data-lat="${p.id}">${P.fmt(p.latent, 2, true)}</div><div class="sub num" style="text-align:right">${P.pct(p.pct)}</div></div>
+        <div class="track-w" style="grid-column:1/-1">${track(p)}</div></div>`).join('') +
+      `<div class="card-f"><span>Paires détenues aussi par un autre bot : <b class="warn">SOL</b> (sol_mr_short)</span></div>`;
+    P.seg($('#sortSeg'));
+  }
+
+  function select(p, openSheet) {
+    sel = p;
+    document.querySelectorAll('.pc').forEach((x) => x.classList.toggle('sel', +x.dataset.id === p.id));
+    $('#drawerBody').innerHTML = drawerHtml(p, false);
+    P.icons($('#drawerBody'));
+    drawChart(p);
+    if (openSheet) { $('#sheetBody').innerHTML = drawerHtml(p, true); P.openSheet('tradeSheet'); }
+  }
+
+  /* ---------- graphique avec niveaux DCA ---------- */
+  let ch;
+  function drawChart(p) {
+    if (innerWidth < 1024) return;
+    const L = ladder(p);
+    if (!ch) { ch = echarts.init($('#chart')); addEventListener('resize', () => ch.resize()); document.addEventListener('themechange', () => drawChart(sel)); }
+    $('#chPair').textContent = p.pair; $('#chMeta').textContent = fp(p.price) + ' · 15m';
+    const n = 120, data = [], x = [];
+    let c = L.lv[0].price * 0.985;
+    const target = p.price;
+    for (let i = 0; i < n; i++) {
+      const drift = (target - c) / (n - i) * 1.05 + (P.rnd() - .5) * c * 0.006 + Math.sin(i / 7) * c * 0.0012;
+      const o = c; c = i === n - 1 ? target : c + drift;
+      const h = Math.max(o, c) * (1 + P.rnd() * .004), l = Math.min(o, c) * (1 - P.rnd() * .004);
+      data.push([o, c, l, h]); const m = 15 * (i - n + 1) + 18 * 60 + 45; x.push(`${String(Math.floor(((m % 1440) + 1440) % 1440 / 60)).padStart(2, '0')}:${String(((m % 60) + 60) % 60).padStart(2, '0')}`);
+    }
+    const ml = (y, color, name, type = 'dashed') => ({ yAxis: y, lineStyle: { color, type, width: 1.2 }, label: { formatter: name, position: 'insideEndTop', color, fontSize: 10.5, fontFamily: 'Geist' } });
+    ch.setOption({
+      animationDuration: 500, grid: { left: 8, right: 64, top: 16, bottom: 28 },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'cross', lineStyle: { color: css('--line-strong') } }, backgroundColor: css('--surface-3'), borderColor: css('--line-strong'), textStyle: { color: css('--text'), fontFamily: 'Geist', fontSize: 12 } },
+      xAxis: { type: 'category', data: x, axisLine: { lineStyle: { color: css('--line-strong') } }, axisLabel: { color: css('--text-3'), fontSize: 10 }, axisTick: { show: false } },
+      yAxis: { type: 'value', scale: true, position: 'right', splitLine: { lineStyle: { color: css('--line') } }, axisLabel: { color: css('--text-3'), fontSize: 10, fontFamily: 'Geist Mono', formatter: (v) => fp(v) } },
+      dataZoom: [{ type: 'inside', start: 20, end: 100 }],
+      series: [{ type: 'candlestick', data, itemStyle: { color: css('--profit'), color0: css('--loss'), borderColor: css('--profit'), borderColor0: css('--loss') },
+        markLine: { silent: true, symbol: 'none', data: [
+          ml(L.avg, css('--info'), 'Moyen'), ml(L.tp, css('--profit'), 'Sortie'),
+          ...(L.next ? [ml(L.next.price, css('--warn'), 'DCA ' + L.next.i)] : []),
+          ...L.lv.filter((l) => l.filled).map((l) => ({ ...ml(l.price, css('--text-3'), '', 'dotted'), label: { show: false } })),
+        ] },
+        markPoint: { symbol: 'triangle', symbolSize: 9, symbolRotate: 180, itemStyle: { color: css('--loss') }, label: { show: false },
+          data: L.lv.filter((l) => l.filled).map((l) => { const i = Math.max(0, data.findIndex((d) => (p.short ? d[3] >= l.price : d[2] <= l.price))); return { coord: [i, l.price * (p.short ? 1.004 : .996)] }; }) } }],
+    }, true);
+  }
+
+  /* ---------- autres onglets ---------- */
+  function renderTabs() {
+    const days = Array.from({ length: 31 }, (_, i) => i < 15 ? +((P.rnd() - .38) * 30).toFixed(1) : null);
+    days[14] = bot.day;
+    $('#cal').innerHTML = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => `<span class="faint" style="font-size:11px;text-align:center">${d}</span>`).join('') + '<div></div><div></div>' +
+      days.map((v, i) => v === null ? `<div style="background:var(--surface-2);opacity:.4">${i + 1}</div>` : `<div style="background:color-mix(in srgb, ${v >= 0 ? 'var(--profit)' : 'var(--loss)'} ${Math.min(60, 8 + Math.abs(v) * 2.4)}%, var(--surface-2))"><span>${i + 1}</span><b class="num" style="color:var(--text);font-size:11px">${P.fmt(v, 0, true)}</b></div>`).join('');
+    $('#perfPairs').innerHTML = [['SOL', 14, 22.4], ['ENA', 9, 15.1], ['HYPE', 11, 12.8], ['WIF', 6, -8.2], ['XRP', 7, -11.9], ['PENGU', 4, -14.6]].map(([pp, n, v]) => `<div class="pairrow"><span><b>${pp}</b> <span class="faint">${n} trades</span></span><span class="meter ${v < 0 ? 'bad' : 'good'}" style="width:90px"><i style="width:${Math.abs(v) / 23 * 100}%"></i></span><span class="num ${P.cls(v)}" style="min-width:56px;text-align:right">${P.fmt(v, 1, true)}</span></div>`).join('');
+    $('#exitR').innerHTML = `<div class="split" style="height:12px"><i style="flex:62;background:var(--profit)"></i><i style="flex:21;background:var(--info)"></i><i style="flex:11;background:var(--warn)"></i><i style="flex:6;background:var(--loss)"></i></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:12px;font-size:13px"><span><b class="up">62 %</b> ROI</span><span><b class="info">21 %</b> signal de sortie</span><span><b class="warn">11 %</b> sortie temporelle</span><span><b class="down">6 %</b> stop</span></div>`;
+    $('#prof').innerHTML = [['Trades fermés (30 j)', '51'], ['Winrate', '71 %'], ['Profit factor', '1,38'], ['Durée moyenne', '9 h 40'], ['Pire trade', '−31,20 USDC'], ['Drawdown max (open-inclusive)', '−17,8 %']].map(([k, v]) => `<div class="field"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+    $('#wl').innerHTML = ['SOL', 'ENA', 'HYPE', 'XRP', 'WIF', 'PENGU', 'SUI', 'DOGE'].map((x, i) => `<div class="pairrow"><span><b>${x}</b>/USDC ${i < 4 ? '<span class="badge short" style="margin-left:6px">position</span>' : ''}</span><span class="faint num">${['12', '8', '5', '3', '0', '0', '2', '1'][i]} signaux 24 h</span><button class="btn sm icon ghost" aria-label="Graphique"><i data-lucide="chart-candlestick" class="i16"></i></button></div>`).join('') + '<div class="card-f"><a href="#">Voir les 34 paires <i data-lucide="arrow-right" class="i14"></i></a></div>';
+    $('#cfgList').innerHTML = [['Mode', 'live · Hyperliquid futures'], ['Timeframe', '15m'], ['max_open_trades', '5'], ['stake_amount', 'unlimited (custom_stake_amount)'], ['tradable_balance_ratio', '0.35'], ['Levier', '3x (par coin, niveau wallet)'], ['Port API', String(bot.port)]].map(([k, v]) => `<div class="field"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+    $('#cfgParams').innerHTML = [['volume_scale', '1.8'], ['overbuy_factor', '0.60'], ['max_entry_cap', '0.35'], ['dca_steps', '0 / 2 / 5 / 9 / 14 %'], ['roi', '1,5 %']].map(([k, v]) => `<div class="field"><span class="k mono">${k}</span><span class="v">${v}</span></div>`).join('');
+    $('#botLogs').innerHTML = [['18:42:08', 'I', 'Bot heartbeat. version=2026.8-fu, state=RUNNING'], ['18:39:12', 'I', 'DCA 4/5 filled SOL/USDC:USDC short 45.00 USDC @ 151.21'], ['18:31:40', 'W', 'Drawdown -17.8% exceeds alert threshold -15%'], ['18:20:02', 'I', 'Exit ROI ENA/USDC:USDC +1.52%'], ['18:05:55', 'W', 'Rate budget 62%, pacing ON'], ['17:58:31', 'E', 'ExchangeError: order below min notional (9.80 < 10)']].map(([t, l, m]) => `<div class="log" style="font:12px/18px var(--font-mono);padding:6px 16px;display:grid;grid-template-columns:70px 44px 1fr;gap:8px"><span class="faint">${t}</span><span style="font-weight:600;color:${l === 'E' ? 'var(--loss)' : l === 'W' ? 'var(--warn)' : 'var(--text-3)'}">${l === 'E' ? 'ERR' : l === 'W' ? 'WARN' : 'INFO'}</span><span class="muted" style="overflow-wrap:anywhere">${m}</span></div>`).join('');
+  }
+
+  function render() {
+    P.tick($('#kLat'), bot.latent, { from: 0 }); P.tick($('#kDay'), bot.day, { from: 0 }); P.tick($('#k7'), bot.d7, { from: 0 });
+    renderList(); renderTabs(); select(sel, false);
+    document.querySelectorAll('.card, .kstrip, .alertbar').forEach((c, i) => { c.classList.add('reveal'); c.style.setProperty('--i', Math.min(i, 6)); });
+    P.icons();
+    if (q.get('sheet') === '1') select(sel, true);
+    if (q.get('confirm') === '1') setTimeout(() => closePos(sel), 300);
+    live();
+  }
+
+  /* ---------- interactions ---------- */
+  document.addEventListener('click', (e) => {
+    const pc = e.target.closest('.pc'); if (pc) { select(ps.find((p) => p.id === +pc.dataset.id), innerWidth < 1024); return; }
+    const t = e.target.closest('#tabs button');
+    if (t) { document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b === t)); document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('on', p.id === 'p-' + t.dataset.p)); if (t.dataset.p === 'pos') setTimeout(() => ch && ch.resize(), 20); return; }
+    const ta = e.target.closest('[data-tact]');
+    if (ta) {
+      if (ta.dataset.tact === 'close') closePos(sel);
+      if (ta.dataset.tact === 'partial') partial(sel);
+      if (ta.dataset.tact === 'increase') P.confirm({ title: 'Renforcer la position', verb: 'renforcer', icon: 'circle-plus', bot: bot.name, pair: sel.pair + ' short', rows: [['Montant', '48,00 USDC'], ['Nouveau prix moyen', fp(ladder(sel).avg * 1.012)]], notes: ['Hors échelle DCA de la stratégie : ce renfort manuel ne sera pas compté dans les paliers.'], okTxt: 'Renfort exécuté' });
+      if (ta.dataset.tact === 'delete') P.confirm({ title: 'Supprimer le trade de la base', verb: 'supprimer', icon: 'trash-2', typeName: true, bot: bot.name, pair: sel.pair, notes: ['La position reste ouverte sur Hyperliquid. Elle deviendra orpheline sur le wallet partagé. À n’utiliser que pour un trade fantôme prouvé.'], okTxt: 'Trade supprimé de la base' });
+      return;
+    }
+    const a = e.target.closest('[data-act]');
+    if (a) {
+      const k = a.dataset.act;
+      const A = {
+        pause: { title: 'Mettre les entrées en pause', verb: 'mettre en pause', icon: 'pause', rows: [['Positions ouvertes', '4, gérées normalement'], ['Nouvelles entrées', 'bloquées']], okTxt: 'Entrées en pause' },
+        reload: { title: 'Recharger la configuration', verb: 'recharger', icon: 'rotate-cw', notes: ['Un rechargement à la fois sur la flotte. Prochain autorisé dans 10 min.'], okTxt: 'Configuration rechargée' },
+        stop: { title: 'Arrêter le bot', verb: 'arrêter', icon: 'square', notes: ['Lancé via launch_bot.sh, un arrêt par l’API provoque un redémarrage automatique.'], okTxt: 'Arrêt demandé' },
+        exitall: { title: 'Fermer les 4 positions', verb: 'tout fermer', icon: 'log-out', typeName: true, rows: [['P&L latent', P.fmt(bot.latent, 2, true) + ' USDC', 'down'], ['Positions', '4 short']], notes: ['Ordres au marché envoyés une seule fois. Chaque refus de la stratégie sera listé.'], okTxt: 'Positions fermées' },
+        entry: { title: 'Entrée forcée', verb: 'entrer', icon: 'circle-plus', rows: [['Paire', 'à choisir'], ['Mise', 'custom_stake_amount']], okTxt: 'Entrée exécutée' },
+      }[k];
+      if (A) P.confirm({ ...A, bot: bot.name, key: `${bot.name}:${k}` });
+    }
+  });
+  function closePos(p) {
+    P.confirm({ title: 'Fermer la position au marché', verb: 'fermer', icon: 'x', bot: bot.name, pair: `${p.pair} short ${p.lev}x`, key: `${p.bot}:close:${p.id}`,
+      rows: [['P&L estimé', P.fmt(p.latent, 2, true) + ' USDC', P.cls(p.latent)], ['Notionnel', P.fmt(p.stake * p.lev, 2) + ' USDC'], ['Prix actuel', fp(p.price)], ['DCA', `${p.dca}/${p.dcaMax} remplis`]],
+      notes: p.base === 'SOL' ? ['sol_mr_short détient aussi SOL short sur le wallet : fermeture en reduceOnly sur la quantité de ce trade uniquement.'] : [],
+      pendingTxt: 'Fermeture envoyée', okTxt: 'Position fermée', okSub: `réalisé ${P.fmt(p.latent * 1.01, 2, true)} USDC` });
+  }
+  function partial(p) {
+    const s = $('#partialSheet');
+    s.innerHTML = `<div class="grab"></div><div class="sh-h"><b style="font-size:17px;flex:1">Sortie partielle · ${p.pair.replace('/USDC', '')}</b><button class="btn icon ghost" data-close>${P.ic('x')}</button></div>
+      <div class="sh-b"><div class="seg" id="ppSeg" style="width:100%;display:flex"><button data-v="25" style="flex:1">25 %</button><button data-v="50" class="on" style="flex:1">50 %</button><button data-v="75" style="flex:1">75 %</button></div>
+        <div class="impact" style="margin-top:14px"><div><div class="label">Montant fermé</div><div class="v num" id="ppAmt">${P.fmt(p.stake * p.lev * .5, 2)} USDC</div></div><div><div class="label">P&L réalisé estimé</div><div class="v num down" id="ppPnl">${P.fmt(p.latent * .5, 2, true)}</div></div></div>
+        <div class="note">${P.ic('triangle-alert')}<div>Le reste doit dépasser le minimum notionnel de l'exchange (10 USDC), sinon la position restante deviendra invendable.</div></div></div>
+      <div class="sh-f"><button class="btn lg" data-close style="flex:1">Annuler</button><button class="btn lg danger" style="flex:2" id="ppGo">Continuer</button></div>`;
+    P.openSheet('partialSheet'); P.seg($('#ppSeg'), (v) => { $('#ppAmt').textContent = P.fmt(p.stake * p.lev * v / 100, 2) + ' USDC'; $('#ppPnl').textContent = P.fmt(p.latent * v / 100, 2, true); });
+    $('#ppGo').onclick = () => { P.closeSheet(); P.confirm({ title: 'Sortie partielle', verb: 'sortir 50 %', icon: 'scissors', bot: bot.name, pair: p.pair, rows: [['Part', '50 %'], ['P&L estimé', P.fmt(p.latent * .5, 2, true), 'down']], okTxt: 'Sortie partielle exécutée' }); };
+  }
+  $('#switcher').addEventListener('click', () => P.toast('ok', 'Sélecteur de bot', 'Recherche, groupes, épinglés, raccourci Ctrl K', 2500));
+
+  /* ---------- deltas : le prix bouge sur l'échelle ---------- */
+  function live() {
+    setInterval(() => {
+      if (document.body.dataset.conn === 'offline') return;
+      const p = ps[Math.floor(P.rnd() * ps.length)];
+      const d = (P.rnd() - .5) * 1.4; const old = p.latent; p.latent += d; p.price = p.price * (1 - d / (p.stake * p.lev) * .9);
+      document.querySelectorAll(`[data-lat="${p.id}"]`).forEach((el) => P.tick(el, p.latent, { from: old }));
+      const tw = document.querySelector(`.pc[data-id="${p.id}"] .track-w`); if (tw) tw.innerHTML = track(p);
+      if (p === sel) { const t = $('#tdLat'); if (t) P.tick(t, p.latent, { from: old }); }
+      bot.latent += d; P.tick($('#kLat'), bot.latent, { from: bot.latent - d }); P.tick($('#cLat'), bot.latent, { from: bot.latent - d, flash: false });
+    }, 2400);
+  }
+})();
+</script>
+</body>
+</html>

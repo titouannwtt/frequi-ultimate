@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<!--@HEAD-->
+<title>Flotte · FreqUI Ultimate (maquette finale)</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+/*@CSS*/
+/* ===== Page Flotte ===== */
+.scopebar { display: flex; align-items: center; gap: 6px; padding: 6px var(--s3); border-bottom: 1px solid var(--line); background: var(--bg); flex: none; overflow-x: auto; scrollbar-width: none; }
+.scopebar::-webkit-scrollbar { display: none; }
+.scopebar .search { width: 210px; flex: none; }
+.scopebar .note { font-size: var(--t-xs); color: var(--fg-3); white-space: nowrap; }
+.scopebar .ws { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.scopebar .ws-compact { display: none; }
+@media (max-width: 1439px) { .scopebar .ws .lab, .scopebar #wsSeg, .scopebar .ws .ws-layout { display: none; } .scopebar .ws-compact { display: inline-flex; } }
+main.dash { display: grid; gap: var(--gut); padding: var(--gut); min-height: 0; }
+@media (min-width: 1024px) {
+  main.dash { grid-template-columns: minmax(0, 1fr) clamp(360px, 30vw, 430px); grid-template-rows: repeat(12, minmax(0, 1fr)); }
+  #p-fleet { grid-column: 1; grid-row: 1 / 8; } #p-pos { grid-column: 1; grid-row: 8 / 13; }
+  #p-alerts { grid-column: 2; grid-row: 1 / 6; } #p-eq { grid-column: 2; grid-row: 6 / 10; } #p-risk { grid-column: 2; grid-row: 10 / 13; }
+  main.dash.ws-incident #p-alerts { grid-row: 1 / 9; } main.dash.ws-incident #p-eq { display: none; } main.dash.ws-incident #p-risk { grid-row: 9 / 13; }
+  main.dash.ws-analyse #p-fleet { grid-row: 1 / 6; } main.dash.ws-analyse #p-pos { grid-row: 6 / 13; grid-column: 2; } main.dash.ws-analyse #p-eq { grid-column: 1; grid-row: 6 / 13; } main.dash.ws-analyse #p-alerts { grid-row: 1 / 6; } main.dash.ws-analyse #p-risk { display: none; }
+}
+@media (min-width: 1800px) {
+  main.dash { grid-template-columns: minmax(0, 1fr) 420px 400px; }
+  #p-eq { grid-column: 2; grid-row: 1 / 8; } #p-risk { grid-column: 2; grid-row: 8 / 13; } #p-alerts { grid-column: 3; grid-row: 1 / 13; }
+}
+@media (max-width: 1023px) {
+  main.dash { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "alerts risk" "fleet fleet" "pos pos" "eq eq"; }
+  #p-alerts { grid-area: alerts; max-height: 520px; } #p-risk { grid-area: risk; max-height: 520px; } #p-fleet { grid-area: fleet; max-height: 760px; } #p-pos { grid-area: pos; max-height: 720px; } #p-eq { grid-area: eq; }
+}
+@media (max-width: 599px) {
+  main.dash { grid-template-columns: minmax(0, 1fr); grid-template-areas: "fleet" "pos" "eq" "risk"; padding: 8px 0; gap: 8px; }
+  main.dash .pane { border-radius: 0; border-left: 0; border-right: 0; }
+  #p-alerts { display: none; } #p-fleet, #p-pos, #p-risk, #p-eq { max-height: none; }
+}
+/* Alertes mobiles en tête : incident d'abord */
+#m-alerts { display: none; }
+@media (max-width: 599px) { #m-alerts { display: block; border-bottom: 1px solid var(--line); background: var(--bg-1); } }
+.situ { display: flex; align-items: center; gap: 8px; padding: 10px var(--s3); font-weight: 600; }
+.situ .badge { margin-left: auto; }
+.situ .reasons { font-weight: 400; color: var(--fg-2); font-size: var(--t-sm); }
+.more { width: 100%; height: 44px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--accent); font-weight: 500; }
+/* KPI mobile en grille */
+@media (max-width: 599px) {
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; }
+  .kpi { min-width: 0; border-bottom: 1px solid var(--line); }
+  .kpi:nth-child(2n) { border-right: 0; }
+  .kpi.k-30, .kpi.k-margin { display: none; }
+  .kpi.k-expo { grid-column: 1 / -1; border-right: 0; }
+}
+@media (min-width: 600px) and (max-width: 1023px) { .kpis { display: grid; grid-template-columns: repeat(4, 1fr); } .kpi { border-bottom: 1px solid var(--line); min-width: 0; } .kpi.k-expo { grid-column: span 2; } .kpi.k-30 { display: none; } }
+/* Table de flotte : colonnes retirées selon la largeur du panneau */
+#p-fleet .tbl td.nmc { text-align: left; min-width: 196px; }
+#p-fleet .tbl tbody tr { cursor: pointer; }
+.c-dd .cell-meter .meter { width: 38px; }
+.c-dd small { color: var(--fg-3); margin-left: 4px; font-size: var(--t-xs); }
+@container (max-width: 1080px) { .c-last { display: none; } }
+@container (max-width: 940px) { .c-spark { display: none; } }
+@container (max-width: 800px) { .c-30, .c-expo { display: none; } }
+@container (max-width: 600px) { .c-day, .c-slots, .c-side, .c-dd small { display: none; } }
+@container (max-width: 440px) { .c-dd { display: none; } }
+.grp .gt { display: inline-flex; align-items: center; gap: 6px; }
+.grp .tosee { color: var(--warn); font-weight: 500; font-size: var(--t-xs); }
+/* Positions : table ou cartes selon la largeur du panneau */
+.as-cards { display: none; }
+@container (max-width: 560px) { .as-table { display: none; } .as-cards { display: block; } }
+@container (max-width: 1060px) { .c-entry { display: none; } }
+@container (max-width: 820px) { .c-price, .c-dur { display: none; } }
+#p-pos .tbl tbody tr { cursor: pointer; }
+tr.orph td { background: var(--crit-w); }
+tr.orph td:first-child { box-shadow: inset 2px 0 0 var(--crit); }
+/* Équité */
+.eq-head { display: flex; gap: 18px; padding: 8px var(--s3) 0; flex-wrap: wrap; }
+.eq-head > div:not(.seg) { display: grid; }
+.eq-head .num { font-size: var(--t-lg); font-weight: 600; }
+#eqBody { display: flex; flex-direction: column; }
+#eqChart { flex: 1; min-height: 0; }
+.eq-head { padding-top: 6px; } .eq-head .num { font-size: var(--t-md); }
+@media (max-width: 1023px) { #eqChart { height: 240px; flex: none; } }
+.eq-compact { display: none; }
+@container (max-width: 520px) { #p-eq .eq-full { display: none; } #p-eq .eq-compact { display: inline-flex; } }
+.kpi.k-expo .v { font-size: var(--t-xl); }
+.rank { display: grid; grid-template-columns: minmax(0, 1fr) 46% 74px; gap: 8px; align-items: center; padding: 4px var(--s3); font-size: var(--t-sm); }
+.rank .bz { position: relative; height: 10px; }
+.rank .bz::before { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--line-2); }
+.rank .bz i { position: absolute; top: 0; bottom: 0; border-radius: 2px; }
+.rank .bz i.p { left: 50%; background: var(--profit); } .rank .bz i.n { right: 50%; background: var(--loss); }
+.rank .nm { display: flex; align-items: center; gap: 6px; overflow: hidden; white-space: nowrap; }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; padding: 8px var(--s3); }
+.cal .dh { font-size: var(--t-xs); color: var(--fg-3); text-align: center; }
+.cal .d { border-radius: 3px; padding: 4px 5px; min-height: 40px; display: grid; align-content: space-between; font-size: var(--t-xs); border: 1px solid var(--line); }
+.cal .d .num { font-size: 11.5px; font-weight: 600; }
+.cal .d.today { border-color: var(--accent); }
+/* Risque */
+.rk { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; padding: 8px var(--s3); font-size: var(--t-sm); border-bottom: 1px solid var(--line); }
+.rk .num { text-align: right; font-weight: 600; }
+.coins { display: grid; grid-template-columns: 74px 30px minmax(0, 1fr) minmax(0, 1fr) 58px; gap: 4px 6px; align-items: center; padding: 6px var(--s3); font-size: var(--t-sm); }
+.coins .bl { height: 7px; border-radius: 2px; background: var(--long); justify-self: end; }
+.coins .bs { height: 7px; border-radius: 2px; background: var(--short); background-image: repeating-linear-gradient(135deg, rgba(0,0,0,.18) 0 2px, transparent 2px 4px); }
+.coins .num { text-align: right; }
+.coins .colh { font-size: var(--t-xs); }
+/* ScopePanel */
+.sp-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
+.sp-kpis .kpi { min-width: 0; border-bottom: 1px solid var(--line); }
+.sp-kpis .kpi:nth-child(3n) { border-right: 0; }
+.sp-kpis .kpi .v { font-size: var(--t-lg); }
+.sp-acts { display: flex; gap: 6px; padding: 10px var(--s3); flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.sp-acts .spacer { flex: 1; }
+</style>
+</head>
+<body>
+<div class="app fit">
+  <header class="top" id="top"></header>
+  <div id="banners"></div>
+  <section id="m-alerts" aria-label="À traiter"></section>
+  <section class="kpis" id="kpis" aria-label="Indicateurs de la flotte"></section>
+  <div class="scopebar" role="toolbar" aria-label="Périmètre">
+    <div class="seg" id="scopeSeg"><button data-s="live" aria-pressed="true">Live</button><button data-s="dry">Dry</button><button data-s="all">Tout</button></div>
+    <span class="note" id="scopeNote"></span>
+    <label class="search hide-m"><i data-lucide="search" class="sm"></i><input placeholder="Filtrer bots, paires, tags" aria-label="Filtrer"><kbd>F</kbd></label>
+    <button class="chip only-m" aria-label="Rechercher"><i data-lucide="search"></i></button>
+    <button class="chip">Hippo DCA <span class="n">6</span></button><button class="chip">DynV1 <span class="n">4</span></button><button class="chip">Régime BTC <span class="n">3</span></button><button class="chip">HIP-3 xyz <span class="n">5</span></button>
+    <button class="chip"><i data-lucide="tag"></i>Tags</button>
+    <button class="chip" id="attnChip"><i data-lucide="triangle-alert"></i>En alerte <span class="n" id="attnN"></span></button>
+    <div class="ws hide-t"><button class="btn sm ws-compact" onclick="FQ.wsPop(this)" title="Espace de travail et disposition"><i data-lucide="panels-top-left"></i><span id="wsName">Surveillance</span><i data-lucide="chevron-down"></i></button><span class="lab">Espace</span><div class="seg" id="wsSeg"><button aria-pressed="true" data-ws="">Surveillance</button><button data-ws="ws-incident">Incident</button><button data-ws="ws-analyse">Analyse</button></div><button class="btn sm ghost icon ws-layout" title="Personnaliser la disposition" onclick="FQ.layoutPop(this)"><i data-lucide="panels-top-left"></i></button></div>
+  </div>
+  <main class="dash" id="dash">
+    <section class="pane" id="p-fleet" aria-label="Flotte">
+      <div class="ph"><h2><i data-lucide="layout-grid"></i>Flotte</h2><span class="meta" id="fleetMeta"></span>
+        <div class="tools"><div class="seg sm" id="viewSeg"><button data-v="table" aria-pressed="true">Table</button><button data-v="map">Carte</button></div>
+        <div class="seg sm hide-m" id="sortSeg" title="Tri"><button aria-pressed="true">Attention d'abord</button><button>Latent</button><button>Nom</button></div>
+        <button class="btn xs ghost icon hide-m" title="Colonnes"><i data-lucide="columns-3"></i></button></div></div>
+      <div class="pb" id="fleetBody"></div>
+    </section>
+    <section class="pane" id="p-pos" aria-label="Positions ouvertes">
+      <div class="ph"><h2><i data-lucide="layers"></i>Positions ouvertes</h2><span class="meta" id="posMeta"></span>
+        <div class="tools scroll-x"><div class="seg sm" id="posSeg"><button aria-pressed="true" data-f="all">Toutes</button><button data-f="loss">En perte</button><button data-f="dca">DCA ≥ 3</button><button data-f="xyz">xyz</button><button data-f="orph">Orphelines <span class="crit-t">1</span></button></div></div></div>
+      <div class="pb" id="posBody"></div>
+    </section>
+    <section class="pane" id="p-alerts" aria-label="À traiter"></section>
+    <section class="pane" id="p-eq" aria-label="Équité">
+      <div class="ph"><div class="tabs" role="tablist" id="eqTabs"><button aria-selected="true" data-t="eq">Équité</button><button data-t="rank">Classement</button><button data-t="cal">Calendrier</button></div>
+        <div class="tools"><button class="btn xs eq-compact" onclick="FQ.eqPop(this)" title="Période et définition de l'équité"><span id="eqLbl">7 j · Latent</span><i data-lucide="chevron-down"></i></button><button class="btn xs eq-full" title="Période : 24 h, 7 j, 30 j, Tout">7 j<i data-lucide="chevron-down"></i></button><div class="seg sm eq-full" id="eqDef" title="Définition nommée"><button aria-pressed="true" title="Équité open-inclusive : réalisé + latent">Latent</button><button title="Équité réalisée seule">Réalisée</button></div></div></div>
+      <div class="pb" id="eqBody"></div>
+    </section>
+    <section class="pane" id="p-risk" aria-label="Risque wallet">
+      <div class="ph"><h2><i data-lucide="shield"></i>Risque wallet</h2><span class="meta">calculé au niveau du wallet partagé</span></div>
+      <div class="pb" id="riskBody"></div>
+    </section>
+  </main>
+  <footer class="status" id="status"></footer>
+  <nav class="tabbar" id="tabbar" aria-label="Navigation"></nav>
+</div>
+<script>/*@CORE*/</script>
+<script>
+(function () {
+const { $, $$, i, n, s, p, cls } = Object.assign({}, FQ, { i: FQ.i, n: FQ.n, s: FQ.s, p: FQ.p, cls: FQ.cls });
+let view = FQ.isMobile() ? 'map' : (FQ.Q.get('view') || 'table');
+let posFilter = 'all';
+
+/* ---------- KPI (périmètre courant, live par défaut) ---------- */
+function kpiTile(cl, k, v, sub, extra = '') { return `<div class="kpi ${cl}">${'<span class="k">' + k + '</span>'}<span class="v num">${v}</span>${sub ? `<span class="s">${sub}</span>` : ''}${extra}</div>`; }
+function renderKpis() {
+  const t = FQ.totals(), sk = '<span class="sk" style="width:80px;height:20px;margin:3px 0"></span>';
+  const sc = FQ.scope === 'live' ? 'live' : FQ.scope === 'dry' ? 'dry' : 'live + dry';
+  const ex = t.excl.length ? `<button class="excl" onclick="event.stopPropagation();FQ.exclPop(this)">${t.excl.length} exclus</button>` : '';
+  const mix = FQ.scope === 'all' ? '<span class="badge warn" title="Dry et live affichés séparément, jamais sommés">non sommés</span>' : '';
+  $('#kpis').innerHTML =
+    kpiTile('wide k-eq', `Équité ${sc} <span class="muted">avec latent</span>${mix}`, `<span data-count="${t.equity}" data-d="2">${n(t.equity)}</span><small>USDC</small>`, `réalisée <span class="num">${n(t.realized)}</span> ${ex}`) +
+    kpiTile('k-open', 'P&L latent', `<span class="${cls(t.openPnl)}" id="kOpen" data-v="${t.openPnl}">${s(t.openPnl)}</span>`, `<span class="num">${t.open}</span> positions`) +
+    kpiTile('k-day', 'Réalisé jour', `<span class="${cls(t.day)}">${s(t.day)}</span>`, 'depuis 00:00 (Paris)') +
+    kpiTile('k-30', 'Réalisé 30 j', `<span class="${cls(t.d30)}">${s(t.d30)}</span>`, 'réussite <span class="num">77,9 %</span>') +
+    kpiTile('k-dd', 'Drawdown <span class="muted">avec latent</span>', `<span class="down">${n(t.ddAbs, 0)}</span><small>USDC</small>`, `<span class="num">${FQ.p(t.ddPct, 1)}</span> · seuil <span class="num">${FQ.p(t.ddThr, 0)}</span>`, `<div class="meter"><i class="warn" style="width:${Math.abs(t.ddPct / t.ddThr) * 100}%"></i><b style="left:100%"></b></div>`) +
+    kpiTile('wide k-expo', 'Exposition wallet <span class="muted">long / short</span>', `<span style="color:var(--long)">${n(t.expoL, 0)}</span> <span class="muted">/</span> <span style="color:var(--short)">${n(t.expoS, 0)}</span>`, `net <span class="num">${s(t.expoL - t.expoS, 0)}</span> USDC`, `<div class="split"><span class="l" style="flex:${t.expoL}"></span><span class="s" style="flex:${t.expoS}"></span></div>`) +
+    kpiTile('k-margin', 'Marge utilisée', `${FQ.n(t.margin, 1)}<small>%</small>`, '', `<div class="meter"><i class="info" style="width:${t.margin}%"></i></div>`) +
+    kpiTile('k-bots', 'Bots en ligne', `${t.online}<small>/ ${t.n}</small>`, `<span class="dot offline"></span>1 <span class="dot stale"></span>1 <span class="dot starting"></span>1 <span class="dot auth"></span>1`);
+  if (document.body.classList.contains('skeleton-mode')) $$('#kpis .v').forEach(v => v.innerHTML = sk);
+  FQ.countUp($('#kpis'));
+  $('#scopeNote').innerHTML = FQ.scope === 'live' ? `${FQ.bots.filter(b => b.mode === 'dry').length} dry masqués` : FQ.scope === 'all' ? 'live et dry jamais sommés' : '';
+  $('#attnN').textContent = FQ.bots.filter(b => FQ.sevOf(b) === 'crit' || FQ.sevOf(b) === 'warn').length;
+}
+
+/* ---------- FleetTable / FleetMap ---------- */
+function sortedGroup(g) { return FQ.bots.filter(b => b.group === g.id && FQ.inScope(b)).sort((a, b) => FQ.attnRank(a) - FQ.attnRank(b)); }
+function botRow(b) {
+  const sev = FQ.sevOf(b), off = b.state === 'offline', na = '<span class="muted">n/d</span>';
+  const v = (x, d = 2) => off ? na : `<span class="${cls(x)}">${s(x, d)}</span>`;
+  const al = sev ? `<i data-lucide="${sev === 'crit' ? 'octagon-alert' : sev === 'warn' ? 'triangle-alert' : 'info'}" class="sm ${sev}-t"></i>` : '';
+  const st = FQ.ui.stateText(b);
+  const ddw = Math.min(100, Math.abs(b.ddPct / b.ddThr) * 100);
+  return `<tr class="${b.mode === 'live' ? 'is-live' : 'is-dry'} ${b.stale && !off ? 'stale' : ''} ${off ? 'offline' : ''}" tabindex="0" data-bot="${b.name}">
+    <td class="l nmc"><span class="botcell">${FQ.ui.stateDot(b)}<span class="nm">${b.name}</span>${b.mode === 'dry' ? '<span class="badge dry">Dry</span>' : ''}${b.market === 'hip3' ? '<span class="badge xyz">xyz</span>' : ''}${al}${st ? `<span class="sub">${st}</span>` : ''}${b.seeded ? `<span class="sub">depuis le ${b.seeded}</span>` : ''}</span></td>
+    <td class="c-side ui">${FQ.ui.side(b.side)}</td>
+    <td class="num">${b.stale && !off ? `<span class="muted">${s(b.openPnl)}</span>` : v(b.openPnl)}</td>
+    <td class="c-day">${v(b.day)}</td><td class="c-30">${v(b.d30, 0)}</td>
+    <td class="c-spark">${off ? '' : FQ.ui.spark(b.spark)}</td>
+    <td class="c-expo">${n(b.expoL + b.expoS, 0)}</td>
+    <td class="c-slots"><span class="cell-meter"><span class="meter"><i class="${b.open >= b.max ? 'warn' : 'neutral'}" style="width:${b.open / b.max * 100}%"></i></span>${b.open}/${b.max}</span></td>
+    <td class="c-dd"><span class="cell-meter"><span class="${b.ddPct < b.ddThr ? 'crit-t' : ''}">${n(b.ddAbs, 0)}</span><small>${FQ.p(b.ddPct, 1)}</small><span class="meter"><i class="${ddw >= 100 ? 'crit' : ddw > 60 ? 'warn' : 'neutral'}" style="width:${ddw}%"></i><b style="left:100%"></b></span></span></td>
+    <td class="c-last">${FQ.dur(b.lastH)}</td>
+    <td class="c-age"><span class="age ${b.stale ? 'stale' : ''}" data-age>${FQ.age(b.ageS)}</span></td></tr>`;
+}
+function renderFleet() {
+  const t = FQ.totals();
+  $('#fleetMeta').textContent = `${t.n} bots · ${t.online} en ligne`;
+  if (document.body.classList.contains('skeleton-mode')) { $('#fleetBody').innerHTML = '<div style="padding:10px;display:grid;gap:12px">' + Array.from({ length: 12 }, (_, k) => `<span class="sk" style="width:${70 + (k * 37) % 30}%"></span>`).join('') + '</div>'; return; }
+  if (view === 'map') return renderMap();
+  let h = `<table class="tbl"><thead><tr><th class="l colh">Bot</th><th class="c-side colh">Sens</th><th class="colh" aria-sort="ascending"><button>Latent</button></th><th class="c-day colh">Jour</th><th class="c-30 colh">30 j</th><th class="c-spark colh">24 h</th><th class="c-expo colh">Expo</th><th class="c-slots colh">Slots</th><th class="c-dd colh">DD / seuil</th><th class="c-last colh">Dern. trade</th><th class="c-age colh">Âge</th></tr></thead><tbody>`;
+  h += `<tr class="sigma" data-scope="fleet" tabindex="0"><td class="l ui">Σ Flotte ${FQ.scope === 'all' ? 'live' : FQ.scope} <span class="excl" style="margin-left:6px" onclick="event.stopPropagation();FQ.exclPop(this)">${t.excl.length} exclus</span></td><td class="c-side"></td><td class="${cls(t.openPnl)}" id="sigOpen">${s(t.openPnl)}</td><td class="c-day ${cls(t.day)}">${s(t.day)}</td><td class="c-30 ${cls(t.d30)}">${s(t.d30, 0)}</td><td class="c-spark"></td><td class="c-expo">${n(t.expoL + t.expoS, 0)}</td><td class="c-slots">${t.open}</td><td class="c-dd">${n(t.ddAbs, 0)}</td><td class="c-last"></td><td class="c-age"><span class="age">2 s</span></td></tr>`;
+  FQ.groups.forEach(g => {
+    const bs = sortedGroup(g); if (!bs.length) return;
+    const ok = bs.filter(b => !b.stale);
+    const tosee = bs.filter(b => FQ.sevOf(b) === 'crit' || FQ.sevOf(b) === 'warn').length;
+    const sum = ok.reduce((a, b) => a + b.openPnl, 0), day = ok.reduce((a, b) => a + b.day, 0);
+    h += `<tr class="grp" data-scope="group:${g.id}" tabindex="0"><td class="l"><span class="gt"><i data-lucide="chevron-down" class="sm"></i>${g.name} <span class="muted num">${bs.length}</span>${tosee ? `<span class="tosee">${tosee} à voir</span>` : ''}</span></td><td class="c-side"></td><td class="${cls(sum)}">${s(sum)}</td><td class="c-day ${cls(day)}">${s(day)}</td><td class="c-30"></td><td class="c-spark"></td><td class="c-expo"></td><td class="c-slots"></td><td class="c-dd"></td><td class="c-last"></td><td class="c-age"></td></tr>`;
+    h += bs.map(botRow).join('');
+  });
+  $('#fleetBody').innerHTML = h + '</tbody></table>';
+  $$('#fleetBody tr[data-bot]').forEach(r => r.onclick = () => openScope(FQ.bot(r.dataset.bot)));
+  $$('#fleetBody tr[data-scope]').forEach(r => r.onclick = () => openScope(null, r.dataset.scope));
+  FQ.icons();
+}
+function renderMap() {
+  let h = '<div class="legend"><span><i></i>calme</span><span><i style="box-shadow:inset 3px 0 0 var(--warn);border-color:var(--warn)"></i>vigilance</span><span><i style="box-shadow:inset 3px 0 0 var(--crit);border-color:var(--crit)"></i>critique</span><span><i style="background:var(--stale-hatch);border:1px dashed var(--warn)"></i>périmé</span><span><i style="background:var(--off-hatch)"></i>hors ligne</span><span><span class="livemark"></span>live</span></div><div class="fmap">';
+  FQ.groups.forEach(g => {
+    const bs = sortedGroup(g); if (!bs.length) return;
+    const sum = bs.filter(b => !b.stale).reduce((a, b) => a + b.openPnl, 0);
+    h += `<div class="fgrp">${g.name}<span class="num ${cls(sum)}">${s(sum)}</span></div>`;
+    h += bs.map(b => {
+      const sev = FQ.sevOf(b), off = b.state === 'offline';
+      const c = [sev === 'crit' ? 'crit' : '', sev === 'warn' && !b.stale ? 'warn' : '', b.stale && !off ? 'stale' : '', off ? 'offline' : '', b.mode === 'dry' ? 'dry' : ''].join(' ');
+      const fl = sev ? `<span class="flag">${i(sev === 'crit' ? 'octagon-alert' : sev === 'warn' ? 'triangle-alert' : 'info')}</span>` : '';
+      return `<button class="tile ${c}" data-bot="${b.name}" title="${b.name}">${fl}<span class="tn">${b.mode === 'live' ? '<span class="livemark"></span>' : ''}${b.name}</span><span class="tv ${off ? '' : cls(b.openPnl)}">${off ? 'n/d' : s(b.openPnl)}</span><span class="tm">${FQ.ui.stateText(b) || `<span class="num">${b.open}/${b.max}</span> pos.`}<span class="age ${b.stale ? 'stale' : ''}">${FQ.age(b.ageS)}</span></span></button>`;
+    }).join('');
+  });
+  $('#fleetBody').innerHTML = h + '</div>';
+  $$('#fleetBody .tile').forEach(t => t.onclick = () => openScope(FQ.bot(t.dataset.bot)));
+  FQ.icons();
+}
+FQ.onMapKey = () => { view = view === 'map' ? 'table' : 'map'; $$('#viewSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === view)); renderFleet(); };
+
+/* ---------- Positions (TradeTable preset open) ---------- */
+function posList() {
+  let ps = FQ.positions.filter(x => x.orphan || FQ.inScope(x.bot));
+  if (posFilter === 'loss') ps = ps.filter(x => x.pnl < 0); if (posFilter === 'dca') ps = ps.filter(x => x.filled >= 3); if (posFilter === 'xyz') ps = ps.filter(x => x.xyz); if (posFilter === 'orph') ps = ps.filter(x => x.orphan);
+  return ps.sort((a, b) => a.pnl - b.pnl);
+}
+function posRow(x) {
+  const b = x.bot, stale = b && b.stale;
+  const lock = b ? `${b.key}:forceexit:${x.tradeId}` : '';
+  return `<tr class="${x.orphan ? 'orph' : b.mode === 'live' ? 'is-live' : 'is-dry'} ${stale ? 'stale' : ''}" data-k="${x.key}" data-lock-row="${lock}" tabindex="0">
+   <td class="l"><span class="paircell">${x.pair.replace('xyz:', '')}${x.xyz ? '<span class="badge xyz">xyz</span>' : ''}${x.orphan ? '<span class="badge orph">Orpheline</span>' : ''}</span></td>
+   <td class="l ui c-bot">${FQ.ui.botLink(b)}</td>
+   <td class="ui">${FQ.ui.dir(x)}</td>
+   <td class="ui">${x.orphan ? '<span class="muted">n/d</span>' : FQ.ui.pips(x.filled, x.dcaMax)}</td>
+   <td class="c-entry">${FQ.price(x.entry)}</td><td class="c-price" data-px>${FQ.price(x.price)}</td>
+   <td><span class="${cls(x.pnl)}" data-pnl>${s(x.pnl)}</span></td><td class="c-pct ${cls(x.pct)}" data-pct>${p(x.pct)}</td>
+   <td class="c-liq">${FQ.ui.liqMeter(x)}</td><td class="c-dur">${FQ.ui.durCell(x)}</td>
+   <td class="ra">${x.orphan ? `<a class="btn xs" style="opacity:1" href="tools.html#reconciliation" onclick="event.stopPropagation()">Réconcilier</a>` : `<button class="btn xs ghost icon" aria-label="Actions sur ${x.pair}, ${b.name}" data-lock="${lock}" onclick="event.stopPropagation();FQ.rowMenu(this,'${x.key}')">${i('ellipsis')}</button>`}</td></tr>`;
+}
+function posCard(x) {
+  const b = x.bot;
+  return `<button class="card ${x.orphan ? '' : b.mode === 'live' ? 'is-live' : ''} ${b && b.stale ? 'stale' : ''}" data-k="${x.key}">
+    <span class="m1">${x.pair.replace('xyz:', '')}${x.xyz ? '<span class="badge xyz">xyz</span>' : ''}${x.orphan ? '<span class="badge orph">Orpheline</span>' : ''} ${FQ.ui.dir(x)}</span><span class="m2 ${cls(x.pnl)}" data-pnl>${s(x.pnl)}</span>
+    <span class="m3">${b ? b.name : 'aucun bot (wallet)'} · ${FQ.ui.durCell(x)}</span><span class="m4 ${cls(x.pct)}">${p(x.pct)}</span>
+    ${x.orphan ? '<span class="m3 full crit-t">Pas de sortie directe : ouvrir la réconciliation</span>' : `<span class="full">${FQ.ui.ladderH(x)}</span>`}</button>`;
+}
+function renderPos() {
+  const ps = posList();
+  $('#posMeta').textContent = `${ps.length} · pires d'abord`;
+  if (document.body.classList.contains('skeleton-mode')) { $('#posBody').innerHTML = '<div style="padding:10px;display:grid;gap:12px">' + Array.from({ length: 8 }, () => '<span class="sk"></span>').join('') + '</div>'; return; }
+  $('#posBody').innerHTML = `<div class="as-table"><table class="tbl"><thead><tr><th class="l colh">Paire</th><th class="l colh c-bot">Bot</th><th class="colh">Sens</th><th class="colh">DCA</th><th class="c-entry colh">Entrée moy.</th><th class="c-price colh">Prix</th><th class="colh" aria-sort="ascending">P&L</th><th class="c-pct colh">%</th><th class="c-liq colh">Dist. liq.</th><th class="c-dur colh">Durée</th><th class="ra"></th></tr></thead><tbody>${ps.map(posRow).join('')}</tbody></table></div>
+  <div class="as-cards"><div class="cards">${ps.slice(0, FQ.isMobile() ? 7 : 99).map(posCard).join('')}</div>${FQ.isMobile() && ps.length > 7 ? `<button class="more">Voir les ${ps.length - 7} autres positions</button>` : ''}</div>`;
+  $$('#posBody [data-k]').forEach(r => r.onclick = () => { const x = FQ.positions.find(q => q.key === r.dataset.k); if (x.orphan) location.href = 'tools.html#reconciliation'; else FQ.openTrade(x); });
+  FQ.icons();
+}
+FQ.rowMenu = function (btn, k) {
+  const x = FQ.positions.find(q => q.key === k);
+  window.__x = x;
+  FQ.pop(btn, `<h4>${x.pair} · ${x.bot.name} ${x.bot.mode === 'live' ? '<span class="badge live" style="margin-left:4px">Live</span>' : '<span class="badge dry">Dry</span>'}</h4>
+   <button class="mi" onclick="FQ.openTrade(window.__x)">${i('panel-right-open')}Ouvrir le trade</button>
+   <a class="mi" href="charts.html?pair=${x.pair}&bot=${x.bot.name}">${i('chart-candlestick')}Graphique</a>
+   <button class="mi" onclick="FQ.exitTrade(window.__x)">${i('log-out')}Sortir…<span class="k"><kbd>X</kbd></span></button>
+   <button class="mi" onclick="FQ.increase(window.__x)">${i('plus')}Renforcer…</button>
+   <hr><button class="mi" onclick="FQ.pauseBot(window.__x.bot)">${i('pause')}Pause des entrées du bot</button>`);
+};
+
+/* ---------- AlertRail (Actives, Acquittées, Silencieuses) + Événements ---------- */
+let alTab = 'act';
+function alertItem(a, k) {
+  const b = a.bot && FQ.bot(a.bot);
+  const ic = a.sev === 'crit' ? 'octagon-alert' : a.sev === 'warn' ? 'triangle-alert' : 'info';
+  const acts = a.acts.map(([id, l], j) => `<button class="btn xs ${j ? 'ghost' : ''}" onclick="FQ.alertAct('${id}','${a.bot || ''}')">${l}</button>`).join('');
+  return `<div class="alert ${a.sev}" style="animation-delay:${k * 40}ms" data-a="${a.id}">${i(ic)}
+    <span class="ttl">${a.title}${b ? `<span class="bot">${b.mode === 'live' ? '<span class="livemark"></span>' : '<span class="badge dry">Dry</span>'}${b.name}</span>` : '<span class="bot">wallet</span>'}</span><span class="when">${FQ.hhmm(a.since)}</span>
+    <span class="msg">${a.msg}</span>
+    <span class="act">${acts}${alTab === 'act' ? `<span class="q"><button class="btn xs ghost icon" title="Acquitter (revient si la valeur empire)" aria-label="Acquitter" onclick="FQ.ack('${a.id}')">${i('check')}</button><button class="btn xs ghost icon" title="Silence" aria-label="Silence" onclick="FQ.silence(this)">${i('bell-off')}</button></span>` : ''}</span></div>`;
+}
+function alertsHTML(limit) {
+  const L = alTab === 'act' ? FQ.alerts : alTab === 'ack' ? FQ.alertsAcked : FQ.alertsSilenced;
+  if (alTab === 'ev') return sinceHTML() + FQ.events.map(e => `<div class="ev"><span class="tm">${FQ.hhmm(e[0])}</span>${i(e[1], 'sm')}<span>${e[2]}</span></div>`).join('');
+  if (!L.length) return `<div class="empty">${i('circle-check')}<b style="color:var(--fg)">Rien à signaler</b><span>Les alertes sont calculées 24/7 par la passerelle.</span></div>`;
+  const sorted = L.slice().sort((a, b) => ['crit', 'warn', 'info'].indexOf(a.sev) - ['crit', 'warn', 'info'].indexOf(b.sev));
+  return sorted.slice(0, limit || 99).map(alertItem).join('');
+}
+function sinceHTML() {
+  return `<div class="since"><div class="hd">${i('history', 'sm')}Depuis votre passage <span class="muted">hier 23:48</span><button class="btn xs" style="margin-left:auto" onclick="this.closest('.since').remove()">Marquer vu</button></div>
+   <div class="g"><div><span class="num up">+186,42</span><span>USDC réalisés</span></div><div><span class="num">21 / 6</span><span>trades gagnants / perdants</span></div><div><span class="num">44</span><span>renforts DCA</span></div>
+   <div><span class="num">3 / 2</span><span>alertes nouvelles / résolues</span></div><div><span class="num">1</span><span>redémarrage</span></div><div><span class="num down">${FQ.MINUS}22,10</span><span>pire trade (SOL, dynv1_short)</span></div></div></div>`;
+}
+function renderAlerts() {
+  const crit = FQ.alerts.filter(a => a.sev === 'crit').length, warn = FQ.alerts.filter(a => a.sev === 'warn').length;
+  const lvl = crit ? '<span class="badge crit">Critique</span>' : warn ? '<span class="badge warn">Vigilance</span>' : '<span class="badge info">Calme</span>';
+  const gwOnly = FQ.conn.kind === 'direct';
+  $('#p-alerts').innerHTML = `<div class="ph"><h2><i data-lucide="siren"></i>À traiter</h2>${lvl}<div class="tools"><button class="btn xs ghost icon" title="Règles d'alerte" onclick="location.href='tools.html#alertes'"><i data-lucide="sliders-horizontal"></i></button></div></div>
+   <div class="ph" style="min-height:34px"><div class="tabs" role="tablist" id="alTabs"><button data-t="act" aria-selected="${alTab === 'act'}">Actives<span class="n ${crit ? 'crit' : ''}">${FQ.alerts.length}</span></button><button data-t="ack" aria-selected="${alTab === 'ack'}">Acquittées<span class="n">${FQ.alertsAcked.length}</span></button><button data-t="sil" aria-selected="${alTab === 'sil'}">Silencieuses<span class="n">${FQ.alertsSilenced.length}</span></button><button data-t="ev" aria-selected="${alTab === 'ev'}">Événements</button></div></div>
+   <div class="pb">${gwOnly ? `<div class="note warn" style="padding:10px 12px">${i('cable')}<span>Mode direct : alertes calculées par cet onglet seulement, pas de veille 24/7 ni d'acquittement partagé.</span></div>` : ''}${alertsHTML()}</div>`;
+  $$('#alTabs button').forEach(b => b.onclick = () => { alTab = b.dataset.t; renderAlerts(); });
+  // version mobile : en tête de page
+  const m = $('#m-alerts');
+  if (FQ.alerts.length) {
+    const save = alTab; alTab = 'act';
+    m.innerHTML = (gwOnly ? `<div class="note warn" style="padding:10px 12px">${i('cable')}<span>Mode direct : alertes calculées par cet onglet seulement.</span></div>` : '') + `<div class="situ">${i('siren')}<span>À traiter <span class="reasons">· ${crit} critiques, ${warn} avertissements</span></span>${lvl}</div>${alertsHTML(4)}${FQ.alerts.length > 4 ? `<button class="more" onclick="this.previousElementSibling.insertAdjacentHTML('afterend','');FQ.showAllMobile()">Voir les ${FQ.alerts.length - 4} autres</button>` : ''}`;
+    alTab = save;
+  } else m.innerHTML = `<div class="situ">${i('circle-check')}<span>Rien à signaler</span><span class="badge info">Calme</span></div>`;
+  FQ.icons();
+}
+FQ.showAllMobile = () => { alTab = 'act'; $('#m-alerts').innerHTML = `<div class="situ">${i('siren')}<span>À traiter</span></div>` + alertsHTML(); FQ.icons(); };
+FQ.ack = id => { const el = $(`#p-alerts [data-a="${id}"]`); const a = FQ.alerts.find(x => x.id === id); el && el.classList.add('gone'); setTimeout(() => { FQ.alerts = FQ.alerts.filter(x => x.id !== id); FQ.alertsAcked.unshift(a); renderAlerts(); }, 210); };
+FQ.silence = btn => FQ.pop(btn, `<h4>Silence</h4><button class="mi">1 h</button><button class="mi">4 h</button><button class="mi">Jusqu'à demain 08:00</button><hr><div class="mi muted" style="pointer-events:none">Par règle, bot ou paire. Revient à l'échéance.</div>`);
+FQ.alertAct = (id, bot) => { if (id === 'pause') FQ.pauseBot(bot); else if (id === 'open') location.href = 'bot.html?bot=' + bot; else if (id === 'logs') FQ.toggleLogs(); else if (id === 'recon') location.href = 'tools.html?pair=PENGU#reconciliation'; else if (id === 'diag') location.href = 'tools.html#diagnostic'; else if (id === 'relogin') location.href = 'tools.html#reglages'; };
+FQ.onBell = () => { if (FQ.isMobile()) { scrollTo({ top: 0, behavior: 'smooth' }); } else { alTab = 'act'; renderAlerts(); $('#p-alerts').animate([{ boxShadow: '0 0 0 2px var(--accent)' }, { boxShadow: '0 0 0 0 transparent' }], 900); } };
+
+/* ---------- Équité : 1 instance ECharts ---------- */
+let chart;
+function eqSeries() {
+  const pts = [], dd = []; let v = 8640, peak = v; const R = FQ.R;
+  for (let k = 0; k < 7 * 24 * 2; k++) { v += (R() - 0.46) * 9; peak = Math.max(peak, v); pts.push([k, +v.toFixed(2)]); dd.push([k, +(v - peak).toFixed(2)]); }
+  return { pts, dd };
+}
+const EQ = eqSeries();
+function renderEq(tab = 'eq') {
+  const body = $('#eqBody');
+  if (chart) { chart.dispose(); chart = null; }
+  if (tab === 'eq') {
+    body.innerHTML = `<div class="eq-head"><div><span class="lab">Variation 7 j (avec latent)</span><span class="num up">+384,21 <small class="muted">USDC</small></span></div><div><span class="lab">Drawdown max (avec latent)</span><span class="num down">${FQ.MINUS}412 <small class="muted">USDC · ${FQ.MINUS}4,5 %</small></span></div></div><div id="eqChart"></div>`;
+    if (!window.echarts) return;
+    chart = echarts.init($('#eqChart'), null, { renderer: 'canvas' });
+    const c = n => FQ.css(n);
+    const days = ['09/10', '10/10', '11/10', '12/10', '13/10', '14/10', '15/10'];
+    chart.setOption({
+      animationDuration: FQ.RM ? 0 : 600, animationEasing: 'cubicOut',
+      grid: [{ left: 46, right: 12, top: 10, bottom: '36%' }, { left: 46, right: 12, top: '73%', bottom: 22 }],
+      xAxis: [{ type: 'value', min: 0, max: EQ.pts.length - 1, show: false, gridIndex: 0 }, { type: 'value', min: 0, max: EQ.pts.length - 1, gridIndex: 1, interval: 48, axisLabel: { color: c('--fg-3'), fontSize: 11, formatter: v => days[Math.round(v / 48)] || '' }, axisLine: { lineStyle: { color: c('--line-2') } }, splitLine: { show: false } }],
+      yAxis: [{ type: 'value', scale: true, gridIndex: 0, splitNumber: 3, axisLabel: { showMinLabel: false, color: c('--fg-3'), fontSize: 11, fontFamily: FQ.MONO, formatter: v => FQ.n(v, 0) }, splitLine: { lineStyle: { color: c('--line') } } }, { type: 'value', gridIndex: 1, splitNumber: 1, axisLabel: { showMaxLabel: false, color: c('--fg-3'), fontSize: 11, fontFamily: FQ.MONO, formatter: v => FQ.n(v, 0) }, splitLine: { show: false } }],
+      tooltip: { trigger: 'axis', backgroundColor: c('--bg-1'), borderColor: c('--line-2'), textStyle: { color: c('--fg'), fontSize: 12 } },
+      axisPointer: { link: [{ xAxisIndex: 'all' }], lineStyle: { color: c('--fg-3') } },
+      series: [
+        { id: 'eq', type: 'line', data: EQ.pts, showSymbol: false, lineStyle: { width: 1.6, color: c('--accent') }, areaStyle: { color: c('--accent-w') }, xAxisIndex: 0, yAxisIndex: 0 },
+        { id: 'dd', type: 'line', data: EQ.dd, showSymbol: false, lineStyle: { width: 1, color: c('--loss') }, areaStyle: { color: c('--loss-w') }, xAxisIndex: 1, yAxisIndex: 1 }] });
+  } else if (tab === 'rank') {
+    const bs = FQ.bots.filter(b => FQ.inScope(b) && !b.stale).sort((a, b) => b.d30 - a.d30); const mx = Math.max(...bs.map(b => Math.abs(b.d30)));
+    body.innerHTML = `<div class="sec-h">Réalisé 30 j par bot<span class="meta">centré sur zéro</span></div>` + bs.map(b => `<div class="rank"><span class="nm">${FQ.ui.modeBadge(b)}${b.name}</span><span class="bz"><i class="${b.d30 >= 0 ? 'p' : 'n'}" style="width:${Math.abs(b.d30) / mx * 50}%"></i></span><span class="num ${cls(b.d30)}" style="text-align:right">${s(b.d30)}</span></div>`).join('');
+  } else {
+    const R = FQ.R; let h = '<div class="cal">' + ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'].map(d => `<span class="dh">${d}</span>`).join('');
+    for (let k = 0; k < 35; k++) { const v = (R() - 0.35) * 160; const a = Math.min(1, Math.abs(v) / 160); const day = k - 1; const fut = day > 15;
+      h += `<div class="d ${day === 15 ? 'today' : ''}" style="${fut || day < 1 ? 'opacity:.35' : `background:color-mix(in srgb, var(${v >= 0 ? '--profit' : '--loss'}) ${Math.round(a * 28)}%, transparent)`}"><span class="muted">${day >= 1 && day <= 31 ? day : ''}</span>${!fut && day >= 1 ? `<span class="num ${cls(v)}">${s(v, 0)}</span>` : ''}</div>`; }
+    body.innerHTML = '<div class="sec-h">Octobre 2026<span class="meta">réalisé par jour, Europe/Paris</span></div>' + h + '</div>';
+  }
+}
+let eqTab = 'eq';
+$$('#eqTabs button').forEach(b => b.onclick = () => { $$('#eqTabs button').forEach(x => x.setAttribute('aria-selected', x === b)); eqTab = b.dataset.t; renderEq(eqTab); });
+document.addEventListener('fq:theme', () => renderEq(eqTab));
+addEventListener('resize', () => chart && chart.resize());
+
+/* ---------- Risque ---------- */
+function renderRisk() {
+  const ps = FQ.positions.filter(x => !x.orphan && FQ.inScope(x.bot) && !x.bot.stale);
+  const near = ps.slice().sort((a, b) => a.liq - b.liq)[0];
+  const by = {}; ps.forEach(x => { const c = by[x.pair] = by[x.pair] || { pair: x.pair, bots: new Set(), L: 0, S: 0 }; c.bots.add(x.bot.name); if (x.isShort) c.S += x.notional; else c.L += x.notional; });
+  const coins = Object.values(by).filter(c => c.bots.size >= 2).sort((a, b) => (b.L + b.S) - (a.L + a.S));
+  const not = ps.reduce((a, x) => a + x.notional, 0), cap = FQ.totals().cap;
+  const mx = Math.max(1, ...coins.map(c => Math.max(c.L, c.S)));
+  $('#riskBody').innerHTML = `<div class="rk"><span>Liquidation la plus proche</span><span class="num ${near.liq < 20 ? 'crit-t' : 'warn-t'}">${FQ.pu(near.liq, 1)} · ${near.pair.replace('xyz:', '')} <span class="muted" style="font-weight:400">${near.bot.name}</span></span><span>Levier effectif (notionnel / capital)</span><span class="num">${FQ.n(not / cap, 2)}×</span><span>Coins tenus par ≥ 2 bots (netting)</span><span class="num">${coins.length}</span><span>Position orpheline</span><span class="num crit-t">PENGU 212,40</span></div>
+   <div class="coins"><span class="colh">Coin</span><span class="colh">bots</span><span class="colh" style="text-align:right">long</span><span class="colh">short</span><span class="colh" style="text-align:right">net</span>
+   ${coins.map(c => `<span class="ui" style="font-weight:600">${c.pair.replace('xyz:', '')}</span><span class="num muted">×${c.bots.size}</span><span class="bl" style="width:${c.L / mx * 100}%"></span><span class="bs" style="width:${c.S / mx * 100}%"></span><span class="num">${s(c.L - c.S, 0)}</span>`).join('')}</div>
+   <div class="muted" style="font-size:var(--t-xs);padding:4px 12px 10px">Long en acier, short en sable hachuré : jamais les couleurs du P&L.</div>`;
+}
+
+/* ---------- ScopePanel (bot, groupe, flotte) ---------- */
+function openScope(b, scope) {
+  if (scope) {
+    const g = scope.startsWith('group:') ? FQ.groups.find(x => 'group:' + x.id === scope) : null;
+    const bs = g ? sortedGroup(g) : FQ.bots.filter(FQ.inScope); const ok = bs.filter(x => !x.stale);
+    const sum = f => ok.reduce((a, x) => a + x[f], 0);
+    FQ.sheetOpen(`<div class="grab"></div><div class="sh-h">${i(g ? 'folder' : 'sigma')}<b>${g ? g.name : 'Flotte ' + FQ.scope}</b><span class="muted">${bs.length} bots · ${bs.length - ok.length} exclus</span><button class="btn ghost icon" style="margin-left:auto" onclick="FQ.sheetClose()" aria-label="Fermer">${i('x')}</button></div>
+    <div class="sh-b"><div class="sp-kpis">${[['P&L latent', s(sum('openPnl')), cls(sum('openPnl'))], ['Réalisé jour', s(sum('day')), cls(sum('day'))], ['Réalisé 30 j', s(sum('d30')), cls(sum('d30'))], ['Capital', n(sum('cap'), 0), ''], ['Positions', String(sum('open')), ''], ['Expo', n(sum('expoL') + sum('expoS'), 0), '']].map(k => `<div class="kpi"><span class="k">${k[0]}</span><span class="v num ${k[2]}">${k[1]}</span></div>`).join('')}</div>
+    <div class="sec-h">Capital = available_capital − capital_withdrawal (registre), jamais balance.total</div>
+    ${bs.map(x => `<div class="rank"><span class="nm">${FQ.ui.stateDot(x)}${x.name}</span><span class="bz"><i class="${x.openPnl >= 0 ? 'p' : 'n'}" style="width:${Math.min(50, Math.abs(x.openPnl) / 2)}%"></i></span><span class="num ${x.stale ? 'muted' : cls(x.openPnl)}" style="text-align:right">${s(x.openPnl)}</span></div>`).join('')}</div>`);
+    return;
+  }
+  const ps = FQ.positions.filter(x => x.bot === b).sort((a, c) => a.pnl - c.pnl);
+  const off = b.state === 'offline';
+  FQ.sheetOpen(`<div class="grab"></div><div class="sh-h">${FQ.ui.stateDot(b)}<b>${b.name}</b>${FQ.ui.modeBadge(b, true)}${b.market === 'hip3' ? '<span class="badge xyz">HIP-3</span>' : ''}<span class="muted" style="font-size:var(--t-xs)">${b.groupName}</span><button class="btn ghost icon" style="margin-left:auto" onclick="FQ.sheetClose()" aria-label="Fermer">${i('x')}</button></div>
+  <div class="sh-b">
+   ${b.alerts.map((a, k) => alertItem(a, k)).join('')}
+   ${b.state === 'auth_expired' ? `<div class="banner auth">${i('key-round')}<span class="grow">Session expirée : lecture conservée, actions désactivées.</span><button class="btn sm">Se reconnecter</button></div>` : ''}
+   ${b.seeded ? `<div class="note" style="padding:8px 12px">${i('info')}<span>Bot dry ensemencé : chiffres depuis le ${b.seeded}.</span></div>` : ''}
+   <div class="sp-kpis">${[['Latent', off ? 'n/d' : s(b.openPnl), cls(b.openPnl)], ['Jour', s(b.day), cls(b.day)], ['30 j', s(b.d30), cls(b.d30)], ['Capital', n(b.cap, 0), ''], ['Drawdown', n(b.ddAbs, 0) + ' <small>' + FQ.p(b.ddPct, 1) + '</small>', b.ddPct < b.ddThr ? 'crit-t' : ''], ['Slots', b.open + '/' + b.max, '']].map(k => `<div class="kpi"><span class="k">${k[0]}</span><span class="v num ${k[2]}">${k[1]}</span></div>`).join('')}</div>
+   <div class="sp-acts"><button class="btn sm" data-money onclick="FQ.pauseBot('${b.name}')">${i('pause')}Pause entrées</button><button class="btn sm" data-money onclick="FQ.reloadBot('${b.name}')">${i('refresh-cw')}Recharger</button><a class="btn sm" href="bot.html?bot=${b.name}">${i('arrow-up-right')}Page du bot</a><span class="spacer"></span><button class="btn sm ghost icon" aria-label="Plus d'actions" onclick="FQ.pop(this,'<button class=&quot;mi&quot;>Logs</button><button class=&quot;mi&quot;>Config</button><hr><button class=&quot;mi danger&quot; onclick=&quot;FQ.stopBot(\\'${b.name}\\')&quot;>Arrêter…</button>')">${i('ellipsis')}</button></div>
+   <div class="sec-h">${i('layers', 'sm')}Positions<span class="meta">${ps.length}</span></div>
+   <div class="cards">${ps.map(posCard).join('') || `<div class="empty">${i('inbox')}Aucune position ouverte. Le bot attend un signal.</div>`}</div>
+   <div class="sec-h">${i('activity', 'sm')}Latent 24 h</div><div style="padding:0 12px 14px">${FQ.ui.spark(b.spark, 400, 60).replace('class="spark"', 'class="spark" style="width:100%;height:60px"')}</div>
+  </div>`);
+  $$('.sheet .card[data-k]').forEach(r => r.onclick = () => FQ.openTrade(FQ.positions.find(q => q.key === r.dataset.k)));
+  FQ.renderConn();
+}
+let eqDef = 'Latent';
+FQ.eqPop = btn => { const o = (v, cur) => `<button class="mi" data-v="${v}">${v === cur ? i('check') : '<span style="width:15px"></span>'}${v}</button>`; FQ.pop(btn, `<h4>Période</h4>${['24 h', '7 j', '30 j', 'Tout'].map(v => o(v, '7 j')).join('')}<hr><h4>Définition</h4>${o('Latent', eqDef).replace('</button>', '<span class="k">réalisé + latent</span></button>')}${o('Réalisée', eqDef).replace('</button>', '<span class="k">réalisé seul</span></button>')}`); };
+FQ.layoutPop = btn => FQ.pop(btn, `<h4>Disposition</h4><div class="mi muted" style="pointer-events:none;white-space:normal">Glissez les filets entre panneaux pour redimensionner (fractions mémorisées). Chaque zone accepte une liste de panneaux compatibles.</div><hr><button class="mi">${i('replace')}Remplacer « Risque wallet » par…</button><button class="mi">${i('eye-off')}Masquer un panneau</button><button class="mi">${i('rotate-ccw')}Réinitialiser l'espace</button>`);
+
+/* ---------- Interactions ---------- */
+$$('#scopeSeg button').forEach(b => b.onclick = () => { FQ.scope = b.dataset.s; $$('#scopeSeg button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderAll(); });
+$$('#viewSeg button').forEach(b => b.onclick = () => { view = b.dataset.v; $$('#viewSeg button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderFleet(); });
+$$('#posSeg button').forEach(b => b.onclick = () => { posFilter = b.dataset.f; $$('#posSeg button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderPos(); });
+function setWs(ws) { $$('#wsSeg button').forEach(x => x.setAttribute('aria-pressed', x.dataset.ws === ws)); $('#wsName').textContent = $(`#wsSeg button[data-ws="${ws}"]`).textContent; $('#dash').className = 'dash ' + ws; setTimeout(() => chart && chart.resize(), 30); }
+$$('#wsSeg button').forEach(b => b.onclick = () => setWs(b.dataset.ws));
+FQ.setWs = setWs;
+FQ.wsPop = btn => FQ.pop(btn, `<h4>Espace de travail</h4>${$$('#wsSeg button').map(b => `<button class="mi" onclick="FQ.setWs('${b.dataset.ws}')">${b.getAttribute('aria-pressed') === 'true' ? i('check') : '<span style="width:15px"></span>'}${b.textContent}<span class="k">Alt ${$$('#wsSeg button').indexOf(b) + 1}</span></button>`).join('')}<hr><button class="mi" onclick="FQ.layoutPop(document.querySelector('.ws-compact'))">${i('panels-top-left')}Personnaliser la disposition…</button>`);
+if (view === 'map') $$('#viewSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === 'map'));
+
+/* Tick : seules les cellules visibles flashent, ordre figé pendant le survol */
+let hovering = false; $('#posBody').addEventListener('pointerenter', () => hovering = true); $('#posBody').addEventListener('pointerleave', () => hovering = false);
+FQ.onTick(moved => {
+  moved.forEach(x => { const r = $(`#posBody tr[data-k="${x.key}"]`); if (!r) return; const e = r.querySelector('[data-pnl]'); e.className = cls(x.pnl); FQ.tween(e, x.pnl, v => s(v)); r.querySelector('[data-pct]').textContent = p(x.pct); r.querySelector('[data-px]').textContent = FQ.price(x.price); });
+  const t = FQ.totals(); const k = $('#kOpen'); if (k) { k.className = cls(t.openPnl); FQ.tween(k, t.openPnl, v => s(v)); }
+  const so = $('#sigOpen'); if (so) { so.className = cls(t.openPnl); FQ.tween(so, t.openPnl, v => s(v)); }
+  $$('#fleetBody tr[data-bot]').forEach(r => { const b = FQ.bot(r.dataset.bot); const a = r.querySelector('[data-age]'); if (a && !b.stale) a.textContent = FQ.age(b.ageS); });
+});
+
+function renderAll() { renderKpis(); renderFleet(); renderPos(); renderAlerts(); renderRisk(); renderEq(eqTab); FQ.icons(); }
+FQ.demoConfirm = () => FQ.exitTrade(FQ.positions.find(x => x.bot && x.bot.name === 'hippo_multi'));
+FQ.boot('dashboard', renderAll);
+const _rc = FQ.renderConn; FQ.renderConn = function () { _rc(); if ($('#p-alerts')) renderAlerts(); };
+if (location.hash === '#scope') setTimeout(() => openScope(FQ.bot('dynv1_short')), 300);
+if (location.hash === '#trade') setTimeout(() => FQ.openTrade(FQ.positions.find(x => x.bot && x.bot.name === 'hippo_multi')), 300);
+if (location.hash === '#palette') setTimeout(FQ.palette, 300);
+if (location.hash === '#logs') setTimeout(FQ.toggleLogs, 300);
+})();
+</script>
+</body>
+</html>

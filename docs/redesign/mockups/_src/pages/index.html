@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<!--@HEAD-->
+<title>FreqUI Ultimate 2 · maquettes finales</title>
+<style>
+/*@CSS*/
+.wrap { max-width: 1240px; margin: 0 auto; padding: 28px 20px 60px; }
+.hero { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.hero h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+.hero p { margin: 6px 0 0; color: var(--fg-2); max-width: 760px; }
+.hero .r { margin-left: auto; display: flex; gap: 8px; }
+.gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+.g { border: 1px solid var(--line); border-radius: var(--r-3); background: var(--bg-1); overflow: hidden; display: flex; flex-direction: column; }
+.g img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; border-bottom: 1px solid var(--line); display: block; background: var(--bg-2); }
+.g .b { padding: 12px 14px; display: grid; gap: 6px; }
+.g h2 { margin: 0; font-size: var(--t-lg); display: flex; align-items: center; gap: 8px; }
+.g p { margin: 0; color: var(--fg-3); font-size: var(--t-sm); }
+.g .st { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.g .st a { font-size: var(--t-xs); padding: 3px 7px; border: 1px solid var(--line-2); border-radius: var(--r-pill); color: var(--fg-2); }
+.g .st a:hover { color: var(--fg); text-decoration: none; border-color: var(--fg-4); }
+.tok { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 26px; }
+.tok div { border: 1px solid var(--line); border-radius: var(--r-2); padding: 8px; display: grid; gap: 4px; font-size: var(--t-xs); background: var(--bg-1); }
+.tok i { height: 26px; border-radius: 3px; display: block; }
+h3 { margin: 30px 0 6px; font-size: var(--t-md); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero"><div><h1>FreqUI Ultimate 2 : maquettes finales</h1><p>Base « Terminal » (dense, calme, chiffres honnêtes), avec les greffes retenues des autres propositions et toutes les corrections des juges. Données fictives. Spécification : <code>docs/redesign/02-design.md</code>.</p></div>
+  <div class="r"><button class="btn" onclick="FQ.toggleTheme()"><i data-lucide="sun-moon"></i>Thème clair ou sombre</button></div></div>
+  <div class="gal">
+    <article class="g"><a href="dashboard.html"><img src="shots/dashboard-1440.png" alt="Flotte, 1440 px"></a><div class="b"><h2><i data-lucide="layout-grid"></i>Flotte</h2><p>KPI live seuls, FleetTable et carte, positions pires d'abord, À traiter, équité, risque wallet, barre d'état.</p>
+      <div class="st"><a href="dashboard.html">par défaut</a><a href="dashboard.html?view=map">carte</a><a href="dashboard.html#scope">ScopePanel</a><a href="dashboard.html#trade">TradeDrawer</a><a href="dashboard.html#confirm">confirmation live</a><a href="dashboard.html#palette">palette</a><a href="dashboard.html#logs">logs</a><a href="dashboard.html?conn=connecting&hold=1">connexion</a><a href="dashboard.html?conn=degraded">dégradée</a><a href="dashboard.html?conn=offline">hors ligne</a><a href="dashboard.html?conn=direct">mode direct</a><a href="dashboard.html?cache=1&hold=1">cache au 1er rendu</a><a href="dashboard.html?skeleton=1&hold=1">squelettes</a><a href="dashboard.html?calm=1">flotte calme</a><a href="dashboard.html?scope=all">live + dry</a></div></div></article>
+    <article class="g"><a href="bot.html"><img src="shots/bot-1440.png" alt="Bot, 1440 px"></a><div class="b"><h2><i data-lucide="bot"></i>Bot</h2><p>En-tête et KPI du bot, paires, graphique avec niveaux, positions, TradeDrawer docké avec échelle DCA et sortie collante.</p>
+      <div class="st"><a href="bot.html">hippo_multi</a><a href="bot.html?bot=dynv1_short">dynv1_short</a><a href="bot.html#trade">feuille trade</a><a href="bot.html#confirm">sortie live</a><a href="bot.html#exitall">tout sortir</a><a href="bot.html?state=auth_expired">session expirée</a><a href="bot.html?state=starting&bot=hippo_ladder_long">démarrage</a><a href="bot.html?bot=xyz_crude_short&state=offline">hors ligne</a></div></div></article>
+    <article class="g"><a href="journal.html"><img src="shots/journal-1440.png" alt="Journal, 1440 px"></a><div class="b"><h2><i data-lucide="book-open-text"></i>Journal</h2><p>Sans replay par défaut, totaux en absolu, jours avec sous-totaux, MAE et MFE, raisons, profondeur DCA.</p>
+      <div class="st"><a href="journal.html">par défaut</a><a href="journal.html#dca">profondeur DCA</a><a href="journal.html?conn=direct">mode direct</a></div></div></article>
+    <article class="g"><a href="charts.html"><img src="shots/charts-1440.png" alt="Graphiques, 1440 px"></a><div class="b"><h2><i data-lucide="chart-candlestick"></i>Graphiques</h2><p>Positions d'abord, bot de contexte, niveaux DCA, 1 ou 2 cellules, indicateurs en feuille.</p>
+      <div class="st"><a href="charts.html">par défaut</a></div></div></article>
+    <article class="g"><a href="tools.html"><img src="shots/tools-1440.png" alt="Outils et réglages, 1440 px"></a><div class="b"><h2><i data-lucide="wrench"></i>Outils et réglages</h2><p>Menu Outils, réconciliation, diagnostic, registre des bots et migration, passerelle, affichage, alertes, sécurité des actions, audit.</p>
+      <div class="st"><a href="tools.html">outils</a><a href="tools.html#reglages">réglages</a><a href="tools.html#securite">résultats d'action</a></div></div></article>
+    <article class="g"><a href="mobile.html"><img src="shots/mobile-1440.png" alt="Vitrine mobile"></a><div class="b"><h2><i data-lucide="smartphone"></i>Vitrine mobile</h2><p>Six écrans 390 x 844 : incident d'abord, mode direct, bot, feuille de trade, confirmation, journal.</p>
+      <div class="st"><a href="mobile.html">ouvrir</a></div></div></article>
+  </div>
+  <h3>Jetons sémantiques (thème courant)</h3>
+  <div class="tok" id="tok"></div>
+</div>
+<script>/*@CORE*/</script>
+<script>
+const toks = [['--profit', 'gain (texte)'], ['--loss', 'perte (texte)'], ['--crit', 'critique'], ['--warn', 'vigilance, périmé'], ['--info', 'info, démarrage'], ['--live', 'argent réel seulement'], ['--dry', 'dry-run'], ['--long', 'sens long'], ['--short', 'sens short'], ['--accent', 'focus, moyenne']];
+document.getElementById('tok').innerHTML = toks.map(t => `<div><i style="background:var(${t[0]})"></i><b class="num">${t[0]}</b><span class="muted">${t[1]}</span></div>`).join('');
+FQ.icons();
+</script>
+</body>
+</html>

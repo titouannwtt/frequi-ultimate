@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<!--@HEAD-->
+<title>Graphiques · FreqUI Ultimate (maquette finale)</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+/*@CSS*/
+.cbar { display: flex; align-items: center; gap: 6px; padding: 6px var(--s3); border-bottom: 1px solid var(--line); background: var(--bg); flex: none; overflow-x: auto; scrollbar-width: none; }
+.cbar::-webkit-scrollbar { display: none; }
+.cbar .right { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.ctx { display: inline-flex; align-items: center; gap: 6px; height: var(--ctl); padding: 0 9px; border: 1px solid var(--line-2); border-radius: var(--r-2); font-size: var(--t-sm); white-space: nowrap; }
+main.cg { display: grid; gap: var(--gut); padding: var(--gut); min-height: 0; grid-template-columns: 260px minmax(0, 1fr); }
+#cells { display: grid; gap: var(--gut); min-height: 0; grid-template-columns: minmax(0, 1fr); }
+#cells.g2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.cell .pb { position: relative; }
+.cell .chart { position: absolute; inset: 0; }
+.legend2 { display: flex; gap: 12px; padding: 4px var(--s3); font: 500 var(--t-xs) var(--font-num); color: var(--fg-3); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.legend2 b { color: var(--fg); font-weight: 600; }
+.legend2 i { display: inline-block; width: 10px; height: 2px; vertical-align: 3px; margin-right: 4px; }
+.pn-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 8px; padding: 7px var(--s3); border-bottom: 1px solid var(--line); cursor: pointer; }
+.pn-item:hover { background: var(--bg-2); }
+.pn-item.on { background: var(--accent-w); box-shadow: inset 2px 0 0 var(--accent); }
+.pn-item b { font-size: var(--t-sm); display: flex; gap: 6px; align-items: center; }
+.pn-item .r { font: 600 var(--t-xs) var(--font-num); text-align: right; }
+.pn-item .sub { font-size: var(--t-xs); color: var(--fg-3); display: flex; gap: 6px; align-items: center; }
+.pn-h { padding: 8px var(--s3) 4px; font-size: var(--t-xs); color: var(--fg-3); font-weight: 600; }
+.mchips { display: none; }
+.mpos { display: none; }
+@media (max-width: 1023px) {
+  main.cg { grid-template-columns: minmax(0, 1fr); }
+  #p-nav { display: none; }
+  .mchips { display: flex; gap: 6px; padding: 8px var(--s3); overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); background: var(--bg-1); }
+  .mchips::-webkit-scrollbar { display: none; }
+  .mchips .chip { height: 36px; }
+  #cells, #cells.g2 { grid-template-columns: minmax(0, 1fr); }
+  .cell { height: 62vh; min-height: 380px; } .cell + .cell { display: none; }
+  .mpos { display: block; }
+  .cbar .hide-c { display: none; }
+}
+@media (max-width: 599px) { main.cg { padding: 0; gap: 0; } main.cg .pane { border-radius: 0; border-left: 0; border-right: 0; } }
+</style>
+</head>
+<body>
+<div class="app fit">
+  <header class="top" id="top"></header>
+  <div id="banners"></div>
+  <div class="cbar" role="toolbar" aria-label="Graphique">
+    <button class="btn sm" style="flex:none" id="pairBtn" onclick="FQ.palette()"><b id="pairLbl">ENA</b><i data-lucide="chevron-down"></i></button>
+    <span class="ctx" title="Bot dont la stratégie calcule les indicateurs"><span class="lab">contexte</span><span class="livemark"></span><b id="ctxLbl">dynv1_short</b><i data-lucide="chevrons-up-down" class="sm"></i></span>
+    <div class="seg"><button>5m</button><button aria-pressed="true">15m</button><button>1h</button><button>4h</button><button>1j</button></div>
+    <div class="seg hide-c" id="gridSeg" title="Cellules (Alt 1 / Alt 2)"><button aria-pressed="true" data-g="1"><i data-lucide="square"></i></button><button data-g="2"><i data-lucide="columns-2"></i></button></div>
+    <div class="right"><button class="btn sm ghost hide-c" title="Bougies Heikin-Ashi" aria-label="Bougies Heikin-Ashi">HA</button><button class="btn sm ghost" title="Mesurer (Maj + glisser, appui long en tactile)"><i data-lucide="ruler"></i><span class="hide-m">Mesurer</span></button><button class="btn sm" onclick="FQ.plotSheet()"><i data-lucide="line-chart"></i>Indicateurs</button></div>
+  </div>
+  <div class="mchips" id="mchips"></div>
+  <main class="cg">
+    <section class="pane" id="p-nav" aria-label="Paires"></section>
+    <div id="cells"></div>
+  </main>
+  <section class="mpos" id="mpos"></section>
+  <footer class="status" id="status"></footer>
+  <nav class="tabbar" id="tabbar" aria-label="Navigation"></nav>
+</div>
+<script>/*@CORE*/</script>
+<script>
+(function () {
+const { $, $$ } = FQ, i = FQ.i, s = FQ.s, p = FQ.p, cls = FQ.cls;
+const open = FQ.positions.filter(x => !x.orphan && x.bot.mode === 'live' && !x.bot.stale).sort((a, b) => a.pnl - b.pnl);
+let cur = open.find(x => x.pair === FQ.Q.get('pair')) || open[0];
+let grid = 1; const charts = [];
+function nav() {
+  const sig = [['TAO', '3 bots · entrée short 18:30'], ['INJ', 'btc_ensemble_long · entrée long 18:15'], ['OP', 'gen_bb_squeeze_short · sortie 17:45']];
+  $('#p-nav').innerHTML = `<div class="ph"><label class="search" style="flex:1"><i data-lucide="search" class="sm"></i><input placeholder="Paire ou bot" aria-label="Paire ou bot"></label></div>
+   <div style="padding:6px 8px;border-bottom:1px solid var(--line)"><div class="seg sm" style="width:100%"><button aria-pressed="true" style="flex:1">Positions</button><button style="flex:1">Signaux</button><button style="flex:1">Toutes</button></div></div>
+   <div class="pb"><div class="pn-h">Positions ouvertes · ${open.length}</div>${open.slice(0, 14).map(x => `<div class="pn-item ${x === cur ? 'on' : ''}" data-k="${x.key}"><b>${x.pair.replace('xyz:', 'xyz:')}${FQ.ui.dir(x)}</b><span class="r ${cls(x.pnl)}">${s(x.pnl)}</span><span class="sub">${x.bot.name} · DCA ${x.filled}/${x.dcaMax}</span><span class="r ${cls(x.pct)}" style="font-weight:500">${p(x.pct, 1)}</span></div>`).join('')}
+   <div class="pn-h">Signaux récents</div>${sig.map(x => `<div class="pn-item"><b>${x[0]}</b><span class="r">${i('zap', 'sm')}</span><span class="sub" style="grid-column:1/3">${x[1]}</span></div>`).join('')}</div>`;
+  $$('#p-nav [data-k]').forEach(e => e.onclick = () => { cur = FQ.positions.find(q => q.key === e.dataset.k); render(); });
+  $('#mchips').innerHTML = open.slice(0, 10).map(x => `<button class="chip ${x === cur ? 'on' : ''}" data-k="${x.key}">${x.pair.replace('xyz:', '')}<span class="num ${cls(x.pct)}" style="font-size:var(--t-xs)">${p(x.pct, 1)}</span></button>`).join('');
+  $$('#mchips [data-k]').forEach(e => e.onclick = () => { cur = FQ.positions.find(q => q.key === e.dataset.k); render(); });
+}
+function cell(x, idx) {
+  const S = FQ.priceSeries(x); const last = S.data[S.data.length - 1];
+  return { html: `<section class="pane cell" aria-label="Graphique ${x.pair}"><div class="ph"><h2>${x.pair} · 15m ${FQ.ui.dir(x)}</h2><span class="meta">${x.bot.name}, DCA ${x.filled}/${x.dcaMax}</span><div class="tools"><a class="btn xs ghost" href="bot.html?bot=${x.bot.name}">${i('bot')}Page du bot</a></div></div>
+   <div class="legend2"><span>O <b>${FQ.price(last[0])}</b> H <b>${FQ.price(last[3])}</b> L <b>${FQ.price(last[2])}</b> C <b class="${cls(last[1] - last[0])}">${FQ.price(last[1])}</b></span><span><i style="background:var(--info)"></i>ema_50 <b>${FQ.price(S.ema[S.ema.length - 1])}</b></span><span><i style="background:var(--fg-2)"></i>rsi <b>${FQ.n(S.rsi[S.rsi.length - 1], 1)}</b></span></div>
+   <div class="pb"><div class="chart" id="ch${idx}"></div></div></section>`, S };
+}
+function draw(el, x, S) { charts.push(FQ.priceChart(el, x, { S, rsi: true })); } // composant partagé avec la page Bot
+function render() {
+  charts.forEach(c => c.dispose()); charts.length = 0;
+  $('#pairLbl').textContent = cur.pair; $('#ctxLbl').textContent = cur.bot.name;
+  const xs = grid === 2 ? [cur, open.find(x => x !== cur)] : [cur];
+  const cs = xs.map((x, k) => cell(x, k));
+  $('#cells').className = grid === 2 ? 'g2' : ''; $('#cells').innerHTML = cs.map(c => c.html).join('');
+  if (window.echarts) cs.forEach((c, k) => draw($('#ch' + k), xs[k], c.S));
+  $('#mpos').innerHTML = `<div class="sec-h">${i('layers', 'sm')}Position ouverte sur ${cur.pair}</div><button class="card is-live" onclick="FQ.openTrade(FQ.positions.find(q=>q.key==='${cur.key}'))"><span class="m1">${cur.bot.name} ${FQ.ui.dir(cur)}</span><span class="m2 ${cls(cur.pnl)}">${s(cur.pnl)}</span><span class="m3">DCA ${cur.filled}/${cur.dcaMax} · ${FQ.ui.durCell(cur)}</span><span class="m4 ${cls(cur.pct)}">${p(cur.pct)}</span><span class="full">${FQ.ui.ladderH(cur)}</span></button>`;
+  nav(); FQ.icons();
+}
+$$('#gridSeg button').forEach(b => b.onclick = () => { grid = +b.dataset.g; $$('#gridSeg button').forEach(x => x.setAttribute('aria-pressed', x === b)); render(); });
+FQ.plotSheet = () => FQ.sheetOpen(`<div class="grab"></div><div class="sh-h">${i('line-chart')}<b>Indicateurs</b><span class="muted" style="font-size:var(--t-xs)">préréglages migrés depuis ftPlotConfig</span><button class="btn ghost icon" style="margin-left:auto" onclick="FQ.sheetClose()" aria-label="Fermer">${i('x')}</button></div>
+  <div class="sh-b"><div class="pop" style="position:static;opacity:1;transform:none;pointer-events:auto;box-shadow:none;max-width:none"><h4>Préréglages</h4><button class="mi">${i('check')}DCA mean-reversion (ema_50, rsi)</button><button class="mi"><span style="width:15px"></span>Bandes de Bollinger + volume</button><button class="mi"><span style="width:15px"></span>Stratégie du bot (plot_config)</button><hr><h4>Graphique principal</h4><button class="mi">ema_50 <span class="k">ligne, accent</span></button><button class="mi">${i('plus')}Ajouter un indicateur</button><h4>Sous-graphes</h4><button class="mi">rsi <span class="k">0 à 100</span></button></div></div>`);
+document.addEventListener('fq:theme', render);
+addEventListener('resize', () => charts.forEach(c => c.resize()));
+document.addEventListener('keydown', e => { if (e.altKey && (e.key === '1' || e.key === '2')) { grid = +e.key; render(); } });
+FQ.boot('charts', render);
+})();
+</script>
+</body>
+</html>

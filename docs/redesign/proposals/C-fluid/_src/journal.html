@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090B0E">
+<title>Journal · FreqUI Ultimate (proposition C « Pouls »)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+/*@CSS*/
+
+/* ================= Journal ================= */
+.filters { position: sticky; top: 0; z-index: 30; margin: 0 calc(var(--s-4) * -1) var(--s-3); padding: var(--s-2) var(--s-4) var(--s-3);
+  background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+body.is-compact .filters { top: var(--compact-h); }
+@media (min-width: 768px) { .filters { margin: 0 calc(var(--s-6) * -1) var(--s-4); padding: var(--s-2) var(--s-6) var(--s-3); } }
+.frow { display: flex; gap: 8px; align-items: center; overflow-x: auto; scrollbar-width: none; }
+.frow::-webkit-scrollbar { display: none; }
+.frow + .frow { margin-top: 8px; }
+.search { flex: 1; min-width: 180px; display: flex; align-items: center; gap: 8px; height: var(--ctl-md); padding: 0 12px; border-radius: var(--r-md); border: 1px solid var(--line-strong); background: var(--surface); color: var(--text-3); }
+.search input { border: 0; background: none; outline: none; flex: 1; min-width: 0; font-size: var(--fs-body); color: var(--text); }
+.chip .x { margin-left: 2px; opacity: .7; }
+.chip.dd::after { content: ""; width: 0; height: 0; border: 4px solid transparent; border-top-color: currentColor; margin: 4px 0 0 2px; }
+.chip.active { background: var(--info-soft); color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); }
+
+.kgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; margin-bottom: var(--s-3); }
+.kgrid .kpi { background: var(--surface); padding: 12px 14px; }
+.kgrid .kpi.big { grid-column: 1 / -1; }
+.kgrid .kpi.big .v { font-size: 34px; letter-spacing: -.03em; }
+@media (max-width: 767px) { .kgrid .kpi:last-child { grid-column: 1 / -1; } }
+@media (min-width: 768px) { .kgrid { grid-template-columns: 1.6fr repeat(5, 1fr); } .kgrid .kpi.big { grid-column: auto; } .kgrid .kpi.big .v { font-size: 30px; } }
+
+.jlayout { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
+.side { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
+@media (min-width: 1280px) { .jlayout { grid-template-columns: minmax(0, 1fr) 380px; gap: var(--s-4); align-items: start; } .side { position: sticky; top: 140px; order: 2; } }
+@media (min-width: 1800px) { .jlayout { grid-template-columns: minmax(0, 1fr) 460px; } }
+
+/* calendrier */
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal .dh { font-size: 10.5px; color: var(--text-3); text-align: center; padding-bottom: 2px; }
+.cal .d { aspect-ratio: 1.15; border-radius: 7px; padding: 4px 5px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; border: 1px solid transparent; transition: transform var(--d-press), border-color var(--d-fast); }
+.cal .d:hover { border-color: var(--line-strong); }
+.cal .d:active { transform: scale(.94); }
+.cal .d.sel { border-color: var(--text); }
+.cal .d .n { font-size: 10.5px; color: var(--text-2); }
+.cal .d .v { font-size: 11px; font-weight: 600; text-align: right; }
+.cal .d.fut { background: var(--surface-2); opacity: .35; cursor: default; }
+.cal .d.today { box-shadow: inset 0 0 0 1.5px var(--info); }
+@media (max-width: 479px) { .cal .d .v { font-size: 9.5px; } }
+
+/* liste */
+.day { position: sticky; top: 108px; z-index: 5; display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--bg-raised); border-bottom: 1px solid var(--line); border-top: 1px solid var(--line); font-size: 13px; }
+body.is-compact .day { top: calc(108px + var(--compact-h)); }
+.day b { font-weight: 620; }
+.day .sp { flex: 1; }
+.tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 16px; cursor: pointer; transition: background-color var(--d-fast); }
+.tr + .tr { border-top: 1px solid var(--line); }
+.tr:hover { background: var(--surface-2); }
+.tr .pair { font-weight: 620; display: flex; gap: 6px; align-items: center; }
+.tr .meta { font-size: 12.5px; color: var(--text-3); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.tr .r { text-align: right; }
+.tr .r .v { font-weight: 650; font-size: 15.5px; }
+.tr .r .p { font-size: 12px; }
+.xr { display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 5px; font-size: 11px; font-weight: 550; white-space: nowrap; }
+.xr.roi { background: var(--profit-soft); color: var(--profit); }
+.xr.sig { background: var(--info-soft); color: var(--info); }
+.xr.time { background: var(--warn-soft); color: var(--warn); }
+.xr.stop { background: var(--loss-soft); color: var(--loss); }
+.xr.force { background: var(--surface-3); color: var(--text-2); }
+.jt-desk { display: none; }
+@media (min-width: 1024px) { .jt-desk { display: block; } .jt-mob { display: none; } .day { top: 112px; } }
+.tbl td.r, .tbl th.r { text-align: right; }
+.jt-desk .tbl th { position: static; }
+@media (max-width: 1279px) {
+  .side { display: contents; }
+  .side > :nth-child(1) { order: 1; }
+  .jlayout > .card { order: 2; }
+  .side > :nth-child(2) { order: 3; }
+  .side > :nth-child(3) { order: 4; }
+}
+.more { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px; border-top: 1px solid var(--line); color: var(--text-3); font-size: 13px; }
+
+.xbar { display: grid; grid-template-columns: 110px 1fr 54px; gap: 10px; align-items: center; font-size: 13px; padding: 5px 0; }
+.xbar .meter { height: 8px; }
+@media (min-width: 768px) { .hide-desk { display: none; } }
+@media (max-width: 479px) { .hide-mob { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="compact" aria-hidden="true">
+  <span class="t">Journal</span><span class="faint" style="font-size:13px">30 j</span>
+  <span class="v num up" id="cNet">+0,00</span>
+  <span class="faint" style="font-size:13px" id="cN">1 284 trades</span>
+  <span class="sp"></span><span class="conn-slot"></span>
+</div>
+
+<main class="main">
+  <header class="topbar">
+    <div><h1>Journal</h1><div class="sub">Trades fermés<span class="hide-mob"> · toute la flotte · UTC+2</span></div></div>
+    <span class="sp"></span>
+    <span class="conn-slot"></span>
+    <button class="btn" id="exportBtn"><i data-lucide="download" class="i16"></i><span class="hide-mob">Exporter</span></button>
+  </header>
+
+  <section class="kgrid" id="hero">
+    <div class="kpi big"><div class="label">P&amp;L net · 30 jours</div><div class="v num tick" id="kNet">0,00</div><div class="s">frais et funding inclus · <span class="up">+3,1 %</span> du capital engagé</div></div>
+    <div class="kpi"><div class="label">Trades</div><div class="v num">1 284</div><div class="s">42,8 par jour</div></div>
+    <div class="kpi"><div class="label">Winrate</div><div class="v num">73,4<span class="unit">%</span></div><div class="s">942 gagnants</div></div>
+    <div class="kpi"><div class="label">Profit factor</div><div class="v num">1,42</div><div class="s">gains / pertes</div></div>
+    <div class="kpi"><div class="label">Moy. gain / perte</div><div class="v num"><span class="up">+3,98</span> <span class="faint" style="font-weight:500">/</span> <span class="down">−7,63</span></div><div class="s">USDC par trade</div></div>
+    <div class="kpi"><div class="label">Durée médiane</div><div class="v num">6 h 10</div><div class="s">p90 : 41 h</div></div>
+  </section>
+
+  <div class="filters" id="filters">
+    <div class="frow">
+      <label class="search"><i data-lucide="search" class="i16"></i><input placeholder="Paire, bot, raison, n° de trade" aria-label="Rechercher"></label>
+      <div class="seg hide-mob" id="perSeg"><button data-v="1">1J</button><button data-v="7">7J</button><button data-v="30" class="on">30J</button><button data-v="m">Mois</button><button data-v="all">Tout</button></div>
+    </div>
+    <div class="frow">
+      <button class="chip dd show-mob-only">30 jours</button>
+      <button class="chip dd">Bots <span class="n">28</span></button>
+      <button class="chip active">Live <span class="x">×</span></button>
+      <button class="chip dd">Sens</button>
+      <button class="chip dd">Raison de sortie</button>
+      <button class="chip dd">Résultat</button>
+      <button class="chip dd">Groupe</button>
+      <button class="chip" style="border-style:dashed">Réinitialiser</button>
+    </div>
+  </div>
+
+  <div class="jlayout">
+    <aside class="side">
+      <section class="card">
+        <div class="card-h"><button class="btn icon ghost sm" aria-label="Mois précédent"><i data-lucide="chevron-left" class="i16"></i></button><h2>Octobre 2026</h2><button class="btn icon ghost sm" aria-label="Mois suivant"><i data-lucide="chevron-right" class="i16"></i></button><span class="sp"></span>
+          <div class="seg" id="calSeg"><button class="on">Jour</button><button>Sem.</button></div></div>
+        <div class="card-b"><div class="cal" id="cal"></div>
+          <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:12px" class="faint"><span>Meilleur : <b class="up num">+188,40</b> le 29/09</span><span>Pire : <b class="down num">−141,25</b> le 3/10</span></div></div>
+      </section>
+      <section class="card">
+        <div class="card-h"><h2>Distribution</h2><span class="meta">profit % par trade</span><span class="sp"></span><div class="seg" id="distSeg"><button class="on">%</button><button>USDC</button><button>Durée</button></div></div>
+        <div class="card-b"><div id="hist" style="height:170px"></div>
+          <div class="note" style="margin:8px 0 0;background:var(--loss-soft)"><i data-lucide="triangle-alert"></i><div><b>Queue gauche</b> : 4 % des trades font 41 % des pertes (sorties après DCA 4-5). Cliquer une barre filtre la liste.</div></div></div>
+      </section>
+      <section class="card">
+        <div class="card-h"><h2>Raisons de sortie</h2></div>
+        <div class="card-b" id="xr"></div>
+      </section>
+    </aside>
+
+    <section class="card" style="overflow:clip">
+      <div class="card-h"><h2>Trades</h2><span class="meta" id="listMeta">50 sur 1 284</span><span class="sp"></span>
+        <div class="seg" id="sortSeg"><button class="on">Récents</button><button>P&amp;L</button><button>Durée</button></div></div>
+      <div id="list"><div class="card-b"><div class="skel" style="height:420px"></div></div></div>
+      <div class="more"><span>Pagination côté passerelle, 50 par page</span><button class="btn sm">Charger 50 de plus</button></div>
+    </section>
+  </div>
+</main>
+
+<div class="sheet" id="tradeSheet" role="dialog" aria-label="Détail du trade"></div>
+
+<script>
+/*@CORE*/
+</script>
+<script>
+(() => {
+  const P = Pouls;
+  const $ = (s, r = document) => r.querySelector(s);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  document.querySelectorAll('.conn-slot').forEach((s) => (s.outerHTML = P.connHtml()));
+  P.boot('journal', render);
+  P.compactOn($('#hero'));
+  P.seg($('#sortSeg')); P.seg($('#calSeg')); P.seg($('#distSeg'));
+  if ($('#perSeg')) P.seg($('#perSeg'));
+
+  /* ---------- trades fermés factices ---------- */
+  const R = [['roi', 'ROI', .58], ['sig', 'Signal', .2], ['time', 'Temporelle', .1], ['stop', 'Stop', .07], ['force', 'Forcée', .05]];
+  const pick = () => { let x = P.rnd(); for (const r of R) { if ((x -= r[2]) < 0) return r; } return R[0]; };
+  const PAIRS = ['SOL', 'ETH', 'HYPE', 'ENA', 'WIF', 'AVAX', 'SUI', 'DOGE', 'LINK', 'PENGU', 'TAO', 'ONDO', 'xyz:NVDA', 'xyz:GOLD', 'BTC', 'XRP'];
+  const trades = [];
+  let t = new Date('2026-10-15T18:42:00');
+  for (let i = 0; i < 46; i++) {
+    t = new Date(t.getTime() - P.between(8, 95) * 60000);
+    const b = P.bots[Math.floor(P.rnd() * P.bots.length)];
+    const r = pick();
+    const stake = P.between(15, 120);
+    const pct = r[0] === 'roi' ? P.between(.8, 3.2) : r[0] === 'sig' ? P.between(-1.5, 4) : r[0] === 'time' ? P.between(-6, 1) : r[0] === 'stop' ? P.between(-24, -8) : P.between(-9, 3);
+    const dca = r[0] === 'stop' ? 4 + Math.floor(P.rnd() * 2) : 1 + Math.floor(P.rnd() * 3);
+    trades.push({ id: 9000 - i, t, bot: b.name, mode: b.mode, pair: PAIRS[Math.floor(P.rnd() * PAIRS.length)], short: b.dir === 'short', lev: 3, pct, usdc: stake * pct / 100 * 3, dca, dcaMax: 5, hours: r[0] === 'time' ? P.between(36, 72) : P.between(.3, 30), r });
+  }
+  // un trade fermé en force par l'utilisateur, pour montrer la traçabilité
+  trades[3].r = R[4]; trades[3].bot = 'dynv1_short'; trades[3].pair = 'SUI'; trades[3].usdc = -6.12; trades[3].pct = -4.1; trades[3].short = true; trades[3].who = 'manuel, depuis le téléphone';
+
+  const fmtD = (d) => d.toLocaleDateString('fr-FR', { weekday: innerWidth < 480 ? 'short' : 'long', day: 'numeric', month: innerWidth < 480 ? 'short' : 'long' });
+  const hm = (d) => d.toTimeString().slice(0, 5);
+
+  function render() {
+    P.tick($('#kNet'), 1518.36, { from: 0 });
+    P.tick($('#cNet'), 1518.36, { from: 0, flash: false });
+    renderCal(); renderHist(); renderXr(); renderList();
+    document.querySelectorAll('.card, .kgrid').forEach((c, i) => { c.classList.add('reveal'); c.style.setProperty('--i', Math.min(i, 6)); });
+    P.icons();
+    if (new URLSearchParams(location.search).get('sheet') === '1') openTrade(trades[3]);
+  }
+
+  function renderCal() {
+    const vals = Array.from({ length: 31 }, (_, i) => (i < 15 ? +((P.rnd() - .3) * 140).toFixed(0) : null));
+    vals[2] = -141; vals[14] = 96;
+    // octobre 2026 commence un jeudi : 3 cases vides
+    $('#cal').innerHTML = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => `<span class="dh">${d}</span>`).join('') + '<span></span><span></span><span></span>' +
+      vals.map((v, i) => v === null ? `<div class="d fut"><span class="n">${i + 1}</span></div>` :
+        `<div class="d ${i === 14 ? 'today' : ''}" data-day="${i + 1}" style="background:color-mix(in srgb, ${v >= 0 ? 'var(--profit)' : 'var(--loss)'} ${Math.min(62, 10 + Math.abs(v) / 2.6)}%, var(--surface-2))"><span class="n">${i + 1}</span><span class="v num">${P.fmt(v, 0, true)}</span></div>`).join('');
+    $('#cal').addEventListener('click', (e) => { const d = e.target.closest('.d[data-day]'); if (!d) return; $('#cal').querySelectorAll('.d').forEach((x) => x.classList.toggle('sel', x === d)); $('#listMeta').textContent = `filtré : ${d.dataset.day} octobre`; });
+  }
+
+  let hc;
+  function renderHist() {
+    hc = echarts.init($('#hist'), null, { renderer: 'svg' });
+    const bins = [], x = [];
+    for (let b = -24; b <= 6; b += 1.5) { x.push(b); const c = b < -10 ? 2 + P.rnd() * 6 : b < -3 ? 10 + P.rnd() * 20 : b < 0 ? 40 + P.rnd() * 40 : b < 3.5 ? 120 + P.rnd() * 90 : 30 + P.rnd() * 20; bins.push(Math.round(c)); }
+    const paint = () => hc.setOption({
+      animationDuration: 600, grid: { left: 4, right: 4, top: 8, bottom: 20 },
+      tooltip: { trigger: 'axis', backgroundColor: css('--surface-3'), borderColor: css('--line-strong'), textStyle: { color: css('--text'), fontFamily: 'Geist', fontSize: 12 }, formatter: (p) => `${P.pct(x[p[0].dataIndex], 1)} : <b>${p[0].value}</b> trades` },
+      xAxis: { type: 'category', data: x, axisLabel: { color: css('--text-3'), fontSize: 10, formatter: (v) => (+v % 6 === 0 ? P.fmt(+v, 0, true) + ' %' : '') , interval: 0 }, axisLine: { lineStyle: { color: css('--line-strong') } }, axisTick: { show: false } },
+      yAxis: { type: 'value', show: false },
+      series: [{ type: 'bar', barCategoryGap: '18%', data: bins.map((v, i) => ({ value: v, itemStyle: { color: x[i] < 0 ? css('--loss') : css('--profit'), opacity: x[i] < -10 ? 1 : .75, borderRadius: [3, 3, 0, 0] } })) }],
+    }, true);
+    paint(); document.addEventListener('themechange', paint); addEventListener('resize', () => hc.resize());
+  }
+
+  function renderXr() {
+    const rows = [['roi', 'ROI', 745, 2961.4], ['sig', 'Signal', 257, 402.8], ['time', 'Temporelle', 128, -310.6], ['stop', 'Stop', 90, -1488.2], ['force', 'Forcée', 64, -47.0]];
+    const max = Math.max(...rows.map((r) => Math.abs(r[3])));
+    $('#xr').innerHTML = rows.map(([k, l, n, v]) => `<div class="xbar"><span><span class="xr ${k}">${l}</span> <span class="faint num" style="font-size:12px">${n}</span></span><span class="meter ${v >= 0 ? 'good' : 'bad'}"><i style="width:${Math.abs(v) / max * 100}%"></i></span><span class="num ${P.cls(v)}" style="text-align:right;font-weight:600">${P.fmt(v, 0, true)}</span></div>`).join('');
+  }
+
+  function renderList() {
+    const groups = {};
+    trades.forEach((t) => (groups[t.t.toDateString()] ||= []).push(t));
+    const dayH = (k, arr) => { const s = arr.reduce((a, t) => a + t.usdc, 0); const w = arr.filter((t) => t.usdc > 0).length; return `<div class="day"><b>${fmtD(arr[0].t).replace(/^./, (c) => c.toUpperCase())}</b><span class="faint">${arr.length} trades · ${Math.round(w / arr.length * 100)} % gagnants</span><span class="sp"></span><b class="num ${P.cls(s)}">${P.fmt(s, 2, true)}</b></div>`; };
+    const mob = Object.entries(groups).map(([k, arr]) => dayH(k, arr) + arr.map((t) => `
+      <div class="tr" data-id="${t.id}"><div style="min-width:0"><div class="pair">${t.pair}<span class="badge ${t.short ? 'short' : 'long'}">${t.short ? 'S' : 'L'} ${t.lev}x</span><span class="xr ${t.r[0]}">${t.r[1]}</span></div>
+        <div class="meta"><span class="num">${hm(t.t)}</span>·<span class="sdot ${t.mode === 'dry' ? 'dry' : ''}" style="width:6px;height:6px"></span>${t.bot}·<span>${P.dur(t.hours)}</span>·<span>DCA ${t.dca}</span></div></div>
+        <div class="r"><div class="v num ${P.cls(t.usdc)}">${P.fmt(t.usdc, 2, true)}</div><div class="p num ${P.cls(t.pct)}">${P.pct(t.pct)}</div></div></div>`).join('')).join('');
+    const desk = Object.entries(groups).map(([k, arr]) => `<tbody><tr><td colspan="9" style="padding:0;height:auto;border:0">${dayH(k, arr)}</td></tr>` + arr.map((t) => `
+      <tr data-id="${t.id}"><td class="num faint">${hm(t.t)}</td><td class="l"><b style="font-weight:600">${t.pair}</b> <span class="badge ${t.short ? 'short' : 'long'}">${t.short ? 'S' : 'L'} ${t.lev}x</span></td>
+      <td class="l"><span style="display:inline-flex;gap:6px;align-items:center"><span class="sdot ${t.mode === 'dry' ? 'dry' : ''}" style="width:6px;height:6px"></span><span class="muted">${t.bot}</span></span></td>
+      <td class="l"><span class="xr ${t.r[0]}">${t.r[1]}</span>${t.who ? ' <span class="faint" title="' + t.who + '">' + P.ic('smartphone', 'i14') + '</span>' : ''}</td>
+      <td class="num muted">${P.dur(t.hours)}</td><td class="num muted">${t.dca}/${t.dcaMax}</td>
+      <td class="num ${P.cls(t.pct)}">${P.pct(t.pct)}</td><td class="num ${P.cls(t.usdc)}" style="font-weight:620">${P.fmt(t.usdc, 2, true)}</td><td><button class="btn icon ghost sm" aria-label="Détail">${P.ic('chevron-right', 'i16')}</button></td></tr>`).join('') + '</tbody>').join('');
+    $('#list').innerHTML = `<div class="jt-mob">${mob}</div><div class="jt-desk"><table class="tbl"><thead><tr><th class="l">Heure</th><th class="l">Paire</th><th class="l">Bot</th><th class="l">Sortie</th><th>Durée</th><th>DCA</th><th>%</th><th>P&amp;L</th><th></th></tr></thead>${desk}</table></div>`;
+    $('#list').addEventListener('click', (e) => { const r = e.target.closest('[data-id]'); if (r) openTrade(trades.find((t) => t.id === +r.dataset.id)); });
+  }
+
+  function openTrade(t) {
+    const mae = Math.min(t.pct, 0) - P.between(1, 6), mfe = Math.max(t.pct, 0) + P.between(.2, 2.5);
+    $('#tradeSheet').innerHTML = `<div class="grab"></div>
+      <div class="sh-h"><div style="flex:1"><div style="display:flex;gap:6px;align-items:center"><b style="font-size:19px">${t.pair}</b><span class="badge ${t.short ? 'short' : 'long'}">${t.short ? 'Short' : 'Long'} ${t.lev}x</span><span class="xr ${t.r[0]}">${t.r[1]}</span></div>
+        <div class="faint" style="font-size:12.5px">#${t.id} · ${t.bot} · fermé le ${t.t.toLocaleDateString('fr-FR')} à ${hm(t.t)}</div></div><button class="btn icon ghost" data-close>${P.ic('x')}</button></div>
+      <div class="sh-b">
+        <div class="num ${P.cls(t.usdc)}" style="font-size:34px;font-weight:650;letter-spacing:-.03em">${P.fmt(t.usdc, 2, true)}<span class="unit" style="font-size:14px">USDC</span></div>
+        <div class="faint" style="font-size:13px;margin-bottom:14px">${P.pct(t.pct)} sur la mise · ${P.dur(t.hours)} · DCA ${t.dca}/${t.dcaMax}${t.who ? ' · fermeture ' + t.who : ''}</div>
+        <div class="impact"><div><div class="label">Pire excursion (MAE)</div><div class="v num down">${P.pct(mae)}</div></div><div><div class="label">Meilleure excursion (MFE)</div><div class="v num up">${P.pct(mfe)}</div></div>
+          <div><div class="label">Durée vs bot</div><div class="v num">p${Math.round(P.between(20, 95))}</div></div><div><div class="label">Frais + funding</div><div class="v num">−${P.fmt(Math.abs(t.usdc) * .08 + .12, 2)}</div></div></div>
+        <div class="label" style="margin:14px 0 6px">Ordres</div>
+        <div class="card"><ul class="list">${Array.from({ length: t.dca }, (_, i) => `<li class="row" style="min-height:44px"><span class="badge neutral">DCA ${i + 1}</span><span class="faint" style="flex:1;font-size:13px">entrée</span><span class="num" style="font-size:13px">${P.fmt(14 + i * 6, 2)} USDC</span></li>`).join('')}<li class="row" style="min-height:44px"><span class="badge ${t.usdc >= 0 ? 'long' : 'short'}">Sortie</span><span class="faint" style="flex:1;font-size:13px">${t.r[1].toLowerCase()}</span><span class="num ${P.cls(t.usdc)}" style="font-size:13px">${P.fmt(t.usdc, 2, true)}</span></li></ul></div>
+      </div>
+      <div class="sh-f"><a class="btn lg" style="flex:1" href="charts.html">${P.ic('chart-candlestick', 'i16')}Graphique</a><a class="btn lg" style="flex:1" href="bot-detail.html">${P.ic('bot', 'i16')}Page du bot</a></div>`;
+    P.openSheet('tradeSheet');
+  }
+  $('#exportBtn').addEventListener('click', () => P.toast('ok', 'Export préparé par la passerelle', 'CSV, 1 284 lignes, filtres actuels appliqués', 3200));
+})();
+</script>
+<style>
+@media (min-width: 480px) { .show-mob-only { display: none; } }
+</style>
+</body>
+</html>

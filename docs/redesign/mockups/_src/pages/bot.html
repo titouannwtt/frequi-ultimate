@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<!--@HEAD-->
+<title>Bot · FreqUI Ultimate (maquette finale)</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+/*@CSS*/
+/* ===== Page Bot ===== */
+.bh { display: flex; align-items: center; gap: var(--s3); padding: 8px var(--s3); background: var(--bg-1); border-bottom: 1px solid var(--line); flex: none; flex-wrap: wrap; }
+.bh .id { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bh .id h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
+.bh .meta { font-size: var(--t-xs); color: var(--fg-3); white-space: nowrap; }
+.bh .acts { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.bh .acts .gap { width: 18px; }
+.bkpis { display: flex; gap: 0; }
+.bkpis .kpi { min-width: 0; padding: 2px 14px; border-right: 1px solid var(--line); flex: none; }
+.bkpis .kpi .v { font-size: var(--t-lg); }
+main.botg { display: grid; gap: var(--gut); padding: var(--gut); min-height: 0; grid-template-columns: 236px minmax(0, 1fr) 392px; grid-template-rows: minmax(0, 1.05fr) minmax(0, 1fr); }
+#p-pairs { grid-row: 1 / 3; } #p-chart { grid-column: 2; grid-row: 1; } #p-tabs { grid-column: 2; grid-row: 2; } #p-dock { grid-column: 3; grid-row: 1 / 3; }
+#p-dock { display: flex; flex-direction: column; }
+@media (max-width: 1439px) { main.botg { grid-template-columns: 210px minmax(0, 1fr) 360px; } .bkpis .k-b429 { display: none; } }
+@media (max-width: 1279px) { .bkpis { display: none; } }
+@media (max-width: 1023px) {
+  main.botg { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; }
+  #p-pairs, #p-chart, #p-tabs, #p-dock { grid-column: 1; grid-row: auto; }
+  #p-dock { display: none; } #p-pairs { order: 3; max-height: 360px; } #p-tabs { order: 1; } #p-chart { order: 2; height: 320px; }
+}
+@media (max-width: 599px) { main.botg { padding: 8px 0; gap: 8px; } main.botg .pane { border-radius: 0; border-left: 0; border-right: 0; } }
+/* KPI mobile du bot + tuiles d'action 64 px */
+.m-kpis, .m-acts, .m-danger { display: none; }
+@media (max-width: 1279px) { .m-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--bg-1); border-bottom: 1px solid var(--line); } .m-kpis .kpi { min-width: 0; border-bottom: 1px solid var(--line); } .m-kpis .kpi:nth-child(3n) { border-right: 0; } .m-kpis .kpi .v { font-size: var(--t-lg); } }
+@media (min-width: 600px) and (max-width: 1279px) { .m-kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); } .m-kpis .kpi:nth-child(3n) { border-right: 1px solid var(--line); } }
+@media (max-width: 599px) {
+  .bh .acts { display: none; } .bh .meta { white-space: normal; } .bh .id { width: 100%; gap: 4px; } .bh .id .badge.xyz { display: none; } .bh .id h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; margin-left: 4px; }
+  .m-acts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px var(--s3); background: var(--bg-1); border-bottom: 1px solid var(--line); }
+  .m-acts button, .m-acts a { height: 64px; display: grid; place-items: center; align-content: center; gap: 5px; border: 1px solid var(--line-2); border-radius: var(--r-2); background: var(--bg-2); color: var(--fg); font-size: var(--t-xs); font-weight: 500; }
+  .m-acts svg { width: 20px; height: 20px; }
+  .m-danger { display: block; margin: 0 var(--s3) 12px; }
+  .m-danger details { border: 1px solid var(--line); border-radius: var(--r-2); }
+  .m-danger summary { padding: 12px; color: var(--fg-2); list-style: none; display: flex; gap: 8px; align-items: center; }
+  .m-danger .in { padding: 0 12px 12px; display: grid; gap: 8px; }
+  .m-danger .btn { --h: 44px; }
+}
+/* Navigateur de paires */
+.pn-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 8px; padding: 7px var(--s3); border-bottom: 1px solid var(--line); cursor: pointer; position: relative; }
+.pn-item:hover { background: var(--bg-2); }
+.pn-item.on { background: var(--accent-w); box-shadow: inset 2px 0 0 var(--accent); }
+.pn-item b { font-size: var(--t-sm); }
+.pn-item .r { font: 500 var(--t-xs) var(--font-num); text-align: right; }
+.pn-item .sub { grid-column: 1 / 3; display: flex; gap: 6px; align-items: center; font-size: var(--t-xs); color: var(--fg-3); }
+.pn-h { padding: 8px var(--s3) 4px; font-size: var(--t-xs); color: var(--fg-3); font-weight: 600; }
+#chart { position: absolute; inset: 0; }
+/* Onglets bas */
+#p-tabs .tbl tbody tr { cursor: pointer; }
+@container (max-width: 700px) { .c-entry, .c-tp { display: none; } }
+@container (max-width: 520px) { .as-table { display: none; } .as-cards { display: block !important; } }
+.as-cards { display: none; }
+@container (max-width: 820px) { .ra-l { display: none; } #p-tabs .tbl .ra .btn { width: var(--h); padding: 0; } }
+.bh .id .ibtn { flex: none; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; padding: 12px; font-size: var(--t-sm); }
+.kv span:nth-child(odd) { color: var(--fg-3); }
+.bars { padding: 8px 12px; display: grid; gap: 6px; }
+.bars .b { display: grid; grid-template-columns: 70px minmax(0, 1fr) 70px; gap: 8px; align-items: center; font-size: var(--t-sm); }
+.bars .b i { height: 8px; border-radius: 2px; display: block; }
+</style>
+</head>
+<body>
+<div class="app fit">
+  <header class="top" id="top"></header>
+  <div id="banners"></div>
+  <div id="botBanner"></div>
+  <section class="bh" id="bh"></section>
+  <section class="m-kpis" id="mkpis"></section>
+  <section class="m-acts" id="macts"></section>
+  <main class="botg">
+    <section class="pane" id="p-pairs" aria-label="Paires"></section>
+    <section class="pane" id="p-chart" aria-label="Graphique">
+      <div class="ph"><h2 id="chTitle"></h2><div class="tools"><div class="seg sm hide-m"><button>5m</button><button aria-pressed="true">15m</button><button>1h</button><button>4h</button></div><button class="btn xs ghost"><i data-lucide="line-chart"></i>Indicateurs</button><a class="btn xs ghost icon hide-m" href="charts.html" title="Ouvrir dans Graphiques" aria-label="Ouvrir dans Graphiques"><i data-lucide="maximize-2"></i></a></div></div>
+      <div class="pb"><div id="chart"></div></div>
+    </section>
+    <section class="pane" id="p-tabs" aria-label="Détail">
+      <div class="ph"><div class="tabs scroll-x" role="tablist" id="bTabs"><button data-t="pos" aria-selected="true">Positions<span class="n" id="nPos"></span></button><button data-t="hist">Historique</button><button data-t="perf">Performance</button><button data-t="pairs">Paires et verrous</button><button data-t="logs">Logs</button><button data-t="cfg">Config</button></div></div>
+      <div class="pb" id="tabBody"></div>
+    </section>
+    <aside class="pane" id="p-dock" aria-label="Trade sélectionné"></aside>
+  </main>
+  <div class="m-danger"><details><summary><i data-lucide="shield-alert"></i>Actions sensibles du bot<i data-lucide="chevron-down" class="sm"></i></summary><div class="in" id="mDanger"></div></details></div>
+  <footer class="status" id="status"></footer>
+  <nav class="tabbar" id="tabbar" aria-label="Navigation"></nav>
+</div>
+<script>/*@CORE*/</script>
+<script>
+(function () {
+const { $, $$ } = FQ, i = FQ.i, n = FQ.n, s = FQ.s, p = FQ.p, cls = FQ.cls;
+const b = FQ.bot(FQ.Q.get('bot') || 'hippo_multi') || FQ.bot('hippo_multi');
+const st = FQ.Q.get('state'); if (st) { b.state = st; if (st === 'offline') { b.offMin = 14; b.stale = true; } if (st === 'starting') b.startMin = 4; }
+const ps = FQ.positions.filter(x => x.bot === b).sort((a, c) => a.pnl - c.pnl);
+let sel = ps[0];
+const live = b.mode === 'live';
+const ix = FQ.bots.indexOf(b);
+
+function header() {
+  const prev = FQ.bots[(ix - 1 + FQ.bots.length) % FQ.bots.length].name, next = FQ.bots[(ix + 1) % FQ.bots.length].name;
+  const k = [['Latent', `<span class="${cls(b.openPnl)}" id="bLat" data-v="${b.openPnl}">${s(b.openPnl)}</span>`], ['Jour', `<span class="${cls(b.day)}">${s(b.day)}</span>`], ['30 j', `<span class="${cls(b.d30)}">${s(b.d30)}</span>`], ['Capital', n(b.cap, 0) + '<small>USDC</small>'], ['Expo L / S', `<span style="color:var(--long)">${n(b.expoL, 0)}</span><small>/</small><span style="color:var(--short)">${n(b.expoS, 0)}</span>`], ['DD avec latent', `${n(b.ddAbs, 0)}<small>${FQ.p(b.ddPct, 1)} / ${FQ.p(b.ddThr, 0)}</small>`]];
+  $('#bh').innerHTML = `<div class="id"><a class="ibtn" href="bot.html?bot=${prev}" title="Bot précédent ([)" aria-label="Bot précédent">${i('chevron-left')}</a><a class="ibtn" href="bot.html?bot=${next}" title="Bot suivant (])" aria-label="Bot suivant">${i('chevron-right')}</a>
+     ${FQ.ui.stateDot(b)}<h1>${b.name}</h1>${FQ.ui.modeBadge(b, true)}${b.market !== 'crypto' ? `<span class="badge xyz">${b.market === 'hip3' ? 'HIP-3' : 'crypto + xyz'}</span>` : ''}<button class="ibtn" aria-label="Changer de bot (B)" title="Changer de bot (B)" onclick="FQ.palette()">${i('chevrons-up-down')}</button></div>
+    <div class="meta">${b.market !== 'crypto' ? `<span class="only-m">${b.market === 'hip3' ? 'HIP-3' : 'crypto + xyz'} · </span>` : ''}${b.strat} · ${b.tf} · ×${b.lev} · port ${b.port} · ${FQ.ui.stateText(b) || 'en ligne ' + b.uptimeH + ' h'} · données <span class="age ${b.stale ? 'stale' : ''}">${FQ.age(b.ageS)}</span></div>
+    <div class="bkpis">${k.map(x => `<div class="kpi"><span class="k">${x[0]}</span><span class="v num">${x[1]}</span></div>`).join('')}<div class="kpi k-b429"><span class="k">Backoff 429</span><span class="v num">${b.backoff || 1}<small>/10 min</small></span></div></div>
+    <div class="acts"><button class="btn sm" data-money onclick="FQ.pauseBot('${b.name}')" title="Pause des entrées (P)">${i('pause')}Pause entrées</button><button class="btn sm" data-money onclick="FQ.reloadBot('${b.name}')">${i('refresh-cw')}Recharger</button><button class="btn sm" onclick="tab('cfg')">${i('file-cog')}Config</button>
+      <button class="btn sm ghost icon" aria-label="Plus d'actions" onclick="FQ.botMenu(this)">${i('ellipsis')}</button><span class="gap"></span>
+      <button class="btn sm danger-o" data-money data-lock="${b.key}:forceexit_all:-" onclick="FQ.exitAll('${b.name}')">${i('log-out')}Tout sortir…</button></div>`;
+  const km = k.slice(0, 5).concat([['DD avec latent', `${n(b.ddAbs, 0)}<small>${FQ.p(b.ddPct, 1)}</small>`]]);
+  $('#mkpis').innerHTML = km.map(x => `<div class="kpi"><span class="k">${x[0]}</span><span class="v num">${x[1].replace(' id="bLat"', '')}</span></div>`).join('');
+  $('#macts').innerHTML = `<button data-money onclick="FQ.pauseBot('${b.name}')">${i('pause')}Pause entrées</button><button data-money onclick="FQ.reloadBot('${b.name}')">${i('refresh-cw')}Recharger</button><button onclick="tab('cfg');document.getElementById('p-tabs').scrollIntoView({behavior:'smooth'})">${i('file-cog')}Config</button><button onclick="FQ.botMenu(this)">${i('ellipsis')}Plus</button>`;
+  $('#mDanger').innerHTML = `<button class="btn danger-o" data-money onclick="FQ.exitAll('${b.name}')">${i('log-out')}Tout sortir…</button><button class="btn" onclick="FQ.stopBot('${b.name}')">${i('square')}Arrêter le bot…</button><div class="muted" style="font-size:var(--t-xs)">Saisie du nom du bot exigée en live.</div>`;
+  let bb = '';
+  if (b.state === 'auth_expired') bb = `<div class="banner auth">${i('key-round')}<span class="grow"><b>Session expirée pour ${b.name}.</b> Lecture conservée via la base du bot, actions désactivées.</span><button class="btn sm">Se reconnecter</button></div>`;
+  if (b.state === 'starting') bb = `<div class="banner cache">${i('loader')}<span class="grow"><b>Démarrage depuis ${b.startMin} min.</b> L'initialisation (pairlist) peut durer 20 min : pas d'alerte hors ligne avant.</span></div>`;
+  if (b.state === 'offline') bb = `<div class="banner offline">${i('plug-zap')}<span class="grow"><b>Hors ligne depuis ${b.offMin} min.</b> Valeurs figées à 18:42:07. Ne relancez pas un bot seulement pour fermer une position.</span><button class="btn sm" onclick="tab('logs')">Voir les logs</button></div>`;
+  if (b.state === 'stopped') bb = `<div class="banner">${i('archive')}<span class="grow"><b>Arrêté.</b> Ledger orphelin : historique lisible, aucune action possible.</span></div>`;
+  $('#botBanner').innerHTML = bb;
+  if (b.state !== 'online') $$('[data-money]').forEach(x => x.setAttribute('disabled', ''));
+}
+FQ.botMenu = btn => FQ.pop(btn, `<h4>${b.name} ${live ? '<span class="badge live" style="margin-left:4px">Live</span>' : ''}</h4><button class="mi">${i('play')}Reprendre les entrées…</button><button class="mi">${i('log-in')}Entrée forcée…</button><button class="mi" onclick="location.href='tools.html#replay'">${i('rewind')}Replay dry…</button><hr><button class="mi danger" onclick="FQ.stopBot('${b.name}')">${i('square')}Arrêter le bot…</button>`);
+
+function pairs() {
+  const wl = ['BTC', 'SOL', 'DOGE', 'AVAX', 'SUI', 'PENGU', 'WIF', 'ENA', 'ARB', 'OP', 'TIA', 'INJ'].filter(x => !ps.some(q => q.pair === x));
+  $('#p-pairs').innerHTML = `<div class="ph"><h2>${i('list')}Paires</h2><span class="meta">${ps.length + wl.length}</span><div class="tools"><button class="btn xs ghost icon" aria-label="Rechercher une paire">${i('search')}</button></div></div>
+   <div style="padding:6px 8px;border-bottom:1px solid var(--line)"><div class="seg sm" style="width:100%"><button aria-pressed="true" style="flex:1">Toutes</button><button style="flex:1">Pos.</button><button style="flex:1">Signal</button><button style="flex:1" title="Paires verrouillées" aria-label="Paires verrouillées">${i('lock', 'sm')}</button></div></div>
+   <div class="pb"><div class="pn-h">Positions tenues</div>${ps.map(x => `<div class="pn-item ${x === sel ? 'on' : ''}" data-k="${x.key}"><b>${x.pair.replace('xyz:', 'xyz:')}</b><span class="r ${cls(x.pct)}">${p(x.pct, 1)}</span><span class="sub">${FQ.ui.dir(x)}<span class="num">DCA ${x.filled}/${x.dcaMax}</span></span></div>`).join('')}
+   <div class="pn-h">Whitelist</div>${wl.map((x, k) => { const c = (FQ.R() - 0.5) * 8; return `<div class="pn-item"><b>${x}</b><span class="r ${cls(c)}">${p(c, 1)}</span>${k === 2 ? '<span class="sub"><span class="badge info">Signal entrée</span></span>' : k === 4 ? `<span class="sub">${i('lock', 'sm')}verrou 42 min</span>` : ''}</div>`; }).join('')}</div>`;
+  $$('#p-pairs .pn-item[data-k]').forEach(e => e.onclick = () => select(FQ.positions.find(q => q.key === e.dataset.k)));
+}
+
+let chart;
+function drawChart() {
+  if (!window.echarts) return;
+  $('#chTitle').innerHTML = `${sel.pair} · 15m ${FQ.ui.dir(sel)}`;
+  if (chart) chart.dispose();
+  chart = FQ.priceChart($('#chart'), sel); // composant partagé avec la page Graphiques
+}
+
+function tab(t) {
+  $$('#bTabs button').forEach(x => x.setAttribute('aria-selected', x.dataset.t === t));
+  const body = $('#tabBody');
+  if (t === 'pos') {
+    body.innerHTML = `<div class="as-table"><table class="tbl"><thead><tr><th class="l colh">Paire</th><th class="colh">Sens</th><th class="colh">DCA</th><th class="c-entry colh">Entrée moy.</th><th class="colh">Prix</th><th class="colh" aria-sort="ascending">P&L</th><th class="colh">%</th><th class="c-tp colh">Vers TP</th><th class="colh">Durée</th><th class="ra"></th></tr></thead><tbody>
+    ${ps.map(x => `<tr class="${live ? 'is-live' : 'is-dry'} ${x === sel ? 'sel' : ''}" data-k="${x.key}" data-lock-row="${b.key}:forceexit:${x.tradeId}" tabindex="0"><td class="l"><span class="paircell">${x.pair.replace('xyz:', '')}${x.xyz ? '<span class="badge xyz">xyz</span>' : ''}</span></td><td class="ui">${FQ.ui.dir(x)}</td><td class="ui">${FQ.ui.pips(x.filled, x.dcaMax)}<span class="num">${x.filled}/${x.dcaMax}</span></td><td class="c-entry">${FQ.price(x.entry)}</td><td data-px>${FQ.price(x.price)}</td><td><span class="${cls(x.pnl)}" data-pnl>${s(x.pnl)}</span></td><td class="${cls(x.pct)}" data-pct>${p(x.pct)}</td><td class="c-tp">${FQ.pu(1.4 + Math.abs(Math.min(0, x.pct)) / x.lev, 2)}</td><td>${FQ.ui.durCell(x)}</td>
+      <td class="ra"><button class="btn xs" data-money data-lock="${b.key}:forceexit:${x.tradeId}" onclick="event.stopPropagation();FQ.exitTrade(FQ.positions.find(q=>q.key==='${x.key}'))" aria-label="Sortir ${x.pair} sur ${b.name}" title="Sortir au marché…">${i('log-out')}<span class="ra-l">Sortir…</span></button></td></tr>`).join('')}</tbody></table></div>
+    <div class="as-cards"><div class="cards">${ps.map(x => `<button class="card ${live ? 'is-live' : ''}" data-k="${x.key}"><span class="m1">${x.pair.replace('xyz:', '')}${x.xyz ? '<span class="badge xyz">xyz</span>' : ''} ${FQ.ui.dir(x)}</span><span class="m2 ${cls(x.pnl)}">${s(x.pnl)}</span><span class="m3">${FQ.ui.durCell(x)} · vers TP ${FQ.pu(1.4 + Math.abs(Math.min(0, x.pct)) / x.lev, 2)}</span><span class="m4 ${cls(x.pct)}">${p(x.pct)}</span><span class="full">${FQ.ui.ladderH(x)}</span></button>`).join('')}</div></div>`;
+    $$('#tabBody [data-k]').forEach(r => r.onclick = () => { const x = FQ.positions.find(q => q.key === r.dataset.k); if (innerWidth < 1024) FQ.openTrade(x); else select(x); });
+  } else if (t === 'hist') {
+    const R = FQ.R;
+    body.innerHTML = `<table class="tbl"><thead><tr><th class="l colh">Fermé</th><th class="l colh">Paire</th><th class="colh">DCA</th><th class="colh">P&L</th><th class="colh">%</th><th class="l colh">Raison</th></tr></thead><tbody>${Array.from({ length: 9 }, (_, k) => { const v = (R() - 0.2) * 18; const reasons = ['roi', 'roi', 'exit_signal', 'stoploss', null, 'force_exit']; const r = reasons[k % 6]; return `<tr class="is-live"><td class="l">15/10 ${String(17 - k).padStart(2, '0')}:${String(k * 7 % 60).padStart(2, '0')}</td><td class="l ui" style="font-weight:600">${['SEI', 'APT', 'LINK', 'OP', 'ARB', 'TIA', 'INJ', 'SUI', 'NEAR'][k]}</td><td>${1 + k % 4}</td><td class="${cls(v)}">${s(v)}</td><td class="${cls(v)}">${p(v / 3)}</td><td class="l ui">${FQ.reason(r)}${r === 'force_exit' ? ' <span class="badge manual">manuel</span>' : ''}</td></tr>`; }).join('')}</tbody></table><div style="padding:10px 12px"><a href="journal.html?bot=${b.name}">Ouvrir le journal filtré sur ${b.name}</a></div>`;
+  } else if (t === 'perf') {
+    const rows = ['HYPE', 'SOL', 'WIF', 'SEI', 'APT', 'ENA', 'LINK'].map((x, k) => [x, (k < 5 ? 1 : -1) * (40 - k * 7)]);
+    body.innerHTML = `<div class="sec-h">Réalisé 30 j par paire</div><div class="bars">${rows.map(r => `<div class="b"><b class="ui">${r[0]}</b><span><i style="width:${Math.abs(r[1]) / 40 * 100}%;background:var(${r[1] >= 0 ? '--profit' : '--loss'})"></i></span><span class="num ${cls(r[1])}" style="text-align:right">${s(r[1])}</span></div>`).join('')}</div>`;
+  } else if (t === 'pairs') {
+    body.innerHTML = `<div class="kv"><span>Méthodes</span><span>VolumePairList (40) → AgeFilter → VolatilityFilter → ShuffleFilter</span><span>Whitelist</span><span>22 paires</span><span>Blacklist</span><span><span class="badge neutral">BNB</span> <span class="badge neutral">kBONK</span> <button class="btn xs" onclick="FQ.toastRaw('ok','Confirmation','Ajout à la blacklist : confirmation nommée (live).',{ttl:3000})">${i('plus')}Ajouter…</button></span></div>
+     <table class="tbl"><thead><tr><th class="l colh">Verrou</th><th class="colh">Reste</th><th class="l colh">Raison</th><th class="ra"></th></tr></thead><tbody><tr><td class="l ui">SUI</td><td>42 min</td><td class="l ui muted">StoplossGuard</td><td class="ra"><button class="btn xs" style="opacity:1">Lever…</button></td></tr><tr><td class="l ui">AVAX</td><td>3 h 10</td><td class="l ui muted">CooldownPeriod</td><td class="ra"><button class="btn xs" style="opacity:1">Lever…</button></td></tr></tbody></table>`;
+  } else if (t === 'logs') { body.innerHTML = FQ.logLines(false); }
+  else { body.innerHTML = `<div class="kv"><span>Stratégie</span><span>${b.strat}</span><span>Timeframe</span><span>${b.tf}</span><span>Levier</span><span>×${b.lev}</span><span>max_open_trades</span><span>${b.max}</span><span>Capital</span><span class="num">${n(b.cap, 0)} USDC (available_capital − capital_withdrawal)</span><span>stake_amount</span><span>unlimited (custom_stake_amount)</span><span>Exchange</span><span>Hyperliquid, wallet partagé</span></div><div style="padding:0 12px 12px;display:flex;gap:8px;align-items:center"><button class="btn sm">${i('file-pen')}Éditer (revue du diff)</button><span class="muted" style="font-size:var(--t-xs)">Écriture Python, confirmation nommée, rechargement séparé.</span></div>`; }
+  FQ.icons(); FQ.renderConn();
+}
+window.tab = tab;
+$$('#bTabs button').forEach(x => x.onclick = () => tab(x.dataset.t));
+
+function dock() { if (!sel) { $('#p-dock').innerHTML = `<div class="empty">${i('inbox')}Aucune position ouverte. Le bot attend un signal.</div>`; return; } $('#p-dock').innerHTML = FQ.tradeDrawer(sel, { close: false }); FQ.icons(); FQ.renderConn(); }
+function select(x) { sel = x; pairs(); dock(); drawChart(); $$('#tabBody tr[data-k]').forEach(r => r.classList.toggle('sel', r.dataset.k === x.key)); FQ.icons(); }
+
+FQ.onTick(moved => {
+  moved.filter(x => x.bot === b).forEach(x => { const r = $(`#tabBody tr[data-k="${x.key}"]`); if (r) { const e = r.querySelector('[data-pnl]'); e.className = cls(x.pnl); FQ.tween(e, x.pnl, v => s(v)); r.querySelector('[data-pct]').textContent = p(x.pct); r.querySelector('[data-px]').textContent = FQ.price(x.price); } if (x === sel) { const e = $('[data-td-pnl]'); if (e) { e.className = 'big ' + cls(x.pnl); FQ.tween(e, x.pnl, v => s(v)); } } });
+  const l = $('#bLat'); if (l) { l.className = cls(b.openPnl); FQ.tween(l, b.openPnl, v => s(v)); }
+});
+document.addEventListener('keydown', e => { if (e.target.matches('input')) return; if (e.key === 'x') FQ.exitTrade(sel); if (e.key === 'p') FQ.pauseBot(b); if (e.key === 'j' || e.key === 'k') { const k = ps.indexOf(sel) + (e.key === 'j' ? 1 : -1); if (ps[k]) select(ps[k]); } });
+document.addEventListener('fq:theme', drawChart);
+addEventListener('resize', () => chart && chart.resize());
+FQ.demoConfirm = () => FQ.exitTrade(sel);
+FQ.boot('bot', () => { header(); pairs(); tab('pos'); dock(); drawChart(); $('#nPos').textContent = ps.length; });
+if (location.hash === '#trade') setTimeout(() => FQ.openTrade(sel), 300);
+if (location.hash === '#exitall') setTimeout(() => FQ.exitAll(b), 300);
+})();
+</script>
+</body>
+</html>
