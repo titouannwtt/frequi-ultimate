@@ -291,13 +291,13 @@ describe('in-flight lock and toasts', () => {
 });
 
 describe('design system auto-registration', () => {
-  it('keeps the ds primitives out of the global components map', () => {
+  it('keeps the ds primitives and the fq composites out of the global components map', () => {
     const config = readFileSync(resolve(__dirname, '../../vite.config.ts'), 'utf8');
-    expect(config).toContain("globsExclude: ['src/components/ds/**']");
+    expect(config).toContain("globsExclude: ['src/components/ds/**', 'src/components/fq/**']");
     // The map is generated (git-ignored): only checked when a dev or build run created it
     const path = resolve(__dirname, '../../src/components.d.ts');
     if (existsSync(path)) {
-      expect(readFileSync(path, 'utf8')).not.toMatch(/components\/ds\//);
+      expect(readFileSync(path, 'utf8')).not.toMatch(/components\/(ds|fq)\//);
     }
   });
 });
