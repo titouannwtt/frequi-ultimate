@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use crate::alerts::rules::LogLine;
 use crate::calc::drawdown::DrawdownValue;
 use crate::calc::exit_reason::ExitReason;
 use crate::calc::hip3::Market;
@@ -355,4 +356,122 @@ pub struct BotAlias {
     pub device_id: String,
     pub ui_id: String,
     pub bot_key: BotKey,
+}
+
+/// Totals of one trading mode (`live`, `dry`, `replay`). Live money is never summed with dry or
+/// replay figures, so there is one scope per mode and no "all" scope. A bot whose figure is stale
+/// or unknown is left out of the sum and counted in `excluded`, never counted as zero.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+pub struct ScopeTotals {
+    /// `live`, `dry` or `replay` (the key of the entity).
+    pub scope: String,
+    pub mode: BotMode,
+    pub bots: u32,
+    pub bots_online: u32,
+    pub open_trades: u32,
+    /// Sum of the bots' own `max_open_trades` that are known.
+    pub max_open_trades: Option<u32>,
+    pub realized_today: Option<f64>,
+    pub realized_1d: Option<f64>,
+    pub realized_7d: Option<f64>,
+    pub realized_30d: Option<f64>,
+    pub realized_total: Option<f64>,
+    pub open_profit_abs: Option<f64>,
+    /// Sum of the bots' starting capitals (`available_capital - capital_withdrawal`).
+    pub starting_capital: Option<f64>,
+    /// Bots whose starting capital is unknown: the sum above leaves them out.
+    pub capital_unknown_bots: u32,
+    /// Wallet-level equity, each wallet counted once however many bots share it.
+    pub wallet_equity: Option<f64>,
+    pub wallets: u32,
+    /// Gross long and short notional before netting, and their difference.
+    pub exposure_long: f64,
+    pub exposure_short: f64,
+    pub exposure_net: f64,
+    pub drawdown_realized: Option<DrawdownValue>,
+    pub drawdown_with_open: Option<DrawdownValue>,
+    /// Keys of the bots left out of at least one sum because a figure was stale or unknown.
+    pub excluded_bots: Vec<String>,
+    pub alerts: AlertSummary,
+    pub freshness: Freshness,
+}
+
+/// A pair lock of a bot (`/locks`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+pub struct PairLock {
+    pub pair: String,
+    pub reason: Option<String>,
+    pub until_ms: Option<i64>,
+    pub side: Option<String>,
+}
+
+/// Summary of the configuration of a bot as the REST API reports it.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, TS)]
+pub struct BotConfigSummary {
+    pub version: Option<String>,
+    pub api_version: Option<f64>,
+    pub strategy: Option<String>,
+    pub trading_mode: Option<String>,
+    pub max_open_trades: Option<i64>,
+    pub dry_run: Option<bool>,
+    /// The bot exposes the `/fleet/*` endpoints of the fork.
+    pub fleet_endpoints: bool,
+}
+
+/// Detail of one bot (channel `bot:<key>`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+pub struct BotDetail {
+    pub whitelist: Vec<String>,
+    pub blacklist: Vec<String>,
+    pub locks: Vec<PairLock>,
+    pub config: BotConfigSummary,
+    /// Latest log lines (at most 100), oldest first.
+    pub logs: Vec<LogLine>,
+    pub freshness: Freshness,
+}
+
+/// What became of a write action.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "snake_case")]
+pub enum ActionStatus {
+    /// The bot answered 2xx: the order was transmitted, not necessarily executed.
+    Accepted,
+    /// The bot (or the gateway) refused it; nothing was done.
+    Rejected,
+    /// The request may or may not have reached the bot: check on the bot, never assume.
+    Unknown,
+}
+
+/// How to confirm the effect of an accepted or unknown action.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+pub struct ActionVerify {
+    pub expected_state: String,
+    pub check_after_ms: u64,
+}
+
+/// Result of a write action.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+pub struct ActionResult {
+    pub status: ActionStatus,
+    pub http_status: Option<u16>,
+    /// Machine-readable reason of a rejection decided by the gateway (`state_mismatch`, ...).
+    pub reason: Option<String>,
+    /// Answer of the bot, truncated to 2 KB.
+    pub bot_response: Option<String>,
+    pub verify: Option<ActionVerify>,
+    pub idempotency_key: String,
+    pub ts_ms: i64,
+}
+
+/// Preferences synchronised across devices, one document per `(user, scope)`. The scope is empty
+/// for the global document or a `bot_key` for per-bot preferences (device aliases `ftbot.N` never
+/// appear here).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+pub struct PrefsDoc {
+    pub scope: String,
+    /// Starts at 1 and increases at every write: the value of `If-Match`.
+    pub version: u64,
+    pub updated_ms: i64,
+    #[ts(type = "unknown")]
+    pub data: serde_json::Value,
 }
