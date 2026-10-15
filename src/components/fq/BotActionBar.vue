@@ -331,9 +331,13 @@ const paletteIds = computed<ActionId[]>(() =>
 }
 .drawer {
   width: 100%;
+  /* At 390 px the two large buttons do not fit side by side: wrap instead of overflowing */
+  flex-wrap: wrap;
 }
 .grow {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 .tiles {
   display: grid;

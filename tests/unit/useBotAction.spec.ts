@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useFqEventsStore } from '@/datasource/stores/events';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
+import { useFqPositionsStore } from '@/datasource/stores/positions';
 import type { ActionResult, BotAction, DataSource } from '@/datasource/types';
 import {
   ACCEPTED_LOCK_MAX_MS,
@@ -286,6 +287,85 @@ describe('two step result', () => {
       kind: 'ok',
       title: expect.any(String),
     });
+  });
+
+  it('B77: a forced exit is done by an exit fill only: a DCA entry fill of the same trade does not release it', async () => {
+    const { source } = fakeSource();
+    const { prepare, submit, isBusy } = useBotAction(LIVE);
+    const p = prepare(exit(7));
+    useInflightLock().acquire(p.lockKey);
+    await submit(p, { source, notify: false });
+    useFqEventsStore().add({ ...fill(7), kind: 'entry_fill' });
+    await Promise.resolve();
+    expect(isBusy(p.action)).toBe(true);
+    useFqEventsStore().add(fill(7));
+    await Promise.resolve();
+    expect(isBusy(p.action)).toBe(false);
+  });
+
+  it('B78: sees its fill even when it is applied in the same batch as other events', async () => {
+    const { source } = fakeSource();
+    const { prepare, submit, isBusy } = useBotAction(LIVE);
+    const p = prepare(exit(7));
+    useInflightLock().acquire(p.lockKey);
+    await submit(p, { source });
+    const events = useFqEventsStore();
+    // Same frame: its own fill, then an unrelated event of another bot
+    events.add(fill(7));
+    events.add({ ...fill(null, DRY), kind: 'alert_raised' as any });
+    await Promise.resolve();
+    expect(isBusy(p.action)).toBe(false);
+    expect(useToaster().toasts.value.at(-1)).toMatchObject({ kind: 'ok' });
+  });
+
+  it('B77: exit of the whole bot stays busy until no position is left, not on the first fill', async () => {
+    const { source } = fakeSource();
+    const { prepare, submit, isBusy } = useBotAction(LIVE);
+    const positions = useFqPositionsStore();
+    const pos = (id: number) => ({ bot_key: LIVE, trade_id: id, orphan: false });
+    const apply = (upsert: object, remove: string[] = []) =>
+      positions.apply({
+        kind: 'delta',
+        seq: 2,
+        ts: 1,
+        replace: [],
+        upsert: { positions: upsert },
+        remove: { positions: remove },
+      } as any);
+    apply({ [`${LIVE}/1`]: pos(1), [`${LIVE}/2`]: pos(2), [`${LIVE}/3`]: pos(3) });
+    const p = prepare(exit('all'));
+    useInflightLock().acquire(p.lockKey);
+    await submit(p, { source, typedName: 'hippo_live', notify: false });
+    expect(isBusy(p.action)).toBe(true);
+
+    useFqEventsStore().add(fill(1));
+    apply({}, [`${LIVE}/1`]);
+    await Promise.resolve();
+    expect(isBusy(p.action)).toBe(true);
+    useFqEventsStore().add(fill(2));
+    apply({}, [`${LIVE}/2`]);
+    await Promise.resolve();
+    expect(isBusy(p.action)).toBe(true);
+    useFqEventsStore().add(fill(3));
+    apply({}, [`${LIVE}/3`]);
+    await Promise.resolve();
+    expect(isBusy(p.action)).toBe(false);
+  });
+
+  it('B75: a forced entry without a side is refused before anything is sent (freqtrade would open a long)', async () => {
+    const { source, act } = fakeSource();
+    const { prepare, submit } = useBotAction(LIVE);
+    const lock = useInflightLock();
+    const p = prepare({ kind: 'forceentry', pair: 'ETH/USDC:USDC', stakeAmount: 20 });
+    lock.acquire(p.lockKey); // the hold button completed
+    const r = await submit(p, { source, notify: false });
+    expect(r).toMatchObject({ status: 'rejected', error: 'bad_request', notSent: true });
+    expect(act).not.toHaveBeenCalled();
+    expect(lock.isLocked(p.lockKey)).toBe(false);
+    const ok = prepare({ kind: 'forceentry', pair: 'ETH/USDC:USDC', side: 'short' });
+    lock.acquire(ok.lockKey);
+    await submit(ok, { source, notify: false });
+    expect(act).toHaveBeenCalledTimes(1);
   });
 
   it('ignores the fill of another bot', async () => {

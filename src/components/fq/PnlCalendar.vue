@@ -241,6 +241,12 @@ const isEmptyMonth = computed(
   padding: 2px 8px;
   cursor: pointer;
 }
+@media (max-width: 599px), (pointer: coarse) {
+  .today {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
 .meta {
   margin-left: auto;
   display: inline-flex;

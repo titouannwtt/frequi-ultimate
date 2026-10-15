@@ -80,6 +80,7 @@ export default {
     sessionTitle: 'Session expired, nothing was executed',
     noReplay: 'No automatic retry.',
     nameMismatch: 'The typed name does not match the bot.',
+    sideMissing: 'A forced entry needs an explicit direction (long or short): nothing was sent.',
     noSource: 'No data source: nothing was sent.',
   },
   freshness: {

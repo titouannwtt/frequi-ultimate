@@ -80,6 +80,7 @@ export default {
     sessionTitle: "Session expirée, rien n'a été exécuté",
     noReplay: 'Aucun rejeu automatique.',
     nameMismatch: 'Le nom saisi ne correspond pas au bot.',
+    sideMissing: 'Une entrée forcée exige un sens explicite (long ou short) : rien n’a été envoyé.',
     noSource: "Aucune source de données : rien n'a été envoyé.",
   },
   freshness: {

@@ -423,6 +423,12 @@ function openPalette() {
   color: var(--fg-3);
   font-size: var(--t-xs);
 }
+@media (max-width: 599px), (pointer: coarse) {
+  .logo {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
 .nav {
   display: flex;
   align-items: center;

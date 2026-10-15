@@ -768,6 +768,14 @@ tr.grp td {
   cursor: pointer;
   margin-right: 2px;
 }
+@media (max-width: 599px), (pointer: coarse) {
+  /* 02 section 17: touch targets are 44 x 44, and a miss would select the group scope */
+  .chev {
+    width: 44px;
+    height: 44px;
+    margin: -12px 0 -12px -12px;
+  }
+}
 .g-n {
   color: var(--fg-3);
   font-weight: 500;

@@ -3,6 +3,7 @@ import { computed, toValue, watch, type MaybeRefOrGetter, type WatchStopHandle }
 import type { ToastAction } from '@/components/ds/types';
 import { useFqEventsStore } from '@/datasource/stores/events';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
+import { useFqPositionsStore } from '@/datasource/stores/positions';
 import type { ActionResult, BotAction, DataSource } from '@/datasource/types';
 import type { BotKey, BotMode } from '@/gateway/types.gen';
 import i18n from '@/locales';
@@ -127,6 +128,7 @@ function localOutcome(
 export function useBotAction(botKey: MaybeRefOrGetter<BotKey>) {
   const fleet = useFqFleetStore();
   const events = useFqEventsStore();
+  const positions = useFqPositionsStore();
   const lock = useInflightLock();
   const toaster = useToaster();
   const data = useDataSource();
@@ -228,19 +230,39 @@ export function useBotAction(botKey: MaybeRefOrGetter<BotKey>) {
     done();
     lock.acquire(p.lockKey);
     const tradeId = tradeIdOf(p.action);
+    // An exit is only done by an exit fill, an entry by an entry fill (a DCA entry fill of the
+    // same trade must not release a pending exit)
+    const wanted = p.action.kind === 'forceexit' ? 'exit_fill' : 'entry_fill';
+    const openOfBot = () => positions.byBot(p.botKey).filter((x) => !x.orphan).length;
+    const finish = (pair: string | null) => {
+      done();
+      toaster.push({
+        kind: 'ok',
+        title: t('result.filled'),
+        body: `${p.botName} · ${pair ?? ''}`.trim(),
+      });
+    };
     const stop = watch(
-      () => events.counter,
-      () => {
-        const e = events.lastEvent;
-        if (!e || e.bot_key !== p.botKey) return;
-        if (e.kind !== 'exit_fill' && e.kind !== 'entry_fill') return;
-        if (typeof tradeId === 'number' && e.trade_id !== null && e.trade_id !== tradeId) return;
-        done();
-        toaster.push({
-          kind: 'ok',
-          title: t('result.filled'),
-          body: `${p.botName} · ${e.pair ?? ''}`.trim(),
-        });
+      () => [events.counter, openOfBot()] as const,
+      ([counter, open], [prev]) => {
+        if (tradeId === 'all') {
+          // Exit of the whole bot: one fill is not the end, wait until nothing remains open
+          if (open === 0 && fillWatchers.has(p.lockKey)) finish(null);
+          return;
+        }
+        // Events are applied in batches: look at every event added since the last run, newest
+        // first, not only the last one
+        const fresh = events.events.slice(
+          0,
+          Math.max(0, Math.min(counter - prev, events.events.length)),
+        );
+        const hit = fresh.find(
+          (e) =>
+            e.bot_key === p.botKey &&
+            e.kind === wanted &&
+            !(typeof tradeId === 'number' && e.trade_id !== null && e.trade_id !== tradeId),
+        );
+        if (hit) finish(hit.pair ?? null);
       },
     );
     const timer = setTimeout(done, ACCEPTED_LOCK_MAX_MS);
@@ -269,6 +291,11 @@ export function useBotAction(botKey: MaybeRefOrGetter<BotKey>) {
     if (p.requiresTypedName && opts.typedName !== p.botName) {
       giveBackHeldLock();
       return finish(localOutcome(p, 'rejected', 'bad_request', t('result.nameMismatch')));
+    }
+    // freqtrade opens a LONG when no side is sent: a forced entry never leaves without one
+    if (p.action.kind === 'forceentry' && !p.action.side) {
+      giveBackHeldLock();
+      return finish(localOutcome(p, 'rejected', 'bad_request', t('result.sideMissing')));
     }
     const source = opts.source === undefined ? data.source.value : opts.source;
     if (!source) {

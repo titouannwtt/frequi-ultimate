@@ -59,6 +59,8 @@ const tooSmall = computed(() => props.modelValue < 1 && notional.value < MIN_NOT
 <style scoped>
 .foot {
   display: grid;
+  /* A grid track is min-content wide by default: let the bar wrap inside the panel */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--s2);
 }
 .qty {
