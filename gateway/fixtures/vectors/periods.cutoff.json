@@ -1,0 +1,186 @@
+{
+ "function": "periods.cutoff",
+ "description": "Lower bound (inclusive) of a profit period. Rolling windows are exact durations, calendar ones follow the local wall clock.",
+ "cases": [
+  {
+   "name": "24h",
+   "input": {
+    "key": "24h",
+    "now_ms": 1779278400000,
+    "tz": "UTC"
+   },
+   "expected": 1779192000000
+  },
+  {
+   "name": "48h",
+   "input": {
+    "key": "48h",
+    "now_ms": 1779278400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1779105600000
+  },
+  {
+   "name": "7d",
+   "input": {
+    "key": "7d",
+    "now_ms": 1779278400000,
+    "tz": "UTC"
+   },
+   "expected": 1778673600000
+  },
+  {
+   "name": "14d",
+   "input": {
+    "key": "14d",
+    "now_ms": 1779278400000,
+    "tz": "UTC"
+   },
+   "expected": 1778068800000
+  },
+  {
+   "name": "30d",
+   "input": {
+    "key": "30d",
+    "now_ms": 1779278400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1776686400000
+  },
+  {
+   "name": "today in Paris",
+   "input": {
+    "key": "today",
+    "now_ms": 1779278400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1779228000000
+  },
+  {
+   "name": "today in UTC",
+   "input": {
+    "key": "today",
+    "now_ms": 1779278400000,
+    "tz": "UTC"
+   },
+   "expected": 1779235200000
+  },
+  {
+   "name": "1m in Paris",
+   "input": {
+    "key": "1m",
+    "now_ms": 1779278400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1776686400000
+  },
+  {
+   "name": "2m in Paris keeps the wall clock across DST",
+   "input": {
+    "key": "2m",
+    "now_ms": 1779278400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1774011600000
+  },
+  {
+   "name": "2m in UTC",
+   "input": {
+    "key": "2m",
+    "now_ms": 1779278400000,
+    "tz": "UTC"
+   },
+   "expected": 1774008000000
+  },
+  {
+   "name": "3m in Paris keeps the wall clock across DST",
+   "input": {
+    "key": "3m",
+    "now_ms": 1779278400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1771592400000
+  },
+  {
+   "name": "3m in UTC",
+   "input": {
+    "key": "3m",
+    "now_ms": 1779278400000,
+    "tz": "UTC"
+   },
+   "expected": 1771588800000
+  },
+  {
+   "name": "6m in Paris",
+   "input": {
+    "key": "6m",
+    "now_ms": 1779278400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1763643600000
+  },
+  {
+   "name": "1y in Paris",
+   "input": {
+    "key": "1y",
+    "now_ms": 1779278400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1747742400000
+  },
+  {
+   "name": "month to date in Paris",
+   "input": {
+    "key": "mtd",
+    "now_ms": 1779278400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1777586400000
+  },
+  {
+   "name": "month to date in UTC",
+   "input": {
+    "key": "mtd",
+    "now_ms": 1779278400000,
+    "tz": "UTC"
+   },
+   "expected": 1777593600000
+  },
+  {
+   "name": "year to date in Paris",
+   "input": {
+    "key": "ytd",
+    "now_ms": 1779278400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1767222000000
+  },
+  {
+   "name": "year to date in UTC",
+   "input": {
+    "key": "ytd",
+    "now_ms": 1779278400000,
+    "tz": "UTC"
+   },
+   "expected": 1767225600000
+  },
+  {
+   "name": "all has no lower bound",
+   "input": {
+    "key": "all",
+    "now_ms": 1779278400000,
+    "tz": "UTC"
+   },
+   "expected": 0
+  },
+  {
+   "name": "month arithmetic clamps to the end of the month",
+   "input": {
+    "key": "1m",
+    "now_ms": 1774958400000,
+    "tz": "UTC"
+   },
+   "expected": 1772280000000
+  }
+ ]
+}

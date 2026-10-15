@@ -1,0 +1,1408 @@
+{
+ "function": "alerts.book_script",
+ "description": "Alert lifecycle: hysteresis, dedup, ack, silence, re-alert. Steps: evaluate, ack, silence, snapshot.",
+ "cases": [
+  {
+   "name": "critical fires at once, a warning waits for its delay",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "botOffline",
+        "subject": null,
+        "severity": "critical",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       },
+       {
+        "type_id": "capacityFull",
+        "subject": null,
+        "severity": "warning",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 30000
+       }
+      ],
+      "evaluated": [
+       "botOffline",
+       "capacityFull"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065620000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "botOffline",
+        "subject": null,
+        "severity": "critical",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       },
+       {
+        "type_id": "capacityFull",
+        "subject": null,
+        "severity": "warning",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 30000
+       }
+      ],
+      "evaluated": [
+       "botOffline",
+       "capacityFull"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065630000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "botOffline",
+        "subject": null,
+        "severity": "critical",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       },
+       {
+        "type_id": "capacityFull",
+        "subject": null,
+        "severity": "warning",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 30000
+       }
+      ],
+      "evaluated": [
+       "botOffline",
+       "capacityFull"
+      ]
+     }
+    ]
+   },
+   "expected": [
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "silenced": false
+      }
+     ],
+     "active": [
+      {
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "active"
+      }
+     ],
+     "bell": 1
+    },
+    {
+     "transitions": [],
+     "active": [
+      {
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "active"
+      }
+     ],
+     "bell": 1
+    },
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "capacityFull",
+       "bot_key": "local:9056",
+       "subject": null,
+       "silenced": false
+      }
+     ],
+     "active": [
+      {
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "active"
+      },
+      {
+       "type_id": "capacityFull",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "warning",
+       "view": "active"
+      }
+     ],
+     "bell": 2
+    }
+   ]
+  },
+  {
+   "name": "resolution takes two clean evaluations and a reappearance restarts the count",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "botOffline",
+        "subject": null,
+        "severity": "critical",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "botOffline"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065610000,
+      "bot_key": "local:9056",
+      "conditions": [],
+      "evaluated": [
+       "botOffline"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065620000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "botOffline",
+        "subject": null,
+        "severity": "critical",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "botOffline"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065630000,
+      "bot_key": "local:9056",
+      "conditions": [],
+      "evaluated": [
+       "botOffline"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065640000,
+      "bot_key": "local:9056",
+      "conditions": [],
+      "evaluated": [
+       "botOffline"
+      ]
+     }
+    ]
+   },
+   "expected": [
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "silenced": false
+      }
+     ]
+    },
+    {
+     "transitions": [],
+     "active": [
+      {
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "active"
+      }
+     ]
+    },
+    {
+     "transitions": []
+    },
+    {
+     "transitions": [],
+     "active": [
+      {
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "active"
+      }
+     ]
+    },
+    {
+     "transitions": [
+      {
+       "kind": "resolved",
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "silenced": false
+      }
+     ],
+     "active": []
+    }
+   ]
+  },
+  {
+   "name": "a condition that vanishes before firing leaves no trace",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "capacityFull",
+        "subject": null,
+        "severity": "info",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 30000
+       }
+      ],
+      "evaluated": [
+       "capacityFull"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065610000,
+      "bot_key": "local:9056",
+      "conditions": [],
+      "evaluated": [
+       "capacityFull"
+      ]
+     }
+    ]
+   },
+   "expected": [
+    {
+     "transitions": [],
+     "active": []
+    },
+    {
+     "transitions": [],
+     "active": []
+    }
+   ]
+  },
+  {
+   "name": "dedup ignores value and message: one alert however often it is re-evaluated",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "logErrors",
+        "subject": null,
+        "severity": "critical",
+        "value": 1,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "logErrors"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065601000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "logErrors",
+        "subject": null,
+        "severity": "critical",
+        "value": 2,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "logErrors"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065602000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "logErrors",
+        "subject": null,
+        "severity": "critical",
+        "value": 9,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "logErrors"
+      ]
+     }
+    ]
+   },
+   "expected": [
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "logErrors",
+       "bot_key": "local:9056",
+       "subject": null,
+       "silenced": false
+      }
+     ],
+     "bell": 1
+    },
+    {
+     "transitions": [],
+     "active": [
+      {
+       "type_id": "logErrors",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "active"
+      }
+     ]
+    },
+    {
+     "transitions": [],
+     "active": [
+      {
+       "type_id": "logErrors",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "active"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "one alert per subject and per bot",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "positionLoss",
+        "subject": "12",
+        "severity": "critical",
+        "value": -25,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       },
+       {
+        "type_id": "positionLoss",
+        "subject": "13",
+        "severity": "critical",
+        "value": -25,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "positionLoss"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9057",
+      "conditions": [
+       {
+        "type_id": "positionLoss",
+        "subject": "12",
+        "severity": "critical",
+        "value": -25,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "positionLoss"
+      ]
+     }
+    ]
+   },
+   "expected": [
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "12",
+       "silenced": false
+      },
+      {
+       "kind": "raised",
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "13",
+       "silenced": false
+      }
+     ]
+    },
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "positionLoss",
+       "bot_key": "local:9057",
+       "subject": "12",
+       "silenced": false
+      }
+     ],
+     "active": [
+      {
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "12",
+       "severity": "critical",
+       "view": "active"
+      },
+      {
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "13",
+       "severity": "critical",
+       "view": "active"
+      },
+      {
+       "type_id": "positionLoss",
+       "bot_key": "local:9057",
+       "subject": "12",
+       "severity": "critical",
+       "view": "active"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "a rule that was not evaluated leaves its alerts untouched",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "nearLiquidation",
+        "subject": "5",
+        "severity": "critical",
+        "value": 8,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "nearLiquidation"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065660000,
+      "bot_key": "local:9056",
+      "conditions": [],
+      "evaluated": []
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065720000,
+      "bot_key": "local:9056",
+      "conditions": [],
+      "evaluated": []
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065780000,
+      "bot_key": "local:9056",
+      "conditions": [],
+      "evaluated": []
+     }
+    ]
+   },
+   "expected": [
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "nearLiquidation",
+       "bot_key": "local:9056",
+       "subject": "5",
+       "silenced": false
+      }
+     ]
+    },
+    {
+     "transitions": [],
+     "active": [
+      {
+       "type_id": "nearLiquidation",
+       "bot_key": "local:9056",
+       "subject": "5",
+       "severity": "critical",
+       "view": "active"
+      }
+     ]
+    },
+    {
+     "transitions": [],
+     "active": [
+      {
+       "type_id": "nearLiquidation",
+       "bot_key": "local:9056",
+       "subject": "5",
+       "severity": "critical",
+       "view": "active"
+      }
+     ]
+    },
+    {
+     "transitions": [],
+     "active": [
+      {
+       "type_id": "nearLiquidation",
+       "bot_key": "local:9056",
+       "subject": "5",
+       "severity": "critical",
+       "view": "active"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "disabling a rule drops its alerts",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "botOffline",
+        "subject": null,
+        "severity": "critical",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "botOffline"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065601000,
+      "bot_key": "local:9056",
+      "conditions": [],
+      "evaluated": [],
+      "disabled": [
+       "botOffline"
+      ]
+     }
+    ]
+   },
+   "expected": [
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "silenced": false
+      }
+     ]
+    },
+    {
+     "transitions": [
+      {
+       "kind": "resolved",
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "silenced": false
+      }
+     ],
+     "active": []
+    }
+   ]
+  },
+  {
+   "name": "escalation is reported once",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "positionLoss",
+        "subject": "1",
+        "severity": "warning",
+        "value": -12,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "positionLoss"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065601000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "positionLoss",
+        "subject": "1",
+        "severity": "critical",
+        "value": -21,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "positionLoss"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065602000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "positionLoss",
+        "subject": "1",
+        "severity": "critical",
+        "value": -22,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "positionLoss"
+      ]
+     }
+    ]
+   },
+   "expected": [
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "1",
+       "silenced": false
+      }
+     ]
+    },
+    {
+     "transitions": [
+      {
+       "kind": "escalated",
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "1",
+       "silenced": false
+      }
+     ]
+    },
+    {
+     "transitions": []
+    }
+   ]
+  },
+  {
+   "name": "ack holds while nothing worsens",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "logErrors",
+        "subject": null,
+        "severity": "critical",
+        "value": 2,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "logErrors"
+      ]
+     },
+     {
+      "op": "ack",
+      "now_ms": 1792065601000,
+      "type_id": "logErrors",
+      "bot_key": "local:9056",
+      "subject": null,
+      "session": "s1"
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065660000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "logErrors",
+        "subject": null,
+        "severity": "critical",
+        "value": 2,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "logErrors"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792066200000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "logErrors",
+        "subject": null,
+        "severity": "critical",
+        "value": 200,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "logErrors"
+      ]
+     }
+    ]
+   },
+   "expected": [
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "logErrors",
+       "bot_key": "local:9056",
+       "subject": null,
+       "silenced": false
+      }
+     ],
+     "bell": 1
+    },
+    {
+     "transitions": [],
+     "active": [
+      {
+       "type_id": "logErrors",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "acked"
+      }
+     ],
+     "bell": 0
+    },
+    {
+     "transitions": [],
+     "active": [
+      {
+       "type_id": "logErrors",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "acked"
+      }
+     ]
+    },
+    {
+     "transitions": [],
+     "active": [
+      {
+       "type_id": "logErrors",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "acked"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "an acknowledged alert comes back when its severity rises",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "positionLoss",
+        "subject": "1",
+        "severity": "warning",
+        "value": -12,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "positionLoss"
+      ]
+     },
+     {
+      "op": "ack",
+      "now_ms": 1792065601000,
+      "type_id": "positionLoss",
+      "bot_key": "local:9056",
+      "subject": "1"
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065602000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "positionLoss",
+        "subject": "1",
+        "severity": "critical",
+        "value": -12.5,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "positionLoss"
+      ]
+     }
+    ]
+   },
+   "expected": [
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "1",
+       "silenced": false
+      }
+     ]
+    },
+    {
+     "active": [
+      {
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "1",
+       "severity": "warning",
+       "view": "acked"
+      }
+     ]
+    },
+    {
+     "transitions": [
+      {
+       "kind": "re_alerted",
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "1",
+       "silenced": false
+      }
+     ],
+     "active": [
+      {
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "1",
+       "severity": "critical",
+       "view": "active"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "an acknowledged alert comes back when its value worsens by the rule's step (5 points)",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "positionLoss",
+        "subject": "1",
+        "severity": "warning",
+        "value": -12,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "positionLoss"
+      ]
+     },
+     {
+      "op": "ack",
+      "now_ms": 1792065600000,
+      "type_id": "positionLoss",
+      "bot_key": "local:9056",
+      "subject": "1"
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065601000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "positionLoss",
+        "subject": "1",
+        "severity": "warning",
+        "value": -16,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "positionLoss"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065602000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "positionLoss",
+        "subject": "1",
+        "severity": "warning",
+        "value": -17,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "positionLoss"
+      ]
+     },
+     {
+      "op": "ack",
+      "now_ms": 1792065603000,
+      "type_id": "positionLoss",
+      "bot_key": "local:9056",
+      "subject": "1"
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065604000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "positionLoss",
+        "subject": "1",
+        "severity": "warning",
+        "value": -18,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "positionLoss"
+      ]
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065605000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "positionLoss",
+        "subject": "1",
+        "severity": "warning",
+        "value": -11,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "positionLoss"
+      ]
+     }
+    ]
+   },
+   "expected": [
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "1",
+       "silenced": false
+      }
+     ]
+    },
+    {
+     "active": [
+      {
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "1",
+       "severity": "warning",
+       "view": "acked"
+      }
+     ]
+    },
+    {
+     "transitions": []
+    },
+    {
+     "transitions": [
+      {
+       "kind": "re_alerted",
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "1",
+       "silenced": false
+      }
+     ]
+    },
+    {
+     "active": [
+      {
+       "type_id": "positionLoss",
+       "bot_key": "local:9056",
+       "subject": "1",
+       "severity": "warning",
+       "view": "acked"
+      }
+     ]
+    },
+    {
+     "transitions": []
+    },
+    {
+     "transitions": []
+    }
+   ]
+  },
+  {
+   "name": "silence flags the alert and wins over an acknowledgement",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "botOffline",
+        "subject": null,
+        "severity": "critical",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "botOffline"
+      ]
+     },
+     {
+      "op": "silence",
+      "now_ms": 1792065601000,
+      "type_id": "botOffline",
+      "bot_key": "local:9056",
+      "until_ms": 1792069200000
+     },
+     {
+      "op": "ack",
+      "now_ms": 1792065602000,
+      "type_id": "botOffline",
+      "bot_key": "local:9056",
+      "subject": null
+     },
+     {
+      "op": "snapshot",
+      "now_ms": 1792067400000
+     },
+     {
+      "op": "snapshot",
+      "now_ms": 1792069260000
+     }
+    ]
+   },
+   "expected": [
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "silenced": false
+      }
+     ]
+    },
+    {
+     "active": [
+      {
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "silenced"
+      }
+     ],
+     "bell": 0
+    },
+    {
+     "active": [
+      {
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "silenced"
+      }
+     ]
+    },
+    {
+     "active": [
+      {
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "silenced"
+      }
+     ]
+    },
+    {
+     "active": [
+      {
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "acked"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "transitions of a silenced alert carry the silence",
+   "input": {
+    "steps": [
+     {
+      "op": "silence",
+      "now_ms": 1792065600000,
+      "type_id": "botOffline",
+      "bot_key": "local:9056",
+      "until_ms": 1792065660000
+     },
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "botOffline",
+        "subject": null,
+        "severity": "critical",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "botOffline"
+      ]
+     }
+    ]
+   },
+   "expected": [
+    {},
+    {
+     "transitions": [
+      {
+       "kind": "raised",
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "silenced": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "the bell counts critical and warning, not information",
+   "input": {
+    "steps": [
+     {
+      "op": "evaluate",
+      "now_ms": 1792065600000,
+      "bot_key": "local:9056",
+      "conditions": [
+       {
+        "type_id": "botOffline",
+        "subject": null,
+        "severity": "critical",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       },
+       {
+        "type_id": "allFundsExposed",
+        "subject": null,
+        "severity": "warning",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       },
+       {
+        "type_id": "capacityFull",
+        "subject": null,
+        "severity": "info",
+        "value": null,
+        "threshold": null,
+        "detail": null,
+        "for_ms": 0
+       }
+      ],
+      "evaluated": [
+       "botOffline",
+       "allFundsExposed",
+       "capacityFull"
+      ]
+     }
+    ]
+   },
+   "expected": [
+    {
+     "bell": 2,
+     "active": [
+      {
+       "type_id": "botOffline",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "critical",
+       "view": "active"
+      },
+      {
+       "type_id": "allFundsExposed",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "warning",
+       "view": "active"
+      },
+      {
+       "type_id": "capacityFull",
+       "bot_key": "local:9056",
+       "subject": null,
+       "severity": "info",
+       "view": "active"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

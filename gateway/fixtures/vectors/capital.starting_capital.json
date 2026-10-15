@@ -1,0 +1,94 @@
+{
+ "function": "capital.starting_capital",
+ "description": "Starting capital of one bot (bug B10: never the total of a shared wallet).",
+ "cases": [
+  {
+   "name": "configured allocation minus withdrawal, shared wallet",
+   "input": {
+    "available_capital": 1500,
+    "capital_withdrawal": 200,
+    "wallet_shared": true,
+    "balance_total": 9000
+   },
+   "expected": {
+    "value": 1300,
+    "source": "config"
+   }
+  },
+  {
+   "name": "configured allocation, no withdrawal",
+   "input": {
+    "available_capital": 500
+   },
+   "expected": {
+    "value": 500,
+    "source": "config"
+   }
+  },
+  {
+   "name": "shared wallet total is never used",
+   "input": {
+    "wallet_shared": true,
+    "balance_total": 9000,
+    "profit_all_coin": 100
+   },
+   "expected": {
+    "value": null,
+    "source": "unknown"
+   }
+  },
+  {
+   "name": "own wallet: balance minus profit",
+   "input": {
+    "balance_total": 1250,
+    "profit_all_coin": 250
+   },
+   "expected": {
+    "value": 1000,
+    "source": "derived"
+   }
+  },
+  {
+   "name": "own wallet: bot-managed balance wins",
+   "input": {
+    "bot_managed_balance": 600,
+    "balance_total": 9999,
+    "profit_all_coin": 100
+   },
+   "expected": {
+    "value": 500,
+    "source": "derived"
+   }
+  },
+  {
+   "name": "allocation fully withdrawn",
+   "input": {
+    "available_capital": 100,
+    "capital_withdrawal": 100
+   },
+   "expected": {
+    "value": null,
+    "source": "unknown"
+   }
+  },
+  {
+   "name": "profit larger than the balance",
+   "input": {
+    "balance_total": 50,
+    "profit_all_coin": 80
+   },
+   "expected": {
+    "value": null,
+    "source": "unknown"
+   }
+  },
+  {
+   "name": "nothing known",
+   "input": {},
+   "expected": {
+    "value": null,
+    "source": "unknown"
+   }
+  }
+ ]
+}

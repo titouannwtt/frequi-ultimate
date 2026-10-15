@@ -1,0 +1,51 @@
+{
+ "function": "time.parse_date_ms",
+ "description": "Database and API dates to epoch milliseconds; a date without offset is UTC.",
+ "cases": [
+  {
+   "name": "naive database date is UTC",
+   "input": "2026-10-15 12:00:00",
+   "expected": 1792065600000
+  },
+  {
+   "name": "microseconds",
+   "input": "2026-10-15 12:00:00.123456",
+   "expected": 1792065600123
+  },
+  {
+   "name": "T separator",
+   "input": "2026-10-15T12:00:00",
+   "expected": 1792065600000
+  },
+  {
+   "name": "Z suffix",
+   "input": "2026-10-15T12:00:00Z",
+   "expected": 1792065600000
+  },
+  {
+   "name": "explicit offset",
+   "input": "2026-10-15T14:00:00+02:00",
+   "expected": 1792065600000
+  },
+  {
+   "name": "offset with space separator",
+   "input": "2026-10-15 14:00:00+02:00",
+   "expected": 1792065600000
+  },
+  {
+   "name": "garbage",
+   "input": "not a date",
+   "expected": null
+  },
+  {
+   "name": "empty",
+   "input": "",
+   "expected": null
+  },
+  {
+   "name": "impossible date",
+   "input": "2026-13-45 99:99:99",
+   "expected": null
+  }
+ ]
+}

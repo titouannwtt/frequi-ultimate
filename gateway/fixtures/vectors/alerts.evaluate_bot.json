@@ -1,0 +1,1143 @@
+{
+ "function": "alerts.evaluate_bot",
+ "description": "The 14 alert rules. Input: `enabled` (rule ids switched on, all others off), optional `thresholds` and `for_s` maps, and `ctx` laid over `defaults.ctx`. Conditions come in catalog order (the order of the 14 rules), then in position order. `evaluated` and `disabled` are sets, compared as sorted lists.",
+ "defaults": {
+  "ctx": {
+   "now_ms": 1792065600000,
+   "status": "online",
+   "is_futures": true,
+   "max_open_trades": null,
+   "starting_capital": null,
+   "positions": [],
+   "positions_stale": false,
+   "median_closed_duration_ms": null,
+   "last_trade_ts_raw": null,
+   "drawdown_current_abs": null,
+   "logs": [],
+   "rate_limit_events": 0
+  }
+ },
+ "cases": [
+  {
+   "name": "positionLoss: warning past the threshold, critical past twice the threshold",
+   "input": {
+    "enabled": [
+     "positionLoss"
+    ],
+    "ctx": {
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": -0.09,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      },
+      {
+       "trade_id": 2,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": -0.11,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      },
+      {
+       "trade_id": 3,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": -0.21,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "positionLoss",
+      "subject": "2",
+      "severity": "warning",
+      "value": -11,
+      "threshold": -10,
+      "for_ms": 30000
+     },
+     {
+      "type_id": "positionLoss",
+      "subject": "3",
+      "severity": "critical",
+      "value": -21,
+      "threshold": -10,
+      "for_ms": 0
+     }
+    ],
+    "evaluated": [
+     "positionLoss"
+    ]
+   }
+  },
+  {
+   "name": "positionLoss: custom threshold",
+   "input": {
+    "enabled": [
+     "positionLoss"
+    ],
+    "ctx": {
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": -0.04,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      }
+     ]
+    },
+    "thresholds": {
+     "positionLoss": -3
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "positionLoss",
+      "subject": "1",
+      "severity": "warning",
+      "value": -4,
+      "threshold": -3,
+      "for_ms": 30000
+     }
+    ]
+   }
+  },
+  {
+   "name": "positionLoss: explicit delay",
+   "input": {
+    "enabled": [
+     "positionLoss"
+    ],
+    "ctx": {
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": -0.5,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      }
+     ]
+    },
+    "for_s": {
+     "positionLoss": 90
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "positionLoss",
+      "subject": "1",
+      "severity": "critical",
+      "value": -50,
+      "threshold": -10,
+      "for_ms": 90000
+     }
+    ]
+   }
+  },
+  {
+   "name": "positionStuck: more than 3 times the median",
+   "input": {
+    "enabled": [
+     "positionStuck"
+    ],
+    "ctx": {
+     "median_closed_duration_ms": 7200000,
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792040400000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      },
+      {
+       "trade_id": 2,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792047600000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "positionStuck",
+      "subject": "1",
+      "severity": "warning",
+      "value": 3.5,
+      "threshold": 3,
+      "for_ms": 30000
+     }
+    ]
+   }
+  },
+  {
+   "name": "positionStuck: no history, nothing claimed",
+   "input": {
+    "enabled": [
+     "positionStuck"
+    ],
+    "ctx": {
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1789545600000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [],
+    "evaluated": [
+     "positionStuck"
+    ]
+   }
+  },
+  {
+   "name": "nearLiquidation: distance to the liquidation price, not 1 + profit",
+   "input": {
+    "enabled": [
+     "nearLiquidation"
+    ],
+    "ctx": {
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0.5,
+       "liquidation_price": 90,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      },
+      {
+       "trade_id": 2,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": -0.95,
+       "liquidation_price": 50,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      },
+      {
+       "trade_id": 3,
+       "pair": "ETH/USDC:USDC",
+       "side": "short",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": 110,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "nearLiquidation",
+      "subject": "1",
+      "severity": "critical",
+      "value": 10,
+      "threshold": 15,
+      "for_ms": 0
+     },
+     {
+      "type_id": "nearLiquidation",
+      "subject": "3",
+      "severity": "critical",
+      "value": 10,
+      "threshold": 15,
+      "for_ms": 0
+     }
+    ]
+   }
+  },
+  {
+   "name": "nearLiquidation: rate already past the liquidation price",
+   "input": {
+    "enabled": [
+     "nearLiquidation"
+    ],
+    "ctx": {
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 85,
+       "profit_ratio": 0,
+       "liquidation_price": 90,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "nearLiquidation",
+      "subject": "1",
+      "severity": "critical",
+      "value": 0,
+      "threshold": 15,
+      "for_ms": 0
+     }
+    ]
+   }
+  },
+  {
+   "name": "nearLiquidation: spot bots are ignored",
+   "input": {
+    "enabled": [
+     "nearLiquidation",
+     "liquidationBeforeStoploss"
+    ],
+    "ctx": {
+     "is_futures": false,
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": 99,
+       "stoploss_abs": 80,
+       "stake_amount": 10
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": []
+   }
+  },
+  {
+   "name": "liquidationBeforeStoploss: distances on the adverse side",
+   "input": {
+    "enabled": [
+     "liquidationBeforeStoploss"
+    ],
+    "ctx": {
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": 90,
+       "stoploss_abs": 80,
+       "stake_amount": 10
+      },
+      {
+       "trade_id": 2,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": 60,
+       "stoploss_abs": 80,
+       "stake_amount": 10
+      },
+      {
+       "trade_id": 3,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": 60,
+       "stoploss_abs": 105,
+       "stake_amount": 10
+      },
+      {
+       "trade_id": 4,
+       "pair": "ETH/USDC:USDC",
+       "side": "short",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": 110,
+       "stoploss_abs": 120,
+       "stake_amount": 10
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "liquidationBeforeStoploss",
+      "subject": "1",
+      "severity": "critical",
+      "value": 10,
+      "threshold": 20,
+      "for_ms": 0
+     },
+     {
+      "type_id": "liquidationBeforeStoploss",
+      "subject": "4",
+      "severity": "critical",
+      "value": 10,
+      "threshold": 20,
+      "for_ms": 0
+     }
+    ]
+   }
+  },
+  {
+   "name": "logErrors: only the last 15 minutes count",
+   "input": {
+    "enabled": [
+     "logErrors"
+    ],
+    "ctx": {
+     "logs": [
+      {
+       "ts_ms": 1792065540000,
+       "level": "ERROR",
+       "message": "boom"
+      },
+      {
+       "ts_ms": 1792065480000,
+       "level": "CRITICAL",
+       "message": "worse"
+      },
+      {
+       "ts_ms": 1792063800000,
+       "level": "ERROR",
+       "message": "old error outside the window"
+      },
+      {
+       "ts_ms": 1792065599000,
+       "level": "INFO",
+       "message": "fine"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "logErrors",
+      "subject": null,
+      "severity": "critical",
+      "value": 2,
+      "threshold": null,
+      "for_ms": 0,
+      "detail": "boom | worse"
+     }
+    ]
+   }
+  },
+  {
+   "name": "log pattern rules",
+   "input": {
+    "enabled": [
+     "orderFailed",
+     "insufficientFunds",
+     "exchangeError",
+     "walletMismatch"
+    ],
+    "ctx": {
+     "logs": [
+      {
+       "ts_ms": 1792065599000,
+       "level": "WARNING",
+       "message": "Could not create trade for BTC"
+      },
+      {
+       "ts_ms": 1792065599000,
+       "level": "WARNING",
+       "message": "Insufficient funds to open"
+      },
+      {
+       "ts_ms": 1792065599000,
+       "level": "WARNING",
+       "message": "ccxt RequestTimeout on fetch"
+      },
+      {
+       "ts_ms": 1792065599000,
+       "level": "ERROR",
+       "message": "Wallet shows a total of 0 USDC"
+      },
+      {
+       "ts_ms": 1792065599000,
+       "level": "INFO",
+       "message": "Everything is fine"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "orderFailed",
+      "subject": null,
+      "severity": "critical",
+      "value": 2,
+      "threshold": null,
+      "for_ms": 0
+     },
+     {
+      "type_id": "insufficientFunds",
+      "subject": null,
+      "severity": "warning",
+      "value": 1,
+      "threshold": null,
+      "for_ms": 30000
+     },
+     {
+      "type_id": "exchangeError",
+      "subject": null,
+      "severity": "warning",
+      "value": 1,
+      "threshold": null,
+      "for_ms": 30000
+     },
+     {
+      "type_id": "walletMismatch",
+      "subject": null,
+      "severity": "critical",
+      "value": 1,
+      "threshold": null,
+      "for_ms": 0
+     }
+    ]
+   }
+  },
+  {
+   "name": "log patterns are case insensitive",
+   "input": {
+    "enabled": [
+     "insufficientFunds"
+    ],
+    "ctx": {
+     "logs": [
+      {
+       "ts_ms": 1792065599000,
+       "level": "WARNING",
+       "message": "insufficient FUNDS"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "insufficientFunds",
+      "subject": null,
+      "severity": "warning",
+      "value": 1,
+      "threshold": null,
+      "for_ms": 30000
+     }
+    ]
+   }
+  },
+  {
+   "name": "daemon rate-limit events feed exchangeError",
+   "input": {
+    "enabled": [
+     "exchangeError"
+    ],
+    "ctx": {
+     "rate_limit_events": 3
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "exchangeError",
+      "subject": null,
+      "severity": "warning",
+      "value": 3,
+      "threshold": null,
+      "for_ms": 30000
+     }
+    ]
+   }
+  },
+  {
+   "name": "unavailable logs skip the log rules instead of reporting calm",
+   "input": {
+    "enabled": [
+     "logErrors",
+     "orderFailed"
+    ],
+    "ctx": {
+     "logs": null
+    }
+   },
+   "expected": {
+    "conditions": [],
+    "evaluated": []
+   }
+  },
+  {
+   "name": "noTradeActivity (regression B5): milliseconds",
+   "input": {
+    "enabled": [
+     "noTradeActivity"
+    ],
+    "ctx": {
+     "last_trade_ts_raw": 1791957600000
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "noTradeActivity",
+      "subject": null,
+      "severity": "info",
+      "value": 30,
+      "threshold": 24,
+      "for_ms": 30000
+     }
+    ]
+   }
+  },
+  {
+   "name": "noTradeActivity (regression B5): seconds give the same answer",
+   "input": {
+    "enabled": [
+     "noTradeActivity"
+    ],
+    "ctx": {
+     "last_trade_ts_raw": 1791957600.0
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "noTradeActivity",
+      "subject": null,
+      "severity": "info",
+      "value": 30,
+      "threshold": 24,
+      "for_ms": 30000
+     }
+    ]
+   }
+  },
+  {
+   "name": "noTradeActivity (regression B5): microseconds give the same answer",
+   "input": {
+    "enabled": [
+     "noTradeActivity"
+    ],
+    "ctx": {
+     "last_trade_ts_raw": 1791957600000000
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "noTradeActivity",
+      "subject": null,
+      "severity": "info",
+      "value": 30,
+      "threshold": 24,
+      "for_ms": 30000
+     }
+    ]
+   }
+  },
+  {
+   "name": "noTradeActivity: recent trade",
+   "input": {
+    "enabled": [
+     "noTradeActivity"
+    ],
+    "ctx": {
+     "last_trade_ts_raw": 1792058400000
+    }
+   },
+   "expected": {
+    "conditions": []
+   }
+  },
+  {
+   "name": "noTradeActivity: no trade ever",
+   "input": {
+    "enabled": [
+     "noTradeActivity"
+    ],
+    "ctx": {
+     "last_trade_ts_raw": null
+    }
+   },
+   "expected": {
+    "conditions": []
+   }
+  },
+  {
+   "name": "noTradeActivity: a date in the future is ignored",
+   "input": {
+    "enabled": [
+     "noTradeActivity"
+    ],
+    "ctx": {
+     "last_trade_ts_raw": 1792083600000
+    }
+   },
+   "expected": {
+    "conditions": []
+   }
+  },
+  {
+   "name": "botOffline: offline is critical",
+   "input": {
+    "enabled": [
+     "botOffline"
+    ],
+    "ctx": {
+     "status": "offline"
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "botOffline",
+      "subject": null,
+      "severity": "critical",
+      "value": null,
+      "threshold": null,
+      "for_ms": 0
+     }
+    ]
+   }
+  },
+  {
+   "name": "botOffline: starting is information",
+   "input": {
+    "enabled": [
+     "botOffline"
+    ],
+    "ctx": {
+     "status": "starting"
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "botOffline",
+      "subject": null,
+      "severity": "info",
+      "value": null,
+      "threshold": null,
+      "for_ms": 30000
+     }
+    ]
+   }
+  },
+  {
+   "name": "botOffline: online, stopped and auth_expired raise nothing",
+   "input": {
+    "enabled": [
+     "botOffline"
+    ],
+    "ctx": {
+     "status": "stopped"
+    }
+   },
+   "expected": {
+    "conditions": []
+   }
+  },
+  {
+   "name": "highDrawdown: relative to the starting capital",
+   "input": {
+    "enabled": [
+     "highDrawdown"
+    ],
+    "ctx": {
+     "starting_capital": 1000,
+     "drawdown_current_abs": 160
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "highDrawdown",
+      "subject": null,
+      "severity": "warning",
+      "value": -16,
+      "threshold": -15,
+      "for_ms": 30000
+     }
+    ]
+   }
+  },
+  {
+   "name": "highDrawdown: below the threshold",
+   "input": {
+    "enabled": [
+     "highDrawdown"
+    ],
+    "ctx": {
+     "starting_capital": 1000,
+     "drawdown_current_abs": 100
+    }
+   },
+   "expected": {
+    "conditions": [],
+    "evaluated": [
+     "highDrawdown"
+    ]
+   }
+  },
+  {
+   "name": "highDrawdown: unknown capital skips the rule",
+   "input": {
+    "enabled": [
+     "highDrawdown"
+    ],
+    "ctx": {
+     "starting_capital": null,
+     "drawdown_current_abs": 100
+    }
+   },
+   "expected": {
+    "conditions": [],
+    "evaluated": []
+   }
+  },
+  {
+   "name": "capacityFull at max_open_trades",
+   "input": {
+    "enabled": [
+     "capacityFull"
+    ],
+    "ctx": {
+     "max_open_trades": 2,
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      },
+      {
+       "trade_id": 2,
+       "pair": "ETH/USDC:USDC",
+       "side": "short",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "capacityFull",
+      "subject": null,
+      "severity": "info",
+      "value": 2,
+      "threshold": 2,
+      "for_ms": 30000
+     }
+    ]
+   }
+  },
+  {
+   "name": "capacityFull below the maximum",
+   "input": {
+    "enabled": [
+     "capacityFull"
+    ],
+    "ctx": {
+     "max_open_trades": 3,
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      },
+      {
+       "trade_id": 2,
+       "pair": "ETH/USDC:USDC",
+       "side": "short",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": []
+   }
+  },
+  {
+   "name": "allFundsExposed (regression B6): open stakes against the starting capital",
+   "input": {
+    "enabled": [
+     "allFundsExposed"
+    ],
+    "ctx": {
+     "starting_capital": 100,
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 60
+      },
+      {
+       "trade_id": 2,
+       "pair": "ETH/USDC:USDC",
+       "side": "short",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 35
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [
+     {
+      "type_id": "allFundsExposed",
+      "subject": null,
+      "severity": "warning",
+      "value": 95,
+      "threshold": 95,
+      "for_ms": 30000
+     }
+    ]
+   }
+  },
+  {
+   "name": "allFundsExposed: just under 95 %",
+   "input": {
+    "enabled": [
+     "allFundsExposed"
+    ],
+    "ctx": {
+     "starting_capital": 100,
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 60
+      },
+      {
+       "trade_id": 2,
+       "pair": "ETH/USDC:USDC",
+       "side": "short",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 34
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": []
+   }
+  },
+  {
+   "name": "allFundsExposed: unknown capital skips the rule",
+   "input": {
+    "enabled": [
+     "allFundsExposed"
+    ],
+    "ctx": {
+     "starting_capital": null,
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 60
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [],
+    "evaluated": []
+   }
+  },
+  {
+   "name": "stale positions skip the position rules",
+   "input": {
+    "enabled": [
+     "positionLoss",
+     "positionStuck",
+     "nearLiquidation",
+     "liquidationBeforeStoploss",
+     "capacityFull",
+     "allFundsExposed",
+     "botOffline"
+    ],
+    "ctx": {
+     "positions_stale": true,
+     "max_open_trades": 1,
+     "starting_capital": 100,
+     "median_closed_duration_ms": 3600000,
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1792062000000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": -0.9,
+       "liquidation_price": 99,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      }
+     ]
+    }
+   },
+   "expected": {
+    "conditions": [],
+    "evaluated": [
+     "botOffline"
+    ]
+   }
+  },
+  {
+   "name": "disabled rules are reported",
+   "input": {
+    "enabled": [
+     "botOffline"
+    ],
+    "ctx": {}
+   },
+   "expected": {
+    "conditions": [],
+    "evaluated": [
+     "botOffline"
+    ]
+   }
+  }
+ ]
+}

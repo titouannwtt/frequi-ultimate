@@ -1,0 +1,99 @@
+{
+ "function": "drawdown.merge_histories",
+ "description": "Merge of several bots' profit_history samples.",
+ "cases": [
+  {
+   "name": "forward fill from the first common timestamp",
+   "input": [
+    [
+     {
+      "ts_ms": 10,
+      "closed": 1,
+      "open": 0
+     },
+     {
+      "ts_ms": 30,
+      "closed": 3,
+      "open": 0
+     }
+    ],
+    [
+     {
+      "ts_ms": 20,
+      "closed": 10,
+      "open": 0
+     },
+     {
+      "ts_ms": 30,
+      "closed": 0,
+      "open": 5
+     }
+    ]
+   ],
+   "expected": [
+    [
+     20,
+     11
+    ],
+    [
+     30,
+     8
+    ]
+   ]
+  },
+  {
+   "name": "empty series are ignored",
+   "input": [
+    [],
+    [
+     {
+      "ts_ms": 10,
+      "closed": 1,
+      "open": 2
+     }
+    ]
+   ],
+   "expected": [
+    [
+     10,
+     3
+    ]
+   ]
+  },
+  {
+   "name": "nothing",
+   "input": [
+    [],
+    []
+   ],
+   "expected": []
+  },
+  {
+   "name": "single series is returned as is, sorted",
+   "input": [
+    [
+     {
+      "ts_ms": 20,
+      "closed": 2,
+      "open": 0
+     },
+     {
+      "ts_ms": 10,
+      "closed": 1,
+      "open": 0
+     }
+    ]
+   ],
+   "expected": [
+    [
+     10,
+     1
+    ],
+    [
+     20,
+     2
+    ]
+   ]
+  }
+ ]
+}
