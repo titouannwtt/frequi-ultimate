@@ -524,7 +524,10 @@ pub fn evaluate_bot(
                 }
             }
             AlertTypeId::PositionStuck => match ctx.median_closed_duration_ms.filter(|m| *m > 0) {
-                Some(median) if !ctx.positions_stale => {
+                // Stale positions or no usable reference duration (ledger unreadable, or no closed
+                // trade yet): the rule cannot judge, so a running alert is kept, not resolved.
+                _ if ctx.positions_stale => evaluated = false,
+                Some(median) => {
                     let mult = thr.unwrap_or(3.0);
                     for p in &ctx.positions {
                         let held = (ctx.now_ms - p.open_ms) as f64;
@@ -545,8 +548,7 @@ pub fn evaluate_bot(
                         }
                     }
                 }
-                Some(_) => evaluated = false,
-                None => {}
+                None => evaluated = false,
             },
             AlertTypeId::NearLiquidation => {
                 if ctx.positions_stale {
@@ -658,6 +660,7 @@ pub fn evaluate_bot(
                 }
             },
             AlertTypeId::NoTradeActivity => {
+                // Without a usable last-trade date the rule cannot judge: a running alert is kept.
                 if let Some(last) = ctx.last_trade_ts_raw.and_then(normalize_ts_ms) {
                     let thr_h = thr.unwrap_or(24.0);
                     let hours = (ctx.now_ms - last) as f64 / 3_600_000.0;
@@ -669,6 +672,8 @@ pub fn evaluate_bot(
                             cond(t, None, Severity::Info, Some(hours), Some(thr_h), None),
                         );
                     }
+                } else {
+                    evaluated = false;
                 }
             }
             AlertTypeId::BotOffline => match ctx.status {

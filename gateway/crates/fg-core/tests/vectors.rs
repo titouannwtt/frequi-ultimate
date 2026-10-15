@@ -310,7 +310,8 @@ fn run(function: &str, input: &Value, defaults: &Value) -> Value {
                 .get("capacity")
                 .and_then(Value::as_u64)
                 .map_or(DELTA_BUFFER_SIZE, |c| c as usize);
-            let mut b = DeltaBuffer::new(&Channel::Fleet, cap);
+            let base = input.get("base").and_then(Value::as_u64).unwrap_or(0);
+            let mut b = DeltaBuffer::with_base(&Channel::Fleet, cap, base);
             for i in 0..input["pushed"].as_u64().unwrap() {
                 b.push_up(i64::try_from(i).unwrap(), Upsert::new(), Remove::new());
             }

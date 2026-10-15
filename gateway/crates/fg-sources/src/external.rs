@@ -59,17 +59,15 @@ impl CoinGecko {
     /// # Errors
     /// [`TickerError::HostNotAllowed`] when `base` is not an allowed host.
     pub fn new(client: reqwest::Client, base: &str, ttl: Duration) -> Result<Self, TickerError> {
-        let rest = base
-            .strip_prefix("https://")
-            .or_else(|| base.strip_prefix("http://"))
-            .ok_or(TickerError::HostNotAllowed)?;
-        let authority = rest.split('/').next().unwrap_or("");
-        let host = if let Some(stripped) = authority.strip_prefix('[') {
-            stripped.split(']').next().unwrap_or("")
-        } else {
-            authority.split(':').next().unwrap_or("")
-        };
-        if !host_allowed(host) {
+        // The URL parser is the one reqwest will use: the host checked here is the host called.
+        let url = reqwest::Url::parse(base).map_err(|_| TickerError::HostNotAllowed)?;
+        if !matches!(url.scheme(), "http" | "https")
+            || !url.username().is_empty()
+            || url.password().is_some()
+        {
+            return Err(TickerError::HostNotAllowed);
+        }
+        if !url.host_str().is_some_and(host_allowed) {
             return Err(TickerError::HostNotAllowed);
         }
         Ok(Self {
@@ -221,6 +219,11 @@ mod tests {
             "https://api.coingecko.com.evil.test",
             "ftp://api.coingecko.com",
             "api.coingecko.com",
+            "https://api.coingecko.com:443@api.hyperliquid.xyz",
+            "https://api.coingecko.com@api.hyperliquid.xyz",
+            "https://user:pass@api.coingecko.com",
+            "https://api.hyperliquid.xyz\\@api.coingecko.com",
+            "https://api.hyperliquid.xyz#@api.coingecko.com",
         ] {
             assert_eq!(
                 CoinGecko::new(client(), bad, Duration::from_secs(1)).err(),

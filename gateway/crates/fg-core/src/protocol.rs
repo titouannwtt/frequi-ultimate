@@ -385,6 +385,16 @@ pub enum Resume {
     Resync(ResyncReason),
 }
 
+/// Sequence base of this process: milliseconds since the Unix epoch at boot. Sequence numbers
+/// advance far slower than 1000 per second, so a later boot always starts above where an earlier
+/// one stopped.
+#[must_use]
+pub fn boot_seq_base() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(0))
+}
+
 /// Server-side ring buffer of the last deltas of one channel.
 #[derive(Debug, Clone)]
 pub struct DeltaBuffer {
@@ -395,12 +405,26 @@ pub struct DeltaBuffer {
 }
 
 impl DeltaBuffer {
+    /// A buffer whose sequence numbers start at 1. Only for a stream that has a single
+    /// incarnation (tests); the gateway uses [`Self::with_base`] with [`boot_seq_base`].
     #[must_use]
     pub fn new(channel: &Channel, capacity: usize) -> Self {
+        Self::with_base(channel, capacity, 0)
+    }
+
+    /// A buffer whose first frame is numbered `base + 1`.
+    ///
+    /// The gateway has no server epoch on the wire, so incarnations are told apart by their
+    /// sequence range: with a base that grows from one boot to the next ([`boot_seq_base`]), a
+    /// resume point of the previous incarnation always falls below the oldest frame of the new one
+    /// and is answered with a resync instead of a replay of unrelated frames. `base` must stay
+    /// below 2^53 so that the number is exact in JavaScript.
+    #[must_use]
+    pub fn with_base(channel: &Channel, capacity: usize, base: u64) -> Self {
         Self {
             channel: channel.to_string(),
             capacity: capacity.max(1),
-            head: 0,
+            head: base,
             frames: VecDeque::new(),
         }
     }
@@ -451,7 +475,7 @@ impl DeltaBuffer {
             return Resume::UpToDate;
         }
         if from > self.head {
-            // The server restarted and its counters went back: the client is "ahead".
+            // Defensive: a client cannot be ahead of the server (a restart moves the base up).
             return Resume::Resync(ResyncReason::StaleResume);
         }
         let oldest = self.head + 1 - self.frames.len() as u64;
