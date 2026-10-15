@@ -6,6 +6,7 @@ members = [
     "crates/fg-engine",
     "crates/fg-server",
     "bin/frequi-gateway",
+    "tools/fakebot",
 ]
 
 [workspace.package]
