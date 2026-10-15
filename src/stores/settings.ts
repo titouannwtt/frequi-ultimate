@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { TimeSummaryCols, TimeSummaryOptions } from '@/types';
-import type { ThemeName, UiVersion } from '@/types';
+import type { ThemeMode, ThemeName, UiVersion } from '@/types';
 import { FtWsMessageTypes } from '@/types/wsMessageTypes';
 
 const FORK_REPO = 'titouannwtt/frequi-ultimate';
@@ -28,6 +28,8 @@ export const useSettingsStore = defineStore('uiSettings', {
       timezone: 'UTC',
       backgroundSync: true,
       currentTheme: 'dark' as ThemeName,
+      // null until the user picks a mode: the legacy currentTheme then decides (see utils/theme.ts)
+      themeMode: null as ThemeMode | null,
       _uiVersion: 'dev',
       useHeikinAshiCandles: false,
       showMarkArea: true,

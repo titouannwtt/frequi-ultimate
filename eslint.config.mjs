@@ -35,7 +35,7 @@ export default defineConfigWithVueTs(
       'vue/component-name-in-template-casing': [
         'error',
         'PascalCase',
-        { registeredComponentsOnly: false, ignores: ['/i-mdi-.*/'] },
+        { registeredComponentsOnly: false, ignores: ['/i-mdi-.*/', '/i-lucide-.*/'] },
       ],
       'vue/block-lang': [
         'error',

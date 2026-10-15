@@ -1,0 +1,222 @@
+/*
+ * FreqUI Ultimate 2: design tokens (docs/redesign/02-design.md, section 6 and 9).
+ *
+ * Colors are CSS custom properties switched by `data-theme="dark|light"` on <html>
+ * (see composables/useTheme.ts). Dark is also the `:root` default so a page that has not run
+ * the theme init yet still renders with valid values.
+ *
+ * Owner decision (2026-10-15): long/short are classic green/red, an alias of --profit/--loss.
+ * They are always rendered with an arrow and the L/S letter so they are never mistaken for a P&L.
+ *
+ * Every pair was measured on --bg-1 (ratios in the comments); --fg-4 is for disabled items only.
+ */
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0a0c0f; /* application background */
+  --bg-1: #0f1216; /* panel */
+  --bg-2: #151a1f; /* panel header, hover, tile */
+  --bg-3: #1c2228; /* active control, gauge rail */
+  --line: #1f262d; /* hairline */
+  --line-2: #2a333c; /* strong hairline, control border */
+  --fg: #e3e8ee; /* text 15.2:1 */
+  --fg-2: #a3adb9; /* secondary 8.3:1 */
+  --fg-3: #8590a0; /* labels 5.8:1 (AA) */
+  --fg-4: #5b6571; /* disabled only */
+  --accent: #5b95ff; /* focus, selection, link, entry average 6.4:1 */
+  --profit: #2fca88; /* gain (text) 8.9:1 */
+  --loss: #ff6b80; /* loss (text) 6.9:1 */
+  --crit: #ff6a3d; /* critical alert, distinct from --loss 6.6:1 */
+  --warn: #f2b33d; /* caution, stale 10.1:1 */
+  --info: #4cbbe9; /* information, starting 8.6:1 */
+  --live: #b98aff; /* real money ONLY 7.3:1 */
+  --dry: #8e9aa8; /* dry-run 6.6:1 */
+  --long: var(--profit); /* long side: green (owner decision) */
+  --short: var(--loss); /* short side: red, hatched in bars */
+
+  /* Semantic backgrounds (13 to 14 % in dark) */
+  --accent-w: rgba(91, 149, 255, 0.14);
+  --profit-w: rgba(47, 202, 136, 0.13);
+  --loss-w: rgba(255, 107, 128, 0.13);
+  --crit-w: rgba(255, 106, 61, 0.14);
+  --warn-w: rgba(242, 179, 61, 0.13);
+  --info-w: rgba(76, 187, 233, 0.13);
+  --live-w: rgba(185, 138, 255, 0.14);
+  --dry-w: rgba(142, 154, 168, 0.12);
+  --long-w: var(--profit-w);
+  --short-w: var(--loss-w);
+
+  /* Hatches: stale (amber), offline (grey), live dialog band, short bars */
+  --stale-hatch: repeating-linear-gradient(
+    135deg,
+    rgba(242, 179, 61, 0.1) 0 4px,
+    transparent 4px 8px
+  );
+  --off-hatch: repeating-linear-gradient(
+    135deg,
+    rgba(142, 154, 168, 0.1) 0 4px,
+    transparent 4px 8px
+  );
+  --live-hatch: repeating-linear-gradient(
+    135deg,
+    rgba(185, 138, 255, 0.55) 0 6px,
+    rgba(185, 138, 255, 0.15) 6px 12px
+  );
+  --short-hatch: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.18) 0 2px, transparent 2px 4px);
+
+  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line-2);
+  --scrim: rgba(3, 5, 8, 0.62);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f3f5f8;
+  --bg-1: #ffffff;
+  --bg-2: #f6f8fa;
+  --bg-3: #eaeef3;
+  --line: #e2e7ed;
+  --line-2: #cfd6de;
+  --fg: #0f1720; /* 18.1:1 */
+  --fg-2: #3f4a57; /* 9.0:1 */
+  --fg-3: #5c6876; /* 5.7:1 */
+  --fg-4: #8a95a2; /* 3.0:1, disabled only */
+  --accent: #1d5bd8; /* 5.9:1 */
+  --profit: #047a4b; /* 5.4:1 */
+  --loss: #c8233c; /* 5.6:1 */
+  --crit: #c2410c; /* 5.2:1 */
+  --warn: #8f5a0b; /* 5.8:1 */
+  --info: #0a6e9e; /* 5.6:1 */
+  --live: #6d28d9; /* 7.1:1 */
+  --dry: #566476; /* 6.0:1 */
+  --long: var(--profit);
+  --short: var(--loss);
+
+  /* Semantic backgrounds (9 to 11 % in light) */
+  --accent-w: rgba(29, 91, 216, 0.1);
+  --profit-w: rgba(4, 122, 75, 0.1);
+  --loss-w: rgba(200, 35, 60, 0.09);
+  --crit-w: rgba(194, 65, 12, 0.1);
+  --warn-w: rgba(143, 90, 11, 0.11);
+  --info-w: rgba(10, 110, 158, 0.1);
+  --live-w: rgba(109, 40, 217, 0.09);
+  --dry-w: rgba(86, 100, 118, 0.1);
+  --long-w: var(--profit-w);
+  --short-w: var(--loss-w);
+
+  --stale-hatch: repeating-linear-gradient(
+    135deg,
+    rgba(143, 90, 11, 0.12) 0 4px,
+    transparent 4px 8px
+  );
+  --off-hatch: repeating-linear-gradient(
+    135deg,
+    rgba(86, 100, 118, 0.1) 0 4px,
+    transparent 4px 8px
+  );
+  --live-hatch: repeating-linear-gradient(
+    135deg,
+    rgba(109, 40, 217, 0.55) 0 6px,
+    rgba(109, 40, 217, 0.12) 6px 12px
+  );
+  --short-hatch: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.18) 0 2px, transparent 2px 4px);
+
+  --shadow-float: 0 12px 32px rgba(15, 23, 32, 0.16), 0 0 0 1px var(--line-2);
+  --scrim: rgba(15, 23, 32, 0.38);
+}
+
+/* Colour-blind palette (Settings option): gain blue, loss orange. Sign and value stay written. */
+:root[data-cvd='1'][data-theme='dark'] {
+  --profit: #5aa9ff;
+  --loss: #ffa24a;
+  --profit-w: rgba(90, 169, 255, 0.13);
+  --loss-w: rgba(255, 162, 74, 0.13);
+}
+:root[data-cvd='1'][data-theme='light'] {
+  --profit: #1559c0;
+  --loss: #a2510a;
+  --profit-w: rgba(21, 89, 192, 0.1);
+  --loss-w: rgba(162, 81, 10, 0.1);
+}
+
+/* Typography, spacing, radii, density, motion */
+:root {
+  --font-ui: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-num:
+    'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Type scale (desktop); the touch media query below raises it by 1 px */
+  --t-xs: 11px;
+  --t-sm: 12px;
+  --t-md: 13px;
+  --t-lg: 15px;
+  --t-xl: 20px;
+  --t-2xl: 26px;
+
+  /* 4 px scale */
+  --s-1: 2px;
+  --s0: 4px;
+  --s1: 6px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s7: 32px;
+
+  --r-1: 3px; /* chips, badges */
+  --r-2: 5px; /* buttons, fields, panels */
+  --r-3: 8px; /* dialogs, palette */
+  --r-4: 14px; /* top of bottom sheets */
+  --r-pill: 999px;
+
+  /* Density: compact by default on desktop */
+  --row: 30px;
+  --ctl: 28px;
+  --hdr: 44px;
+  --gut: 6px;
+
+  /* Motion (section 9) */
+  --d-instant: 80ms;
+  --d-fast: 140ms;
+  --d-base: 200ms;
+  --d-slow: 320ms;
+  --d-flash: 900ms;
+  --e-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --e-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --e-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  /* Safety delay of the hold-to-confirm: never reduced, not even with reduced motion */
+  --hold: 1000ms;
+}
+
+:root[data-density='comfortable'] {
+  --row: 36px;
+  --ctl: 32px;
+}
+
+/* Touch: below 600 px or on a coarse pointer. The density attribute does not apply here. */
+@media (max-width: 599px), (pointer: coarse) {
+  :root {
+    --t-xs: 12px;
+    --t-sm: 13px;
+    --t-md: 14px;
+    --t-lg: 16px;
+    --t-xl: 22px;
+    --t-2xl: 28px;
+    --row: 44px;
+    --ctl: 40px;
+    --hdr: 52px;
+    --gut: 8px;
+  }
+}
+
+/* Reduced motion: durations collapse to 1 ms, --hold stays at 1 s on purpose. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-instant: 1ms;
+    --d-fast: 1ms;
+    --d-base: 1ms;
+    --d-slow: 1ms;
+    --d-flash: 1ms;
+  }
+}

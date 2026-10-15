@@ -1,0 +1,8 @@
+/* FreqUI Ultimate 2 design system, loaded once from main.ts */
+/* Same order as Tailwind, so the utilities below never end up before its base layer */
+@layer theme, base, components, utilities;
+
+@import './fonts.css';
+@import './tokens.css';
+@import './base.css';
+@import './motion.css';
