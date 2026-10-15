@@ -1,0 +1,17 @@
+[package]
+name = "frequi-gateway"
+description = "FreqUI Ultimate gateway: one server-side poller, aggregates and WebSocket push for the whole fleet"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+fg-core = { workspace = true }
+fg-engine = { workspace = true }
+fg-server = { workspace = true }
+fg-sources = { workspace = true }
+
+[lints]
+workspace = true
