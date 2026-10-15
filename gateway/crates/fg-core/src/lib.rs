@@ -5,5 +5,6 @@
 //! re-implements in TypeScript: both sides run the shared vectors in
 //! `gateway/fixtures/vectors/*.json`.
 
+pub mod calc;
 pub mod identity;
 pub mod time;
