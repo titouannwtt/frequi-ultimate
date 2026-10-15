@@ -1,0 +1,64 @@
+{
+ "function": "freshness.sum_fresh",
+ "description": "",
+ "cases": [
+  {
+   "name": "stale and missing values are excluded",
+   "input": [
+    {
+     "key": "a",
+     "value": 10,
+     "fresh": {
+      "as_of_ms": 0,
+      "source": "ws",
+      "stale": false
+     }
+    },
+    {
+     "key": "b",
+     "value": 5,
+     "fresh": {
+      "as_of_ms": 0,
+      "source": "ws",
+      "stale": true
+     }
+    },
+    {
+     "key": "c",
+     "value": null,
+     "fresh": {
+      "as_of_ms": 0,
+      "source": "ws",
+      "stale": false
+     }
+    },
+    {
+     "key": "d",
+     "value": 2.5,
+     "fresh": {
+      "as_of_ms": 0,
+      "source": "ws",
+      "stale": false
+     }
+    }
+   ],
+   "expected": {
+    "total": 12.5,
+    "included": 2,
+    "excluded": [
+     "b",
+     "c"
+    ]
+   }
+  },
+  {
+   "name": "nothing",
+   "input": [],
+   "expected": {
+    "total": 0,
+    "included": 0,
+    "excluded": []
+   }
+  }
+ ]
+}

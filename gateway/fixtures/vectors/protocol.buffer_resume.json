@@ -1,0 +1,129 @@
+{
+ "function": "protocol.buffer_resume",
+ "description": "Resume against the ring buffer of 512 deltas (capacity overridable in the vectors). Optional input.base: sequence base of the buffer (a gateway incarnation); seq numbers then start at base + 1.",
+ "cases": [
+  {
+   "name": "up to date",
+   "input": {
+    "pushed": 10,
+    "from": 10
+   },
+   "expected": {
+    "resume": "up_to_date",
+    "head": 10
+   }
+  },
+  {
+   "name": "replay of the missed frames",
+   "input": {
+    "pushed": 10,
+    "from": 7
+   },
+   "expected": {
+    "resume": "replay",
+    "seqs": [
+     8,
+     9,
+     10
+    ]
+   }
+  },
+  {
+   "name": "replay from the very beginning",
+   "input": {
+    "pushed": 3,
+    "from": 0
+   },
+   "expected": {
+    "resume": "replay",
+    "seqs": [
+     1,
+     2,
+     3
+    ]
+   }
+  },
+  {
+   "name": "oldest replayable point",
+   "input": {
+    "capacity": 4,
+    "pushed": 10,
+    "from": 6
+   },
+   "expected": {
+    "resume": "replay",
+    "seqs": [
+     7,
+     8,
+     9,
+     10
+    ]
+   }
+  },
+  {
+   "name": "outside the buffer",
+   "input": {
+    "capacity": 4,
+    "pushed": 10,
+    "from": 5
+   },
+   "expected": {
+    "resume": "resync",
+    "reason": "stale_resume"
+   }
+  },
+  {
+   "name": "server restarted: the client is ahead",
+   "input": {
+    "capacity": 4,
+    "pushed": 10,
+    "from": 11
+   },
+   "expected": {
+    "resume": "resync",
+    "reason": "stale_resume"
+   }
+  },
+  {
+   "name": "restart: a resume point of the previous incarnation resyncs",
+   "input": {
+    "base": 1760530000000,
+    "pushed": 8,
+    "from": 1759000000005
+   },
+   "expected": {
+    "resume": "resync",
+    "head": 1760530000008,
+    "reason": "stale_resume"
+   }
+  },
+  {
+   "name": "restart: a resume point of the new incarnation replays",
+   "input": {
+    "base": 1760530000000,
+    "pushed": 8,
+    "from": 1760530000005
+   },
+   "expected": {
+    "resume": "replay",
+    "head": 1760530000008,
+    "seqs": [
+     1760530000006,
+     1760530000007,
+     1760530000008
+    ]
+   }
+  },
+  {
+   "name": "nothing pushed yet",
+   "input": {
+    "pushed": 0,
+    "from": 0
+   },
+   "expected": {
+    "resume": "up_to_date",
+    "head": 0
+   }
+  }
+ ]
+}

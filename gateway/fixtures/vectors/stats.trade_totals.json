@@ -1,0 +1,52 @@
+{
+ "function": "stats.trade_totals",
+ "description": "",
+ "cases": [
+  {
+   "name": "mixed with an unknown profit",
+   "input": [
+    10,
+    -4,
+    null,
+    0,
+    6
+   ],
+   "expected": {
+    "count": 4,
+    "unknown": 1,
+    "sum": 12,
+    "wins": 2,
+    "losses": 1,
+    "winrate": 0.5,
+    "profit_factor": 4,
+    "worst_abs": -4,
+    "best_abs": 10
+   }
+  },
+  {
+   "name": "no loss: profit factor undefined",
+   "input": [
+    1,
+    2
+   ],
+   "expected": {
+    "count": 2,
+    "winrate": 1,
+    "profit_factor": null,
+    "worst_abs": 1
+   }
+  },
+  {
+   "name": "empty",
+   "input": [],
+   "expected": {
+    "count": 0,
+    "unknown": 0,
+    "sum": 0,
+    "winrate": null,
+    "profit_factor": null,
+    "worst_abs": null
+   }
+  }
+ ]
+}

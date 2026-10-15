@@ -1,0 +1,133 @@
+{
+ "function": "hip3.parse_pair",
+ "description": "HIP-3 coin naming: both spellings map to one net-exposure key.",
+ "cases": [
+  {
+   "name": "crypto",
+   "input": {
+    "pair": "BTC/USDC:USDC"
+   },
+   "expected": {
+    "market": "crypto",
+    "dex": null,
+    "symbol": "BTC",
+    "coin_key": "BTC"
+   }
+  },
+  {
+   "name": "crypto keeps its case",
+   "input": {
+    "pair": "kPEPE/USDC:USDC"
+   },
+   "expected": {
+    "market": "crypto",
+    "coin_key": "kPEPE"
+   }
+  },
+  {
+   "name": "freqtrade spelling of a stock",
+   "input": {
+    "pair": "XYZ-NVDA/USDC:USDC"
+   },
+   "expected": {
+    "market": "xyz_stocks",
+    "dex": "xyz",
+    "symbol": "NVDA",
+    "coin_key": "xyz:NVDA"
+   }
+  },
+  {
+   "name": "Hyperliquid spelling of the same stock",
+   "input": {
+    "pair": "xyz:NVDA/USDC:USDC"
+   },
+   "expected": {
+    "market": "xyz_stocks",
+    "dex": "xyz",
+    "symbol": "NVDA",
+    "coin_key": "xyz:NVDA"
+   }
+  },
+  {
+   "name": "index",
+   "input": {
+    "pair": "XYZ-SP500/USDC:USDC"
+   },
+   "expected": {
+    "market": "xyz_indices",
+    "coin_key": "xyz:SP500"
+   }
+  },
+  {
+   "name": "commodity",
+   "input": {
+    "pair": "xyz:GOLD"
+   },
+   "expected": {
+    "market": "xyz_commodities",
+    "coin_key": "xyz:GOLD"
+   }
+  },
+  {
+   "name": "unknown xyz symbols default to stocks",
+   "input": {
+    "pair": "XYZ-UNKNOWNTHING/USDC:USDC"
+   },
+   "expected": {
+    "market": "xyz_stocks"
+   }
+  },
+  {
+   "name": "another dex",
+   "input": {
+    "pair": "flx:TSLA/USDC:USDC"
+   },
+   "expected": {
+    "market": "hip3_other",
+    "dex": "flx",
+    "coin_key": "flx:TSLA"
+   }
+  },
+  {
+   "name": "dashed spelling needs a declared dex",
+   "input": {
+    "pair": "FLX-TSLA/USDC:USDC"
+   },
+   "expected": {
+    "market": "crypto"
+   }
+  },
+  {
+   "name": "dashed spelling with a declared dex",
+   "input": {
+    "pair": "FLX-TSLA/USDC:USDC",
+    "dexes": [
+     "xyz",
+     "flx"
+    ]
+   },
+   "expected": {
+    "market": "hip3_other",
+    "coin_key": "flx:TSLA"
+   }
+  },
+  {
+   "name": "empty symbol after the dex",
+   "input": {
+    "pair": "XYZ-/USDC:USDC"
+   },
+   "expected": {
+    "market": "crypto"
+   }
+  },
+  {
+   "name": "empty string",
+   "input": {
+    "pair": ""
+   },
+   "expected": {
+    "market": "crypto"
+   }
+  }
+ ]
+}

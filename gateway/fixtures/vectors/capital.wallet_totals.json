@@ -1,0 +1,240 @@
+{
+ "function": "capital.wallet_totals",
+ "description": "",
+ "cases": [
+  {
+   "name": "24 bots on one wallet count once",
+   "input": [
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1000,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1001,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1002,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1003,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1004,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1005,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1006,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1007,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1008,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1009,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1010,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1011,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1012,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1013,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1014,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1015,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1016,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1017,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1018,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1019,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1020,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1021,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1022,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 10000,
+     "as_of_ms": 1023,
+     "stale": false
+    }
+   ],
+   "expected": {
+    "total": 10000,
+    "wallets": 1,
+    "excluded": [],
+    "conflicting": []
+   }
+  },
+  {
+   "name": "stale reports are excluded, the latest fresh wins",
+   "input": [
+    {
+     "wallet_id": "w1",
+     "total": 100,
+     "as_of_ms": 10,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 100.002,
+     "as_of_ms": 20,
+     "stale": false
+    },
+    {
+     "wallet_id": "w2",
+     "total": 500,
+     "as_of_ms": 5,
+     "stale": true
+    },
+    {
+     "wallet_id": "w3",
+     "total": 40,
+     "as_of_ms": 5,
+     "stale": false
+    }
+   ],
+   "expected": {
+    "total": 140.002,
+    "wallets": 2,
+    "excluded": [
+     "w2"
+    ],
+    "conflicting": []
+   }
+  },
+  {
+   "name": "disagreeing fresh reports are flagged",
+   "input": [
+    {
+     "wallet_id": "w1",
+     "total": 100,
+     "as_of_ms": 10,
+     "stale": false
+    },
+    {
+     "wallet_id": "w1",
+     "total": 120,
+     "as_of_ms": 20,
+     "stale": false
+    }
+   ],
+   "expected": {
+    "total": 120,
+    "wallets": 1,
+    "conflicting": [
+     "w1"
+    ]
+   }
+  },
+  {
+   "name": "missing totals",
+   "input": [
+    {
+     "wallet_id": "w1",
+     "total": null,
+     "as_of_ms": 1,
+     "stale": false
+    }
+   ],
+   "expected": {
+    "total": 0,
+    "wallets": 0,
+    "excluded": [
+     "w1"
+    ]
+   }
+  }
+ ]
+}

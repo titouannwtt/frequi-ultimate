@@ -1,0 +1,95 @@
+{
+ "function": "duration.percentile_rank",
+ "description": "Rank of a duration among the bot's closed durations (the pNN label).",
+ "cases": [
+  {
+   "name": "median",
+   "input": {
+    "closed_ms": [
+     3600000,
+     7200000,
+     10800000,
+     14400000
+    ],
+    "ms": 7200000
+   },
+   "expected": 50
+  },
+  {
+   "name": "longest",
+   "input": {
+    "closed_ms": [
+     3600000,
+     7200000,
+     10800000,
+     14400000
+    ],
+    "ms": 14400000
+   },
+   "expected": 100
+  },
+  {
+   "name": "shorter than all",
+   "input": {
+    "closed_ms": [
+     3600000,
+     7200000,
+     10800000,
+     14400000
+    ],
+    "ms": 1800000
+   },
+   "expected": 0
+  },
+  {
+   "name": "longer than all",
+   "input": {
+    "closed_ms": [
+     3600000,
+     7200000,
+     10800000,
+     14400000
+    ],
+    "ms": 360000000
+   },
+   "expected": 100
+  },
+  {
+   "name": "two samples are not enough",
+   "input": {
+    "closed_ms": [
+     3600000,
+     7200000
+    ],
+    "ms": 3600000
+   },
+   "expected": null
+  },
+  {
+   "name": "zero durations are ignored, rounding half up",
+   "input": {
+    "closed_ms": [
+     0,
+     3600000,
+     7200000,
+     10800000
+    ],
+    "ms": 7200000
+   },
+   "expected": 67
+  },
+  {
+   "name": "only zero durations",
+   "input": {
+    "closed_ms": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "ms": 3600000
+   },
+   "expected": null
+  }
+ ]
+}

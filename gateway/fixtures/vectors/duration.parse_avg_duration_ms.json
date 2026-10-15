@@ -1,0 +1,46 @@
+{
+ "function": "duration.parse_avg_duration_ms",
+ "description": "freqtrade avg_duration strings (direct mode only).",
+ "cases": [
+  {
+   "name": "time only",
+   "input": "3:04:05",
+   "expected": 11045000
+  },
+  {
+   "name": "days and time",
+   "input": "2 days, 3:04:05",
+   "expected": 183845000
+  },
+  {
+   "name": "fractional seconds",
+   "input": "1 day, 0:00:10.5",
+   "expected": 86410500
+  },
+  {
+   "name": "days only",
+   "input": "1 day",
+   "expected": 86400000
+  },
+  {
+   "name": "zero",
+   "input": "0:00:00",
+   "expected": null
+  },
+  {
+   "name": "empty",
+   "input": "",
+   "expected": null
+  },
+  {
+   "name": "text",
+   "input": "soon",
+   "expected": null
+  },
+  {
+   "name": "incomplete time",
+   "input": "1:2",
+   "expected": null
+  }
+ ]
+}
