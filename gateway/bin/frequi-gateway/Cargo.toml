@@ -12,6 +12,10 @@ fg-core = { workspace = true }
 fg-engine = { workspace = true }
 fg-server = { workspace = true }
 fg-sources = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true }
+futures-util = { workspace = true }
+tokio = { workspace = true }
 
 [lints]
 workspace = true

@@ -30,7 +30,7 @@ axum = { version = "=0.8.9", features = ["ws", "macros"] }
 tower-http = { version = "=0.7.1", features = ["cors", "compression-gzip", "compression-br", "timeout", "limit", "trace", "set-header"] }
 reqwest = { version = "=0.13.5", default-features = false, features = ["rustls", "json", "gzip"] }
 tokio-tungstenite = { version = "=0.30.0", features = ["rustls-tls-webpki-roots"] }
-rusqlite = { version = "=0.40.2", features = ["bundled"] }
+rusqlite = { version = "=0.40.2", features = ["bundled", "hooks"] }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = "=1.0.154"
 figment = { version = "=0.10.19", features = ["toml", "env"] }
@@ -50,6 +50,8 @@ clap = { version = "=4.6.7", features = ["derive"] }
 thiserror = "=2.0.21"
 anyhow = "=1.0.104"
 mimalloc = "=0.1.52"
+futures-util = { version = "=0.3.34", default-features = false, features = ["sink", "std"] }
+tempfile = "=3.27.0"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
