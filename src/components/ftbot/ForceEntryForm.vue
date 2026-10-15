@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { resolveTargetBot } from '@/utils/targetBot';
 import type { ForceEnterPayload } from '@/types';
 import { OrderSides } from '@/types';
 import { useI18n } from 'vue-i18n';
@@ -7,15 +8,25 @@ const props = withDefaults(
   defineProps<{
     pair?: string;
     positionIncrease?: boolean;
+    /** Bot receiving the order. Defaults to the active bot; multi-bot views must pass it. */
+    botId?: string;
+    /** Side of the position being increased, so the order never flips it. */
+    side?: OrderSides;
   }>(),
   {
     pair: '',
     positionIncrease: false,
+    botId: undefined,
+    side: undefined,
   },
 );
 const model = defineModel<boolean>();
 const { t } = useI18n();
 const botStore = useBotStore();
+const targetBot = computed(() =>
+  resolveTargetBot(botStore.botStores, props.botId, botStore.activeBot),
+);
+const submitting = ref(false);
 
 const form = ref<HTMLFormElement>();
 const selectedPair = ref('');
@@ -44,9 +55,10 @@ const checkFormValidity = () => {
 
 const handleSubmit = async () => {
   // Exit when the form isn't valid
-  if (!checkFormValidity()) {
+  if (!checkFormValidity() || submitting.value) {
     return;
   }
+  submitting.value = true;
 
   // call forceentry
   const payload: ForceEnterPayload = { pair: selectedPair.value };
@@ -59,17 +71,21 @@ const handleSubmit = async () => {
   if (stakeAmount.value) {
     payload.stakeamount = stakeAmount.value;
   }
-  if (botStore.activeBot.botFeatures.forceEnterShort && botStore.activeBot.shortAllowed) {
+  if (targetBot.value.botFeatures.forceEnterShort && targetBot.value.shortAllowed) {
     payload.side = orderSide.value;
   }
-  if (botStore.activeBot.botFeatures.forceEntryTag && enterTag.value) {
+  if (targetBot.value.botFeatures.forceEntryTag && enterTag.value) {
     payload.entry_tag = enterTag.value;
   }
 
   if (leverage.value) {
     payload.leverage = leverage.value;
   }
-  botStore.activeBot.forceentry(payload);
+  try {
+    await targetBot.value.forceentry(payload);
+  } finally {
+    submitting.value = false;
+  }
   await nextTick();
   model.value = false;
 };
@@ -78,11 +94,14 @@ const resetForm = () => {
   selectedPair.value = props.pair;
   price.value = undefined;
   stakeAmount.value = undefined;
+  if (props.side) {
+    orderSide.value = props.side;
+  }
   ordertype.value =
-    botStore.activeBot.botState?.order_types?.forcebuy ||
-    botStore.activeBot.botState?.order_types?.force_entry ||
-    botStore.activeBot.botState?.order_types?.buy ||
-    botStore.activeBot.botState?.order_types?.entry ||
+    targetBot.value.botState?.order_types?.forcebuy ||
+    targetBot.value.botState?.order_types?.force_entry ||
+    targetBot.value.botState?.order_types?.buy ||
+    targetBot.value.botState?.order_types?.entry ||
     'limit';
 };
 
@@ -103,7 +122,7 @@ const handleEntry = () => {
     @hide="resetForm"
   >
     <form ref="form" class="space-y-4 md:min-w-[32rem]" @submit.prevent="handleSubmit">
-      <div v-if="botStore.activeBot.botFeatures.forceEnterShort && botStore.activeBot.shortAllowed">
+      <div v-if="targetBot.botFeatures.forceEnterShort && targetBot.shortAllowed">
         <label class="block font-medium mb-1">{{ t('forceEntry.orderDirection') }}</label>
         <SelectButton
           v-model="orderSide"
@@ -145,20 +164,20 @@ const handleEntry = () => {
 
       <div>
         <label for="stake-input" class="block font-medium mb-1"
-          >* {{ t('forceEntry.stakeAmount', { stake: botStore.activeBot.stakeCurrency }) }}</label
+          >* {{ t('forceEntry.stakeAmount', { stake: targetBot.stakeCurrency }) }}</label
         >
         <InputNumber
           id="stake-input"
           v-model="stakeAmount"
           show-buttons
           :min="0"
-          :step="botStore.activeBot.stakeCurrency === 'USDT' ? 10 : 1"
+          :step="targetBot.stakeCurrency === 'USDT' ? 10 : 1"
           :max-fraction-digits="5"
           fluid
         />
       </div>
 
-      <div v-if="botStore.activeBot.botFeatures.forceEnterShort && botStore.activeBot.shortAllowed">
+      <div v-if="targetBot.botFeatures.forceEnterShort && targetBot.shortAllowed">
         <label for="leverage-input" class="block font-medium mb-1">{{
           t('forceEntry.leverage')
         }}</label>
@@ -186,7 +205,7 @@ const handleEntry = () => {
         />
       </div>
 
-      <div v-if="botStore.activeBot.botFeatures.forceEntryTag">
+      <div v-if="targetBot.botFeatures.forceEntryTag">
         <label for="enterTag-input" class="block text-sm font-medium mb-1"
           >* {{ t('forceEntry.entryTag') }}</label
         >
