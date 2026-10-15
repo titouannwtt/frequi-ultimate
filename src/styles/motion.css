@@ -49,6 +49,28 @@
   }
 }
 
+/* Spinners (busy buttons, connecting pill) and the pulse of a starting bot */
+@keyframes fq-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fq-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes fq-slide-down {
+  from {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
 /* One-shot beat of the connection dot on each delta */
 @keyframes fq-beat {
   from {

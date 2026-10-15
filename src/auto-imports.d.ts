@@ -100,6 +100,7 @@ declare global {
   const deepGet: typeof import('./utils/configEditorObject').deepGet
   const deepMerge: typeof import('./utils/deepMerge').deepMerge
   const deepSet: typeof import('./utils/configEditorObject').deepSet
+  const defaultTtl: typeof import('./composables/useToaster').defaultTtl
   const defineAsyncComponent: typeof import('vue').defineAsyncComponent
   const defineComponent: typeof import('vue').defineComponent
   const defineStore: typeof import('pinia').defineStore
@@ -392,6 +393,7 @@ declare global {
   const useIdle: typeof import('@vueuse/core').useIdle
   const useImage: typeof import('@vueuse/core').useImage
   const useInfiniteScroll: typeof import('@vueuse/core').useInfiniteScroll
+  const useInflightLock: typeof import('./composables/useInflightLock').useInflightLock
   const useInitialBotLoading: typeof import('./composables/useWidgetState').useInitialBotLoading
   const useIntersectionObserver: typeof import('@vueuse/core').useIntersectionObserver
   const useInterval: typeof import('@vueuse/core').useInterval
@@ -494,6 +496,7 @@ declare global {
   const useToNumber: typeof import('@vueuse/core').useToNumber
   const useToString: typeof import('@vueuse/core').useToString
   const useToast: typeof import('./composables/useToast').useToast
+  const useToaster: typeof import('./composables/useToaster').useToaster
   const useToggle: typeof import('@vueuse/core').useToggle
   const useTradeColumnVisibility: typeof import('./composables/tradeColumns').useTradeColumnVisibility
   const useTradePopover: typeof import('./composables/useTradePopover').useTradePopover
@@ -571,6 +574,9 @@ declare global {
   // @ts-ignore
   export type { RegimeTimelineEntry } from './composables/useRegimeOverlay'
   import('./composables/useRegimeOverlay')
+  // @ts-ignore
+  export type { ToastItem, ToastInput } from './composables/useToaster'
+  import('./composables/useToaster')
   // @ts-ignore
   export type { PopoverName } from './composables/useTradePopover'
   import('./composables/useTradePopover')
@@ -738,6 +744,7 @@ declare module 'vue' {
     readonly deepGet: UnwrapRef<typeof import('./utils/configEditorObject')['deepGet']>
     readonly deepMerge: UnwrapRef<typeof import('./utils/deepMerge')['deepMerge']>
     readonly deepSet: UnwrapRef<typeof import('./utils/configEditorObject')['deepSet']>
+    readonly defaultTtl: UnwrapRef<typeof import('./composables/useToaster')['defaultTtl']>
     readonly defineAsyncComponent: UnwrapRef<typeof import('vue')['defineAsyncComponent']>
     readonly defineComponent: UnwrapRef<typeof import('vue')['defineComponent']>
     readonly defineStore: UnwrapRef<typeof import('pinia')['defineStore']>
@@ -1027,6 +1034,7 @@ declare module 'vue' {
     readonly useIdle: UnwrapRef<typeof import('@vueuse/core')['useIdle']>
     readonly useImage: UnwrapRef<typeof import('@vueuse/core')['useImage']>
     readonly useInfiniteScroll: UnwrapRef<typeof import('@vueuse/core')['useInfiniteScroll']>
+    readonly useInflightLock: UnwrapRef<typeof import('./composables/useInflightLock')['useInflightLock']>
     readonly useInitialBotLoading: UnwrapRef<typeof import('./composables/useWidgetState')['useInitialBotLoading']>
     readonly useIntersectionObserver: UnwrapRef<typeof import('@vueuse/core')['useIntersectionObserver']>
     readonly useInterval: UnwrapRef<typeof import('@vueuse/core')['useInterval']>
@@ -1129,6 +1137,7 @@ declare module 'vue' {
     readonly useToNumber: UnwrapRef<typeof import('@vueuse/core')['useToNumber']>
     readonly useToString: UnwrapRef<typeof import('@vueuse/core')['useToString']>
     readonly useToast: UnwrapRef<typeof import('./composables/useToast')['useToast']>
+    readonly useToaster: UnwrapRef<typeof import('./composables/useToaster')['useToaster']>
     readonly useToggle: UnwrapRef<typeof import('@vueuse/core')['useToggle']>
     readonly useTradeColumnVisibility: UnwrapRef<typeof import('./composables/tradeColumns')['useTradeColumnVisibility']>
     readonly useTradePopover: UnwrapRef<typeof import('./composables/useTradePopover')['useTradePopover']>

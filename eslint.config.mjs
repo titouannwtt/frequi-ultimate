@@ -67,4 +67,11 @@ export default defineConfigWithVueTs(
       ],
     },
   },
+  {
+    // The design system primitives follow the names of docs/redesign/02-design.md section 5.1
+    files: ['src/components/ds/**/*.vue'],
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  },
 );
