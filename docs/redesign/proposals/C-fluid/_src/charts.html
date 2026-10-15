@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090B0E">
+<title>Graphiques · FreqUI Ultimate (proposition C « Pouls »)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+/*@CSS*/
+
+/* ================= Graphiques ================= */
+.clayout { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1024px) { .clayout { grid-template-columns: 290px minmax(0, 1fr); gap: var(--s-4); align-items: start; } .nav-pairs { position: sticky; top: 16px; } }
+@media (min-width: 1920px) { .clayout { grid-template-columns: 320px minmax(0, 1fr) 320px; } }
+.nav-pairs { display: none; }
+@media (min-width: 1024px) { .nav-pairs { display: block; } .pchips { display: none !important; } }
+.pchips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(var(--s-4) * -1) var(--s-3); padding: 0 var(--s-4); }
+.pchips::-webkit-scrollbar { display: none; }
+.pchip { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface); min-width: 108px; cursor: pointer; text-align: left; color: var(--text); }
+.pchip.on { border-color: var(--text); }
+.pchip b { font-size: 14px; }
+.pchip span { font-size: 12px; }
+.pl { list-style: none; margin: 0; padding: 0; max-height: calc(100dvh - 240px); overflow: auto; }
+.pl li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; padding: 9px 14px; cursor: pointer; border-left: 2px solid transparent; transition: background-color var(--d-fast); }
+.pl li:hover { background: var(--surface-2); }
+.pl li.on { background: var(--surface-2); border-left-color: var(--text); }
+.pl .nm { font-weight: 600; font-size: 13.5px; display: flex; gap: 6px; align-items: center; }
+.pl .sub { font-size: 11.5px; color: var(--text-3); }
+.pl .pv { text-align: right; font-size: 13px; font-weight: 600; }
+.pl .grp { padding: 10px 14px 4px; font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .07em; cursor: default; border: 0; }
+.pl .grp:hover { background: none; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.toolbar .sp { flex: 1; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 14px; font-size: 12px; color: var(--text-2); border-bottom: 1px solid var(--line); }
+.legend i { display: inline-block; width: 10px; height: 2px; vertical-align: middle; margin-right: 5px; }
+#chart { height: 62dvh; min-height: 380px; }
+@media (min-width: 1024px) { #chart { height: calc(100dvh - 250px); min-height: 520px; } }
+.ctx { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-2); }
+.rightcol { display: none; }
+@media (min-width: 1920px) { .rightcol { display: flex; flex-direction: column; gap: var(--s-4); } }
+@media (max-width: 479px) { .hide-mob { display: none; } }
+@media (min-width: 768px) { .hide-desk { display: none; } }
+</style>
+</head>
+<body>
+<div class="compact" aria-hidden="true"><span class="t">Graphiques</span><span class="sp"></span><span class="conn-slot"></span></div>
+<main class="main">
+  <header class="topbar" id="hero">
+    <div><h1>Graphiques</h1><div class="sub">ENA/USDC · 15m<span class="hide-mob"> · indicateurs calculés par le bot choisi</span></div></div>
+    <span class="sp"></span><span class="conn-slot"></span>
+  </header>
+
+  <div class="pchips" id="pchips"></div>
+
+  <div class="clayout">
+    <aside class="card nav-pairs">
+      <div style="padding:12px 12px 8px"><label class="btn" style="width:100%;justify-content:flex-start;color:var(--text-3);font-weight:400"><i data-lucide="search" class="i16"></i>Paire ou bot</label></div>
+      <div style="padding:0 12px 8px"><div class="seg" id="navSeg" style="display:flex"><button class="on" style="flex:1">Positions</button><button style="flex:1">Signaux</button><button style="flex:1">Toutes</button></div></div>
+      <ul class="pl" id="pl"></ul>
+    </aside>
+
+    <section class="card" style="min-width:0">
+      <div class="toolbar">
+        <button class="btn sm"><b id="tPair">ENA/USDC</b><i data-lucide="chevron-down" class="i14"></i></button>
+        <span class="ctx hide-mob">contexte <button class="chip" style="height:28px"><span class="sdot" style="width:6px;height:6px"></span>dynv1_short</button></span>
+        <span class="sp"></span>
+        <div class="seg" id="tfSeg"><button>5m</button><button class="on">15m</button><button>1h</button><button>4h</button><button class="hide-mob">1j</button></div>
+        <button class="btn sm" id="indBtn"><i data-lucide="chart-spline" class="i16"></i><span class="hide-mob">Indicateurs</span></button>
+        <button class="btn sm icon ghost" title="Mesurer (Maj + glisser, ou deux doigts)"><i data-lucide="ruler" class="i16"></i></button>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div id="chart"></div>
+    </section>
+
+    <aside class="rightcol">
+      <div class="card"><div class="card-h"><h2>Position sur ENA</h2></div><div class="card-b" style="font-size:13px">
+        <div class="kv" style="display:flex;justify-content:space-between;padding:6px 0"><span class="muted">dynv1_short</span><b class="num down">−24,10</b></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span class="muted">DCA</span><b class="num">4/5</b></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span class="muted">Prix moyen</span><b class="num">0,3064</b></div>
+        <a class="btn" style="width:100%;margin-top:8px" href="bot-detail.html">Ouvrir la position</a></div></div>
+      <div class="card"><div class="card-h"><h2>Autres bots sur ENA</h2></div><div class="card-b faint" style="font-size:13px">cci_ao_short : sortie refusée 3 fois (confirm_trade_exit)</div></div>
+    </aside>
+  </div>
+</main>
+
+<div class="sheet" id="indSheet" role="dialog" aria-label="Indicateurs">
+  <div class="grab"></div>
+  <div class="sh-h"><b style="font-size:17px;flex:1">Indicateurs</b><button class="btn icon ghost" data-close><i data-lucide="x"></i></button></div>
+  <div class="sh-b">
+    <div class="label" style="margin-bottom:8px">Préréglages (importés de l'ancienne interface)</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><button class="chip on">DCA mean-rev</button><button class="chip">Bollinger + RSI</button><button class="chip">Volume seul</button><button class="chip">+ Nouveau</button></div>
+    <div class="card"><ul class="list">
+      <li class="row"><span style="width:12px;height:3px;background:#5AA9FF;border-radius:2px"></span><span style="flex:1">ema_50</span><span class="faint" style="font-size:12px">graphique principal</span></li>
+      <li class="row"><span style="width:12px;height:3px;background:#A98BFF;border-radius:2px"></span><span style="flex:1">bb_upper / bb_lower</span><span class="faint" style="font-size:12px">bande</span></li>
+      <li class="row"><span style="width:12px;height:3px;background:#F5B544;border-radius:2px"></span><span style="flex:1">rsi</span><span class="faint" style="font-size:12px">sous-graphique</span></li>
+      <li class="row"><span style="width:12px;height:3px;background:var(--text-3);border-radius:2px"></span><span style="flex:1">volume</span><span class="faint" style="font-size:12px">sous-graphique</span></li>
+    </ul></div>
+  </div>
+</div>
+
+<script>
+/*@CORE*/
+</script>
+<script>
+(() => {
+  const P = Pouls; const $ = (s) => document.querySelector(s);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  document.querySelectorAll('.conn-slot').forEach((s) => (s.outerHTML = P.connHtml()));
+  P.boot('charts', render);
+  P.seg($('#tfSeg')); P.seg($('#navSeg'));
+  $('#indBtn').onclick = () => P.openSheet('indSheet');
+
+  const open = P.positions.slice().sort((a, b) => a.latent - b.latent).slice(0, 9);
+  function render() {
+    $('#pchips').innerHTML = open.map((p, i) => `<button class="pchip ${i === 0 ? 'on' : ''}"><b>${p.base}</b><span class="faint">${p.bot}</span><span class="num ${P.cls(p.latent)}">${P.fmt(p.latent, 2, true)}</span></button>`).join('');
+    $('#pl').innerHTML = '<li class="grp">Positions ouvertes · 46</li>' + open.map((p, i) => `<li class="${i === 0 ? 'on' : ''}"><span class="nm">${p.base}<span class="badge ${p.short ? 'short' : 'long'}">${p.short ? 'S' : 'L'}</span></span><span class="pv num ${P.cls(p.latent)}">${P.fmt(p.latent, 2, true)}</span><span class="sub">${p.bot} · DCA ${p.dca}/${p.dcaMax}</span><span class="sub num" style="text-align:right">${P.pct(p.pct)}</span></li>`).join('') +
+      '<li class="grp">Signaux récents</li>' + [['TAO', '3 bots', 'entrée short 18:30'], ['SUI', 'rsi_dip_long', 'entrée long 18:15']].map(([a, b, c]) => `<li><span class="nm">${a}</span><span class="pv faint">${P.ic('zap', 'i14')}</span><span class="sub">${b} · ${c}</span><span></span></li>`).join('') +
+      '<li class="grp">Verrous</li><li><span class="nm">WIF</span><span class="pv faint">jusqu’à 20:15</span><span class="sub">dynv1_short · cooldown</span><span></span></li>';
+    draw(); P.icons();
+  }
+  function draw() {
+    const c = echarts.init($('#chart')); addEventListener('resize', () => c.resize());
+    const n = 160, d = [], x = [], ema = [], up = [], lo = [], rsi = [], vol = [];
+    let v = .2985, e = v;
+    for (let i = 0; i < n; i++) {
+      const o = v; v = v + (.3315 - v) / (n - i) * 1.05 + (P.rnd() - .5) * v * .006 + Math.sin(i / 9) * v * .0011; if (i === n - 1) v = .3315;
+      d.push([o, v, Math.min(o, v) * (1 - P.rnd() * .003), Math.max(o, v) * (1 + P.rnd() * .003)]);
+      e = e + (v - e) * .06; ema.push(+e.toFixed(5)); up.push(+(e * 1.018).toFixed(5)); lo.push(+(e * .982).toFixed(5));
+      rsi.push(+(50 + (v - e) / e * 900 + (P.rnd() - .5) * 8).toFixed(1)); vol.push(Math.round(200 + P.rnd() * 800));
+      const m = 15 * (i - n + 1) + 18 * 60 + 45; x.push(`${String(Math.floor(((m % 1440) + 1440) % 1440 / 60)).padStart(2, '0')}:${String(((m % 60) + 60) % 60).padStart(2, '0')}`);
+    }
+    $('#legend').innerHTML = `<span><b class="num">ENA</b> O 0,3301 H 0,3322 L 0,3297 C <b class="num down">0,3315</b></span><span><i style="background:#5AA9FF"></i>ema_50 <b class="num">${P.fmt(ema[n - 1], 4)}</b></span><span><i style="background:#A98BFF"></i>bb</span><span><i style="background:#F5B544"></i>rsi <b class="num">${P.fmt(rsi[n - 1], 1)}</b></span>`;
+    const ax = { axisLabel: { color: css('--text-3'), fontSize: 10, fontFamily: 'Geist Mono' }, splitLine: { lineStyle: { color: css('--line') } } };
+    const paint = () => c.setOption({
+      animation: false,
+      axisPointer: { link: [{ xAxisIndex: 'all' }], label: { backgroundColor: css('--surface-3') } },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'cross' }, show: true, showContent: false },
+      grid: [{ left: 8, right: 58, top: 10, height: '62%' }, { left: 8, right: 58, top: '76%', height: '9%' }, { left: 8, right: 58, top: '88%', bottom: 22 }],
+      xAxis: [0, 1, 2].map((i) => ({ type: 'category', gridIndex: i, data: x, show: i === 2, axisLabel: { color: css('--text-3'), fontSize: 10 }, axisLine: { lineStyle: { color: css('--line-strong') } }, axisTick: { show: false } })),
+      yAxis: [{ scale: true, position: 'right', ...ax, axisLabel: { ...ax.axisLabel, formatter: (v) => P.fmt(v, 4) } }, { gridIndex: 1, position: 'right', ...ax, splitNumber: 1, axisLabel: { show: false } }, { gridIndex: 2, position: 'right', min: 0, max: 100, splitNumber: 2, ...ax }],
+      dataZoom: [{ type: 'inside', xAxisIndex: [0, 1, 2], start: 35, end: 100 }],
+      series: [
+        { type: 'candlestick', data: d, itemStyle: { color: css('--profit'), color0: css('--loss'), borderColor: css('--profit'), borderColor0: css('--loss') },
+          markLine: { silent: true, symbol: 'none', data: [{ yAxis: .3064, lineStyle: { color: css('--info'), type: 'dashed' }, label: { formatter: 'Moyen dynv1_short', position: 'insideEndTop', color: css('--info'), fontSize: 10.5 } }, { yAxis: .3324, lineStyle: { color: css('--warn'), type: 'dashed' }, label: { formatter: 'DCA 5', position: 'insideEndTop', color: css('--warn'), fontSize: 10.5 } }] } },
+        { type: 'line', data: ema, symbol: 'none', lineStyle: { width: 1.4, color: '#5AA9FF' } },
+        { type: 'line', data: up, symbol: 'none', lineStyle: { width: 1, color: '#A98BFF', opacity: .7 } },
+        { type: 'line', data: lo, symbol: 'none', lineStyle: { width: 1, color: '#A98BFF', opacity: .7 } },
+        { type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: vol, itemStyle: { color: css('--text-3'), opacity: .5 } },
+        { type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: rsi, symbol: 'none', lineStyle: { width: 1.2, color: '#F5B544' }, markLine: { silent: true, symbol: 'none', label: { show: false }, lineStyle: { color: css('--line-strong'), type: [3, 3] }, data: [{ yAxis: 30 }, { yAxis: 70 }] } },
+      ],
+    }, true);
+    paint(); document.addEventListener('themechange', paint);
+  }
+})();
+</script>
+</body>
+</html>

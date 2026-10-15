@@ -1,0 +1,1446 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+
+<title>FreqUI Ultimate 2 · maquettes finales</title>
+<style>
+/* =====================================================================
+   FreqUI Ultimate 2 : jetons et composants partagés (maquettes finales)
+   Source unique : mockups/_src/base.css, injectée par build.py dans
+   chaque page. Ne pas éditer les .html générés.
+   ===================================================================== */
+
+/* ---------- 1. Jetons de couleur ---------- */
+:root, [data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0c0f;            /* fond application */
+  --bg-1: #0f1216;          /* panneau */
+  --bg-2: #151a1f;          /* en-tête de panneau, survol */
+  --bg-3: #1c2228;          /* contrôle actif, rail de jauge */
+  --line: #1f262d;          /* filet */
+  --line-2: #2a333c;        /* filet fort, bordure de contrôle */
+  --fg: #e3e8ee;            /* texte 15,2:1 */
+  --fg-2: #a3adb9;          /* secondaire 8,3:1 */
+  --fg-3: #8590a0;          /* libellé 5,8:1 (AA) */
+  --fg-4: #5b6571;          /* désactivé uniquement */
+  --accent: #5b95ff;        /* focus, sélection, lien, moyenne d'entrée */
+  --profit: #2fca88;        /* gain (texte) */
+  --loss: #ff6b80;          /* perte (texte) */
+  --crit: #ff6a3d;          /* alerte critique, distinct de --loss */
+  --warn: #f2b33d;          /* avertissement, périmé */
+  --info: #4cbbe9;          /* information, démarrage */
+  --live: #b98aff;          /* argent réel UNIQUEMENT */
+  --dry: #8e9aa8;           /* dry-run */
+  --long: #86aed0;          /* sens long (acier), jamais vert */
+  --short: #cdab84;         /* sens short (sable), jamais rouge */
+  --accent-w: rgba(91,149,255,.14);
+  --profit-w: rgba(47,202,136,.13);
+  --loss-w: rgba(255,107,128,.13);
+  --crit-w: rgba(255,106,61,.14);
+  --warn-w: rgba(242,179,61,.13);
+  --info-w: rgba(76,187,233,.13);
+  --live-w: rgba(185,138,255,.14);
+  --dry-w: rgba(142,154,168,.12);
+  --stale-hatch: repeating-linear-gradient(135deg, rgba(242,179,61,.10) 0 4px, transparent 4px 8px);
+  --off-hatch: repeating-linear-gradient(135deg, rgba(142,154,168,.10) 0 4px, transparent 4px 8px);
+  --live-hatch: repeating-linear-gradient(135deg, rgba(185,138,255,.55) 0 6px, rgba(185,138,255,.15) 6px 12px);
+  --shadow-float: 0 12px 32px rgba(0,0,0,.55), 0 0 0 1px var(--line-2);
+  --scrim: rgba(3,5,8,.62);
+}
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3f5f8;
+  --bg-1: #ffffff;
+  --bg-2: #f6f8fa;
+  --bg-3: #eaeef3;
+  --line: #e2e7ed;
+  --line-2: #cfd6de;
+  --fg: #0f1720;            /* 18,1:1 */
+  --fg-2: #3f4a57;          /* 9,0:1 */
+  --fg-3: #5c6876;          /* 5,7:1 */
+  --fg-4: #8a95a2;
+  --accent: #1d5bd8;        /* 5,9:1 */
+  --profit: #047a4b;        /* 5,4:1 */
+  --loss: #c8233c;          /* 5,6:1 */
+  --crit: #c2410c;          /* 5,2:1 */
+  --warn: #8f5a0b;          /* 5,8:1 */
+  --info: #0a6e9e;          /* 5,6:1 */
+  --live: #6d28d9;          /* 7,1:1 */
+  --dry: #566476;
+  --long: #3d6d96;
+  --short: #8a6431;
+  --accent-w: rgba(29,91,216,.10);
+  --profit-w: rgba(4,122,75,.10);
+  --loss-w: rgba(200,35,60,.09);
+  --crit-w: rgba(194,65,12,.10);
+  --warn-w: rgba(143,90,11,.11);
+  --info-w: rgba(10,110,158,.10);
+  --live-w: rgba(109,40,217,.09);
+  --dry-w: rgba(86,100,118,.10);
+  --stale-hatch: repeating-linear-gradient(135deg, rgba(143,90,11,.12) 0 4px, transparent 4px 8px);
+  --off-hatch: repeating-linear-gradient(135deg, rgba(86,100,118,.10) 0 4px, transparent 4px 8px);
+  --live-hatch: repeating-linear-gradient(135deg, rgba(109,40,217,.55) 0 6px, rgba(109,40,217,.12) 6px 12px);
+  --shadow-float: 0 12px 32px rgba(15,23,32,.16), 0 0 0 1px var(--line-2);
+  --scrim: rgba(15,23,32,.38);
+}
+/* Palette daltonien (option Réglages) : gain bleu, perte orange */
+[data-cvd="1"][data-theme="dark"] { --profit: #5aa9ff; --loss: #ffa24a; --profit-w: rgba(90,169,255,.13); --loss-w: rgba(255,162,74,.13); }
+[data-cvd="1"][data-theme="light"] { --profit: #1559c0; --loss: #a2510a; --profit-w: rgba(21,89,192,.10); --loss-w: rgba(162,81,10,.10); }
+
+/* ---------- 2. Typo, espacement, rayons, mouvement ---------- */
+:root {
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-num: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --t-xs: 11px; --t-sm: 12px; --t-md: 13px; --t-lg: 15px; --t-xl: 20px; --t-2xl: 26px;
+  --s-1: 2px; --s0: 4px; --s1: 6px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 32px;
+  --r-1: 3px; --r-2: 5px; --r-3: 8px; --r-4: 14px; --r-pill: 999px;
+  --row: 30px; --ctl: 28px; --hdr: 44px; --gut: 6px;
+  --d-instant: 80ms; --d-fast: 140ms; --d-base: 200ms; --d-slow: 320ms; --d-flash: 900ms;
+  --e-out: cubic-bezier(.2,.8,.2,1); --e-inout: cubic-bezier(.65,0,.35,1); --e-spring: cubic-bezier(.34,1.4,.64,1);
+  --hold: 1000ms;           /* délai de sécurité : jamais réduit, même en mouvement réduit */
+}
+[data-density="comfortable"] { --row: 36px; --ctl: 32px; }
+@media (max-width: 599px), (pointer: coarse) {
+  :root { --t-xs: 12px; --t-sm: 13px; --t-md: 14px; --t-lg: 16px; --t-xl: 22px; --t-2xl: 28px; --row: 44px; --ctl: 40px; --hdr: 52px; --gut: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --d-instant: 1ms; --d-fast: 1ms; --d-base: 1ms; --d-slow: 1ms; --d-flash: 1ms; }
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* ---------- 3. Base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+html { overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: var(--t-md); line-height: 1.38;
+  -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01";
+  transition: background-color var(--d-base) var(--e-out), color var(--d-base) var(--e-out);
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums slashed-zero; letter-spacing: -.015em; }
+.up { color: var(--profit); } .down { color: var(--loss); } .flat { color: var(--fg-2); }
+.muted { color: var(--fg-3); } .dim { color: var(--fg-2); } .warn-t { color: var(--warn); } .crit-t { color: var(--crit); } .info-t { color: var(--info); } .live-t { color: var(--live); }
+.colh { font-size: var(--t-xs); text-transform: uppercase; letter-spacing: .05em; color: var(--fg-3); font-weight: 600; font-family: var(--font-ui); }
+.lab { font-size: var(--t-xs); color: var(--fg-3); font-weight: 500; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: var(--r-1); }
+::selection { background: var(--accent-w); }
+svg.lucide, .ico { width: 15px; height: 15px; stroke-width: 1.75; flex: none; vertical-align: -3px; }
+.ico-sm svg.lucide, svg.lucide.sm { width: 13px; height: 13px; }
+.ico-lg svg.lucide, svg.lucide.lg { width: 18px; height: 18px; }
+kbd { font: 600 10.5px var(--font-num); padding: 1px 4px; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 3px; color: var(--fg-3); background: var(--bg-2); }
+.only-m { display: none !important; }
+@media (max-width: 599px) { .hide-m { display: none !important; } .only-m { display: revert !important; } }
+@media (max-width: 1023px) { .hide-t { display: none !important; } }
+.grow { flex: 1; min-width: 0; }
+.row-f { display: flex; align-items: center; gap: var(--s2); min-width: 0; }
+.sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 var(--s1); }
+.nowrap { white-space: nowrap; }
+.scroll-x { overflow-x: auto; scrollbar-width: none; } .scroll-x::-webkit-scrollbar { display: none; }
+/* Signal de défilement horizontal : dégradé de bord posé par FQ.edgeFade (data-fade = l, r ou lr) */
+[data-fade="r"] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
+[data-fade="l"] { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent); }
+[data-fade="lr"] { -webkit-mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
+* { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+
+/* ---------- 4. Coquille ---------- */
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+@media (min-width: 1024px) {
+  .app.fit { height: 100vh; height: 100dvh; overflow: hidden; }
+  .app.fit > main { flex: 1; min-height: 0; }
+}
+.top {
+  height: var(--hdr); flex: none; display: flex; align-items: center; gap: var(--s3); padding: 0 var(--s3);
+  background: var(--bg-1); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 30;
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; color: var(--fg); }
+.brand:hover { text-decoration: none; }
+.brand-mark { width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center; background: var(--fg); color: var(--bg); }
+.brand-mark svg { width: 15px; height: 15px; stroke-width: 2.25; }
+.brand small { font-weight: 500; color: var(--fg-3); font-size: var(--t-xs); }
+.nav { display: flex; gap: 2px; height: 100%; }
+.nav a, .nav button { display: flex; align-items: center; gap: 6px; padding: 0 10px; color: var(--fg-2); font-weight: 500; position: relative; white-space: nowrap; background: none; border: 0; height: 100%; }
+.nav a:hover, .nav button:hover { color: var(--fg); text-decoration: none; }
+.nav a[aria-current="page"] { color: var(--fg); }
+.nav a[aria-current="page"]::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; background: var(--accent); border-radius: 2px 2px 0 0; }
+.nav .tools { color: var(--fg-3); }
+.cmd {
+  flex: 1; max-width: 380px; margin-left: auto; height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 8px;
+  background: var(--bg); border: 1px solid var(--line-2); border-radius: var(--r-2); color: var(--fg-3); cursor: text; font-size: var(--t-sm);
+}
+.cmd:hover { border-color: var(--fg-4); }
+.cmd span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-r { display: flex; align-items: center; gap: 4px; }
+.ibtn {
+  width: 32px; height: 32px; display: inline-grid; place-items: center; border-radius: var(--r-2); border: 1px solid transparent;
+  background: none; color: var(--fg-2); position: relative; transition: background var(--d-instant) var(--e-out), color var(--d-instant);
+}
+.ibtn:hover { background: var(--bg-2); color: var(--fg); }
+.ibtn .count { position: absolute; top: 1px; right: 0; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--crit); color: #fff; font: 700 11px/17px var(--font-num); text-align: center; }
+@media (max-width: 599px), (pointer: coarse) { .ibtn { width: 44px; height: 44px; } .brand { min-height: 44px; } }
+@media (max-width: 1023px) { .nav { display: none; } .cmd { display: none; } }
+
+/* Indicateur de connexion : 4 états + mode direct */
+.conn {
+  display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px 0 9px; border-radius: var(--r-pill);
+  border: 1px solid var(--line-2); background: var(--bg); font-size: var(--t-sm); white-space: nowrap; color: var(--fg-2);
+}
+.conn b { font-weight: 600; color: var(--fg); }
+.conn .d { width: 8px; height: 8px; border-radius: 50%; background: var(--profit); position: relative; flex: none; }
+.conn[data-state="live"] .d::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 1.5px solid var(--profit); opacity: 0; }
+.conn.beat .d::after { animation: beat 700ms var(--e-out); }
+@keyframes beat { from { opacity: .9; transform: scale(.6); } to { opacity: 0; transform: scale(1.6); } }
+.conn[data-state="connecting"] .d { background: transparent; border: 2px solid var(--fg-3); border-top-color: var(--fg); animation: spin 900ms linear infinite; }
+.conn[data-state="degraded"] { border-color: color-mix(in srgb, var(--warn) 55%, transparent); }
+.conn[data-state="degraded"] .d { background: var(--warn); }
+.conn[data-state="offline"] { border-color: color-mix(in srgb, var(--crit) 55%, transparent); }
+.conn[data-state="offline"] .d { background: var(--crit); }
+.conn[data-kind="direct"] .d { border-radius: 2px; }
+.conn[data-kind="direct"][data-state="live"] .d { background: var(--warn); }
+.conn .sync { display: none; width: 12px; height: 12px; border: 1.5px solid var(--fg-3); border-right-color: transparent; border-radius: 50%; animation: spin 800ms linear infinite; }
+.conn.resync .sync { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 599px) { .conn .lbl-l { display: none; } .conn[data-state="live"][data-kind="gateway"] .lbl { display: none; } .conn { padding: 0 8px; height: 30px; } }
+
+/* Bandeaux globaux */
+.banner {
+  display: flex; align-items: center; gap: var(--s2); padding: 7px var(--s3); font-size: var(--t-sm); border-bottom: 1px solid var(--line);
+  background: var(--bg-2); color: var(--fg-2); flex: none; animation: slideDown var(--d-slow) var(--e-out);
+}
+.banner b { color: var(--fg); font-weight: 600; }
+.banner .grow { min-width: 0; flex: 1 1 220px; }
+.banner.direct { background: var(--warn-w); border-bottom-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.banner.direct > svg { color: var(--warn); }
+.banner.offline { background: var(--crit-w); border-bottom-color: color-mix(in srgb, var(--crit) 35%, transparent); }
+.banner.offline > svg { color: var(--crit); }
+.banner.cache > svg, .banner.connecting > svg { color: var(--info); }
+.banner.degraded { background: var(--warn-w); }
+.banner.degraded > svg { color: var(--warn); }
+.banner.auth { background: var(--warn-w); }
+.banner .btn { margin-left: auto; }
+@keyframes slideDown { from { transform: translateY(-6px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-width: 599px) { .banner { align-items: flex-start; flex-wrap: wrap; } .banner .btn { margin-left: 23px; } }
+
+/* Barre d'état (desktop) */
+.status {
+  height: 26px; flex: none; display: flex; align-items: center; gap: 2px; padding: 0 var(--s2); border-top: 1px solid var(--line);
+  background: var(--bg-1); font-size: var(--t-xs); color: var(--fg-2); white-space: nowrap; overflow: hidden; position: relative; z-index: 25;
+}
+.status .si { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 7px; border-radius: var(--r-1); border: 0; background: none; color: inherit; font-size: inherit; }
+.status button.si:hover { background: var(--bg-2); color: var(--fg); }
+.status .si svg { width: 13px; height: 13px; }
+.status .si .num { color: var(--fg); }
+.status .sp { flex: 1; }
+.status .lvl-ok { color: var(--profit); } .status .lvl-deg { color: var(--warn); } .status .lvl-crit { color: var(--crit); }
+@media (max-width: 1023px) { .status { display: none; } }
+
+/* Barre d'onglets mobile : sticky en fin de document (pas d'artefact en capture pleine page) */
+.tabbar {
+  display: none; position: sticky; bottom: 0; z-index: 40; height: calc(58px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
+  background: color-mix(in srgb, var(--bg-1) 92%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line); grid-template-columns: repeat(5, 1fr); margin-top: auto;
+}
+.tabbar a, .tabbar button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--fg-3); font-size: 11px; font-weight: 500; background: none; border: 0; position: relative; }
+.tabbar a:hover { text-decoration: none; }
+.tabbar svg { width: 20px; height: 20px; }
+.tabbar [aria-current="page"] { color: var(--fg); }
+.tabbar [aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 30%; right: 30%; height: 2px; background: var(--accent); border-radius: 0 0 2px 2px; }
+@media (max-width: 1023px) { .tabbar { display: grid; } }
+
+/* ---------- 5. Panneaux ---------- */
+.pane { background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-2); display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; container-type: inline-size; }
+.ph { display: flex; align-items: center; gap: var(--s2); min-height: 38px; padding: 4px var(--s2) 4px var(--s3); border-bottom: 1px solid var(--line); flex: none; }
+.ph h2, .ph h3 { margin: 0; font-size: var(--t-md); font-weight: 600; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.ph h2 svg { color: var(--fg-3); }
+.ph .meta { color: var(--fg-3); font-size: var(--t-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph .tools { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+.pb { flex: 1; min-height: 0; overflow: auto; position: relative; }
+.pb.pad { padding: var(--s3); }
+.tabs { display: flex; gap: 2px; height: 100%; align-self: stretch; }
+.tabs button { background: none; border: 0; padding: 0 8px; color: var(--fg-3); font-weight: 600; font-size: var(--t-sm); position: relative; white-space: nowrap; }
+.tabs button:hover { color: var(--fg); }
+.tabs button[aria-selected="true"] { color: var(--fg); }
+.tabs button[aria-selected="true"]::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: -5px; height: 2px; background: var(--accent); border-radius: 2px; }
+.tabs .n { font-family: var(--font-num); font-weight: 500; color: var(--fg-3); margin-left: 3px; }
+.tabs .n.crit { color: var(--crit); }
+@media (max-width: 599px), (pointer: coarse) { .tabs button { min-height: 44px; } }
+@media (max-width: 599px) { .ph .meta { display: none; } }
+
+/* ---------- 6. Boutons et contrôles ---------- */
+.btn {
+  --h: var(--ctl); height: var(--h); display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px;
+  border-radius: var(--r-2); border: 1px solid var(--line-2); background: var(--bg-2); color: var(--fg); font-size: var(--t-sm); font-weight: 500;
+  white-space: nowrap; position: relative; overflow: hidden; user-select: none;
+  transition: background var(--d-instant) var(--e-out), border-color var(--d-instant), transform var(--d-instant), opacity var(--d-fast);
+}
+.btn:hover { background: var(--bg-3); border-color: var(--fg-4); }
+.btn:active { transform: translateY(1px); }
+.btn.xs { --h: 24px; padding: 0 7px; font-size: var(--t-xs); gap: 4px; }
+.btn.sm { --h: 26px; padding: 0 8px; }
+.btn.lg { --h: 38px; padding: 0 14px; font-size: var(--t-md); font-weight: 600; }
+.btn.ghost { background: none; border-color: transparent; color: var(--fg-2); }
+.btn.ghost:hover { background: var(--bg-2); color: var(--fg); }
+.btn.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.btn.primary:hover { opacity: .9; }
+.btn.danger-o { color: var(--loss); border-color: color-mix(in srgb, var(--loss) 45%, var(--line-2)); background: none; }
+.btn.danger-o:hover { background: var(--loss-w); }
+.btn.danger { background: var(--loss); border-color: var(--loss); color: #fff; }
+.btn.live-o { border-color: color-mix(in srgb, var(--live) 50%, var(--line-2)); }
+.btn[disabled], .btn[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+.btn[aria-busy="true"] { pointer-events: none; color: transparent !important; }
+.btn[aria-busy="true"]::after { content: ""; position: absolute; left: calc(50% - 7px); top: calc(50% - 7px); width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--fg-2); border-right-color: transparent; animation: spin 700ms linear infinite; }
+.btn svg { width: 14px; height: 14px; }
+.btn.icon { width: var(--h); padding: 0; }
+@media (max-width: 599px), (pointer: coarse) {
+  .btn.xs, .btn.sm { --h: 36px; padding: 0 10px; font-size: var(--t-sm); }
+  .btn.xs::before, .btn.sm::before, .ibtn::before { content: ""; position: absolute; inset: -4px; } /* zone d'appui 44 px */
+  .btn.lg { --h: 48px; }
+}
+.seg { display: inline-flex; padding: 2px; gap: 2px; border-radius: var(--r-2); background: var(--bg); border: 1px solid var(--line-2); flex: none; }
+.seg button { height: calc(var(--ctl) - 6px); padding: 0 9px; border: 0; border-radius: var(--r-1); background: none; color: var(--fg-3); font-size: var(--t-sm); font-weight: 500; white-space: nowrap; }
+.seg button:hover { color: var(--fg); }
+.seg button[aria-pressed="true"] { background: var(--bg-3); color: var(--fg); box-shadow: 0 0 0 1px var(--line-2); }
+.seg.sm button { height: 20px; padding: 0 7px; font-size: var(--t-xs); }
+@media (max-width: 599px), (pointer: coarse) { .seg button, .seg.sm button { height: 44px; padding: 0 12px; font-size: var(--t-sm); } }
+.chip {
+  height: var(--ctl); display: inline-flex; align-items: center; gap: 6px; padding: 0 9px; border-radius: var(--r-pill); white-space: nowrap; flex: none;
+  border: 1px dashed var(--line-2); background: none; color: var(--fg-2); font-size: var(--t-sm);
+}
+.chip:hover { border-color: var(--fg-4); color: var(--fg); }
+.chip.on { border-style: solid; background: var(--accent-w); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--fg); }
+.chip .n { font-family: var(--font-num); color: var(--fg-3); font-size: var(--t-xs); }
+.chip svg { width: 13px; height: 13px; }
+.chip .x { margin-left: 2px; opacity: .7; }
+.input { height: var(--ctl); border-radius: var(--r-2); border: 1px solid var(--line-2); background: var(--bg); padding: 0 9px; color: var(--fg); min-width: 0; }
+.input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-w); }
+.search { display: inline-flex; align-items: center; gap: 6px; height: var(--ctl); padding: 0 8px; border: 1px solid var(--line-2); border-radius: var(--r-2); background: var(--bg); color: var(--fg-3); min-width: 0; }
+.search input { border: 0; background: none; outline: none; min-width: 0; width: 100%; color: var(--fg); }
+.switch { width: 32px; height: 18px; border-radius: 9px; background: var(--bg-3); border: 1px solid var(--line-2); position: relative; flex: none; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--fg-3); transition: transform var(--d-fast) var(--e-out), background var(--d-fast); }
+.switch[aria-checked="true"] { background: var(--accent-w); border-color: var(--accent); }
+.switch[aria-checked="true"]::after { transform: translateX(14px); background: var(--accent); }
+
+/* ---------- 7. Badges, points d'état, puces ---------- */
+.badge { display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 6px; border-radius: var(--r-1); font: 600 var(--t-xs)/1 var(--font-ui); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; flex: none; border: 1px solid transparent; }
+.badge.live { color: var(--live); background: var(--live-w); border-color: color-mix(in srgb, var(--live) 40%, transparent); }
+.badge.live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--live); }
+.badge.dry { color: var(--dry); border: 1px dashed var(--dry); }
+.badge.replay { color: var(--info); border: 1px dashed var(--info); }
+.badge.xyz { color: var(--info); background: var(--info-w); }
+.badge.orph { color: var(--crit); background: var(--crit-w); border-color: color-mix(in srgb, var(--crit) 40%, transparent); }
+.badge.warn { color: var(--warn); background: var(--warn-w); }
+.badge.crit { color: var(--crit); background: var(--crit-w); }
+.badge.info { color: var(--info); background: var(--info-w); }
+.badge.neutral { color: var(--fg-2); background: var(--bg-3); }
+.badge.reason { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.badge.manual { color: var(--fg-2); border: 1px solid var(--line-2); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; background: var(--profit); }
+.dot.starting { background: var(--info); animation: pulse 1.6s var(--e-inout) infinite; }
+.dot.offline { background: var(--crit); }
+.dot.stopped { background: transparent; border: 1.5px solid var(--fg-3); }
+.dot.auth { background: var(--warn); border-radius: 2px; }
+.dot.stale { background: var(--warn); }
+@keyframes pulse { 50% { opacity: .35; } }
+.dir { display: inline-flex; align-items: center; gap: 3px; font: 600 var(--t-xs)/1 var(--font-num); white-space: nowrap; }
+.dir.l { color: var(--long); } .dir.s { color: var(--short); } .dir.ls { color: var(--fg-2); }
+.dir .lev { color: var(--fg-3); font-weight: 500; }
+.livemark { width: 6px; height: 6px; border-radius: 50%; background: var(--live); display: inline-block; flex: none; }
+.age { font: 500 var(--t-xs) var(--font-num); color: var(--fg-3); white-space: nowrap; }
+.age.stale { color: var(--warn); }
+.excl { display: inline-flex; align-items: center; gap: 3px; color: var(--warn); font-size: var(--t-xs); border: 0; background: none; padding: 0; text-decoration: underline dotted; text-underline-offset: 2px; cursor: pointer; white-space: nowrap; }
+
+/* ---------- 8. Jauges, barres, pips DCA, sparkline ---------- */
+.meter { height: 4px; border-radius: 2px; background: var(--bg-3); position: relative; overflow: visible; min-width: 30px; }
+.meter > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--fg-2); transition: width var(--d-slow) var(--e-out); }
+.meter > i.ok { background: var(--profit); } .meter > i.warn { background: var(--warn); } .meter > i.crit { background: var(--crit); } .meter > i.info { background: var(--info); } .meter > i.neutral { background: var(--fg-3); }
+.meter > b { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--fg); border-radius: 1px; } /* repère de seuil */
+.split { display: flex; height: 6px; border-radius: 3px; overflow: hidden; gap: 2px; background: none; }
+.split > .l { background: var(--long); } .split > .s { background: var(--short); background-image: repeating-linear-gradient(135deg, rgba(0,0,0,.18) 0 2px, transparent 2px 4px); }
+.pips { display: inline-flex; gap: 2px; align-items: center; }
+.pips i { width: 4px; height: 11px; border-radius: 1px; background: var(--fg-2); }
+.pips i.e { background: none; box-shadow: inset 0 0 0 1px var(--line-2); }
+.pips i.last { background: var(--warn); }
+.pips + .num { margin-left: 5px; font-size: var(--t-xs); color: var(--fg-3); }
+.spark { width: 64px; height: 18px; display: block; }
+.spark path { fill: none; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.spark .z { stroke: var(--line-2); stroke-dasharray: 2 2; stroke-width: 1; }
+.pctl { font: 500 var(--t-xs) var(--font-num); padding: 0 4px; border-radius: 3px; margin-left: 4px; }
+.pctl.p84 { color: var(--warn); background: var(--warn-w); } .pctl.p91 { color: var(--crit); background: var(--crit-w); }
+
+/* Échelle DCA horizontale normalisée : gauche = côté dangereux (liquidation), droite = profit (long comme short) */
+.lad-h { position: relative; height: 34px; margin: 4px 2px 0; }
+.lad-h .rail { position: absolute; left: 0; right: 0; top: 14px; height: 2px; background: var(--line-2); }
+.lad-h .liq { position: absolute; left: 0; top: 8px; width: 14%; height: 14px; background: var(--off-hatch); border-left: 2px solid var(--crit); }
+.lad-h .gain { position: absolute; right: 0; top: 13px; height: 4px; background: var(--profit-w); }
+.lad-h .lv { position: absolute; top: 9px; width: 8px; height: 12px; margin-left: -4px; border-radius: 2px; background: var(--fg-2); }
+.lad-h .lv.pend { background: none; border: 1px dashed var(--fg-3); }
+.lad-h .lv.next { border-color: var(--warn); }
+.lad-h .avg { position: absolute; top: 6px; width: 2px; height: 18px; background: var(--accent); }
+.lad-h .tp { position: absolute; top: 6px; width: 2px; height: 18px; background: var(--profit); }
+.lad-h .px { position: absolute; top: 3px; width: 0; height: 0; margin-left: -5px; border: 5px solid transparent; border-top: 7px solid var(--fg); transition: left var(--d-slow) var(--e-out); }
+.lad-h .t { position: absolute; top: 24px; font: 500 var(--t-xs) var(--font-num); color: var(--fg-3); white-space: nowrap; transform: translateX(-50%); }
+.lad-h .t.l0 { transform: none; } .lad-h .t.r0 { transform: translateX(-100%); }
+
+/* ---------- 9. Tables (grille CSS, en-tête collant, container queries) ---------- */
+.tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--t-sm); }
+.tbl th { position: sticky; top: 0; z-index: 2; background: var(--bg-1); text-align: right; padding: 0 8px; height: 30px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tbl th.l, .tbl td.l { text-align: left; }
+.tbl th button { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-transform: inherit; letter-spacing: inherit; }
+.tbl th[aria-sort] { color: var(--fg); }
+.tbl td { height: var(--row); padding: 0 8px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.tbl td.ui { font-family: var(--font-ui); }
+.tbl tbody tr { transition: background var(--d-instant); position: relative; }
+.tbl tbody tr:hover { background: var(--bg-2); }
+.tbl tbody tr.sel { background: var(--accent-w); }
+.tbl tr.is-live td:first-child { box-shadow: inset 2px 0 0 var(--live); }
+.tbl tr.is-dry td:first-child { box-shadow: inset 2px 0 0 color-mix(in srgb, var(--dry) 50%, transparent); }
+.tbl tr.stale td { background-image: var(--stale-hatch); color: var(--fg-3); }
+.tbl tr.offline td { opacity: .62; background-image: var(--off-hatch); }
+.tbl tr.offline td:first-child { opacity: 1; }
+.tbl tr.busy td { opacity: .6; }
+.tbl tr.sigma td { position: sticky; top: 30px; z-index: 1; background: var(--bg-2); font-weight: 600; }
+.tbl tr.grp td { background: color-mix(in srgb, var(--bg-2) 60%, var(--bg-1)); color: var(--fg-2); height: 28px; }
+.tbl tr.grp td:first-child { font-family: var(--font-ui); font-weight: 600; color: var(--fg); }
+.tbl .ra { width: 1%; padding-right: 6px; }
+.tbl .ra .btn { opacity: 0; transition: opacity var(--d-fast); }
+.tbl tr:hover .ra .btn, .tbl tr:focus-within .ra .btn, .tbl tr.sel .ra .btn { opacity: 1; }
+@media (pointer: coarse) { .tbl .ra .btn { opacity: 1; } }
+.botcell { display: flex; align-items: center; gap: 7px; font-family: var(--font-ui); min-width: 0; }
+.botcell .nm { font-weight: 500; color: var(--fg); white-space: nowrap; }
+.botcell .sub { color: var(--fg-3); font-size: var(--t-xs); white-space: nowrap; }
+.paircell { display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-weight: 600; }
+.cell-meter { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.cell-meter .meter { width: 44px; }
+.empty { padding: var(--s6) var(--s4); text-align: center; color: var(--fg-3); display: grid; justify-items: center; gap: 8px; }
+.empty svg { width: 20px; height: 20px; }
+
+/* Flash de valeur et compteurs */
+.fl-up { animation: flUp var(--d-flash) var(--e-out); }
+.fl-dn { animation: flDn var(--d-flash) var(--e-out); }
+@keyframes flUp { 0% { background-color: var(--profit-w); box-shadow: inset 0 -2px 0 var(--profit); } 100% { background-color: transparent; box-shadow: inset 0 -2px 0 transparent; } }
+@keyframes flDn { 0% { background-color: var(--loss-w); box-shadow: inset 0 -2px 0 var(--loss); } 100% { background-color: transparent; box-shadow: inset 0 -2px 0 transparent; } }
+
+/* ---------- 10. KPI ---------- */
+.kpis { display: flex; flex: none; background: var(--bg-1); border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.kpis::-webkit-scrollbar { display: none; }
+.kpi { flex: 1 1 0; min-width: 132px; padding: 8px var(--s3) 9px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; position: relative; }
+.kpi:last-child { border-right: 0; }
+.kpi .k { font-size: var(--t-xs); color: var(--fg-3); font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; }
+.kpi .v { font: 600 var(--t-xl)/1.15 var(--font-num); font-variant-numeric: tabular-nums slashed-zero; letter-spacing: -.02em; white-space: nowrap; }
+.kpi .v small { font-size: 12px; font-weight: 500; color: var(--fg-3); margin-left: 3px; letter-spacing: 0; }
+.kpi .s { font-size: var(--t-xs); color: var(--fg-3); white-space: nowrap; display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.kpi .s .dot { vertical-align: 0; margin: 0 2px 0 4px; } .kpi .s .dot:first-child { margin-left: 0; }
+.kpi .s .num { color: var(--fg-2); }
+.kpi .meter, .kpi .split { margin-top: 4px; }
+.kpi.alert { box-shadow: inset 0 -2px 0 var(--crit); }
+.kpi.wide { flex-grow: 1.4; min-width: 190px; }
+button.kpi { background: none; border: 0; border-right: 1px solid var(--line); text-align: left; color: inherit; }
+button.kpi:hover { background: var(--bg-2); }
+
+/* ---------- 11. Squelettes ---------- */
+.sk { display: block; border-radius: 3px; background: linear-gradient(90deg, var(--bg-2) 0%, var(--bg-3) 50%, var(--bg-2) 100%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; height: 12px; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.skeleton-mode [data-real] { display: none !important; }
+body:not(.skeleton-mode) [data-skel] { display: none !important; }
+
+/* ---------- 12. Alertes et événements ---------- */
+.alert { display: grid; grid-template-columns: 18px minmax(0,1fr) auto; gap: 2px 8px; padding: 9px var(--s3) 9px 10px; border-bottom: 1px solid var(--line); position: relative; animation: rise var(--d-base) var(--e-out) backwards; }
+.alert::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; }
+.alert.crit::before { background: var(--crit); } .alert.warn::before { background: var(--warn); } .alert.info::before { background: var(--info); }
+.alert > svg { margin-top: 1px; }
+.alert.crit > svg { color: var(--crit); } .alert.warn > svg { color: var(--warn); } .alert.info > svg { color: var(--info); }
+.alert .ttl { font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.alert .bot { font-weight: 500; color: var(--fg-2); display: inline-flex; align-items: center; gap: 5px; }
+.alert .when { font: 500 var(--t-xs) var(--font-num); color: var(--fg-3); white-space: nowrap; }
+.alert .msg { grid-column: 2 / 4; color: var(--fg-2); font-size: var(--t-sm); }
+.alert .msg .num { color: var(--fg); }
+.alert .act { grid-column: 2 / 4; display: flex; align-items: center; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+.alert .act .q { margin-left: auto; display: flex; gap: 2px; }
+.alert.acked { opacity: .7; }
+.alert.gone { animation: fadeOut var(--d-base) var(--e-out) forwards; }
+@keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes fadeOut { to { opacity: 0; transform: translateX(10px); } }
+@media (max-width: 599px), (pointer: coarse) { .alert .act .btn { --h: 44px; } .alert .act .q .btn { width: 44px; } }
+.ev { display: grid; grid-template-columns: 44px 16px minmax(0,1fr); gap: 8px; padding: 6px var(--s3); font-size: var(--t-sm); border-bottom: 1px solid var(--line); align-items: start; }
+.ev .tm { font: 500 var(--t-xs)/18px var(--font-num); color: var(--fg-3); }
+.ev svg { margin-top: 2px; color: var(--fg-3); }
+.ev b { font-weight: 600; }
+.since { margin: var(--s2) var(--s3); padding: 10px; border: 1px solid var(--line-2); border-radius: var(--r-2); background: var(--bg-2); }
+.since .hd { display: flex; align-items: center; gap: 8px; font-size: var(--t-sm); font-weight: 600; margin-bottom: 8px; }
+.since .hd .muted { font-weight: 400; }
+.since .g { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; }
+.since .g div { display: flex; flex-direction: column; min-width: 0; }
+.since .g .num { font-size: var(--t-lg); font-weight: 600; }
+.since .g span:last-child { font-size: var(--t-xs); color: var(--fg-3); }
+
+/* ---------- 13. Feuille adaptative (tiroir desktop / feuille basse mobile), dialogue, palette, toasts ---------- */
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 60; opacity: 0; pointer-events: none; transition: opacity var(--d-base) var(--e-out); }
+.scrim.open { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: fixed; z-index: 61; background: var(--bg-1); box-shadow: var(--shadow-float); display: flex; flex-direction: column;
+  top: 0; right: 0; bottom: 0; width: min(480px, 100vw); transform: translateX(104%); transition: transform var(--d-slow) var(--e-out);
+}
+.sheet.open { transform: none; }
+.sheet .sh-h { display: flex; align-items: center; gap: 8px; padding: 10px var(--s3); border-bottom: 1px solid var(--line); flex: none; }
+.sheet .sh-b { flex: 1; overflow: auto; }
+.sheet .sh-f { flex: none; border-top: 1px solid var(--line); padding: var(--s3); background: var(--bg-1); }
+.sheet .grab { display: none; }
+@media (max-width: 599px) {
+  .sheet { top: auto; left: 0; width: 100%; max-height: 92vh; border-radius: var(--r-4) var(--r-4) 0 0; transform: translateY(104%); padding-bottom: env(safe-area-inset-bottom); }
+  .sheet .grab { display: block; width: 36px; height: 4px; border-radius: 2px; background: var(--line-2); margin: 8px auto 0; flex: none; }
+}
+.dlg {
+  position: fixed; z-index: 71; left: 50%; top: 50%; width: min(460px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto;
+  transform: translate(-50%, -48%) scale(.98); opacity: 0; pointer-events: none; background: var(--bg-1); border-radius: var(--r-3); box-shadow: var(--shadow-float);
+  transition: transform var(--d-base) var(--e-spring), opacity var(--d-base) var(--e-out);
+}
+.dlg.open { transform: translate(-50%, -50%); opacity: 1; pointer-events: auto; }
+.scrim.dlg-scrim { z-index: 70; }
+@media (max-width: 599px) {
+  .dlg { left: 0; right: 0; top: auto; bottom: 0; width: 100%; max-height: 94vh; border-radius: var(--r-4) var(--r-4) 0 0; transform: translateY(100%); padding-bottom: env(safe-area-inset-bottom); }
+  .dlg.open { transform: none; }
+}
+.dlg .band { height: 6px; background: repeating-linear-gradient(135deg, var(--fg-4) 0 6px, transparent 6px 12px); }
+.dlg.is-live .band { background: var(--live-hatch); }
+.dlg .dh { display: flex; gap: 10px; padding: var(--s4) var(--s4) var(--s2); align-items: flex-start; }
+.dlg .dh .ic { width: 34px; height: 34px; border-radius: var(--r-2); display: grid; place-items: center; background: var(--loss-w); color: var(--loss); flex: none; }
+.dlg .dh .ic.neutral { background: var(--bg-3); color: var(--fg-2); }
+.dlg .dh h3 { margin: 0; font-size: var(--t-lg); }
+.dlg .dh p { margin: 2px 0 0; color: var(--fg-2); font-size: var(--t-sm); }
+.dlg .db { padding: 0 var(--s4) var(--s2); display: grid; gap: 10px; }
+.target { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: var(--r-2); border: 1px solid var(--line-2); background: var(--bg-2); }
+.is-live .target { border-color: color-mix(in srgb, var(--live) 60%, transparent); background: var(--live-w); }
+.target .lab { display: block; }
+.target b { font-size: var(--t-md); }
+.target .badge { margin-left: auto; }
+.frow { display: flex; align-items: center; gap: 10px; }
+.frow > .lab { width: 74px; flex: none; }
+.est { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.est > div { border: 1px solid var(--line); border-radius: var(--r-2); padding: 7px 10px; }
+.est .num { font-size: var(--t-lg); font-weight: 600; display: block; }
+.note { display: flex; gap: 8px; font-size: var(--t-sm); color: var(--fg-2); align-items: flex-start; }
+.note svg { margin-top: 1px; color: var(--fg-3); }
+.note.warn svg { color: var(--warn); } .note.crit svg { color: var(--crit); }
+.typein { display: grid; gap: 5px; }
+.typein .input { font-family: var(--font-num); }
+.typein .input.ok { border-color: var(--profit); }
+.dlg .df { display: flex; gap: 8px; padding: var(--s3) var(--s4) var(--s4); }
+.dlg .df .btn { flex: 1; }
+.dlg .df .btn.cancel { flex: 0 0 auto; min-width: 96px; }
+@media (max-width: 599px) { .dlg .df { flex-direction: column-reverse; } .dlg .df .btn, .dlg .df .btn.cancel { flex: none; width: 100%; --h: 52px; } } /* flex: none sinon flex-basis 0 écrase la hauteur en colonne */
+
+/* Bouton de maintien : le geste est écrit sur le bouton, remplissage linéaire de --hold */
+.hold { --p: 0; }
+.hold.danger { background: color-mix(in srgb, var(--loss) 22%, var(--bg-2)); border-color: var(--loss); color: var(--fg); }
+.hold.go { background: color-mix(in srgb, var(--fg) 12%, var(--bg-2)); border-color: var(--fg-3); }
+.hold .fill { position: absolute; inset: 0; transform-origin: left; transform: scaleX(var(--p)); background: var(--loss); }
+.hold.go .fill { background: var(--fg-3); }
+.hold .lbl { position: relative; display: inline-flex; align-items: center; gap: 7px; }
+.hold.holding .fill { transition: transform var(--hold) linear; transform: scaleX(1); }
+.hold.done { background: var(--loss); }
+.hold.go.done { background: var(--fg-3); }
+.hold-hint { font-size: var(--t-xs); color: var(--warn); min-height: 15px; text-align: center; transition: opacity var(--d-fast); }
+
+/* Palette de commandes */
+.pal { position: fixed; z-index: 81; left: 50%; top: 12vh; width: min(620px, calc(100vw - 24px)); transform: translateX(-50%) translateY(-6px); opacity: 0; pointer-events: none; background: var(--bg-1); border-radius: var(--r-3); box-shadow: var(--shadow-float); transition: opacity var(--d-base) var(--e-out), transform var(--d-base) var(--e-out); }
+.pal.open { opacity: 1; transform: translateX(-50%); pointer-events: auto; }
+.pal .pi { display: flex; align-items: center; gap: 8px; padding: 0 var(--s3); height: 46px; border-bottom: 1px solid var(--line); }
+.pal .pi input { flex: 1; border: 0; outline: none; background: none; font-size: var(--t-lg); color: var(--fg); }
+.pal .pg { padding: 6px 0; max-height: 50vh; overflow: auto; }
+.pal .pg h4 { margin: 6px var(--s3) 2px; font-size: var(--t-xs); color: var(--fg-3); font-weight: 600; }
+.pal .it { color: var(--fg); text-decoration: none; display: flex; align-items: center; gap: 10px; padding: 7px var(--s3); font-size: var(--t-md); }
+.pal .it.on { background: var(--bg-2); }
+.pal .it .k { margin-left: auto; display: flex; gap: 3px; color: var(--fg-3); font-size: var(--t-xs); }
+.scrim.pal-scrim { z-index: 80; }
+
+/* Toasts (deux temps) */
+.toasts { position: fixed; z-index: 90; right: 12px; bottom: 36px; display: flex; flex-direction: column; gap: 8px; width: min(380px, calc(100vw - 24px)); }
+@media (max-width: 1023px) { .toasts { left: 12px; right: 12px; width: auto; bottom: calc(70px + env(safe-area-inset-bottom)); } }
+.toast { background: var(--bg-1); border-radius: var(--r-2); box-shadow: var(--shadow-float); padding: 10px 12px 10px 14px; display: grid; grid-template-columns: 18px minmax(0,1fr) auto; gap: 2px 9px; position: relative; overflow: hidden; animation: toastIn var(--d-base) var(--e-out); font-size: var(--t-sm); }
+.toast::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--fg-3); }
+.toast.sent::before { background: var(--info); } .toast.ok::before { background: var(--profit); } .toast.verify::before { background: var(--warn); } .toast.err::before { background: var(--crit); }
+.toast.sent > svg { color: var(--info); } .toast.ok > svg { color: var(--profit); } .toast.verify > svg { color: var(--warn); } .toast.err > svg { color: var(--crit); }
+.toast b { font-weight: 600; }
+.toast .tb { grid-column: 2 / 4; color: var(--fg-2); }
+.toast .ta { grid-column: 2 / 4; display: flex; gap: 6px; margin-top: 6px; }
+.toast .meta { grid-column: 2 / 4; font: 500 var(--t-xs) var(--font-num); color: var(--fg-3); margin-top: 2px; }
+.toast .x { background: none; border: 0; color: var(--fg-3); padding: 0; }
+.toast.out { animation: toastOut var(--d-base) var(--e-out) forwards; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes toastOut { to { opacity: 0; transform: translateX(16px); } }
+
+/* Popover léger (exclus, menus) */
+.pop { position: fixed; z-index: 85; min-width: 220px; max-width: 320px; background: var(--bg-1); border-radius: var(--r-2); box-shadow: var(--shadow-float); padding: 6px 0; font-size: var(--t-sm); opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity var(--d-fast) var(--e-out), transform var(--d-fast) var(--e-out); }
+.pop.open { opacity: 1; transform: none; pointer-events: auto; }
+.pop h4 { margin: 4px 12px 6px; font-size: var(--t-xs); color: var(--fg-3); font-weight: 600; }
+.pop .mi { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 12px; background: none; border: 0; text-align: left; color: var(--fg); font-size: var(--t-sm); }
+.pop .mi:hover { background: var(--bg-2); }
+.pop .mi .k { margin-left: auto; color: var(--fg-3); font-size: var(--t-xs); }
+.pop .mi.danger { color: var(--loss); }
+.pop hr { border: 0; border-top: 1px solid var(--line); margin: 5px 0; }
+@media (max-width: 599px), (pointer: coarse) { .pop .mi { min-height: 44px; } }
+
+/* Tuiles de la carte de flotte : neutres au repos */
+.fmap { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 6px; padding: 8px; }
+.fgrp { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: var(--t-xs); color: var(--fg-3); font-weight: 600; padding: 6px 2px 0; }
+.fgrp .num { color: var(--fg-2); margin-left: auto; }
+.tile { position: relative; border: 1px solid var(--line); border-radius: var(--r-2); background: var(--bg-2); padding: 7px 8px 6px; display: grid; gap: 3px; text-align: left; color: inherit; min-height: 64px; transition: border-color var(--d-fast), transform var(--d-instant); }
+.tile:hover { border-color: var(--fg-4); }
+.tile:active { transform: scale(.985); }
+.tile .tn { display: flex; align-items: flex-start; gap: 5px; font-size: var(--t-sm); font-weight: 500; line-height: 1.2; overflow-wrap: anywhere; }
+.tile .tn .livemark { margin-top: 5px; }
+.tile .tv { font: 600 var(--t-md) var(--font-num); }
+.tile .tm { display: flex; align-items: center; gap: 6px; font-size: var(--t-xs); color: var(--fg-3); }
+.tile .tm .age { margin-left: auto; }
+.tile.warn { border-color: color-mix(in srgb, var(--warn) 60%, transparent); box-shadow: inset 3px 0 0 var(--warn); }
+.tile.crit { border-color: color-mix(in srgb, var(--crit) 70%, transparent); box-shadow: inset 3px 0 0 var(--crit), 0 0 0 1px color-mix(in srgb, var(--crit) 25%, transparent); }
+.tile.stale { background-image: var(--stale-hatch); border-style: dashed; border-color: var(--warn); }
+.tile.stale .tv { color: var(--fg-3); }
+.tile.offline { background-image: var(--off-hatch); }
+.tile.offline .tv { text-decoration: line-through; color: var(--fg-3); }
+.tile.dry { border-style: dashed; }
+.tile .flag { position: absolute; top: 6px; right: 6px; }
+.tile .flag svg { width: 14px; height: 14px; }
+.tile.crit .flag { color: var(--crit); } .tile.warn .flag, .tile.stale .flag { color: var(--warn); } .tile.info .flag { color: var(--info); }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: var(--t-xs); color: var(--fg-3); padding: 0 10px 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 12px; height: 9px; border-radius: 2px; border: 1px solid var(--line-2); display: inline-block; }
+
+/* Cartes de liste mobile (registre m1-m4) */
+.cards { display: grid; gap: 0; }
+.card { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 3px 10px; padding: 10px var(--s3); border-bottom: 1px solid var(--line); background: none; text-align: left; color: inherit; border-left: 0; border-right: 0; border-top: 0; width: 100%; min-height: 56px; position: relative; }
+.card .m1 { display: flex; align-items: center; gap: 6px; font-weight: 600; min-width: 0; flex-wrap: wrap; }
+.card .m2 { font: 600 var(--t-md) var(--font-num); text-align: right; }
+.card .m3 { display: flex; align-items: center; gap: 8px; color: var(--fg-3); font-size: var(--t-xs); min-width: 0; flex-wrap: wrap; }
+.card .m4 { font: 500 var(--t-xs) var(--font-num); color: var(--fg-3); text-align: right; }
+.card .full { grid-column: 1 / -1; }
+.card.is-live { box-shadow: inset 2px 0 0 var(--live); }
+.card.stale { background-image: var(--stale-hatch); }
+
+/* Logs */
+.logs { font: 400 var(--t-xs)/1.55 var(--font-num); padding: 6px 0; }
+.logs .ln { display: grid; grid-template-columns: 62px 132px 44px minmax(0,1fr); gap: 8px; padding: 0 var(--s3); white-space: nowrap; }
+.logs .ln > span:last-child { overflow: hidden; text-overflow: ellipsis; color: var(--fg-2); }
+.logs .ln .e { color: var(--crit); } .logs .ln .w { color: var(--warn); } .logs .ln .i { color: var(--fg-3); }
+.logdrawer { position: fixed; left: 0; right: 0; bottom: 26px; height: 0; background: var(--bg-1); border-top: 1px solid var(--line-2); z-index: 24; overflow: hidden; transition: height var(--d-slow) var(--e-out); display: flex; flex-direction: column; }
+.logdrawer.open { height: 38vh; box-shadow: 0 -12px 30px rgba(0,0,0,.35); }
+
+/* Démo (hors produit) */
+.demo-note { font-size: var(--t-xs); color: var(--fg-3); }
+
+/* ---------- 14. TradeDrawer et échelle DCA verticale ---------- */
+.td-h { display: flex; align-items: center; gap: 8px; padding: 10px var(--s3); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.td-h .pair { font-size: var(--t-lg); font-weight: 700; }
+.td-h .x { margin-left: auto; }
+.td-pnl { display: flex; align-items: baseline; gap: 10px; padding: 10px var(--s3) 4px; flex-wrap: wrap; }
+.td-pnl .big { font: 600 var(--t-2xl)/1 var(--font-num); letter-spacing: -.02em; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-top: 8px; }
+.facts > div { padding: 7px var(--s3); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; gap: 1px; min-width: 0; }
+.facts > div:nth-child(3n) { border-right: 0; }
+.facts > div:nth-last-child(-n+3) { border-bottom: 0; }
+.facts .num { font-weight: 600; }
+.sec-h { display: flex; align-items: center; gap: 7px; padding: 10px var(--s3) 6px; font-size: var(--t-sm); font-weight: 600; }
+.sec-h .meta { margin-left: auto; font-weight: 400; color: var(--fg-3); font-size: var(--t-xs); }
+.lad-v { position: relative; margin: 0 var(--s3) 6px; padding: 4px 0; }
+.lad-v .lvl { position: relative; z-index: 1; display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; height: 28px; gap: 8px; }
+.lad-v .lvl .pr { font: 500 var(--t-xs) var(--font-num); color: var(--fg-3); text-align: right; }
+.lad-v .lvl .bar { height: 12px; border-radius: 2px; background: var(--fg-3); position: relative; }
+.lad-v .lvl.pend .bar { background: none; border: 1px dashed var(--fg-3); }
+.lad-v .lvl.next .bar { border-color: var(--warn); }
+.lad-v .lvl .bl { position: absolute; left: calc(100% + 6px); top: -2px; background: var(--bg-1); padding: 0 3px; font: 500 var(--t-xs) var(--font-num); color: var(--fg-2); white-space: nowrap; }
+.lad-v .ln { position: absolute; left: 72px; right: 0; height: 0; border-top: 1px solid; pointer-events: none; transition: top var(--d-slow) var(--e-out); }
+.lad-v .ln span { position: absolute; right: 0; transform: translateY(-50%); font: 600 var(--t-xs) var(--font-num); padding: 0 4px; background: var(--bg-1); white-space: nowrap; }
+.lad-v .ln.avg { border-color: var(--accent); } .lad-v .ln.avg span { color: var(--accent); }
+.lad-v .ln.tp { border-color: var(--profit); border-top-style: dashed; } .lad-v .ln.tp span { color: var(--profit); }
+.lad-v .ln.px { border-color: var(--fg); } .lad-v .ln.px span { color: var(--fg); }
+.lad-v .liqf { display: flex; align-items: center; gap: 6px; margin: 4px 0 0 72px; font: 600 var(--t-xs) var(--font-num); color: var(--crit); }
+.orders td { height: 26px; }
+details.fold > summary { list-style: none; cursor: pointer; } details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary > svg:last-child { margin-left: 4px; transition: transform var(--d-fast) var(--e-out); } details.fold:not([open]) > summary > svg:last-child { transform: rotate(-90deg); }
+details.fold > summary:hover { color: var(--fg); background: var(--bg-2); }
+details.dbacts { margin: 8px var(--s3) 12px; border: 1px solid var(--line); border-radius: var(--r-2); }
+details.dbacts summary { padding: 8px 10px; cursor: pointer; font-size: var(--t-sm); color: var(--fg-2); list-style: none; display: flex; align-items: center; gap: 7px; }
+details.dbacts summary::-webkit-details-marker { display: none; }
+details.dbacts[open] summary { border-bottom: 1px solid var(--line); }
+details.dbacts .in { padding: 8px 10px; display: grid; gap: 6px; }
+details.dbacts .in .dz { margin-top: 6px; padding-top: 8px; border-top: 1px dashed var(--line-2); }
+.td-foot { border-top: 1px solid var(--line); padding: 10px var(--s3); display: grid; gap: 8px; background: var(--bg-1); }
+.td-foot .r1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.td-foot .r2 { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+
+.wrap { max-width: 1240px; margin: 0 auto; padding: 28px 20px 60px; }
+.hero { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.hero h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+.hero p { margin: 6px 0 0; color: var(--fg-2); max-width: 760px; }
+.hero .r { margin-left: auto; display: flex; gap: 8px; }
+.gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+.g { border: 1px solid var(--line); border-radius: var(--r-3); background: var(--bg-1); overflow: hidden; display: flex; flex-direction: column; }
+.g img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; border-bottom: 1px solid var(--line); display: block; background: var(--bg-2); }
+.g .b { padding: 12px 14px; display: grid; gap: 6px; }
+.g h2 { margin: 0; font-size: var(--t-lg); display: flex; align-items: center; gap: 8px; }
+.g p { margin: 0; color: var(--fg-3); font-size: var(--t-sm); }
+.g .st { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.g .st a { font-size: var(--t-xs); padding: 3px 7px; border: 1px solid var(--line-2); border-radius: var(--r-pill); color: var(--fg-2); }
+.g .st a:hover { color: var(--fg); text-decoration: none; border-color: var(--fg-4); }
+.tok { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 26px; }
+.tok div { border: 1px solid var(--line); border-radius: var(--r-2); padding: 8px; display: grid; gap: 4px; font-size: var(--t-xs); background: var(--bg-1); }
+.tok i { height: 26px; border-radius: 3px; display: block; }
+h3 { margin: 30px 0 6px; font-size: var(--t-md); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero"><div><h1>FreqUI Ultimate 2 : maquettes finales</h1><p>Base « Terminal » (dense, calme, chiffres honnêtes), avec les greffes retenues des autres propositions et toutes les corrections des juges. Données fictives. Spécification : <code>docs/redesign/02-design.md</code>.</p></div>
+  <div class="r"><button class="btn" onclick="FQ.toggleTheme()"><i data-lucide="sun-moon"></i>Thème clair ou sombre</button></div></div>
+  <div class="gal">
+    <article class="g"><a href="dashboard.html"><img src="shots/dashboard-1440.png" alt="Flotte, 1440 px"></a><div class="b"><h2><i data-lucide="layout-grid"></i>Flotte</h2><p>KPI live seuls, FleetTable et carte, positions pires d'abord, À traiter, équité, risque wallet, barre d'état.</p>
+      <div class="st"><a href="dashboard.html">par défaut</a><a href="dashboard.html?view=map">carte</a><a href="dashboard.html#scope">ScopePanel</a><a href="dashboard.html#trade">TradeDrawer</a><a href="dashboard.html#confirm">confirmation live</a><a href="dashboard.html#palette">palette</a><a href="dashboard.html#logs">logs</a><a href="dashboard.html?conn=connecting&hold=1">connexion</a><a href="dashboard.html?conn=degraded">dégradée</a><a href="dashboard.html?conn=offline">hors ligne</a><a href="dashboard.html?conn=direct">mode direct</a><a href="dashboard.html?cache=1&hold=1">cache au 1er rendu</a><a href="dashboard.html?skeleton=1&hold=1">squelettes</a><a href="dashboard.html?calm=1">flotte calme</a><a href="dashboard.html?scope=all">live + dry</a></div></div></article>
+    <article class="g"><a href="bot.html"><img src="shots/bot-1440.png" alt="Bot, 1440 px"></a><div class="b"><h2><i data-lucide="bot"></i>Bot</h2><p>En-tête et KPI du bot, paires, graphique avec niveaux, positions, TradeDrawer docké avec échelle DCA et sortie collante.</p>
+      <div class="st"><a href="bot.html">hippo_multi</a><a href="bot.html?bot=dynv1_short">dynv1_short</a><a href="bot.html#trade">feuille trade</a><a href="bot.html#confirm">sortie live</a><a href="bot.html#exitall">tout sortir</a><a href="bot.html?state=auth_expired">session expirée</a><a href="bot.html?state=starting&bot=hippo_ladder_long">démarrage</a><a href="bot.html?bot=xyz_crude_short&state=offline">hors ligne</a></div></div></article>
+    <article class="g"><a href="journal.html"><img src="shots/journal-1440.png" alt="Journal, 1440 px"></a><div class="b"><h2><i data-lucide="book-open-text"></i>Journal</h2><p>Sans replay par défaut, totaux en absolu, jours avec sous-totaux, MAE et MFE, raisons, profondeur DCA.</p>
+      <div class="st"><a href="journal.html">par défaut</a><a href="journal.html#dca">profondeur DCA</a><a href="journal.html?conn=direct">mode direct</a></div></div></article>
+    <article class="g"><a href="charts.html"><img src="shots/charts-1440.png" alt="Graphiques, 1440 px"></a><div class="b"><h2><i data-lucide="chart-candlestick"></i>Graphiques</h2><p>Positions d'abord, bot de contexte, niveaux DCA, 1 ou 2 cellules, indicateurs en feuille.</p>
+      <div class="st"><a href="charts.html">par défaut</a></div></div></article>
+    <article class="g"><a href="tools.html"><img src="shots/tools-1440.png" alt="Outils et réglages, 1440 px"></a><div class="b"><h2><i data-lucide="wrench"></i>Outils et réglages</h2><p>Menu Outils, réconciliation, diagnostic, registre des bots et migration, passerelle, affichage, alertes, sécurité des actions, audit.</p>
+      <div class="st"><a href="tools.html">outils</a><a href="tools.html#reglages">réglages</a><a href="tools.html#securite">résultats d'action</a></div></div></article>
+    <article class="g"><a href="mobile.html"><img src="shots/mobile-1440.png" alt="Vitrine mobile"></a><div class="b"><h2><i data-lucide="smartphone"></i>Vitrine mobile</h2><p>Six écrans 390 x 844 : incident d'abord, mode direct, bot, feuille de trade, confirmation, journal.</p>
+      <div class="st"><a href="mobile.html">ouvrir</a></div></div></article>
+  </div>
+  <h3>Jetons sémantiques (thème courant)</h3>
+  <div class="tok" id="tok"></div>
+</div>
+<script>/* =====================================================================
+   FreqUI Ultimate 2 : noyau des maquettes (données fictives, coquille,
+   confirmation argent réel, toasts, connexion, mouvement).
+   Source unique injectée par build.py. Données 100 % inventées.
+   ===================================================================== */
+(function () {
+'use strict';
+const Q = new URLSearchParams(location.search);
+const FQ = window.FQ = { Q };
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+FQ.$ = $; FQ.$$ = $$;
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+FQ.RM = RM;
+FQ.isMobile = () => innerWidth < 600;
+FQ.MONO = "'JetBrains Mono', ui-monospace, Menlo, monospace";
+
+/* ---------- Aléatoire déterministe ---------- */
+function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const R = rng(20261015); FQ.R = R; FQ.rng = rng;
+const rr = (a, b) => a + R() * (b - a);
+const ri = (a, b) => Math.floor(rr(a, b + 1));
+const pick = a => a[Math.floor(R() * a.length)];
+
+/* ---------- Formatage FR (espace fine insécable, vrai signe moins) ---------- */
+const NB = ' ', MINUS = '−';
+FQ.NB = NB; FQ.MINUS = MINUS;
+function grp(v, d) { return Math.abs(v).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d }).replace(/[\s  ]/g, NB); }
+FQ.n = (v, d = 2) => (v < 0 && Math.abs(v) >= Math.pow(10, -d) / 2 ? MINUS : '') + grp(v, d);
+FQ.s = (v, d = 2) => (Math.abs(v) < Math.pow(10, -d) / 2 ? '' : v > 0 ? '+' : MINUS) + grp(v, d);
+FQ.p = (v, d = 2) => FQ.s(v, d) + NB + '%';
+FQ.pu = (v, d = 1) => grp(v, d) + NB + '%';
+FQ.cls = v => v > 0.004 ? 'up' : v < -0.004 ? 'down' : 'flat';
+FQ.price = v => { const d = v >= 1000 ? 1 : v >= 100 ? 2 : v >= 1 ? 3 : v >= 0.01 ? 4 : 6; return grp(v, d); };
+FQ.dur = h => { const m = Math.round(h * 60); if (m < 60) return m + ' min'; if (m < 1440) return Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0'); const hh = Math.round(m / 60); return Math.floor(hh / 24) + ' j ' + (hh % 24) + ' h'; };
+FQ.age = s => s < 60 ? Math.round(s) + ' s' : s < 3600 ? Math.round(s / 60) + ' min' : Math.round(s / 3600) + ' h';
+FQ.usd = (v, d = 2) => FQ.s(v, d);
+/* Raisons de sortie freqtrade : libellé FR affiché, valeur brute en infobulle et dans les exports */
+FQ.REASONS = { roi: 'ROI atteint', exit_signal: 'Signal de sortie', trailing_stop_loss: 'Stop suiveur', stoploss: 'Stop-loss', stop_loss: 'Stop-loss', force_exit: 'Sortie forcée', liquidation: 'Liquidation', emergency_exit: "Sortie d'urgence", partial_exit: 'Sortie partielle' };
+FQ.reason = r => r ? `<span class="badge neutral reason" title="Raison brute : ${r}"${r === 'stoploss' || r === 'liquidation' ? ' style="color:var(--loss)"' : ''}>${FQ.REASONS[r] || r}</span>` : '<span class="muted">inconnu</span>';
+
+/* ---------- Données fictives : 32 bots, 6 groupes ---------- */
+const PAIRS = { HYPE: 38.9, SOL: 152.4, ETH: 2635, BTC: 67250, DOGE: 0.1192, WIF: 1.531, ENA: 0.3711, SUI: 1.842, ARB: 0.5218, OP: 1.611, LINK: 11.82, AVAX: 24.61, APT: 9.14, NEAR: 4.91, SEI: 0.4012, TIA: 4.87, INJ: 18.92, ONDO: 0.7012, FARTCOIN: 0.8114, kPEPE: 0.00912, TAO: 342.5 };
+const XYZ = { 'xyz:AAPL': 229.4, 'xyz:TSLA': 251.8, 'xyz:NVDA': 132.6, 'xyz:GOLD': 2671.5, 'xyz:CL': 74.18, 'xyz:SILVER': 31.62 };
+FQ.PRICES = Object.assign({}, PAIRS, XYZ, { PENGU: 0.01183 });
+const G = [
+  { id: 'hippo', name: 'Hippo DCA', bots: [
+    ['hippo_multi', 'live', 'mixed', 'ls', 'HippoOriginalMulti', 2, 8878, { cap: 2728, max: 8, capFull: true }],
+    ['hippo_short_sharpe', 'live', 'crypto', 's', 'HippoShortSharpe', 2, 8890, {}],
+    ['hippo_long_op200', 'live', 'crypto', 'l', 'HippoLongOnlyProfit', 2, 8902, {}],
+    ['hippo_ladder_long', 'live', 'crypto', 'l', 'HippoLadderOut', 2, 8914, { state: 'starting', startMin: 4 }],
+    ['hippo_stocks', 'live', 'hip3', 'l', 'HippoOriginalStocks', 2, 8926, {}],
+    ['hippo_mat', 'live', 'hip3', 'l', 'HippoOriginalMat', 2, 8938, {}] ] },
+  { id: 'dyn', name: 'DynV1', bots: [
+    ['dynv1_short', 'live', 'crypto', 's', 'HippoDynV1Short', 3, 9020, { cap: 600, ddBreach: true }],
+    ['dynv1_long', 'live', 'crypto', 'l', 'HippoDynV1Long', 2, 9032, { backoff: 2 }],
+    ['dynv2_short_bis', 'dry', 'crypto', 's', 'HippoDynV2Bis', 2, 9044, {}],
+    ['dyn_funding_skew', 'live', 'crypto', 's', 'DynFundingSkew', 2, 9056, {}] ] },
+  { id: 'btc', name: 'Régime BTC', bots: [
+    ['btc_regime_long', 'live', 'crypto', 'l', 'BtcRegimeV1', 2, 9100, {}],
+    ['btc_ensemble_long', 'live', 'crypto', 'l', 'BtcEnsembleV1', 2, 9112, {}],
+    ['btc_regime_v2', 'dry', 'crypto', 'l', 'BtcRegimeV2', 2, 9124, {}] ] },
+  { id: 'xyz', name: 'HIP-3 xyz', bots: [
+    ['xyz_vwap_short', 'live', 'hip3', 's', 'XyzVwapShort', 2, 9200, {}],
+    ['xyz_nyopen_short', 'live', 'hip3', 's', 'XyzNyOpenShort', 2, 9212, {}],
+    ['xyz_gold_rates', 'live', 'hip3', 'l', 'XyzGoldRates', 2, 9224, {}],
+    ['xyz_crude_short', 'live', 'hip3', 's', 'XyzCrudeShort', 2, 9236, { state: 'offline', offMin: 14 }],
+    ['xyz_gap_long', 'dry', 'hip3', 'l', 'XyzGapLong', 2, 9248, {}] ] },
+  { id: 'gen', name: 'Générées', bots: [
+    ['gen_cci_ao_short', 'live', 'crypto', 's', 'GenCciAo', 2, 9300, {}],
+    ['gen_mfi_rev_short', 'live', 'crypto', 's', 'GenMfiRev', 2, 9312, {}],
+    ['gen_bb_squeeze_short', 'live', 'crypto', 's', 'GenBbSqueeze', 2, 9324, {}],
+    ['kelt_dpo_long', 'live', 'crypto', 'l', 'KeltDpo', 2, 9336, { state: 'auth_expired' }],
+    ['sol_meanrev_short', 'live', 'crypto', 's', 'SolMeanRev', 2, 9348, {}],
+    ['eth_meanrev_15m', 'live', 'crypto', 'l', 'EthMeanRev15', 2, 9360, { stale: 540 }] ] },
+  { id: 'lab', name: 'Labo (dry)', bots: [
+    ['casino_dry', 'dry', 'crypto', 'ls', 'Casino', 3, 9400, {}],
+    ['miracle_mot2', 'dry', 'crypto', 'l', 'MiracleMot2', 2, 9412, {}],
+    ['vwap_reclaim_long', 'dry', 'crypto', 'l', 'VwapReclaim', 2, 9424, {}],
+    ['rsi_div_short', 'dry', 'crypto', 's', 'RsiDiv', 2, 9436, {}],
+    ['hf_dca_74', 'dry', 'crypto', 'l', 'HfDca74', 2, 9448, { seeded: '03/10' }],
+    ['donchian_short', 'dry', 'crypto', 's', 'DonchianShort', 2, 9460, {}],
+    ['atr_band_short', 'dry', 'crypto', 's', 'AtrBandShort', 2, 9472, {}],
+    ['zscore_pairs', 'dry', 'crypto', 'ls', 'ZScorePairs', 2, 9484, { state: 'stopped' }] ] },
+];
+const bots = [], positions = [];
+let bid = 1, tid = 1180;
+const cryptoPairs = Object.keys(PAIRS).filter(p => p !== 'BTC' && p !== 'ETH');
+G.forEach(g => g.bots.forEach(b => {
+  const [name, mode, market, side, strat, lev, port, x] = b;
+  const state = x.state || 'online';
+  const cap = x.cap || Math.round(rr(150, mode === 'live' ? 620 : 1000) / 10) * 10;
+  const max = x.max || (name.startsWith('btc') ? 2 : ri(3, 6));
+  const bot = {
+    id: 'ftbot.' + bid, key: 'local:' + port, name, group: g.id, groupName: g.name, mode, market, side, strat, lev, port, state,
+    tf: '15m', cap, max, open: 0, openPnl: 0, day: 0, d30: 0, ddAbs: 0, ddPct: 0, ddThr: -12, expoL: 0, expoS: 0,
+    ageS: x.stale || ri(2, 14), stale: !!x.stale || state === 'offline', lastH: rr(0.4, 20), spark: [], winrate: rr(62, 86),
+    seeded: x.seeded || null, backoff: x.backoff || 0, startMin: x.startMin, offMin: x.offMin, capFull: !!x.capFull, uptimeH: ri(3, 96)
+  };
+  bid++;
+  if (state === 'offline') bot.ageS = x.offMin * 60;
+  // positions
+  let n = state === 'starting' || state === 'stopped' ? 0 : x.capFull ? max : ri(1, Math.max(1, max - 1));
+  if (name === 'dynv1_short') n = 4;
+  if (name === 'xyz_crude_short') n = 2;
+  const pool = market === 'hip3' ? Object.keys(XYZ) : market === 'mixed' ? cryptoPairs.concat(['xyz:AAPL', 'xyz:CL']) : name.startsWith('btc') ? ['BTC', 'ETH'] : cryptoPairs;
+  const used = new Set();
+  for (let i = 0; i < n; i++) {
+    let pair; let guard = 0; do { pair = pick(pool); guard++; } while (used.has(pair) && guard < 20);
+    if (used.has(pair)) break; used.add(pair);
+    const isShort = side === 's' ? true : side === 'l' ? false : R() < 0.45;
+    const dcaMax = name.startsWith('hippo') || name.startsWith('dyn') ? 6 : 4;
+    let filled = Math.min(dcaMax, 1 + Math.floor(Math.pow(R(), 1.6) * dcaMax));
+    let pct = (filled > 3 ? rr(-11, -2) : rr(-4.5, 5.5));
+    if (name === 'dynv1_short' && i < 2) { pct = rr(-14, -9); filled = 5; }
+    const price = FQ.PRICES[pair];
+    const stake = rr(14, 60) * filled * (bot.cap / 600 + 0.5);
+    const lv = lev;
+    const avg = isShort ? price / (1 - pct / 100 / lv * 0 + 0) * (1 + 0) : price;
+    const entry = isShort ? price * (1 + pct / 100 / lv * -1) : price / (1 + pct / 100 / lv);
+    const pnl = stake * pct / 100;
+    const liq = rr(18, 60) - (filled - 1) * 3.2;
+    const durH = filled > 3 ? rr(14, 70) : rr(0.6, 26);
+    positions.push({ key: bot.key + '/' + tid, tradeId: tid++, bot, pair, isShort, lev: lv, filled, dcaMax, entry, price, pct, pnl, stake, notional: stake * lv, liq: Math.max(11, liq), durH, pctl: durH > 58 ? 91 : durH > 44 ? 84 : 0, xyz: pair.startsWith('xyz:'), orphan: false });
+  }
+  bots.push(bot);
+}));
+// position orpheline : sur le wallet, sans bot propriétaire
+const orphan = { key: 'wallet/PENGU', tradeId: null, bot: null, pair: 'PENGU', isShort: true, lev: 2, filled: 0, dcaMax: 0, entry: 0.01121, price: 0.01183, pct: -11.06, pnl: -26.12, stake: 106.2, notional: 212.4, liq: 38, durH: 70.4, pctl: 0, xyz: false, orphan: true };
+positions.push(orphan);
+// métriques par bot
+bots.forEach(b => {
+  const ps = positions.filter(p => p.bot === b);
+  b.open = ps.length;
+  b.openPnl = ps.reduce((a, p) => a + p.pnl, 0);
+  ps.forEach(p => { if (p.isShort) b.expoS += p.notional; else b.expoL += p.notional; });
+  b.day = b.state === 'starting' || b.state === 'stopped' ? 0 : rr(-6, 9) * (b.cap / 500);
+  b.d30 = rr(-20, 60) * (b.cap / 500);
+  b.ddPct = rr(-9, -0.4); b.ddAbs = b.cap * b.ddPct / 100;
+  if (b.name === 'dynv1_short') { b.ddPct = -18.4; b.ddAbs = -110.4; b.day = -14.2; }
+  if (b.name === 'hippo_multi') { b.ddPct = -2.2; b.ddAbs = -61.2; b.d30 = 162.4; }
+  let v = b.openPnl - rr(-3, 3); for (let i = 0; i < 24; i++) { b.spark.unshift(v); v -= rr(-2.4, 2.4) * (b.cap / 600); }
+  b.alerts = [];
+});
+FQ.bots = bots; FQ.positions = positions; FQ.groups = G;
+FQ.bot = name => bots.find(b => b.name === name);
+const B = FQ.bot;
+
+/* ---------- Alertes structurées (modèle passerelle §7.1) ---------- */
+const now = new Date(2026, 9, 15, 18, 56, 12);
+FQ.now = now;
+const hhmm = (minAgo) => { const d = new Date(now - minAgo * 60000); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+FQ.hhmm = hhmm;
+const dyn = B('dynv1_short');
+FQ.alerts = [
+  { id: 'a1', type: 'highDrawdown', sev: 'crit', bot: 'dynv1_short', title: 'Drawdown au-delà du seuil', msg: `<span class="num">${FQ.n(dyn.ddAbs)}</span> USDC (<span class="num">${FQ.p(dyn.ddPct, 1)}</span>, avec latent) pour un seuil de <span class="num">${FQ.p(-12, 0)}</span>.`, since: 42, acts: [['pause', 'Pause entrées'], ['open', 'Ouvrir']] },
+  { id: 'a2', type: 'botOffline', sev: 'crit', bot: 'xyz_crude_short', title: 'Bot hors ligne', msg: 'Aucune réponse depuis <span class="num">14 min</span>. 2 positions ouvertes, valeurs figées à 18:42:07 et exclues des totaux.', since: 14, acts: [['logs', 'Logs'], ['open', 'Ouvrir']] },
+  { id: 'a3', type: 'reconMismatch', sev: 'crit', bot: null, title: 'Position orpheline', msg: 'PENGU short <span class="num">212,40</span> USDC sur le wallet partagé, aucun bot propriétaire. Pas de sortie directe : passer par la réconciliation.', since: 65, acts: [['recon', 'Réconcilier (aperçu)']] },
+  { id: 'a4', type: 'daemonDegraded', sev: 'warn', bot: null, title: 'Backoff 429 répété', msg: '<span class="num">3</span> backoffs en 10 min (dynv1_long, hippo_multi). Budget Hyperliquid à <span class="num">61 %</span>. Évitez les rechargements.', since: 9, acts: [['diag', 'Diagnostic']] },
+  { id: 'a5', type: 'dataStale', sev: 'warn', bot: 'eth_meanrev_15m', title: 'Donnée périmée', msg: 'Dernière donnée il y a <span class="num">9 min</span> (seuil 2 min). Exclu des totaux.', since: 6, acts: [['open', 'Ouvrir']] },
+  { id: 'a6', type: 'authExpired', sev: 'warn', bot: 'kelt_dpo_long', title: 'Session expirée', msg: 'La passerelle ne peut plus agir sur ce bot. Lecture conservée (SQLite), actions désactivées.', since: 31, acts: [['relogin', 'Se reconnecter']] },
+  { id: 'a7', type: 'capacityFull', sev: 'warn', bot: 'hippo_multi', title: 'Slots pleins', msg: '<span class="num">8/8</span> positions depuis 3 h. Aucune nouvelle entrée possible.', since: 180, acts: [['open', 'Ouvrir']] },
+  { id: 'a8', type: 'botStarting', sev: 'info', bot: 'hippo_ladder_long', title: 'Démarrage en cours', msg: 'Initialisation depuis <span class="num">4 min</span> (pairlist). Pas d\'alerte hors ligne avant 20 min.', since: 4, acts: [] },
+];
+FQ.alertsAcked = [{ id: 'k1', type: 'positionStuck', sev: 'warn', bot: 'hippo_multi', title: 'Position longue', msg: 'WIF ouverte depuis <span class="num">2 j 6 h</span>, 91e centile des durées du bot. Revient si elle dépasse 3 j.', since: 130, acts: [['open', 'Ouvrir']] }];
+FQ.alertsSilenced = [{ id: 's1', type: 'noTradeActivity', sev: 'info', bot: 'casino_dry', title: 'Aucun trade depuis 48 h', msg: 'Silencieuse jusqu\'à demain 08:00.', since: 600, acts: [] }];
+if (Q.get('calm') === '1') { FQ.alerts = []; }
+FQ.alerts.forEach(a => { const b = a.bot && B(a.bot); if (b) b.alerts.push(a); });
+FQ.sevOf = b => b.alerts.some(a => a.sev === 'crit') ? 'crit' : b.alerts.some(a => a.sev === 'warn') ? 'warn' : b.stale ? 'warn' : b.alerts.length ? 'info' : '';
+// ordre « Attention d'abord »
+FQ.attnRank = b => { const s = FQ.sevOf(b); return (s === 'crit' ? 0 : s === 'warn' ? 1 : s === 'info' ? 2 : 3) * 1e4 - Math.abs(Math.min(0, b.openPnl)) ; };
+
+/* ---------- Agrégats (live seul par défaut, périmés exclus) ---------- */
+FQ.scope = Q.get('scope') || 'live';
+FQ.inScope = b => FQ.scope === 'all' || b.mode === FQ.scope;
+FQ.totals = function () {
+  const sc = bots.filter(FQ.inScope);
+  const ok = sc.filter(b => !b.stale && b.state !== 'stopped');
+  const excl = sc.filter(b => b.stale);
+  const t = { n: sc.length, excl, open: 0, openPnl: 0, day: 0, d30: 0, cap: 0, expoL: 0, expoS: 0, online: 0 };
+  ok.forEach(b => { t.open += b.open; t.openPnl += b.openPnl; t.day += b.day; t.d30 += b.d30; t.cap += b.cap; t.expoL += b.expoL; t.expoS += b.expoS; });
+  if (FQ.scope !== 'dry') { t.openPnl += orphan.pnl * 0; } // l'orpheline n'appartient à aucun bot : affichée à part, jamais sommée
+  t.online = sc.filter(b => b.state === 'online' && !b.stale).length;
+  t.realized = t.cap + t.d30 * 3.1;
+  t.equity = t.realized + t.openPnl;
+  t.ddAbs = -412.3; t.ddPct = t.ddAbs / t.equity * 100; t.ddThr = -10;
+  t.margin = (t.expoL + t.expoS) / 2 / (t.cap * 1.6) * 100;
+  return t;
+};
+
+/* ---------- Santé (niveau + raisons, pas de score) ---------- */
+FQ.health = { level: FQ.alerts.length ? 'deg' : 'ok', reasons: FQ.alerts.length ? ['1 bot live hors ligne', 'Backoff 429 répété (3 en 10 min)', '1 donnée périmée'] : [], budget: 61, backoff: 3, cache: 97.2, snap: 2, logsErr: 3 };
+
+/* ---------- Événements et « Depuis votre passage » ---------- */
+FQ.events = [
+  [2, 'arrow-down-to-line', '<b>hippo_multi</b> renfort DCA SO4 sur WIF, <span class="num">61,89</span> USDC'],
+  [5, 'log-out', '<b>btc_regime_long</b> sortie ROI sur BTC <span class="num up">+21,55</span>'],
+  [9, 'triangle-alert', '<b>Démon</b> backoff 429 (3e en 10 min)'],
+  [14, 'plug-zap', '<b>xyz_crude_short</b> ne répond plus'],
+  [21, 'log-out', '<b>gen_mfi_rev_short</b> sortie stoploss sur ARB <span class="num down">' + MINUS + '4,12</span>'],
+  [31, 'key-round', '<b>kelt_dpo_long</b> session expirée'],
+  [42, 'trending-down', '<b>dynv1_short</b> franchit le seuil de drawdown'],
+  [55, 'hand', '<b>hippo_short_sharpe</b> sortie manuelle sur SEI <span class="num up">+3,40</span> (vous, téléphone)'],
+  [64, 'refresh-cw', '<b>hippo_ladder_long</b> rechargé (vous)'],
+];
+
+/* ---------- Icônes ---------- */
+FQ.icons = function (root) { try { if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.75 }, nameAttr: 'data-lucide' }); } catch (e) {} };
+FQ.i = (n, cls = '') => `<i data-lucide="${n}"${cls ? ` class="${cls}"` : ''}></i>`;
+
+/* ---------- Fragments partagés ---------- */
+const i = FQ.i;
+FQ.ui = {};
+FQ.ui.dir = (p) => p.isShort ? `<span class="dir s" title="Short">${i('arrow-down-right', 'sm')}S<span class="lev">×${p.lev}</span></span>` : `<span class="dir l" title="Long">${i('arrow-up-right', 'sm')}L<span class="lev">×${p.lev}</span></span>`;
+FQ.ui.side = s => s === 's' ? `<span class="dir s">${i('arrow-down-right', 'sm')}S</span>` : s === 'l' ? `<span class="dir l">${i('arrow-up-right', 'sm')}L</span>` : `<span class="dir ls">L·S</span>`;
+FQ.ui.pips = (f, m) => { let h = '<span class="pips" aria-label="' + f + ' ordres remplis sur ' + m + '">'; for (let k = 0; k < m; k++) h += `<i class="${k < f ? (k === f - 1 && f > 3 ? 'last' : '') : 'e'}"></i>`; return h + '</span>'; };
+FQ.ui.stateDot = b => b.state === 'offline' ? '<span class="dot offline" title="Hors ligne"></span>' : b.state === 'starting' ? '<span class="dot starting" title="Démarrage"></span>' : b.state === 'stopped' ? '<span class="dot stopped" title="Arrêté, ledger orphelin"></span>' : b.state === 'auth_expired' ? '<span class="dot auth" title="Session expirée"></span>' : b.stale ? '<span class="dot stale" title="Périmé"></span>' : '<span class="dot" title="En ligne"></span>';
+FQ.ui.modeBadge = (b, full) => b.mode === 'dry' ? '<span class="badge dry">Dry</span>' : full ? '<span class="badge live">Live</span>' : '<span class="livemark" title="Argent réel"></span>';
+FQ.ui.stateText = b => b.state === 'offline' ? `<span class="crit-t">hors ligne ${b.offMin} min</span>` : b.state === 'starting' ? `<span class="info-t">démarrage ${b.startMin} min</span>` : b.state === 'stopped' ? '<span class="muted">arrêté, ledger orphelin</span>' : b.state === 'auth_expired' ? '<span class="warn-t">session expirée</span>' : '';
+FQ.ui.spark = (vals, w = 64, h = 18) => {
+  const mn = Math.min(...vals, 0), mx = Math.max(...vals, 0), sp = mx - mn || 1;
+  const pts = vals.map((v, k) => `${(k / (vals.length - 1) * w).toFixed(1)},${(h - 1 - (v - mn) / sp * (h - 2)).toFixed(1)}`).join(' L');
+  const z = (h - 1 - (0 - mn) / sp * (h - 2)).toFixed(1);
+  const last = vals[vals.length - 1];
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path class="z" d="M0,${z} L${w},${z}"/><path d="M${pts}" stroke="var(${last >= 0 ? '--profit' : '--loss'})"/></svg>`;
+};
+FQ.ui.liqMeter = p => `<span class="cell-meter"><span class="meter"><i class="${p.liq < 20 ? 'crit' : p.liq < 30 ? 'warn' : 'neutral'}" style="width:${Math.min(100, p.liq * 1.6)}%"></i></span><span>${FQ.pu(p.liq, 0)}</span></span>`;
+FQ.ui.durCell = p => `${FQ.dur(p.durH)}${p.pctl ? `<span class="pctl p${p.pctl}" title="${p.pctl}e centile des durées du bot">p${p.pctl}</span>` : ''}`;
+// Échelle DCA horizontale normalisée : gauche = danger (liquidation), droite = profit, pour long comme short
+FQ.ui.ladderH = p => {
+  const lv = []; const step = 64 / Math.max(1, p.dcaMax);
+  for (let k = 0; k < p.dcaMax; k++) { const x = 84 - k * step; lv.push(`<span class="lv ${k < p.filled ? '' : 'pend'} ${k === p.filled ? 'next' : ''}" style="left:${x}%"></span>`); }
+  const avg = 84 - (p.filled - 1) * step * 0.55, tp = Math.min(97, avg + 9), px = Math.max(18, Math.min(96, avg + p.pct * 1.4));
+  return `<div class="lad-h" aria-label="Échelle DCA">
+    <span class="rail"></span><span class="liq" title="Liquidation"></span><span class="gain" style="left:${avg}%;width:${tp - avg}%"></span>
+    ${lv.join('')}<span class="avg" style="left:${avg}%"></span><span class="tp" style="left:${tp}%"></span><span class="px" style="left:${px}%"></span>
+    <span class="t l0" style="left:0">liq. ${FQ.pu(p.liq, 0)}</span><span class="t" style="left:${Math.max(30, Math.min(70, avg))}%">${p.filled}/${p.dcaMax} remplis</span><span class="t r0" style="left:100%">TP</span></div>`;
+};
+FQ.ui.botLink = (b) => b ? `<a href="bot.html?bot=${b.name}" class="botcell" onclick="event.stopPropagation()">${FQ.ui.modeBadge(b)}<span class="nm">${b.name}</span></a>` : '<span class="botcell"><span class="muted">aucun bot (wallet)</span></span>';
+
+/* ---------- Thème ---------- */
+FQ.setTheme = t => { document.documentElement.dataset.theme = t; try { localStorage.setItem('fqu2.mock.theme', t); } catch (e) {} document.dispatchEvent(new CustomEvent('fq:theme', { detail: t })); };
+(function initTheme() {
+  let t = Q.get('theme'); if (!t) { try { t = localStorage.getItem('fqu2.mock.theme'); } catch (e) {} }
+  document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
+  if (Q.get('cvd') === '1') document.documentElement.dataset.cvd = '1';
+})();
+FQ.toggleTheme = () => FQ.setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+FQ.css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ---------- Connexion : gateway|direct x connecting|live|degraded|offline ---------- */
+const cq = Q.get('conn') || 'live';
+FQ.conn = { kind: cq.startsWith('direct') ? 'direct' : 'gateway', state: cq === 'direct' ? 'live' : cq.replace('direct-', ''), lat: 38, frozenAt: '18:42:07' };
+FQ.moneyAllowed = () => FQ.conn.state !== 'offline' && FQ.conn.state !== 'connecting';
+FQ.renderConn = function () {
+  const el = $('#conn'); if (!el) return;
+  const c = FQ.conn; el.dataset.kind = c.kind; el.dataset.state = c.state;
+  const map = {
+    'gateway:live': ['Passerelle', `<span class="num">${c.lat}</span> ms`],
+    'gateway:connecting': ['Connexion', 'en cours'],
+    'gateway:degraded': ['Dégradée', '2 sources en retard'],
+    'gateway:offline': ['Hors ligne', 'figé ' + c.frozenAt],
+    'direct:live': ['Direct', 'polling par bot'],
+    'direct:connecting': ['Direct', 'connexion'],
+    'direct:degraded': ['Direct', 'bots lents'],
+    'direct:offline': ['Hors ligne', 'figé ' + c.frozenAt] };
+  const [a, b] = map[c.kind + ':' + c.state];
+  el.innerHTML = `<span class="d"></span><span class="lbl"><b>${a}</b> <span class="lbl-l dim">${b}</span></span><span class="sync" title="Resynchronisation"></span>`;
+  el.title = 'Source : ' + (c.kind === 'gateway' ? 'passerelle frequi-gateway' : 'mode direct (navigateur)') + ', état : ' + c.state;
+  $$('[data-money]').forEach(x => x.toggleAttribute('disabled', !FQ.moneyAllowed()));
+  FQ.renderBanners();
+};
+FQ.renderBanners = function () {
+  const host = $('#banners'); if (!host) return;
+  const c = FQ.conn; let h = '';
+  if (c.state === 'offline') h += `<div class="banner offline" role="status">${i('wifi-off')}<span class="grow"><b>Hors ligne.</b> Valeurs figées à <span class="num">${c.frozenAt}</span>, actions argent réel désactivées. Nouvel essai dans <span class="num">10 s</span> (essai 4).</span><button class="btn sm" onclick="FQ.demoConn('live')">Réessayer</button></div>`;
+  else if (c.kind === 'direct') h += `<div class="banner direct" role="status">${i('cable')}<span class="grow"><b>Mode direct.</b> Passerelle injoignable : le navigateur interroge chaque bot. Indisponibles : alertes 24/7, MAE/MFE, exports serveur, sparklines 24 h. Nouvelle sonde dans <span class="num" id="probeIn">42</span> s.</span><button class="btn sm" onclick="FQ.demoConn('live')">Sonder maintenant</button></div>`;
+  else if (c.state === 'degraded') h += `<div class="banner degraded" role="status">${i('triangle-alert')}<span class="grow"><b>Passerelle dégradée.</b> Démon ftcache en retard (48 s), base de dynv1_long verrouillée. Les valeurs concernées sont marquées périmées et sorties des totaux.</span><button class="btn sm ghost" onclick="FQ.openHealth()">Détails</button></div>`;
+  if (c.state === 'connecting' || FQ.fromCache) h += `<div class="banner cache" role="status">${i('history')}<span class="grow"><b>Données d'il y a 4 min</b> (dernier snapshot mis en cache sur cet appareil). Synchronisation en cours, aucune action possible avant la fin.</span></div>`;
+  host.innerHTML = h; FQ.icons();
+};
+FQ.demoConn = function (s) {
+  if (s === 'direct') { FQ.conn.kind = 'direct'; FQ.conn.state = 'live'; }
+  else { FQ.conn.kind = 'gateway'; FQ.conn.state = s; }
+  FQ.renderConn();
+  if (s === 'live') { const el = $('#conn'); el.classList.add('resync'); setTimeout(() => el.classList.remove('resync'), 1200); }
+};
+FQ.fromCache = Q.get('cache') === '1';
+
+/* ---------- Animations de valeurs ---------- */
+FQ.tween = function (el, to, fmt, flash = true) {
+  const from = parseFloat(el.dataset.v ?? to); el.dataset.v = to;
+  const cell = el.closest('td,.kpi,.tile,.card') || el;
+  if (flash && to !== from && !RM) { cell.classList.remove('fl-up', 'fl-dn'); void cell.offsetWidth; cell.classList.add(to > from ? 'fl-up' : 'fl-dn'); }
+  if (RM || from === to) { el.textContent = fmt(to); return; }
+  const t0 = performance.now(), D = 420;
+  (function step(t) { const k = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - k, 3); el.textContent = fmt(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); })(t0);
+};
+FQ.countUp = function (root = document) { $$('[data-count]', root).forEach(el => { const to = parseFloat(el.dataset.count); const d = +(el.dataset.d || 2); const sgn = el.dataset.sign === '1'; el.dataset.v = 0; FQ.tween(el, to, v => sgn ? FQ.s(v, d) : FQ.n(v, d), false); }); };
+
+/* ---------- Tick simulé (deltas regroupés par frame) ---------- */
+const subs = [];
+FQ.onTick = fn => subs.push(fn);
+let tickN = 0;
+function tick() {
+  if (FQ.conn.state === 'offline' || FQ.conn.state === 'connecting' || document.hidden) return;
+  tickN++;
+  const moved = [];
+  positions.forEach(p => { if (p.orphan || !p.bot || p.bot.stale || R() > 0.28) return; const d = rr(-0.35, 0.35); p.pct += d; p.pnl = p.stake * p.pct / 100; p.price = p.price * (1 + (p.isShort ? -d : d) / 100 / p.lev); moved.push(p); });
+  bots.forEach(b => { if (b.stale) return; b.openPnl = positions.filter(p => p.bot === b).reduce((a, p) => a + p.pnl, 0); b.ageS = ri(1, 9); });
+  requestAnimationFrame(() => { subs.forEach(f => f(moved)); const c = $('#conn'); if (c && FQ.conn.state === 'live') { c.classList.remove('beat'); void c.offsetWidth; c.classList.add('beat'); } });
+}
+if (Q.get('static') !== '1') setInterval(tick, 2600);
+
+/* ---------- Coquille : en-tête, onglets mobiles, barre d'état ---------- */
+FQ.shell = function (page) {
+  const nav = [['dashboard', 'dashboard.html', 'layout-grid', 'Flotte', 'G D'], ['bot', 'bot.html', 'bot', 'Bot', 'G B'], ['charts', 'charts.html', 'chart-candlestick', 'Graphiques', 'G C'], ['journal', 'journal.html', 'book-open-text', 'Journal', 'G J']];
+  const top = $('#top');
+  const nAlerts = FQ.alerts.filter(a => a.sev !== 'info').length;
+  if (top) top.innerHTML = `
+    <a class="brand" href="index.html" aria-label="FreqUI Ultimate, galerie">${'<span class="brand-mark">' + i('activity') + '</span>'}<span>FreqUI</span><small class="hide-m">Ultimate</small></a>
+    <nav class="nav" aria-label="Navigation principale">${nav.map(n => `<a href="${n[1]}" ${n[0] === page ? 'aria-current="page"' : ''} title="${n[3]} (${n[4]})">${i(n[2])}${n[3]}</a>`).join('')}
+      <button class="tools" onclick="FQ.toolsMenu(this)" aria-haspopup="menu" ${page === 'tools' ? 'style="color:var(--fg)"' : ''}>${i('wrench')}Outils${i('chevron-down', 'sm')}</button></nav>
+    <button class="cmd" onclick="FQ.palette()" aria-label="Palette de commandes">${i('search')}<span>Bot, paire, action ou page</span><kbd>Ctrl</kbd><kbd>K</kbd></button>
+    <div class="top-r">
+      <button class="ibtn only-m" onclick="FQ.palette()" aria-label="Rechercher">${i('search')}</button>
+      <span class="conn" id="conn" role="status" aria-live="polite"></span>
+      <button class="ibtn" onclick="FQ.bell()" aria-label="Alertes : ${nAlerts}">${i('bell')}${nAlerts ? `<span class="count">${nAlerts}</span>` : ''}</button>
+      <button class="ibtn hide-m" onclick="FQ.toggleTheme()" aria-label="Basculer le thème (T)">${i('sun-moon')}</button>
+      <a class="ibtn hide-m" href="tools.html#reglages" aria-label="Réglages">${i('settings')}</a>
+    </div>`;
+  const tb = $('#tabbar');
+  if (tb) tb.innerHTML = nav.map(n => `<a href="${n[1]}" ${n[0] === page ? 'aria-current="page"' : ''}>${i(n[2])}<span>${n[3]}</span></a>`).join('') + `<button onclick="FQ.moreSheet()" ${page === 'tools' ? 'aria-current="page"' : ''}>${i('menu')}<span>Plus</span></button>`;
+  const st = $('#status');
+  if (st) { const h = FQ.health; st.innerHTML = `
+    <button class="si" onclick="FQ.openHealth()" title="Santé : ${h.reasons.join(', ') || 'aucune raison'}">${i('activity')}<span class="${h.level === 'ok' ? 'lvl-ok' : 'lvl-deg'}">Santé ${h.level === 'ok' ? 'OK' : 'dégradée'}</span>${h.reasons.length ? `<span class="muted">${h.reasons.length} raisons</span>` : ''}</button>
+    <span class="si">Bots live <span class="num">${FQ.bots.filter(b => b.mode === 'live' && b.state === 'online' && !b.stale).length}/${FQ.bots.filter(b => b.mode === 'live').length}</span></span>
+    <button class="si" onclick="FQ.openHealth()" title="Budget agrégé de la passerelle">Budget HL <span class="num">${h.budget} %</span></button>
+    <button class="si" onclick="FQ.openHealth()" title="Backoffs 429 sur 10 min, par bot dans le détail"><span class="${h.backoff >= 3 ? 'lvl-deg' : ''}">Backoff 429</span> <span class="num">${h.backoff}</span><span class="muted">/10 min</span></button>
+    <span class="si">Cache <span class="num">${FQ.n(h.cache, 1)} %</span></span>
+    <span class="si">Snapshot <span class="num" id="snapAge">${h.snap} s</span></span>
+    <span class="sp"></span>
+    <button class="si" onclick="FQ.toggleLogs()">${i('terminal')}Logs <span class="num lvl-crit">${h.logsErr}</span> err</button>
+    <button class="si" onclick="FQ.toggleDensity()">${i('rows-3')}<span id="densLbl">Densité compacte</span></button>
+    <button class="si" onclick="FQ.demoMenu(this)">${i('flask-conical')}Démo</button>
+    <span class="si muted">v2.0.0-maquette · Europe/Paris</span>`; }
+  // Tiroir de logs (LogStream compact)
+  if (st && !$('#logdrawer')) { const d = document.createElement('div'); d.id = 'logdrawer'; d.className = 'logdrawer'; d.innerHTML = `<div class="ph"><h2>${i('terminal')}Logs</h2><div class="seg sm"><button aria-pressed="true">Erreurs</button><button>Avert.</button><button>Tout</button></div><span class="meta">tampon des bots, curseur passerelle</span><div class="tools"><a class="btn xs ghost" href="tools.html#logs">Ouvrir la page</a><button class="btn xs ghost icon" onclick="FQ.toggleLogs()" aria-label="Fermer">${i('x')}</button></div></div><div class="pb">${FQ.logLines(true)}</div>`; document.body.appendChild(d); }
+  FQ.renderConn();
+  FQ.icons();
+};
+FQ.logLines = function (errorsOnly) {
+  const L = [['18:55:41', 'xyz_crude_short', 'e', 'ERROR', 'Connection to exchange lost, retrying in 30 s (ExchangeError)'], ['18:54:02', 'dynv1_long', 'w', 'WARN', 'Backoff 429 actif, prochaine requête dans 4,0 s'], ['18:52:17', 'gen_cci_ao_short', 'e', 'ERROR', 'Unable to exit trade PENGU/USDC:USDC: position not found'], ['18:49:30', 'hippo_multi', 'i', 'INFO', 'Entrée DCA SO4 WIF/USDC:USDC 61,89 USDC'], ['18:47:03', 'kelt_dpo_long', 'e', 'ERROR', '401 Unauthorized sur /api/v1/status'], ['18:44:51', 'hippo_multi', 'w', 'WARN', 'Backoff 429 actif, prochaine requête dans 2,0 s'], ['18:41:12', 'btc_regime_long', 'i', 'INFO', 'Sortie ROI BTC/USDC:USDC +21,55 USDC']];
+  return '<div class="logs">' + L.filter(l => !errorsOnly || l[2] !== 'i').map(l => `<div class="ln"><span class="muted">${l[0]}</span><span>${l[1]}</span><span class="${l[2]}">${l[3]}</span><span>${l[4]}</span></div>`).join('') + '</div>';
+};
+FQ.toggleLogs = () => $('#logdrawer')?.classList.toggle('open');
+FQ.toggleDensity = () => { const c = document.documentElement.dataset.density === 'comfortable'; document.documentElement.dataset.density = c ? '' : 'comfortable'; const l = $('#densLbl'); if (l) l.textContent = c ? 'Densité compacte' : 'Densité confort'; };
+
+/* ---------- Popovers et menus ---------- */
+let popEl;
+FQ.pop = function (anchor, html) {
+  FQ.closePop();
+  popEl = document.createElement('div'); popEl.className = 'pop'; popEl.innerHTML = html; popEl.setAttribute('role', 'menu');
+  document.body.appendChild(popEl); FQ.icons();
+  const r = anchor.getBoundingClientRect(), w = popEl.offsetWidth, h = popEl.offsetHeight;
+  let x = Math.min(innerWidth - w - 8, Math.max(8, r.left)), y = r.bottom + 4;
+  if (y + h > innerHeight - 8) y = Math.max(8, r.top - h - 4);
+  popEl.style.left = x + 'px'; popEl.style.top = y + 'px';
+  requestAnimationFrame(() => popEl.classList.add('open'));
+  setTimeout(() => document.addEventListener('click', FQ.closePop, { once: true }), 0);
+  return popEl;
+};
+FQ.closePop = () => { if (popEl) { popEl.remove(); popEl = null; } };
+FQ.exclPop = function (btn) {
+  const t = FQ.totals();
+  FQ.pop(btn, `<h4>Exclus des totaux (${t.excl.length})</h4>${t.excl.map(b => `<a class="mi" href="bot.html?bot=${b.name}">${FQ.ui.stateDot(b)}<span>${b.name}</span><span class="k">${b.state === 'offline' ? 'hors ligne ' + b.offMin + ' min' : 'périmé ' + FQ.age(b.ageS)}</span></a>`).join('')}<hr><div class="mi muted" style="pointer-events:none">Une valeur périmée n'est jamais sommée.</div>`);
+};
+FQ.toolsMenu = function (btn) {
+  FQ.pop(btn, `<h4>Outils</h4>
+   <a class="mi" href="tools.html#diagnostic">${i('gauge')}Diagnostic (rate, cache, timeline par bot)</a>
+   <a class="mi" href="tools.html#reconciliation">${i('git-compare-arrows')}Réconciliation du wallet</a>
+   <a class="mi" href="tools.html#risque">${i('shield-alert')}Risque avancé, stress test</a>
+   <a class="mi" href="tools.html#logs">${i('terminal')}Logs (page)</a>
+   <hr>
+   <a class="mi" href="tools.html#stratdev">${i('flask-conical')}Labo de stratégie</a>
+   <a class="mi" href="tools.html#backtest">${i('history')}Backtest</a>
+   <a class="mi" href="tools.html#data">${i('download')}Télécharger des données</a>
+   <a class="mi" href="tools.html#pairlist">${i('list-filter')}Configuration de pairlist</a>
+   <a class="mi" href="tools.html#replay">${i('rewind')}Replay dry</a>
+   <hr><a class="mi" href="tools.html#reglages">${i('settings')}Réglages<span class="k">G S</span></a>`);
+};
+FQ.demoMenu = function (btn) {
+  const u = (q) => location.pathname.split('/').pop() + q;
+  FQ.pop(btn, `<h4>Connexion (4 états + direct)</h4>
+   <button class="mi" onclick="FQ.demoConn('connecting')">${i('loader')}Connexion en cours</button>
+   <button class="mi" onclick="FQ.demoConn('live')">${i('radio')}Passerelle en direct (resync discrète)</button>
+   <button class="mi" onclick="FQ.demoConn('degraded')">${i('triangle-alert')}Passerelle dégradée</button>
+   <button class="mi" onclick="FQ.demoConn('offline')">${i('wifi-off')}Hors ligne</button>
+   <button class="mi" onclick="FQ.demoConn('direct')">${i('cable')}Mode direct</button>
+   <a class="mi" href="${u('?cache=1')}">${i('history')}Premier rendu depuis le cache</a>
+   <a class="mi" href="${u('?skeleton=1')}">${i('loader-circle')}Squelettes (aucun cache)</a>
+   <a class="mi" href="${u('?calm=1')}">${i('moon')}Flotte calme</a>
+   <h4>Résultat de la prochaine action</h4>
+   ${[['fill', 'Transmis puis rempli'], ['unknown', 'À vérifier (timeout)'], ['mismatch', '409 état changé'], ['inprogress', '409 déjà en cours'], ['401', '401 session expirée'], ['rejected', 'Refusé par le bot']].map(r => `<button class="mi" onclick="FQ.resultMode='${r[0]}';FQ.toastRaw('ok','Mode de démo','Prochaine action : ${r[1]}.')">${FQ.resultMode === r[0] ? i('check') : '<span style="width:15px"></span>'}${r[1]}</button>`).join('')}`);
+};
+FQ.moreSheet = function () {
+  FQ.sheetOpen(`<div class="sh-h"><b>Plus</b><button class="btn ghost icon" style="margin-left:auto" onclick="FQ.sheetClose()" aria-label="Fermer">${i('x')}</button></div>
+  <div class="sh-b"><div class="pop" style="position:static;opacity:1;transform:none;pointer-events:auto;box-shadow:none;max-width:none">
+   <a class="mi" href="tools.html#reglages">${i('settings')}Réglages</a><a class="mi" href="tools.html">${i('wrench')}Outils</a>
+   <button class="mi" onclick="FQ.toggleTheme()">${i('sun-moon')}Thème clair ou sombre</button>
+   <button class="mi" onclick="FQ.openHealth()">${i('activity')}Santé du système</button>
+   <hr><h4>Démo de la maquette</h4>
+   <button class="mi" onclick="FQ.demoConn('connecting');FQ.sheetClose()">Connexion en cours</button><button class="mi" onclick="FQ.demoConn('degraded');FQ.sheetClose()">Passerelle dégradée</button>
+   <button class="mi" onclick="FQ.demoConn('offline');FQ.sheetClose()">Hors ligne</button><button class="mi" onclick="FQ.demoConn('direct');FQ.sheetClose()">Mode direct</button>
+   <a class="mi" href="?cache=1">Premier rendu depuis le cache</a><a class="mi" href="?calm=1">Flotte calme</a>
+  </div></div>`);
+};
+FQ.bell = function () { if (FQ.onBell) return FQ.onBell(); location.href = 'dashboard.html#alertes'; };
+FQ.openHealth = function () {
+  const h = FQ.health;
+  FQ.sheetOpen(`<div class="grab"></div><div class="sh-h">${i('activity')}<b>Santé du système</b><span class="badge ${h.level === 'ok' ? 'info' : 'warn'}">${h.level === 'ok' ? 'OK' : 'Dégradée'}</span><button class="btn ghost icon" style="margin-left:auto" onclick="FQ.sheetClose()" aria-label="Fermer">${i('x')}</button></div>
+  <div class="sh-b"><div style="padding:12px;display:grid;gap:12px">
+   <div><div class="lab" style="margin-bottom:6px">Raisons (chacune mène à son alerte)</div>${h.reasons.length ? h.reasons.map(r => `<a class="note warn" href="dashboard.html#alertes" style="padding:5px 0">${i('chevron-right')}<span>${r}</span></a>`).join('') : '<div class="muted">Aucune.</div>'}</div>
+   <div class="est"><div><span class="lab">Budget Hyperliquid (passerelle)</span><span class="num">${h.budget} %</span><div class="meter" style="margin-top:6px"><i class="warn" style="width:${h.budget}%"></i></div></div><div><span class="lab">Cache ftcache</span><span class="num">${FQ.n(h.cache, 1)} %</span><div class="meter" style="margin-top:6px"><i class="ok" style="width:${h.cache}%"></i></div></div></div>
+   <div><div class="lab" style="margin-bottom:4px">Backoff 429 par bot (via proxy du bot, 10 min)</div>
+    <table class="tbl"><thead><tr><th class="l colh">Bot</th><th class="colh">Backoffs</th><th class="colh">Dernier</th></tr></thead><tbody>
+    <tr><td class="l ui">dynv1_long</td><td>2</td><td>18:54</td></tr><tr><td class="l ui">hippo_multi</td><td>1</td><td>18:44</td></tr><tr><td class="l ui muted">22 autres</td><td>0</td><td class="muted">n/d</td></tr></tbody></table>
+    <p class="muted" style="font-size:var(--t-xs);margin:6px 0 0">Pas de timeline 429 de toute la flotte : elle n'existe que par bot (Outils, Diagnostic).</p></div>
+   <div class="est"><div><span class="lab">Âge du snapshot</span><span class="num">2 s</span></div><div><span class="lab">Bots process</span><span class="num">29/32</span></div></div>
+  </div></div>`);
+};
+
+/* ---------- Feuille adaptative ---------- */
+let sheetEl, scrimEl;
+FQ.sheetOpen = function (html, opts = {}) {
+  FQ.sheetClose(true);
+  scrimEl = document.createElement('div'); scrimEl.className = 'scrim'; scrimEl.onclick = () => FQ.sheetClose();
+  sheetEl = document.createElement('aside'); sheetEl.className = 'sheet'; sheetEl.setAttribute('role', 'dialog'); sheetEl.innerHTML = html;
+  if (opts.width) sheetEl.style.width = opts.width;
+  document.body.append(scrimEl, sheetEl); FQ.icons();
+  requestAnimationFrame(() => { scrimEl.classList.add('open'); sheetEl.classList.add('open'); });
+  return sheetEl;
+};
+FQ.sheetClose = function (now) {
+  const s = sheetEl, c = scrimEl; sheetEl = scrimEl = null; if (!s) return;
+  if (now) { s.remove(); c.remove(); return; }
+  s.classList.remove('open'); c.classList.remove('open'); setTimeout(() => { s.remove(); c.remove(); }, 340);
+};
+
+/* ---------- Toasts (deux temps) ---------- */
+FQ.toastRaw = function (kind, title, body, opts = {}) {
+  let host = $('.toasts'); if (!host) { host = document.createElement('div'); host.className = 'toasts'; host.setAttribute('aria-live', 'polite'); document.body.appendChild(host); }
+  const ic = { sent: 'send', ok: 'circle-check', verify: 'circle-help', err: 'circle-x' }[kind];
+  const t = document.createElement('div'); t.className = 'toast ' + kind; t.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+  t.innerHTML = `${i(ic)}<b>${title}</b><button class="x" aria-label="Fermer">${i('x', 'sm')}</button><div class="tb">${body}</div>${opts.meta ? `<div class="meta">${opts.meta}</div>` : ''}${opts.actions ? `<div class="ta">${opts.actions}</div>` : ''}`;
+  t.querySelector('.x').onclick = () => t.remove();
+  host.appendChild(t); FQ.icons();
+  const ttl = opts.ttl ?? (kind === 'ok' ? 6000 : kind === 'sent' ? 0 : 0);
+  if (ttl) setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 220); }, ttl);
+  return t;
+};
+
+/* ---------- Actions argent réel : useBotAction(botKey) ---------- */
+FQ.inflight = new Set();
+FQ.resultMode = Q.get('result') || 'fill';
+FQ.setBusy = (key, on) => { $$(`[data-lock="${key}"]`).forEach(el => el.setAttribute('aria-busy', on ? 'true' : 'false')); $$(`tr[data-lock-row="${key}"]`).forEach(r => r.classList.toggle('busy', on)); };
+FQ.uuid = () => 'xxxxxxxx'.replace(/x/g, () => (R() * 16 | 0).toString(16));
+/* opts: {action, verb, title, sub, bot, trade, level: 'reduce'|'normal'|'destroy', qty, ordertype, est, notes} */
+FQ.confirm = function (o) {
+  const b = typeof o.bot === 'string' ? B(o.bot) : o.bot;
+  const live = b.mode === 'live';
+  const lvl = o.level || 'normal';
+  const key = `${b.key}:${o.action}:${o.trade ? o.trade.tradeId : '-'}`;
+  if (FQ.inflight.has(key)) { FQ.toastRaw('verify', 'Déjà en cours', `Une action « ${o.verb} » est déjà en vol pour <b>${b.name}</b>. Attendez son résultat.`, { ttl: 5000 }); return; }
+  if (!FQ.moneyAllowed()) { FQ.toastRaw('err', 'Action impossible', 'Connexion hors ligne ou en cours : les actions sont désactivées.', { ttl: 5000 }); return; }
+  if (b.state === 'auth_expired') { FQ.toastRaw('err', 'Session expirée', `Reconnectez <b>${b.name}</b> avant d'agir.`, { ttl: 6000, actions: '<button class="btn xs">Se reconnecter</button>' }); return; }
+  const needHold = live && lvl !== 'reduce';
+  const needType = live && lvl === 'destroy';
+  const holdLabel = o.holdLabel || (needType ? `Maintenir pour ${o.verb} en réel` : `Maintenir pour ${o.verb} en réel`);
+  const s = document.createElement('div'); s.className = 'scrim dlg-scrim';
+  const d = document.createElement('div'); d.className = 'dlg' + (live ? ' is-live' : ''); d.setAttribute('role', 'alertdialog'); d.setAttribute('aria-modal', 'true');
+  d.innerHTML = `<div class="band"></div>
+   <div class="dh"><span class="ic ${lvl === 'reduce' ? 'neutral' : ''}">${i(o.icon || (lvl === 'reduce' ? 'pause' : 'log-out'), 'lg')}</span><div><h3>${o.title}</h3>${o.sub ? `<p>${o.sub}</p>` : ''}</div></div>
+   <div class="db">
+    <div class="target">${i('bot')}<div><span class="lab">Bot ciblé</span><b>${b.name}</b> <span class="muted num" style="font-size:var(--t-xs)">${b.key}${o.trade ? ' · trade #' + o.trade.tradeId : ''}</span></div>${live ? '<span class="badge live">Live</span>' : '<span class="badge dry">Dry</span>'}</div>
+    ${o.qty ? `<div class="frow"><span class="lab">Quantité</span><div class="seg" data-qty><button aria-pressed="true">100 %</button><button>50 %</button><button>25 %</button><button>Autre</button></div></div>` : ''}
+    ${o.ordertype ? `<div class="frow"><span class="lab">Ordre</span><div class="seg"><button aria-pressed="true">Marché</button><button>Limite</button></div></div>` : ''}
+    ${o.est ? `<div class="est">${o.est.map(e => `<div><span class="lab">${e[0]}</span><span class="num ${e[2] || ''}">${e[1]}</span></div>`).join('')}</div>` : ''}
+    ${(o.notes || []).map(n => `<div class="note ${n[0]}">${i(n[0] === 'crit' ? 'octagon-alert' : n[0] === 'warn' ? 'triangle-alert' : 'info')}<span>${n[1]}</span></div>`).join('')}
+    ${needHold ? `<div class="note">${i('shield-check')}<span>Envoyé une seule fois, sans nouvel essai automatique. Journalisé (audit).</span></div>` : ''}
+    ${needType ? `<label class="typein"><span class="lab">Tapez <b class="num" style="color:var(--fg)">${b.name}</b> pour déverrouiller</span><input class="input" autocomplete="off" spellcheck="false" placeholder="${b.name}" data-type></label>` : ''}
+   </div>
+   <div class="df"><button class="btn lg cancel" data-cancel>Annuler</button>
+    ${needHold ? `<button class="btn lg hold ${lvl === 'reduce' ? 'go' : 'danger'}" data-hold data-lock="${key}" ${needType ? 'disabled' : ''}><span class="fill"></span><span class="lbl">${i('hand', 'sm')}${holdLabel}</span></button>`
+      : `<button class="btn lg ${lvl === 'reduce' ? 'primary' : 'danger-o'}" data-go data-lock="${key}">${o.clickLabel || (live ? o.verbCap : o.verbCap + ' (dry)')}</button>`}
+   </div>${needHold ? '<div class="hold-hint" data-hint style="padding:0 16px 12px"></div>' : ''}`;
+  document.body.append(s, d); FQ.icons();
+  requestAnimationFrame(() => { s.classList.add('open'); d.classList.add('open'); });
+  const cancel = d.querySelector('[data-cancel]'); setTimeout(() => cancel.focus(), 30);
+  const close = () => { d.classList.remove('open'); s.classList.remove('open'); setTimeout(() => { d.remove(); s.remove(); }, 260); document.removeEventListener('keydown', esc); };
+  const esc = e => { if (e.key === 'Escape') close(); }; document.addEventListener('keydown', esc);
+  cancel.onclick = close; s.onclick = close;
+  d.querySelectorAll('.seg').forEach(sg => sg.onclick = e => { const bt = e.target.closest('button'); if (!bt) return; sg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === bt)); });
+  const fire = (btn) => {
+    if (FQ.inflight.has(key)) return; FQ.inflight.add(key); FQ.setBusy(key, true);
+    const idem = FQ.uuid();
+    setTimeout(() => { close(); FQ.result(o, b, key, idem); }, 380);
+  };
+  const ty = d.querySelector('[data-type]');
+  const hb = d.querySelector('[data-hold]');
+  if (ty) ty.oninput = () => { const ok = ty.value.trim() === b.name; ty.classList.toggle('ok', ok); hb.toggleAttribute('disabled', !ok); };
+  if (hb) {
+    let tm = null, t0 = 0; const hint = d.querySelector('[data-hint]');
+    const start = e => { if (hb.disabled || FQ.inflight.has(key)) return; e.preventDefault(); t0 = performance.now(); hb.classList.add('holding'); hint.textContent = ''; tm = setTimeout(() => { hb.classList.remove('holding'); hb.classList.add('done'); fire(hb); }, 1000); };
+    const stop = () => { if (!tm) return; clearTimeout(tm); tm = null; if (!hb.classList.contains('done')) { hb.classList.remove('holding'); if (performance.now() - t0 < 600) hint.textContent = 'Maintenez le bouton 1 seconde pour confirmer (ou Entrée maintenue).'; } };
+    hb.addEventListener('pointerdown', start); ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => hb.addEventListener(ev, stop));
+    hb.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) start(e); });
+    hb.addEventListener('keyup', e => { if (e.key === 'Enter' || e.key === ' ') stop(); });
+    hb.addEventListener('click', e => e.preventDefault());
+    if (Q.get('holdDemo') === '1') { hb.style.setProperty('--p', '.62'); }
+  }
+  const gb = d.querySelector('[data-go]'); if (gb) gb.onclick = () => fire(gb);
+  return d;
+};
+FQ.result = function (o, b, key, idem) {
+  const done = () => { FQ.inflight.delete(key); FQ.setBusy(key, false); };
+  const tgt = `<b>${b.name}</b>${o.trade ? ' · ' + o.trade.pair + ' #' + o.trade.tradeId : ''}`;
+  const meta = `idem ${idem} · ${hhmm(0)}`;
+  const m = FQ.resultMode;
+  if (m === '401') { done(); return FQ.toastRaw('err', 'Session expirée, rien n\'a été exécuté', `${tgt} : le bot a répondu 401 avant toute exécution. Aucun rejeu automatique.`, { meta, actions: `<button class="btn xs" onclick="this.closest('.toast').remove();FQ.resultMode='fill';FQ.confirm(FQ.lastConfirm)">Réessayer</button>` }); }
+  if (m === 'mismatch') { done(); return FQ.toastRaw('err', 'Rien n\'a été envoyé : l\'état a changé', `${tgt} a changé depuis l'affichage (déjà fermé ou modifié). Les données ont été relues.`, { meta: '409 state_mismatch · ' + meta, actions: '<button class="btn xs">Revoir le trade</button>' }); }
+  if (m === 'inprogress') { done(); return FQ.toastRaw('verify', 'Déjà en cours', `Une action identique pour ${tgt} est déjà en vol (autre appareil ou autre onglet). Attendez son résultat dans le fil.`, { meta: '409 in_progress · ' + meta, ttl: 8000 }); }
+  const sent = FQ.toastRaw('sent', 'Transmis', `${tgt} : ordre transmis au bot. En attente du fill, la position n'est pas encore fermée.`, { meta: 'accepted · ' + meta });
+  setTimeout(() => {
+    sent.classList.add('out'); setTimeout(() => sent.remove(), 220); done();
+    if (m === 'unknown') return FQ.toastRaw('verify', 'À vérifier', `${tgt} : pas de réponse en 20 s. Ni succès ni échec. La passerelle relit l'état et publiera le résultat dans le fil.`, { meta: 'unknown · ' + meta, actions: '<button class="btn xs">Ouvrir le trade</button><button class="btn xs ghost">Voir les logs</button>' });
+    if (m === 'rejected') return FQ.toastRaw('err', 'Refusé par le bot', `${tgt} : confirm_trade_exit a refusé la sortie. Rien n'a été exécuté sur l'exchange.`, { meta: 'rejected · ' + meta });
+    FQ.toastRaw('ok', o.okTitle || 'Rempli', o.receipt ? o.receipt(b) : `${tgt} : confirmé par exit_fill.`, { meta: 'exit_fill reçu en 0,8 s · ' + meta });
+    if (o.onFilled) o.onFilled();
+  }, m === 'unknown' ? 2400 : 1500);
+};
+FQ.act = function (o) { FQ.lastConfirm = o; return FQ.confirm(o); };
+/* Préréglages d'actions : utilisés par toutes les surfaces (ligne, tiroir, menu, palette) */
+FQ.exitTrade = function (p, extra = {}) {
+  if (p.orphan) { location.href = 'tools.html#reconciliation'; return; }
+  const b = p.bot;
+  return FQ.act(Object.assign({ action: 'forceexit', verb: 'sortir', verbCap: 'Sortir', title: 'Sortir la position', sub: `${p.pair} ${p.isShort ? 'Short' : 'Long'} ×${p.lev} · ${p.filled} entrée${p.filled > 1 ? 's' : ''} · ${FQ.n(p.stake, 2)} USDC`, bot: b, trade: p, qty: true, ordertype: true,
+    est: [['P&L estimé', FQ.s(p.pnl) + ' USDC', FQ.cls(p.pnl)], ['Prix indicatif', FQ.price(p.price)]],
+    notes: [['', 'Une sortie partielle sous 10 USDC de notionnel serait refusée par l\'exchange : le formulaire l\'empêche.'], ...(p.pair === 'WIF' || p.pair === 'HYPE' ? [['warn', `${p.pair} est aussi tenue par un autre bot sur le wallet partagé (netting) : seule la quantité de ce trade est réduite.`]] : [])],
+    receipt: () => `<b>${b.name}</b> · ${p.pair} #${p.tradeId} : <span class="num">${FQ.n(p.stake / p.price * p.lev, 2)}</span> au prix <span class="num">${FQ.price(p.price)}</span>, P&L réalisé <span class="num ${FQ.cls(p.pnl)}">${FQ.s(p.pnl)}</span> USDC.` }, extra));
+};
+FQ.pauseBot = function (b) { b = typeof b === 'string' ? B(b) : b; return FQ.act({ action: 'stopbuy', verb: 'mettre en pause', verbCap: 'Mettre en pause les entrées', clickLabel: 'Mettre en pause les entrées', title: 'Pause des entrées', sub: 'Réduit le risque : les positions ouvertes et leurs sorties continuent.', icon: 'pause', bot: b, level: 'reduce', okTitle: 'Entrées en pause', receipt: bb => `<b>${bb.name}</b> n'ouvrira plus de position. Reprise : bouton Reprendre (maintien).` }); };
+FQ.reloadBot = function (b) { b = typeof b === 'string' ? B(b) : b; return FQ.act({ action: 'reload_config', verb: 'recharger', verbCap: 'Recharger', title: 'Recharger la configuration', icon: 'refresh-cw', bot: b, notes: [['warn', 'Espacez les rechargements de 10 min au moins : plusieurs redémarrages proches provoquent des tempêtes de 429.'], ['', 'L\'initialisation peut durer jusqu\'à 20 min (pairlist) : le bot passe en « démarrage », sans alerte hors ligne.']], okTitle: 'Rechargé' }); };
+FQ.exitAll = function (b) { b = typeof b === 'string' ? B(b) : b; const ps = positions.filter(p => p.bot === b); return FQ.act({ action: 'forceexit_all', verb: 'tout sortir', verbCap: 'Tout sortir', title: `Tout sortir : ${ps.length} positions`, sub: 'Un seul ordre forceexit « all » envoyé au bot.', bot: b, level: 'destroy', est: [['P&L latent', FQ.s(ps.reduce((a, p) => a + p.pnl, 0)) + ' USDC', FQ.cls(ps.reduce((a, p) => a + p.pnl, 0))], ['Notionnel', FQ.n(ps.reduce((a, p) => a + p.notional, 0), 0) + ' USDC']], notes: [['warn', 'Mettez d\'abord les entrées en pause, sinon le bot peut rouvrir aussitôt.'], ['warn', 'WIF et HYPE sont nettées avec d\'autres bots sur le wallet partagé.']], okTitle: 'Ordres remplis' }); };
+FQ.stopBot = function (b) { b = typeof b === 'string' ? B(b) : b; return FQ.act({ action: 'stop', verb: 'arrêter', verbCap: 'Arrêter', title: 'Arrêter le bot', icon: 'square', bot: b, level: 'destroy', notes: [['warn', 'Ce bot est lancé par launch_bot.sh : un /stop par l\'API le relance automatiquement. Pour un arrêt réel, passez par sa session screen.'], ['', 'Les positions ouvertes restent ouvertes et ne sont plus gérées.']], okTitle: 'Arrêté' }); };
+FQ.deleteTrade = function (p) { return FQ.act({ action: 'delete_trade', verb: 'supprimer', verbCap: 'Supprimer de la base', title: 'Supprimer le trade de la base du bot', icon: 'database', bot: p.bot, trade: p, level: 'destroy', notes: [['crit', 'Ne ferme PAS la position sur l\'exchange : elle deviendra orpheline sur le wallet partagé.']], okTitle: 'Supprimé de la base' }); };
+FQ.increase = function (p) { return FQ.act({ action: 'forceentry', verb: 'renforcer', verbCap: 'Renforcer', title: 'Renforcer la position', icon: 'plus', sub: `${p.pair} · prochain palier SO${p.filled + 1}`, bot: p.bot, trade: p, est: [['Mise', '61,89 USDC'], ['Nouvelle moyenne', FQ.price(p.entry * 0.985)]], notes: [['', 'Montant sous 10 USDC refusé. Le levier est une propriété par coin du wallet.']], okTitle: 'Renfort rempli' }); };
+
+/* ---------- Palette de commandes ---------- */
+FQ.palette = function () {
+  const s = document.createElement('div'); s.className = 'scrim pal-scrim';
+  const p = document.createElement('div'); p.className = 'pal'; p.setAttribute('role', 'dialog');
+  const items = [
+    ['Aller à', [['layout-grid', 'Flotte', 'G D', 'dashboard.html'], ['bot', 'Bot : hippo_multi', 'G B', 'bot.html'], ['chart-candlestick', 'Graphiques', 'G C', 'charts.html'], ['book-open-text', 'Journal', 'G J', 'journal.html'], ['settings', 'Réglages', 'G S', 'tools.html#reglages']]],
+    ['Bots', [['bot', '<span class="livemark"></span> dynv1_short <span class="crit-t" style="font-size:var(--t-xs)">drawdown</span>', '', 'bot.html?bot=dynv1_short'], ['bot', '<span class="livemark"></span> xyz_crude_short <span class="crit-t" style="font-size:var(--t-xs)">hors ligne</span>', '', 'bot.html?bot=xyz_crude_short']]],
+    ['Actions (ouvrent toujours la confirmation, un seul bot à la fois)', [['pause', 'Pause des entrées : dynv1_short', 'P', 'js:pause'], ['log-out', 'Sortir HYPE : hippo_multi', 'X', 'js:exit']]],
+    ['Affichage', [['sun-moon', 'Basculer le thème', 'T', 'js:theme'], ['map', 'Table ou carte de la flotte', 'M', 'js:map']]]];
+  p.innerHTML = `<div class="pi">${i('search')}<input placeholder="Bot, paire, action, page…" aria-label="Rechercher"><kbd>Échap</kbd></div><div class="pg">${items.map(g => `<h4>${g[0]}</h4>` + g[1].map((it, k) => `<a class="it ${g[0] === 'Aller à' && k === 0 ? 'on' : ''}" href="${it[3].startsWith('js:') ? '#' : it[3]}" data-js="${it[3]}">${i(it[0])}<span>${it[1]}</span><span class="k">${it[2] ? it[2].split(' ').map(x => `<kbd>${x}</kbd>`).join('') : ''}</span></a>`).join('')).join('')}<div class="demo-note" style="padding:8px 12px">Pas d'action groupée en v1 : « recharger tous les bots » n'existe pas.</div></div>`;
+  document.body.append(s, p); FQ.icons();
+  requestAnimationFrame(() => { s.classList.add('open'); p.classList.add('open'); p.querySelector('input').focus(); });
+  const close = () => { s.remove(); p.remove(); };
+  s.onclick = close; p.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  p.querySelectorAll('[data-js^="js:"]').forEach(a => a.onclick = e => { e.preventDefault(); close(); const j = a.dataset.js; if (j === 'js:theme') FQ.toggleTheme(); if (j === 'js:pause') FQ.pauseBot('dynv1_short'); if (j === 'js:exit') FQ.exitTrade(positions.find(x => x.bot && x.bot.name === 'hippo_multi')); if (j === 'js:map' && FQ.onMapKey) FQ.onMapKey(); });
+};
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input,textarea,select')) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); FQ.palette(); }
+  else if (e.key === 't' && !e.ctrlKey && !e.metaKey) FQ.toggleTheme();
+  else if (e.key === 'm' && FQ.onMapKey) FQ.onMapKey();
+});
+
+/* ---------- Démarrage commun ---------- */
+/* Signal de défilement horizontal : dégradé sur le bord qui cache du contenu */
+FQ.FADE_SEL = '.scroll-x, .scopebar, .cbar, .fbar, .mchips, .kpis';
+FQ.edgeFade = function () {
+  $$(FQ.FADE_SEL).forEach(el => {
+    if (!el.dataset.fadeOn) { el.dataset.fadeOn = '1'; el.addEventListener('scroll', () => FQ.edgeFade1(el), { passive: true }); }
+    FQ.edgeFade1(el);
+  });
+};
+FQ.edgeFade1 = function (el) {
+  const max = el.scrollWidth - el.clientWidth; if (getComputedStyle(el).overflowX === 'visible' || max <= 1) { el.removeAttribute('data-fade'); return; }
+  const f = (el.scrollLeft > 2 ? 'l' : '') + (el.scrollLeft < max - 2 ? 'r' : ''); if (f) el.dataset.fade = f; else el.removeAttribute('data-fade');
+};
+FQ.boot = function (page, render) {
+  if (Q.get('skeleton') === '1') document.body.classList.add('skeleton-mode');
+  FQ.shell(page);
+  render && render();
+  FQ.icons();
+  if (Q.get('conn') === 'connecting' && Q.get('hold') !== '1') setTimeout(() => FQ.demoConn('live'), 2600);
+  if (FQ.fromCache) setTimeout(() => { FQ.fromCache = false; FQ.renderBanners(); const el = $('#conn'); el && el.classList.add('resync'); setTimeout(() => el && el.classList.remove('resync'), 900); }, Q.get('hold') === '1' ? 1e9 : 3200);
+  if (Q.get('skeleton') === '1' && Q.get('hold') !== '1') setTimeout(() => document.body.classList.remove('skeleton-mode'), 2400);
+  if (location.hash === '#confirm' && FQ.demoConfirm) setTimeout(FQ.demoConfirm, 300);
+  document.addEventListener('fq:theme', () => FQ.icons());
+  FQ.edgeFade(); setTimeout(FQ.edgeFade, 400); addEventListener('resize', FQ.edgeFade);
+  document.addEventListener('click', () => setTimeout(FQ.edgeFade, 60));
+};
+})();
+/* ---------- TradeDrawer partagé (docké, tiroir ou feuille basse) ---------- */
+(function () {
+const FQ = window.FQ, i = FQ.i;
+FQ.dcaPlan = function (p) {
+  const n = p.dcaMax; const stakes = []; let st = 14; for (let k = 0; k < n; k++) { stakes.push(st); st *= 1.45; }
+  const step = k => p.isShort ? 1 + k * 0.025 : 1 - k * 0.025;
+  const f = p.filled || 1; let ws = 0, wp = 0; for (let k = 0; k < f; k++) { ws += stakes[k]; wp += stakes[k] * step(k); }
+  const e0 = p.entry / (wp / ws); // p.entry = prix moyen d'entrée
+  const prices = stakes.map((_, k) => e0 * step(k));
+  return { stakes, prices, avg: p.entry, tp: p.entry * (p.isShort ? 0.986 : 1.014), next: prices[p.filled] };
+};
+/* ---------- PriceChart : composant unique (page Bot, page Graphiques, demain le tiroir) ----------
+   Mêmes calques partout : bougies, préréglage d'indicateurs (ema_50), niveaux DCA (Moy., TP, prochain SO),
+   marqueurs d'exécution (E, SO1..SOn) posés au prix réel de remplissage, volume ; RSI en option (opts.rsi). */
+FQ.priceSeries = function (x, n = 140) {
+  const r = FQ.rng(7919 + (x.tradeId || 1) * 131), plan = FQ.dcaPlan(x), f = Math.max(1, x.filled || 1);
+  const fillIdx = Array.from({ length: f }, (_, k) => Math.round(n * 0.08 + (f > 1 ? k * n * 0.62 / (f - 1) : 0)));
+  const anchors = [[0, plan.prices[0] * (x.isShort ? 0.99 : 1.01)]].concat(fillIdx.map((ix, k) => [ix, plan.prices[k]]), [[n - 1, x.price]]);
+  const close = new Array(n);
+  for (let a = 0; a < anchors.length - 1; a++) {
+    const [i0, p0] = anchors[a], [i1, p1] = anchors[a + 1], L = Math.max(1, i1 - i0);
+    let w = 0; const W = [0]; for (let j = 1; j <= L; j++) { w += r() - 0.5; W.push(w); }
+    for (let j = 0; j <= L; j++) close[i0 + j] = p0 + (p1 - p0) * j / L + (W[j] - W[L] * j / L) * p0 * 0.007;
+  }
+  const data = close.map((c, k) => { const o = k ? close[k - 1] : c * (1 + (r() - 0.5) * 0.002); return [o, c, Math.min(o, c) * (1 - r() * 0.0025), Math.max(o, c) * (1 + r() * 0.0025)]; });
+  fillIdx.forEach((ix, k) => { const d = data[ix], fp = plan.prices[k]; d[2] = Math.min(d[2], fp * 0.999); d[3] = Math.max(d[3], fp * 1.001); });
+  const ema = []; let e = data[0][1]; data.forEach(d => { e += (d[1] - e) * 0.06; ema.push(+e.toPrecision(6)); });
+  const rsi = data.map((_, k) => 50 + Math.sin(k / 9) * 14 + (r() - 0.5) * 8), vol = data.map(() => Math.round(r() * 100));
+  const t0 = 18 * 60 + 45 - (n - 1) * 15, time = data.map((_, k) => { const m = ((t0 + k * 15) % 1440 + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); });
+  return { data, ema, rsi, vol, time, plan, fillIdx };
+};
+FQ.priceChart = function (el, x, opts = {}) {
+  const c = v => FQ.css(v), S = opts.S || FQ.priceSeries(x), plan = S.plan, ch = echarts.init(el);
+  const avg = plan.avg, tp = plan.tp, so = plan.next, F = 11;
+  const lbl = (t, col) => ({ formatter: t, color: col, fontFamily: FQ.MONO, fontSize: F, position: 'insideEndTop' });
+  const rsi = !!opts.rsi, R0 = 70, gl = 26; // gl : marge gauche pour que la première heure ne soit pas rognée
+  const grid = rsi ? [{ left: gl, right: R0, top: 10, bottom: 150 }, { left: gl, right: R0, height: 40, bottom: 100 }, { left: gl, right: R0, height: 56, bottom: 26 }]
+                   : [{ left: gl, right: R0, top: 10, bottom: 74 }, { left: gl, right: R0, height: 40, bottom: 26 }];
+  const last = grid.length - 1;
+  const levels = [{ yAxis: avg, lineStyle: { color: c('--accent'), type: 'solid', width: 1.2 }, label: lbl('Moy. ' + FQ.price(avg), c('--accent')) },
+    { yAxis: tp, lineStyle: { color: c('--profit'), type: 'dashed' }, label: lbl('TP ' + FQ.price(tp), c('--profit')) }];
+  if (so) levels.push({ yAxis: so, lineStyle: { color: c('--warn'), type: 'dashed' }, label: lbl('SO' + x.filled + ' ' + FQ.price(so), c('--warn')) });
+  const marks = S.fillIdx.map((ix, k) => ({ coord: [ix, plan.prices[k]], value: k ? 'SO' + k : 'E' }));
+  const series = [
+    { id: 'k', type: 'candlestick', data: S.data, itemStyle: { color: c('--profit'), color0: c('--loss'), borderColor: c('--profit'), borderColor0: c('--loss') },
+      markLine: { symbol: 'none', silent: true, data: levels },
+      markPoint: { symbol: 'triangle', symbolSize: 10, symbolRotate: x.isShort ? 180 : 0, symbolOffset: [0, x.isShort ? -9 : 9], itemStyle: { color: c('--accent') }, label: { position: x.isShort ? 'top' : 'bottom', color: c('--fg-2'), fontFamily: FQ.MONO, fontSize: F, distance: 4 }, data: marks } },
+    { id: 'ema', type: 'line', data: S.ema, showSymbol: false, lineStyle: { width: 1.2, color: c('--info'), opacity: .85 } },
+    { id: 'vol', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: S.vol, itemStyle: { color: c('--bg-3') } }];
+  if (rsi) series.push({ id: 'rsi', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: S.rsi, showSymbol: false, lineStyle: { width: 1.2, color: c('--fg-2') } });
+  ch.setOption({ animation: false, grid,
+    axisPointer: { link: [{ xAxisIndex: 'all' }], lineStyle: { color: c('--fg-3') } },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'cross' }, backgroundColor: c('--bg-1'), borderColor: c('--line-2'), textStyle: { color: c('--fg'), fontSize: F } },
+    xAxis: grid.map((_, g) => ({ type: 'category', gridIndex: g, data: S.time, show: g === last, axisLabel: { color: c('--fg-3'), fontSize: F, interval: 23 }, axisLine: { lineStyle: { color: c('--line-2') } }, axisTick: { show: false } })),
+    yAxis: [{ scale: true, position: 'right', splitNumber: 5, axisLabel: { color: c('--fg-3'), fontSize: F, fontFamily: FQ.MONO, formatter: v => FQ.price(v) }, splitLine: { lineStyle: { color: c('--line') } } }, { gridIndex: 1, show: false }]
+      .concat(rsi ? [{ gridIndex: 2, min: 0, max: 100, position: 'right', interval: 50, axisLabel: { color: c('--fg-3'), fontSize: F, fontFamily: FQ.MONO }, splitLine: { lineStyle: { color: c('--line'), type: 'dashed' } } }] : []),
+    dataZoom: [{ type: 'inside', xAxisIndex: grid.map((_, g) => g), start: 0, end: 100 }],
+    series });
+  return ch;
+};
+FQ.ladderV = function (p) {
+  const n = p.dcaMax; const plan = FQ.dcaPlan(p); const stakes = plan.stakes, prices = plan.prices;
+  const mx = stakes[n - 1];
+  const rowH = 28, top0 = 4;
+  const yOf = (pr) => { // interpolation sur les rangées (prix décroissant vers le bas pour un long)
+    const t = (prices[0] - pr) / (prices[0] - prices[n - 1]) * (p.isShort ? -1 : 1);
+    return top0 + rowH / 2 + t * (n - 1) * rowH;
+  };
+  let rows = '';
+  for (let k = 0; k < n; k++) rows += `<div class="lvl ${k < p.filled ? '' : 'pend'} ${k === p.filled ? 'next' : ''}"><span class="pr">${FQ.price(prices[k])}</span><span class="bar" style="width:${(stakes[k] / mx * 48).toFixed(0)}%"><span class="bl">${k ? 'SO' + k : 'Entrée'} · ${FQ.n(stakes[k], 0)}${k >= p.filled ? ' (attente)' : ''}</span></span></div>`;
+  const avgP = plan.avg, tpP = plan.tp;
+  const lines = [['tp', tpP, 'TP ' + FQ.price(tpP)], ['avg', avgP, 'Moy. ' + FQ.price(avgP)], ['px', p.price, 'Prix ' + FQ.price(p.price)]].map(l => ({ c: l[0], y: Math.max(2, Math.min(top0 + n * rowH - 2, yOf(l[1]))), t: l[2] }));
+  // anti-chevauchement des étiquettes (14 px mini)
+  const lab = lines.map(l => ({ ...l })).sort((a, b) => a.y - b.y);
+  for (let k = 1; k < lab.length; k++) if (lab[k].y - lab[k - 1].y < 15) lab[k].ly = lab[k - 1].ly !== undefined ? lab[k - 1].ly + 15 : lab[k - 1].y + 15; 
+  lab.forEach(l => { if (l.ly === undefined) l.ly = l.y; });
+  return `<div class="lad-v" data-ladder>${rows}${lab.map(l => `<div class="ln ${l.c}" style="top:${l.y}px"><span style="top:${l.ly - l.y}px">${l.t}</span></div>`).join('')}<div class="liqf">${i('arrow-down', 'sm')}Liquidation ${FQ.price(p.price * (p.isShort ? 1 + p.liq / 100 : 1 - p.liq / 100))} · à ${FQ.pu(p.liq, 1)}</div></div>`;
+};
+FQ.tradeDrawer = function (p, opts = {}) {
+  const b = p.bot, live = b.mode === 'live';
+  const toTp = 1.4 + Math.abs(Math.min(0, p.pct)) / p.lev, toSo = 2.5 - (p.pct % 2.5);
+  return `<div class="grab"></div>
+  <div class="td-h"><span class="pair">${p.pair}</span>${FQ.ui.dir(p)}${p.xyz ? '<span class="badge xyz">xyz</span>' : ''}<span class="muted num" style="font-size:var(--t-xs)">#${p.tradeId}</span>
+    <span class="target" style="padding:3px 8px;gap:6px;margin-left:auto">${i('bot', 'sm')}<b style="font-size:var(--t-sm)">${b.name}</b>${live ? '<span class="badge live">Live</span>' : '<span class="badge dry">Dry</span>'}</span>
+    ${opts.close !== false ? `<button class="btn ghost icon x" style="margin-left:4px" onclick="FQ.sheetClose()" aria-label="Fermer">${i('x')}</button>` : ''}</div>
+  <div class="sh-b" style="overflow:auto;flex:1">
+  <div class="td-pnl"><span class="big ${FQ.cls(p.pnl)}" data-td-pnl>${FQ.s(p.pnl)}</span><span class="num ${FQ.cls(p.pct)}">${FQ.p(p.pct)}</span><span class="muted" style="font-size:var(--t-xs)">USDC · ouvert depuis ${FQ.dur(p.durH)}${p.pctl ? ` <span class="pctl p${p.pctl}">p${p.pctl}</span>` : ''}</span></div>
+  <div class="facts">
+    <div><span class="lab">Notionnel</span><span class="num">${FQ.n(p.notional)}</span></div><div><span class="lab">Mise</span><span class="num">${FQ.n(p.stake)}</span></div><div><span class="lab">DCA</span><span class="num">${p.filled}/${p.dcaMax}</span></div>
+    <div><span class="lab">Vers TP</span><span class="num">${FQ.pu(toTp, 2)}</span></div><div><span class="lab">Vers SO${p.filled}</span><span class="num ${p.filled < p.dcaMax ? 'warn-t' : 'muted'}">${p.filled < p.dcaMax ? FQ.pu(toSo, 2) : 'aucun'}</span></div><div><span class="lab">Vers liq.</span><span class="num ${p.liq < 20 ? 'crit-t' : ''}">${FQ.pu(p.liq, 1)}</span></div></div>
+  <div class="sec-h">${i('layers', 'sm')}Échelle DCA<span class="meta">pleine = remplie, pointillée = en attente</span></div>
+  ${FQ.ladderV(p)}
+  <details class="fold" ${innerHeight < 900 ? '' : 'open'}><summary class="sec-h">${i('list', 'sm')}Ordres<span class="meta">${p.filled} rempli${p.filled > 1 ? 's' : ''}, ${p.dcaMax - p.filled} en attente</span>${i('chevron-down', 'sm')}</summary>
+  <table class="tbl orders"><thead><tr><th class="l colh">Ordre</th><th class="colh">Heure</th><th class="colh">Prix</th><th class="colh">Mise</th><th class="colh">État</th></tr></thead><tbody>
+  ${Array.from({ length: p.dcaMax }, (_, k) => `<tr><td class="l ui">${k ? 'SO ' + k : 'Entrée'}</td><td>${k < p.filled ? '10/10 ' + String(9 + k * 3).padStart(2, '0') + ':' + String(15 + k * 7).padStart(2, '0') : '<span class="muted">attente</span>'}</td><td>${FQ.price(FQ.dcaPlan(p).prices[k])}</td><td>${FQ.n(14 * Math.pow(1.45, k))}</td><td class="ui ${k < p.filled ? '' : 'muted'}">${k < p.filled ? 'rempli' : 'limite'}</td></tr>`).join('')}
+  </tbody></table></details>
+  <details class="dbacts"><summary>${i('database', 'sm')}Maintenance de ce trade (base du bot)${i('chevron-down', 'sm')}</summary><div class="in">
+    <button class="btn sm" style="justify-self:start">${i('x-circle')}Annuler l'ordre en attente</button>
+    <button class="btn sm" style="justify-self:start">${i('rotate-ccw')}Recharger le trade depuis l'exchange</button>
+    <div class="dz"><button class="btn sm danger-o" onclick="FQ.deleteTrade(FQ.positions.find(x=>x.key==='${p.key}'))">${i('trash-2')}Supprimer de la base…</button><div class="muted" style="font-size:var(--t-xs);margin-top:4px">Ne ferme pas la position sur l'exchange.</div></div>
+  </div></details>
+  </div>
+  <div class="td-foot">
+    <div class="r1"><div class="seg"><button>25 %</button><button>50 %</button><button aria-pressed="true">100 %</button><button>Autre</button></div><span class="num dim">${FQ.n(p.notional)} USDC</span><span class="muted" style="font-size:var(--t-xs)">min. 10 USDC</span></div>
+    <div class="r2"><button class="btn lg danger-o" data-money data-lock="${b.key}:forceexit:${p.tradeId}" onclick="FQ.exitTrade(FQ.positions.find(x=>x.key==='${p.key}'))">${i('log-out')}Sortir au marché…</button><button class="btn lg" data-money onclick="FQ.increase(FQ.positions.find(x=>x.key==='${p.key}'))">${i('plus')}Renforcer…</button></div>
+  </div>`;
+};
+FQ.openTrade = function (p) { const s = FQ.sheetOpen(FQ.tradeDrawer(p)); s.style.display = 'flex'; s.style.flexDirection = 'column'; FQ.renderConn(); };
+})();
+</script>
+<script>
+const toks = [['--profit', 'gain (texte)'], ['--loss', 'perte (texte)'], ['--crit', 'critique'], ['--warn', 'vigilance, périmé'], ['--info', 'info, démarrage'], ['--live', 'argent réel seulement'], ['--dry', 'dry-run'], ['--long', 'sens long'], ['--short', 'sens short'], ['--accent', 'focus, moyenne']];
+document.getElementById('tok').innerHTML = toks.map(t => `<div><i style="background:var(${t[0]})"></i><b class="num">${t[0]}</b><span class="muted">${t[1]}</span></div>`).join('');
+FQ.icons();
+</script>
+</body>
+</html>

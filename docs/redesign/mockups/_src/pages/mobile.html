@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<!--@HEAD-->
+<title>Vitrine mobile · FreqUI Ultimate (maquette finale)</title>
+<style>
+/*@CSS*/
+.wrap { padding: 22px 20px 40px; max-width: 1500px; margin: 0 auto; }
+.wrap h1 { margin: 0 0 4px; font-size: 22px; }
+.wrap > p { margin: 0 0 18px; color: var(--fg-2); }
+.phones { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 22px; }
+.ph1 { display: grid; gap: 8px; justify-items: center; min-width: 0; }
+.frame { width: 328px; height: 691px; border-radius: 34px; border: 8px solid #222830; overflow: hidden; background: var(--bg); box-shadow: var(--shadow-float); position: relative; }
+.frame iframe { width: 390px; height: 844px; border: 0; transform: scale(.8); transform-origin: 0 0; }
+.ph1 b { font-size: var(--t-md); } .ph1 span { color: var(--fg-3); font-size: var(--t-sm); text-align: center; max-width: 300px; }
+@media (max-width: 599px) { .wrap { padding: 16px 12px 32px; } .frame { width: 100%; max-width: 406px; } }
+/* Mise à l'échelle calculée : le cadre ne dépasse jamais la largeur de l'écran (FQ.fitFrames) */
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Vitrine mobile</h1><p>Chaque écran est la vraie page à 390 x 844. Incident d'abord : les alertes passent avant les chiffres dès que la liste n'est pas vide.</p>
+  <div class="phones">
+    <div class="ph1"><div class="frame"><iframe src="dashboard.html" title="Flotte en incident" loading="eager"></iframe></div><b>Flotte en incident</b><span>Hors ligne, orpheline et backoff 429 en même temps, critiques d'abord.</span></div>
+    <div class="ph1"><div class="frame"><iframe src="dashboard.html?conn=direct" title="Mode direct" loading="eager"></iframe></div><b>Mode direct</b><span>Bandeau, sonde toutes les 60 s, fonctions passerelle marquées indisponibles.</span></div>
+    <div class="ph1"><div class="frame"><iframe src="bot.html" title="Page bot" loading="eager"></iframe></div><b>Bot</b><span>KPI 3 x 2, tuiles d'action de 64 px, positions avec échelle DCA normalisée.</span></div>
+    <div class="ph1"><div class="frame"><iframe src="bot.html#trade" title="Feuille de trade" loading="eager"></iframe></div><b>Feuille de trade</b><span>TradeDrawer en feuille basse, sortie collante, actions de base repliées.</span></div>
+    <div class="ph1"><div class="frame"><iframe src="bot.html?holdDemo=1#confirm" title="Confirmation" loading="eager"></iframe></div><b>Confirmation argent réel</b><span>Bot ciblé, quantité, estimations, « Maintenir pour sortir en réel », bouton de 52 px.</span></div>
+    <div class="ph1"><div class="frame"><iframe src="journal.html" title="Journal" loading="eager"></iframe></div><b>Journal</b><span>Totaux 2 x 3, jours avec sous-totaux, MAE et MFE par carte.</span></div>
+  </div>
+</div>
+<script>/*@CORE*/</script>
+<script>FQ.icons();
+FQ.fitFrames = () => document.querySelectorAll('.frame').forEach(f => { const s = f.clientWidth / 390; const ifr = f.querySelector('iframe'); ifr.style.transform = `scale(${s})`; f.style.height = Math.round(844 * s + 16) + 'px'; });
+FQ.fitFrames(); addEventListener('resize', FQ.fitFrames);</script>
+</body>
+</html>
