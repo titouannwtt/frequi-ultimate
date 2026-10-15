@@ -55,6 +55,25 @@ export default {
     filled: 'Rempli',
     needsChecking: 'À vérifier',
     rejected: 'Refusé par le bot',
+    retry: 'Réessayer',
+    openTrade: 'Ouvrir le trade',
+    viewLogs: 'Voir les logs',
+    reviewTrade: 'Revoir le trade',
+    accepted: 'ordre transmis au bot.',
+    acceptedAwaitFill:
+      "ordre transmis au bot. En attente du fill, la position n'est pas encore fermée.",
+    unknownBody:
+      "Pas de réponse à temps. Ni succès ni échec : l'état sera relu, vérifiez le trade et les logs.",
+    nothingExecuted: "Rien n'a été exécuté sur l'exchange.",
+    mismatchTitle: "Rien n'a été envoyé : l'état a changé",
+    mismatchBody:
+      "le trade a changé depuis l'affichage (déjà fermé ou modifié). Les données ont été relues.",
+    inProgressTitle: 'Déjà en cours',
+    inProgressBody: 'Une action identique est déjà en vol. Attendez son résultat dans le fil.',
+    sessionTitle: "Session expirée, rien n'a été exécuté",
+    noReplay: 'Aucun rejeu automatique.',
+    nameMismatch: 'Le nom saisi ne correspond pas au bot.',
+    noSource: "Aucune source de données : rien n'a été envoyé.",
   },
   freshness: {
     dataFrom: "Données d'il y a {n} min",

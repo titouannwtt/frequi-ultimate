@@ -6,6 +6,7 @@
 // biome-ignore lint: disable
 export {}
 declare global {
+  const ACCEPTED_LOCK_MAX_MS: typeof import('./composables/useBotAction').ACCEPTED_LOCK_MAX_MS
   const ALERT_CATEGORIES: typeof import('./stores/botComparison').ALERT_CATEGORIES
   const ALERT_TYPES: typeof import('./stores/botComparison').ALERT_TYPES
   const BENCHMARK_CATEGORIES: typeof import('./utils/benchmarkData').BENCHMARK_CATEGORIES
@@ -72,6 +73,7 @@ declare global {
   const computedEager: typeof import('@vueuse/core').computedEager
   const computedInject: typeof import('@vueuse/core').computedInject
   const computedWithControl: typeof import('@vueuse/core').computedWithControl
+  const confirmLevelOf: typeof import('./composables/useBotAction').confirmLevelOf
   const controlledComputed: typeof import('@vueuse/core').controlledComputed
   const controlledRef: typeof import('@vueuse/core').controlledRef
   const createApp: typeof import('vue').createApp
@@ -177,7 +179,9 @@ declare global {
   const isRef: typeof import('vue').isRef
   const isShallow: typeof import('vue').isShallow
   const isTransportFailure: typeof import('./composables/api').isTransportFailure
+  const isTypingTarget: typeof import('./composables/useShortcuts').isTypingTarget
   const legacyThemeToResolved: typeof import('./utils/theme').legacyThemeToResolved
+  const lockKeyOf: typeof import('./composables/useBotAction').lockKeyOf
   const locksDemand: typeof import('./stores/perBotFetchPolicy').locksDemand
   const locksWanted: typeof import('./stores/perBotFetchPolicy').locksWanted
   const loggedInBots: typeof import('./composables/loginInfo').loggedInBots
@@ -188,8 +192,12 @@ declare global {
   const mapStores: typeof import('pinia').mapStores
   const mapWritableState: typeof import('pinia').mapWritableState
   const markRaw: typeof import('vue').markRaw
+  const matchShortcut: typeof import('./composables/useShortcuts').matchShortcut
+  const matchesQuery: typeof import('./composables/useScope').matchesQuery
+  const modeAllows: typeof import('./composables/useScope').modeAllows
   const monaco: typeof import('./utils/monacoWorker').monaco
   const motionDuration: typeof import('./utils/motion').motionDuration
+  const newIdempotencyKey: typeof import('./composables/useBotAction').newIdempotencyKey
   const nextThemeMode: typeof import('./utils/theme').nextThemeMode
   const nextTick: typeof import('vue').nextTick
   const normalizeToPercent: typeof import('./utils/benchmarkData').normalizeToPercent
@@ -217,6 +225,7 @@ declare global {
   const pairlistDemand: typeof import('./stores/perBotFetchPolicy').pairlistDemand
   const pairlistWanted: typeof import('./stores/perBotFetchPolicy').pairlistWanted
   const parseTimerangeToDates: typeof import('./utils/reconstitute').parseTimerangeToDates
+  const patchLoginInfoTokens: typeof import('./composables/loginInfo').patchLoginInfoTokens
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
   const plotConfigColumns: typeof import('./utils/charts/plotConfigColumns').plotConfigColumns
   const prefersReducedMotion: typeof import('./utils/motion').prefersReducedMotion
@@ -234,6 +243,7 @@ declare global {
   const reactiveOmit: typeof import('@vueuse/core').reactiveOmit
   const reactivePick: typeof import('@vueuse/core').reactivePick
   const readCssToken: typeof import('./utils/designTokens').readCssToken
+  const readLoginInfos: typeof import('./composables/loginInfo').readLoginInfos
   const readonly: typeof import('vue').readonly
   const ref: typeof import('vue').ref
   const refAutoReset: typeof import('@vueuse/core').refAutoReset
@@ -246,6 +256,8 @@ declare global {
   const rememberBotName: typeof import('./stores/botNameRegistry').rememberBotName
   const reportedBotName: typeof import('./stores/botNameRegistry').reportedBotName
   const requestNotificationPermission: typeof import('./utils/browserNotifications').requestNotificationPermission
+  const resetBotActionState: typeof import('./composables/useBotAction').resetBotActionState
+  const resolveColumns: typeof import('./composables/useColumns').resolveColumns
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveGeckoId: typeof import('./utils/benchmarkData').resolveGeckoId
   const resolveRef: typeof import('@vueuse/core').resolveRef
@@ -265,6 +277,7 @@ declare global {
   const showAlert: typeof import('./utils/alerts').showAlert
   const showNotification: typeof import('./utils/notifications').showNotification
   const splitTradePair: typeof import('./utils/formatters/pairFormat').splitTradePair
+  const staleAfterFromCadence: typeof import('./composables/useFreshness').staleAfterFromCadence
   const stoplossDistancePct: typeof import('./composables/tradeColumns').stoplossDistancePct
   const storeToRefs: typeof import('pinia').storeToRefs
   const syncRef: typeof import('@vueuse/core').syncRef
@@ -287,6 +300,7 @@ declare global {
   const toValue: typeof import('vue').toValue
   const trackMouse: typeof import('./composables/usePopoverHover').trackMouse
   const tradeDurationMs: typeof import('./composables/tradeColumns').tradeDurationMs
+  const tradeIdOf: typeof import('./composables/useBotAction').tradeIdOf
   const tradeWorstAbs: typeof import('./utils/maxDrawdown').tradeWorstAbs
   const triggerRef: typeof import('vue').triggerRef
   const tryOnBeforeMount: typeof import('@vueuse/core').tryOnBeforeMount
@@ -322,6 +336,7 @@ declare global {
   const useBase64: typeof import('@vueuse/core').useBase64
   const useBattery: typeof import('@vueuse/core').useBattery
   const useBluetooth: typeof import('@vueuse/core').useBluetooth
+  const useBotAction: typeof import('./composables/useBotAction').useBotAction
   const useBotComparisonStore: typeof import('./stores/botComparison').useBotComparisonStore
   const useBotConfigEditorStore: typeof import('./stores/botConfigEditorStore').useBotConfigEditorStore
   const useBotListSort: typeof import('./composables/useBotListSort').useBotListSort
@@ -340,6 +355,7 @@ declare global {
   const useClosedTradesFeed: typeof import('./composables/useClosedTradesFeed').useClosedTradesFeed
   const useColorMode: typeof import('@vueuse/core').useColorMode
   const useColorStore: typeof import('./stores/colors').useColorStore
+  const useColumns: typeof import('./composables/useColumns').useColumns
   const useConfirmDialog: typeof import('@vueuse/core').useConfirmDialog
   const useCountdown: typeof import('@vueuse/core').useCountdown
   const useCounter: typeof import('@vueuse/core').useCounter
@@ -351,6 +367,7 @@ declare global {
   const useCycleList: typeof import('@vueuse/core').useCycleList
   const useDaemonHealth: typeof import('./composables/useDaemonHealth').useDaemonHealth
   const useDark: typeof import('@vueuse/core').useDark
+  const useDataSource: typeof import('./composables/useDataSource').useDataSource
   const useDateFormat: typeof import('@vueuse/core').useDateFormat
   const useDebounce: typeof import('@vueuse/core').useDebounce
   const useDebounceFn: typeof import('@vueuse/core').useDebounceFn
@@ -386,6 +403,8 @@ declare global {
   const useFocus: typeof import('@vueuse/core').useFocus
   const useFocusWithin: typeof import('@vueuse/core').useFocusWithin
   const useFps: typeof import('@vueuse/core').useFps
+  const useFreshness: typeof import('./composables/useFreshness').useFreshness
+  const useFreshnessGroup: typeof import('./composables/useFreshness').useFreshnessGroup
   const useFullscreen: typeof import('@vueuse/core').useFullscreen
   const useGamepad: typeof import('@vueuse/core').useGamepad
   const useGeolocation: typeof import('@vueuse/core').useGeolocation
@@ -455,6 +474,7 @@ declare global {
   const useRoute: typeof import('vue-router').useRoute
   const useRouter: typeof import('vue-router').useRouter
   const useSSRWidth: typeof import('@vueuse/core').useSSRWidth
+  const useScope: typeof import('./composables/useScope').useScope
   const useScreenOrientation: typeof import('@vueuse/core').useScreenOrientation
   const useScreenSafeArea: typeof import('@vueuse/core').useScreenSafeArea
   const useScriptTag: typeof import('@vueuse/core').useScriptTag
@@ -463,6 +483,7 @@ declare global {
   const useSessionStorage: typeof import('@vueuse/core').useSessionStorage
   const useSettingsStore: typeof import('./stores/settings').useSettingsStore
   const useShare: typeof import('@vueuse/core').useShare
+  const useShortcuts: typeof import('./composables/useShortcuts').useShortcuts
   const useSlots: typeof import('vue').useSlots
   const useSorted: typeof import('@vueuse/core').useSorted
   const useSpeechRecognition: typeof import('@vueuse/core').useSpeechRecognition
@@ -548,6 +569,9 @@ declare global {
   export type { TradeColumnDef } from './composables/tradeColumns'
   import('./composables/tradeColumns')
   // @ts-ignore
+  export type { ConfirmLevel, PendingAction, ActionOutcome } from './composables/useBotAction'
+  import('./composables/useBotAction')
+  // @ts-ignore
   export type { BotSortMode } from './composables/useBotListSort'
   import('./composables/useBotListSort')
   // @ts-ignore
@@ -556,6 +580,9 @@ declare global {
   // @ts-ignore
   export type { ChartShortcutActions } from './composables/useChartShortcuts'
   import('./composables/useChartShortcuts')
+  // @ts-ignore
+  export type { ResolvedColumn } from './composables/useColumns'
+  import('./composables/useColumns')
   // @ts-ignore
   export type { ConfigPreview } from './composables/useConfigExport'
   import('./composables/useConfigExport')
@@ -566,6 +593,9 @@ declare global {
   export type { EmojiEntry, EmojiGroup } from './composables/useEmojiCatalog'
   import('./composables/useEmojiCatalog')
   // @ts-ignore
+  export type { FreshnessEntry } from './composables/useFreshness'
+  import('./composables/useFreshness')
+  // @ts-ignore
   export type { LogLevel, LogFilters, GroupedLogEntry } from './composables/useLogFiltering'
   import('./composables/useLogFiltering')
   // @ts-ignore
@@ -574,6 +604,9 @@ declare global {
   // @ts-ignore
   export type { RegimeTimelineEntry } from './composables/useRegimeOverlay'
   import('./composables/useRegimeOverlay')
+  // @ts-ignore
+  export type { Shortcut } from './composables/useShortcuts'
+  import('./composables/useShortcuts')
   // @ts-ignore
   export type { ToastItem, ToastInput } from './composables/useToaster'
   import('./composables/useToaster')
@@ -650,6 +683,7 @@ import { UnwrapRef } from 'vue'
 declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
+    readonly ACCEPTED_LOCK_MAX_MS: UnwrapRef<typeof import('./composables/useBotAction')['ACCEPTED_LOCK_MAX_MS']>
     readonly ALERT_CATEGORIES: UnwrapRef<typeof import('./stores/botComparison')['ALERT_CATEGORIES']>
     readonly ALERT_TYPES: UnwrapRef<typeof import('./stores/botComparison')['ALERT_TYPES']>
     readonly BENCHMARK_CATEGORIES: UnwrapRef<typeof import('./utils/benchmarkData')['BENCHMARK_CATEGORIES']>
@@ -716,6 +750,7 @@ declare module 'vue' {
     readonly computedEager: UnwrapRef<typeof import('@vueuse/core')['computedEager']>
     readonly computedInject: UnwrapRef<typeof import('@vueuse/core')['computedInject']>
     readonly computedWithControl: UnwrapRef<typeof import('@vueuse/core')['computedWithControl']>
+    readonly confirmLevelOf: UnwrapRef<typeof import('./composables/useBotAction')['confirmLevelOf']>
     readonly controlledComputed: UnwrapRef<typeof import('@vueuse/core')['controlledComputed']>
     readonly controlledRef: UnwrapRef<typeof import('@vueuse/core')['controlledRef']>
     readonly createApp: UnwrapRef<typeof import('vue')['createApp']>
@@ -821,7 +856,9 @@ declare module 'vue' {
     readonly isRef: UnwrapRef<typeof import('vue')['isRef']>
     readonly isShallow: UnwrapRef<typeof import('vue')['isShallow']>
     readonly isTransportFailure: UnwrapRef<typeof import('./composables/api')['isTransportFailure']>
+    readonly isTypingTarget: UnwrapRef<typeof import('./composables/useShortcuts')['isTypingTarget']>
     readonly legacyThemeToResolved: UnwrapRef<typeof import('./utils/theme')['legacyThemeToResolved']>
+    readonly lockKeyOf: UnwrapRef<typeof import('./composables/useBotAction')['lockKeyOf']>
     readonly locksDemand: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['locksDemand']>
     readonly locksWanted: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['locksWanted']>
     readonly loggedInBots: UnwrapRef<typeof import('./composables/loginInfo')['loggedInBots']>
@@ -832,8 +869,12 @@ declare module 'vue' {
     readonly mapStores: UnwrapRef<typeof import('pinia')['mapStores']>
     readonly mapWritableState: UnwrapRef<typeof import('pinia')['mapWritableState']>
     readonly markRaw: UnwrapRef<typeof import('vue')['markRaw']>
+    readonly matchShortcut: UnwrapRef<typeof import('./composables/useShortcuts')['matchShortcut']>
+    readonly matchesQuery: UnwrapRef<typeof import('./composables/useScope')['matchesQuery']>
+    readonly modeAllows: UnwrapRef<typeof import('./composables/useScope')['modeAllows']>
     readonly monaco: UnwrapRef<typeof import('./utils/monacoWorker')['monaco']>
     readonly motionDuration: UnwrapRef<typeof import('./utils/motion')['motionDuration']>
+    readonly newIdempotencyKey: UnwrapRef<typeof import('./composables/useBotAction')['newIdempotencyKey']>
     readonly nextThemeMode: UnwrapRef<typeof import('./utils/theme')['nextThemeMode']>
     readonly nextTick: UnwrapRef<typeof import('vue')['nextTick']>
     readonly normalizeToPercent: UnwrapRef<typeof import('./utils/benchmarkData')['normalizeToPercent']>
@@ -859,6 +900,7 @@ declare module 'vue' {
     readonly onUpdated: UnwrapRef<typeof import('vue')['onUpdated']>
     readonly onWatcherCleanup: UnwrapRef<typeof import('vue')['onWatcherCleanup']>
     readonly parseTimerangeToDates: UnwrapRef<typeof import('./utils/reconstitute')['parseTimerangeToDates']>
+    readonly patchLoginInfoTokens: UnwrapRef<typeof import('./composables/loginInfo')['patchLoginInfoTokens']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
     readonly plotConfigColumns: UnwrapRef<typeof import('./utils/charts/plotConfigColumns')['plotConfigColumns']>
     readonly prefersReducedMotion: UnwrapRef<typeof import('./utils/motion')['prefersReducedMotion']>
@@ -876,6 +918,7 @@ declare module 'vue' {
     readonly reactiveOmit: UnwrapRef<typeof import('@vueuse/core')['reactiveOmit']>
     readonly reactivePick: UnwrapRef<typeof import('@vueuse/core')['reactivePick']>
     readonly readCssToken: UnwrapRef<typeof import('./utils/designTokens')['readCssToken']>
+    readonly readLoginInfos: UnwrapRef<typeof import('./composables/loginInfo')['readLoginInfos']>
     readonly readonly: UnwrapRef<typeof import('vue')['readonly']>
     readonly ref: UnwrapRef<typeof import('vue')['ref']>
     readonly refAutoReset: UnwrapRef<typeof import('@vueuse/core')['refAutoReset']>
@@ -888,6 +931,8 @@ declare module 'vue' {
     readonly rememberBotName: UnwrapRef<typeof import('./stores/botNameRegistry')['rememberBotName']>
     readonly reportedBotName: UnwrapRef<typeof import('./stores/botNameRegistry')['reportedBotName']>
     readonly requestNotificationPermission: UnwrapRef<typeof import('./utils/browserNotifications')['requestNotificationPermission']>
+    readonly resetBotActionState: UnwrapRef<typeof import('./composables/useBotAction')['resetBotActionState']>
+    readonly resolveColumns: UnwrapRef<typeof import('./composables/useColumns')['resolveColumns']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
     readonly resolveGeckoId: UnwrapRef<typeof import('./utils/benchmarkData')['resolveGeckoId']>
     readonly resolveTargetBot: UnwrapRef<typeof import('./utils/targetBot')['resolveTargetBot']>
@@ -906,6 +951,7 @@ declare module 'vue' {
     readonly showAlert: UnwrapRef<typeof import('./utils/alerts')['showAlert']>
     readonly showNotification: UnwrapRef<typeof import('./utils/notifications')['showNotification']>
     readonly splitTradePair: UnwrapRef<typeof import('./utils/formatters/pairFormat')['splitTradePair']>
+    readonly staleAfterFromCadence: UnwrapRef<typeof import('./composables/useFreshness')['staleAfterFromCadence']>
     readonly stoplossDistancePct: UnwrapRef<typeof import('./composables/tradeColumns')['stoplossDistancePct']>
     readonly storeToRefs: UnwrapRef<typeof import('pinia')['storeToRefs']>
     readonly syncRef: UnwrapRef<typeof import('@vueuse/core')['syncRef']>
@@ -928,6 +974,7 @@ declare module 'vue' {
     readonly toValue: UnwrapRef<typeof import('vue')['toValue']>
     readonly trackMouse: UnwrapRef<typeof import('./composables/usePopoverHover')['trackMouse']>
     readonly tradeDurationMs: UnwrapRef<typeof import('./composables/tradeColumns')['tradeDurationMs']>
+    readonly tradeIdOf: UnwrapRef<typeof import('./composables/useBotAction')['tradeIdOf']>
     readonly tradeWorstAbs: UnwrapRef<typeof import('./utils/maxDrawdown')['tradeWorstAbs']>
     readonly triggerRef: UnwrapRef<typeof import('vue')['triggerRef']>
     readonly tryOnBeforeMount: UnwrapRef<typeof import('@vueuse/core')['tryOnBeforeMount']>
@@ -963,6 +1010,7 @@ declare module 'vue' {
     readonly useBase64: UnwrapRef<typeof import('@vueuse/core')['useBase64']>
     readonly useBattery: UnwrapRef<typeof import('@vueuse/core')['useBattery']>
     readonly useBluetooth: UnwrapRef<typeof import('@vueuse/core')['useBluetooth']>
+    readonly useBotAction: UnwrapRef<typeof import('./composables/useBotAction')['useBotAction']>
     readonly useBotComparisonStore: UnwrapRef<typeof import('./stores/botComparison')['useBotComparisonStore']>
     readonly useBotConfigEditorStore: UnwrapRef<typeof import('./stores/botConfigEditorStore')['useBotConfigEditorStore']>
     readonly useBotListSort: UnwrapRef<typeof import('./composables/useBotListSort')['useBotListSort']>
@@ -981,6 +1029,7 @@ declare module 'vue' {
     readonly useClosedTradesFeed: UnwrapRef<typeof import('./composables/useClosedTradesFeed')['useClosedTradesFeed']>
     readonly useColorMode: UnwrapRef<typeof import('@vueuse/core')['useColorMode']>
     readonly useColorStore: UnwrapRef<typeof import('./stores/colors')['useColorStore']>
+    readonly useColumns: UnwrapRef<typeof import('./composables/useColumns')['useColumns']>
     readonly useConfirmDialog: UnwrapRef<typeof import('@vueuse/core')['useConfirmDialog']>
     readonly useCountdown: UnwrapRef<typeof import('@vueuse/core')['useCountdown']>
     readonly useCounter: UnwrapRef<typeof import('@vueuse/core')['useCounter']>
@@ -992,6 +1041,7 @@ declare module 'vue' {
     readonly useCycleList: UnwrapRef<typeof import('@vueuse/core')['useCycleList']>
     readonly useDaemonHealth: UnwrapRef<typeof import('./composables/useDaemonHealth')['useDaemonHealth']>
     readonly useDark: UnwrapRef<typeof import('@vueuse/core')['useDark']>
+    readonly useDataSource: UnwrapRef<typeof import('./composables/useDataSource')['useDataSource']>
     readonly useDateFormat: UnwrapRef<typeof import('@vueuse/core')['useDateFormat']>
     readonly useDebounce: UnwrapRef<typeof import('@vueuse/core')['useDebounce']>
     readonly useDebounceFn: UnwrapRef<typeof import('@vueuse/core')['useDebounceFn']>
@@ -1027,6 +1077,8 @@ declare module 'vue' {
     readonly useFocus: UnwrapRef<typeof import('@vueuse/core')['useFocus']>
     readonly useFocusWithin: UnwrapRef<typeof import('@vueuse/core')['useFocusWithin']>
     readonly useFps: UnwrapRef<typeof import('@vueuse/core')['useFps']>
+    readonly useFreshness: UnwrapRef<typeof import('./composables/useFreshness')['useFreshness']>
+    readonly useFreshnessGroup: UnwrapRef<typeof import('./composables/useFreshness')['useFreshnessGroup']>
     readonly useFullscreen: UnwrapRef<typeof import('@vueuse/core')['useFullscreen']>
     readonly useGamepad: UnwrapRef<typeof import('@vueuse/core')['useGamepad']>
     readonly useGeolocation: UnwrapRef<typeof import('@vueuse/core')['useGeolocation']>
@@ -1096,6 +1148,7 @@ declare module 'vue' {
     readonly useRoute: UnwrapRef<typeof import('vue-router')['useRoute']>
     readonly useRouter: UnwrapRef<typeof import('vue-router')['useRouter']>
     readonly useSSRWidth: UnwrapRef<typeof import('@vueuse/core')['useSSRWidth']>
+    readonly useScope: UnwrapRef<typeof import('./composables/useScope')['useScope']>
     readonly useScreenOrientation: UnwrapRef<typeof import('@vueuse/core')['useScreenOrientation']>
     readonly useScreenSafeArea: UnwrapRef<typeof import('@vueuse/core')['useScreenSafeArea']>
     readonly useScriptTag: UnwrapRef<typeof import('@vueuse/core')['useScriptTag']>
@@ -1104,6 +1157,7 @@ declare module 'vue' {
     readonly useSessionStorage: UnwrapRef<typeof import('@vueuse/core')['useSessionStorage']>
     readonly useSettingsStore: UnwrapRef<typeof import('./stores/settings')['useSettingsStore']>
     readonly useShare: UnwrapRef<typeof import('@vueuse/core')['useShare']>
+    readonly useShortcuts: UnwrapRef<typeof import('./composables/useShortcuts')['useShortcuts']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>
     readonly useSorted: UnwrapRef<typeof import('@vueuse/core')['useSorted']>
     readonly useSpeechRecognition: UnwrapRef<typeof import('@vueuse/core')['useSpeechRecognition']>
