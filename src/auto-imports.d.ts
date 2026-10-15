@@ -13,27 +13,37 @@ declare global {
   const BOT_SORT_MODES: typeof import('./composables/useBotListSort').BOT_SORT_MODES
   const CATALOG_BY_PATH: typeof import('./utils/configEditorCatalog').CATALOG_BY_PATH
   const CATALOG_PATHS: typeof import('./utils/configEditorCatalog').CATALOG_PATHS
+  const CHART_FONT_FALLBACK: typeof import('./utils/designTokens').CHART_FONT_FALLBACK
   const CONFIG_CATALOG: typeof import('./utils/configEditorCatalog').CONFIG_CATALOG
+  const COUNTER_MS: typeof import('./utils/motion').COUNTER_MS
   const ColorPreferences: typeof import('./stores/colors').ColorPreferences
   const DIGEST_SUBSTITUTION_MAX_AGE_S: typeof import('./stores/fleetDigestPolicy').DIGEST_SUBSTITUTION_MAX_AGE_S
+  const DURATIONS: typeof import('./utils/motion').DURATIONS
   const DashboardLayout: typeof import('./stores/layout').DashboardLayout
+  const EASINGS: typeof import('./utils/motion').EASINGS
   const EffectScope: typeof import('vue').EffectScope
   const FLEET_DIGEST_MAX_AGE_S: typeof import('./composables/useFleetSnapshot').FLEET_DIGEST_MAX_AGE_S
+  const FQ_ICONS: typeof import('./utils/icons').FQ_ICONS
+  const FQ_ICON_SIZES: typeof import('./utils/icons').FQ_ICON_SIZES
+  const HOLD_MS: typeof import('./utils/motion').HOLD_MS
   const KNOWN_BENCHMARKS: typeof import('./utils/benchmarkData').KNOWN_BENCHMARKS
   const OFFLINE_AFTER_CONSECUTIVE_FAILURES: typeof import('./composables/api').OFFLINE_AFTER_CONSECUTIVE_FAILURES
   const OpenTradeVizOptions: typeof import('./stores/settings').OpenTradeVizOptions
   const PROFIT_PERIODS: typeof import('./utils/botProfit').PROFIT_PERIODS
+  const REDUCED_MOTION_QUERY: typeof import('./utils/motion').REDUCED_MOTION_QUERY
   const REGIME_COLORS: typeof import('./composables/useRegimeOverlay').REGIME_COLORS
   const REGIME_LABEL_KEYS: typeof import('./composables/useRegimeOverlay').REGIME_LABEL_KEYS
   const ROUND_CLOSER: typeof import('./utils/roundTimeframe').ROUND_CLOSER
   const ROUND_DOWN: typeof import('./utils/roundTimeframe').ROUND_DOWN
   const ROUND_UP: typeof import('./utils/roundTimeframe').ROUND_UP
+  const THEME_MODES: typeof import('./utils/theme').THEME_MODES
   const TradeLayout: typeof import('./stores/layout').TradeLayout
   const acceptHMRUpdate: typeof import('pinia').acceptHMRUpdate
   const accountBaseFromProfit: typeof import('./utils/maxDrawdown').accountBaseFromProfit
   const activeBotIdForTrades: typeof import('./stores/closedTradesPolicy').activeBotIdForTrades
   const aggregateProfitByBot: typeof import('./utils/botProfit').aggregateProfitByBot
   const apiPortFromUrl: typeof import('./stores/botApiPort').apiPortFromUrl
+  const applyThemeToDocument: typeof import('./utils/theme').applyThemeToDocument
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
   const availableBacktestMetrics: typeof import('./utils/backtestMetrics').availableBacktestMetrics
@@ -99,8 +109,10 @@ declare global {
   const durationAnomalyLevelFromPct: typeof import('./composables/tradeColumns').durationAnomalyLevelFromPct
   const durationAnomalyPct: typeof import('./composables/tradeColumns').durationAnomalyPct
   const eagerComputed: typeof import('@vueuse/core').eagerComputed
+  const easeOutCubic: typeof import('./utils/motion').easeOutCubic
   const echartsGridDefault: typeof import('./utils/charts/chartZoom').echartsGridDefault
   const effectScope: typeof import('vue').effectScope
+  const effectiveThemeMode: typeof import('./utils/theme').effectiveThemeMode
   const evaluateFeatures: typeof import('./utils/features').evaluateFeatures
   const exchangeStyles: typeof import('./utils/botPresentation').exchangeStyles
   const exitReasonColor: typeof import('./composables/tradeColumns').exitReasonColor
@@ -164,6 +176,7 @@ declare global {
   const isRef: typeof import('vue').isRef
   const isShallow: typeof import('vue').isShallow
   const isTransportFailure: typeof import('./composables/api').isTransportFailure
+  const legacyThemeToResolved: typeof import('./utils/theme').legacyThemeToResolved
   const locksDemand: typeof import('./stores/perBotFetchPolicy').locksDemand
   const locksWanted: typeof import('./stores/perBotFetchPolicy').locksWanted
   const loggedInBots: typeof import('./composables/loginInfo').loggedInBots
@@ -175,6 +188,8 @@ declare global {
   const mapWritableState: typeof import('pinia').mapWritableState
   const markRaw: typeof import('vue').markRaw
   const monaco: typeof import('./utils/monacoWorker').monaco
+  const motionDuration: typeof import('./utils/motion').motionDuration
+  const nextThemeMode: typeof import('./utils/theme').nextThemeMode
   const nextTick: typeof import('vue').nextTick
   const normalizeToPercent: typeof import('./utils/benchmarkData').normalizeToPercent
   const onActivated: typeof import('vue').onActivated
@@ -203,6 +218,7 @@ declare global {
   const parseTimerangeToDates: typeof import('./utils/reconstitute').parseTimerangeToDates
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
   const plotConfigColumns: typeof import('./utils/charts/plotConfigColumns').plotConfigColumns
+  const prefersReducedMotion: typeof import('./utils/motion').prefersReducedMotion
   const previewConfig: typeof import('./composables/useConfigExport').previewConfig
   const profitBgClass: typeof import('./composables/tradeColumns').profitBgClass
   const provide: typeof import('vue').provide
@@ -216,6 +232,7 @@ declare global {
   const reactiveComputed: typeof import('@vueuse/core').reactiveComputed
   const reactiveOmit: typeof import('@vueuse/core').reactiveOmit
   const reactivePick: typeof import('@vueuse/core').reactivePick
+  const readCssToken: typeof import('./utils/designTokens').readCssToken
   const readonly: typeof import('vue').readonly
   const ref: typeof import('vue').ref
   const refAutoReset: typeof import('@vueuse/core').refAutoReset
@@ -232,8 +249,10 @@ declare global {
   const resolveGeckoId: typeof import('./utils/benchmarkData').resolveGeckoId
   const resolveRef: typeof import('@vueuse/core').resolveRef
   const resolveTargetBot: typeof import('./utils/targetBot').resolveTargetBot
+  const resolveTheme: typeof import('./utils/theme').resolveTheme
   const roundTimeframe: typeof import('./utils/roundTimeframe').default
   const rowBgClass: typeof import('./composables/tradeColumns').rowBgClass
+  const runTween: typeof import('./utils/motion').runTween
   const runTypeToJobType: typeof import('./utils/reconstitute').runTypeToJobType
   const scheduleSlowRefresh: typeof import('./stores/slowRefreshScheduler').scheduleSlowRefresh
   const setActivePinia: typeof import('pinia').setActivePinia
@@ -400,6 +419,7 @@ declare global {
   const useNavigatorLanguage: typeof import('@vueuse/core').useNavigatorLanguage
   const useNetwork: typeof import('@vueuse/core').useNetwork
   const useNow: typeof import('@vueuse/core').useNow
+  const useNumberTween: typeof import('./composables/useNumberTween').useNumberTween
   const useObjectUrl: typeof import('@vueuse/core').useObjectUrl
   const useOffsetPagination: typeof import('@vueuse/core').useOffsetPagination
   const useOnline: typeof import('@vueuse/core').useOnline
@@ -459,6 +479,8 @@ declare global {
   const useTextDirection: typeof import('@vueuse/core').useTextDirection
   const useTextSelection: typeof import('@vueuse/core').useTextSelection
   const useTextareaAutosize: typeof import('@vueuse/core').useTextareaAutosize
+  const useTheme: typeof import('./composables/useTheme').useTheme
+  const useThemeController: typeof import('./composables/useTheme').useThemeController
   const useThrottle: typeof import('@vueuse/core').useThrottle
   const useThrottleFn: typeof import('@vueuse/core').useThrottleFn
   const useThrottledRefHistory: typeof import('@vueuse/core').useThrottledRefHistory
@@ -544,6 +566,9 @@ declare global {
   export type { LogLevel, LogFilters, GroupedLogEntry } from './composables/useLogFiltering'
   import('./composables/useLogFiltering')
   // @ts-ignore
+  export type { FlashDirection, NumberTweenOptions } from './composables/useNumberTween'
+  import('./composables/useNumberTween')
+  // @ts-ignore
   export type { RegimeTimelineEntry } from './composables/useRegimeOverlay'
   import('./composables/useRegimeOverlay')
   // @ts-ignore
@@ -595,14 +620,23 @@ declare global {
   export type { ConfigDiffEntry } from './utils/configEditorObject'
   import('./utils/configEditorObject')
   // @ts-ignore
+  export type { FqIconMeaning } from './utils/icons'
+  import('./utils/icons')
+  // @ts-ignore
   export type { LiveBotInput } from './utils/liveBotAnalytics'
   import('./utils/liveBotAnalytics')
   // @ts-ignore
   export type { MaxDrawdownResult } from './utils/maxDrawdown'
   import('./utils/maxDrawdown')
   // @ts-ignore
+  export type { TweenOptions } from './utils/motion'
+  import('./utils/motion')
+  // @ts-ignore
   export type { LiveBotPrefillInput } from './utils/reconstitute'
   import('./utils/reconstitute')
+  // @ts-ignore
+  export type { ResolvedTheme } from './utils/theme'
+  import('./utils/theme')
 }
 
 // for vue template auto import
@@ -617,27 +651,37 @@ declare module 'vue' {
     readonly BOT_SORT_MODES: UnwrapRef<typeof import('./composables/useBotListSort')['BOT_SORT_MODES']>
     readonly CATALOG_BY_PATH: UnwrapRef<typeof import('./utils/configEditorCatalog')['CATALOG_BY_PATH']>
     readonly CATALOG_PATHS: UnwrapRef<typeof import('./utils/configEditorCatalog')['CATALOG_PATHS']>
+    readonly CHART_FONT_FALLBACK: UnwrapRef<typeof import('./utils/designTokens')['CHART_FONT_FALLBACK']>
     readonly CONFIG_CATALOG: UnwrapRef<typeof import('./utils/configEditorCatalog')['CONFIG_CATALOG']>
+    readonly COUNTER_MS: UnwrapRef<typeof import('./utils/motion')['COUNTER_MS']>
     readonly ColorPreferences: UnwrapRef<typeof import('./stores/colors')['ColorPreferences']>
     readonly DIGEST_SUBSTITUTION_MAX_AGE_S: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['DIGEST_SUBSTITUTION_MAX_AGE_S']>
+    readonly DURATIONS: UnwrapRef<typeof import('./utils/motion')['DURATIONS']>
     readonly DashboardLayout: UnwrapRef<typeof import('./stores/layout')['DashboardLayout']>
+    readonly EASINGS: UnwrapRef<typeof import('./utils/motion')['EASINGS']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly FLEET_DIGEST_MAX_AGE_S: UnwrapRef<typeof import('./composables/useFleetSnapshot')['FLEET_DIGEST_MAX_AGE_S']>
+    readonly FQ_ICONS: UnwrapRef<typeof import('./utils/icons')['FQ_ICONS']>
+    readonly FQ_ICON_SIZES: UnwrapRef<typeof import('./utils/icons')['FQ_ICON_SIZES']>
+    readonly HOLD_MS: UnwrapRef<typeof import('./utils/motion')['HOLD_MS']>
     readonly KNOWN_BENCHMARKS: UnwrapRef<typeof import('./utils/benchmarkData')['KNOWN_BENCHMARKS']>
     readonly OFFLINE_AFTER_CONSECUTIVE_FAILURES: UnwrapRef<typeof import('./composables/api')['OFFLINE_AFTER_CONSECUTIVE_FAILURES']>
     readonly OpenTradeVizOptions: UnwrapRef<typeof import('./stores/settings')['OpenTradeVizOptions']>
     readonly PROFIT_PERIODS: UnwrapRef<typeof import('./utils/botProfit')['PROFIT_PERIODS']>
+    readonly REDUCED_MOTION_QUERY: UnwrapRef<typeof import('./utils/motion')['REDUCED_MOTION_QUERY']>
     readonly REGIME_COLORS: UnwrapRef<typeof import('./composables/useRegimeOverlay')['REGIME_COLORS']>
     readonly REGIME_LABEL_KEYS: UnwrapRef<typeof import('./composables/useRegimeOverlay')['REGIME_LABEL_KEYS']>
     readonly ROUND_CLOSER: UnwrapRef<typeof import('./utils/roundTimeframe')['ROUND_CLOSER']>
     readonly ROUND_DOWN: UnwrapRef<typeof import('./utils/roundTimeframe')['ROUND_DOWN']>
     readonly ROUND_UP: UnwrapRef<typeof import('./utils/roundTimeframe')['ROUND_UP']>
+    readonly THEME_MODES: UnwrapRef<typeof import('./utils/theme')['THEME_MODES']>
     readonly TradeLayout: UnwrapRef<typeof import('./stores/layout')['TradeLayout']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
     readonly accountBaseFromProfit: UnwrapRef<typeof import('./utils/maxDrawdown')['accountBaseFromProfit']>
     readonly activeBotIdForTrades: UnwrapRef<typeof import('./stores/closedTradesPolicy')['activeBotIdForTrades']>
     readonly aggregateProfitByBot: UnwrapRef<typeof import('./utils/botProfit')['aggregateProfitByBot']>
     readonly apiPortFromUrl: UnwrapRef<typeof import('./stores/botApiPort')['apiPortFromUrl']>
+    readonly applyThemeToDocument: UnwrapRef<typeof import('./utils/theme')['applyThemeToDocument']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly availableBacktestMetrics: UnwrapRef<typeof import('./utils/backtestMetrics')['availableBacktestMetrics']>
@@ -703,8 +747,10 @@ declare module 'vue' {
     readonly durationAnomalyLevelFromPct: UnwrapRef<typeof import('./composables/tradeColumns')['durationAnomalyLevelFromPct']>
     readonly durationAnomalyPct: UnwrapRef<typeof import('./composables/tradeColumns')['durationAnomalyPct']>
     readonly eagerComputed: UnwrapRef<typeof import('@vueuse/core')['eagerComputed']>
+    readonly easeOutCubic: UnwrapRef<typeof import('./utils/motion')['easeOutCubic']>
     readonly echartsGridDefault: UnwrapRef<typeof import('./utils/charts/chartZoom')['echartsGridDefault']>
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
+    readonly effectiveThemeMode: UnwrapRef<typeof import('./utils/theme')['effectiveThemeMode']>
     readonly evaluateFeatures: UnwrapRef<typeof import('./utils/features')['evaluateFeatures']>
     readonly exchangeStyles: UnwrapRef<typeof import('./utils/botPresentation')['exchangeStyles']>
     readonly exitReasonColor: UnwrapRef<typeof import('./composables/tradeColumns')['exitReasonColor']>
@@ -768,6 +814,7 @@ declare module 'vue' {
     readonly isRef: UnwrapRef<typeof import('vue')['isRef']>
     readonly isShallow: UnwrapRef<typeof import('vue')['isShallow']>
     readonly isTransportFailure: UnwrapRef<typeof import('./composables/api')['isTransportFailure']>
+    readonly legacyThemeToResolved: UnwrapRef<typeof import('./utils/theme')['legacyThemeToResolved']>
     readonly locksDemand: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['locksDemand']>
     readonly locksWanted: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['locksWanted']>
     readonly loggedInBots: UnwrapRef<typeof import('./composables/loginInfo')['loggedInBots']>
@@ -779,6 +826,8 @@ declare module 'vue' {
     readonly mapWritableState: UnwrapRef<typeof import('pinia')['mapWritableState']>
     readonly markRaw: UnwrapRef<typeof import('vue')['markRaw']>
     readonly monaco: UnwrapRef<typeof import('./utils/monacoWorker')['monaco']>
+    readonly motionDuration: UnwrapRef<typeof import('./utils/motion')['motionDuration']>
+    readonly nextThemeMode: UnwrapRef<typeof import('./utils/theme')['nextThemeMode']>
     readonly nextTick: UnwrapRef<typeof import('vue')['nextTick']>
     readonly normalizeToPercent: UnwrapRef<typeof import('./utils/benchmarkData')['normalizeToPercent']>
     readonly onActivated: UnwrapRef<typeof import('vue')['onActivated']>
@@ -805,6 +854,7 @@ declare module 'vue' {
     readonly parseTimerangeToDates: UnwrapRef<typeof import('./utils/reconstitute')['parseTimerangeToDates']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
     readonly plotConfigColumns: UnwrapRef<typeof import('./utils/charts/plotConfigColumns')['plotConfigColumns']>
+    readonly prefersReducedMotion: UnwrapRef<typeof import('./utils/motion')['prefersReducedMotion']>
     readonly previewConfig: UnwrapRef<typeof import('./composables/useConfigExport')['previewConfig']>
     readonly profitBgClass: UnwrapRef<typeof import('./composables/tradeColumns')['profitBgClass']>
     readonly provide: UnwrapRef<typeof import('vue')['provide']>
@@ -818,6 +868,7 @@ declare module 'vue' {
     readonly reactiveComputed: UnwrapRef<typeof import('@vueuse/core')['reactiveComputed']>
     readonly reactiveOmit: UnwrapRef<typeof import('@vueuse/core')['reactiveOmit']>
     readonly reactivePick: UnwrapRef<typeof import('@vueuse/core')['reactivePick']>
+    readonly readCssToken: UnwrapRef<typeof import('./utils/designTokens')['readCssToken']>
     readonly readonly: UnwrapRef<typeof import('vue')['readonly']>
     readonly ref: UnwrapRef<typeof import('vue')['ref']>
     readonly refAutoReset: UnwrapRef<typeof import('@vueuse/core')['refAutoReset']>
@@ -833,8 +884,10 @@ declare module 'vue' {
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
     readonly resolveGeckoId: UnwrapRef<typeof import('./utils/benchmarkData')['resolveGeckoId']>
     readonly resolveTargetBot: UnwrapRef<typeof import('./utils/targetBot')['resolveTargetBot']>
+    readonly resolveTheme: UnwrapRef<typeof import('./utils/theme')['resolveTheme']>
     readonly roundTimeframe: UnwrapRef<typeof import('./utils/roundTimeframe')['default']>
     readonly rowBgClass: UnwrapRef<typeof import('./composables/tradeColumns')['rowBgClass']>
+    readonly runTween: UnwrapRef<typeof import('./utils/motion')['runTween']>
     readonly runTypeToJobType: UnwrapRef<typeof import('./utils/reconstitute')['runTypeToJobType']>
     readonly scheduleSlowRefresh: UnwrapRef<typeof import('./stores/slowRefreshScheduler')['scheduleSlowRefresh']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
@@ -1001,6 +1054,7 @@ declare module 'vue' {
     readonly useNavigatorLanguage: UnwrapRef<typeof import('@vueuse/core')['useNavigatorLanguage']>
     readonly useNetwork: UnwrapRef<typeof import('@vueuse/core')['useNetwork']>
     readonly useNow: UnwrapRef<typeof import('@vueuse/core')['useNow']>
+    readonly useNumberTween: UnwrapRef<typeof import('./composables/useNumberTween')['useNumberTween']>
     readonly useObjectUrl: UnwrapRef<typeof import('@vueuse/core')['useObjectUrl']>
     readonly useOffsetPagination: UnwrapRef<typeof import('@vueuse/core')['useOffsetPagination']>
     readonly useOnline: UnwrapRef<typeof import('@vueuse/core')['useOnline']>
@@ -1060,6 +1114,8 @@ declare module 'vue' {
     readonly useTextDirection: UnwrapRef<typeof import('@vueuse/core')['useTextDirection']>
     readonly useTextSelection: UnwrapRef<typeof import('@vueuse/core')['useTextSelection']>
     readonly useTextareaAutosize: UnwrapRef<typeof import('@vueuse/core')['useTextareaAutosize']>
+    readonly useTheme: UnwrapRef<typeof import('./composables/useTheme')['useTheme']>
+    readonly useThemeController: UnwrapRef<typeof import('./composables/useTheme')['useThemeController']>
     readonly useThrottle: UnwrapRef<typeof import('@vueuse/core')['useThrottle']>
     readonly useThrottleFn: UnwrapRef<typeof import('@vueuse/core')['useThrottleFn']>
     readonly useThrottledRefHistory: UnwrapRef<typeof import('@vueuse/core')['useThrottledRefHistory']>

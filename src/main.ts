@@ -7,12 +7,17 @@ import router from './router';
 import i18n from './locales';
 
 import { PrimeVue, FtTheme, ToastService } from './plugins/primevue';
+// After the PrimeVue plugin, which loads the Tailwind layers the design system sits in
+import './styles/redesign.css';
+import { useTheme } from './composables/useTheme';
 
 const myApp = createApp(App);
 
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
 myApp.use(pinia);
+// Sets data-theme on <html> from the persisted mode, before the first paint of the app
+useTheme();
 
 myApp.use(PrimeVue, {
   theme: {

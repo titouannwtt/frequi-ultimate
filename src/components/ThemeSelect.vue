@@ -1,56 +1,27 @@
 <script setup lang="ts">
-import type { ThemeName } from '@/types';
+import { useI18n } from 'vue-i18n';
 
-const activeTheme = ref('');
-const settingsStore = useSettingsStore();
+const { t } = useI18n();
+const { mode, cycle } = useTheme();
 
 withDefaults(defineProps<{ showText?: boolean }>(), { showText: false });
 
-function setTheme(themeName: ThemeName) {
-  // If theme is already active, do nothing.
-  if (activeTheme.value === themeName) {
-    return;
-  }
-  if (['bootstrap', 'bootstrap_dark', 'light', 'dark'].includes(themeName.toLowerCase())) {
-    // const styles = document.getElementsByTagName('style');
-    if (activeTheme.value) {
-      // Only transition if simple mode is active
-      document.body.classList.add('ft-theme-transition');
-      window.setTimeout(() => {
-        document.body.classList.remove('ft-theme-transition');
-      }, 1000);
-    }
-    if (themeName.toLowerCase() === 'bootstrap' || themeName.toLowerCase() === 'light') {
-      document.documentElement.classList.remove('dark', 'ft-dark-theme');
-    } else {
-      // Add the dark theme
-      document.documentElement.classList.add('dark', 'ft-dark-theme');
-    }
-  }
-  // Save the theme as localstorage
-  settingsStore.currentTheme = themeName;
-  activeTheme.value = themeName;
-}
-
-onMounted(() => {
-  if (settingsStore.currentTheme) setTheme(settingsStore.currentTheme);
-});
-
-function toggleNight() {
-  setTheme(['light', 'bootstrap'].includes(activeTheme.value) ? 'dark' : 'light');
-}
+const label = computed(() => t(`fq.theme.${mode.value}`));
 </script>
 
 <template>
   <Button
     variant="link"
-    title="Toggle Night Mode"
+    :title="t('fq.theme.cycle', { mode: label })"
+    :aria-label="t('fq.theme.cycle', { mode: label })"
     class="text-surface-200"
-    :label="showText ? 'Toggle Night Mode' : ''"
-    @click="toggleNight"
+    :label="showText ? label : ''"
+    @click="cycle"
   >
     <template #icon>
-      <i-mdi-brightness-6 />
+      <i-lucide-monitor v-if="mode === 'system'" class="ico" />
+      <i-lucide-moon v-else-if="mode === 'dark'" class="ico" />
+      <i-lucide-sun v-else class="ico" />
     </template>
   </Button>
 </template>

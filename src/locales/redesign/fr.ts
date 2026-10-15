@@ -1,0 +1,91 @@
+/**
+ * French messages of the redesigned UI, merged under the `fq` namespace (docs/redesign/02-design.md,
+ * section 16). Same keys as en.ts (tests/unit/redesignLocales.spec.ts). No em dash; no-break space
+ * before : ? ! and thin no-break space before %.
+ */
+export default {
+  nav: {
+    fleet: 'Flotte',
+    bot: 'Bot',
+    charts: 'Graphiques',
+    journal: 'Journal',
+    tools: 'Outils',
+    settings: 'Réglages',
+  },
+  attention: {
+    title: 'À traiter',
+    active: 'Actives',
+    acknowledged: 'Acquittées',
+    silenced: 'Silencieuses',
+    events: 'Événements',
+    sinceLastVisit: 'Depuis votre passage',
+    markSeen: 'Marquer vu',
+    allClear: 'Rien à signaler',
+  },
+  kpi: {
+    equityOpen: 'Équité avec latent',
+    equityRealized: 'Équité réalisée',
+    drawdownOpen: 'Drawdown avec latent',
+    pnlOpen: 'P&L latent',
+    realizedToday: 'Réalisé jour',
+    excluded: '{n} exclus',
+    excludingReplay: 'Sans replay',
+  },
+  status: {
+    stale: 'Périmé',
+    offline: 'Hors ligne',
+    starting: 'Démarrage',
+    stopped: 'Arrêté',
+    sessionExpired: 'Session expirée',
+    reconnect: 'Se reconnecter',
+  },
+  action: {
+    pauseEntries: 'Pause entrées',
+    resumeEntries: 'Reprendre les entrées',
+    reload: 'Recharger',
+    exitMarket: 'Sortir au marché…',
+    addToPosition: 'Renforcer…',
+    exitAll: 'Tout sortir…',
+    holdToExitLive: 'Maintenir pour sortir en réel',
+    targetBot: 'Bot ciblé',
+    sentOnce: 'Envoyé une seule fois, sans nouvel essai automatique. Journalisé.',
+  },
+  result: {
+    sent: 'Transmis',
+    filled: 'Rempli',
+    needsChecking: 'À vérifier',
+    rejected: 'Refusé par le bot',
+  },
+  freshness: {
+    dataFrom: "Données d'il y a {n} min",
+    frozenAt: 'Valeurs figées à {time}',
+  },
+  connection: {
+    direct: 'Mode direct',
+    gateway: 'Passerelle',
+    degraded: 'Dégradée',
+    connecting: 'Connexion en cours',
+    unavailableDirect: 'Indisponible en mode direct',
+  },
+  reconcile: {
+    orphan: 'Position orpheline',
+    reconcile: 'Réconcilier (aperçu)',
+  },
+  origin: {
+    unknown: 'inconnu',
+    since: 'depuis le {date}',
+    manual: 'manuel',
+  },
+  side: {
+    long: 'Long',
+    short: 'Short',
+    longLetter: 'L',
+    shortLetter: 'S',
+  },
+  theme: {
+    system: 'Système',
+    dark: 'Sombre',
+    light: 'Clair',
+    cycle: 'Thème : {mode}. Cliquer pour changer.',
+  },
+};
