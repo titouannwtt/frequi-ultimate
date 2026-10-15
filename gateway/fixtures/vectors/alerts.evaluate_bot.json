@@ -217,7 +217,7 @@
    }
   },
   {
-   "name": "positionStuck: no history, nothing claimed",
+   "name": "positionStuck: no reference duration, nothing claimed and not evaluated",
    "input": {
     "enabled": [
      "positionStuck"
@@ -241,9 +241,7 @@
    },
    "expected": {
     "conditions": [],
-    "evaluated": [
-     "positionStuck"
-    ]
+    "evaluated": []
    }
   },
   {
@@ -1137,6 +1135,35 @@
     "evaluated": [
      "botOffline"
     ]
+   }
+  },
+  {
+   "name": "positionStuck: stale positions are never evaluated, even without a median",
+   "input": {
+    "enabled": [
+     "positionStuck"
+    ],
+    "ctx": {
+     "positions": [
+      {
+       "trade_id": 1,
+       "pair": "ETH/USDC:USDC",
+       "side": "long",
+       "open_ms": 1789545600000,
+       "open_rate": 100,
+       "current_rate": 100,
+       "profit_ratio": 0,
+       "liquidation_price": null,
+       "stoploss_abs": null,
+       "stake_amount": 10
+      }
+     ],
+     "positions_stale": true
+    }
+   },
+   "expected": {
+    "conditions": [],
+    "evaluated": []
    }
   }
  ]

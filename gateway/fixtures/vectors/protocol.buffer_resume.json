@@ -1,6 +1,6 @@
 {
  "function": "protocol.buffer_resume",
- "description": "Resume against the ring buffer of 512 deltas (capacity overridable in the vectors).",
+ "description": "Resume against the ring buffer of 512 deltas (capacity overridable in the vectors). Optional input.base: sequence base of the buffer (a gateway incarnation); seq numbers then start at base + 1.",
  "cases": [
   {
    "name": "up to date",
@@ -82,6 +82,36 @@
    "expected": {
     "resume": "resync",
     "reason": "stale_resume"
+   }
+  },
+  {
+   "name": "restart: a resume point of the previous incarnation resyncs",
+   "input": {
+    "base": 1760530000000,
+    "pushed": 8,
+    "from": 1759000000005
+   },
+   "expected": {
+    "resume": "resync",
+    "head": 1760530000008,
+    "reason": "stale_resume"
+   }
+  },
+  {
+   "name": "restart: a resume point of the new incarnation replays",
+   "input": {
+    "base": 1760530000000,
+    "pushed": 8,
+    "from": 1760530000005
+   },
+   "expected": {
+    "resume": "replay",
+    "head": 1760530000008,
+    "seqs": [
+     1760530000006,
+     1760530000007,
+     1760530000008
+    ]
    }
   },
   {

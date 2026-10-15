@@ -307,7 +307,6 @@ impl Default for LedgerOptions {
 
 struct Handle {
     conn: Connection,
-    inode: u64,
     /// `PRAGMA schema_version` the cached schema belongs to.
     schema_version: Option<i64>,
     schema: LedgerSchema,
@@ -349,10 +348,20 @@ impl Deadline {
     }
 }
 
+/// A cached connection. The inode lives next to the lock, not inside it, so the cache can compare
+/// it while holding `conns` without ever waiting on a slot that a running query holds.
+struct Slot {
+    inode: u64,
+    handle: Arc<Mutex<Handle>>,
+}
+
 /// The production [`LedgerReader`]: read-only SQLite with cached connections.
+///
+/// Lock order: `conns` is only held briefly and never while waiting for a `Slot::handle`; a slot
+/// guard is dropped before `conns` is taken.
 pub struct SqliteLedger {
     opts: LedgerOptions,
-    conns: Mutex<HashMap<PathBuf, Arc<Mutex<Handle>>>>,
+    conns: Mutex<HashMap<PathBuf, Slot>>,
 }
 
 impl SqliteLedger {
@@ -398,7 +407,6 @@ impl SqliteLedger {
             .map_err(|e| map_err(&e))?;
         Ok(Handle {
             conn,
-            inode: meta.ino(),
             schema_version: None,
             schema: LedgerSchema::default(),
             deadline,
@@ -420,18 +428,20 @@ impl SqliteLedger {
                 .lock()
                 .map_err(|_| LedgerError(LedgerErrorCode::DbError))?;
             // A replaced file (same path, new inode) must not be read through the old handle.
-            if conns
-                .get(db)
-                .and_then(|h| h.lock().ok().map(|h| h.inode != inode))
-                .unwrap_or(false)
-            {
+            if conns.get(db).is_some_and(|s| s.inode != inode) {
                 conns.remove(db);
             }
-            if let Some(h) = conns.get(db) {
-                Arc::clone(h)
+            if let Some(s) = conns.get(db) {
+                Arc::clone(&s.handle)
             } else {
                 let h = Arc::new(Mutex::new(self.open(db)?));
-                conns.insert(db.to_path_buf(), Arc::clone(&h));
+                conns.insert(
+                    db.to_path_buf(),
+                    Slot {
+                        inode,
+                        handle: Arc::clone(&h),
+                    },
+                );
                 h
             }
         };
@@ -452,12 +462,17 @@ impl SqliteLedger {
         })();
         handle.deadline.disarm();
         let expired = handle.deadline.expired.load(Ordering::Relaxed);
+        // The slot guard must be gone before `conns` is taken (see the lock order on the type).
+        drop(handle);
         result.map_err(|e| {
             if expired {
                 LedgerError(LedgerErrorCode::Timeout)
             } else {
-                // A connection that failed is dropped: the next call reopens it.
-                if let Ok(mut c) = self.conns.lock() {
+                // A connection that failed is dropped: the next call reopens it. Only our own
+                // slot is removed, a concurrent caller may already have replaced it.
+                if let Ok(mut c) = self.conns.lock()
+                    && c.get(db).is_some_and(|s| Arc::ptr_eq(&s.handle, &slot))
+                {
                     c.remove(db);
                 }
                 map_err(&e)
@@ -849,12 +864,17 @@ impl LedgerReader for SqliteLedger {
                 })?;
                 let mut samples = Vec::new();
                 let mut truncated = false;
+                // Rows read, usable or not: the cap and the cursor follow the rows, not the samples.
+                let mut fetched: i64 = 0;
+                let mut last_rowid = None;
                 for row in rows {
                     let (rowid, ts, closed, open, n) = row?;
-                    if i64::try_from(samples.len()).unwrap_or(i64::MAX) >= cap {
+                    fetched += 1;
+                    if fetched > cap {
                         truncated = true;
                         break;
                     }
+                    last_rowid = Some(rowid);
                     // A sample without a usable timestamp or values cannot be plotted.
                     if let (Some(ts_ms), Some(closed_abs), Some(open_abs)) = (ts, closed, open) {
                         samples.push(ProfitSample {
@@ -868,7 +888,7 @@ impl LedgerReader for SqliteLedger {
                 }
                 drop(stmt);
                 let cursor = if truncated {
-                    samples.last().map_or(from, |s| s.rowid)
+                    last_rowid.unwrap_or(from)
                 } else {
                     max
                 };
@@ -1229,6 +1249,74 @@ mod tests {
     }
 
     #[test]
+    fn profit_history_pages_over_rows_that_are_unusable() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = make_db(dir.path(), "bot.sqlite", true);
+        let conn = Connection::open(&db).unwrap();
+        for i in 1..=25 {
+            // Row 3 has a timestamp that cannot be parsed.
+            let ts = if i == 3 {
+                "garbage"
+            } else {
+                "2026-10-15 10:00:00"
+            };
+            conn.execute(
+                "INSERT INTO profit_history (id, timestamp, profit_closed_abs, profit_open_abs, open_trades)
+                 VALUES (?1, ?2, 0, 0, 0)",
+                rusqlite::params![i, ts],
+            )
+            .unwrap();
+        }
+        drop(conn);
+        let ledger = SqliteLedger::new(LedgerOptions {
+            profit_chunk_rows: 10,
+            ..LedgerOptions::default()
+        });
+        let mut cursor = 0;
+        let mut total = 0;
+        for _ in 0..10 {
+            let chunk = ledger.profit_history(&db, cursor).unwrap();
+            total += chunk.samples.len();
+            cursor = chunk.max_rowid;
+            if !chunk.truncated {
+                break;
+            }
+        }
+        assert_eq!(cursor, 25);
+        assert_eq!(total, 24, "no usable row may be skipped by the paging");
+    }
+
+    /// Regression: `with` used to take `conns` while holding a slot guard, while another thread
+    /// held `conns` and waited for that slot guard (lock order inversion on the error path).
+    #[test]
+    fn concurrent_failing_reads_do_not_deadlock() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("bot.sqlite");
+        fs::write(
+            &db,
+            b"this is not a sqlite file, it is long enough to be read as one header",
+        )
+        .unwrap();
+        let ledger = Arc::new(SqliteLedger::default());
+        let (tx, rx) = std::sync::mpsc::channel();
+        for _ in 0..4 {
+            let ledger = Arc::clone(&ledger);
+            let db = db.clone();
+            let tx = tx.clone();
+            std::thread::spawn(move || {
+                for _ in 0..300 {
+                    assert!(ledger.summary(&db).is_err());
+                }
+                tx.send(()).unwrap();
+            });
+        }
+        for _ in 0..4 {
+            rx.recv_timeout(Duration::from_secs(30))
+                .expect("failing concurrent reads deadlocked");
+        }
+    }
+
+    #[test]
     fn a_ledger_without_profit_history_reports_no_history_table() {
         let dir = tempfile::tempdir().unwrap();
         let db = make_db(dir.path(), "bot.sqlite", false);
@@ -1264,7 +1352,7 @@ mod tests {
         let ledger = reader();
         ledger.summary(&db).unwrap();
         // Reach the cached connection and try to write through it.
-        let slot = ledger.conns.lock().unwrap().get(&db).cloned().unwrap();
+        let slot = Arc::clone(&ledger.conns.lock().unwrap().get(&db).unwrap().handle);
         let handle = slot.lock().unwrap();
         let err = handle
             .conn

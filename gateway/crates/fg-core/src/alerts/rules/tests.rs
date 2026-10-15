@@ -205,11 +205,50 @@ fn position_stuck_uses_the_median_multiple() {
     assert_eq!(got.len(), 1);
     assert_eq!(got[0].subject.as_deref(), Some("1"));
     assert!((got[0].value.unwrap() - 3.5).abs() < 1e-9);
-    // No history: nothing to compare with, and nothing claimed.
+    // No reference duration: nothing to compare with, nothing claimed and nothing resolved.
     c.median_closed_duration_ms = None;
     let ev = run(&[AlertTypeId::PositionStuck], &c);
     assert!(ev.conditions.is_empty());
-    assert!(ev.evaluated.contains(&AlertTypeId::PositionStuck));
+    assert!(!ev.evaluated.contains(&AlertTypeId::PositionStuck));
+}
+
+/// Regression (B26): a running alert must survive evaluations that cannot judge, whether the
+/// positions are stale or the reference data (median duration, last trade date) is missing.
+#[test]
+fn rules_that_cannot_judge_never_resolve_a_running_alert() {
+    use crate::alerts::AlertBook;
+    for (rule, stale, median, last_trade) in [
+        (AlertTypeId::PositionStuck, true, Some(2 * H), None),
+        (AlertTypeId::PositionStuck, true, None, None),
+        (AlertTypeId::PositionStuck, false, None, None),
+        (AlertTypeId::NoTradeActivity, false, None, None),
+    ] {
+        let mut book = AlertBook::new();
+        let mut fresh = ctx();
+        fresh.median_closed_duration_ms = Some(2 * H);
+        fresh.last_trade_ts_raw = Some((NOW - 30 * H) as f64);
+        let mut slow = pos(1, Side::Long);
+        slow.open_ms = NOW - 7 * H;
+        fresh.positions = vec![slow];
+        let ev = run(&[rule], &fresh);
+        assert_eq!(of(&ev, rule).len(), 1, "{rule:?} should fire on fresh data");
+        // The alert fires once the condition has held for its delay.
+        book.evaluate_bot(NOW, "local:1", &ev);
+        let t0 = NOW + DEFAULT_FOR_MS;
+        book.evaluate_bot(t0, "local:1", &ev);
+        assert_eq!(book.alerts(t0).len(), 1, "{rule:?}");
+
+        let mut blind = fresh.clone();
+        blind.positions_stale = stale;
+        blind.median_closed_duration_ms = median;
+        blind.last_trade_ts_raw = last_trade;
+        for i in 1..=5 {
+            let ev = run(&[rule], &blind);
+            assert!(!ev.evaluated.contains(&rule), "{rule:?} stale={stale}");
+            book.evaluate_bot(t0 + i * 1_000, "local:1", &ev);
+        }
+        assert_eq!(book.alerts(t0 + 6_000).len(), 1, "{rule:?} stale={stale}");
+    }
 }
 
 #[test]
@@ -390,11 +429,9 @@ fn no_trade_activity_regression_milliseconds_not_seconds() {
             .is_empty()
     );
     c.last_trade_ts_raw = None;
-    assert!(
-        run(&[AlertTypeId::NoTradeActivity], &c)
-            .conditions
-            .is_empty()
-    );
+    let ev = run(&[AlertTypeId::NoTradeActivity], &c);
+    assert!(ev.conditions.is_empty());
+    assert!(!ev.evaluated.contains(&AlertTypeId::NoTradeActivity));
 }
 
 #[test]

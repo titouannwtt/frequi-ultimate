@@ -252,6 +252,44 @@ fn resume_outside_the_buffer_or_ahead_of_it_resyncs() {
     assert_eq!(filled(0, 4).resume(0), Resume::UpToDate);
 }
 
+/// A resume after a gateway restart must not replay the frames of another incarnation: the
+/// counters restart, so the only thing telling the two apart is the sequence base.
+#[test]
+fn resume_after_gateway_restart_resyncs_instead_of_replaying() {
+    let old_base = 1_760_000_000_000;
+    let mut old = DeltaBuffer::with_base(&Channel::Alerts, 16, old_base);
+    for i in 0..5 {
+        old.push_up(i, Upsert::new(), Remove::new());
+    }
+    let client_seq = old.head();
+    // The process restarts later and emits more frames than the client had seen.
+    let new_base = old_base + 60_000;
+    let mut new = DeltaBuffer::with_base(&Channel::Alerts, 16, new_base);
+    for i in 0..8 {
+        new.push_up(i, Upsert::new(), Remove::new());
+    }
+    assert_eq!(
+        new.resume(client_seq),
+        Resume::Resync(ResyncReason::StaleResume)
+    );
+    // Nothing emitted yet since the restart: still a resync, never "up to date".
+    let quiet = DeltaBuffer::with_base(&Channel::Alerts, 16, new_base);
+    assert_eq!(
+        quiet.resume(client_seq),
+        Resume::Resync(ResyncReason::StaleResume)
+    );
+    // A client that took its snapshot from the new incarnation resumes normally.
+    assert!(matches!(new.resume(new_base + 5), Resume::Replay(f) if f.len() == 3));
+}
+
+#[test]
+fn the_boot_base_is_exact_in_javascript_and_grows_between_boots() {
+    let a = boot_seq_base();
+    assert!(a > 1_700_000_000_000);
+    assert!(a < (1_u64 << 53));
+    assert!(boot_seq_base() >= a);
+}
+
 #[test]
 fn buffer_never_exceeds_its_capacity() {
     let b = filled(2_000, DELTA_BUFFER_SIZE);
