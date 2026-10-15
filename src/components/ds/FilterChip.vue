@@ -96,5 +96,9 @@ button {
   .chip {
     min-height: 44px;
   }
+  .x {
+    min-width: 44px;
+    justify-content: center;
+  }
 }
 </style>

@@ -1,7 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildChartTheme, readChartTokens } from '../../src/components/ds/lib/chartTheme';
+import {
+  buildChartTheme,
+  readChartTokens,
+  readChartTokensFor,
+} from '../../src/components/ds/lib/chartTheme';
 import { ageMs, isStale } from '../../src/components/ds/lib/freshness';
 import {
   formatAge,
@@ -236,6 +240,31 @@ describe('chart theme', () => {
     expect(theme.valueAxis.axisLabel.fontSize).toBeGreaterThanOrEqual(11);
     expect(theme.valueAxis.axisLabel.fontFamily).toMatch(/monospace|mono/i);
     expect(theme.candlestick.itemStyle.color).toBe(theme.candlestick.itemStyle.borderColor);
+  });
+
+  it('reads the tokens of the requested mode, not the document mode, and restores the attribute', () => {
+    const style = document.createElement('style');
+    style.textContent = `
+      :root[data-theme='dark'] { --fg: #e3e8ee; }
+      :root[data-theme='light'] { --fg: #0f1720; }
+    `;
+    document.head.appendChild(style);
+    const root = document.documentElement;
+    try {
+      root.setAttribute('data-theme', 'dark');
+      expect(readChartTokensFor('dark').fg).toBe('#e3e8ee');
+      expect(readChartTokensFor('light').fg).toBe('#0f1720');
+      expect(root.getAttribute('data-theme')).toBe('dark');
+      root.setAttribute('data-theme', 'light');
+      expect(readChartTokensFor('dark').fg).toBe('#e3e8ee');
+      expect(root.getAttribute('data-theme')).toBe('light');
+      root.removeAttribute('data-theme');
+      readChartTokensFor('light');
+      expect(root.hasAttribute('data-theme')).toBe(false);
+    } finally {
+      root.removeAttribute('data-theme');
+      style.remove();
+    }
   });
 });
 

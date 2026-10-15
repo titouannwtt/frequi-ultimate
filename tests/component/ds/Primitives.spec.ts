@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 import Banner from '../../../src/components/ds/Banner.vue';
 import Btn from '../../../src/components/ds/Btn.vue';
 import ConnectionPill from '../../../src/components/ds/ConnectionPill.vue';
 import DataTable from '../../../src/components/ds/DataTable.vue';
+import HoldButton from '../../../src/components/ds/HoldButton.vue';
 import DirectionChip from '../../../src/components/ds/DirectionChip.vue';
 import DcaPips from '../../../src/components/ds/DcaPips.vue';
 import ExcludedCount from '../../../src/components/ds/ExcludedCount.vue';
@@ -58,8 +59,11 @@ describe('Btn', () => {
     expect(wrapper.attributes('aria-busy')).toBe('true');
   });
 
-  it('lockKey takes the lock once and every surface with the key becomes busy', async () => {
-    const a = mountDs(Btn, { props: { lockKey: 'bot1:stopbuy:' }, slots: { default: 'A' } });
+  it('acquireLock takes the lock once and every surface with the key becomes busy', async () => {
+    const a = mountDs(Btn, {
+      props: { lockKey: 'bot1:stopbuy:', acquireLock: true },
+      slots: { default: 'A' },
+    });
     const b = mountDs(Btn, { props: { lockKey: 'bot1:stopbuy:' }, slots: { default: 'B' } });
     await a.trigger('click');
     expect(a.emitted('click')).toHaveLength(1);
@@ -71,6 +75,45 @@ describe('Btn', () => {
     useInflightLock().release('bot1:stopbuy:');
     await nextTick();
     expect(b.attributes('aria-busy')).toBeUndefined();
+  });
+
+  it('a lockKey alone only observes the lock: it never takes it on click', async () => {
+    const lock = useInflightLock();
+    const row = mountDs(Btn, {
+      props: { lockKey: 'bot1:forceexit:7' },
+      slots: { default: 'Exit' },
+    });
+    await row.trigger('click');
+    expect(row.emitted('click')).toHaveLength(1);
+    expect(lock.isLocked('bot1:forceexit:7')).toBe(false);
+    // Taken by the real trigger (a HoldButton or the action owner): the row button shows it
+    lock.acquire('bot1:forceexit:7');
+    await nextTick();
+    expect(row.attributes('aria-busy')).toBe('true');
+    await row.trigger('click');
+    expect(row.emitted('click')).toHaveLength(1);
+    expect(row.emitted('locked')).toEqual([['bot1:forceexit:7']]);
+  });
+
+  it('a row button and the HoldButton of its dialog can share one key', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+    try {
+      const lock = useInflightLock();
+      const key = 'bot1:forceexit:7';
+      const row = mountDs(Btn, { props: { lockKey: key }, slots: { default: 'Exit' } });
+      const hold = mountDs(HoldButton, { props: { label: 'Hold', lockKey: key } });
+      // Opening the dialog (the click) leaves the key free, even if the dialog is then cancelled
+      await row.trigger('click');
+      expect(lock.isLocked(key)).toBe(false);
+      await hold.get('button').trigger('pointerdown', { button: 0 });
+      vi.advanceTimersByTime(1000);
+      expect(hold.emitted('complete')).toHaveLength(1);
+      expect(lock.isLocked(key)).toBe(true);
+      await nextTick();
+      expect(row.attributes('aria-busy')).toBe('true');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -315,10 +358,24 @@ describe('Banner and ConnectionPill', () => {
     expect(label({ kind: 'direct', state: 'live' })).toBe('Direct');
   });
 
-  it('is a polite status region', () => {
+  it('keeps the button semantics and announces the state from a separate live region', () => {
+    const wrapper = mountDs(ConnectionPill, {
+      props: { kind: 'gateway', state: 'live', latencyMs: 38 },
+    });
+    const button = wrapper.get('button');
+    expect(button.attributes('role')).toBeUndefined();
+    expect(button.attributes('aria-live')).toBeUndefined();
+    const status = wrapper.get('[role="status"]');
+    expect(status.attributes('aria-live')).toBe('polite');
+    expect(status.element.closest('button')).toBeNull();
+    // The latency changes on every tick and must not be announced
+    expect(status.text()).toBe('Gateway');
+  });
+
+  it('emits click from the button', async () => {
     const wrapper = mountDs(ConnectionPill, { props: { kind: 'gateway', state: 'live' } });
-    expect(wrapper.attributes('role')).toBe('status');
-    expect(wrapper.attributes('aria-live')).toBe('polite');
+    await wrapper.get('button').trigger('click');
+    expect(wrapper.emitted('click')).toHaveLength(1);
   });
 });
 

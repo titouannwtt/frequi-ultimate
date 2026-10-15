@@ -142,11 +142,15 @@ type Item =
 const items = computed<Item[]>(() => {
   const out: Item[] = [];
   let lastGroup: string | undefined;
+  // A group can come back when the sort does not follow it (journal grouped by day, sorted by P&L)
+  const occurrences = new Map<string, number>();
   for (const row of sorted.value) {
     if (props.groupBy) {
       const g = props.groupBy(row);
       if (g !== lastGroup) {
-        out.push({ type: 'group', key: `g:${g}`, label: g });
+        const n = occurrences.get(g) ?? 0;
+        occurrences.set(g, n + 1);
+        out.push({ type: 'group', key: `g:${g}:${n}`, label: g });
         lastGroup = g;
       }
     }
@@ -220,14 +224,28 @@ function cellText(row: Row, col: ColumnDef<Row>): string {
   return v === null || v === undefined ? '' : String(v);
 }
 
-function activate(item: Item) {
+// A control inside a cell (row action, link, menu trigger) owns its own click and keys
+const INTERACTIVE =
+  'button, a, input, select, textarea, summary, label, [role="button"], [role="link"], [role="menuitem"], [role="checkbox"], [role="switch"], [tabindex]';
+
+function fromInnerControl(event: Event): boolean {
+  const row = event.currentTarget as Element | null;
+  const target = event.target as Element | null;
+  const control = target?.closest?.(INTERACTIVE);
+  return !!row && !!control && control !== row && row.contains(control);
+}
+
+function activate(item: Item, event?: Event) {
+  if (event && fromInnerControl(event)) {
+    return;
+  }
   if (props.activatable && item.type === 'row') {
     emit('rowActivate', item.row, item.key);
   }
 }
 
 function onRowKeydown(event: KeyboardEvent, item: Item) {
-  if (event.key === 'Enter' || event.key === ' ') {
+  if ((event.key === 'Enter' || event.key === ' ') && !fromInnerControl(event)) {
     event.preventDefault();
     activate(item);
   }
@@ -313,7 +331,7 @@ defineExpose({
                 ? selectedKey === item.key
                 : undefined
             "
-            @click="activate(item)"
+            @click="activate(item, $event)"
             @keydown="onRowKeydown($event, item)"
           >
             <td
@@ -395,6 +413,7 @@ th[aria-sort='descending'] {
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  position: relative;
 }
 .sort:hover {
   color: var(--fg);
@@ -479,6 +498,12 @@ tr.grp td {
 @media (max-width: 599px), (pointer: coarse) {
   th {
     height: 36px;
+  }
+  /* 44 px touch target around the small sort label (the header stays 36 px high) */
+  .sort::before {
+    content: '';
+    position: absolute;
+    inset: -14px -10px;
   }
   tr.sigma th,
   tr.grp td {

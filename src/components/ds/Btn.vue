@@ -13,11 +13,19 @@ const props = withDefaults(
     disabled?: boolean;
     /** Why the button is disabled (offline, session expired, connecting); shown as a tooltip. */
     disabledReason?: string;
-    /** In-flight lock key (`bot_key:action:trade_id`): shared by every surface of the action. */
+    /**
+     * In-flight lock key (`bot_key:action:trade_id`): shared by every surface of the action.
+     * By default the button only observes the lock (aria-busy, `locked` event); it does not take it.
+     */
     lockKey?: string;
+    /**
+     * Take the lock on click. Off by default: a button that opens a confirmation dialog must not
+     * hold the key its HoldButton needs. Turn it on for an action that fires without a dialog.
+     */
+    acquireLock?: boolean;
     type?: 'button' | 'submit' | 'reset';
   }>(),
-  { variant: 'secondary', size: 'md', type: 'button' },
+  { variant: 'secondary', size: 'md', type: 'button', acquireLock: false },
 );
 
 const emit = defineEmits<{
@@ -42,7 +50,7 @@ function onClick(event: MouseEvent) {
     }
     return;
   }
-  if (props.lockKey && !lock.acquire(props.lockKey)) {
+  if (props.lockKey && props.acquireLock && !lock.acquire(props.lockKey)) {
     emit('locked', props.lockKey);
     return;
   }
@@ -83,7 +91,6 @@ function onClick(event: MouseEvent) {
   font-weight: 500;
   white-space: nowrap;
   position: relative;
-  overflow: hidden;
   user-select: none;
   cursor: pointer;
   transition:
@@ -143,7 +150,8 @@ function onClick(event: MouseEvent) {
 .btn.danger {
   background: var(--loss);
   border-color: var(--loss);
-  color: #fff;
+  /* --bg on --loss keeps AA contrast in both themes (white on the dark-mode red was 2.7:1) */
+  color: var(--bg);
 }
 .btn[aria-disabled='true'] {
   opacity: 0.45;

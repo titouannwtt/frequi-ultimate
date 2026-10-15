@@ -88,7 +88,7 @@ onBeforeUnmount(detach);
       <div
         v-if="open"
         ref="panel"
-        class="pop"
+        class="pop fq-portal"
         :role="role"
         :aria-label="label"
         tabindex="-1"

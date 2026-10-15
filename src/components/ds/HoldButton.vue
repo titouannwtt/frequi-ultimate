@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, useId } from 'vue';
+import { computed, onBeforeUnmount, ref, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useInflightLock } from '@/composables/useInflightLock';
 import { HOLD_MS } from '@/utils/motion';
@@ -11,7 +11,13 @@ import DsIcon from './DsIcon.vue';
  * The delay is ONE constant, `HOLD_MS` (1000 ms): it is not a prop, it is never shortened, and it
  * does not depend on reduced motion (only the fill animation could, and it does not: the fill is
  * linear over the same `--hold` token). Works with the pointer and with Enter or Space held.
- * A release before the end emits `tooShort` and shows the help text.
+ * A release before the end emits `tooShort` and shows the help text. If the button becomes
+ * disabled during the hold (connection lost, session expired) the hold is cancelled silently and
+ * nothing is emitted.
+ *
+ * One completion per arming: with a `lockKey` the shared in-flight lock refuses a second one;
+ * without it the button latches (busy) after `complete` until the owner calls `reset()` or the
+ * button is unmounted with its dialog, so a double submit never depends on the caller.
  */
 const props = withDefaults(
   defineProps<{
@@ -21,7 +27,10 @@ const props = withDefaults(
     disabled?: boolean;
     /** Why the button is disabled (type the bot name first, offline...). */
     disabledReason?: string;
-    /** In-flight lock key (`bot_key:action:trade_id`): a second completion is refused until released. */
+    /**
+     * In-flight lock key (`bot_key:action:trade_id`): a second completion is refused until released.
+     * Strongly recommended for any real-money action; without it the button latches instead.
+     */
     lockKey?: string;
   }>(),
   { tone: 'danger' },
@@ -46,9 +55,11 @@ const hint = ref('');
 let timer: ReturnType<typeof setTimeout> | undefined;
 let resetTimer: ReturnType<typeof setTimeout> | undefined;
 let startedAt = 0;
+/** Completed without a lock key: stays refused until `reset()`. */
+const latched = ref(false);
 
 const locked = computed(() => lock.isLocked(props.lockKey));
-const inactive = computed(() => props.disabled || locked.value);
+const inactive = computed(() => props.disabled || locked.value || latched.value);
 
 function clearTimers() {
   if (timer !== undefined) {
@@ -58,7 +69,7 @@ function clearTimers() {
 }
 
 function start(event?: Event) {
-  if (props.disabled || locked.value || phase.value !== 'idle') {
+  if (inactive.value || phase.value !== 'idle') {
     return;
   }
   event?.preventDefault();
@@ -72,12 +83,29 @@ function start(event?: Event) {
   timer = setTimeout(finish, HOLD_MS);
 }
 
+function cancelHold() {
+  clearTimers();
+  if (phase.value === 'holding') {
+    phase.value = 'idle';
+  }
+}
+
 function finish() {
   timer = undefined;
+  // Disabled during the hold: never fire the action
+  if (props.disabled) {
+    cancelHold();
+    return;
+  }
   phase.value = 'done';
-  if (props.lockKey && !lock.acquire(props.lockKey)) {
-    emit('blocked', props.lockKey);
+  if (props.lockKey) {
+    if (lock.acquire(props.lockKey)) {
+      emit('complete');
+    } else {
+      emit('blocked', props.lockKey);
+    }
   } else {
+    latched.value = true;
     emit('complete');
   }
   // The button goes back to idle shortly after; the owner of the action closes the dialog
@@ -86,6 +114,16 @@ function finish() {
     resetTimer = undefined;
   }, 600);
 }
+
+// The button went inactive during a hold (offline, session expired): abort without any event
+watch(
+  () => props.disabled,
+  (disabled) => {
+    if (disabled) {
+      cancelHold();
+    }
+  },
+);
 
 function stop() {
   if (phase.value !== 'holding') {
@@ -120,6 +158,13 @@ function onPointerdown(event: PointerEvent) {
   start(event);
 }
 
+/** Arm the button again, for example after a rejected or failed action. */
+function reset() {
+  latched.value = false;
+}
+
+defineExpose({ reset });
+
 onBeforeUnmount(() => {
   clearTimers();
   if (resetTimer !== undefined) {
@@ -135,7 +180,7 @@ onBeforeUnmount(() => {
       class="hold"
       :class="[tone, phase]"
       :aria-disabled="inactive || undefined"
-      :aria-busy="locked || undefined"
+      :aria-busy="locked || latched || undefined"
       :aria-describedby="hint ? hintId : undefined"
       :title="disabled ? disabledReason : undefined"
       @pointerdown="onPointerdown"
@@ -205,12 +250,12 @@ onBeforeUnmount(() => {
   inset: 0;
   transform-origin: left;
   transform: scaleX(0);
-  background: var(--loss);
+  background: var(--hold-fill);
   /* Fast reset when released */
   transition: transform var(--d-fast) var(--e-out);
 }
 .go .fill {
-  background: var(--fg-3);
+  background: var(--hold-fill-go);
 }
 /* The fill is linear over --hold, a safety delay that reduced motion never shortens */
 .holding .fill {

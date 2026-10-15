@@ -106,3 +106,40 @@ describe('PnlValue', () => {
     });
   });
 });
+
+describe('PnlValue observers', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function stubObserver() {
+    const created = vi.fn();
+    class FakeObserver {
+      constructor() {
+        created();
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    }
+    vi.stubGlobal('IntersectionObserver', FakeObserver);
+    return created;
+  }
+
+  it('creates no IntersectionObserver for a plain cell', async () => {
+    const created = stubObserver();
+    mountDs(PnlValue, { props: { value: 5 }, attachTo: document.body });
+    await nextTick();
+    await nextTick();
+    expect(created).not.toHaveBeenCalled();
+  });
+
+  it('observes visibility only when it tweens or flashes', async () => {
+    const created = stubObserver();
+    mountDs(PnlValue, { props: { value: 5, tween: true }, attachTo: document.body });
+    await nextTick();
+    await nextTick();
+    expect(created).toHaveBeenCalledTimes(1);
+  });
+});

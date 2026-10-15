@@ -107,4 +107,58 @@ describe('design tokens', () => {
     expect(reduced).not.toContain('--hold');
     expect(reduced).toContain('--d-flash: 1ms');
   });
+
+  it('applies the comfortable density to fine pointers on wide screens only', () => {
+    // The attribute rule has more specificity than the touch :root rule: it must live in a media
+    // query that excludes the touch cases, or a phone would shrink to 32 px controls.
+    const rule = css.indexOf(":root[data-density='comfortable']");
+    expect(rule).toBeGreaterThan(-1);
+    const media = css.lastIndexOf('@media', rule);
+    const header = css.slice(media, css.indexOf('{', media));
+    expect(header).toContain('min-width: 600px');
+    expect(header).toContain('not (pointer: coarse)');
+    // No other, unconditional, copy of the rule
+    expect(css.indexOf(":root[data-density='comfortable']", rule + 1)).toBe(-1);
+  });
+
+  it('keeps the hold-to-confirm label above AA contrast over its fill in every palette', () => {
+    const mixOf = (name: string) => {
+      const m = block(':root {\n  --font-ui')[name]?.match(
+        /color-mix\(in srgb, var\(--([\w-]+)\) (\d+)%, var\(--([\w-]+)\)\)/,
+      );
+      expect(m, name).not.toBeNull();
+      return { a: m![1], p: Number(m![2]) / 100, b: m![3] };
+    };
+    const mix = (x: string, y: string, p: number) => {
+      const ch = (h: string, i: number) => parseInt(h.slice(i, i + 2), 16);
+      const out = [1, 3, 5].map((i) => Math.round(ch(x, i) * p + ch(y, i) * (1 - p)));
+      return `#${out.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+    };
+    const cvd: Record<string, Record<string, string>> = {
+      dark: block(":root[data-cvd='1'][data-theme='dark']"),
+      light: block(":root[data-cvd='1'][data-theme='light']"),
+    };
+    for (const [name, theme] of [
+      ['dark', dark],
+      ['light', light],
+    ] as const) {
+      for (const palette of [theme, { ...theme, ...cvd[name] }]) {
+        for (const token of ['--hold-fill', '--hold-fill-go']) {
+          const { a, p, b } = mixOf(token);
+          const fill = mix(palette[`--${a}`], palette[`--${b}`], p);
+          const ratio = contrast(palette['--fg'], fill);
+          expect(ratio, `${name} ${token}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    }
+  });
+
+  it('keeps the text of the solid danger button above AA contrast (--bg on --loss)', () => {
+    for (const [name, theme] of [
+      ['dark', dark],
+      ['light', light],
+    ] as const) {
+      expect(contrast(theme['--bg'], theme['--loss']), name).toBeGreaterThanOrEqual(4.5);
+    }
+  });
 });

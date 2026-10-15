@@ -28,11 +28,13 @@ const { t } = useI18n();
 const fmt = useFormat();
 
 const el = ref<HTMLElement | null>(null);
-// Only visible cells animate (section 9); without IntersectionObserver every cell counts
+// Only visible cells animate (section 9). The tween props are read once (static in practice), and a
+// plain cell creates no IntersectionObserver: a fleet table holds one PnlValue per cell.
+const animated = props.tween || props.flash;
 const visible =
-  typeof IntersectionObserver === 'undefined'
-    ? ref(true)
-    : useElementVisibility(el, { initialValue: true });
+  animated && typeof IntersectionObserver !== 'undefined'
+    ? useElementVisibility(el, { initialValue: true })
+    : ref(true);
 
 const target = toRef(() => (Number.isFinite(props.value as number) ? (props.value as number) : 0));
 const { displayed, flashClass } = useNumberTween(target, {

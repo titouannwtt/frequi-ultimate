@@ -136,4 +136,54 @@ describe('HoldButton', () => {
     expect(wrapper.emitted('complete')).toBeUndefined();
     expect(wrapper.emitted('blocked')).toEqual([['k']]);
   });
+
+  it('cancels silently when disabled during the hold (connection lost)', async () => {
+    const wrapper = mountDs(HoldButton, { props: { label, lockKey: 'k2' } });
+    const btn = wrapper.get('button');
+    await btn.trigger('pointerdown', { button: 0 });
+    vi.advanceTimersByTime(400);
+    await wrapper.setProps({ disabled: true });
+    expect(btn.classes()).not.toContain('holding');
+    vi.advanceTimersByTime(2000);
+    expect(wrapper.emitted('complete')).toBeUndefined();
+    expect(wrapper.emitted('tooShort')).toBeUndefined();
+    expect(wrapper.emitted('blocked')).toBeUndefined();
+    expect(useInflightLock().isLocked('k2')).toBe(false);
+    // Re-enabled: a fresh full hold works again
+    await wrapper.setProps({ disabled: false });
+    await btn.trigger('pointerdown', { button: 0 });
+    vi.advanceTimersByTime(1000);
+    expect(wrapper.emitted('complete')).toHaveLength(1);
+  });
+
+  it('never completes when disabled right before the end of the hold', async () => {
+    const wrapper = mountDs(HoldButton, { props: { label } });
+    await wrapper.get('button').trigger('pointerdown', { button: 0 });
+    vi.advanceTimersByTime(999);
+    // Props changed without a flush yet: finish() must still re-check it
+    wrapper.vm.$.props.disabled = true;
+    vi.advanceTimersByTime(1);
+    expect(wrapper.emitted('complete')).toBeUndefined();
+  });
+
+  it('without a lockKey it latches after complete until reset()', async () => {
+    const wrapper = mountDs(HoldButton, { props: { label } });
+    const btn = wrapper.get('button');
+    await btn.trigger('pointerdown', { button: 0 });
+    vi.advanceTimersByTime(1000);
+    expect(wrapper.emitted('complete')).toHaveLength(1);
+    vi.advanceTimersByTime(700);
+    await nextTick();
+    expect(btn.attributes('aria-busy')).toBe('true');
+    await btn.trigger('pointerdown', { button: 0 });
+    vi.advanceTimersByTime(1500);
+    expect(wrapper.emitted('complete')).toHaveLength(1);
+
+    (wrapper.vm as unknown as { reset: () => void }).reset();
+    await nextTick();
+    expect(btn.attributes('aria-busy')).toBeUndefined();
+    await btn.trigger('pointerdown', { button: 0 });
+    vi.advanceTimersByTime(1000);
+    expect(wrapper.emitted('complete')).toHaveLength(2);
+  });
 });

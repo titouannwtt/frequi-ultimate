@@ -15,8 +15,8 @@ import {
 } from 'echarts/components';
 import { init, registerTheme, use, type ECharts } from 'echarts/core';
 import { CanvasRenderer, SVGRenderer } from 'echarts/renderers';
-import { buildChartTheme, readChartTokens } from './lib/chartTheme';
-import { useDocumentTheme } from './lib/useDocumentTheme';
+import { buildChartTheme, readChartTokensFor } from './lib/chartTheme';
+import { useDocumentAppearance } from './lib/useDocumentTheme';
 
 use([
   LineChart,
@@ -38,8 +38,9 @@ use([
 /**
  * ECharts wrapper (docs/redesign/02-design.md, sections 5.1, 6.6 and 9).
  *
- * - The theme is built from the CSS tokens and registered per mode (`fq-dark` / `fq-light`); the
- *   instance is disposed and created again when the theme changes (ECharts themes are fixed at init).
+ * - The theme is built from the CSS tokens of the requested mode and registered per mode and
+ *   palette (`fq-dark`, `fq-light-cvd`...); the instance is disposed and created again when the
+ *   theme, the colour-blind palette or the renderer changes (ECharts themes are fixed at init).
  * - The instance is `markRaw`: Vue must never make it reactive.
  * - Updates merge by `id` and replace the series (`replaceMerge`), with animation off: charts do
  *   not animate on each live delta.
@@ -63,13 +64,17 @@ const props = withDefaults(
 
 const emit = defineEmits<{ ready: [chart: ECharts] }>();
 
-const docTheme = useDocumentTheme();
+const { theme: docTheme, cvd } = useDocumentAppearance();
 const el = ref<HTMLElement | null>(null);
 const chart = shallowRef<ECharts | null>(null);
 let observer: ResizeObserver | undefined;
 
+function resolvedTheme(): 'dark' | 'light' {
+  return props.theme ?? docTheme.value;
+}
+
 function themeName(): string {
-  return `fq-${props.theme ?? docTheme.value}`;
+  return `fq-${resolvedTheme()}${cvd.value ? '-cvd' : ''}`;
 }
 
 function create() {
@@ -77,8 +82,8 @@ function create() {
     return;
   }
   const name = themeName();
-  // Tokens are read after the theme attribute is applied, so they match the mode
-  registerTheme(name, buildChartTheme(readChartTokens()));
+  // Tokens are read for the requested mode, even when `theme` differs from the document's
+  registerTheme(name, buildChartTheme(readChartTokensFor(resolvedTheme())));
   const instance = markRaw(init(el.value, name, { renderer: props.renderer }));
   chart.value = instance;
   apply();
@@ -107,8 +112,8 @@ onMounted(() => {
 
 watch(() => props.option, apply, { deep: false });
 
-// A new theme needs a new instance
-watch([() => props.theme ?? docTheme.value, () => props.renderer], () => {
+// A new theme, palette or renderer needs a new instance
+watch([resolvedTheme, cvd, () => props.renderer], () => {
   dispose();
   create();
 });

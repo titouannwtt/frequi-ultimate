@@ -73,6 +73,7 @@ const anchor = ref<HTMLElement | null>(null);
   text-underline-offset: 2px;
   cursor: pointer;
   white-space: nowrap;
+  position: relative;
 }
 h4 {
   margin: 4px 12px 6px;
@@ -117,6 +118,12 @@ hr {
   font-size: var(--t-xs);
 }
 @media (max-width: 599px), (pointer: coarse) {
+  /* 44 px touch target around the small inline counter */
+  .excl::before {
+    content: '';
+    position: absolute;
+    inset: -14px -6px;
+  }
   .mi {
     min-height: 44px;
   }

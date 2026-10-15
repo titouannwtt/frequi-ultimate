@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 import DataTable from '../../../src/components/ds/DataTable.vue';
 import type { ColumnDef } from '../../../src/components/ds/lib/table';
@@ -128,6 +128,49 @@ describe('DataTable rows', () => {
       props: { columns, rows, rowKey: 'id', groupBy: (r: Row) => r.day },
     });
     expect(wrapper.findAll('tr.grp').map((g) => g.text())).toEqual(['d1', 'd2']);
+  });
+
+  it('gives a group that comes back (sorted by another column) a unique key', async () => {
+    const wrapper = mountDs(DataTable, {
+      props: {
+        columns,
+        rows,
+        rowKey: 'id',
+        groupBy: (r: Row) => r.day,
+        sort: { id: 'pnl', dir: 'desc' },
+      },
+    });
+    // pnl desc: delta(d2), beta(d1), alpha(d1), gamma(d2 = null last) -> d2, d1, d2
+    expect(wrapper.findAll('tr.grp').map((g) => g.text())).toEqual(['d2', 'd1', 'd2']);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    await wrapper.setProps({ sort: { id: 'pnl', dir: 'asc' } });
+    expect(warn.mock.calls.filter((c) => String(c[0]).includes('Duplicate keys'))).toHaveLength(0);
+    warn.mockRestore();
+  });
+
+  it('lets a button inside a cell keep its click and keys', async () => {
+    const wrapper = mountDs(DataTable, {
+      props: { columns, rows, rowKey: 'id' },
+      slots: { 'cell-name': '<button type="button" class="act">Exit</button>' },
+      attachTo: document.body,
+    });
+    const button = wrapper.get('tbody tr .act');
+    const onClick = vi.fn();
+    button.element.addEventListener('click', onClick);
+    await button.trigger('click');
+    expect(onClick).toHaveBeenCalledTimes(1);
+    await button.trigger('keydown', { key: 'Enter' });
+    await button.trigger('keydown', { key: ' ' });
+    expect(wrapper.emitted('rowActivate')).toBeUndefined();
+    // The default action of Enter/Space on the button (its click) is not cancelled
+    const ev = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    button.element.dispatchEvent(ev);
+    expect(ev.defaultPrevented).toBe(false);
+    // The row itself still activates
+    await wrapper.findAll('tbody tr')[0].trigger('keydown', { key: 'Enter' });
+    await wrapper.findAll('tbody tr')[0].trigger('click');
+    expect(wrapper.emitted('rowActivate')).toHaveLength(2);
+    wrapper.unmount();
   });
 
   it('emits rowActivate on click and Enter', async () => {
