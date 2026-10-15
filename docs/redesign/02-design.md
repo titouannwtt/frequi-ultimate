@@ -138,7 +138,7 @@ Aucune touche sans modificateur n'agit quand un champ a le focus ; `Ctrl A` n'es
 | Réalisé jour | depuis 00:00 du fuseau choisi | fuseau explicite |
 | Réalisé 30 j | USDC | taux de réussite |
 | Drawdown avec latent | **USDC d'abord**, puis % | seuil, jauge avec repère |
-| Exposition wallet | long / short en USDC, barre acier et sable | net signé en sous-ligne (jamais une 3e valeur sur la ligne principale, qui débordait à 1280 px) |
+| Exposition wallet | long / short en USDC, barre verte et rouge | net signé en sous-ligne (jamais une 3e valeur sur la ligne principale, qui débordait à 1280 px) |
 | Marge utilisée | % | jauge |
 | Bots en ligne | en ligne / total du périmètre | compte par état : hors ligne, périmé, démarrage, session expirée |
 
@@ -388,7 +388,7 @@ référence visuelle : `mockups/_src/base.css` (jetons et styles) et `mockups/_s
 | `Badge` | `kind: live\|dry\|replay\|xyz\|orphan\|crit\|warn\|info\|neutral\|manual`, `label` | | toutes |
 | `ModeMark` | `mode: live\|dry\|replay`, `full: boolean` (badge complet seulement en en-tête, tiroir, dialogue) | | toutes |
 | `StatusDot` | `state: online\|starting\|offline\|stopped\|auth_expired\|stale` | | toutes |
-| `DirectionChip` | `side: long\|short\|both`, `leverage?` (acier/sable + flèche, jamais vert/rouge) | | tables, tiroirs |
+| `DirectionChip` | `side: long\|short\|both`, `leverage?` (vert/rouge + flèche + lettre L/S) | | tables, tiroirs |
 | `AgeBadge` | `asOfMs`, `staleAfterMs`, `clockSkewMs` | | tables, KPI |
 | `ExcludedCount` | `bots: BotRef[]` | ouvre un popover listant les exclus | KPI, Σ, ScopePanel |
 | `PnlValue` | `value`, `decimals`, `unit?`, `tween?`, `flash?`, `muted?` (périmé), `unknown?` | | toutes |
@@ -482,14 +482,14 @@ référence visuelle : `mockups/_src/base.css` (jetons et styles) et `mockups/_s
 | `--info` | `#4cbbe9` | 8,6 | `#0a6e9e` | 5,6 | information, démarrage, xyz |
 | `--live` | `#b98aff` | 7,3 | `#6d28d9` | 7,1 | **argent réel uniquement** |
 | `--dry` | `#8e9aa8` | 6,6 | `#566476` | 6,0 | dry-run (contour pointillé) |
-| `--long` | `#86aed0` | 8,0 | `#3d6d96` | 5,5 | sens long (acier) |
-| `--short` | `#cdab84` | 8,7 | `#8a6431` | 5,3 | sens short (sable, hachuré dans les barres) |
+| `--long` | `var(--profit)` | | `var(--profit)` | | sens long : vert (décision du propriétaire, 2026-10-15) |
+| `--short` | `var(--loss)` | | `var(--loss)` | | sens short : rouge, hachuré dans les barres |
 
 Règles :
 - Chaque couleur sémantique a une variante `-w` (13 à 14 % en sombre, 9 à 11 % en clair) pour les fonds.
 - **Violet exclusif** : seulement le live. Dans les tables et les tuiles, un liseré ou un point ; le badge complet
   « LIVE » seulement dans les en-têtes, tiroirs et confirmations.
-- **Long/short** ne reprennent jamais le vert et le rouge du P&L : acier et sable + flèche et lettre.
+- **Long/short** : vert et rouge classiques (décision du propriétaire, les teintes acier/sable ont été refusées), toujours accompagnés de la flèche et de la lettre L/S pour ne pas être confondus avec un P&L.
 - **P&L** : couleur de texte uniquement, jamais en remplissage de tuile ; signe `+` ou `−` (U+2212) toujours affiché.
 - **Critique** (`--crit`, vermillon) n'est pas une perte (`--loss`, rose) : une alerte et un P&L négatif ne se confondent pas.
 - Hachures : `--stale-hatch` (ambre, périmé), `--off-hatch` (gris, hors ligne), `--live-hatch` (bande du dialogue live).
@@ -925,17 +925,18 @@ delà du tampon ; notifications push (HTTPS requis) ; timeline 429 de flotte (n'
 | Contrat de données par widget, ajouts et reports | § 13 | |
 | i18n FR/EN, pas de chaîne en dur, tests de largeur | § 16 | |
 
-## 19. Points à valider par le propriétaire
+## 19. Décisions du propriétaire (2026-10-15)
 
-1. Durée unique du maintien : **1 s** retenue (A 1,1 s, B 1,2 s, C 0,9 s). Elle s'applique à toute sortie live ; la pause
-   des entrées n'en a pas.
-2. Fuseau du P&L quotidien : Europe/Paris par défaut, UTC en option (question 03 § 15.3).
-3. Préférences synchronisées entre téléphone et ordinateur via la passerelle (recommandé).
-4. Ajouts au contrat passerelle du § 13.2 (sparkline 24 h, MAE/MFE, « Depuis votre passage », marqueur manuel) en v1.
-5. Teintes long (acier) et short (sable) à valider sur un vrai écran, avec la palette daltonien.
-6. Densité compacte (lignes de 30 px) par défaut sur desktop.
-7. Espaces de travail à zones plutôt que glisser-déposer libre.
-8. Graphiques limités à 2 cellules en v1 (3 au plus), 4 en v2 après mesure.
+Design validé tel quel. Arbitrages :
+1. Maintien de **1 s** pour toute sortie live : validé.
+2. Fuseau du P&L quotidien : **Europe/Paris** par défaut, UTC en option.
+3. Préférences **synchronisées** entre appareils via la passerelle (indexées par `bot_key`).
+4. Ajouts au contrat passerelle du § 13.2 : inclus en v1.
+5. Long/short : **vert et rouge** (acier et sable refusés), toujours avec flèche et lettre.
+6. Densité compacte par défaut sur desktop, espaces de travail à zones, graphiques limités à 2 cellules en v1 : retenus.
+7. Passerelle : identifiants lus dans les configs des bots (liste blanche de champs, jamais les clés exchange) ; port 9399
+   en HTTP avec authentification obligatoire, CORS limité à l'origine de l'UI, limitation des tentatives de connexion ;
+   TLS plus tard.
 
 ## 20. Maquettes et captures
 

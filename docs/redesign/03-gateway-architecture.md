@@ -743,7 +743,7 @@ Dépendances : B1 -> (B2, B3) -> B4 -> B7 ; B5 et B6 démarrent dès que les typ
 6. Ids `ftbot.N` différents entre appareils : la synchronisation des préférences doit passer par `bot_key`.
 7. Le bot :9400 qui sert l'UI est un bot live : un déploiement raté coupe le dashboard, pas le trading ; la passerelle
    retire au contraire la charge `/fleetview/*` de ce processus.
-8. Pas de toolchain Rust ni de Docker sur l'hôte : dépendance à la CI pour les binaires.
+8. Toolchain Rust présente sur l'hôte dans `~/.cargo/bin` (cargo 1.99, hors PATH par défaut) ; pas de Docker. Les binaires musl de release viennent de la CI.
 9. Évolutions de l'API freqtrade amont : tests de contrat et sondage des features par incarnation.
 10. `permessage-deflate` non garanti côté WS : compensé par le snapshot HTTP compressé et des deltas petits.
 11. Notifications navigateur impossibles en HTTP hors localhost.
