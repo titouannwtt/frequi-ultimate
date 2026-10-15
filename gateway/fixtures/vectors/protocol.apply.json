@@ -1,0 +1,209 @@
+{
+ "function": "protocol.apply",
+ "description": "Client-side application of up frames.",
+ "cases": [
+  {
+   "name": "shallow merge per field group",
+   "input": {
+    "frames": [
+     {
+      "upsert": {
+       "bots": {
+        "local:1": {
+         "identity": {
+          "name": "hippo"
+         },
+         "metrics": {
+          "a": 0,
+          "b": 2
+         },
+         "freshness": {
+          "state": {
+           "as_of_ms": 1
+          },
+          "metrics": {
+           "as_of_ms": 1
+          }
+         }
+        }
+       }
+      }
+     },
+     {
+      "upsert": {
+       "bots": {
+        "local:1": {
+         "metrics": {
+          "a": 1
+         },
+         "freshness": {
+          "metrics": {
+           "as_of_ms": 5
+          }
+         }
+        }
+       }
+      }
+     }
+    ]
+   },
+   "expected": {
+    "bots": {
+     "local:1": {
+      "identity": {
+       "name": "hippo"
+      },
+      "metrics": {
+       "a": 1,
+       "b": 2
+      },
+      "freshness": {
+       "state": {
+        "as_of_ms": 1
+       },
+       "metrics": {
+        "as_of_ms": 5
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "scalar fields and null groups are replaced",
+   "input": {
+    "frames": [
+     {
+      "upsert": {
+       "alerts": {
+        "x": {
+         "severity": "warning",
+         "value": 1,
+         "metrics": {
+          "a": 1
+         }
+        }
+       }
+      }
+     },
+     {
+      "upsert": {
+       "alerts": {
+        "x": {
+         "severity": "critical",
+         "value": null,
+         "metrics": null
+        }
+       }
+      }
+     }
+    ]
+   },
+   "expected": {
+    "alerts": {
+     "x": {
+      "severity": "critical",
+      "value": null,
+      "metrics": null
+     }
+    }
+   }
+  },
+  {
+   "name": "applying a frame twice changes nothing",
+   "input": {
+    "frames": [
+     {
+      "upsert": {
+       "bots": {
+        "local:1": {
+         "metrics": {
+          "a": 1
+         }
+        }
+       }
+      }
+     },
+     {
+      "upsert": {
+       "bots": {
+        "local:1": {
+         "metrics": {
+          "a": 1
+         }
+        }
+       }
+      }
+     }
+    ]
+   },
+   "expected": {
+    "bots": {
+     "local:1": {
+      "metrics": {
+       "a": 1
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "removal",
+   "input": {
+    "frames": [
+     {
+      "upsert": {
+       "positions": {
+        "local:1/5": {
+         "pair": "ETH"
+        },
+        "local:1/6": {
+         "pair": "BTC"
+        }
+       }
+      }
+     },
+     {
+      "remove": {
+       "positions": [
+        "local:1/5",
+        "never-existed"
+       ]
+      }
+     }
+    ]
+   },
+   "expected": {
+    "positions": {
+     "local:1/6": {
+      "pair": "BTC"
+     }
+    }
+   }
+  },
+  {
+   "name": "a key upserted and removed in one frame ends up removed",
+   "input": {
+    "frames": [
+     {
+      "upsert": {
+       "positions": {
+        "local:1/6": {
+         "pair": "BTC"
+        }
+       }
+      },
+      "remove": {
+       "positions": [
+        "local:1/6"
+       ]
+      }
+     }
+    ]
+   },
+   "expected": {
+    "positions": {}
+   }
+  }
+ ]
+}

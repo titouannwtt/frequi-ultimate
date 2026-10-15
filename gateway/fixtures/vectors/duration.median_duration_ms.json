@@ -1,0 +1,38 @@
+{
+ "function": "duration.median_duration_ms",
+ "description": "",
+ "cases": [
+  {
+   "name": "ignores non positive",
+   "input": [
+    0,
+    -5,
+    3600000,
+    10800000,
+    18000000
+   ],
+   "expected": 10800000
+  },
+  {
+   "name": "only zeros",
+   "input": [
+    0,
+    0
+   ],
+   "expected": null
+  },
+  {
+   "name": "empty",
+   "input": [],
+   "expected": null
+  },
+  {
+   "name": "even count interpolates",
+   "input": [
+    3600000,
+    10800000
+   ],
+   "expected": 7200000
+  }
+ ]
+}

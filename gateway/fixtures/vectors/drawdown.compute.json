@@ -1,0 +1,433 @@
+{
+ "function": "drawdown.compute",
+ "description": "The two named drawdown definitions (realized, with open positions), absolute first.",
+ "cases": [
+  {
+   "name": "realized peak to trough",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 1,
+      "profit_abs": 10
+     },
+     {
+      "ts_ms": 2,
+      "profit_abs": 20
+     },
+     {
+      "ts_ms": 3,
+      "profit_abs": -15
+     },
+     {
+      "ts_ms": 4,
+      "profit_abs": 10
+     },
+     {
+      "ts_ms": 5,
+      "profit_abs": -20
+     }
+    ],
+    "starting_capital": 1000,
+    "now_ms": 10
+   },
+   "expected": {
+    "realized": {
+     "abs": 25,
+     "peak_ms": 2,
+     "trough_ms": 5,
+     "current_abs": 25,
+     "pct": 0.024271844660194174
+    },
+    "with_open": {
+     "abs": 25
+    },
+    "has_open": false,
+    "base": 1030,
+    "open_worst_sum": 0
+   }
+  },
+  {
+   "name": "high-water mark starts at the starting capital",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 1,
+      "profit_abs": -4
+     },
+     {
+      "ts_ms": 2,
+      "profit_abs": -6
+     }
+    ],
+    "now_ms": 3
+   },
+   "expected": {
+    "realized": {
+     "abs": 10,
+     "peak_ms": null,
+     "trough_ms": 2,
+     "pct": null
+    },
+    "base": null
+   }
+  },
+  {
+   "name": "input order does not matter",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 3,
+      "profit_abs": -15
+     },
+     {
+      "ts_ms": 1,
+      "profit_abs": 10
+     },
+     {
+      "ts_ms": 2,
+      "profit_abs": 20
+     }
+    ],
+    "now_ms": 4
+   },
+   "expected": {
+    "realized": {
+     "abs": 15,
+     "peak_ms": 2,
+     "trough_ms": 3
+    }
+   }
+  },
+  {
+   "name": "recovered fully: no current drawdown",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 1,
+      "profit_abs": -5
+     },
+     {
+      "ts_ms": 2,
+      "profit_abs": 9
+     }
+    ],
+    "now_ms": 3
+   },
+   "expected": {
+    "realized": {
+     "abs": 5,
+     "current_abs": 0
+    }
+   }
+  },
+  {
+   "name": "long open position extends to its worst point",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 1,
+      "profit_abs": 50
+     }
+    ],
+    "open": [
+     {
+      "profit_abs": -10,
+      "amount": 2,
+      "open_rate": 100,
+      "current_rate": 95,
+      "is_short": false,
+      "min_rate": 80,
+      "max_rate": null
+     }
+    ],
+    "now_ms": 9
+   },
+   "expected": {
+    "open_worst_sum": -40,
+    "has_open": true,
+    "realized": {
+     "abs": 0
+    },
+    "with_open": {
+     "abs": 40,
+     "peak_ms": 1,
+     "trough_ms": 9
+    }
+   }
+  },
+  {
+   "name": "short open position extends to its worst point",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 1,
+      "profit_abs": 10
+     }
+    ],
+    "open": [
+     {
+      "profit_abs": 3,
+      "amount": 4,
+      "open_rate": 100,
+      "current_rate": 98,
+      "is_short": true,
+      "min_rate": 90,
+      "max_rate": 104
+     }
+    ],
+    "now_ms": 9
+   },
+   "expected": {
+    "open_worst_sum": -21,
+    "with_open": {
+     "abs": 21,
+     "peak_ms": 1,
+     "trough_ms": 9
+    }
+   }
+  },
+  {
+   "name": "winning open position never lowers the drawdown below realized",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 1,
+      "profit_abs": 50
+     },
+     {
+      "ts_ms": 2,
+      "profit_abs": -30
+     }
+    ],
+    "open": [
+     {
+      "profit_abs": 5,
+      "amount": 1,
+      "open_rate": 100,
+      "current_rate": 105,
+      "is_short": false,
+      "min_rate": 105,
+      "max_rate": null
+     }
+    ],
+    "now_ms": 9
+   },
+   "expected": {
+    "realized": {
+     "abs": 30
+    },
+    "with_open": {
+     "abs": 30
+    }
+   }
+  },
+  {
+   "name": "two open positions: worst points add up",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 1,
+      "profit_abs": 20
+     }
+    ],
+    "open": [
+     {
+      "profit_abs": -5,
+      "amount": 1,
+      "open_rate": 100,
+      "current_rate": 95,
+      "is_short": false,
+      "min_rate": 90,
+      "max_rate": null
+     },
+     {
+      "profit_abs": 2,
+      "amount": 2,
+      "open_rate": 100,
+      "current_rate": 101,
+      "is_short": false,
+      "min_rate": 98,
+      "max_rate": null
+     }
+    ],
+    "now_ms": 9
+   },
+   "expected": {
+    "open_worst_sum": -14,
+    "with_open": {
+     "abs": 14
+    }
+   }
+  },
+  {
+   "name": "sampled history captures books that are now closed",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 30,
+      "profit_abs": 8
+     }
+    ],
+    "histories": [
+     [
+      {
+       "ts_ms": 10,
+       "closed": 0,
+       "open": 0
+      },
+      {
+       "ts_ms": 20,
+       "closed": 0,
+       "open": -30
+      },
+      {
+       "ts_ms": 30,
+       "closed": 8,
+       "open": 0
+      }
+     ]
+    ],
+    "now_ms": 40
+   },
+   "expected": {
+    "realized": {
+     "abs": 0
+    },
+    "with_open": {
+     "abs": 30,
+     "trough_ms": 20,
+     "current_abs": 0
+    }
+   }
+  },
+  {
+   "name": "realized points before the first sample are prepended",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 1,
+      "profit_abs": 20
+     },
+     {
+      "ts_ms": 2,
+      "profit_abs": -20
+     }
+    ],
+    "histories": [
+     [
+      {
+       "ts_ms": 100,
+       "closed": 0,
+       "open": 0
+      },
+      {
+       "ts_ms": 200,
+       "closed": 0,
+       "open": 1
+      }
+     ]
+    ],
+    "now_ms": 300
+   },
+   "expected": {
+    "realized": {
+     "abs": 20
+    },
+    "with_open": {
+     "abs": 20,
+     "current_abs": 19
+    }
+   }
+  },
+  {
+   "name": "two bots merged from their first common timestamp",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 30,
+      "profit_abs": 8
+     }
+    ],
+    "histories": [
+     [
+      {
+       "ts_ms": 10,
+       "closed": 0,
+       "open": 0
+      },
+      {
+       "ts_ms": 20,
+       "closed": 0,
+       "open": -30
+      },
+      {
+       "ts_ms": 30,
+       "closed": 8,
+       "open": 0
+      }
+     ],
+     [
+      {
+       "ts_ms": 20,
+       "closed": 0,
+       "open": 0
+      },
+      {
+       "ts_ms": 30,
+       "closed": 0,
+       "open": 0
+      }
+     ]
+    ],
+    "now_ms": 40
+   },
+   "expected": {
+    "with_open": {
+     "abs": 30,
+     "trough_ms": 20,
+     "peak_ms": null
+    }
+   }
+  },
+  {
+   "name": "zero starting capital means no percentage",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 1,
+      "profit_abs": 10
+     },
+     {
+      "ts_ms": 2,
+      "profit_abs": -5
+     }
+    ],
+    "starting_capital": 0,
+    "now_ms": 3
+   },
+   "expected": {
+    "realized": {
+     "abs": 5,
+     "pct": null
+    },
+    "base": null
+   }
+  },
+  {
+   "name": "no data",
+   "input": {
+    "now_ms": 1
+   },
+   "expected": {
+    "realized": {
+     "abs": 0,
+     "current_abs": 0
+    },
+    "with_open": {
+     "abs": 0
+    },
+    "has_open": false
+   }
+  }
+ ]
+}

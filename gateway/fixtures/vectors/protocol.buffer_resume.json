@@ -1,0 +1,99 @@
+{
+ "function": "protocol.buffer_resume",
+ "description": "Resume against the ring buffer of 512 deltas (capacity overridable in the vectors).",
+ "cases": [
+  {
+   "name": "up to date",
+   "input": {
+    "pushed": 10,
+    "from": 10
+   },
+   "expected": {
+    "resume": "up_to_date",
+    "head": 10
+   }
+  },
+  {
+   "name": "replay of the missed frames",
+   "input": {
+    "pushed": 10,
+    "from": 7
+   },
+   "expected": {
+    "resume": "replay",
+    "seqs": [
+     8,
+     9,
+     10
+    ]
+   }
+  },
+  {
+   "name": "replay from the very beginning",
+   "input": {
+    "pushed": 3,
+    "from": 0
+   },
+   "expected": {
+    "resume": "replay",
+    "seqs": [
+     1,
+     2,
+     3
+    ]
+   }
+  },
+  {
+   "name": "oldest replayable point",
+   "input": {
+    "capacity": 4,
+    "pushed": 10,
+    "from": 6
+   },
+   "expected": {
+    "resume": "replay",
+    "seqs": [
+     7,
+     8,
+     9,
+     10
+    ]
+   }
+  },
+  {
+   "name": "outside the buffer",
+   "input": {
+    "capacity": 4,
+    "pushed": 10,
+    "from": 5
+   },
+   "expected": {
+    "resume": "resync",
+    "reason": "stale_resume"
+   }
+  },
+  {
+   "name": "server restarted: the client is ahead",
+   "input": {
+    "capacity": 4,
+    "pushed": 10,
+    "from": 11
+   },
+   "expected": {
+    "resume": "resync",
+    "reason": "stale_resume"
+   }
+  },
+  {
+   "name": "nothing pushed yet",
+   "input": {
+    "pushed": 0,
+    "from": 0
+   },
+   "expected": {
+    "resume": "up_to_date",
+    "head": 0
+   }
+  }
+ ]
+}

@@ -1,0 +1,31 @@
+{
+ "function": "duration.level",
+ "description": "",
+ "cases": [
+  {
+   "name": "70 is ok",
+   "input": 70,
+   "expected": "ok"
+  },
+  {
+   "name": "84 warns",
+   "input": 84,
+   "expected": "warn"
+  },
+  {
+   "name": "90 still warns",
+   "input": 90,
+   "expected": "warn"
+  },
+  {
+   "name": "91 is critical",
+   "input": 91,
+   "expected": "critical"
+  },
+  {
+   "name": "0",
+   "input": 0,
+   "expected": "ok"
+  }
+ ]
+}

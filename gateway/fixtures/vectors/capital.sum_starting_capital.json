@@ -1,0 +1,29 @@
+{
+ "function": "capital.sum_starting_capital",
+ "description": "",
+ "cases": [
+  {
+   "name": "unknown capitals are counted apart",
+   "input": [
+    100,
+    null,
+    50,
+    0
+   ],
+   "expected": {
+    "total": 150,
+    "known": 2,
+    "unknown": 2
+   }
+  },
+  {
+   "name": "empty",
+   "input": [],
+   "expected": {
+    "total": 0,
+    "known": 0,
+    "unknown": 0
+   }
+  }
+ ]
+}

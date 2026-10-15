@@ -1,0 +1,84 @@
+{
+ "function": "drawdown.open_worst_abs",
+ "description": "Worst unrealized profit of an open position.",
+ "cases": [
+  {
+   "name": "long: extend to min_rate",
+   "input": {
+    "profit_abs": -10,
+    "amount": 2,
+    "open_rate": 100,
+    "current_rate": 95,
+    "is_short": false,
+    "min_rate": 80,
+    "max_rate": null
+   },
+   "expected": -40
+  },
+  {
+   "name": "long: min_rate above current changes nothing",
+   "input": {
+    "profit_abs": 1,
+    "amount": 2,
+    "open_rate": 100,
+    "current_rate": 95,
+    "is_short": false,
+    "min_rate": 99,
+    "max_rate": null
+   },
+   "expected": 1
+  },
+  {
+   "name": "short: extend to max_rate",
+   "input": {
+    "profit_abs": 3,
+    "amount": 4,
+    "open_rate": 100,
+    "current_rate": 98,
+    "is_short": true,
+    "min_rate": 90,
+    "max_rate": 104
+   },
+   "expected": -21
+  },
+  {
+   "name": "short without max_rate",
+   "input": {
+    "profit_abs": 3,
+    "amount": 4,
+    "open_rate": 100,
+    "current_rate": 98,
+    "is_short": true,
+    "min_rate": 90,
+    "max_rate": null
+   },
+   "expected": 3
+  },
+  {
+   "name": "zero amount returns the profit",
+   "input": {
+    "profit_abs": 3,
+    "amount": 0,
+    "open_rate": 100,
+    "current_rate": 98,
+    "is_short": false,
+    "min_rate": 10,
+    "max_rate": null
+   },
+   "expected": 3
+  },
+  {
+   "name": "missing current rate falls back to the open rate",
+   "input": {
+    "profit_abs": 0,
+    "amount": 1,
+    "open_rate": 100,
+    "current_rate": null,
+    "is_short": false,
+    "min_rate": 90,
+    "max_rate": null
+   },
+   "expected": -10
+  }
+ ]
+}

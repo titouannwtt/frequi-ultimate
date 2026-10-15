@@ -1,0 +1,242 @@
+{
+ "function": "periods.pnl_periods",
+ "description": "Calendar buckets of realized profit in an explicit time zone.",
+ "cases": [
+  {
+   "name": "the day of a DST change lasts 25 hours in Paris",
+   "input": {
+    "unit": "day",
+    "tz": "Europe/Paris",
+    "now_ms": 1792929600000,
+    "n": 2,
+    "trades": [
+     {
+      "ts_ms": 1792879199999,
+      "profit_abs": -1
+     },
+     {
+      "ts_ms": 1792969199999,
+      "profit_abs": 2.5
+     },
+     {
+      "ts_ms": 1792969200000,
+      "profit_abs": 100
+     }
+    ]
+   },
+   "expected": [
+    {
+     "label": "2026-10-24",
+     "start_ms": 1792792800000,
+     "end_ms": 1792879200000,
+     "profit_abs": -1,
+     "trades": 1,
+     "wins": 0,
+     "losses": 1
+    },
+    {
+     "label": "2026-10-25",
+     "start_ms": 1792879200000,
+     "end_ms": 1792969200000,
+     "profit_abs": 2.5,
+     "trades": 1,
+     "wins": 1,
+     "losses": 0
+    }
+   ]
+  },
+  {
+   "name": "the day of the spring DST change lasts 23 hours in Paris",
+   "input": {
+    "unit": "day",
+    "tz": "Europe/Paris",
+    "now_ms": 1774785600000,
+    "n": 1,
+    "trades": []
+   },
+   "expected": [
+    {
+     "label": "2026-03-29",
+     "start_ms": 1774738800000,
+     "end_ms": 1774821600000,
+     "profit_abs": 0,
+     "trades": 0
+    }
+   ]
+  },
+  {
+   "name": "a trade just after Paris midnight belongs to the next Paris day",
+   "input": {
+    "unit": "day",
+    "tz": "Europe/Paris",
+    "now_ms": 1779278400000,
+    "n": 1,
+    "trades": [
+     {
+      "ts_ms": 1779229800000,
+      "profit_abs": 5
+     }
+    ]
+   },
+   "expected": [
+    {
+     "label": "2026-05-20",
+     "profit_abs": 5,
+     "trades": 1
+    }
+   ]
+  },
+  {
+   "name": "the same trade is still on the previous UTC day",
+   "input": {
+    "unit": "day",
+    "tz": "UTC",
+    "now_ms": 1779278400000,
+    "n": 1,
+    "trades": [
+     {
+      "ts_ms": 1779229800000,
+      "profit_abs": 5
+     }
+    ]
+   },
+   "expected": [
+    {
+     "label": "2026-05-20",
+     "profit_abs": 0,
+     "trades": 0
+    }
+   ]
+  },
+  {
+   "name": "empty buckets are included, oldest first",
+   "input": {
+    "unit": "day",
+    "tz": "UTC",
+    "now_ms": 1779278400000,
+    "n": 4,
+    "trades": [
+     {
+      "ts_ms": 1779278399000,
+      "profit_abs": 3
+     },
+     {
+      "ts_ms": 1779278398000,
+      "profit_abs": -1
+     },
+     {
+      "ts_ms": 1779019200000,
+      "profit_abs": 7
+     }
+    ]
+   },
+   "expected": [
+    {
+     "label": "2026-05-17",
+     "profit_abs": 7,
+     "trades": 1
+    },
+    {
+     "label": "2026-05-18",
+     "profit_abs": 0,
+     "trades": 0
+    },
+    {
+     "label": "2026-05-19",
+     "profit_abs": 0,
+     "trades": 0
+    },
+    {
+     "label": "2026-05-20",
+     "profit_abs": 2,
+     "trades": 2,
+     "wins": 1,
+     "losses": 1
+    }
+   ]
+  },
+  {
+   "name": "weeks start on Monday",
+   "input": {
+    "unit": "week",
+    "tz": "Europe/Paris",
+    "now_ms": 1779278400000,
+    "n": 2,
+    "trades": [
+     {
+      "ts_ms": 1779278400000,
+      "profit_abs": 1
+     },
+     {
+      "ts_ms": 1778450400000,
+      "profit_abs": 2
+     }
+    ]
+   },
+   "expected": [
+    {
+     "label": "2026-05-11",
+     "start_ms": 1778450400000,
+     "end_ms": 1779055200000,
+     "profit_abs": 2
+    },
+    {
+     "label": "2026-05-18",
+     "start_ms": 1779055200000,
+     "end_ms": 1779660000000,
+     "profit_abs": 1
+    }
+   ]
+  },
+  {
+   "name": "months",
+   "input": {
+    "unit": "month",
+    "tz": "Europe/Paris",
+    "now_ms": 1779278400000,
+    "n": 3,
+    "trades": [
+     {
+      "ts_ms": 1777586340000,
+      "profit_abs": 4
+     },
+     {
+      "ts_ms": 1777586400000,
+      "profit_abs": 5
+     }
+    ]
+   },
+   "expected": [
+    {
+     "label": "2026-03",
+     "start_ms": 1772319600000,
+     "end_ms": 1774994400000,
+     "profit_abs": 0
+    },
+    {
+     "label": "2026-04",
+     "start_ms": 1774994400000,
+     "end_ms": 1777586400000,
+     "profit_abs": 4
+    },
+    {
+     "label": "2026-05",
+     "start_ms": 1777586400000,
+     "end_ms": 1780264800000,
+     "profit_abs": 5
+    }
+   ]
+  },
+  {
+   "name": "zero buckets",
+   "input": {
+    "unit": "day",
+    "tz": "UTC",
+    "now_ms": 1779278400000,
+    "n": 0,
+    "trades": []
+   },
+   "expected": []
+  }
+ ]
+}

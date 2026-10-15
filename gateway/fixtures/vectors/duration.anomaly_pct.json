@@ -1,0 +1,37 @@
+{
+ "function": "duration.anomaly_pct",
+ "description": "",
+ "cases": [
+  {
+   "name": "percentile when enough history",
+   "input": {
+    "closed_ms": [
+     3600000,
+     7200000,
+     10800000,
+     14400000
+    ],
+    "ms": 7200000
+   },
+   "expected": 50
+  },
+  {
+   "name": "72h scale without history",
+   "input": {
+    "closed_ms": [],
+    "ms": 129600000
+   },
+   "expected": 50
+  },
+  {
+   "name": "capped at 100",
+   "input": {
+    "closed_ms": [
+     3600000
+    ],
+    "ms": 720000000
+   },
+   "expected": 100
+  }
+ ]
+}

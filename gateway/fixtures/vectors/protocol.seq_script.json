@@ -1,0 +1,85 @@
+{
+ "function": "protocol.seq_script",
+ "description": "",
+ "cases": [
+  {
+   "name": "in order, duplicate, gap",
+   "input": {
+    "baseline": 41,
+    "observe": [
+     42,
+     42,
+     40,
+     45
+    ]
+   },
+   "expected": {
+    "verdicts": [
+     {
+      "verdict": "in_order"
+     },
+     {
+      "verdict": "duplicate"
+     },
+     {
+      "verdict": "duplicate"
+     },
+     {
+      "verdict": "gap",
+      "expected": 43,
+      "got": 45
+     }
+    ],
+    "last": 42
+   }
+  },
+  {
+   "name": "a gap does not move the baseline",
+   "input": {
+    "baseline": 10,
+    "observe": [
+     12,
+     11,
+     12
+    ]
+   },
+   "expected": {
+    "verdicts": [
+     {
+      "verdict": "gap",
+      "expected": 11,
+      "got": 12
+     },
+     {
+      "verdict": "in_order"
+     },
+     {
+      "verdict": "in_order"
+     }
+    ],
+    "last": 12
+   }
+  },
+  {
+   "name": "without a baseline the first frame becomes the baseline",
+   "input": {
+    "baseline": null,
+    "observe": [
+     7,
+     8
+    ]
+   },
+   "expected": {
+    "verdicts": [
+     {
+      "verdict": "in_order"
+     },
+     {
+      "verdict": "in_order"
+     }
+    ],
+    "last": 8
+   }
+  }
+ ]
+}
