@@ -1,0 +1,137 @@
+/*
+ * FreqUI Ultimate 2: shared utilities (docs/redesign/02-design.md, sections 6, 7 and 17).
+ *
+ * Nothing here is global: no reset, no body style, so the legacy pages keep their look until they
+ * are migrated. The new application shell puts `fq-app` on its root element.
+ */
+
+@layer components {
+  .fq-app {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-ui);
+    font-size: var(--t-md);
+    line-height: 1.38;
+    font-feature-settings:
+      'cv11' 1,
+      'ss01' 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Every figure: tabular, slashed zero, so digits never move when they change */
+  .num {
+    font-family: var(--font-num);
+    font-variant-numeric: tabular-nums slashed-zero;
+    letter-spacing: -0.015em;
+  }
+
+  /* P&L and state colours (text only, never a tile fill) */
+  .up {
+    color: var(--profit);
+  }
+  .down {
+    color: var(--loss);
+  }
+  .flat {
+    color: var(--fg-2);
+  }
+  .muted {
+    color: var(--fg-3);
+  }
+  .dim {
+    color: var(--fg-2);
+  }
+  .warn-t {
+    color: var(--warn);
+  }
+  .crit-t {
+    color: var(--crit);
+  }
+  .info-t {
+    color: var(--info);
+  }
+  .live-t {
+    color: var(--live);
+  }
+
+  /* Spaced capitals are reserved for column headers; KPI labels use sentence case */
+  .colh {
+    font-family: var(--font-ui);
+    font-size: var(--t-xs);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+  }
+  .lab {
+    font-size: var(--t-xs);
+    font-weight: 500;
+    color: var(--fg-3);
+  }
+
+  /* Visually hidden, still read by assistive technology */
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  /* Lucide icons (section 7): stroke 1.75, sizes 13 (tables), 15 (default), 18 (empty states), 20 (mobile bar) */
+  .ico {
+    width: 15px;
+    height: 15px;
+    stroke-width: 1.75;
+    flex: none;
+    vertical-align: -3px;
+  }
+  .ico-13 {
+    width: 13px;
+    height: 13px;
+  }
+  .ico-18 {
+    width: 18px;
+    height: 18px;
+  }
+  .ico-20 {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Focus ring (section 17): accent, 2 px. Sheets, popovers and toasts are teleported to <body>,
+     outside .fq-app, so they carry .fq-portal to get the same ring. */
+  .fq-app :focus-visible,
+  .fq-portal :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-radius: var(--r-1);
+  }
+}
+
+/* Edge fade on a horizontally scrolling row; data-fade is set from the scroll position (l, r or lr) */
+[data-fade='r'] {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+}
+[data-fade='l'] {
+  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
+}
+[data-fade='lr'] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 40px,
+    #000 calc(100% - 40px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 40px,
+    #000 calc(100% - 40px),
+    transparent
+  );
+}

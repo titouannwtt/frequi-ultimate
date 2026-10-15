@@ -23,6 +23,17 @@
         --ft-boot-track: rgba(15, 23, 42, 0.08);
       }
     }
+    /* Explicit theme chosen by the early script below wins over the OS preference */
+    :root[data-theme="dark"] {
+      --ft-boot-bg: #0a1622;
+      --ft-boot-fg: rgba(255, 255, 255, 0.92);
+      --ft-boot-track: rgba(255, 255, 255, 0.08);
+    }
+    :root[data-theme="light"] {
+      --ft-boot-bg: #f8fafc;
+      --ft-boot-fg: rgba(15, 23, 42, 0.92);
+      --ft-boot-track: rgba(15, 23, 42, 0.08);
+    }
     html, body { margin: 0; padding: 0; height: 100%; background: var(--ft-boot-bg); }
     body { font-family: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
     #ft-boot-splash {
@@ -74,6 +85,26 @@
       #ft-boot-splash .ft-boot-ring::before, #ft-boot-splash .ft-boot-dot { animation: none; }
     }
   </style>
+  <script>
+    // Apply the persisted theme before first paint (same rules as src/utils/theme.ts, which
+    // takes over once the app has booted). Dark when nothing is stored.
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('ftUISettings') || '{}');
+        var mode = s.themeMode;
+        if (mode !== 'system' && mode !== 'dark' && mode !== 'light') {
+          mode = s.currentTheme === 'light' || s.currentTheme === 'bootstrap' ? 'light' : 'dark';
+        }
+        var dark = mode === 'system'
+          ? window.matchMedia('(prefers-color-scheme: dark)').matches
+          : mode === 'dark';
+        var root = document.documentElement;
+        root.setAttribute('data-theme', dark ? 'dark' : 'light');
+        root.style.colorScheme = dark ? 'dark' : 'light';
+        if (dark) root.classList.add('dark', 'ft-dark-theme');
+      } catch (e) { /* storage unavailable: the app applies the theme once booted */ }
+    })();
+  </script>
 </head>
 
 <body>

@@ -35,7 +35,7 @@ export default defineConfigWithVueTs(
       'vue/component-name-in-template-casing': [
         'error',
         'PascalCase',
-        { registeredComponentsOnly: false, ignores: ['/i-mdi-.*/'] },
+        { registeredComponentsOnly: false, ignores: ['/i-mdi-.*/', '/i-lucide-.*/'] },
       ],
       'vue/block-lang': [
         'error',
@@ -65,6 +65,13 @@ export default defineConfigWithVueTs(
           order: ['script', 'template', 'style'],
         },
       ],
+    },
+  },
+  {
+    // The design system primitives follow the names of docs/redesign/02-design.md section 5.1
+    files: ['src/components/ds/**/*.vue'],
+    rules: {
+      'vue/multi-word-component-names': 'off',
     },
   },
 );

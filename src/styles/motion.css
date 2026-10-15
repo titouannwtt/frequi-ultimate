@@ -1,0 +1,119 @@
+/*
+ * FreqUI Ultimate 2: motion (docs/redesign/02-design.md, section 9).
+ * Durations and easings are tokens in tokens.css; the ones below are the animations built on them.
+ */
+
+/* Value flash on a cell that changes (set by useNumberTween, only for visible cells) */
+.fl-up {
+  animation: fq-flash-up var(--d-flash) var(--e-out);
+}
+.fl-dn {
+  animation: fq-flash-dn var(--d-flash) var(--e-out);
+}
+@keyframes fq-flash-up {
+  0% {
+    background-color: var(--profit-w);
+    box-shadow: inset 0 -2px 0 var(--profit);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 -2px 0 transparent;
+  }
+}
+@keyframes fq-flash-dn {
+  0% {
+    background-color: var(--loss-w);
+    box-shadow: inset 0 -2px 0 var(--loss);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 -2px 0 transparent;
+  }
+}
+
+/* Skeleton shimmer, 1.3 s */
+.sk {
+  display: block;
+  height: 12px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--bg-2) 0%, var(--bg-3) 50%, var(--bg-2) 100%);
+  background-size: 200% 100%;
+  animation: fq-shimmer 1.3s linear infinite;
+}
+@keyframes fq-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Spinners (busy buttons, connecting pill) and the pulse of a starting bot */
+@keyframes fq-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fq-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes fq-slide-down {
+  from {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* One-shot beat of the connection dot on each delta */
+@keyframes fq-beat {
+  from {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+/* Entry animation of alerts, staggered by 40 ms with the --i custom property */
+@keyframes fq-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fq-rise {
+  animation: fq-rise var(--d-base) var(--e-out) backwards;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+/*
+ * Reduced motion: every animation collapses to a single 1 ms pass (counters and flashes are also
+ * cut in useNumberTween), the shimmer becomes a static block. The hold-to-confirm delay (--hold)
+ * is a safety delay and is deliberately not touched here.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+  }
+  .sk {
+    background-image: none;
+    background-color: var(--bg-2);
+  }
+}
