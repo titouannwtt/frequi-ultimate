@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MultiDeletePayload, MultiForceExitPayload, Trade } from '@/types';
+import { OrderSides } from '@/types';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
@@ -295,11 +296,14 @@ watch(
       v-if="activeTrades"
       v-model="forceExitVisible"
       :trade="feTrade"
+      :bot-id="feTrade?.botId"
       :stake-currency-decimals="botStore.activeBot.botState.stake_currency_decimals ?? 3"
     />
     <ForceEntryForm
       v-model="increasePosition.visible"
       :pair="increasePosition.trade?.pair"
+      :bot-id="increasePosition.trade?.botId"
+      :side="increasePosition.trade?.is_short ? OrderSides.short : OrderSides.long"
       position-increase
     />
 
