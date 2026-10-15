@@ -28,9 +28,17 @@ describe('getProfitPeriodCutoff', () => {
   });
 
   it('returns calendar-aware cutoffs for months and year', () => {
-    expect(getProfitPeriodCutoff('1m', NOW)).toBe(new Date('2026-04-20T12:00:00Z').getTime());
-    expect(getProfitPeriodCutoff('3m', NOW)).toBe(new Date('2026-02-20T12:00:00Z').getTime());
-    expect(getProfitPeriodCutoff('1y', NOW)).toBe(new Date('2025-05-20T12:00:00Z').getTime());
+    // Calendar months follow local wall-clock time: across a DST change the
+    // cutoff keeps the same local hour, so the UTC offset may differ by 1 h.
+    const monthsAgo = (n: number) => {
+      const e = new Date(NOW);
+      e.setMonth(e.getMonth() - n);
+      return e.getTime();
+    };
+    expect(getProfitPeriodCutoff('1m', NOW)).toBe(monthsAgo(1));
+    expect(getProfitPeriodCutoff('3m', NOW)).toBe(monthsAgo(3));
+    expect(getProfitPeriodCutoff('1y', NOW)).toBe(monthsAgo(12));
+    expect(new Date(getProfitPeriodCutoff('3m', NOW)).getHours()).toBe(new Date(NOW).getHours());
   });
 
   it('returns 0 (no lower bound) for "all"', () => {
