@@ -57,6 +57,29 @@ export function readChartTokens(el?: Element): ChartTokens {
 }
 
 /**
+ * Tokens as they resolve for `theme`, whatever the theme of the document is. The color tokens are
+ * defined on `:root[data-theme=...]`, so the attribute is switched on <html> for the duration of one
+ * synchronous read (no paint can happen in between) and put back.
+ */
+export function readChartTokensFor(theme: 'dark' | 'light'): ChartTokens {
+  const root = document.documentElement;
+  const current = root.getAttribute('data-theme');
+  if (current === theme || (current === null && theme === 'dark')) {
+    return readChartTokens();
+  }
+  root.setAttribute('data-theme', theme);
+  try {
+    return readChartTokens();
+  } finally {
+    if (current === null) {
+      root.removeAttribute('data-theme');
+    } else {
+      root.setAttribute('data-theme', current);
+    }
+  }
+}
+
+/**
  * ECharts theme derived from the design tokens (docs/redesign/02-design.md, section 6.6).
  * Axis labels are at least 11 px and use the monospace figure font, with the documented
  * `ui-monospace` fallback when the self-hosted font is not loaded.

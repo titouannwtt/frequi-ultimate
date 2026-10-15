@@ -100,8 +100,10 @@
     height: 20px;
   }
 
-  /* Focus ring (section 17): accent, 2 px */
-  .fq-app :focus-visible {
+  /* Focus ring (section 17): accent, 2 px. Sheets, popovers and toasts are teleported to <body>,
+     outside .fq-app, so they carry .fq-portal to get the same ring. */
+  .fq-app :focus-visible,
+  .fq-portal :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
     border-radius: var(--r-1);

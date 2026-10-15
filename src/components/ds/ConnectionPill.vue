@@ -41,6 +41,17 @@ const label = computed(() => {
     : t('fq.connection.gateway');
 });
 
+// What the live region says: the state, not the changing latency
+const announcement = computed(() => {
+  const base =
+    props.state === 'live'
+      ? props.kind === 'direct'
+        ? t('fq.ds.pill.direct')
+        : t('fq.connection.gateway')
+      : label.value;
+  return props.resyncing ? `${base}, ${t('fq.ds.pill.resync')}` : base;
+});
+
 // One-shot beat on each delta; restarted by toggling the class on the next frame
 const beating = ref(false);
 watch(
@@ -55,26 +66,33 @@ watch(
 </script>
 
 <template>
-  <button
-    type="button"
-    class="conn"
-    :class="{ beat: beating, resync: resyncing }"
-    :data-state="state"
-    :data-kind="kind"
-    role="status"
-    aria-live="polite"
-    @click="emit('click')"
-    @animationend="beating = false"
-  >
-    <span class="d" aria-hidden="true"></span>
-    <b class="lbl">{{ label }}</b>
-    <span class="sync" aria-hidden="true"></span>
-    <span v-if="resyncing" class="sr">{{ t('fq.ds.pill.resync') }}</span>
-  </button>
+  <span class="conn-wrap">
+    <button
+      type="button"
+      class="conn"
+      :class="{ beat: beating, resync: resyncing }"
+      :data-state="state"
+      :data-kind="kind"
+      @click="emit('click')"
+      @animationend="beating = false"
+    >
+      <span class="d" aria-hidden="true"></span>
+      <b class="lbl">{{ label }}</b>
+      <span class="sync" aria-hidden="true"></span>
+    </button>
+    <!-- The state is announced from a separate live region: a role on the button would hide that it
+         can be activated. The latency is left out so it does not announce on every tick. -->
+    <span class="sr" role="status" aria-live="polite">{{ announcement }}</span>
+  </span>
 </template>
 
 <style scoped>
+.conn-wrap {
+  display: inline-flex;
+  position: relative;
+}
 .conn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -148,6 +166,14 @@ b {
 }
 .conn.resync .sync {
   display: inline-block;
+}
+@media (max-width: 599px), (pointer: coarse) {
+  /* 44 px touch target around the 30 px pill */
+  .conn::before {
+    content: '';
+    position: absolute;
+    inset: -7px 0;
+  }
 }
 @media (max-width: 599px) {
   .conn {

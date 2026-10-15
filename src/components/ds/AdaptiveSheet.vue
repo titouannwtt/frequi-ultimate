@@ -97,7 +97,7 @@ onBeforeUnmount(() => {
       <aside
         v-if="open"
         ref="panel"
-        class="sheet"
+        class="sheet fq-portal"
         :class="mode === 'sheet' ? 'is-sheet' : 'is-drawer'"
         :data-mode="mode"
         role="dialog"

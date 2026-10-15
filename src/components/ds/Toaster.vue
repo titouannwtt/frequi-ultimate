@@ -13,7 +13,7 @@ const { toasts, dismiss } = useToaster();
     <TransitionGroup
       name="fq-toast"
       tag="div"
-      class="toasts"
+      class="toasts fq-portal"
       aria-live="polite"
       aria-relevant="additions"
     >
