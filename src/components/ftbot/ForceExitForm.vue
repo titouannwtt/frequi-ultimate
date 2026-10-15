@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { resolveTargetBot } from '@/utils/targetBot';
 import type { ForceExitPayload, Trade } from '@/types';
 import { ref, computed } from 'vue';
 import { refDebounced } from '@vueuse/core';
@@ -7,11 +8,17 @@ import { useI18n } from 'vue-i18n';
 const props = defineProps<{
   trade: Trade;
   stakeCurrencyDecimals: number;
+  /** Bot owning the trade. Defaults to the active bot; multi-bot views must pass it. */
+  botId?: string;
 }>();
 
 const model = defineModel<boolean>();
 const { t } = useI18n();
 const botStore = useBotStore();
+const targetBot = computed(() =>
+  resolveTargetBot(botStore.botStores, props.botId, botStore.activeBot),
+);
+const submitting = ref(false);
 
 const form = ref<HTMLFormElement>();
 const amount = ref<number | undefined>(undefined);
@@ -26,9 +33,10 @@ const checkFormValidity = () => {
 
 async function handleSubmit() {
   // Exit when the form isn't valid
-  if (!checkFormValidity()) {
+  if (!checkFormValidity() || submitting.value) {
     return;
   }
+  submitting.value = true;
   // call forceentry
   const payload: ForceExitPayload = { tradeid: String(props.trade.trade_id) };
 
@@ -38,19 +46,23 @@ async function handleSubmit() {
   if (amount.value) {
     payload.amount = amount.value;
   }
-  if (price.value && botStore.activeBot.botFeatures.forceExitWithPrice) {
+  if (price.value && targetBot.value.botFeatures.forceExitWithPrice) {
     payload.price = price.value;
   }
   await nextTick();
-  botStore.activeBot.forceexit(payload);
+  try {
+    await targetBot.value.forceexit(payload);
+  } finally {
+    submitting.value = false;
+  }
   model.value = false;
 }
 
 function resetForm() {
   amount.value = props.trade.amount;
   ordertype.value =
-    botStore.activeBot.botState?.order_types?.force_exit ||
-    botStore.activeBot.botState?.order_types?.exit ||
+    targetBot.value.botState?.order_types?.force_exit ||
+    targetBot.value.botState?.order_types?.exit ||
     'limit';
 }
 
@@ -117,7 +129,7 @@ const orderTypeOptions = computed(() => [
           />
         </div>
       </div>
-      <div v-if="botStore.activeBot.botFeatures.forceExitWithPrice">
+      <div v-if="targetBot.botFeatures.forceExitWithPrice">
         <label for="price-input" class="block font-medium mb-1">
           {{ t('forceExit.price') }}
           <span class="text-sm italic ml-1">{{ t('forceExit.limitOnly') }}</span>

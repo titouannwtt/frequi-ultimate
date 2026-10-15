@@ -231,6 +231,7 @@ declare global {
   const resolveComponent: typeof import('vue').resolveComponent
   const resolveGeckoId: typeof import('./utils/benchmarkData').resolveGeckoId
   const resolveRef: typeof import('@vueuse/core').resolveRef
+  const resolveTargetBot: typeof import('./utils/targetBot').resolveTargetBot
   const roundTimeframe: typeof import('./utils/roundTimeframe').default
   const rowBgClass: typeof import('./composables/tradeColumns').rowBgClass
   const runTypeToJobType: typeof import('./utils/reconstitute').runTypeToJobType
@@ -831,6 +832,7 @@ declare module 'vue' {
     readonly requestNotificationPermission: UnwrapRef<typeof import('./utils/browserNotifications')['requestNotificationPermission']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
     readonly resolveGeckoId: UnwrapRef<typeof import('./utils/benchmarkData')['resolveGeckoId']>
+    readonly resolveTargetBot: UnwrapRef<typeof import('./utils/targetBot')['resolveTargetBot']>
     readonly roundTimeframe: UnwrapRef<typeof import('./utils/roundTimeframe')['default']>
     readonly rowBgClass: UnwrapRef<typeof import('./composables/tradeColumns')['rowBgClass']>
     readonly runTypeToJobType: UnwrapRef<typeof import('./utils/reconstitute')['runTypeToJobType']>
