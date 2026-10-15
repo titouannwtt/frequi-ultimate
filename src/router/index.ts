@@ -89,6 +89,21 @@ const routes: Array<RouteRecordRaw> = [
   },
 ];
 
+// Design system showcase: development builds, or any build opened with ?ds
+if (
+  import.meta.env.DEV ||
+  (typeof location !== 'undefined' && new URLSearchParams(location.search).has('ds'))
+) {
+  routes.unshift({
+    path: '/__ds',
+    name: 'Design system',
+    component: () => import('@/views/DesignSystemShowcase.vue'),
+    meta: {
+      allowAnonymous: true,
+    },
+  });
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
