@@ -7,4 +7,5 @@
 
 pub mod calc;
 pub mod identity;
+pub mod model;
 pub mod time;
