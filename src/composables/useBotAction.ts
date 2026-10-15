@@ -261,11 +261,18 @@ export function useBotAction(botKey: MaybeRefOrGetter<BotKey>) {
       return r;
     };
 
+    // The hold button took the lock when it completed. A refusal before anything is sent must give
+    // it back, or the action stays "in progress" until the page is reloaded (B72).
+    const giveBackHeldLock = () => {
+      if (p.requiresHold && !inflight.has(p.lockKey)) lock.release(p.lockKey);
+    };
     if (p.requiresTypedName && opts.typedName !== p.botName) {
+      giveBackHeldLock();
       return finish(localOutcome(p, 'rejected', 'bad_request', t('result.nameMismatch')));
     }
     const source = opts.source === undefined ? data.source.value : opts.source;
     if (!source) {
+      giveBackHeldLock();
       return finish(localOutcome(p, 'rejected', 'unavailable', t('result.noSource')));
     }
     // A duplicate submit (double click, two surfaces) never reaches the bot.

@@ -193,6 +193,21 @@ describe('submit: exactly one request, never a replay', () => {
     expect((act.mock.calls[0]![1] as any).confirm).toBe('hippo_live');
   });
 
+  it('gives back the lock the hold button took when the submit is refused before sending (B72)', async () => {
+    const { source, act } = fakeSource();
+    const { prepare, submit } = useBotAction(LIVE);
+    const lock = useInflightLock();
+    const p = prepare(exit('all'));
+    lock.acquire(p.lockKey); // the hold button completed
+    await submit(p, { source, typedName: 'wrong', notify: false });
+    expect(lock.isLocked(p.lockKey)).toBe(false);
+    const q = prepare(exit(7));
+    lock.acquire(q.lockKey);
+    await submit(q, { source: null, notify: false });
+    expect(lock.isLocked(q.lockKey)).toBe(false);
+    expect(act).not.toHaveBeenCalled();
+  });
+
   it('treats an exception as `unknown` and never calls the source again', async () => {
     const { source, act } = fakeSource(async () => {
       throw new Error('socket hang up');
