@@ -1,6 +1,6 @@
 [package]
 name = "fg-sources"
-description = "frequi-gateway: fg-sources (stub, implemented in a later step)"
+description = "frequi-gateway: input adapters (discovery, ftcache, SQLite, bot REST and WebSocket, external ticker)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,6 +9,21 @@ publish.workspace = true
 
 [dependencies]
 fg-core = { workspace = true }
+blake3 = { workspace = true }
+chrono = { workspace = true }
+futures-util = { workspace = true }
+reqwest = { workspace = true }
+rusqlite = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-tungstenite = { workspace = true }
+tracing = { workspace = true }
+zeroize = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true
