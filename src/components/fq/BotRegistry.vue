@@ -248,6 +248,13 @@ const dateOf = (ms: number) => formatDateTime(ms, prefs.settings.tz, locale.valu
   font: inherit;
   cursor: pointer;
 }
+@media (max-width: 599px), (pointer: coarse) {
+  .one {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 6px;
+  }
+}
 .wrap {
   border: 1px solid var(--line);
   border-radius: var(--r-2);

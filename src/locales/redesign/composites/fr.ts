@@ -192,6 +192,8 @@ export default {
     allPositions: 'toutes les positions',
     quantity: 'Quantité',
     other: 'Autre',
+    direction: 'Sens',
+    directionHint: 'Choisissez Long ou Short : rien n’est supposé.',
     amountUsdc: 'Montant en USDC',
     pair: 'Paire',
     stake: 'Mise',

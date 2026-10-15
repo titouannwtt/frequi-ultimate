@@ -296,6 +296,11 @@ function leftLabel(i: PairItem): string {
   background: var(--bg-3);
   color: var(--fg);
 }
+@media (max-width: 599px), (pointer: coarse) {
+  .tabs button {
+    height: 44px;
+  }
+}
 .note {
   margin: 0;
   padding: 5px var(--s3);

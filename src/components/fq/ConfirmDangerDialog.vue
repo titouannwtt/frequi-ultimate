@@ -82,6 +82,8 @@ const limitPrice = ref('');
 const typedName = ref('');
 const entryPair = ref('');
 const entryStake = ref('');
+/** Empty until chosen: freqtrade opens a LONG when no side is sent, which must never be a default. */
+const entrySide = ref<'' | 'long' | 'short'>('');
 const submitting = ref(false);
 const hold = ref<InstanceType<typeof HoldButton> | null>(null);
 const cancelComp = ref<{ $el: HTMLElement } | null>(null);
@@ -96,6 +98,8 @@ function resetForm() {
   typedName.value = '';
   entryPair.value = props.action.kind === 'forceentry' ? props.action.pair : '';
   entryStake.value = '';
+  // A reinforcement carries the side of its position; a fresh entry has to be chosen
+  entrySide.value = props.action.kind === 'forceentry' ? (props.action.side ?? '') : '';
   submitting.value = false;
 }
 watch(
@@ -151,6 +155,7 @@ const effective = computed<BotAction>(() => {
     return {
       ...a,
       pair: entryPair.value.trim(),
+      ...(entrySide.value ? { side: entrySide.value } : {}),
       ...(Number.isFinite(stakeNum.value) && stakeNum.value > 0
         ? { stakeAmount: stakeNum.value }
         : {}),
@@ -176,7 +181,12 @@ const formOk = computed(() => {
     return !!props.position && !!plan.value?.valid && limitOk.value;
   }
   if (a.kind === 'forceentry') {
-    return entryPair.value.trim().length > 0 && stakeNum.value > 0 && limitOk.value;
+    return (
+      entryPair.value.trim().length > 0 &&
+      entrySide.value !== '' &&
+      stakeNum.value > 0 &&
+      limitOk.value
+    );
   }
   return true;
 });
@@ -271,6 +281,10 @@ const quantityOptions = computed(() => [
   { value: 50 as QuantityChoice, label: '50 %' },
   { value: 25 as QuantityChoice, label: '25 %' },
   { value: 'other' as QuantityChoice, label: t('fq.dialog.other') },
+]);
+const sideOptions = computed(() => [
+  { value: 'long' as const, label: t('fq.side.long') },
+  { value: 'short' as const, label: t('fq.side.short') },
 ]);
 const orderOptions = computed(() => [
   { value: 'market' as const, label: t('fq.dialog.market') },
@@ -416,6 +430,21 @@ watch(
                 :label="t('fq.dialog.pair')"
                 :disabled="!!position"
               />
+            </div>
+            <div class="row" data-testid="entry-side">
+              <span class="lab">{{ t('fq.dialog.direction') }}</span>
+              <!-- A reinforcement keeps the side of its position; a new entry has no default -->
+              <DirectionChip v-if="action.side" :side="action.side" />
+              <template v-else>
+                <SegmentedControl
+                  v-model="entrySide"
+                  :options="sideOptions"
+                  size="sm"
+                  :label="t('fq.dialog.direction')"
+                />
+                <DirectionChip v-if="entrySide" :side="entrySide" />
+                <span v-else class="hint-side">{{ t('fq.dialog.directionHint') }}</span>
+              </template>
             </div>
             <div class="row">
               <span class="lab">{{ t('fq.dialog.stake') }}</span>
@@ -653,6 +682,10 @@ h2 {
 }
 .amt {
   width: 130px;
+}
+.hint-side {
+  color: var(--fg-3);
+  font-size: var(--t-sm);
 }
 .est {
   display: grid;

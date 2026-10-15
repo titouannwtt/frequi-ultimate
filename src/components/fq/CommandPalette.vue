@@ -81,7 +81,11 @@ useShortcuts([
 ]);
 
 const query = ref('');
-const active = ref(0);
+/**
+ * The highlighted entry is remembered by id, never by index: the list is rebuilt on every store
+ * update, and an index would silently move to another trade or bot when a row above disappears.
+ */
+const activeId = ref<string | null>(null);
 const input = ref<HTMLInputElement | null>(null);
 const panel = ref<HTMLElement | null>(null);
 const listId = useId();
@@ -90,7 +94,7 @@ const open = palette.open;
 watch(open, async (o) => {
   if (o) {
     query.value = '';
-    active.value = 0;
+    activeId.value = flat.value[0]?.id ?? null;
     await nextTick();
     input.value?.focus();
   }
@@ -269,7 +273,18 @@ const grouped = computed(() =>
 );
 const flat = computed(() => grouped.value.flatMap((g) => g.items));
 
-watch(query, () => (active.value = 0));
+const active = computed(() =>
+  activeId.value === null ? -1 : flat.value.findIndex((i) => i.id === activeId.value),
+);
+
+watch(query, () => (activeId.value = flat.value[0]?.id ?? null));
+// The highlighted entry vanished (position closed, bot gone): clear the selection instead of
+// moving it, so Enter can never run something else than what the user had chosen
+watch(flat, (list) => {
+  if (activeId.value !== null && !list.some((i) => i.id === activeId.value)) {
+    activeId.value = null;
+  }
+});
 
 function choose(item: PaletteItem | undefined) {
   if (!item || item.disabledReason) return;
@@ -284,13 +299,14 @@ function onKeydown(e: KeyboardEvent) {
     palette.hide();
   } else if (e.key === 'ArrowDown') {
     e.preventDefault();
-    active.value = Math.min(flat.value.length - 1, active.value + 1);
+    activeId.value = flat.value[Math.min(flat.value.length - 1, active.value + 1)]?.id ?? null;
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
-    active.value = Math.max(0, active.value - 1);
+    activeId.value = flat.value[Math.max(0, active.value - 1)]?.id ?? null;
   } else if (e.key === 'Enter') {
     e.preventDefault();
-    choose(flat.value[active.value]);
+    // No highlighted entry (it vanished): nothing runs
+    if (active.value >= 0) choose(flat.value[active.value]);
   }
 }
 
@@ -320,7 +336,7 @@ const indexOf = (item: PaletteItem) => flat.value.indexOf(item);
           role="combobox"
           :aria-expanded="true"
           :aria-controls="listId"
-          :aria-activedescendant="flat.length ? optionId(active) : undefined"
+          :aria-activedescendant="active >= 0 ? optionId(active) : undefined"
           :placeholder="t('fq.palette.placeholder')"
           autocomplete="off"
           spellcheck="false"
@@ -342,7 +358,7 @@ const indexOf = (item: PaletteItem) => flat.value.indexOf(item);
             :aria-disabled="it.disabledReason ? true : undefined"
             :title="it.disabledReason"
             :data-item="it.id"
-            @mousemove="active = indexOf(it)"
+            @mousemove="activeId = it.id"
             @click="choose(it)"
           >
             <DsIcon :name="it.icon" />

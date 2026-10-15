@@ -221,3 +221,59 @@ describe('ConfirmDangerDialog: dry and reduce levels', () => {
     expect(world.fake.acts).toHaveLength(1);
   });
 });
+
+describe('ConfirmDangerDialog: forced entry direction, freqtrade defaults to LONG (B75)', () => {
+  const entry = (extra: Partial<BotAction> = {}) =>
+    ({ kind: 'forceentry', pair: 'ETH/USDC:USDC', ...extra }) as BotAction;
+
+  async function fill(w: ReturnType<typeof mountDialog>) {
+    // The pair is prefilled; the stake is the field whose placeholder is the currency
+    await w
+      .findAll('input')
+      .find((i) => i.attributes('placeholder') === 'USDC')!
+      .setValue('25');
+  }
+
+  it('shows the direction choice, with no default, and the text names both sides', async () => {
+    const w = mountDialog(liveBot, entry());
+    await nextTick();
+    const row = w.get('[data-testid=entry-side]');
+    expect(row.text()).toMatch(/long/i);
+    expect(row.text()).toMatch(/short/i);
+    expect(row.findAll('[role=radio][aria-checked=true]')).toHaveLength(0);
+  });
+
+  it('cannot be sent without a direction, however long it is held', async () => {
+    const w = mountDialog(liveBot, entry());
+    await nextTick();
+    await fill(w);
+    const go = w.get('.hold-wrap button.hold');
+    expect(go.attributes('aria-disabled')).toBe('true');
+    await holdFor(go, 1500);
+    expect(world.fake.acts).toHaveLength(0);
+  });
+
+  it('sends the chosen side, and changing it changes what is sent', async () => {
+    const w = mountDialog(liveBot, entry());
+    await nextTick();
+    await fill(w);
+    const radios = w.get('[data-testid=entry-side]').findAll('[role=radio]');
+    await radios.find((r) => /short/i.test(r.text()))!.trigger('click');
+    await holdFor(w.get('.hold-wrap button.hold'), 1000);
+    expect(world.fake.acts).toHaveLength(1);
+    expect(world.fake.acts[0]!.action).toMatchObject({ kind: 'forceentry', side: 'short' });
+  });
+
+  it('a reinforcement keeps the side of its position and shows no choice', async () => {
+    const w = mountDialog(
+      liveBot,
+      entry({ pair: livePos.pair, side: livePos.side as 'long' | 'short' }),
+      livePos,
+    );
+    await nextTick();
+    expect(w.get('[data-testid=entry-side]').findAll('[role=radio]')).toHaveLength(0);
+    await fill(w);
+    await holdFor(w.get('.hold-wrap button.hold'), 1000);
+    expect(world.fake.acts[0]!.action).toMatchObject({ kind: 'forceentry', side: livePos.side });
+  });
+});
