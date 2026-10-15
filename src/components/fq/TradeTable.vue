@@ -27,6 +27,7 @@ import type { ColumnPreset } from '@/migration/schema';
 
 import BotActionBar from './BotActionBar.vue';
 import BotActionMenu from './BotActionMenu.vue';
+import MaeMfeBar from './MaeMfeBar.vue';
 import type { ActionId } from './lib/actions';
 import { formatDateTime } from './lib/time';
 import {
@@ -471,7 +472,9 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
         }}</span>
       </template>
       <template #cell-closed_at="{ row }">{{ dateOf(row.closeMs) }}</template>
-      <template #cell-mae_mfe>{{ t('fq.connection.unavailableDirect') }}</template>
+      <template #cell-mae_mfe="{ row }">
+        <MaeMfeBar :mae="row.mae" :mfe="row.mfe" :exit="row.ratio" />
+      </template>
       <template #cell-actions="{ row }">
         <BotActionBar
           context="row"

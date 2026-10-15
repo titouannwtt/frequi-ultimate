@@ -4,9 +4,11 @@
  * (tests/unit/redesignLocales.spec.ts). No em dash, no hard-coded string in components.
  */
 import composites from './composites/en';
+import charts from './charts/en';
 
 export default {
   ...composites,
+  ...charts,
   nav: {
     fleet: 'Fleet',
     bot: 'Bot',

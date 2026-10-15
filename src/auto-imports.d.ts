@@ -492,6 +492,7 @@ declare global {
   const useShortcuts: typeof import('./composables/useShortcuts').useShortcuts
   const useSlots: typeof import('vue').useSlots
   const useSorted: typeof import('@vueuse/core').useSorted
+  const useSourceQuery: typeof import('./composables/useSourceQuery').useSourceQuery
   const useSpeechRecognition: typeof import('@vueuse/core').useSpeechRecognition
   const useSpeechSynthesis: typeof import('@vueuse/core').useSpeechSynthesis
   const useStepper: typeof import('@vueuse/core').useStepper
@@ -527,6 +528,7 @@ declare global {
   const useToggle: typeof import('@vueuse/core').useToggle
   const useTradeColumnVisibility: typeof import('./composables/tradeColumns').useTradeColumnVisibility
   const useTradePopover: typeof import('./composables/useTradePopover').useTradePopover
+  const useTradeSet: typeof import('./composables/useTradeSet').useTradeSet
   const useTradingModeFilter: typeof import('./composables/useTradingModeFilter').useTradingModeFilter
   const useTransition: typeof import('@vueuse/core').useTransition
   const useUrlSearchParams: typeof import('@vueuse/core').useUrlSearchParams
@@ -616,6 +618,9 @@ declare global {
   // @ts-ignore
   export type { Shortcut } from './composables/useShortcuts'
   import('./composables/useShortcuts')
+  // @ts-ignore
+  export type { SourceQueryOptions } from './composables/useSourceQuery'
+  import('./composables/useSourceQuery')
   // @ts-ignore
   export type { ToastItem, ToastInput } from './composables/useToaster'
   import('./composables/useToaster')
@@ -1175,6 +1180,7 @@ declare module 'vue' {
     readonly useShortcuts: UnwrapRef<typeof import('./composables/useShortcuts')['useShortcuts']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>
     readonly useSorted: UnwrapRef<typeof import('@vueuse/core')['useSorted']>
+    readonly useSourceQuery: UnwrapRef<typeof import('./composables/useSourceQuery')['useSourceQuery']>
     readonly useSpeechRecognition: UnwrapRef<typeof import('@vueuse/core')['useSpeechRecognition']>
     readonly useSpeechSynthesis: UnwrapRef<typeof import('@vueuse/core')['useSpeechSynthesis']>
     readonly useStepper: UnwrapRef<typeof import('@vueuse/core')['useStepper']>
@@ -1210,6 +1216,7 @@ declare module 'vue' {
     readonly useToggle: UnwrapRef<typeof import('@vueuse/core')['useToggle']>
     readonly useTradeColumnVisibility: UnwrapRef<typeof import('./composables/tradeColumns')['useTradeColumnVisibility']>
     readonly useTradePopover: UnwrapRef<typeof import('./composables/useTradePopover')['useTradePopover']>
+    readonly useTradeSet: UnwrapRef<typeof import('./composables/useTradeSet')['useTradeSet']>
     readonly useTradingModeFilter: UnwrapRef<typeof import('./composables/useTradingModeFilter')['useTradingModeFilter']>
     readonly useTransition: UnwrapRef<typeof import('@vueuse/core')['useTransition']>
     readonly useUrlSearchParams: UnwrapRef<typeof import('@vueuse/core')['useUrlSearchParams']>
