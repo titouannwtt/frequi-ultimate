@@ -57,3 +57,7 @@ frequi-dist.zip
 
 # Redesign screenshots are regenerated locally, not versioned
 docs/redesign/**/*.png
+
+# Rust gateway
+/gateway/target/
+!gateway/**/*.md

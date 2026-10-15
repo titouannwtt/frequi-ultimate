@@ -1,0 +1,41 @@
+{
+ "function": "time.normalize_ts_ms",
+ "description": "Unit-agnostic epoch normalisation (regression of bug B5: seconds vs milliseconds).",
+ "cases": [
+  {
+   "name": "seconds",
+   "input": 1760530000,
+   "expected": 1760530000000
+  },
+  {
+   "name": "milliseconds",
+   "input": 1760530000123,
+   "expected": 1760530000123
+  },
+  {
+   "name": "microseconds",
+   "input": 1760530000123456,
+   "expected": 1760530000123
+  },
+  {
+   "name": "nanoseconds",
+   "input": 1760530000123456789,
+   "expected": 1760530000123
+  },
+  {
+   "name": "seconds with fraction",
+   "input": 1760530000.5,
+   "expected": 1760530000500
+  },
+  {
+   "name": "zero means never",
+   "input": 0,
+   "expected": null
+  },
+  {
+   "name": "negative",
+   "input": -5,
+   "expected": null
+  }
+ ]
+}

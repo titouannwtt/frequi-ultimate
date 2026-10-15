@@ -1,0 +1,213 @@
+{
+ "function": "exit_reason.normalize",
+ "description": "Token based classification; a null reason is unknown and counted apart.",
+ "cases": [
+  {
+   "name": "roi",
+   "input": "roi",
+   "expected": {
+    "kind": "roi",
+    "class": "profit",
+    "raw": "roi"
+   }
+  },
+  {
+   "name": "stop_loss",
+   "input": "stop_loss",
+   "expected": {
+    "kind": "stop_loss",
+    "class": "protective",
+    "raw": "stop_loss"
+   }
+  },
+  {
+   "name": "stoploss_on_exchange",
+   "input": "stoploss_on_exchange",
+   "expected": {
+    "kind": "stop_loss",
+    "class": "protective",
+    "raw": "stoploss_on_exchange"
+   }
+  },
+  {
+   "name": "trailing_stop_loss is protective, not profit (old UI coloured it green)",
+   "input": "trailing_stop_loss",
+   "expected": {
+    "kind": "trailing_stop",
+    "class": "protective",
+    "raw": "trailing_stop_loss"
+   }
+  },
+  {
+   "name": "exit_signal",
+   "input": "exit_signal",
+   "expected": {
+    "kind": "exit_signal",
+    "class": "signal",
+    "raw": "exit_signal"
+   }
+  },
+  {
+   "name": "force_exit",
+   "input": "force_exit",
+   "expected": {
+    "kind": "force_exit",
+    "class": "manual",
+    "raw": "force_exit"
+   }
+  },
+  {
+   "name": "liquidation",
+   "input": "liquidation",
+   "expected": {
+    "kind": "liquidation",
+    "class": "protective",
+    "raw": "liquidation"
+   }
+  },
+  {
+   "name": "emergency_exit",
+   "input": "emergency_exit",
+   "expected": {
+    "kind": "emergency_exit",
+    "class": "protective",
+    "raw": "emergency_exit"
+   }
+  },
+  {
+   "name": "custom_tp",
+   "input": "custom_tp",
+   "expected": {
+    "kind": "take_profit",
+    "class": "profit",
+    "raw": "custom_tp"
+   }
+  },
+  {
+   "name": "tp2",
+   "input": "tp2",
+   "expected": {
+    "kind": "take_profit",
+    "class": "profit",
+    "raw": "tp2"
+   }
+  },
+  {
+   "name": "take_profit_hit",
+   "input": "take_profit_hit",
+   "expected": {
+    "kind": "take_profit",
+    "class": "profit",
+    "raw": "take_profit_hit"
+   }
+  },
+  {
+   "name": "custom_sl_pair",
+   "input": "custom_sl_pair",
+   "expected": {
+    "kind": "stop_loss",
+    "class": "protective",
+    "raw": "custom_sl_pair"
+   }
+  },
+  {
+   "name": "external_close",
+   "input": "external_close",
+   "expected": {
+    "kind": "external",
+    "class": "external",
+    "raw": "external_close"
+   }
+  },
+  {
+   "name": "slow_decay_exit",
+   "input": "slow_decay_exit",
+   "expected": {
+    "kind": "custom",
+    "class": "other",
+    "raw": "slow_decay_exit"
+   }
+  },
+  {
+   "name": "http_timeout_exit",
+   "input": "http_timeout_exit",
+   "expected": {
+    "kind": "custom",
+    "class": "other",
+    "raw": "http_timeout_exit"
+   }
+  },
+  {
+   "name": "hippo_ladder_out_3",
+   "input": "hippo_ladder_out_3",
+   "expected": {
+    "kind": "custom",
+    "class": "other",
+    "raw": "hippo_ladder_out_3"
+   }
+  },
+  {
+   "name": "stop_loss_liquidation",
+   "input": "stop_loss_liquidation",
+   "expected": {
+    "kind": "liquidation",
+    "class": "protective",
+    "raw": "stop_loss_liquidation"
+   }
+  },
+  {
+   "name": "force_exit_stop",
+   "input": "force_exit_stop",
+   "expected": {
+    "kind": "force_exit",
+    "class": "manual",
+    "raw": "force_exit_stop"
+   }
+  },
+  {
+   "name": "trimmed and case preserved",
+   "input": "  Hippo_TP  ",
+   "expected": {
+    "kind": "take_profit",
+    "class": "profit",
+    "raw": "Hippo_TP"
+   }
+  },
+  {
+   "name": "null",
+   "input": null,
+   "expected": {
+    "kind": "unknown",
+    "class": "unknown",
+    "raw": ""
+   }
+  },
+  {
+   "name": "empty",
+   "input": "",
+   "expected": {
+    "kind": "unknown",
+    "class": "unknown",
+    "raw": ""
+   }
+  },
+  {
+   "name": "blank",
+   "input": "   ",
+   "expected": {
+    "kind": "unknown",
+    "class": "unknown",
+    "raw": ""
+   }
+  },
+  {
+   "name": "None string",
+   "input": "None",
+   "expected": {
+    "kind": "unknown",
+    "class": "unknown",
+    "raw": ""
+   }
+  }
+ ]
+}

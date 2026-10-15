@@ -1,0 +1,125 @@
+{
+ "function": "freshness.compute",
+ "description": "Server-side staleness rules (03 section 6.1).",
+ "cases": [
+  {
+   "name": "digest at 120 s is fresh",
+   "input": {
+    "source": "digest",
+    "as_of_ms": 0,
+    "now_ms": 120000,
+    "cadence_ms": 5000,
+    "has_positions": true
+   },
+   "expected": {
+    "stale": false,
+    "source": "digest",
+    "as_of_ms": 0
+   }
+  },
+  {
+   "name": "digest past 120 s is stale",
+   "input": {
+    "source": "digest",
+    "as_of_ms": 0,
+    "now_ms": 120001,
+    "cadence_ms": 5000,
+    "has_positions": true
+   },
+   "expected": {
+    "stale": true
+   }
+  },
+  {
+   "name": "rest at three cadences is fresh",
+   "input": {
+    "source": "rest",
+    "as_of_ms": 0,
+    "now_ms": 180000,
+    "cadence_ms": 60000,
+    "has_positions": true
+   },
+   "expected": {
+    "stale": false
+   }
+  },
+  {
+   "name": "rest past three cadences is stale",
+   "input": {
+    "source": "rest",
+    "as_of_ms": 0,
+    "now_ms": 180001,
+    "cadence_ms": 60000,
+    "has_positions": true
+   },
+   "expected": {
+    "stale": true
+   }
+  },
+  {
+   "name": "sqlite past three cadences",
+   "input": {
+    "source": "sqlite",
+    "as_of_ms": 0,
+    "now_ms": 7000,
+    "cadence_ms": 2000,
+    "has_positions": true
+   },
+   "expected": {
+    "stale": true
+   }
+  },
+  {
+   "name": "python at the limit",
+   "input": {
+    "source": "python",
+    "as_of_ms": 0,
+    "now_ms": 900000,
+    "cadence_ms": 300000,
+    "has_positions": true
+   },
+   "expected": {
+    "stale": false
+   }
+  },
+  {
+   "name": "silent websocket with open positions",
+   "input": {
+    "source": "ws",
+    "as_of_ms": 0,
+    "now_ms": 130000,
+    "cadence_ms": 0,
+    "has_positions": true
+   },
+   "expected": {
+    "stale": true
+   }
+  },
+  {
+   "name": "silent websocket with nothing open",
+   "input": {
+    "source": "ws",
+    "as_of_ms": 0,
+    "now_ms": 130000,
+    "cadence_ms": 0,
+    "has_positions": false
+   },
+   "expected": {
+    "stale": false
+   }
+  },
+  {
+   "name": "websocket just under two minutes",
+   "input": {
+    "source": "ws",
+    "as_of_ms": 0,
+    "now_ms": 119000,
+    "cadence_ms": 0,
+    "has_positions": true
+   },
+   "expected": {
+    "stale": false
+   }
+  }
+ ]
+}

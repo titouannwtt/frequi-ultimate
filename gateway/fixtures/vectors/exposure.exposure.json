@@ -1,0 +1,69 @@
+{
+ "function": "exposure.exposure",
+ "description": "Exposure at wallet level, netted per coin.",
+ "cases": [
+  {
+   "name": "long and short on one coin net out",
+   "input": [
+    {
+     "coin": "BTC",
+     "side": "long",
+     "notional": 300
+    },
+    {
+     "coin": "BTC",
+     "side": "short",
+     "notional": 100
+    },
+    {
+     "coin": "ETH",
+     "side": "short",
+     "notional": 50
+    }
+   ],
+   "expected": {
+    "long": 300,
+    "short": 150,
+    "net": 150,
+    "net_by_coin": {
+     "BTC": 200,
+     "ETH": -50
+    },
+    "gross_netted": 250
+   }
+  },
+  {
+   "name": "both HIP-3 spellings net to zero",
+   "input": [
+    {
+     "coin": "xyz:NVDA",
+     "side": "long",
+     "notional": 100
+    },
+    {
+     "coin": "xyz:NVDA",
+     "side": "short",
+     "notional": 100
+    }
+   ],
+   "expected": {
+    "net": 0,
+    "net_by_coin": {
+     "xyz:NVDA": 0
+    },
+    "gross_netted": 0
+   }
+  },
+  {
+   "name": "empty",
+   "input": [],
+   "expected": {
+    "long": 0,
+    "short": 0,
+    "net": 0,
+    "net_by_coin": {},
+    "gross_netted": 0
+   }
+  }
+ ]
+}

@@ -1,0 +1,53 @@
+{
+ "function": "hip3.whitelist_market",
+ "description": "",
+ "cases": [
+  {
+   "name": "empty",
+   "input": {
+    "whitelist": []
+   },
+   "expected": null
+  },
+  {
+   "name": "crypto only",
+   "input": {
+    "whitelist": [
+     "BTC/USDC:USDC",
+     "ETH/USDC:USDC"
+    ]
+   },
+   "expected": "crypto"
+  },
+  {
+   "name": "stocks only",
+   "input": {
+    "whitelist": [
+     "XYZ-NVDA/USDC:USDC",
+     "XYZ-TSLA/USDC:USDC"
+    ]
+   },
+   "expected": "xyz_stocks"
+  },
+  {
+   "name": "mixed",
+   "input": {
+    "whitelist": [
+     "BTC/USDC:USDC",
+     "XYZ-NVDA/USDC:USDC"
+    ]
+   },
+   "expected": "mixed"
+  },
+  {
+   "name": "stocks and indices are mixed",
+   "input": {
+    "whitelist": [
+     "XYZ-NVDA/USDC:USDC",
+     "XYZ-SP500/USDC:USDC"
+    ]
+   },
+   "expected": "mixed"
+  }
+ ]
+}

@@ -421,6 +421,9 @@ Choix comparés :
   et alertes immédiats.
 - Battement : `hb` toutes les 15 s avec l'heure serveur (le client corrige son décalage d'horloge pour les âges) ; aucune
   trame depuis 35 s -> reconnexion (backoff 1, 2, 5, 10, 30 s) avec `resume`.
+- Redémarrage de la passerelle : la numérotation des trames d'un canal démarre à `base + 1`, `base` = millisecondes du
+  démarrage du processus (sous 2^53, exact en JavaScript). Un `resume` d'une incarnation précédente tombe donc toujours
+  sous la plus ancienne trame du tampon et reçoit un `resync` (`stale_resume`), jamais un rejeu de trames étrangères.
 - Contre-pression : file d'envoi bornée par client (256 trames) ; dépassement -> vidage de la file et `resync` (un client
   lent ne ralentit jamais les autres ni le moteur).
 - Canaux : `fleet` (lignes de bots + totaux par scope), `positions` (toutes les positions ouvertes, RiskPanel et

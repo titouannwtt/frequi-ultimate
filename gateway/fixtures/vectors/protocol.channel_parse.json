@@ -1,0 +1,125 @@
+{
+ "function": "protocol.channel_parse",
+ "description": "Channel names, with bot keys and pairs that contain colons.",
+ "cases": [
+  {
+   "name": "fleet",
+   "input": "fleet",
+   "expected": {
+    "channel": "fleet"
+   }
+  },
+  {
+   "name": "positions",
+   "input": "positions",
+   "expected": {
+    "channel": "positions"
+   }
+  },
+  {
+   "name": "alerts",
+   "input": "alerts",
+   "expected": {
+    "channel": "alerts"
+   }
+  },
+  {
+   "name": "events",
+   "input": "events",
+   "expected": {
+    "channel": "events"
+   }
+  },
+  {
+   "name": "health",
+   "input": "health",
+   "expected": {
+    "channel": "health"
+   }
+  },
+  {
+   "name": "recon",
+   "input": "recon",
+   "expected": {
+    "channel": "recon"
+   }
+  },
+  {
+   "name": "errors log",
+   "input": "logs:errors",
+   "expected": {
+    "channel": "logs:errors"
+   }
+  },
+  {
+   "name": "bot",
+   "input": "bot:local:9056",
+   "expected": {
+    "channel": "bot:local:9056"
+   }
+  },
+  {
+   "name": "bot logs",
+   "input": "logs:local:9056",
+   "expected": {
+    "channel": "logs:local:9056"
+   }
+  },
+  {
+   "name": "chart with colons in the pair",
+   "input": "chart:local:9056:ETH/USDC:USDC:15m",
+   "expected": {
+    "channel": "chart:local:9056:ETH/USDC:USDC:15m"
+   }
+  },
+  {
+   "name": "chart on a remote bot with a port",
+   "input": "chart:url:http://10.0.0.4:9400:XYZ-NVDA/USDC:USDC:1h",
+   "expected": {
+    "channel": "chart:url:http://10.0.0.4:9400:XYZ-NVDA/USDC:USDC:1h"
+   }
+  },
+  {
+   "name": "chart on a remote bot without a port, pair starting with digits",
+   "input": "chart:url:https://bots.example.org:1000PEPE/USDC:USDC:5m",
+   "expected": {
+    "channel": "chart:url:https://bots.example.org:1000PEPE/USDC:USDC:5m"
+   }
+  },
+  {
+   "name": "unknown",
+   "input": "nope",
+   "expected": {
+    "error": "unknown"
+   }
+  },
+  {
+   "name": "empty bot",
+   "input": "bot:",
+   "expected": {
+    "error": "malformed"
+   }
+  },
+  {
+   "name": "ftbot alias is not a bot key",
+   "input": "bot:ftbot.3",
+   "expected": {
+    "error": "malformed"
+   }
+  },
+  {
+   "name": "trailing garbage",
+   "input": "bot:local:9056:extra",
+   "expected": {
+    "error": "malformed"
+   }
+  },
+  {
+   "name": "chart without timeframe",
+   "input": "chart:local:9056:15m",
+   "expected": {
+    "error": "malformed"
+   }
+  }
+ ]
+}
