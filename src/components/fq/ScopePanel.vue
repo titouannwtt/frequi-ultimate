@@ -27,6 +27,7 @@ import type { Alert, BotKey } from '@/gateway/types.gen';
 import AlertItem from './AlertItem.vue';
 import BotActionBar from './BotActionBar.vue';
 import type { ActionId } from './lib/actions';
+import { drawdownPct } from './lib/bots';
 import { lineFromPosition } from './lib/trades';
 import PositionCard from './PositionCard.vue';
 
@@ -93,8 +94,9 @@ function excludedRefs(b: ScopeTotals): BotRef[] {
 
 function ddMeter(): KpiMeter | undefined {
   const d = data.value?.drawdown?.with_open;
-  if (!d || d.pct == null) return undefined;
-  return { value: d.pct, max: 22, threshold: 15, tone: d.pct >= 15 ? 'crit' : 'neutral' };
+  const pct = drawdownPct(d);
+  if (pct === null) return undefined;
+  return { value: pct, max: 22, threshold: 15, tone: pct >= 15 ? 'crit' : 'neutral' };
 }
 
 /** 24 h latent curve of the scope: the bots' hourly samples added up (same length only). */
@@ -179,8 +181,8 @@ const unavailable = computed(() => alertsStore.unavailable);
             >
               <template #value>
                 <PnlValue :value="-data.drawdown.with_open.abs" :decimals="0" />
-                <small v-if="data.drawdown.with_open.pct !== null">
-                  {{ fmt.percent(-data.drawdown.with_open.pct, 1) }}</small
+                <small v-if="drawdownPct(data.drawdown.with_open) !== null">
+                  {{ fmt.percent(-(drawdownPct(data.drawdown.with_open) as number), 1) }}</small
                 >
               </template>
             </KpiTile>

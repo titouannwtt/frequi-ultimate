@@ -25,7 +25,7 @@ import type { BotRow } from '@/gateway/types.gen';
 
 import BotActionBar from './BotActionBar.vue';
 import type { ActionId } from './lib/actions';
-import { botState, isStaleGroup, minutesSince } from './lib/bots';
+import { botState, drawdownPct, isStaleGroup, minutesSince } from './lib/bots';
 import { formatClockSeconds } from './lib/time';
 
 /**
@@ -79,14 +79,16 @@ const ddThreshold = computed(() => {
   return Math.abs(custom ?? ruleMeta('highDrawdown').threshold?.default ?? 15);
 });
 const dd = computed(() => m.value.drawdown_with_open);
+/** Percent of the account, converted from the ratio of the contract. */
+const ddPct = computed(() => drawdownPct(dd.value));
 const ddMeter = computed<KpiMeter | undefined>(() =>
-  dd.value?.pct == null
+  ddPct.value === null
     ? undefined
     : {
-        value: dd.value.pct,
+        value: ddPct.value,
         max: ddThreshold.value * 1.5,
         threshold: ddThreshold.value,
-        tone: dd.value.pct >= ddThreshold.value ? 'crit' : 'neutral',
+        tone: ddPct.value >= ddThreshold.value ? 'crit' : 'neutral',
       },
 );
 
@@ -202,12 +204,12 @@ const stateSince = computed(
       <KpiTile
         :label="t('fq.kpi.drawdownOpen')"
         :meter="ddMeter"
-        :alert="dd !== null && dd.pct !== null && dd.pct >= ddThreshold"
+        :alert="ddPct !== null && ddPct >= ddThreshold"
       >
         <template #value>
           <template v-if="dd"
-            ><PnlValue :value="-dd.abs" :decimals="0" /><small v-if="dd.pct !== null">
-              {{ fmt.percent(-dd.pct, 1) }}</small
+            ><PnlValue :value="-dd.abs" :decimals="0" /><small v-if="ddPct !== null">
+              {{ fmt.percent(-ddPct, 1) }}</small
             ></template
           >
           <template v-else>{{ t('fq.ds.notAvailable') }}</template>

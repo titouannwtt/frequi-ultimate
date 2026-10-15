@@ -157,12 +157,7 @@ export function makeBot(seq: number, spec: FixtureBotSpec): BotRow {
           ? null
           : {
               abs: ddAbs,
-              pct:
-                spec.dd?.pct === undefined
-                  ? capital
-                    ? (ddAbs / capital) * 100
-                    : null
-                  : spec.dd.pct,
+              pct: spec.dd?.pct === undefined ? (capital ? ddAbs / capital : null) : spec.dd.pct,
               peak_ms: null,
               trough_ms: null,
               current_abs: ddAbs,
@@ -191,7 +186,7 @@ export function makeFleet(n = 40): BotRow[] {
       latent: -94.23,
       alert: 'warning',
       market: 'mixed',
-      dd: { abs: 61, pct: 2.2 },
+      dd: { abs: 61, pct: 0.022 },
     },
     { name: NAMES[1]!, mode: 'live', wallet: 'w-shared', slots: 2, latent: 12.4, d1: 0, d30: 28 },
     {
@@ -201,7 +196,7 @@ export function makeFleet(n = 40): BotRow[] {
       slots: 3,
       latent: -35.23,
       alert: 'critical',
-      dd: { abs: 46, pct: 7.7 },
+      dd: { abs: 46, pct: 0.077 },
     },
     {
       name: NAMES[3]!,
@@ -227,7 +222,7 @@ export function makeFleet(n = 40): BotRow[] {
       slots: 4,
       latent: -72.4,
       alert: 'warning',
-      dd: { abs: 110, pct: 18.4 },
+      dd: { abs: 110, pct: 0.184 },
     },
     {
       name: NAMES[7]!,
@@ -236,7 +231,7 @@ export function makeFleet(n = 40): BotRow[] {
       latent: -56.41,
       d1: -3.45,
       d30: -21,
-      dd: { abs: 43, pct: 7.7 },
+      dd: { abs: 43, pct: 0.077 },
     },
     {
       name: 'hippo_original_multi_hyperliquid_stocks_and_materials_long_name_variant_v2',
@@ -681,8 +676,8 @@ export function scopeDetailOf(f: FleetFixture, scope: ScopeRef): ScopeDetail {
     positions: f.positions.filter((p) => keys.has(p.bot_key)),
     totals,
     drawdown: {
-      realized: { abs: 80, pct: 2.9, peak_ms: null, trough_ms: null, current_abs: 40 },
-      with_open: { abs: 412, pct: 4.5, peak_ms: null, trough_ms: null, current_abs: 300 },
+      realized: { abs: 80, pct: 0.029, peak_ms: null, trough_ms: null, current_abs: 40 },
+      with_open: { abs: 412, pct: 0.045, peak_ms: null, trough_ms: null, current_abs: 300 },
       open_worst_sum: -320,
       has_open: true,
       base: 9000,
