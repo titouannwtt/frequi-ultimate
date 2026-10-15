@@ -55,6 +55,25 @@ export default {
     filled: 'Filled',
     needsChecking: 'Needs checking',
     rejected: 'Rejected by bot',
+    retry: 'Retry',
+    openTrade: 'Open trade',
+    viewLogs: 'View logs',
+    reviewTrade: 'Review trade',
+    accepted: 'order handed to the bot.',
+    acceptedAwaitFill:
+      'order handed to the bot. Waiting for the fill, the position is not closed yet.',
+    unknownBody:
+      'No answer in time. Neither success nor failure: the state will be read again, check the trade and the logs.',
+    nothingExecuted: 'Nothing was executed on the exchange.',
+    mismatchTitle: 'Nothing was sent: the state changed',
+    mismatchBody:
+      'the trade changed since it was displayed (already closed or modified). The data was reloaded.',
+    inProgressTitle: 'Already in progress',
+    inProgressBody: 'An identical action is already in flight. Wait for its result in the feed.',
+    sessionTitle: 'Session expired, nothing was executed',
+    noReplay: 'No automatic retry.',
+    nameMismatch: 'The typed name does not match the bot.',
+    noSource: 'No data source: nothing was sent.',
   },
   freshness: {
     dataFrom: 'Data from {n} min ago',
