@@ -40,6 +40,7 @@ yarn-error.log*
 !CODE_OF_CONDUCT.md
 !CONTRIBUTING.md
 !.github/**/*.md
+!docs/redesign/**/*.md
 
 # Build artifacts (built locally, attached to GitHub Releases instead)
 frequi-dist.tar.gz
