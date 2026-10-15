@@ -11,7 +11,8 @@ export interface DcaLadderVPosition {
   /** Average entry price. */
   avg: number;
   /** Take-profit price. */
-  tp: number;
+  /** Absent when the take profit is not known: no TP line. */
+  tp?: number;
   /** Liquidation price, shown under the ladder. */
   liquidation?: number;
   /** Distance to liquidation, in percent. */
@@ -29,11 +30,15 @@ const fmt = useFormat();
 
 const layout = computed(() =>
   layoutLadderV(props.orders, [
-    {
-      kind: 'tp',
-      price: props.position.tp,
-      text: `${t('fq.ds.ladder.tp')} ${fmt.price(props.position.tp)}`,
-    },
+    ...(props.position.tp === undefined
+      ? []
+      : [
+          {
+            kind: 'tp' as const,
+            price: props.position.tp,
+            text: `${t('fq.ds.ladder.tp')} ${fmt.price(props.position.tp)}`,
+          },
+        ]),
     {
       kind: 'avg',
       price: props.position.avg,

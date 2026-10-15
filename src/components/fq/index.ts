@@ -1,0 +1,27 @@
+/**
+ * FreqUI Ultimate 2 composites (docs/redesign/02-design.md, section 5.2), batch A. Import from here
+ * (`@/components/fq`); like the design system primitives the folder is excluded from component
+ * auto-registration. Composites read the data layer (stores, composables), never a bot API.
+ */
+export { default as ActionDialogHost } from './ActionDialogHost.vue';
+export { default as AlertItem } from './AlertItem.vue';
+export { default as AlertRail } from './AlertRail.vue';
+export type { AlertTab } from './AlertRail.vue';
+export { default as AppShell } from './AppShell.vue';
+export type { ShellPage } from './AppShell.vue';
+export { default as BotActionBar } from './BotActionBar.vue';
+export { default as BotActionMenu } from './BotActionMenu.vue';
+export { default as BotHeader } from './BotHeader.vue';
+export { default as CommandPalette } from './CommandPalette.vue';
+export type { PalettePage } from './CommandPalette.vue';
+export { default as ConfirmDangerDialog } from './ConfirmDangerDialog.vue';
+export { default as EventFeed } from './EventFeed.vue';
+export { default as EventRow } from './EventRow.vue';
+export { default as FleetMap } from './FleetMap.vue';
+export { default as FleetScope } from './FleetScope.vue';
+export { default as FleetTable } from './FleetTable.vue';
+export { default as PositionCard } from './PositionCard.vue';
+export { default as ScopePanel } from './ScopePanel.vue';
+export { default as SinceLastVisit } from './SinceLastVisit.vue';
+export { default as TradeDrawer } from './TradeDrawer.vue';
+export { default as TradeTable } from './TradeTable.vue';
