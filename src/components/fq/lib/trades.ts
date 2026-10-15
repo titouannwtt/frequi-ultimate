@@ -54,6 +54,13 @@ export interface TradeLine {
   manual: boolean;
   enterTag: string | null;
   open: boolean;
+  /** Excursions of a closed trade as ratios of the stake; absent without a gateway. */
+  mae?: number | null;
+  mfe?: number | null;
+  /** Orders filled on the entry side of a closed trade, when the source gave it. */
+  dcaEntries?: number | null;
+  /** Result as a ratio, to place the exit tick on the excursion bar. */
+  ratio?: number | null;
 }
 
 export function tradeKey(botKey: string, tradeId: number): string {
@@ -102,7 +109,10 @@ export function lineFromPosition(
   };
 }
 
-export function lineFromTrade(t: TradeRow, bot: BotRow | undefined): TradeLine {
+export function lineFromTrade(
+  t: TradeRow & { mae?: number | null; mfe?: number | null; dca_entries?: number | null },
+  bot: BotRow | undefined,
+): TradeLine {
   const closeMs = t.close_ms;
   return {
     key: tradeKey(t.bot_key, t.trade_id),
@@ -125,7 +135,7 @@ export function lineFromTrade(t: TradeRow, bot: BotRow | undefined): TradeLine {
     stake: t.stake_amount,
     notional: t.amount * t.open_rate,
     amount: t.amount,
-    dcaFilled: 0,
+    dcaFilled: t.dca_entries ?? 0,
     dcaMax: null,
     liquidationPrice: null,
     liqDistancePct: null,
@@ -138,6 +148,10 @@ export function lineFromTrade(t: TradeRow, bot: BotRow | undefined): TradeLine {
     manual: t.manual,
     enterTag: t.enter_tag,
     open: closeMs == null,
+    mae: t.mae ?? null,
+    mfe: t.mfe ?? null,
+    dcaEntries: t.dca_entries ?? null,
+    ratio: t.profit_ratio,
   };
 }
 

@@ -4,9 +4,11 @@
  * before : ? ! and thin no-break space before %.
  */
 import composites from './composites/fr';
+import charts from './charts/fr';
 
 export default {
   ...composites,
+  ...charts,
   nav: {
     fleet: 'Flotte',
     bot: 'Bot',

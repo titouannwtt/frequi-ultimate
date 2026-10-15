@@ -46,6 +46,7 @@ import {
   TextInput,
   Toaster,
 } from '@/components/ds';
+import CompositesBShowcase from './ds/CompositesBShowcase.vue';
 import CompositesShowcase from './ds/CompositesShowcase.vue';
 import type {
   BotRef,
@@ -816,6 +817,7 @@ function ageLabel(ms: number) {
 
       <!-- 11. Composites (batch A) -->
       <CompositesShowcase />
+      <CompositesBShowcase />
     </main>
   </div>
 </template>
