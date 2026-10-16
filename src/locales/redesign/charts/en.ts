@@ -383,9 +383,11 @@ export default {
     tp: 'TP',
     liquidation: 'Liquidation',
     entry: 'Entry',
-    dca: 'Safety order',
+    dca: 'Top-up',
     exit: 'Exit',
     dcaTag: 'D',
+    refill: 'Top-up',
+    refills: 'Top-ups',
     closedTrade: 'Closed trade',
     pending: {
       entry: 'Entry order',

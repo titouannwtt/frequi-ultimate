@@ -146,6 +146,28 @@ export function pendingOrders(
   return out;
 }
 
+/**
+ * The two levels the trade drawer says in words, read from the orders that wait on the exchange:
+ * the take profit (a limit exit on the profit side of the average entry) and the next top-up (a
+ * limit entry added to the position). When several wait, the one nearest to the current price is
+ * the next to be reached. Null when no waiting order has a price: nothing is guessed.
+ */
+export function waitingLevels(
+  rows: readonly OrderRow[],
+  side: Side,
+  average: number | null | undefined,
+  current: number | null | undefined,
+): { tp: number | null; nextRefill: number | null } {
+  const waiting = pendingOrders(rows, side, average);
+  const nearest = (kind: PendingKind): number | null => {
+    const prices = waiting.filter((p) => p.kind === kind).map((p) => p.price);
+    if (prices.length === 0) return null;
+    if (!finitePrice(current)) return prices[0]!;
+    return prices.reduce((a, b) => (Math.abs(b - current) < Math.abs(a - current) ? b : a));
+  };
+  return { tp: nearest('tp'), nextRefill: nearest('dca') };
+}
+
 // ---- current gain ----
 
 /**

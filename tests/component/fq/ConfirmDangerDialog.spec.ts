@@ -128,6 +128,19 @@ describe('ConfirmDangerDialog: the quantity is chosen here', () => {
     expect(world.fake.acts).toHaveLength(0);
   });
 
+  it('labels the two amounts: the stake in the header, the exit value with its leverage', async () => {
+    const pos: Position = { ...livePos, notional: 400, stake_amount: 200, leverage: 2 };
+    const w = mountDialog(liveBot, exitOf(pos), pos);
+    await nextTick();
+    expect(w.get('.sub').text()).toMatch(/stake 200\.00 USDC/);
+    const note = w.get('[data-testid=dialog-qty-note]').text();
+    expect(note).toContain('Exit value ≈ 400.00 USDC (leverage ×2)');
+    // The wording changes nothing of what is sent
+    expect(w.text()).toContain('Estimated result');
+    expect(w.text()).not.toContain('P&L');
+    expect(world.fake.acts).toHaveLength(0);
+  });
+
   it('the quantity is not offered for Exit all: nothing partial there', async () => {
     const w = mountDialog(liveBot, { kind: 'forceexit', tradeId: 'all' }, null);
     await nextTick();
