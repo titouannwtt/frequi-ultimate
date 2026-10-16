@@ -1,6 +1,8 @@
 //! `ANY /bots/{key}/proxy/{path}`: the whitelisted passthrough to the Python API of a bot
 //! (03 section 8.2).
 
+use std::time::Duration;
+
 use axum::Json;
 use axum::body::{Body, Bytes};
 use axum::extract::{Extension, Path, State};
@@ -10,12 +12,15 @@ use axum::response::{IntoResponse, Response};
 use fg_core::identity::BotKey;
 use fg_core::protocol::ErrorCode;
 use fg_engine::{ActionOrigin, ProxyError, ProxyWrite};
-use fg_sources::botrest::{ProxyMethod, ProxyRequest, ProxyResponse, proxy_path_is_plain};
+use fg_sources::botrest::{
+    ProxyMethod, ProxyRequest, ProxyResponse, RestError, proxy_path_is_plain,
+};
 use serde_json::{Map, Value};
 
 use crate::error::{ApiFailure, rest_failure};
 use crate::passthrough::{
-    CacheKey, Class, FLEET_SCOPE, Rule, candle_ttl, clamp_candle_limit, classify, query_param,
+    CacheKey, Class, FLEET_SCOPE, Rule, SweepFailure, candle_ttl, clamp_candle_limit, classify,
+    query_param,
 };
 use crate::routes::data::{guard_bot, parse_key};
 use crate::session::Session;
@@ -116,16 +121,56 @@ async fn cached(
         path: path.to_owned(),
         query: cache_query,
     };
-    let req = read_request(path, query, rule, ProxyMethod::Get, &Bytes::new(), None);
-    let (resp, hit) = st
-        .cache
-        .get_or_fetch(ck, ttl, || async {
-            st.engine
-                .proxy_read(key, req, true)
-                .await
-                .map_err(engine_failure)
-        })
-        .await?;
+    let mut req = read_request(path, query, rule, ProxyMethod::Get, &Bytes::new(), None);
+    if rule.wallet_level {
+        req.timeout = Duration::from_secs(u64::from(st.cfg.hyperliquid.sweep_timeout_s));
+    }
+    let budgeted = rule.budgeted;
+    let (resp, hit) = if rule.wallet_level {
+        // The sweep of the wallets asks the exchange. After a failure the whole fleet rests for
+        // `min_sweep_interval_s`: one retry button, one more tab or the next bot cannot start
+        // another sweep on top of one that just failed.
+        st.cache
+            .get_or_fetch_resting(ck, ttl, st.cache.wallet_ttl, || async {
+                match st.engine.proxy_read(key, req, budgeted).await {
+                    // A 5xx is the Python side failing to read the exchange, unless the bot is
+                    // only starting ("not in the correct state"): that one is not the wallet's.
+                    Ok(r) if r.status >= 500 => Err(SweepFailure {
+                        failure: ApiFailure::new(
+                            ErrorCode::BotUnreachable,
+                            "the bot could not read the exchange",
+                        )
+                        .with_status(StatusCode::BAD_GATEWAY),
+                        rest: !String::from_utf8_lossy(&r.body).contains("correct state"),
+                    }),
+                    Ok(r) => Ok(r),
+                    Err(e) => {
+                        // A bot that is down, starting or lacks the route says nothing about the
+                        // exchange: only a sweep that ran out of time or failed on the bot rests.
+                        let rest = matches!(
+                            e,
+                            ProxyError::Rest(
+                                RestError::Timeout | RestError::Server(_) | RestError::Reset
+                            )
+                        );
+                        Err(SweepFailure {
+                            failure: engine_failure(e),
+                            rest,
+                        })
+                    }
+                }
+            })
+            .await?
+    } else {
+        st.cache
+            .get_or_fetch(ck, ttl, || async {
+                st.engine
+                    .proxy_read(key, req, budgeted)
+                    .await
+                    .map_err(engine_failure)
+            })
+            .await?
+    };
     to_response(&resp, Some(if hit { "hit" } else { "miss" }))
 }
 
