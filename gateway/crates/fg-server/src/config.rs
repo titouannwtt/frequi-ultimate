@@ -150,8 +150,9 @@ pub struct SchedulerSection {
     pub request_burst: u32,
     pub max_in_flight: usize,
     pub ledger_threads: usize,
-    /// Worker threads of the async runtime: 0 = automatic (the number of CPUs, between 2 and 4),
-    /// otherwise 2 to 4. The host is shared; a gateway has no use for more.
+    /// Worker threads of the async runtime: 0 = automatic (the number of CPUs, between 2 and 3),
+    /// otherwise 2 to 4. The host is shared; a gateway has no use for more, and each thread that
+    /// allocates keeps a heap of its own (about 4 MB resident per extra worker, measured).
     pub worker_threads: usize,
 }
 
@@ -532,7 +533,7 @@ impl SchedulerSection {
     #[must_use]
     pub fn workers(&self, cpus: usize) -> usize {
         if self.worker_threads == 0 {
-            cpus.clamp(2, 4)
+            cpus.clamp(2, 3)
         } else {
             self.worker_threads.clamp(2, 4)
         }
@@ -591,7 +592,7 @@ request_rate_per_s = 2.8
 request_burst = 30
 max_in_flight = 6
 ledger_threads = 4
-# Async worker threads: 0 = automatic (number of CPUs, between 2 and 4), or 2 to 4.
+# Async worker threads: 0 = automatic (number of CPUs, between 2 and 3), or 2 to 4.
 worker_threads = 0
 
 [market]
@@ -633,7 +634,7 @@ mod tests {
     fn the_runtime_has_two_to_four_workers_whatever_the_host_or_the_configuration() {
         let mut cfg = GatewayConfig::default();
         // Automatic: the number of CPUs, clamped.
-        for (cpus, want) in [(1, 2), (2, 2), (3, 3), (4, 4), (32, 4), (128, 4)] {
+        for (cpus, want) in [(1, 2), (2, 2), (3, 3), (4, 3), (32, 3), (128, 3)] {
             assert_eq!(cfg.scheduler.workers(cpus), want, "{cpus} cpus");
         }
         // Configured: honoured within the range, regardless of the host.
