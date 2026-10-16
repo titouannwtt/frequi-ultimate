@@ -33,6 +33,13 @@ const checkedMs = computed(() =>
 const wait = computed(() => nextSweepInMs(checkedMs.value, clock.value));
 const wallet = computed(() => shortWallet(rec.response.value?.wallet));
 
+const errorText = computed(() => {
+  const kind = rec.error.value;
+  if (!kind) return '';
+  const s = Math.ceil((rec.retryAfterMs.value ?? 0) / 1000);
+  return t(`fq.pg.tools.reconciliation.err.${kind}`, { s });
+});
+
 // The fleet may not be loaded yet when the page opens: read as soon as a bot can answer
 watch(
   () => rec.candidates.value.join(','),
@@ -87,11 +94,17 @@ async function send(payload: FleetviewResolvePayload) {
       >
     </template>
 
-    <Banner v-if="rec.error.value && !rec.response.value" kind="offline">
-      {{ t(`fq.pg.tools.reconciliation.err.${rec.error.value === 'noBot' ? 'noBot' : 'failed'}`) }}
+    <Banner
+      v-if="rec.error.value"
+      :kind="rec.response.value ? 'degraded' : 'offline'"
+      :action="rec.loading.value ? undefined : t('fq.result.retry')"
+      data-testid="recon-error"
+      @action="rec.load()"
+    >
+      {{ errorText }}
     </Banner>
 
-    <Skeleton v-if="rec.loading.value && !rec.response.value" :count="4" />
+    <Skeleton v-if="rec.loading.value && !rec.response.value && !rec.error.value" :count="4" />
     <ReconciliationTable
       v-else-if="rec.response.value"
       :wallet="wallet"

@@ -102,7 +102,7 @@ const healthCrit: Health = {
   level: 'critical',
   reasons: [
     { code: 'bots_offline', severity: 'critical', detail: 'hippo_short_sharpe', alert_id: 'a2' },
-    { code: 'rate_budget', severity: 'warning', detail: '88 %', alert_id: null },
+    { code: 'rate_budget_low', severity: 'warning', detail: '12', alert_id: null },
     { code: 'mystery_code', severity: 'warning', detail: null, alert_id: null },
   ],
   rate_budget_pct: 88,

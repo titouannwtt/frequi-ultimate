@@ -23,7 +23,7 @@ import { computeFreshness } from '../calc/freshness';
 import { startingCapital } from '../calc/capital';
 import { whitelistMarket } from '../calc/hip3';
 import { normalizeTsMs } from '../calc/time';
-import { periodCutoffMs, profitSince } from '../calc/periods';
+import { periodCutoffMs, profitSince, realizedDay } from '../calc/periods';
 import type { ClosedPnl } from '@/gateway/types.gen';
 
 import { toOpenRisk } from './mappers';
@@ -42,6 +42,8 @@ export interface ClosedHistory {
   /** Everything the bot has is loaded: totals over `rows` are totals of the bot. */
   complete: boolean;
   atMs: number;
+  /** Closed-trade count the bot reported when the history was read (null: not reported). */
+  countAtLoad: number | null;
 }
 
 export type Reachability = 'unknown' | 'online' | 'starting' | 'offline' | 'auth_expired';
@@ -231,6 +233,17 @@ export function startingCapitalOf(rt: BotRuntime, walletShared: boolean): number
   }).value;
 }
 
+/** Closed-trade count the bot reports (profit first, then the fleet overview), null if unknown. */
+export function closedCountOf(rt: BotRuntime): number | null {
+  return rt.profit?.data.closed_trade_count ?? rt.overview?.data.trades.closed_count ?? null;
+}
+
+/** A trade closed since the history was read: the count the bot reports moved. */
+export function closedHistoryOutdated(rt: BotRuntime): boolean {
+  const count = closedCountOf(rt);
+  return !!rt.closed && count !== null && rt.closed.countAtLoad !== count;
+}
+
 export function buildBotRow(rt: BotRuntime, ctx: RowContext): BotRow {
   const { nowMs } = ctx;
   const mode = modeOf(rt);
@@ -259,10 +272,14 @@ export function buildBotRow(rt: BotRuntime, ctx: RowContext): BotRow {
   // ---- metrics ----
   const digestFresh = rt.digest ? rt.digest.data.age_s * 1000 <= 120_000 : false;
   const latent = latentOf(rt);
-  const sinceCut = (key: '24h' | '7d' | '30d'): number | null => {
+  const sinceCut = (key: '7d' | '30d'): number | null => {
     if (!closed) return null;
     return profitSince(closedPnl(closed), periodCutoffMs(key, nowMs));
   };
+  // The day is the calendar day (local midnight), as the column header says. The bot's own
+  // overview counts a rolling 24 hours, so it cannot stand in for it: unknown until the closed
+  // history is loaded.
+  const day = closed ? realizedDay(closedPnl(closed), nowMs) : null;
   const realizedTotal =
     ov?.pnl.realized_total ??
     (closed ? closedPnl(closed).reduce((a, p) => a + p.profit_abs, 0) : null) ??
@@ -303,7 +320,7 @@ export function buildBotRow(rt: BotRuntime, ctx: RowContext): BotRow {
     profit && profit.latest_trade_timestamp ? normalizeTsMs(profit.latest_trade_timestamp) : null;
 
   const metrics: BotRow['metrics'] = {
-    realized_1d: ov?.pnl.realized_1d ?? sinceCut('24h'),
+    realized_1d: day,
     realized_7d: ov?.pnl.realized_7d ?? sinceCut('7d'),
     realized_30d: ov?.pnl.realized_30d ?? sinceCut('30d'),
     realized_total: realizedTotal,
@@ -314,7 +331,7 @@ export function buildBotRow(rt: BotRuntime, ctx: RowContext): BotRow {
     drawdown_realized: drawdownRealized,
     drawdown_with_open: drawdownWithOpen,
     last_trade_ms: lastTradeMs,
-    trades_closed: profit?.closed_trade_count ?? ov?.trades.closed_count ?? null,
+    trades_closed: closedCountOf(rt),
     winrate:
       typeof wins === 'number' && typeof losses === 'number' && wins + losses > 0
         ? wins / (wins + losses)

@@ -372,6 +372,7 @@ export function makeAlerts(bots: BotRow[]): Alert[] {
     acked_by_session: null,
     silenced_until_ms: null,
     detail: null,
+    pair: null,
   };
   const alerts: Alert[] = [];
   if (b2)
@@ -526,7 +527,7 @@ export function makeWallets(bots: BotRow[]): WalletRow[] {
 export function makeHealth(): Health {
   return {
     level: 'degraded',
-    reasons: [{ code: 'rate_budget', severity: 'warning', detail: '61 %', alert_id: null }],
+    reasons: [{ code: 'rate_backoff', severity: 'warning', detail: null, alert_id: null }],
     rate_budget_pct: 61,
     backoff_active: true,
     hit_rate: 0.97,

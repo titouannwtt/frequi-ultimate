@@ -9,8 +9,15 @@ export default {
     tooSoon: 'Le prochain balayage est possible dans {s} s',
     err: {
       noBot: 'Aucun bot ne répond : le wallet ne peut pas être lu.',
-      failed:
+      source: 'Aucune source de données n’est connectée : le wallet ne peut pas être lu.',
+      noServing:
         'Aucun bot n’a pu donner la réconciliation. Elle est servie par les bots qui exécutent l’outillage de flotte.',
+      timeout:
+        'Le balayage du wallet n’a pas répondu à temps. L’exchange est peut-être limité : aucun nouveau balayage ne part tout seul.',
+      resting:
+        'Le dernier balayage vient d’échouer. Le wallet est laissé au repos pour ne pas surcharger l’exchange : nouvel essai possible dans {s} s.',
+      failed:
+        'Le balayage du wallet a échoué. Réessayez dans un instant ; chaque essai interroge l’exchange.',
     },
   },
   diagnostic: {

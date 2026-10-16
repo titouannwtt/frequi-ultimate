@@ -36,6 +36,7 @@ import {
   percentileValue,
   periodCutoffMs,
   pnlPeriods,
+  realizedDay,
   startingCapital,
   sumFresh,
   sumStartingCapital,
@@ -207,6 +208,11 @@ const IMPLS: Record<string, Impl> = {
     usedBy: 'direct',
     symbols: ['periodCutoffMs'],
     run: (i) => periodCutoffMs(i.key, i.now_ms, i.tz),
+  },
+  'periods.realized_day': {
+    usedBy: 'direct',
+    symbols: ['realizedDay'],
+    run: (i) => realizedDay(i.trades, i.now_ms, i.tz),
   },
   'periods.pnl_periods': {
     usedBy: 'direct',

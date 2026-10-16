@@ -132,12 +132,16 @@ pub struct FtcacheSection {
 pub struct HyperliquidSection {
     /// At most one reconciliation sweep per wallet in this many seconds (cached answer in between).
     pub min_sweep_interval_s: u32,
+    /// A reconciliation sweep that has not answered after this many seconds is told as a failure
+    /// (and the wallets rest for `min_sweep_interval_s`). Under the 60 s a client waits.
+    pub sweep_timeout_s: u32,
 }
 
 impl Default for HyperliquidSection {
     fn default() -> Self {
         Self {
             min_sweep_interval_s: 60,
+            sweep_timeout_s: 40,
         }
     }
 }
@@ -448,6 +452,9 @@ impl GatewayConfig {
         if self.scheduler.worker_threads != 0 && !(2..=4).contains(&self.scheduler.worker_threads) {
             p.push("scheduler.worker_threads must be 0 (automatic) or between 2 and 4".to_owned());
         }
+        if !(1..=55).contains(&self.hyperliquid.sweep_timeout_s) {
+            p.push("hyperliquid.sweep_timeout_s must be between 1 and 55".to_owned());
+        }
         if self.tz().is_none() {
             p.push("general.timezone must be Europe/Paris or UTC".to_owned());
         }
@@ -586,6 +593,8 @@ ignore_db_name_tokens = ["backup", "replay", "tmp"]
 [hyperliquid]
 # At most one reconciliation sweep per wallet in this many seconds.
 min_sweep_interval_s = 60
+# A sweep that has not answered after this many seconds is a failure (1 to 55).
+sweep_timeout_s = 40
 
 [scheduler]
 request_rate_per_s = 2.8

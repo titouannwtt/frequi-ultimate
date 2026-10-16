@@ -248,6 +248,14 @@ pub fn profit_since(trades: &[ClosedPnl], cutoff_ms: i64) -> f64 {
         .sum()
 }
 
+/// Realized profit of the calendar day of `tz`: the trades closed at or after the local midnight,
+/// not those of the last 24 hours (that is [`PeriodKey::H24`]). The day is 23 or 25 hours long
+/// around a daylight-saving change.
+#[must_use]
+pub fn realized_day(trades: &[ClosedPnl], now_ms: i64, tz: Tz) -> f64 {
+    profit_since(trades, period_cutoff_ms(PeriodKey::Today, now_ms, tz))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

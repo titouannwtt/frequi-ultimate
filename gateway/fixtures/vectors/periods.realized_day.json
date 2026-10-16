@@ -1,0 +1,119 @@
+{
+ "function": "periods.realized_day",
+ "description": "Realized profit of the calendar day of the configured zone: closed at or after the local midnight (not the last 24 hours).",
+ "cases": [
+  {
+   "name": "the day starts at Paris midnight and not 24 hours ago",
+   "input": {
+    "trades": [
+     {
+      "ts_ms": 1792015199999,
+      "profit_abs": -6.1
+     },
+     {
+      "ts_ms": 1792015200000,
+      "profit_abs": -1.5
+     },
+     {
+      "ts_ms": 1792018800000,
+      "profit_abs": 0.25
+     },
+     {
+      "ts_ms": 1792047299999,
+      "profit_abs": -0.5
+     },
+     {
+      "ts_ms": 1791975300000,
+      "profit_abs": -9.28
+     }
+    ],
+    "now_ms": 1792047300000,
+    "tz": "Europe/Paris"
+   },
+   "expected": -1.75
+  },
+  {
+   "name": "the same trades in UTC use the UTC midnight",
+   "input": {
+    "trades": [
+     {
+      "ts_ms": 1792015199999,
+      "profit_abs": -6.1
+     },
+     {
+      "ts_ms": 1792015200000,
+      "profit_abs": -1.5
+     },
+     {
+      "ts_ms": 1792018800000,
+      "profit_abs": 0.25
+     },
+     {
+      "ts_ms": 1792047299999,
+      "profit_abs": -0.5
+     },
+     {
+      "ts_ms": 1791975300000,
+      "profit_abs": -9.28
+     }
+    ],
+    "now_ms": 1792047300000,
+    "tz": "UTC"
+   },
+   "expected": -0.5
+  },
+  {
+   "name": "a day without trade is zero",
+   "input": {
+    "trades": [],
+    "now_ms": 1792047300000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 0
+  },
+  {
+   "name": "on the 23 hour day of the spring change a trade 24 hours ago is not today",
+   "input": {
+    "trades": [
+     {
+      "ts_ms": 1774737000000,
+      "profit_abs": 5
+     },
+     {
+      "ts_ms": 1774740600000,
+      "profit_abs": -2
+     },
+     {
+      "ts_ms": 1774821599999,
+      "profit_abs": 1
+     }
+    ],
+    "now_ms": 1774778400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": -1
+  },
+  {
+   "name": "on the 25 hour day of the autumn change the day lasts until the next midnight",
+   "input": {
+    "trades": [
+     {
+      "ts_ms": 1792879199999,
+      "profit_abs": 4
+     },
+     {
+      "ts_ms": 1792965599999,
+      "profit_abs": -3
+     },
+     {
+      "ts_ms": 1792967400000,
+      "profit_abs": 2
+     }
+    ],
+    "now_ms": 1792967400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": -1
+  }
+ ]
+}

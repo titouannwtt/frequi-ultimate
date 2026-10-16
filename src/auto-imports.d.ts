@@ -55,6 +55,7 @@ declare global {
   const buildPrefillFromLiveBot: typeof import('./utils/reconstitute').buildPrefillFromLiveBot
   const buildPrefillFromWfa: typeof import('./utils/reconstitute').buildPrefillFromWfa
   const calculateDiff: typeof import('./utils/charts/areaPlotDataset').calculateDiff
+  const classifyReconFailure: typeof import('./composables/useReconciliation').classifyReconFailure
   const clearBenchmarkCache: typeof import('./utils/benchmarkData').clearBenchmarkCache
   const clone: typeof import('./utils/configEditorObject').clone
   const closedTradesDemand: typeof import('./stores/closedTradesPolicy').closedTradesDemand
@@ -566,6 +567,9 @@ declare global {
   export type { FlashDirection, NumberTweenOptions } from './composables/useNumberTween'
   import('./composables/useNumberTween')
   // @ts-ignore
+  export type { ReconError, ReconFailure } from './composables/useReconciliation'
+  import('./composables/useReconciliation')
+  // @ts-ignore
   export type { RegimeTimelineEntry } from './composables/useRegimeOverlay'
   import('./composables/useRegimeOverlay')
   // @ts-ignore
@@ -681,6 +685,7 @@ declare module 'vue' {
     readonly buildPrefillFromLiveBot: UnwrapRef<typeof import('./utils/reconstitute')['buildPrefillFromLiveBot']>
     readonly buildPrefillFromWfa: UnwrapRef<typeof import('./utils/reconstitute')['buildPrefillFromWfa']>
     readonly calculateDiff: UnwrapRef<typeof import('./utils/charts/areaPlotDataset')['calculateDiff']>
+    readonly classifyReconFailure: UnwrapRef<typeof import('./composables/useReconciliation')['classifyReconFailure']>
     readonly clearBenchmarkCache: UnwrapRef<typeof import('./utils/benchmarkData')['clearBenchmarkCache']>
     readonly clone: UnwrapRef<typeof import('./utils/configEditorObject')['clone']>
     readonly closedTradesDemand: UnwrapRef<typeof import('./stores/closedTradesPolicy')['closedTradesDemand']>

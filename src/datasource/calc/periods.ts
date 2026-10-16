@@ -247,3 +247,15 @@ export function pnlPeriods(
 export function profitSince(trades: readonly ClosedPnl[], cutoffMs: number): number {
   return trades.reduce((acc, t) => (t.ts_ms >= cutoffMs ? acc + t.profit_abs : acc), 0);
 }
+
+/**
+ * Realized profit of the calendar day of `tz`: the trades closed at or after the local midnight,
+ * not those of the last 24 hours. The day is 23 or 25 hours long around a daylight-saving change.
+ */
+export function realizedDay(
+  trades: readonly ClosedPnl[],
+  nowMs: number,
+  tz: Tz = DEFAULT_TZ,
+): number {
+  return profitSince(trades, periodCutoffMs('today', nowMs, tz));
+}

@@ -192,6 +192,11 @@ fn run(function: &str, input: &Value, defaults: &Value) -> Value {
             input["now_ms"].as_i64().unwrap(),
             from(&input["tz"]),
         )),
+        "periods.realized_day" => to(&periods::realized_day(
+            &from::<Vec<drawdown::ClosedPnl>>(&input["trades"]),
+            input["now_ms"].as_i64().unwrap(),
+            from(&input["tz"]),
+        )),
         "periods.pnl_periods" => to(&periods::pnl_periods(
             &from::<Vec<drawdown::ClosedPnl>>(&input["trades"]),
             from(&input["unit"]),

@@ -181,6 +181,87 @@
     "tz": "UTC"
    },
    "expected": 1772280000000
+  },
+  {
+   "name": "today: one millisecond after Paris midnight is the new day",
+   "input": {
+    "key": "today",
+    "now_ms": 1779228000001,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1779228000000
+  },
+  {
+   "name": "today: one millisecond before Paris midnight is still the old day",
+   "input": {
+    "key": "today",
+    "now_ms": 1779227999999,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1779141600000
+  },
+  {
+   "name": "today: exactly Paris midnight starts the day",
+   "input": {
+    "key": "today",
+    "now_ms": 1779228000000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1779228000000
+  },
+  {
+   "name": "today: 08:55 Paris in winter, cut at 23:00Z the day before",
+   "input": {
+    "key": "today",
+    "now_ms": 1768463700000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1768431600000
+  },
+  {
+   "name": "today: spring forward day is 23 hours, cut at 00:00 CET",
+   "input": {
+    "key": "today",
+    "now_ms": 1774778400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1774738800000
+  },
+  {
+   "name": "today: the day after spring forward is cut at 00:00 CEST",
+   "input": {
+    "key": "today",
+    "now_ms": 1774823400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1774821600000
+  },
+  {
+   "name": "today: fall back day is 25 hours, cut at 00:00 CEST",
+   "input": {
+    "key": "today",
+    "now_ms": 1792926000000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1792879200000
+  },
+  {
+   "name": "today: late on the fall back day still cuts at 00:00 CEST",
+   "input": {
+    "key": "today",
+    "now_ms": 1792967400000,
+    "tz": "Europe/Paris"
+   },
+   "expected": 1792879200000
+  },
+  {
+   "name": "today: UTC ignores the Paris offset around midnight",
+   "input": {
+    "key": "today",
+    "now_ms": 1779229800000,
+    "tz": "UTC"
+   },
+   "expected": 1779148800000
   }
  ]
 }

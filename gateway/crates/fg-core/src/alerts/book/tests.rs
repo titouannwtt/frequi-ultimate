@@ -17,6 +17,7 @@ fn cond(
     Condition {
         type_id: t,
         subject: subject.map(str::to_owned),
+        pair: None,
         severity: sev,
         value,
         threshold: None,
@@ -572,4 +573,34 @@ fn state_round_trips_through_json() {
     let mut restored = restored;
     assert!(restored.evaluate_bot(T0 + S, BOT, &on).is_empty());
     assert_eq!(restored.alerts(T0 + S).len(), 1);
+}
+
+#[test]
+fn an_alert_carries_the_pair_of_its_position_while_its_key_stays_the_trade_id() {
+    let mut book = AlertBook::new();
+    let mut c = cond(
+        AlertTypeId::NearLiquidation,
+        Some("310"),
+        Severity::Critical,
+        Some(12.0),
+        0,
+    );
+    c.pair = Some("SKY/USDC:USDC".into());
+    let e = ev(vec![c.clone()], &[AlertTypeId::NearLiquidation]);
+    book.evaluate_bot(1_000, "local:9400", &e);
+    let a = book.alerts(1_000);
+    assert_eq!(a.len(), 1);
+    assert_eq!(a[0].subject.as_deref(), Some("310"));
+    assert_eq!(a[0].pair.as_deref(), Some("SKY/USDC:USDC"));
+    // The same trade evaluated again is the same alert, and it keeps telling the pair.
+    book.evaluate_bot(2_000, "local:9400", &e);
+    assert_eq!(book.alerts(2_000).len(), 1);
+    // A book persisted before the field existed still loads.
+    let mut state = serde_json::to_value(book.to_state()).unwrap();
+    state["tracked"][0]["alert"]
+        .as_object_mut()
+        .unwrap()
+        .remove("pair");
+    let old: BookState = serde_json::from_value(state).unwrap();
+    assert_eq!(AlertBook::from_state(old).alerts(2_000)[0].pair, None);
 }

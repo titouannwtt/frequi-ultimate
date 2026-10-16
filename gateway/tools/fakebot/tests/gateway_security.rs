@@ -1558,6 +1558,69 @@ async fn the_reconciliation_is_one_sweep_per_interval_for_the_whole_fleet() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_reconciliation_that_does_not_answer_fails_clearly_and_the_fleet_rests() {
+    // QA 2026-10-15: the sweep waited five minutes and every client retry, every tab and the next
+    // bot of the fleet started another sweep of the exchange on top of the stuck one.
+    let gw = Gw::start(Opts {
+        bots: 3,
+        sweep_timeout_s: Some(1),
+        ..Opts::default()
+    })
+    .await;
+    gw.wait_online(3, Duration::from_secs(60)).await;
+    let token = gw.session("d1").await;
+    let sweeps = || -> u64 {
+        (0..3)
+            .map(|i| {
+                gw.fleet
+                    .bot(i)
+                    .unwrap()
+                    .route_counts()
+                    .get("GET /fleetview/reconciliation")
+                    .copied()
+                    .unwrap_or(0)
+            })
+            .sum()
+    };
+    let url = |i: usize| format!("/bots/{}/proxy/fleetview/reconciliation", gw.key(i));
+    // Bot 0 sweeps for longer than the deadline.
+    gw.fleet.bot(0).unwrap().set_mode(Mode::Slow(3000));
+    let t0 = std::time::Instant::now();
+    let first = gw
+        .req(Method::GET, &url(0), Some(&token))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(first.status(), 504, "a clear timeout, not a wait");
+    assert!(
+        t0.elapsed() < Duration::from_millis(2500),
+        "{:?}",
+        t0.elapsed()
+    );
+    let body: Value = first.json().await.unwrap();
+    assert_eq!(body["code"], "bot_unreachable", "{body}");
+    assert_eq!(sweeps(), 1);
+    // The bot that answers fast is not asked to sweep again while the fleet rests; the failure
+    // comes back at once and says when to try again.
+    gw.fleet.bot(0).unwrap().set_mode(Mode::Up);
+    for i in [0, 1, 2, 1] {
+        let t = std::time::Instant::now();
+        let r = gw
+            .req(Method::GET, &url(i), Some(&token))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(r.status(), 504, "bot {i}");
+        assert!(r.headers().contains_key("retry-after"), "bot {i}");
+        assert!(t.elapsed() < Duration::from_millis(500), "bot {i}");
+        let b: Value = r.json().await.unwrap();
+        assert!(b["retry_after_ms"].as_u64().unwrap() > 0, "{b}");
+    }
+    assert_eq!(sweeps(), 1, "no second sweep while the wallets rest");
+    gw.stop().await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_bootstrap_asks_the_bots_for_a_few_proofs_at_most() {
     // B58: a stranger sets the number of requests a bootstrap sends to the bots.
     let gw = Gw::start(Opts {

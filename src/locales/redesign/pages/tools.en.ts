@@ -9,8 +9,14 @@ export default {
     tooSoon: 'The next sweep is possible in {s} s',
     err: {
       noBot: 'No bot answers: the wallet cannot be read.',
-      failed:
+      source: 'No data source is connected: the wallet cannot be read.',
+      noServing:
         'No bot could give the reconciliation. It is served by bots that run the fleet tooling.',
+      timeout:
+        'The sweep of the wallet did not answer in time. The exchange may be rate limited: no new sweep starts on its own.',
+      resting:
+        'The last sweep just failed. The wallet is left alone so as not to overload the exchange: another try is possible in {s} s.',
+      failed: 'The sweep of the wallet failed. Try again in a moment; every try asks the exchange.',
     },
   },
   diagnostic: {

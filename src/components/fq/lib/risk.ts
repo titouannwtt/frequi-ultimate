@@ -3,7 +3,16 @@
  * liquidation, the effective leverage and the orphan positions. Exposure is never summed per bot:
  * two bots on the same wallet that hold opposite sides of a coin net each other on the exchange.
  */
-import type { BotKey, BotMode, Health, HealthReason, Position, Side } from '@/gateway/types.gen';
+import {
+  HEALTH_REASON_CODES,
+  type BotKey,
+  type BotMode,
+  type Health,
+  type HealthReason,
+  type HealthReasonCode,
+  type Position,
+  type Side,
+} from '@/gateway/types.gen';
 import type { ScopeTotals } from '@/datasource/types';
 
 export interface CoinRow {
@@ -150,17 +159,25 @@ export function hitRateTone(rate: number | null): BudgetTone {
   return rate < 0.75 ? 'crit' : rate < 0.9 ? 'warn' : 'ok';
 }
 
-/** Reason codes the translations know; any other code is shown as received. */
-export const KNOWN_REASONS = [
-  'bots_offline',
-  'auth_expired',
-  'data_stale',
-  'daemon_backoff',
-  'rate_budget',
-] as const;
+/**
+ * Reason codes the translations know: the catalogue of the contract (`HEALTH_REASON_CODES`, from
+ * the gateway), so a code the gateway adds is a type error here until it is translated. Any other
+ * code is shown as received.
+ */
+export const KNOWN_REASONS: readonly HealthReasonCode[] = HEALTH_REASON_CODES;
 
-export function isKnownReason(code: string): boolean {
+export function isKnownReason(code: string): code is HealthReasonCode {
   return (KNOWN_REASONS as readonly string[]).includes(code);
+}
+
+/** Codes whose `detail` is a bare figure that the page words (the others show it as it is). */
+const FIGURE_DETAILS: ReadonlySet<string> = new Set<HealthReasonCode>([
+  'rate_budget_low',
+  'rate_limit_events',
+]);
+
+export function hasFigureDetail(code: string): boolean {
+  return FIGURE_DETAILS.has(code);
 }
 
 /** Worst severity first, then by code, so the order never depends on arrival order. */

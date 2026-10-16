@@ -503,14 +503,121 @@ async fn positions_come_from_the_ledger_and_prices_from_the_websocket() {
     assert_eq!(row.metrics.open_profit_abs, Some(30.0));
     assert_eq!(row.metrics.realized_total, Some(15.5));
     assert_eq!(row.metrics.trades_closed, Some(3));
-    // 24 h and 7 d windows: trade 3 closed 20 h ago, 4 and 5 within the last day.
-    assert_eq!(row.metrics.realized_1d, Some(15.5));
+    // T0 is 10:53 in Paris: trade 3 (closed 20 h ago) is yesterday, trades 4 and 5 are today. The
+    // day is cut at the Paris midnight, not 24 hours back; 7 d and 30 d are rolling windows.
+    assert_eq!(row.metrics.realized_1d, Some(3.5));
+    assert_eq!(row.metrics.realized_7d, Some(15.5));
     assert_eq!(row.metrics.realized_30d, Some(15.5));
     assert!(row.metrics.drawdown_realized.is_some());
     assert!(!row.metrics.spark24h.is_empty());
     let longs = row.metrics.exposure_long.unwrap();
     let shorts = row.metrics.exposure_short.unwrap();
     assert!((longs - 2.0 * 110.0).abs() < 1e-9 && (shorts - 2.0 * 95.0).abs() < 1e-9);
+}
+
+fn filled_order(id: i64, trade_id: i64, side: &str) -> fg_sources::sqlite::LedgerOrder {
+    fg_sources::sqlite::LedgerOrder {
+        id,
+        trade_id,
+        side: side.into(),
+        status: Some("closed".into()),
+        is_open: false,
+        filled: Some(1.0),
+        amount: Some(1.0),
+        average: Some(100.0),
+        cost: Some(100.0),
+        filled_ms: Some(T0 - HOUR),
+        tag: None,
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_position_reports_every_filled_entry_order_the_first_one_included() {
+    let r = rig(&[spec(9001, "a", true)]).await;
+    seed_positions(&r, "a");
+    r.ledger.with(&db_path("a"), |db| {
+        // Trade 1 (long): the entry plus two safety orders, then a partial exit and a cancelled
+        // safety order that never filled. Trade 2 (short): the entry alone.
+        let mut cancelled = filled_order(14, 1, "buy");
+        cancelled.status = Some("canceled".into());
+        cancelled.filled = Some(0.0);
+        db.orders = vec![
+            filled_order(10, 1, "buy"),
+            filled_order(11, 1, "buy"),
+            filled_order(12, 1, "buy"),
+            filled_order(13, 1, "sell"),
+            cancelled,
+            filled_order(20, 2, "sell"),
+        ];
+    });
+    settle(60).await;
+    r.h.publish_now().await.unwrap();
+    let p = r.h.published();
+    assert_eq!(p.positions["local:9001/1"].dca_entries, 3);
+    assert_eq!(p.positions["local:9001/2"].dca_entries, 1);
+}
+
+#[tokio::test(start_paused = true)]
+async fn the_day_figure_restarts_at_the_paris_midnight() {
+    let r = rig(&[spec(9001, "a", true)]).await;
+    seed_positions(&r, "a");
+    settle(60).await;
+    r.h.publish_now().await.unwrap();
+    let before = r.h.published();
+    let live = &before.scopes["live"];
+    assert_eq!(before.bots[&key(9001)].metrics.realized_1d, Some(3.5));
+    assert_eq!(live.realized_1d, Some(3.5));
+    assert_eq!(live.realized_today, Some(3.5), "both day figures agree");
+    // T0 is 10:53:20 in Paris (CEST): the next midnight is 13 h 6 min 40 s later. Trades 4 and 5
+    // closed at 01:53 and 09:53 become yesterday's, while the last 24 hours would still hold them.
+    settle(13 * 3600 + 6 * 60 + 40 + 60).await;
+    r.h.publish_now().await.unwrap();
+    let after = r.h.published();
+    assert_eq!(after.bots[&key(9001)].metrics.realized_1d, Some(0.0));
+    assert_eq!(after.scopes["live"].realized_1d, Some(0.0));
+    assert_eq!(after.scopes["live"].realized_today, Some(0.0));
+}
+
+#[tokio::test(start_paused = true)]
+async fn the_health_reasons_are_stable_codes_and_the_budget_figure_is_the_share_used() {
+    let r = rig(&[spec(9001, "a", true)]).await;
+    {
+        let mut st = r.daemon.status.lock().unwrap();
+        st.rate_limiters.insert(
+            "hyperliquid".to_owned(),
+            fg_sources::ftcache::RateBudget {
+                tokens_available: Some(15.0),
+                tokens_max: Some(100.0),
+                backoff_active: Some(true),
+                ..Default::default()
+            },
+        );
+    }
+    settle(120).await;
+    r.h.publish_now().await.unwrap();
+    let h = &r.h.published().health;
+    // 15 % left is 85 % used: a high figure is the bad one, like the direct mode and the gauge.
+    assert!((h.rate_budget_pct.unwrap() - 85.0).abs() < 1e-9, "{h:?}");
+    assert!(h.backoff_active);
+    let low = h
+        .reasons
+        .iter()
+        .find(|x| x.code == "rate_budget_low")
+        .expect("under 20 % left is a reason");
+    assert_eq!(
+        low.detail.as_deref(),
+        Some("15"),
+        "the detail is the percentage left, without a unit or a sentence"
+    );
+    assert!(h.reasons.iter().any(|x| x.code == "rate_backoff"));
+    // Every code the engine emits is in the catalogue the clients translate.
+    let known: Vec<&str> = fg_core::model::HealthReasonCode::ALL
+        .iter()
+        .map(|c| c.as_str())
+        .collect();
+    for reason in &h.reasons {
+        assert!(known.contains(&reason.code.as_str()), "{}", reason.code);
+    }
 }
 
 fn status_body(trade: i64, pair: &str, rate: f64) -> serde_json::Value {
