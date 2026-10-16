@@ -20,7 +20,7 @@
 
 ## What is FreqUI Ultimate?
 
-A fork of [FreqUI](https://github.com/freqtrade/frequi), the Freqtrade web dashboard, rebuilt to run a whole fleet of Freqtrade bots from one screen, on a desktop or a phone. It is the companion of [freqtrade-ultimate](https://github.com/titouannwtt/freqtrade-ultimate), and it keeps working against any standard Freqtrade instance.
+A fork of [FreqUI](https://github.com/freqtrade/frequi), the Freqtrade web dashboard, rebuilt to run a whole fleet of Freqtrade trading bots from one screen, on a desktop or a phone. It is the companion of [freqtrade-ultimate](https://github.com/titouannwtt/freqtrade-ultimate), and it keeps working against any standard Freqtrade instance.
 
 Version 2.0 is a full redesign: four first-class pages (Fleet, Bot, Charts, Journal), one data layer shared by every page, and an optional Rust service, the **gateway**, that reads your bots once for all your tabs and devices. Maintained by [Freqtrade France](https://buymeacoffee.com/freqtrade_france).
 
