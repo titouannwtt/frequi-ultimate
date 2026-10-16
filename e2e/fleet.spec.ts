@@ -64,6 +64,31 @@ test.describe('Fleet on a desktop', () => {
     await expect(rail).toHaveCount(0);
   });
 
+  test('a live bot that does not answer is in the verdict, in a card and among the first rows (B360, B361)', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const silent = rig().bots[rig().down[0]!]!;
+    test.skip(!silent.live, 'the silent bot of this rig is a dry one');
+    await page.goto('/dashboard');
+    const verdict = page.getByTestId('fleet-verdict');
+    await expect(verdict).toBeVisible();
+    // The gateway gives up on the bot after a few polls: the fleet must not say "fine" meanwhile
+    await expect(verdict).not.toContainText('Everything is fine', { timeout: 90_000 });
+    await expect(verdict).not.toHaveAttribute('data-level', 'calm');
+    const cards = page.getByTestId('fleet-alerts');
+    await expect(cards).toContainText(silent.name, { timeout: 30_000 });
+    await expect(cards).toContainText('not counted in the totals', { timeout: 30_000 });
+    await expect(cards.getByRole('button', { name: 'Reconnect' }).first()).toBeVisible();
+    // The bot is among the first rows of the list "sorted by attention", not behind "See the others"
+    const rows = page.locator('tr[data-bot-key]');
+    const keys = await rows.evaluateAll((trs) => trs.map((t) => t.getAttribute('data-bot-key')));
+    expect(keys.indexOf(botKey(silent))).toBeGreaterThanOrEqual(0);
+    expect(keys.indexOf(botKey(silent))).toBeLessThan(3);
+    // No jargon tag on the rows
+    await expect(page.locator('tr[data-bot-key]', { hasText: /xyz/i })).toHaveCount(0);
+  });
+
   test('a long bot name stays inside its cell', async ({ page }) => {
     await page.goto('/dashboard');
     await page.getByLabel('Trading mode').getByRole('radio', { name: 'All' }).click();

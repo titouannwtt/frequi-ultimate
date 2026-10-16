@@ -65,6 +65,24 @@ export function attentionRank(bot: BotRow): number {
   return SEVERITY_RANK[sev] + 1;
 }
 
+/**
+ * Rank of a bot in the "attention" order, problems first (the sort the Fleet announces): a bot
+ * that is offline or whose session expired (nobody can act on it from here), then a critical alert,
+ * then a bot whose figures are frozen (online but silent), a warning, an info and the calm ones.
+ * Twice the alert rank, so that the silent states slot in between.
+ */
+export function attentionScore(bot: BotRow, state: BotState): number {
+  if (state === 'offline' || state === 'auth_expired') return 7;
+  const alert = attentionRank(bot) * 2;
+  if (state === 'stale') return Math.max(alert, 5);
+  return alert;
+}
+
+/** The rank the table and the tiles sort by: the state of the bot is read at the clock they use. */
+export type RankOf = (bot: BotRow) => number;
+
+const defaultRank: RankOf = (b) => attentionScore(b, b.state.status);
+
 export function severityRank(s: Severity | null | undefined): number {
   return s ? SEVERITY_RANK[s] + 1 : 0;
 }
@@ -79,12 +97,15 @@ function byLatent(a: BotRow, b: BotRow): number {
   return x - y;
 }
 
-export function compareBots(sort: FleetSort): (a: BotRow, b: BotRow) => number {
+export function compareBots(
+  sort: FleetSort,
+  rankOf: RankOf = defaultRank,
+): (a: BotRow, b: BotRow) => number {
   const name = (a: BotRow, b: BotRow) =>
     collator.compare(a.identity.name, b.identity.name) || a.bot_key.localeCompare(b.bot_key);
   switch (sort) {
     case 'attention':
-      return (a, b) => attentionRank(b) - attentionRank(a) || byLatent(a, b) || name(a, b);
+      return (a, b) => rankOf(b) - rankOf(a) || byLatent(a, b) || name(a, b);
     case 'latent':
       return (a, b) => byLatent(a, b) || name(a, b);
     case 'name':
@@ -94,12 +115,12 @@ export function compareBots(sort: FleetSort): (a: BotRow, b: BotRow) => number {
 
 /**
  * Signature of what decides the "attention" order: the rank of each bot. The order of the table
- * only changes when this signature changes (an alert appears or resolves), not at every tick of
- * the latent profit.
+ * only changes when this signature changes (an alert appears or resolves, a bot goes silent or
+ * answers again), not at every tick of the latent profit.
  */
-export function attentionSignature(rows: readonly BotRow[]): string {
+export function attentionSignature(rows: readonly BotRow[], rankOf: RankOf = defaultRank): string {
   return rows
-    .map((b) => `${b.bot_key}:${attentionRank(b)}`)
+    .map((b) => `${b.bot_key}:${rankOf(b)}`)
     .sort()
     .join('|');
 }
@@ -121,8 +142,9 @@ export function stableOrder(
   sort: FleetSort,
   prev: StableOrderState | null,
   frozen: boolean,
+  rankOf: RankOf = defaultRank,
 ): StableOrderState {
-  const signature = attentionSignature(rows);
+  const signature = attentionSignature(rows, rankOf);
   const reuse =
     prev !== null &&
     prev.sort === sort &&
@@ -130,7 +152,7 @@ export function stableOrder(
   if (reuse) {
     const present = new Set(rows.map((r) => r.bot_key));
     const known = new Set(prev.keys);
-    const added = rows.filter((r) => !known.has(r.bot_key)).sort(compareBots(sort));
+    const added = rows.filter((r) => !known.has(r.bot_key)).sort(compareBots(sort, rankOf));
     // Bots that left are dropped, new ones go last until the next recompute
     return {
       signature: prev.signature,
@@ -138,7 +160,7 @@ export function stableOrder(
       keys: [...prev.keys.filter((k) => present.has(k)), ...added.map((r) => r.bot_key)],
     };
   }
-  return { signature, sort, keys: [...rows].sort(compareBots(sort)).map((r) => r.bot_key) };
+  return { signature, sort, keys: [...rows].sort(compareBots(sort, rankOf)).map((r) => r.bot_key) };
 }
 
 export interface BotGroup {

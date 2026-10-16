@@ -3,12 +3,13 @@ import { nextTick } from 'vue';
 
 import AlertCenter from '../../../src/components/fq/AlertCenter.vue';
 import FleetAlerts from '../../../src/components/fq/FleetAlerts.vue';
+import FleetMap from '../../../src/components/fq/FleetMap.vue';
 import FleetKpis from '../../../src/components/fq/FleetKpis.vue';
 import FleetVerdict from '../../../src/components/fq/FleetVerdict.vue';
 import PositionCard from '../../../src/components/fq/PositionCard.vue';
 import RiskPanel from '../../../src/components/fq/RiskPanel.vue';
 import WatchList from '../../../src/components/fq/WatchList.vue';
-import { FIXTURE_NOW, scopeDetailOf } from '../../../src/components/fq/fixtures';
+import { FIXTURE_NOW, makeBot, scopeDetailOf } from '../../../src/components/fq/fixtures';
 import { lineFromPosition } from '../../../src/components/fq/lib/trades';
 import { useActionDialog } from '../../../src/composables/useActionDialog';
 import { useFqAlertsStore } from '../../../src/datasource/stores/alerts';
@@ -98,6 +99,95 @@ describe('FleetVerdict', () => {
     const crit = mountFq(FleetVerdict, { props: { alerts: alerts(['critical']) } });
     expect(crit.get('[data-testid=fleet-verdict]').attributes('data-level')).toBe('critical');
     expect(crit.text()).toContain('1 critical alert');
+  });
+});
+
+describe('FleetVerdict with notices (B360)', () => {
+  const notice = (kind: string, severity: 'critical' | 'warning' = 'warning') =>
+    ({ id: `n-${kind}`, kind, severity }) as never;
+  it('is not calm when a session expired, though no alert is active', () => {
+    setFqLocale('fr');
+    const w = mountFq(FleetVerdict, {
+      props: { alerts: [], notices: [notice('authExpired')], nowMs: FIXTURE_NOW },
+    });
+    expect(w.get('[data-testid=fleet-verdict]').attributes('data-level')).toBe('one');
+    expect(w.text()).toContain('Un point à voir');
+    expect(w.text()).not.toContain('Tout va bien');
+  });
+  it('counts alerts and notices together', () => {
+    const w = mountFq(FleetVerdict, {
+      props: {
+        alerts: [{ id: 'x', severity: 'warning', bot_key: null }] as never,
+        notices: [notice('drawdown')],
+      },
+    });
+    expect(w.text()).toContain('2 things to check.');
+  });
+  it('does not say "fine" before the figures it reads have arrived', () => {
+    const w = mountFq(FleetVerdict, { props: { alerts: [], ready: false, nowMs: FIXTURE_NOW } });
+    expect(w.get('[data-testid=fleet-verdict]').attributes('data-level')).toBe('loading');
+    expect(w.text()).not.toContain('Everything is fine');
+  });
+});
+
+describe('FleetAlerts notice cards (B360)', () => {
+  const expired = {
+    id: 'authExpired:local:9405',
+    kind: 'authExpired',
+    severity: 'warning',
+    botKey: world_key(),
+    botKeys: [],
+    mode: 'live',
+    sinceMs: FIXTURE_NOW - 3_600_000,
+    value: null,
+    threshold: null,
+    pair: null,
+    n: 1,
+    actions: ['reconnect'],
+  };
+  function world_key() {
+    return 'local:9405';
+  }
+  it('shows the expired bot with "Reconnect" and "Later", and says it is out of the totals', async () => {
+    setFqLocale('fr');
+    const w = mountFq(FleetAlerts, {
+      props: { alerts: [], notices: [expired], nowMs: FIXTURE_NOW },
+      attachTo: document.body,
+    });
+    const card = w.get('article.card[data-notice=authExpired]');
+    expect(card.text()).toContain('ne répond plus depuis');
+    expect(card.text()).toContain('pas comptés dans les totaux');
+    expect(card.get('[data-alert-action=reconnect]').text()).toBe('Se reconnecter');
+    expect(card.find('[data-ctl=ack]').exists()).toBe(false);
+    await card.get('[data-alert-action=reconnect]').trigger('click');
+    expect(w.emitted('action')![0]![0]).toBe('reconnect');
+    await card.get('[data-ctl=silence]').trigger('click');
+    await card.get('[data-silence="1h"]').trigger('click');
+    expect(w.emitted('later')![0]).toEqual([expired.id, FIXTURE_NOW + 3_600_000]);
+    // A notice is not an alert: nothing is silenced at the source
+    expect(world.fake.silences).toHaveLength(0);
+  });
+  it('puts a notice before the alerts of its severity and opens hidden notices in place', async () => {
+    const all = useFqAlertsStore().view(FIXTURE_NOW, 'active');
+    const w = mountFq(FleetAlerts, {
+      props: { alerts: all, notices: [expired], limit: 1, nowMs: FIXTURE_NOW },
+      attachTo: document.body,
+    });
+    const first = w.findAll('article.card')[0]!;
+    expect(first.attributes('data-severity')).toBe('critical');
+    expect(w.findAll('article.card')).toHaveLength(1);
+    await w.get('[data-testid=fleet-alerts-more]').trigger('click');
+    expect(w.find('article.card[data-notice=authExpired]').exists()).toBe(true);
+  });
+});
+
+describe('FleetMap tile wording (B364)', () => {
+  it('writes "4 positions sur 4" and no bare 4/4', () => {
+    setFqLocale('fr');
+    const bot = makeBot(97, { name: 'tile', mode: 'live', slots: 4, maxSlots: 4 });
+    const w = mountFq(FleetMap, { props: { rows: [bot], nowMs: FIXTURE_NOW } });
+    expect(w.get('.t-sub').text()).toMatch(/4 positions sur\s*4/);
+    expect(w.get('.t-sub').text()).not.toContain('4/4');
   });
 });
 
