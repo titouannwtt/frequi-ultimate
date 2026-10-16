@@ -7,6 +7,7 @@ import charts from './charts.fr';
 import tools from './tools.fr';
 import settings from './settings.fr';
 import legacy from './legacy.fr';
+import fleet from './fleet.fr';
 
 export default {
   pg: {
@@ -31,26 +32,7 @@ export default {
       replay: 'Rejouer la boucle live en dry (par bot).',
       volume: 'Comparer les volumes entre paires.',
     },
-    fleet: {
-      table: 'Flotte',
-      tableMeta: '{n} bot · {online} en ligne | {n} bots · {online} en ligne',
-      view: { label: 'Affichage', table: 'Table', map: 'Carte' },
-      sort: {
-        label: 'Tri',
-        attention: "Attention d'abord",
-        latent: 'En cours',
-        name: 'Nom',
-      },
-      positions: 'Positions ouvertes',
-      positionsMeta: '{n} · pires en premier',
-      positionsMetaPartial: '{n} lues sur {total} · pires en premier',
-      positionsAwaiting: 'positions en cours de lecture',
-      equity: 'Capital',
-      tabs: { equity: 'Capital', leaderboard: 'Classement', calendar: 'Calendrier' },
-      lbPeriod: { '1d': '1 j', '7d': '7 j', '30d': '30 j', total: 'Total' },
-      risk: 'Risque wallet',
-      riskMeta: 'calculé au niveau du wallet partagé',
-    },
+    fleet,
     bot: {
       pairs: 'Paires',
       chart: 'Graphique',

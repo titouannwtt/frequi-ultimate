@@ -5,14 +5,14 @@ const logsOpen = ref(false);
 /** Bot whose logs the drawer shows (null: the errors of the whole fleet). */
 const logsBot = ref<string | null>(null);
 const helpOpen = ref(false);
-/** Incremented when the bell is pressed: the Fleet page focuses the "needs attention" rail. */
-const attentionTick = ref(0);
+/** The alert centre behind the bell: active, acknowledged, silenced alerts and the events. */
+const alertsOpen = ref(false);
 /** Incremented by the palette command "switch table / map": the Fleet page toggles its view. */
 const viewTick = ref(0);
 
 /**
  * What the shell asks the page or the app to open: the health sheet, the logs drawer, the
- * shortcut help and the attention rail (02 section 2.3). Module level so the status bar, the
+ * shortcut help and the alert centre (02 section 2.3). Module level so the status bar, the
  * palette and the pages share one state without prop drilling through the shell.
  */
 export function useShellBus() {
@@ -21,9 +21,8 @@ export function useShellBus() {
     logsOpen,
     logsBot,
     helpOpen,
-    attentionTick,
+    alertsOpen,
     viewTick,
-    focusAttention: () => (attentionTick.value += 1),
     toggleView: () => (viewTick.value += 1),
   };
 }

@@ -53,8 +53,13 @@ test('direct mode reads the positions of slow bots, some with an expired token',
   const fleetPage = page.getByTestId('fleet-page');
   await expect(fleetPage).toBeVisible();
   await expect(page.locator('button.conn')).toHaveAttribute('data-kind', 'direct');
+  // The Fleet shows the five positions to watch: the full table is one click away
+  await page.getByTestId('positions-toggle').click({ timeout: 45_000 });
   await expect(fleetPage.locator('tbody tr.act')).toHaveCount(total, { timeout: 45_000 });
   await expect(fleetPage.locator('.awaiting')).toHaveCount(0);
+  // The list of the bots stops at eight: open the others
+  const more = page.getByTestId('fleet-more-bots');
+  if (await more.count()) await more.click();
   for (const b of live) {
     await expect(fleetPage.locator(`tr[data-bot-key="${botKey(b)}"]`)).toBeVisible();
   }

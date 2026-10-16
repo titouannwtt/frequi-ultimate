@@ -4,6 +4,7 @@
  * auto-registration. Composites read the data layer (stores, composables), never a bot API.
  */
 export { default as ActionDialogHost } from './ActionDialogHost.vue';
+export { default as AlertCenter } from './AlertCenter.vue';
 export { default as AlertItem } from './AlertItem.vue';
 export { default as AlertRail } from './AlertRail.vue';
 export type { AlertTab } from './AlertRail.vue';
@@ -25,10 +26,12 @@ export { default as EquityCurve } from './EquityCurve.vue';
 export { default as EventFeed } from './EventFeed.vue';
 export { default as EventRow } from './EventRow.vue';
 export { default as ExitReasonTable } from './ExitReasonTable.vue';
+export { default as FleetAlerts } from './FleetAlerts.vue';
 export { default as FleetKpis } from './FleetKpis.vue';
 export { default as FleetMap } from './FleetMap.vue';
 export { default as FleetScope } from './FleetScope.vue';
 export { default as FleetTable } from './FleetTable.vue';
+export { default as FleetVerdict } from './FleetVerdict.vue';
 export { default as IndicatorsSheet } from './IndicatorsSheet.vue';
 export { default as JournalFilterBar } from './JournalFilterBar.vue';
 export { default as JournalTotals } from './JournalTotals.vue';
@@ -48,3 +51,4 @@ export { default as SinceLastVisit } from './SinceLastVisit.vue';
 export { default as SystemHealth } from './SystemHealth.vue';
 export { default as TradeDrawer } from './TradeDrawer.vue';
 export { default as TradeTable } from './TradeTable.vue';
+export { default as WatchList } from './WatchList.vue';

@@ -120,44 +120,75 @@ describe('FleetTable', () => {
     expect(names(w)).not.toEqual(before);
   });
 
-  it('a mixed live and dry scope shows one sum per mode and never a combined one', () => {
+  it('has no sum row: the totals are in the four figures above', () => {
     const w = mountTable(world.fixture.bots.filter((b) => b.identity.mode !== 'replay'));
-    const sigma = w.findAll('tr.sigma');
-    expect(sigma.map((r) => r.attributes('data-sigma'))).toEqual(['live', 'dry']);
-    expect(sigma[0]!.text()).toContain('Live');
-    expect(sigma[1]!.text()).toContain('Dry');
+    expect(w.find('tr.sigma').exists()).toBe(false);
+    expect(w.find('thead').findAll('tr')).toHaveLength(1);
   });
 
-  it('a single-mode scope has a single Σ row; replay is never summed with the rest', () => {
-    const live = world.fixture.bots.filter((b) => b.identity.mode === 'live');
-    expect(mountTable(live).findAll('tr.sigma')).toHaveLength(1);
-    const withReplay = world.fixture.bots.filter((b) => b.identity.mode !== 'dry');
-    const modes = mountTable(withReplay)
-      .findAll('tr.sigma')
-      .map((r) => r.attributes('data-sigma'));
-    expect(modes).toEqual(['live']);
+  it('shows six columns by default and keeps the others behind "Columns"', () => {
+    const w = mountTable(world.fixture.bots, { containerWidth: 1300 });
+    const ids = (w.vm as unknown as { visibleColumnIds: () => string[] }).visibleColumnIds();
+    expect(ids).toEqual(['bot', 'latent', 'realized_30d', 'spark24h', 'trades', 'last_trade']);
+    for (const hidden of ['side', 'realized_1d', 'exposure', 'drawdown', 'age']) {
+      expect(ids).not.toContain(hidden);
+    }
   });
 
-  it('the Σ row says how many bots it leaves out (stale, offline)', () => {
-    const live = world.fixture.bots.filter((b) => b.identity.mode === 'live');
-    const text = mountTable(live).get('tr.sigma').text();
-    expect(text).toMatch(/\d+\s+excluded/i);
+  it('"Columns" lists the others and a choice adds the column', async () => {
+    const w = mountTable(world.fixture.bots, { containerWidth: 1300 });
+    await w.get('[data-testid=fleet-columns]').trigger('click');
+    const boxes = [...document.body.querySelectorAll<HTMLInputElement>('.colmenu input')];
+    expect(boxes.length).toBeGreaterThan(6);
+    const drawdown = boxes.find((b) => b.closest('label')?.textContent?.match(/Drop|Recul/i))!;
+    expect(drawdown.checked).toBe(false);
+    drawdown.checked = true;
+    drawdown.dispatchEvent(new Event('change'));
+    await nextTick();
+    const ids = (w.vm as unknown as { visibleColumnIds: () => string[] }).visibleColumnIds();
+    expect(ids).toContain('drawdown');
   });
 
-  it('the Σ latent equals the sum of the fresh live bots only', () => {
-    const live = world.fixture.bots.filter((b) => b.identity.mode === 'live');
-    const fresh = live.filter(
-      (b) => !b.freshness.positions?.stale && b.metrics.open_profit_abs != null,
+  it('stops at the limit and shows the others on request', async () => {
+    const bots = world.fixture.bots.filter((b) => b.identity.mode === 'live');
+    expect(bots.length).toBeGreaterThan(3);
+    const w = mountTable(bots, { limit: 3 });
+    expect(w.findAll('tr.bot')).toHaveLength(3);
+    const more = w.get('[data-testid=fleet-more-bots]');
+    expect(more.text()).toContain(String(bots.length - 3));
+    await more.trigger('click');
+    expect(w.findAll('tr.bot')).toHaveLength(bots.length);
+  });
+
+  it('the Bot and Open headers sort, a second click restores the attention order', async () => {
+    const w = mountTable(world.fixture.bots);
+    const heads = w.findAll('th button.hbtn');
+    expect(heads).toHaveLength(2);
+    await heads[0]!.trigger('click');
+    expect(w.emitted('update:sort')![0]).toEqual(['name']);
+    await w.setProps({ sort: 'name' });
+    await w.findAll('th button.hbtn')[0]!.trigger('click');
+    expect(w.emitted('update:sort')![1]).toEqual(['attention']);
+  });
+
+  it('a silent bot shows "frozen" instead of a number that looks alive', () => {
+    const w = mountTable(world.fixture.bots);
+    const offline = world.fixture.bots.find((b) => b.state.status === 'offline')!;
+    expect(w.get(`tr[data-bot-key="${offline.bot_key}"] [data-testid=frozen]`).text()).toMatch(
+      /frozen/i,
     );
-    const expected = fresh.reduce((a, b) => a + (b.metrics.open_profit_abs ?? 0), 0);
-    const w = mountTable(live);
-    const cell = w
-      .get('tr.sigma th:nth-child(3)')
-      .text()
-      .replace(/[\s\u202f\u00a0]/g, '');
-    const digits = Math.abs(expected).toFixed(2).replace('.', ',');
-    const asDot = Math.abs(expected).toFixed(2);
-    expect(cell.includes(digits) || cell.includes(asDot)).toBe(true);
+  });
+
+  it('draws the open positions as bars, one per slot', () => {
+    const bot = world.fixture.bots.find(
+      (b) => b.state.status === 'online' && (b.state.max_open_trades ?? 0) > 0,
+    )!;
+    const w = mountTable([bot], { containerWidth: 1300 });
+    const pips = w.findAll('[data-testid=slots] .pip');
+    expect(pips).toHaveLength(bot.state.max_open_trades!);
+    expect(pips.filter((p) => p.classes('on'))).toHaveLength(
+      Math.min(bot.state.open_trades, bot.state.max_open_trades!),
+    );
   });
 
   it('a group of mixed modes shows no aggregate (live and dry are never added)', () => {
@@ -209,15 +240,13 @@ describe('FleetTable', () => {
     expect(w.emitted('selectScope')![0]![0]).toEqual({ kind: 'group', id: 'g1' });
   });
 
-  it('a row opens its bot on click and on Enter; Σ opens the fleet scope', async () => {
+  it('a row opens its bot on click and on Enter', async () => {
     const w = mountTable(world.fixture.bots);
     const first = w.get('tr.bot');
     await first.trigger('click');
     await first.trigger('keydown', { key: 'Enter' });
     const key = first.attributes('data-bot-key');
     expect(w.emitted('selectBot')).toEqual([[key], [key]]);
-    await w.get('tr.sigma').trigger('click');
-    expect(w.emitted('selectScope')![0]![0]).toEqual({ kind: 'fleet' });
   });
 
   it('never cuts the name: the full name is in the DOM and as a tooltip', () => {
@@ -271,7 +300,7 @@ describe('FleetTable', () => {
     const z = w.get(`tr[data-bot-key="${zero.bot_key}"]`).text();
     const row = (b: BotRow) => w.get(`tr[data-bot-key="${b.bot_key}"]`);
     // Unknown: icons that say why, never a word; zero: real zeros, no icon
-    expect(row(unknown).findAll('[data-state]').length).toBeGreaterThan(2);
+    expect(row(unknown).findAll('[data-state]').length).toBeGreaterThanOrEqual(2);
     expect(row(unknown).find('[data-state="unavailable"]').exists()).toBe(true);
     expect(u).not.toMatch(/n\/a|n\/d|unknown(?!_bot)/i);
     expect(row(zero).find('[data-state]').exists()).toBe(false);
@@ -296,22 +325,23 @@ describe('FleetTable', () => {
     expect(narrow).toContain('bot');
     expect(narrow).toContain('latent');
     expect(narrow.length).toBeLessThan(wide.length);
-    // 02 section 3.1: the order of removal (last trade, sparkline, 30 d and exposure, then the rest)
-    expect(ids(1100)).toContain('last_trade');
-    expect(ids(1000)).not.toContain('last_trade');
-    expect(ids(800)).toContain('realized_30d');
-    expect(ids(790)).not.toContain('realized_30d');
-    expect(ids(790)).not.toContain('exposure');
-    expect(ids(590)).not.toContain('realized_1d');
-    expect(ids(590)).not.toContain('trades');
-    expect(ids(590)).not.toContain('side');
+    // The order of removal: last trade, then the curve, then positions, then the 30 days
+    expect(ids(700)).toContain('last_trade');
+    expect(ids(690)).not.toContain('last_trade');
+    expect(ids(540)).toContain('spark24h');
+    expect(ids(530)).not.toContain('spark24h');
+    expect(ids(420)).toContain('trades');
+    expect(ids(410)).not.toContain('trades');
+    expect(ids(360)).toContain('realized_30d');
+    expect(ids(350)).not.toContain('realized_30d');
   });
 
   it('speaks French with non breaking spaces before punctuation', () => {
     setFqLocale('fr');
     const live = world.fixture.bots.filter((b) => b.identity.mode === 'live');
     const w = mountTable(live);
-    expect(w.get('tr.sigma').text()).toContain('Flotte');
+    expect(w.get('thead').text()).toContain('En cours');
+    expect(w.get('[data-testid=fleet-columns]').text()).toBe('Colonnes');
     setFqLocale('en');
   });
 });

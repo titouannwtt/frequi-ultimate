@@ -22,7 +22,7 @@ import { useFqFleetStore } from '@/datasource/stores/fleet';
 import type { ScopeDetail, ScopeRef } from '@/datasource/types';
 import type { BotKey, BotMode } from '@/gateway/types.gen';
 
-import { liquidationTone, riskModel } from './lib/risk';
+import { liquidationTone, riskLevel, riskModel } from './lib/risk';
 import { pairLabel } from './lib/trades';
 import { fleetKpiModel, type FleetKpiModel } from './lib/kpis';
 import { PENDING, READY, unavailable } from './lib/valueState';
@@ -32,6 +32,8 @@ import { PENDING, READY, unavailable } from './lib/valueState';
  * the exposure netted per coin and the orphan positions. Exposure is read per wallet and never
  * added bot by bot. One trading mode at a time (live by default). Pure DOM, no chart instance.
  * `detail` shows every coin held by several bots (Tools, advanced risk) instead of the first few.
+ * `summary` (the Fleet) tells the risk in one word and four lines; "Details" opens the rest: the
+ * exposure, the orphan positions and the coins held by several bots.
  */
 const props = withDefaults(
   defineProps<{
@@ -41,8 +43,9 @@ const props = withDefaults(
     /** Replaces the query (previews and tests). */
     scopeDetail?: ScopeDetail | null;
     coinLimit?: number;
+    summary?: boolean;
   }>(),
-  { detail: false, mode: 'live', scopeDetail: null, coinLimit: 4 },
+  { detail: false, mode: 'live', scopeDetail: null, coinLimit: 4, summary: false },
 );
 
 const emit = defineEmits<{ openBot: [botKey: BotKey]; openReconciliation: [] }>();
@@ -113,6 +116,13 @@ const noLeverage = computed(() =>
   ),
 );
 const tone = computed(() => liquidationTone(model.value?.nearest?.distancePct ?? null));
+
+// ---- summary: one word, four lines, and "Details" for the rest ----
+const opened = ref(false);
+const level = computed(() =>
+  model.value ? riskLevel(model.value, kpi.value?.marginPct ?? null) : null,
+);
+const showCoins = computed(() => !props.summary || opened.value);
 </script>
 
 <template>
@@ -122,7 +132,76 @@ const tone = computed(() => liquidationTone(model.value?.nearest?.distancePct ??
     </p>
     <Skeleton v-if="!model" shape="row" :count="4" />
     <template v-else>
-      <div class="head">
+      <template v-if="summary">
+        <div class="sumhead">
+          <span v-if="level" class="pill" :class="level" data-testid="risk-level">{{
+            t(`fq.pg.fleet.risk.level.${level}`)
+          }}</span>
+          <ExcludedCount :bots="excludedRefs" @select="(b) => emit('openBot', b.key)" />
+          <span class="sp"></span>
+          <button
+            type="button"
+            class="more"
+            data-testid="risk-details"
+            :aria-expanded="opened"
+            @click="opened = !opened"
+          >
+            {{ opened ? t('fq.pg.fleet.risk.hide') : t('fq.pg.fleet.risk.details') }}
+          </button>
+        </div>
+        <dl class="rk sum">
+          <dt>{{ t('fq.pg.fleet.risk.nearest') }}</dt>
+          <dd data-testid="risk-nearest" :class="tone">
+            <template v-if="model.nearest">
+              <span class="num">{{ fmt.percent(model.nearest.distancePct, 0, false) }}</span>
+              · {{ pairLabel(model.nearest.pair) }}
+            </template>
+            <ValueState v-else v-bind="noNearest" />
+          </dd>
+          <dt>{{ t('fq.pg.fleet.risk.leverage') }}</dt>
+          <dd data-testid="risk-leverage">
+            <span v-if="model.leverage !== null" class="num"
+              >{{ fmt.number(model.leverage, 2) }}×</span
+            >
+            <ValueState v-else v-bind="noLeverage" />
+          </dd>
+          <dt>{{ t('fq.pg.fleet.risk.split') }}</dt>
+          <dd class="num">
+            <ValueState v-if="exposureSlot.state !== 'ready'" v-bind="exposureSlot" />
+            <template v-else
+              >{{ fmt.number(model.exposure.long, 0) }} /
+              {{ fmt.number(model.exposure.short, 0) }}</template
+            >
+          </dd>
+          <dt>{{ t('fq.pg.fleet.risk.coins') }}</dt>
+          <dd class="num" data-testid="risk-netting-count">{{ model.coins.length }}</dd>
+          <template v-if="model.orphans.length > 0">
+            <dt>{{ t('fq.pg.fleet.risk.orphans') }}</dt>
+            <dd data-testid="risk-orphans">
+              <button
+                v-for="o in model.orphans"
+                :key="`${o.pair}-${o.side}`"
+                type="button"
+                class="orph"
+                @click="emit('openReconciliation')"
+              >
+                <Badge kind="orphan" />
+                {{ pairLabel(o.pair) }}
+                <DirectionChip :side="o.side" />
+                <span class="num">{{ fmt.number(o.notional, 2) }}</span>
+              </button>
+            </dd>
+          </template>
+        </dl>
+        <div v-if="opened" class="expo detail-expo">
+          <span class="mut">
+            {{ t('fq.header.net', { n: fmt.signed(model.exposure.net, 0) }) }}
+            <template v-if="!model.exposure.netted"> · {{ t('fq.fleet.notNetted') }} </template>
+          </span>
+          <SplitBar :long="model.exposure.long" :short="model.exposure.short" />
+        </div>
+      </template>
+      <div v-if="!summary" class="head">
         <ModeMark :mode="mode" full />
         <span v-if="!model.exposure.netted" class="mut" data-testid="risk-not-netted">{{
           t('fq.fleet.notNetted')
@@ -130,7 +209,7 @@ const tone = computed(() => liquidationTone(model.value?.nearest?.distancePct ??
         <ExcludedCount :bots="excludedRefs" @select="(b) => emit('openBot', b.key)" />
       </div>
 
-      <dl class="rk">
+      <dl v-if="!summary" class="rk">
         <dt>{{ t('fq.risk.nearest') }}</dt>
         <dd data-testid="risk-nearest" :class="tone">
           <template v-if="model.nearest">
@@ -193,7 +272,7 @@ const tone = computed(() => liquidationTone(model.value?.nearest?.distancePct ??
       </dl>
 
       <div
-        v-if="model.coins.length > 0"
+        v-if="showCoins && model.coins.length > 0"
         class="coins"
         role="table"
         :aria-label="t('fq.risk.coinsTitle')"
@@ -218,7 +297,7 @@ const tone = computed(() => liquidationTone(model.value?.nearest?.distancePct ??
         </template>
       </div>
       <button
-        v-if="!detail && model.coins.length > coinLimit"
+        v-if="showCoins && !detail && model.coins.length > coinLimit"
         type="button"
         class="more"
         @click="showAll = !showAll"
@@ -230,7 +309,7 @@ const tone = computed(() => liquidationTone(model.value?.nearest?.distancePct ??
         }}
       </button>
       <EmptyState
-        v-if="model.coins.length === 0 && data && data.positions.length === 0"
+        v-if="!summary && model.coins.length === 0 && data && data.positions.length === 0"
         icon="layers"
         :title="t('fq.risk.noPosition')"
         :hint="t('fq.risk.noPositionHint')"
@@ -260,6 +339,40 @@ const tone = computed(() => liquidationTone(model.value?.nearest?.distancePct ??
 }
 .partial {
   margin-left: var(--s2);
+}
+.sumhead {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.sp {
+  flex: 1;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  background: var(--profit-w);
+  color: var(--profit);
+}
+.pill.high {
+  background: var(--warn-w);
+  color: var(--warn);
+}
+.pill.critical {
+  background: var(--crit-w);
+  color: var(--crit);
+}
+.pill.flat {
+  background: var(--bg-3);
+  color: var(--fg-2);
+}
+.detail-expo {
+  padding-top: var(--s2);
+  border-top: 1px solid var(--line);
 }
 .mut {
   color: var(--fg-3);

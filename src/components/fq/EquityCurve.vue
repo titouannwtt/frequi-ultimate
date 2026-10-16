@@ -55,6 +55,13 @@ const props = withDefaults(
     drawdown?: DrawdownResult | null;
     /** CSS height of the chart; `fill` takes the room the container leaves. */
     height?: string;
+    /**
+     * The calm version (the Fleet): one definition ("positions included", said in a tooltip), no
+     * drawdown grid or figure under the curve, and the gain of the period in a sentence.
+     */
+    simple?: boolean;
+    /** Periods offered; all of them by default. */
+    periods?: readonly EquityPeriod[];
     /** A source to use instead of the active one (previews, tests). */
     source?: DataSource | null;
     nowMs?: number;
@@ -100,7 +107,7 @@ const eq = useSourceQuery<EquitySeries>(
 );
 const dd = useSourceQuery<DrawdownResult | null>(
   (source) =>
-    props.drawdown !== undefined
+    props.drawdown !== undefined || props.simple
       ? null
       : source.query.drawdown({
           scope: props.scope,
@@ -136,7 +143,7 @@ const ddFromCurve = computed(() => !ddValue.value && ddAbs.value !== null);
 const change = computed(() => variation(points.value));
 
 const periodOptions = computed<SegmentOption<EquityPeriod>[]>(() =>
-  EQUITY_PERIODS.map((p) => ({ value: p, label: t(`fq.eq.period.${p}`) })),
+  (props.periods ?? EQUITY_PERIODS).map((p) => ({ value: p, label: t(`fq.eq.period.${p}`) })),
 );
 const definitionOptions = computed<SegmentOption<EquityDefinition>[]>(() => [
   { value: 'with_open', label: t('fq.eq.def.with_open') },
@@ -153,6 +160,7 @@ const option = computed(() =>
         ? formatClock(ts, zone.value)
         : formatDateTime(ts, zone.value, locale.value).slice(0, 5),
     labels: { equity: t('fq.eq.series.equity'), drawdown: t('fq.eq.series.drawdown') },
+    withDrawdown: !props.simple,
   }),
 );
 
@@ -167,7 +175,9 @@ watch(
 );
 
 const chartLabel = computed(() =>
-  t('fq.eq.chartLabel', { def: t(`fq.eq.def.${props.definition}`) }),
+  props.simple
+    ? t('fq.pg.fleet.eq.chartLabel')
+    : t('fq.eq.chartLabel', { def: t(`fq.eq.def.${props.definition}`) }),
 );
 </script>
 
@@ -175,6 +185,7 @@ const chartLabel = computed(() =>
   <div class="eq" data-testid="equity-curve" :aria-busy="loading || undefined">
     <div class="bar">
       <SegmentedControl
+        v-if="!simple"
         :model-value="definition"
         :options="definitionOptions"
         size="sm"
@@ -200,7 +211,18 @@ const chartLabel = computed(() =>
 
     <Skeleton v-if="loading" shape="kpi" :count="2" />
     <template v-else-if="points.length > 1">
-      <div class="head">
+      <div
+        v-if="simple"
+        class="head sentence"
+        data-testid="eq-sentence"
+        :title="t('fq.pg.fleet.eq.hint')"
+      >
+        <span class="big"><PnlValue :value="change" unit="USDC" :decimals="2" /></span>
+        <span class="lab">{{
+          t('fq.pg.fleet.eq.over', { p: t(`fq.pg.fleet.eq.period.${period}`) })
+        }}</span>
+      </div>
+      <div v-else class="head">
         <div class="fig">
           <span class="lab">{{ t('fq.eq.variation', { p: t(`fq.eq.period.${period}`) }) }}</span>
           <span class="big"><PnlValue :value="change" unit="USDC" :decimals="2" /></span>
@@ -273,6 +295,13 @@ const chartLabel = computed(() =>
 .fig {
   display: grid;
   gap: 2px;
+}
+.head.sentence {
+  align-items: baseline;
+  gap: var(--s2);
+}
+.head.sentence .lab {
+  font-size: var(--t-sm);
 }
 .lab {
   font-size: var(--t-xs);

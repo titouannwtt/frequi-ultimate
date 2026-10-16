@@ -4,28 +4,27 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 
-import { ExcludedCount, Pane, SegmentedControl, Tabs } from '@/components/ds';
-import type { TabItem } from '@/components/ds';
+import { ExcludedCount, Pane, SegmentedControl } from '@/components/ds';
+import { useNowMs } from '@/components/ds/lib/useNowMs';
 import {
-  AlertRail,
   EquityCurve,
+  FleetAlerts,
   FleetKpis,
   FleetMap,
   FleetScope,
   FleetTable,
-  Leaderboard,
+  FleetVerdict,
   LogStream,
-  PnlCalendar,
   RiskPanel,
   ScopePanel,
-  ShellSlot,
   TradeDrawer,
   TradeTable,
+  WatchList,
 } from '@/components/fq';
-import type { EquityDefinition, EquityPeriod } from '@/components/fq/lib/equity';
+import type { EquityPeriod } from '@/components/fq/lib/equity';
 import type { FleetSort } from '@/components/fq/lib/bots';
-import type { LeaderboardPeriod } from '@/components/fq/lib/leaderboard';
-import type { QuickFilter } from '@/components/fq/lib/trades';
+import { alertsInScope, watchSelection } from '@/components/fq/lib/fleetPage';
+import { lineFromPosition, type QuickFilter } from '@/components/fq/lib/trades';
 import { useActionNav } from '@/composables/useActionNav';
 import { usePositionsAwaiting } from '@/composables/usePositionsAwaiting';
 import { useScope } from '@/composables/useScope';
@@ -40,10 +39,11 @@ import type { BotMode } from '@/gateway/types.gen';
 import type { Workspace } from '@/migration/schema';
 
 /**
- * The Fleet page (docs/redesign/02-design.md, section 3.1): KPI strip, scope bar, the fleet as a
- * table or a map, the open positions, "needs attention", equity / leaderboard / calendar and the
- * wallet risk, in named zones that follow the workspace (Surveillance, Incident, Analysis). On a
- * phone the figures come first, then the alerts (four at most), then the scope and the table.
+ * The Fleet page, calmer (docs/redesign/05-friendly-plan.md, L4). One question, "is everything
+ * fine?", answered by a sentence; the active alerts as cards right under it; four figures; the
+ * bots, the capital curve and the wallet risk summarised; and the five positions to watch, with
+ * "See all the positions" for the full table. The workspaces (Monitoring, Incident, Analysis) are
+ * a layout menu. The alert history (acknowledged, silenced, events) is behind the bell.
  */
 const { t } = useI18n();
 const route = useRoute();
@@ -54,11 +54,13 @@ const positions = useFqPositionsStore();
 const prefs = useFqPrefsStore();
 const bus = useShellBus();
 const nav = useActionNav();
+const clock = useNowMs();
 
 const phone = useMediaQuery('(max-width: 599px)');
 const desktop = useMediaQuery('(min-width: 1024px)');
 
-// ---- view: table or map (map is the default on a phone) ----
+// ---- bots: a list or tiles (tiles are the default on a phone) ----
+const BOTS_SHOWN = 8;
 const storedView = useLocalStorage<'table' | 'map' | null>('fqu2.fleetView', null);
 const view = computed<'table' | 'map'>({
   get: () => storedView.value ?? (phone.value ? 'map' : 'table'),
@@ -69,11 +71,6 @@ const sort = ref<FleetSort>('attention');
 const viewOptions = computed(() => [
   { value: 'table' as const, label: t('fq.pg.fleet.view.table') },
   { value: 'map' as const, label: t('fq.pg.fleet.view.map') },
-]);
-const sortOptions = computed(() => [
-  { value: 'attention' as FleetSort, label: t('fq.pg.fleet.sort.attention') },
-  { value: 'latent' as FleetSort, label: t('fq.pg.fleet.sort.latent') },
-  { value: 'name' as FleetSort, label: t('fq.pg.fleet.sort.name') },
 ]);
 
 // ---- scope panel, trade drawer ----
@@ -86,30 +83,17 @@ function openTrade(botKey: string, tradeId: number) {
   drawer.value = { botKey, tradeId };
 }
 
-// ---- positions ----
+// ---- positions: the five to watch, or all of them ----
+const allPositions = ref(false);
 const posFilter = ref<QuickFilter>('all');
-// The selected row of the positions table: J and K move it, X asks to exit it
+// The selected row of the full table: J and K move it, X asks to exit it
 const posSelected = ref<string | null>(null);
 
-// ---- equity panel ----
-type EqTab = 'equity' | 'leaderboard' | 'calendar';
-const eqTab = ref<EqTab>('equity');
+// ---- capital curve ----
 const eqPeriod = ref<EquityPeriod>('7d');
-const eqDefinition = ref<EquityDefinition>('with_open');
-const lbPeriod = ref<LeaderboardPeriod>('30d');
-const eqTabs = computed<TabItem[]>(() => [
-  { id: 'equity', label: t('fq.pg.fleet.tabs.equity') },
-  { id: 'leaderboard', label: t('fq.pg.fleet.tabs.leaderboard') },
-  { id: 'calendar', label: t('fq.pg.fleet.tabs.calendar') },
-]);
-const lbOptions = computed(() =>
-  (['1d', '7d', '30d', 'total'] as LeaderboardPeriod[]).map((p) => ({
-    value: p,
-    label: t(`fq.pg.fleet.lbPeriod.${p}`),
-  })),
-);
+const EQ_PERIODS: EquityPeriod[] = ['24h', '7d', '30d'];
 
-/** Equity, leaderboard, calendar and risk never mix modes: "All" shows the live ones. */
+/** Capital and risk never mix modes: "All" shows the live ones. */
 const figuresMode = computed<BotMode>(() => (scope.mode.value === 'dry' ? 'dry' : 'live'));
 
 // ---- workspaces ----
@@ -126,17 +110,28 @@ watch(ws, (now, before) => {
   }
 });
 
-// ---- counts for headers ----
-const online = computed(() => scope.bots.value.filter((b) => b.state.status === 'online').length);
-const activeAlerts = computed(() => alerts.view(Date.now(), 'active').length);
-// The number the table shows: the positions of the bots in scope, plus the orphans (no bot)
-const openCount = computed(() => {
+// ---- alerts of the scope (the bell keeps the whole history and every alert) ----
+const tick = computed(() => Math.floor(clock.value / 15_000) * 15_000);
+const activeAlerts = computed(() =>
+  alertsInScope(
+    alerts.view(tick.value, 'active'),
+    (k) => fleet.bots[k]?.identity.mode ?? null,
+    scope.mode.value,
+  ),
+);
+
+// ---- positions to watch ----
+const watchLines = computed(() => {
   const inScope = new Set(scope.botKeys.value);
-  return positions.list.filter((p) => p.orphan || inScope.has(p.bot_key)).length;
+  return positions.list
+    .filter((p) => p.orphan || inScope.has(p.bot_key))
+    .map((p) => lineFromPosition(p, fleet.bots[p.bot_key]));
 });
+const selection = computed(() => watchSelection(watchLines.value, phone.value ? 3 : 5));
+const total = computed(() => watchLines.value.length);
 
 // Bots that announce positions the table has not read yet (direct mode reads the bots in turn):
-// the table is partial, and says so instead of looking complete
+// the list is partial, and says so instead of looking complete
 const awaiting = usePositionsAwaiting(() => scope.botKeys.value);
 const awaitingBots = computed(() =>
   awaiting.bots.value.map((b) => ({
@@ -145,44 +140,37 @@ const awaitingBots = computed(() =>
     reason: t('fq.pg.fleet.positionsAwaiting'),
   })),
 );
-const positionsMeta = computed(() =>
-  awaiting.missing.value > 0
-    ? t('fq.pg.fleet.positionsMetaPartial', {
-        n: openCount.value,
-        total: openCount.value + awaiting.missing.value,
-      })
-    : t('fq.pg.fleet.positionsMeta', { n: openCount.value }),
-);
-
-// ---- bell and palette: focus the rail, toggle the view ----
-const rail = ref<HTMLElement | null>(null);
-function focusRail() {
-  void nextTick(() => {
-    rail.value?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-    rail.value?.querySelector<HTMLElement>('[role="tab"]')?.focus({ preventScroll: true });
+const positionsMeta = computed(() => {
+  if (awaiting.missing.value > 0) {
+    return t('fq.pg.fleet.positionsMetaPartial', {
+      n: total.value,
+      total: total.value + awaiting.missing.value,
+    });
+  }
+  if (allPositions.value || selection.value.top.length === 0) return '';
+  return t(selection.value.losing ? 'fq.pg.fleet.watch.metaLoss' : 'fq.pg.fleet.watch.metaSoft', {
+    n: selection.value.top.length,
+    total: total.value,
   });
-}
-watch(() => bus.attentionTick.value, focusRail);
+});
+
+// ---- palette: toggle the view; `/open_trades` lands here with `?view=positions` ----
 watch(
   () => bus.viewTick.value,
   () => (view.value = view.value === 'table' ? 'map' : 'table'),
 );
-watch(
-  () => route.hash,
-  (h) => h === '#attention' && focusRail(),
-  { immediate: true },
-);
-// `/open_trades` lands here with `?view=positions`
 // A ref on a component is its instance, not its element: the element is `$el`
 const positionsEl = ref<{ $el?: HTMLElement } | HTMLElement | null>(null);
 watch(
   () => route.query.view,
-  (v) =>
-    v === 'positions' &&
+  (v) => {
+    if (v !== 'positions') return;
+    allPositions.value = true;
     void nextTick(() => {
       const r = positionsEl.value;
       (r instanceof HTMLElement ? r : r?.$el)?.scrollIntoView?.();
-    }),
+    });
+  },
   { immediate: true },
 );
 
@@ -206,92 +194,133 @@ useShortcuts([
 
 const groups = computed(() => prefs.settings.fleet.groups);
 const showEquity = computed(() => ws.value !== 'incident');
-const showRisk = computed(() => ws.value === 'surveillance');
-const showLeaderboard = computed(() => ws.value === 'analysis');
+const showRisk = computed(() => ws.value !== 'incident');
 const showLogs = computed(() => ws.value === 'incident');
 const showPositions = computed(() => ws.value !== 'analysis');
-const incidentFirst = computed(() => phone.value && activeAlerts.value > 0);
+const tableMeta = computed(() =>
+  t(
+    'fq.pg.fleet.tableMeta',
+    { n: scope.bots.value.length, sorted: t(`fq.pg.fleet.tableSorted.${sort.value}`) },
+    scope.bots.value.length,
+  ),
+);
 </script>
 
 <template>
   <div class="fleet" :data-ws="ws" :data-phone="phone || undefined" data-testid="fleet-page">
-    <!-- Strip and scope bar live in the shell on tablet and desktop; on a phone they are in the flow -->
-    <template v-if="!phone">
-      <ShellSlot name="strip"><FleetKpis @open-bot="(k) => nav.openBot(k)" /></ShellSlot>
-      <ShellSlot name="scope"><FleetScope /></ShellSlot>
-    </template>
+    <header class="head">
+      <FleetVerdict class="verdict" :alerts="activeAlerts" />
+      <FleetScope v-if="!phone" class="scope" />
+    </header>
 
-    <!-- Phone: the figures first (they were pushed below the fold by four alert cards), then the
-         alerts, which come before the scope and the table -->
-    <template v-if="phone">
-      <FleetKpis @open-bot="(k) => nav.openBot(k)" />
-    </template>
-    <section v-if="phone && incidentFirst" ref="rail" class="area attention" id="attention">
-      <AlertRail :limit="4" @action="nav.alertAction" />
-    </section>
-    <template v-if="phone">
-      <FleetScope />
-    </template>
+    <FleetAlerts
+      :alerts="activeAlerts"
+      :limit="phone ? 2 : 3"
+      @action="nav.alertAction"
+      @more="bus.alertsOpen.value = true"
+    />
 
-    <Pane
-      class="area table"
-      :title="t('fq.pg.fleet.table')"
-      icon="layout-grid"
-      :meta="
-        t('fq.pg.fleet.tableMeta', { n: scope.bots.value.length, online }, scope.bots.value.length)
-      "
-      :state="fleet.loaded ? 'ready' : 'loading'"
-      :unavailable-reason="fleet.unavailable ?? undefined"
-    >
-      <template #tools>
-        <SegmentedControl
-          v-model="view"
-          :options="viewOptions"
-          size="sm"
-          :label="t('fq.pg.fleet.view.label')"
+    <FleetKpis @open-bot="(k) => nav.openBot(k)" />
+    <FleetScope v-if="phone" class="scope" />
+
+    <!-- Phone: what needs a decision first, then the bots, then the rest -->
+    <div class="mid">
+      <Pane
+        class="area table"
+        :title="t('fq.pg.fleet.table')"
+        :meta="tableMeta"
+        :state="fleet.loaded ? 'ready' : 'loading'"
+        :unavailable-reason="fleet.unavailable ?? undefined"
+      >
+        <template #tools>
+          <SegmentedControl
+            v-model="view"
+            :options="viewOptions"
+            size="sm"
+            :label="t('fq.pg.fleet.view.label')"
+          />
+        </template>
+        <FleetTable
+          v-if="view === 'table'"
+          v-model:sort="sort"
+          :rows="scope.bots.value"
+          :groups="groups"
+          :limit="BOTS_SHOWN"
+          :selected-key="selectedBot"
+          max-height="none"
+          @select-bot="(k) => (panel = { kind: 'bot', botKey: k })"
+          @select-scope="(s) => (panel = s)"
         />
-        <SegmentedControl
-          v-if="!phone"
-          v-model="sort"
-          :options="sortOptions"
-          size="sm"
-          :label="t('fq.pg.fleet.sort.label')"
+        <FleetMap
+          v-else
+          :rows="scope.bots.value"
+          :groups="groups"
+          :sort="sort"
+          :limit="BOTS_SHOWN"
+          :selected-key="selectedBot"
+          @select-bot="(k) => (panel = { kind: 'bot', botKey: k })"
         />
-      </template>
-      <FleetTable
-        v-if="view === 'table'"
-        :rows="scope.bots.value"
-        :groups="groups"
-        :sort="sort"
-        :selected-key="selectedBot"
-        max-height="none"
-        @select-bot="(k) => (panel = { kind: 'bot', botKey: k })"
-        @select-scope="(s) => (panel = s)"
-      />
-      <FleetMap
-        v-else
-        :rows="scope.bots.value"
-        :groups="groups"
-        :sort="sort"
-        :selected-key="selectedBot"
-        @select-bot="(k) => (panel = { kind: 'bot', botKey: k })"
-      />
-    </Pane>
+      </Pane>
+
+      <div class="side">
+        <Pane v-if="showLogs" class="area logs" :title="t('fq.ds.logs')" icon="terminal">
+          <LogStream mode="compact" :limit="30" @open-bot="(k) => nav.openBot(k)" />
+        </Pane>
+
+        <Pane v-if="showEquity" class="area equity" :title="t('fq.pg.fleet.equity')">
+          <div class="eqwrap">
+            <EquityCurve
+              v-model:period="eqPeriod"
+              simple
+              :periods="EQ_PERIODS"
+              definition="with_open"
+              :scope="scope.fleetScopeRef.value"
+              :mode="figuresMode"
+              :height="desktop ? 'fill' : '240px'"
+            />
+          </div>
+        </Pane>
+
+        <Pane v-if="showRisk" class="area risk" :title="t('fq.pg.fleet.risk.title')">
+          <RiskPanel
+            summary
+            :scope="scope.fleetScopeRef.value"
+            :mode="figuresMode"
+            @open-bot="(k) => nav.openBot(k)"
+            @open-reconciliation="nav.navigateAction('reconcile', { botKey: '' })"
+          />
+        </Pane>
+      </div>
+    </div>
 
     <Pane
       v-if="showPositions"
       ref="positionsEl"
       class="area positions"
-      :title="t('fq.pg.fleet.positions')"
-      icon="layers"
+      :title="t('fq.pg.fleet.watch.title')"
       :meta="positionsMeta"
       :state="positions.loaded ? 'ready' : 'loading'"
       :unavailable-reason="positions.unavailable ?? undefined"
     >
       <template #tools>
         <ExcludedCount :bots="awaitingBots" @select="(b) => nav.openBot(b.key)" />
+        <button
+          v-if="total > selection.top.length || allPositions"
+          type="button"
+          class="link"
+          data-testid="positions-toggle"
+          :aria-expanded="allPositions"
+          @click="allPositions = !allPositions"
+        >
+          {{
+            allPositions
+              ? t('fq.pg.fleet.watch.collapse')
+              : t('fq.pg.fleet.watch.seeAll', { n: total }, total)
+          }}
+        </button>
       </template>
       <TradeTable
+        v-if="allPositions"
         v-model:filter="posFilter"
         v-model:selected-key="posSelected"
         preset="open"
@@ -304,81 +333,12 @@ const incidentFirst = computed(() => phone.value && activeAlerts.value > 0);
             nav.navigateAction(id, { botKey: line.botKey, pair: line.pair, tradeId: line.tradeId })
         "
       />
-    </Pane>
-
-    <section v-if="!(phone && incidentFirst)" ref="rail" class="area attention" id="attention">
-      <AlertRail :limit="phone ? 4 : undefined" @action="nav.alertAction" />
-    </section>
-
-    <Pane v-if="showLogs" class="area logs" :title="t('fq.ds.logs')" icon="terminal">
-      <LogStream mode="compact" :limit="30" @open-bot="(k) => nav.openBot(k)" />
-    </Pane>
-
-    <Pane v-if="showEquity" class="area equity" :title="t('fq.pg.fleet.equity')" icon="activity">
-      <div class="eqwrap">
-        <Tabs v-model="eqTab" :tabs="eqTabs" :label="t('fq.pg.fleet.equity')" />
-        <EquityCurve
-          v-if="eqTab === 'equity'"
-          v-model:period="eqPeriod"
-          v-model:definition="eqDefinition"
-          :scope="scope.fleetScopeRef.value"
-          :mode="figuresMode"
-          :height="desktop ? 'fill' : '240px'"
-        />
-        <template v-else-if="eqTab === 'leaderboard'">
-          <div class="lbbar">
-            <SegmentedControl
-              v-model="lbPeriod"
-              :options="lbOptions"
-              size="sm"
-              :label="t('fq.eq.periodLabel')"
-            />
-          </div>
-          <Leaderboard
-            :scope="scope.fleetScopeRef.value"
-            :period="lbPeriod"
-            :mode="figuresMode"
-            @select="(k) => nav.openBot(k)"
-          />
-        </template>
-        <PnlCalendar v-else :scope="scope.fleetScopeRef.value" :mode="figuresMode" />
-      </div>
-    </Pane>
-
-    <Pane
-      v-if="showLeaderboard"
-      class="area leaderboard"
-      :title="t('fq.pg.fleet.tabs.leaderboard')"
-      icon="chart-candlestick"
-    >
-      <div class="lbbar">
-        <SegmentedControl
-          v-model="lbPeriod"
-          :options="lbOptions"
-          size="sm"
-          :label="t('fq.eq.periodLabel')"
-        />
-      </div>
-      <Leaderboard
-        :scope="scope.fleetScopeRef.value"
-        :period="lbPeriod"
-        :mode="figuresMode"
-        @select="(k) => nav.openBot(k)"
-      />
-    </Pane>
-
-    <Pane
-      v-if="showRisk"
-      class="area risk"
-      :title="t('fq.pg.fleet.risk')"
-      :meta="t('fq.pg.fleet.riskMeta')"
-      icon="triangle-alert"
-    >
-      <RiskPanel
-        :scope="scope.fleetScopeRef.value"
-        :mode="figuresMode"
+      <WatchList
+        v-else
+        :lines="selection.top"
+        @open="openTrade"
         @open-bot="(k) => nav.openBot(k)"
-        @open-reconciliation="nav.navigateAction('reconcile', { botKey: '' })"
+        @chart="(l) => nav.navigateAction('chart', { botKey: l.botKey, pair: l.pair })"
       />
     </Pane>
 
@@ -413,27 +373,46 @@ const incidentFirst = computed(() => phone.value && activeAlerts.value > 0);
 
 <style scoped>
 .fleet {
-  --gap: var(--gut, 6px);
-  display: grid;
-  gap: var(--gap);
-  padding: var(--gap);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: var(--s5) var(--s5) var(--s6);
   text-align: left;
-  align-content: start;
+  min-width: 0;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  flex-wrap: wrap;
+}
+.verdict {
+  flex: 1 1 280px;
+}
+.scope {
+  flex: 0 1 auto;
+  min-width: 0;
 }
 .area {
   min-width: 0;
   min-height: 0;
 }
-.attention {
+
+/* The bots, and beside them the curve and the risk. The curve takes the height the table leaves
+   it: a definite height down to the chart (a min-height alone leaves the percentage of the chart
+   unresolved, and the curve fell back to its 130 px floor under an empty pane). */
+.mid {
   display: grid;
-  min-height: 0;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
 }
-.attention > :deep(.rail) {
-  min-height: 0;
-  height: 100%;
+.side {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  align-content: start;
 }
-/* A definite height down to the chart: a min-height alone leaves the percentage of the chart
-   unresolved, and the curve fell back to its 130 px floor under an empty pane */
 .eqwrap {
   display: flex;
   flex-direction: column;
@@ -444,158 +423,102 @@ const incidentFirst = computed(() => phone.value && activeAlerts.value > 0);
   flex: 1 1 0;
   min-height: 0;
 }
-.lbbar {
-  display: flex;
-  padding: var(--s2) var(--s3);
+.equity {
+  min-height: 300px;
 }
-
-/* Phone and tablet: the document scrolls, every panel has a height of its own */
-.table,
-.positions,
 .logs {
   max-height: 560px;
 }
-.equity,
-.risk,
-.leaderboard {
-  max-height: 520px;
+.link {
+  padding: 0 var(--s2);
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--t-sm);
+  cursor: pointer;
+  white-space: nowrap;
 }
-.attention {
-  max-height: 560px;
+
+@media (max-width: 599px), (pointer: coarse) {
+  .link {
+    min-height: 44px;
+  }
 }
+
+/* Tablet: the curve and the risk side by side under the bots */
+@media (min-width: 600px) and (max-width: 1023px) {
+  .side {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .side .logs {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Desktop: the bots on the left, the curve and the risk stacked on the right */
+@media (min-width: 1024px) {
+  .mid {
+    grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .side {
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-content: stretch;
+  }
+  .side .equity {
+    min-height: 300px;
+  }
+  .side .logs {
+    max-height: none;
+    grid-row: 1 / -1;
+  }
+  /* Analysis: the curve takes the whole width, taller */
+  .fleet[data-ws='analysis'] .mid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fleet[data-ws='analysis'] .side {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-rows: auto;
+    order: -1;
+  }
+  .fleet[data-ws='analysis'] .side .equity {
+    min-height: 420px;
+  }
+}
+
+/* Phone: the document scrolls, full width, no card chrome around the sections */
 .fleet[data-phone] {
-  padding: 0;
-  gap: 0;
+  padding: var(--s3) 0 var(--s4);
+  gap: var(--s3);
+}
+.fleet[data-phone] .head,
+.fleet[data-phone] .scope,
+.fleet[data-phone] :deep(.fk),
+.fleet[data-phone] :deep(.fa) {
+  padding-left: var(--s3);
+  padding-right: var(--s3);
+}
+.fleet[data-phone] :deep(.fa) {
+  padding-left: 0;
+  padding-right: 0;
 }
 .fleet[data-phone] .area {
   border-radius: 0;
-  max-height: none;
+  border-left: 0;
+  border-right: 0;
 }
-@media (min-width: 600px) and (max-width: 1023px) {
-  .fleet {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  /* "Needs attention" and "Risk" side by side, then the fleet, positions and equity */
-  .attention {
-    order: 1;
-  }
-  .risk {
-    order: 2;
-  }
-  .table {
-    order: 3;
-    grid-column: 1 / -1;
-  }
-  .positions {
-    order: 4;
-    grid-column: 1 / -1;
-  }
-  .equity,
-  .leaderboard,
-  .logs {
-    order: 5;
-    grid-column: 1 / -1;
-  }
+.fleet[data-phone] .mid {
+  gap: var(--s3);
 }
-
-/* Desktop: named zones over 12 fractional rows, the page fits the window */
-@media (min-width: 1024px) {
-  .fleet {
-    height: 100%;
-    grid-template-columns: minmax(0, 1fr) clamp(360px, 30vw, 430px);
-    grid-template-rows: repeat(12, minmax(0, 1fr));
-    grid-template-areas:
-      'table attention'
-      'table attention'
-      'table attention'
-      'table attention'
-      'table equity'
-      'table equity'
-      'positions equity'
-      'positions equity'
-      'positions equity'
-      'positions risk'
-      'positions risk'
-      'positions risk';
-  }
-  .area {
-    max-height: none;
-  }
-  .table {
-    grid-area: table;
-  }
-  .positions {
-    grid-area: positions;
-  }
-  .attention {
-    grid-area: attention;
-  }
-  .equity {
-    grid-area: equity;
-  }
-  .risk {
-    grid-area: risk;
-  }
-  .leaderboard {
-    grid-area: risk;
-  }
-  .logs {
-    grid-area: equity;
-  }
-
-  /* Incident: the alerts and the logs get the room, the fleet is filtered to the bots in alert */
-  .fleet[data-ws='incident'] {
-    grid-template-areas:
-      'table attention'
-      'table attention'
-      'table attention'
-      'table attention'
-      'table attention'
-      'table attention'
-      'positions attention'
-      'positions attention'
-      'positions logs'
-      'positions logs'
-      'positions logs'
-      'positions logs';
-  }
-  /* Analysis: the equity and the leaderboard get the room, the risk and the positions step aside */
-  .fleet[data-ws='analysis'] {
-    grid-template-areas:
-      'equity attention'
-      'equity attention'
-      'equity attention'
-      'equity attention'
-      'equity attention'
-      'equity leaderboard'
-      'equity leaderboard'
-      'table leaderboard'
-      'table leaderboard'
-      'table leaderboard'
-      'table leaderboard'
-      'table leaderboard';
-  }
+.fleet[data-phone] .side {
+  gap: var(--s3);
 }
-@media (min-width: 1800px) {
-  .fleet {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) clamp(360px, 22vw, 430px);
-    grid-template-areas:
-      'table equity attention'
-      'table equity attention'
-      'table equity attention'
-      'table equity attention'
-      'table equity attention'
-      'table equity attention'
-      'table equity attention'
-      'positions risk attention'
-      'positions risk attention'
-      'positions risk attention'
-      'positions risk attention'
-      'positions risk attention';
-  }
-  .fleet[data-ws='incident'],
-  .fleet[data-ws='analysis'] {
-    grid-template-columns: minmax(0, 1fr) clamp(360px, 30vw, 430px);
-  }
+/* The positions to watch come before the bots on a phone */
+.fleet[data-phone] .positions {
+  order: 1;
+}
+.fleet[data-phone] .mid {
+  order: 2;
 }
 </style>

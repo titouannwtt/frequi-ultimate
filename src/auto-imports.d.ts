@@ -292,6 +292,7 @@ declare global {
   const useActionDialog: typeof import('./composables/useActionDialog').useActionDialog
   const useActionNav: typeof import('./composables/useActionNav').useActionNav
   const useActiveElement: typeof import('@vueuse/core').useActiveElement
+  const useAlertControls: typeof import('./composables/useAlertControls').useAlertControls
   const useAlertForBot: typeof import('./utils/alerts').useAlertForBot
   const useAlertsStore: typeof import('./stores/alertsStore').useAlertsStore
   const useAnimate: typeof import('@vueuse/core').useAnimate
@@ -921,6 +922,7 @@ declare module 'vue' {
     readonly useActionDialog: UnwrapRef<typeof import('./composables/useActionDialog')['useActionDialog']>
     readonly useActionNav: UnwrapRef<typeof import('./composables/useActionNav')['useActionNav']>
     readonly useActiveElement: UnwrapRef<typeof import('@vueuse/core')['useActiveElement']>
+    readonly useAlertControls: UnwrapRef<typeof import('./composables/useAlertControls')['useAlertControls']>
     readonly useAlertForBot: UnwrapRef<typeof import('./utils/alerts')['useAlertForBot']>
     readonly useAlertsStore: UnwrapRef<typeof import('./stores/alertsStore')['useAlertsStore']>
     readonly useAnimate: UnwrapRef<typeof import('@vueuse/core')['useAnimate']>

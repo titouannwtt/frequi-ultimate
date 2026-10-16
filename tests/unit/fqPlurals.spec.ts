@@ -44,9 +44,20 @@ describe('counts agree with their noun (B196)', () => {
   });
 
   it('bots and stress-test counts too', () => {
-    expect(t('fr', 'fq.pg.fleet.tableMeta', { n: 1, online: 1 }, 1)).toBe('1 bot · 1 en ligne');
-    expect(t('fr', 'fq.pg.fleet.tableMeta', { n: 24, online: 22 }, 24)).toBe(
-      '24 bots · 22 en ligne',
+    const sorted = 'triés par nom';
+    expect(t('fr', 'fq.pg.fleet.tableMeta', { n: 1, sorted }, 1)).toBe('1 bot, triés par nom');
+    expect(t('fr', 'fq.pg.fleet.tableMeta', { n: 24, sorted }, 24)).toBe('24 bots, triés par nom');
+    expect(t('fr', 'fq.pg.fleet.seeMoreBots', { n: 1 }, 1)).toBe('Voir l’autre bot');
+    expect(t('fr', 'fq.pg.fleet.seeMoreBots', { n: 2 }, 2)).toBe('Voir les 2 autres bots');
+    expect(t('fr', 'fq.pg.fleet.verdict.positions', { n: 1 }, 1)).toBe('1 position ouverte');
+    expect(t('fr', 'fq.pg.fleet.verdict.subLive', { online: 1, total: 10 }, 1)).toBe(
+      '1 bot live sur 10 tourne',
+    );
+    expect(t('fr', 'fq.pg.fleet.verdict.subLive', { online: 9, total: 10 }, 9)).toBe(
+      '9 bots live sur 10 tournent',
+    );
+    expect(t('fr', 'fq.pg.fleet.verdict.critical', { n: 2 }, 2)).toBe(
+      'À traiter maintenant\u00a0: 2 alertes critiques.',
     );
     expect(t('fr', 'fq.stress.deltaSub', { n: 1 }, 1)).toBe('sur 1 position');
     expect(t('fr', 'fq.kpi.excluded', { n: 1 }, 1)).toBe('1 exclu');

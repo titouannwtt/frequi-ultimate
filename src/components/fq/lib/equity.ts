@@ -83,6 +83,8 @@ export interface EquityOptionInput {
   fmtDate: (ts: number) => string;
   /** Labels of the two series, already translated. */
   labels: { equity: string; drawdown: string };
+  /** Draw the drawdown grid under the curve (default); the Fleet shows the curve alone. */
+  withDrawdown?: boolean;
 }
 
 /** Decimals of the ticks of an axis spanning `span`: whole numbers from 20 up, never mixed. */
@@ -91,9 +93,13 @@ export function tickDecimals(span: number): number {
   return span >= 2 ? 1 : 2;
 }
 
-/** One ECharts instance, two grids: the curve above, the drawdown (absolute) below. */
+/**
+ * One ECharts instance, two grids: the curve above, the drawdown (absolute) below. Without the
+ * drawdown (`withDrawdown: false`) the curve takes the whole panel and carries the dates.
+ */
 export function buildEquityOption(input: EquityOptionInput): EChartsOption {
   const { tokens: c, fmtValue, fmtDate } = input;
+  if (input.withDrawdown === false) return buildCurveOption(input);
   const pts = downsample(input.points);
   const dd = drawdownSeries(pts);
   const values = pts.map((p) => p[1]);
@@ -174,6 +180,50 @@ export function buildEquityOption(input: EquityOptionInput): EChartsOption {
         yAxisIndex: 1,
         lineStyle: { width: 1, color: c.loss },
         areaStyle: { color: c.loss, opacity: 0.15 },
+      },
+    ],
+  };
+}
+
+/** The curve alone: one grid, the dates on the x axis. */
+function buildCurveOption(input: EquityOptionInput): EChartsOption {
+  const { tokens: c, fmtValue, fmtDate } = input;
+  const pts = downsample(input.points);
+  const values = pts.map((p) => p[1]);
+  const decimals = tickDecimals(values.length ? Math.max(...values) - Math.min(...values) : 0);
+  return {
+    grid: { left: 8, right: 12, top: 10, bottom: 22, containLabel: true },
+    xAxis: {
+      type: 'time',
+      axisLabel: { color: c.fg3, fontSize: 11, formatter: (v: number) => fmtDate(v) },
+      axisLine: { lineStyle: { color: c.line2 } },
+      splitLine: { show: false },
+    },
+    yAxis: {
+      type: 'value',
+      scale: true,
+      splitNumber: 3,
+      axisLabel: {
+        color: c.fg3,
+        fontSize: 11,
+        formatter: (v: number) => fmtValue(v, decimals),
+      },
+      splitLine: { lineStyle: { color: c.line } },
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'line', lineStyle: { color: c.fg3 } },
+      valueFormatter: (v) => (typeof v === 'number' ? fmtValue(v) : String(v)),
+    },
+    series: [
+      {
+        id: 'equity',
+        name: input.labels.equity,
+        type: 'line',
+        data: pts,
+        showSymbol: false,
+        lineStyle: { width: 1.6, color: c.accent },
+        areaStyle: { color: c.accent, opacity: 0.12 },
       },
     ],
   };

@@ -38,6 +38,15 @@ for (const [name, selector] of TARGETS) {
   });
 }
 
+test('a position card has no exit button of its own on a phone (L8)', async ({ page }) => {
+  const cards = page.locator('[data-testid="ds-showcase"] article[data-trade-key]');
+  expect(await cards.count()).toBeGreaterThan(0);
+  // The exit is in the drawer, behind its confirmation: nothing on the card itself
+  await expect(
+    page.locator('[data-testid="ds-showcase"] article[data-trade-key] [data-action]'),
+  ).toHaveCount(0);
+});
+
 test('the trade drawer foot wraps instead of overflowing (B79)', async ({ page }) => {
   const drawers = page.locator('[data-testid^="trade-drawer"]');
   expect(await drawers.count()).toBeGreaterThan(0);

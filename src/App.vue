@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 
 import { AdaptiveSheet } from '@/components/ds';
-import { AppShell, LogStream, ShortcutHelp, SystemHealth } from '@/components/fq';
+import { AlertCenter, AppShell, LogStream, ShortcutHelp, SystemHealth } from '@/components/fq';
 import type { ShellPage } from '@/components/fq';
 import { useBrowserNotifications } from '@/composables/useBrowserNotifications';
 import { useDataSource } from '@/composables/useDataSource';
@@ -109,8 +109,7 @@ function openTrade(botKey: string, tradeId: number) {
   void router.push({ name: 'bot', params: { botKey }, query: { trade: String(tradeId) } });
 }
 function onBell() {
-  if (route.name === 'fleet') bus.focusAttention();
-  else void router.push({ name: 'fleet', hash: '#attention' });
+  bus.alertsOpen.value = !bus.alertsOpen.value;
 }
 function onDisplay(command: 'view' | 'language') {
   if (command === 'language') {
@@ -170,6 +169,7 @@ function onDisplay(command: 'view' | 'language') {
           @open-bot="(k) => ((bus.logsOpen.value = false), openBot(k))"
         />
       </AdaptiveSheet>
+      <AlertCenter :open="bus.alertsOpen.value" @close="bus.alertsOpen.value = false" />
       <ShortcutHelp :open="bus.helpOpen.value" @close="bus.helpOpen.value = false" />
     </template>
     <Toast />

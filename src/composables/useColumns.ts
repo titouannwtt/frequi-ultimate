@@ -95,6 +95,11 @@ export function useColumns(preset: ColumnPreset, containerWidth: MaybeRefOrGette
     columns: computed(() => resolved.value.shown),
     allColumns: computed(() => resolved.value.all),
     hiddenByWidth: computed(() => resolved.value.all.filter((c) => c.hiddenByWidth)),
+    /** The columns the user wants (or the preset's defaults), whatever the width allows. */
+    wanted: computed(() => {
+      const known = new Set(resolved.value.all.map((c) => c.id));
+      return new Set([...visibleIds.value].filter((id) => known.has(id)));
+    }),
     setVisible,
     move,
     reset,

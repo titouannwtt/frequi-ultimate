@@ -4,9 +4,7 @@ import { useI18n } from 'vue-i18n';
 
 import { Badge, Btn, EmptyState, Tabs } from '@/components/ds';
 import type { TabItem } from '@/components/ds';
-import { requestAction } from '@/composables/useActionDialog';
-import { useDataSource } from '@/composables/useDataSource';
-import { useToaster } from '@/composables/useToaster';
+import { useAlertControls } from '@/composables/useAlertControls';
 import { useFqAlertsStore } from '@/datasource/stores/alerts';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import type { Alert, AlertView } from '@/gateway/types.gen';
@@ -46,8 +44,6 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const alerts = useFqAlertsStore();
 const fleet = useFqFleetStore();
-const data = useDataSource();
-const toaster = useToaster();
 
 const now = computed(() => props.nowMs ?? Date.now());
 const local = ref<AlertTab>(props.tab);
@@ -104,43 +100,7 @@ const hidden = computed(() => shown.value.length - visible.value.length);
 
 const bot = (a: Alert) => (a.bot_key ? fleet.bots[a.bot_key] : undefined);
 
-function fail(message: string) {
-  toaster.push({ kind: 'err', title: t('fq.alert.failed'), body: message });
-}
-
-async function ack(id: string) {
-  const source = data.source.value;
-  if (!source) return fail(t('fq.result.noSource'));
-  try {
-    await source.alerts.ack(id);
-  } catch (e) {
-    fail(e instanceof Error ? e.message : String(e));
-  }
-}
-
-async function silence(a: Alert, untilMs: number) {
-  const source = data.source.value;
-  if (!source) return fail(t('fq.result.noSource'));
-  try {
-    await source.alerts.silence({
-      typeId: a.type_id,
-      ...(a.bot_key ? { botKey: a.bot_key } : {}),
-      ...(a.subject ? { subject: a.subject } : {}),
-      untilMs,
-    });
-  } catch (e) {
-    fail(e instanceof Error ? e.message : String(e));
-  }
-}
-
-function onAction(id: AlertActionId, a: Alert) {
-  if (id === 'pause' && a.bot_key) {
-    // A mutation: the confirmation of THIS bot opens, nothing is sent from the rail
-    requestAction(a.bot_key, { kind: 'stopbuy' });
-    return;
-  }
-  emit('action', id, a);
-}
+const { ack, silence, onAction } = useAlertControls((id, a) => emit('action', id, a));
 
 const levelLabel = computed(() => t(`fq.attention.level.${level.value}`));
 const levelKind = computed(() =>
