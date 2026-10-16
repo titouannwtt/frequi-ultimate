@@ -185,3 +185,24 @@ le quota Hyperliquid, absent en direct : la ligne ne s'affiche pas.
    des termes de trading (équité, latent, drawdown, DCA) ; ceux-ci restent en infobulle.
 4. Densité par défaut adoucie (38 px), « Compacte » en option, ou l'inverse.
 5. Calendrier et Classement quittent la Flotte pour le Journal.
+
+## 5. Avancement
+
+Décisions du propriétaire : maquette validée telle quelle ; libellés en français courant (le terme technique reste
+en infobulle) ; densité aérée par défaut, « Compacte » en option dans Réglages > Affichage.
+
+| Lot | État | Notes |
+|---|---|---|
+| L1 Libellés | fait | glossaire appliqué dans `src/locales/redesign/**` (FR et EN) ; infobulles `fq.hint.*` sur les tuiles KPI (`KpiTile`, prop `hint`) et sur les en-têtes de colonnes (`fq.hint.col.<id>`) ; « Ultimate » retiré de la barre du haut, nom gardé dans Réglages > À propos |
+| L2 Coquille calme | fait | `StatusBar` : fraîcheur, santé en clair seulement si elle n'est pas OK, quota Hyperliquid au-delà de 70 %, erreurs de logs si > 0 ; pastille de connexion = point + « À jour » (latence en infobulle) ; thème (touche T) et densité dans Réglages |
+| L3 Densité adoucie | fait | jetons de `tokens.css` : airy par défaut (ligne 38 px, texte 14 px, rayon `--r-card` 10 px, en-têtes en casse normale) ; `data-density="compact"` rend les valeurs précédentes (bureau seulement) |
+
+Pour les lots suivants :
+
+- La densité se lit dans `useDisplayPrefs().density` (clé `fqu2.density.v2`, `airy` ou `compact`, défaut `airy`).
+  L'ancienne clé `fqu2.density` valait « compact » pour tout le monde (c'était la valeur par défaut écrite) : elle est
+  supprimée au démarrage, sans toucher aux autres préférences.
+- Utiliser les jetons plutôt que des tailles fixes : `--row`, `--th-h` (en-tête de tableau), `--pane-h`, `--t-cell`,
+  `--t-label`, `--t-title`, `--r-card`, `--sbar`, `--row-line`, `--th-case`, `--th-track`, `--th-weight`, `--th-color`.
+  Le tactile (moins de 600 px ou pointeur grossier) ignore la densité et garde ses tailles.
+- Une colonne ou une tuile qui porte un terme de trading ajoute sa définition courte dans `fq.hint.*` (FR et EN).

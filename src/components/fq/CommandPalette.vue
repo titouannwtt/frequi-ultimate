@@ -445,8 +445,8 @@ h4 {
   font-size: var(--t-xs);
   color: var(--fg-3);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: var(--th-case);
+  letter-spacing: var(--th-track);
 }
 .opt {
   display: flex;

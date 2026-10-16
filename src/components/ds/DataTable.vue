@@ -374,15 +374,17 @@ defineExpose({
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: var(--t-sm);
+  font-size: var(--t-cell);
 }
 th {
   text-align: right;
   padding: 0 8px;
-  height: 30px;
+  height: var(--th-h);
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
   background: var(--bg-1);
+  color: var(--th-color);
+  font-weight: var(--th-weight);
 }
 th.sticky {
   position: sticky;
@@ -422,7 +424,7 @@ td {
   height: var(--row);
   padding: 0 8px;
   text-align: right;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--row-line);
   white-space: nowrap;
   font-family: var(--font-num);
   font-variant-numeric: tabular-nums slashed-zero;
@@ -470,7 +472,7 @@ tr.orphan td {
 /* Sum row sticks under the header */
 tr.sigma th {
   position: sticky;
-  top: 30px;
+  top: var(--th-h);
   z-index: 2;
   background: var(--bg-2);
   font-weight: 600;
@@ -487,7 +489,7 @@ tr.grp td {
   color: var(--fg-2);
   font-weight: 600;
   position: sticky;
-  top: 30px;
+  top: var(--th-h);
   z-index: 1;
 }
 .none td {
@@ -496,18 +498,11 @@ tr.grp td {
   text-align: center;
 }
 @media (max-width: 599px), (pointer: coarse) {
-  th {
-    height: 36px;
-  }
   /* 44 px touch target around the small sort label (the header stays 36 px high) */
   .sort::before {
     content: '';
     position: absolute;
     inset: -14px -10px;
-  }
-  tr.sigma th,
-  tr.grp td {
-    top: 36px;
   }
 }
 </style>
