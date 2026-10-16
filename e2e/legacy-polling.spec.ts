@@ -57,3 +57,64 @@ test('no direct request to a bot on the Fleet page, even after a round trip thro
   await page.waitForTimeout(25_000);
   expect(direct, 'no request from the browser to a bot while on the Fleet page').toBe(settled);
 });
+
+test('no direct bot connection on Fleet, Bot, Journal and Charts: no socket, no request (B192)', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  test.setTimeout(240_000);
+  await seed(context);
+  await allowBotCors(context, new URL(baseURL!).origin);
+  const bots = rig().bots;
+  const ports = new Set(bots.map((b) => b.port));
+  const isBot = (url: string) => {
+    const u = new URL(url);
+    return u.hostname === '127.0.0.1' && ports.has(Number(u.port));
+  };
+  let requests = 0;
+  const sockets = new Set<unknown>();
+  let everOpened = 0;
+  page.on('request', (r) => {
+    if (isBot(r.url()) && new URL(r.url()).pathname.startsWith('/api')) requests += 1;
+  });
+  page.on('websocket', (ws) => {
+    if (!isBot(ws.url())) return;
+    everOpened += 1;
+    sockets.add(ws);
+    ws.on('close', () => sockets.delete(ws));
+  });
+
+  // The first visit of a legacy tool makes the dev server optimise its dependencies: do it once
+  await page.goto('/tools/backtest');
+  await expect(page).toHaveURL(/\/tools\/backtest$/);
+  await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => undefined);
+  await page.waitForTimeout(3000);
+
+  const pages: Array<[string, string]> = [
+    ['Fleet', 'fleet-page'],
+    ['Bot', 'bot-page'],
+    ['Journal', 'journal-page'],
+    ['Charts', 'charts-page'],
+  ];
+  // A legacy tool first (it opens the browser's own polling), then every gateway page in turn by
+  // the navigation of the app (no reload): the polling must be gone, with nothing left in flight
+  // that reopens a socket
+  for (const [label, testId] of pages) {
+    await page.goto('/tools/backtest');
+    await expect.poll(() => everOpened, { timeout: 30_000 }).toBeGreaterThan(0);
+    await page
+      .getByRole('navigation', { name: 'Main navigation' })
+      .getByRole('button', { name: label, exact: true })
+      .click();
+    await expect(page.getByTestId(testId)).toBeVisible();
+    await page.waitForTimeout(1500);
+    const settledRequests = requests;
+    const settledOpened = everOpened;
+    expect(sockets.size, `${label}: no bot socket left open`).toBe(0);
+    await page.waitForTimeout(12_000);
+    expect(everOpened, `${label}: no bot socket opened`).toBe(settledOpened);
+    expect(requests, `${label}: no request to a bot`).toBe(settledRequests);
+    expect(sockets.size, `${label}: no bot socket open`).toBe(0);
+  }
+});

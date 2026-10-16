@@ -5,10 +5,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // The browser must not poll the bots on its own once the user is back on a gateway page.
 // Count every request the legacy stores send, through a stub axios instance.
 const requests: string[] = [];
+/** When set, every request answers after this delay with `answer(url)` instead of failing. */
+let slow: { delayMs: number; answer: (url: string) => unknown } | null = null;
 
 function stubApi() {
   const call = (url: string) => {
     requests.push(url);
+    if (slow) {
+      const s = slow;
+      return new Promise((resolve) =>
+        setTimeout(() => resolve({ data: s.answer(url), status: 200 }), s.delayMs),
+      );
+    }
     return Promise.reject(new Error('stub'));
   };
   return {
@@ -25,6 +33,7 @@ describe('legacy polling follows the legacy pages', () => {
     vi.useFakeTimers();
     vi.resetModules();
     requests.length = 0;
+    slow = null;
     localStorage.setItem(
       'ftAuthLoginInfo',
       JSON.stringify({
@@ -79,6 +88,62 @@ describe('legacy polling follows the legacy pages', () => {
     const again = requests.length;
     await vi.advanceTimersByTimeAsync(25 * 60_000);
     expect(requests.length).toBe(again);
+  });
+
+  it('does not go on with a sweep that was in flight when the user left (B192)', async () => {
+    // 14 bots: the startup sweep needs three batches, each waiting for the slowest bot
+    const many: Record<string, unknown> = {};
+    for (let i = 0; i < 14; i++) {
+      many[`ftbot.${i}`] = {
+        botName: `b${i}`,
+        apiUrl: `http://127.0.0.1:${18080 + i}`,
+        refreshToken: 'r',
+        accessToken: 'a',
+        autoRefresh: true,
+      };
+    }
+    localStorage.setItem('ftAuthLoginInfo', JSON.stringify(many));
+    slow = { delayMs: 4_000, answer: () => ({ status: 'pong' }) };
+    const { initBots, suspendBots } = await import('@/stores/ftbotwrapper');
+    initBots();
+    await vi.advanceTimersByTimeAsync(1_000);
+    const firstBatch = requests.length;
+    expect(firstBatch).toBeGreaterThan(0);
+    // Back on a gateway page while the first batch still waits for its bots
+    suspendBots();
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    expect(requests.length, 'nothing after the batch that was already sent').toBe(firstBatch);
+  });
+
+  it('never opens the bot socket for a config answered after the user left (B192)', async () => {
+    const sockets: string[] = [];
+    class FakeSocket {
+      readyState = 0;
+      constructor(url: string) {
+        sockets.push(url);
+      }
+      close() {}
+      send() {}
+      addEventListener() {}
+      removeEventListener() {}
+    }
+    vi.stubGlobal('WebSocket', FakeSocket);
+    slow = {
+      delayMs: 3_000,
+      answer: (url) =>
+        url === '/show_config'
+          ? { api_version: 2.45, runmode: 'live', bot_name: 'a' }
+          : { status: 'pong' },
+    };
+    const { initBots, suspendBots } = await import('@/stores/ftbotwrapper');
+    initBots();
+    // The ping answered (t = 3 s) and `/show_config` is in flight when the user leaves (t = 4 s)
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(requests).toContain('/show_config');
+    suspendBots();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(sockets).toEqual([]);
+    vi.unstubAllGlobals();
   });
 
   it('is a no-op when the legacy stores never started', async () => {

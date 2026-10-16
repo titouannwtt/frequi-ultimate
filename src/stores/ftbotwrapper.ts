@@ -11,6 +11,7 @@ import { createBotSubStore } from './ftbot';
 import { activeBotIdForTrades, closedTradesWanted } from './closedTradesPolicy';
 import { forgetBotName } from './botNameRegistry';
 import { fleetDigestCoversBot, publishFleetDigests } from './fleetDigestPolicy';
+import { legacyPollingAllowed, setLegacyPollingAllowed } from './legacyPollingGate';
 import { registerSlowRefreshRunner } from './slowRefreshScheduler';
 const AUTH_SELECTED_BOT = 'ftSelectedBot';
 
@@ -49,6 +50,8 @@ const BATCH_DELAY_MS = 150;
 async function batchedAll<T>(tasks: (() => Promise<T>)[]): Promise<T[]> {
   const results: T[] = [];
   for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
+    // The user left the legacy pages while this sweep was running: the next batches are not sent
+    if (!legacyPollingAllowed()) break;
     const batch = tasks.slice(i, i + BATCH_SIZE);
     const batchResults = await Promise.all(batch.map((fn) => fn()));
     results.push(...batchResults);
@@ -243,10 +246,13 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       try {
         // Ensure all bots status is correct.
         await this.pingAll();
+        // The user left the legacy pages meanwhile: nothing more is asked of the bots
+        if (!legacyPollingAllowed()) return;
         // Before fanning out, ask one bot for the whole fleet. This has to happen FIRST:
         // the tiers below only stagger the bots the snapshot covers, and a snapshot that
         // arrives after them saves nothing on the load everyone actually feels.
         await this.primeFleetSnapshot();
+        if (!legacyPollingAllowed()) return;
 
         const stateTasks = this.allBotStores
           .filter((bot) => bot.isBotLoggedIn && bot.isBotOnline && !bot.botStatusAvailable)
@@ -435,6 +441,7 @@ let _botsPolling = false;
 export function suspendBots() {
   if (!_botsPolling) return;
   _botsPolling = false;
+  setLegacyPollingAllowed(false);
   const botStore = useBotStore();
   botStore.stopRefresh();
   // A pending coalesced sweep must not fire after the stop
@@ -452,12 +459,14 @@ export function initBots() {
     if (!_botsPolling) {
       // Back on a legacy page after a suspend: resume (startRefresh refreshes at once)
       _botsPolling = true;
+      setLegacyPollingAllowed(true);
       botStore.startRefresh();
       botStore.allBotStores.forEach((b) => b.startWebSocket());
     }
     return;
   }
   _botsPolling = true;
+  setLegacyPollingAllowed(true);
   Object.entries(loggedInBots.value).forEach(([, v]) => {
     botStore.addBot(v);
   });
