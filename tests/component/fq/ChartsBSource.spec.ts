@@ -322,7 +322,9 @@ describe('CandleChart', () => {
     expect(w.findAllComponents(BaseChart)).toHaveLength(1);
     expect(liveCharts()).toHaveLength(1);
     expect(w.find('[data-testid=candle-legend]').text()).toMatch(/O \d/);
-    expect(w.find('[data-testid=candle-legend]').text()).toContain('ema_50');
+    // The legend speaks plainly; the column name stays in the tooltip
+    expect(w.find('[data-testid=candle-legend]').text()).toContain('Average 50');
+    expect(w.find('[data-testid=candle-legend] .ind').attributes('title')).toBe('ema_50');
   });
 
   it('is released on unmount: instance disposed, subscription gone', async () => {
@@ -381,6 +383,106 @@ describe('CandleChart', () => {
     expect(json()).not.toContain('5.2345');
     expect(json()).toContain('4.9123');
     expect(w.emitted('update:toggles')?.[0]![0]).toMatchObject({ tp: false, average: true });
+  });
+
+  it('frames the open position: the window reaches its open date, or an edge marker says how far back', async () => {
+    const fx = makeCandles(900);
+    sb = sourceB(world.fixture, { candles: fx });
+    const tf = fx.timeframe_ms;
+    // Only the first render sets the window (a later update keeps the user's zoom)
+    const startOf = () =>
+      charts[charts.length - 1]!.options.map(
+        (o) => (o as { dataZoom?: Array<{ start?: number }> }).dataZoom?.[0]?.start,
+      ).find((v) => v !== undefined) as number;
+    // 300 candles back: the window is widened to it (the default shows 250 of 900)
+    const near = mountFq(CandleChart, {
+      props: props({
+        source: sb.source,
+        overlays: { average: 4.9, openTs: FIXTURE_NOW - 300 * tf },
+      }),
+      attachTo: document.body,
+    });
+    await flushPromises();
+    expect(startOf()).toBeLessThan((1 - 300 / 900) * 100);
+    expect(near.find('[data-testid=candle-entry-edge]').exists()).toBe(false);
+    near.unmount();
+
+    // 700 candles back: too far to frame, the edge marker takes its place and a click goes there
+    const far = mountFq(CandleChart, {
+      props: props({
+        source: sb.source,
+        overlays: { average: 4.9, openTs: FIXTURE_NOW - 700 * tf },
+      }),
+      attachTo: document.body,
+    });
+    await flushPromises();
+    const edge = far.find('[data-testid=candle-entry-edge]');
+    expect(edge.exists()).toBe(true);
+    expect(edge.text()).toMatch(/entered .* ago/);
+    await edge.trigger('click');
+    const chart = charts[charts.length - 1]!;
+    const act = chart.dispatchAction.mock.calls[0]![0] as { type: string; startValue: number };
+    expect(act.type).toBe('dataZoom');
+    expect(act.startValue).toBeLessThan(FIXTURE_NOW - 700 * tf);
+    // The chart then reports its new window: the entry is in it, the marker goes
+    chart.handlers.get('datazoom')!({
+      startValue: act.startValue,
+      endValue: FIXTURE_NOW - 400 * tf,
+    });
+    await flushPromises();
+    expect(far.find('[data-testid=candle-entry-edge]').exists()).toBe(false);
+  });
+
+  it('draws the orders that wait, the gain and the closed trades, each with its chip', async () => {
+    const fx = makeCandles(200);
+    sb = sourceB(world.fixture, { candles: fx });
+    const last = fx.data[fx.data.length - 1]!;
+    const t = last[6] as number;
+    const w = mountFq(CandleChart, {
+      props: props({
+        source: sb.source,
+        overlays: {
+          average: 4.9,
+          pending: [{ id: 'p1', price: 4.55, kind: 'dca', n: 2 }],
+          gain: {
+            price: 4.8,
+            entry: 4.9,
+            sinceTs: t - 20 * fx.timeframe_ms,
+            profitAbs: -3.21,
+            profitPct: -2.04,
+          },
+          closed: [
+            {
+              id: 'b/1',
+              side: 'long',
+              openTs: t - 80 * fx.timeframe_ms,
+              openPrice: 4.8,
+              closeTs: t - 60 * fx.timeframe_ms,
+              closePrice: 4.9,
+              profitAbs: 1.2,
+              profitPct: 2,
+              exitReason: 'ROI',
+            },
+          ],
+        },
+        controls: true,
+      }),
+      attachTo: document.body,
+    });
+    await flushPromises();
+    const json = JSON.stringify(charts[charts.length - 1]!.last());
+    expect(json).toContain('Order D2');
+    expect(json).toContain('\u22123.21 USDC');
+    expect(json).toContain('"id":"closed"');
+    const chips = w.findAll('.ov button').map((c) => c.text());
+    expect(chips).toEqual(
+      expect.arrayContaining(['Pending orders', 'Current gain', 'Closed trades']),
+    );
+    const closed = w.findAll('.ov button').find((c) => c.text() === 'Closed trades')!;
+    await closed.trigger('click');
+    await flushPromises();
+    expect(JSON.stringify(charts[charts.length - 1]!.last())).not.toContain('"id":"closed"');
+    expect(w.find('[data-testid=candle-chart]').attributes('data-closed')).toBe('1');
   });
 
   it('a pair other than the position pair gets no overlay (caller passes none)', async () => {

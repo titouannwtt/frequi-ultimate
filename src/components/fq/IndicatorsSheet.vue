@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { AdaptiveSheet, DsIcon, EmptyState, Switch } from '@/components/ds';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 
+import type { SubplotInfo } from './lib/candles';
 import {
   plotTemplateNames,
   resolvePlotChoice,
@@ -16,11 +17,11 @@ import {
  * The indicators of the Charts page (02 section 3.3): the plot of the context bot's strategy, the
  * presets migrated from the old `ftPlotConfig`, and the built-in templates (Bollinger bands, RSI,
  * MACD) layered on top of the strategy's. The choice is a preference (`plot`), synchronised with
- * the other devices; nothing is written to a bot.
+ * the other devices; nothing is written to a bot. Under them, the sub-charts the strategy offers:
+ * each can be drawn or not (one is drawn at first), the choice is remembered per strategy.
  */
-defineProps<{ open: boolean; inline?: boolean }>();
-const rsi = defineModel<boolean>('rsi', { default: true });
-const emit = defineEmits<{ close: [] }>();
+defineProps<{ open: boolean; inline?: boolean; subs?: SubplotInfo[] }>();
+const emit = defineEmits<{ close: []; toggleSub: [id: string, on: boolean] }>();
 
 const { t } = useI18n();
 const prefs = useFqPrefsStore();
@@ -115,8 +116,21 @@ function pick(name: string) {
         </button>
       </section>
 
-      <section class="row">
-        <Switch v-model="rsi" :label="t('fq.pg.charts.ind.rsi')" />
+      <section data-testid="indicators-subs">
+        <h4>{{ t('fq.pg.charts.ind.subs') }}</h4>
+        <EmptyState
+          v-if="!subs || subs.length === 0"
+          icon="info"
+          :title="t('fq.pg.charts.ind.noSubs')"
+        />
+        <div v-for="s in subs" :key="s.id" class="sub">
+          <Switch
+            :model-value="s.shown"
+            :label="s.label"
+            @update:model-value="(on) => emit('toggleSub', s.id, on)"
+          />
+          <small v-if="s.explain">{{ s.explain }}</small>
+        </div>
       </section>
     </div>
   </AdaptiveSheet>
@@ -169,7 +183,15 @@ h4 {
   color: var(--fg-3);
   font-size: var(--t-xs);
 }
-.row {
-  padding-top: var(--s2);
+.sub {
+  display: grid;
+  gap: 2px;
+  padding: var(--s1) var(--s2);
+  border-bottom: 1px solid var(--line);
+}
+.sub small {
+  color: var(--fg-3);
+  font-size: var(--t-xs);
+  padding-left: 40px;
 }
 </style>

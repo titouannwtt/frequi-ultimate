@@ -18,14 +18,27 @@ test.describe('Charts', () => {
     await page.goto('/charts');
     await expect(page.getByTestId('charts-page')).toBeVisible();
     await expect(page.getByTestId('pair-navigator')).toBeVisible();
-    // The rig's bots serve no candles: the chart says so instead of failing
-    // (the gateway queues the relay behind the polling of the 40 bots: allow it time)
-    await expect(page.getByTestId('chart-cell')).toContainText(/no candle/i, { timeout: 75_000 });
+    // The chart answers one way or the other, never a blank or a crash: the fake bots serve a
+    // curve, but the gateway queues the relay behind the polling of the 40 bots and a read that
+    // is too slow ends as "no candle" (allow it time)
+    await expect(page.getByTestId('chart-cell')).toContainText(/no candle|\bO \d/i, {
+      timeout: 75_000,
+    });
 
-    await page.getByRole('radio', { name: '1h' }).click();
+    // One button for the pair and its bot, four timeframes and "Other", and one Display menu
+    await expect(page.getByTestId('charts-pair')).toContainText(/computed by/);
+    await expect(page.getByRole('radio')).toHaveCount(4);
+    await page.getByRole('radio', { name: '1 h' }).click();
     await expect(page).toHaveURL(/tf=1h/);
-    await page.getByRole('radio', { name: '2 cells' }).click();
+    await page.getByTestId('charts-tf-other').click();
+    await page.getByRole('menuitem', { name: '30 min' }).click();
+    await expect(page).toHaveURL(/tf=30m/);
+    await page.getByRole('radio', { name: '1 h' }).click();
+    await expect(page).toHaveURL(/tf=1h/);
+    await page.getByTestId('charts-display').click();
+    await page.getByRole('switch', { name: 'Two charts side by side' }).click();
     await expect(page).toHaveURL(/cells=2/);
+    await page.keyboard.press('Escape');
     await expect(page.getByTestId('chart-cell')).toHaveCount(2);
     // The state survives a reload
     await page.reload();
