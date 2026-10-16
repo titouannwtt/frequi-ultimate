@@ -307,6 +307,10 @@ pub struct ProxyResponse {
     pub latency_ms: u64,
 }
 
+/// Longest answer to one of the engine's own reads (`/status`, `/logs`, `/balance`, ...). A hundred
+/// open trades are about 100 KB.
+pub const READ_MAX_BYTES: usize = 16 * 1024 * 1024;
+
 /// Longest bot answer a proxy call accepts (a backtest result can be large).
 pub const PROXY_MAX_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
 
@@ -678,6 +682,24 @@ impl HttpBot {
         }
     }
 
+    /// The JSON body of a successful read, refused beyond [`READ_MAX_BYTES`]: a bot (or whatever
+    /// answers on its port) that streams without end must not be able to fill the memory of the
+    /// gateway. The timeout of the request bounds the time.
+    async fn bounded_json(mut resp: reqwest::Response) -> Result<Value, RestError> {
+        let max = u64::try_from(READ_MAX_BYTES).unwrap_or(u64::MAX);
+        if resp.content_length().is_some_and(|n| n > max) {
+            return Err(RestError::Decode);
+        }
+        let mut buf: Vec<u8> = Vec::new();
+        while let Some(chunk) = resp.chunk().await.map_err(|e| Self::classify(&e))? {
+            if buf.len() + chunk.len() > READ_MAX_BYTES {
+                return Err(RestError::Decode);
+            }
+            buf.extend_from_slice(&chunk);
+        }
+        serde_json::from_slice(&buf).map_err(|_| RestError::Decode)
+    }
+
     async fn get_json(&self, path: &str, timeout: Duration) -> Result<Value, RestError> {
         let mut forced = false;
         loop {
@@ -691,7 +713,7 @@ impl HttpBot {
                 .await
                 .map_err(|e| Self::classify(&e))?;
             if resp.status().is_success() {
-                return resp.json::<Value>().await.map_err(|_| RestError::Decode);
+                return Self::bounded_json(resp).await;
             }
             let err = Self::error_for(resp).await;
             if err == RestError::Unauthorized && !forced {
@@ -1040,6 +1062,30 @@ mod tests {
             ("DELETE", "/api/v1/trades/7") => FakeResponse::json(200, r#"{"result":"deleted"}"#),
             _ => FakeResponse::json(404, r#"{"detail":"Not Found"}"#),
         }
+    }
+
+    #[tokio::test]
+    async fn an_answer_beyond_the_limit_is_refused_not_buffered() {
+        let fake = FakeHttp::start(|req| {
+            if req.path() == "/api/v1/status" {
+                FakeResponse::json(200, &format!("[\"{}\"]", "x".repeat(READ_MAX_BYTES)))
+            } else {
+                freqtrade_like(req)
+            }
+        })
+        .await;
+        let b = bot(&fake, RestOptions::default());
+        assert_eq!(
+            b.read(ReadEndpoint::Status).await.unwrap_err(),
+            RestError::Decode
+        );
+        // A normal answer is untouched.
+        let ok = FakeHttp::start(freqtrade_like).await;
+        let b = bot(&ok, RestOptions::default());
+        assert_eq!(
+            b.read(ReadEndpoint::Status).await.unwrap(),
+            json!([{"trade_id": 1}])
+        );
     }
 
     fn base64(input: &[u8]) -> String {
