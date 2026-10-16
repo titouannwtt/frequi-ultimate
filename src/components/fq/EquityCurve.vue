@@ -62,6 +62,11 @@ const props = withDefaults(
     simple?: boolean;
     /** Periods offered; all of them by default. */
     periods?: readonly EquityPeriod[];
+    /**
+     * Added to every point before drawing. The source's curve is the cumulated profit; with the
+     * starting capital added it reads as capital, on the scale of the "Capital total" tile.
+     */
+    baseline?: number | null;
     /** A source to use instead of the active one (previews, tests). */
     source?: DataSource | null;
     nowMs?: number;
@@ -150,9 +155,15 @@ const definitionOptions = computed<SegmentOption<EquityDefinition>[]>(() => [
   { value: 'realized', label: t('fq.eq.def.realized') },
 ]);
 
+// Only the drawing moves: the gain of the period and the drawdown are differences, unchanged
+const drawn = computed<Array<[number, number]>>(() => {
+  const b = props.baseline;
+  return b == null ? points.value : points.value.map(([ts, v]) => [ts, v + b]);
+});
+
 const option = computed(() =>
   buildEquityOption({
-    points: points.value,
+    points: drawn.value,
     tokens: tokens.value,
     fmtValue: (v, decimals) => fmt.number(v, decimals ?? (Math.abs(v) >= 1000 ? 0 : 2)),
     fmtDate: (ts) =>

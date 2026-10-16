@@ -121,6 +121,7 @@ export default {
   positionsMetaPartial: '{n} lues sur {total}',
   positionsAwaiting: 'positions en cours de lecture',
   equity: 'Capital',
+  equityGain: 'Gain cumulé',
   eq: {
     chartLabel: 'Courbe du capital, positions comprises',
     over: 'sur {p}',

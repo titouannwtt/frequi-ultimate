@@ -322,6 +322,25 @@ describe('EquityCurve', () => {
     expect(charts.every((c) => c.dispose.mock.calls.length === 1)).toBe(true);
   });
 
+  it('a baseline draws the curve as capital; the gain of the period does not move', () => {
+    // The chart of the last mount is the newest instance
+    const first = () => {
+      const option = charts[charts.length - 1]!.last() as {
+        series: Array<{ data?: Array<[number, number] | number> }>;
+      };
+      const pt = option.series[0]!.data![0]!;
+      return Array.isArray(pt) ? pt[1] : pt;
+    };
+    const plain = mount({ simple: true });
+    const v0 = first();
+    const gain0 = plain.text();
+    plain.unmount();
+    const based = mount({ simple: true, baseline: 10_000 });
+    expect(first()).toBeCloseTo(v0 + 10_000, 6);
+    expect(based.text()).toBe(gain0);
+    based.unmount();
+  });
+
   it('absolute drawdown comes first, the percentage after', () => {
     const w = mount();
     const t = w.find('[data-testid=eq-drawdown]').text();

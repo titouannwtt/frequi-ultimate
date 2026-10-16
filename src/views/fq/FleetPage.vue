@@ -97,6 +97,12 @@ const EQ_PERIODS: EquityPeriod[] = ['24h', '7d', '30d'];
 
 /** Capital and risk never mix modes: "All" shows the live ones. */
 const figuresMode = computed<BotMode>(() => (scope.mode.value === 'dry' ? 'dry' : 'live'));
+// The curve is drawn as capital from the same starting capital as the "Capital total" tile; when
+// that capital is not known, it stays the cumulated gain and says so in its title
+const capitalBase = computed<number | null>(() => {
+  const block = fleetDetail.value?.totals.find((b) => b.mode === figuresMode.value);
+  return block && block.starting_capital.known > 0 ? block.starting_capital.total : null;
+});
 
 // ---- workspaces ----
 const ws = computed<Workspace>(() => scope.workspace.value);
@@ -295,13 +301,18 @@ const tableMeta = computed(() =>
           <LogStream mode="compact" :limit="30" @open-bot="(k) => nav.openBot(k)" />
         </Pane>
 
-        <Pane v-if="showEquity" class="area equity" :title="t('fq.pg.fleet.equity')">
+        <Pane
+          v-if="showEquity"
+          class="area equity"
+          :title="capitalBase !== null ? t('fq.pg.fleet.equity') : t('fq.pg.fleet.equityGain')"
+        >
           <div class="eqwrap">
             <EquityCurve
               v-model:period="eqPeriod"
               simple
               :periods="EQ_PERIODS"
               definition="with_open"
+              :baseline="capitalBase"
               :scope="scope.fleetScopeRef.value"
               :mode="figuresMode"
               :height="desktop ? 'fill' : '240px'"

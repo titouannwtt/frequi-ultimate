@@ -116,6 +116,7 @@ export default {
   positionsMetaPartial: '{n} read of {total}',
   positionsAwaiting: 'positions being read',
   equity: 'Capital',
+  equityGain: 'Cumulated gain',
   eq: {
     chartLabel: 'Capital curve, open positions included',
     over: 'over {p}',
