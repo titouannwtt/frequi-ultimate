@@ -1,19 +1,9 @@
 <script setup lang="ts">
-import { useWindowSize } from '@vueuse/core';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import {
-  Badge,
-  Btn,
-  DcaLadderV,
-  DirectionChip,
-  DsIcon,
-  ModeMark,
-  PnlValue,
-  ValueState,
-} from '@/components/ds';
-import type { LadderOrder } from '@/components/ds';
+import { Badge, Btn, DirectionChip, DsIcon, ModeMark, PnlValue, ValueState } from '@/components/ds';
+import type { DsIconRef, LadderOrder } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useValueSlot } from '@/composables/useValueSlot';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
@@ -24,9 +14,11 @@ import { durationTone, lineFromPosition, pairLabel } from './lib/trades';
 import { lineSlot, PENDING, READY, unavailable, type Slot } from './lib/valueState';
 
 /**
- * Body of the trade drawer (02 section 3.2): the target bot, the P&L, six facts, the DCA ladder
- * (always open, it is the risk information), the orders (folded under 900 px of height) and the
- * maintenance of the trade in the bot's database, folded and apart.
+ * Body of the trade drawer (02 section 3.2, 05 section 2.4): the target bot, the P&L, three
+ * sentences (target exit, next top-up, liquidation, each with its distance in percent), the
+ * top-up bar (used out of planned, committed out of maximum: it is the risk information, always
+ * visible), then folded: the details (notional, stake, orders) and the maintenance of the trade in
+ * the bot's database, apart.
  */
 const props = defineProps<{
   position: Position;
@@ -43,7 +35,6 @@ const { t } = useI18n();
 const fmt = useFormat();
 const { vs } = useValueSlot();
 const fleet = useFqFleetStore();
-const { height } = useWindowSize();
 
 const line = computed(() =>
   lineFromPosition(props.position, fleet.bots[props.position.bot_key], { dcaMax: props.dcaMax }),
@@ -73,45 +64,118 @@ const nextSoPrice = computed(
 );
 const toSo = computed(() => toward(nextSoPrice.value, true));
 
-// A fact the bot gives is a figure; the others say why they are not (take profit and the maximum of
-// entries have no API; the orders are read after the position, so the next safety order waits)
+// A sentence the bot can say is a figure; the others say why they are not (take profit and the
+// maximum of entries have no API; the orders are read after the position, so the next safety order
+// waits)
 const noPrice = computed<Slot>(() => lineSlot(line.value, props.position.current_rate, 'prices'));
-const facts = computed<Array<{ k: string; v: string; slot: Slot; crit?: boolean }>>(() => {
-  const dcaSlot: Slot =
-    props.dcaMax != null ? READY : props.ordersLoading ? PENDING : unavailable('noApi');
+const long = computed(() => props.position.side === 'long');
+
+interface Sentence {
+  k: 'target' | 'refill' | 'liq';
+  icon: DsIconRef;
+  slot: Slot;
+  /** The bold line (with the price when it is known). */
+  title: string;
+  /** The line under it: the distance, in words. */
+  detail: string;
+  tone?: 'warn' | 'crit';
+}
+
+/** "2,7 %": a distance, always positive in the sentence (the verb says the direction). */
+const pct = (v: number, decimals = 1) => fmt.percent(Math.abs(v), decimals, false);
+const sx = (k: string, p: Record<string, string | number> = {}) => t(`fq.drawer.sentence.${k}`, p);
+
+const sentences = computed<Sentence[]>(() => {
   const levelSlot = (known: boolean, missing: Slot): Slot =>
     noPrice.value.state !== 'ready' ? noPrice.value : known ? READY : missing;
-  const toLiq = props.position.liq_distance_pct;
-  return [
-    { k: 'notional', v: fmt.number(props.position.notional, 2), slot: READY },
-    { k: 'stake', v: fmt.number(props.position.stake_amount, 2), slot: READY },
-    { k: 'dca', v: '', slot: dcaSlot },
-    {
-      k: 'toTp',
-      v: fmt.percent(toTp.value ?? 0, 2),
-      slot: levelSlot(toTp.value !== null, unavailable('noApi')),
-    },
-    {
-      k: 'toSo',
-      v: fmt.percent(toSo.value ?? 0, 2),
-      slot: levelSlot(toSo.value !== null, props.ordersLoading ? PENDING : unavailable('noData')),
-    },
-    {
-      k: 'toLiq',
-      v: fmt.percent(toLiq ?? 0, 1, false),
-      slot: lineSlot(line.value, toLiq, props.position.current_rate === null ? 'prices' : 'noData'),
-      crit: toLiq != null && toLiq < 15,
-    },
-  ];
+
+  // Take profit: above a long, below a short
+  const tp = props.tp;
+  const toT = toTp.value;
+  const target: Sentence = {
+    k: 'target',
+    icon: long.value ? 'arrow-up' : 'arrow-down',
+    slot: levelSlot(toT !== null && tp != null, unavailable('noApi')),
+    title: tp != null ? sx('targetAt', { price: fmt.price(tp) }) : sx('target'),
+    detail:
+      toT === null
+        ? ''
+        : toT > 0
+          ? sx(long.value ? 'targetUp' : 'targetDown', { pct: pct(toT, 2) })
+          : sx('targetPassed'),
+  };
+
+  // Next safety order: below a long, above a short
+  const so = nextSoPrice.value;
+  const toS = toSo.value;
+  const refill: Sentence = {
+    k: 'refill',
+    icon: 'plus',
+    slot: levelSlot(
+      toS !== null && so !== null,
+      props.ordersLoading ? PENDING : unavailable('noData'),
+    ),
+    title: so !== null ? sx('refillAt', { price: fmt.price(so) }) : sx('refill'),
+    detail:
+      toS === null
+        ? ''
+        : toS > 0
+          ? sx(long.value ? 'refillDown' : 'refillUp', { pct: pct(toS, 1) })
+          : sx('refillPassed'),
+  };
+
+  // Liquidation: below a long, above a short
+  const toL = props.position.liq_distance_pct;
+  const liqPrice = props.position.liquidation_price;
+  const near = toL != null && toL < 15;
+  const watch = toL != null && toL >= 15 && toL < 30;
+  const liq: Sentence = {
+    k: 'liq',
+    icon: 'triangle-alert',
+    slot: lineSlot(line.value, toL, props.position.current_rate === null ? 'prices' : 'noData'),
+    title: toL == null ? sx('liq') : sx(near ? 'liqNear' : watch ? 'liqWatch' : 'liqFar'),
+    detail:
+      toL == null
+        ? ''
+        : liqPrice != null
+          ? sx(long.value ? 'liqBelow' : 'liqAbove', {
+              price: fmt.price(liqPrice),
+              pct: pct(toL, 1),
+            })
+          : sx('liqPct', { pct: pct(toL, 1) }),
+    tone: near ? 'crit' : watch ? 'warn' : undefined,
+  };
+  return [target, refill, liq];
 });
 
-const ladderPos = computed(() => ({
-  price: props.position.current_rate ?? props.position.open_rate,
-  avg: props.position.open_rate,
-  tp: props.tp ?? undefined,
-  liquidation: props.position.liquidation_price ?? undefined,
-  liquidationDistancePct: props.position.liq_distance_pct ?? undefined,
-}));
+// The DCA count is read from the bot (entry included); the top-ups are the entries after the first
+const used = computed(() => Math.max(0, props.position.dca_entries - 1));
+const refills = computed(() => {
+  const list = props.orders ?? [];
+  // "Out of N" is only said when the ladder shows levels still to come: a list of filled orders
+  // alone says what happened, not what the bot may still add
+  const planned = list.some((o) => o.state !== 'filled');
+  const max = planned && list.length > 1 ? list.length - 1 : null;
+  const stake = (o: LadderOrder) => (Number.isFinite(o.stake) ? o.stake : 0);
+  const committed = list.filter((o) => o.state === 'filled').reduce((a, o) => a + stake(o), 0);
+  const total = list.reduce((a, o) => a + stake(o), 0);
+  return {
+    title:
+      max !== null
+        ? t('fq.drawer.refills', { used: used.value, max })
+        : t('fq.drawer.refillsOnly', { used: used.value }),
+    bar: max !== null,
+    committed: list.length > 0 ? t('fq.drawer.committed', { v: fmt.number(committed, 2) }) : '',
+    upTo:
+      list.length > 0 && total > committed ? t('fq.drawer.upTo', { v: fmt.number(total, 2) }) : '',
+  };
+});
+
+/** Notional and stake: kept under "Details", the sentences carry the decisions. */
+const facts = computed<Array<{ k: string; v: string }>>(() => [
+  { k: 'notional', v: fmt.number(props.position.notional, 2) },
+  { k: 'stake', v: fmt.number(props.position.stake_amount, 2) },
+]);
 
 const ordersSummary = computed(() => {
   const list = props.orders ?? [];
@@ -119,8 +183,6 @@ const ordersSummary = computed(() => {
   // Two counts, two nouns: each carries its own plural ("1 rempli, 0 en attente", B237)
   return `${t('fq.drawer.ordersFilled', { n: filled }, filled)}, ${t('fq.drawer.ordersPending', { n: list.length - filled })}`;
 });
-/** Folded under 900 px of height: the ladder matters more than the order list. */
-const ordersOpen = computed(() => height.value >= 900);
 </script>
 
 <template>
@@ -173,55 +235,73 @@ const ordersOpen = computed(() => height.value >= 900);
       </span>
     </section>
 
-    <section class="facts" :aria-label="t('fq.drawer.facts')">
-      <div v-for="f in facts" :key="f.k" class="fact">
-        <span class="k">{{ t(`fq.drawer.fact.${f.k}`) }}</span>
-        <span class="v num" :class="{ crit: f.crit }"
-          ><template v-if="f.k === 'dca'"
-            >{{ position.dca_entries }}/<ValueState
-              v-bind="vs(f.slot, `drawer/${position.bot_key}/${position.trade_id}/dca`)"
-              >{{ dcaMax }}</ValueState
-            ></template
-          ><ValueState
-            v-else
-            v-bind="vs(f.slot, `drawer/${position.bot_key}/${position.trade_id}/${f.k}`)"
-            >{{ f.v }}</ValueState
-          ></span
-        >
+    <section class="plain" :aria-label="t('fq.drawer.facts')" data-testid="drawer-sentences">
+      <div v-for="r in sentences" :key="r.k" class="f" :class="r.tone" :data-sentence="r.k">
+        <span class="ic"><DsIcon :name="r.icon" :size="15" /></span>
+        <div class="tx">
+          <b>{{ r.title }}</b>
+          <span v-if="r.slot.state === 'ready'" class="sub">{{ r.detail }}</span>
+          <span v-else class="sub"
+            ><ValueState
+              v-bind="vs(r.slot, `drawer/${position.bot_key}/${position.trade_id}/${r.k}`)"
+          /></span>
+        </div>
       </div>
     </section>
 
-    <section class="ladder">
-      <h3><DsIcon name="layers" /> {{ t('fq.ds.ladder.title') }}</h3>
-      <DcaLadderV v-if="orders && orders.length > 0" :position="ladderPos" :orders="orders" />
-      <p v-else-if="ordersLoading" class="dim"><ValueState state="pending" announce /></p>
-      <p v-else class="dim">
-        {{ t('fq.drawer.ordersUnavailable', { n: position.dca_entries }, position.dca_entries) }}
+    <section class="refills" data-testid="drawer-refills">
+      <p class="rt">{{ refills.title }}</p>
+      <div v-if="refills.bar" class="rail" role="img" :aria-label="refills.title">
+        <i
+          v-for="o in orders"
+          :key="o.id"
+          :class="{ f: o.state === 'filled', n: o.state === 'next' }"
+          :title="`${o.label} ${fmt.price(o.price)}`"
+        ></i>
+      </div>
+      <p v-if="ordersLoading && !orders?.length" class="dim">
+        <ValueState state="pending" announce />
+      </p>
+      <p v-if="refills.committed" class="cap num">
+        <span>{{ refills.committed }}</span>
+        <span v-if="refills.upTo">{{ refills.upTo }}</span>
       </p>
     </section>
 
-    <details v-if="orders && orders.length > 0" class="orders" :open="ordersOpen">
-      <summary>
-        {{ t('fq.drawer.orders') }} <span class="sum">{{ ordersSummary }}</span>
-      </summary>
-      <table>
-        <thead>
-          <tr>
-            <th class="l">{{ t('fq.drawer.order') }}</th>
-            <th>{{ t('fq.col.entry') }}</th>
-            <th>{{ t('fq.col.stake') }}</th>
-            <th>{{ t('fq.drawer.state') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="o in orders" :key="o.id">
-            <td class="l">{{ o.label }}</td>
-            <td>{{ fmt.price(o.price) }}</td>
-            <td>{{ fmt.number(o.stake, 2) }}</td>
-            <td>{{ t(`fq.drawer.orderState.${o.state}`) }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <details class="orders" data-testid="drawer-details">
+      <summary>{{ t('fq.drawer.details') }}</summary>
+      <dl class="dl">
+        <template v-for="f in facts" :key="f.k">
+          <dt>{{ t(`fq.drawer.fact.${f.k}`) }}</dt>
+          <dd class="num">{{ f.v }}</dd>
+        </template>
+        <dt>{{ t('fq.drawer.fact.dca') }}</dt>
+        <dd class="num">{{ position.dca_entries }}</dd>
+      </dl>
+      <p v-if="!orders || orders.length === 0" class="dim pad">
+        {{ t('fq.drawer.ordersUnavailable', { n: position.dca_entries }, position.dca_entries) }}
+      </p>
+      <template v-else>
+        <p class="dim pad">{{ ordersSummary }}</p>
+        <table>
+          <thead>
+            <tr>
+              <th class="l">{{ t('fq.drawer.order') }}</th>
+              <th>{{ t('fq.col.entry') }}</th>
+              <th>{{ t('fq.col.stake') }}</th>
+              <th>{{ t('fq.drawer.state') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="o in orders" :key="o.id">
+              <td class="l">{{ o.label }}</td>
+              <td>{{ fmt.price(o.price) }}</td>
+              <td>{{ fmt.number(o.stake, 2) }}</td>
+              <td>{{ t(`fq.drawer.orderState.${o.state}`) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </template>
     </details>
 
     <details v-if="!position.orphan" class="maint">
@@ -328,6 +408,9 @@ const ordersOpen = computed(() => height.value >= 900);
   font: 700 var(--t-2xl) var(--font-num);
   font-variant-numeric: tabular-nums slashed-zero;
 }
+.big :deep(small) {
+  font-size: var(--t-sm);
+}
 .pct {
   font: 600 var(--t-lg) var(--font-num);
 }
@@ -338,30 +421,103 @@ const ordersOpen = computed(() => height.value >= 900);
   gap: 6px;
   align-items: center;
 }
-.facts {
+.plain {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  border: 1px solid var(--line);
-  border-radius: var(--r-2);
+  gap: var(--s3);
 }
-.fact {
+.f {
+  display: flex;
+  gap: var(--s3);
+  align-items: flex-start;
+}
+.f .ic {
   display: grid;
-  gap: 2px;
-  padding: 7px var(--s3);
-  border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-2);
+  color: var(--fg-2);
 }
-.fact:nth-child(3n) {
-  border-right: 0;
+.f.warn .ic {
+  background: var(--warn-w);
+  color: var(--warn);
 }
-.fact:nth-last-child(-n + 3) {
-  border-bottom: 0;
-}
-.v {
-  font: 600 var(--t-md) var(--font-num);
-}
-.v.crit {
+.f.crit .ic {
+  background: var(--crit-w);
   color: var(--crit);
+}
+.f.crit b {
+  color: var(--crit);
+}
+.tx {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  font-size: var(--t-md);
+}
+.tx b {
+  font-weight: 600;
+}
+.sub {
+  color: var(--fg-2);
+  font-size: var(--t-sm);
+  overflow-wrap: anywhere;
+}
+.refills {
+  display: grid;
+  gap: 6px;
+}
+.rt {
+  margin: 0;
+  color: var(--fg-2);
+  font-size: var(--t-sm);
+}
+.rail {
+  display: flex;
+  gap: 3px;
+}
+.rail i {
+  flex: 1 1 0;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-3);
+}
+.rail i.n {
+  box-shadow: inset 0 0 0 1px var(--fg-3);
+  background: none;
+}
+.rail i.f {
+  background: var(--accent);
+}
+.cap {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+  flex-wrap: wrap;
+  margin: 0;
+  color: var(--fg-3);
+  font-size: var(--t-xs);
+}
+.dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px var(--s4);
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  font-size: var(--t-sm);
+}
+.dl dt {
+  color: var(--fg-3);
+}
+.dl dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+}
+.pad {
+  padding: 0 var(--s3) var(--s2);
 }
 h3 {
   margin: 0 0 6px;

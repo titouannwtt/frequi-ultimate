@@ -283,17 +283,14 @@ describe.each(['en', 'fr'] as const)('composites without a figure (%s)', (lang) 
       props: { position: p, tp: null, orders: [], ordersLoading: true },
       attachTo: document.body,
     });
-    const facts = w.findAll('.fact');
-    const byKey = (k: string) =>
-      facts.find((f) => f.find('.k').text().length > 0 && f.html().includes(k));
-    expect(facts.length).toBe(6);
-    // Take profit: no API exposes it, said once the page is loaded, not "loading"
-    const tp = facts[3]!;
+    const rows = w.findAll('[data-sentence]');
+    // Three sentences: target exit, next top-up, liquidation
+    expect(rows.map((r) => r.attributes('data-sentence'))).toEqual(['target', 'refill', 'liq']);
+    // Target exit: no API exposes it, said once the page is loaded, not "loading"
+    const tp = rows[0]!;
     expect(tp.find('[data-state="unavailable"]').exists()).toBe(true);
-    expect(tp.get('.v').text()).toBe('');
-    // Next safety order: the orders are being read
-    expect(facts[4]!.find('[data-state="pending"]').exists()).toBe(true);
-    expect(byKey).toBeDefined();
+    // Next top-up: the orders are being read
+    expect(rows[1]!.find('[data-state="pending"]').exists()).toBe(true);
     expect(w.text()).not.toMatch(PLACEHOLDER);
   });
 

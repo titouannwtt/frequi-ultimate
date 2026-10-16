@@ -18,9 +18,10 @@ import { useBotActions } from './lib/useBotActions';
 /**
  * The actions of a bot on one surface (02 sections 3.1, 3.2, 8 and 11.4). The surfaces differ
  * only in layout and all go through the same `useBotActions` and the same confirmation:
- * - `header`: Pause entries, Reload, Config, a "..." menu (Resume, Forced entry, Replay, then
- *   apart "Stop the bot..."), 18 px of space, then "Exit all..." (the only danger-outline of the
- *   header). On a phone: four 64 px tiles, and the sensitive actions in a folded section;
+ * - `header`: ONE visible action (Pause entries) and a "More" menu (Resume, Reload, Config, Forced
+ *   entry, Replay, the port and age of the data, then apart, under "Sensitive actions", "Exit
+ *   all..." and "Stop the bot..."). On a phone: two 64 px tiles (Pause, More), and the sensitive
+ *   actions in a folded section;
  * - `sensitive`: only that folded section (phone), for the foot of the page;
  * - `row`: one neutral "Exit..." button (icon only in a narrow panel) and the "..." menu, shown
  *   on hover, focus or selection and always on touch;
@@ -34,8 +35,6 @@ const props = withDefaults(
     botKey: BotKey;
     context: ActionContextKind;
     position?: Position | null;
-    /** Share of the position chosen in the drawer foot (0 to 1), carried to the confirmation. */
-    fraction?: number;
     /** Narrow panel: the row button shows an icon only. */
     iconOnly?: boolean;
     /**
@@ -74,7 +73,7 @@ function fire(id: ActionId) {
     return;
   }
   if (ACTIONS[id].mutation) {
-    acts.trigger(id, { fraction: props.fraction });
+    acts.trigger(id);
   } else {
     emit('navigate', id);
   }
@@ -114,20 +113,16 @@ const paletteIds = computed<ActionId[]>(() =>
     >
       {{ label(id) }}
     </Btn>
-    <IconBtn icon="ellipsis" :label="acts.t('fq.act.more')" @click="toggleMenu" />
-    <span class="gap" aria-hidden="true"></span>
     <Btn
-      variant="danger-outline"
+      variant="ghost"
       size="sm"
-      :icon="ACTIONS[HEADER_DANGER].icon"
-      :disabled="acts.disabled(HEADER_DANGER)"
-      :disabled-reason="acts.reasonText.value"
-      :lock-key="acts.lockKey(HEADER_DANGER)"
-      :data-action="HEADER_DANGER"
-      @click="fire(HEADER_DANGER)"
-      @locked="emit('locked', HEADER_DANGER)"
+      icon="ellipsis"
+      aria-haspopup="menu"
+      :aria-expanded="menuOpen"
+      data-action="more"
+      @click="toggleMenu"
     >
-      {{ label(HEADER_DANGER) }}
+      {{ acts.t('fq.pg.bot.more') }}
     </Btn>
     <BotActionMenu
       context="header"
@@ -139,7 +134,7 @@ const paletteIds = computed<ActionId[]>(() =>
     />
   </div>
 
-  <!-- Header of the Bot page, phone: tiles of 64 px, sensitive actions folded far away -->
+  <!-- Header of the Bot page, phone: two tiles of 64 px, sensitive actions folded far away -->
   <div v-else-if="context === 'header'" class="phone">
     <div class="tiles" role="group" :aria-label="acts.t('fq.act.menuLabel')">
       <button
@@ -158,7 +153,7 @@ const paletteIds = computed<ActionId[]>(() =>
       </button>
       <button type="button" class="tile" :data-action="'more'" @click="toggleMenu">
         <DsIcon name="ellipsis" :size="20" />
-        <span>{{ acts.t('fq.act.more') }}</span>
+        <span>{{ acts.t('fq.pg.bot.more') }}</span>
       </button>
     </div>
     <details v-if="!splitSensitive" class="sens">
@@ -293,7 +288,7 @@ const paletteIds = computed<ActionId[]>(() =>
         @click="fire('exit')"
         @locked="emit('locked', 'exit')"
       >
-        {{ label('exit') }}
+        {{ acts.t('fq.pg.bot.exitShort') }}
       </Btn>
       <Btn
         size="lg"
@@ -347,9 +342,6 @@ const paletteIds = computed<ActionId[]>(() =>
   align-items: center;
   gap: 6px;
 }
-.header .gap {
-  width: 18px;
-}
 .row {
   justify-content: center;
   /* Visible on hover, focus and selection; always on touch (02 section 8) */
@@ -380,7 +372,7 @@ const paletteIds = computed<ActionId[]>(() =>
 }
 .tiles {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--gut);
 }
 .tile {
