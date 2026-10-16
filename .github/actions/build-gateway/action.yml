@@ -1,0 +1,74 @@
+name: Build the gateway (static musl)
+description: >
+  Cross-builds frequi-gateway for a musl target with cargo-zigbuild (no Docker, no OpenSSL),
+  checks that the binary is static and under the size target, and leaves it in gateway-dist/.
+inputs:
+  target:
+    description: x86_64-unknown-linux-musl or aarch64-unknown-linux-musl
+    required: true
+  name:
+    description: File name of the produced binary
+    default: frequi-gateway
+outputs:
+  path:
+    description: Path of the produced binary
+    value: ${{ steps.collect.outputs.path }}
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ inputs.target }}
+    # The zig version is the one this build was checked with (x86_64 and aarch64, static, 14.7 MB).
+    - uses: mlugg/setup-zig@v2
+      with:
+        version: 0.15.2
+    - uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-zigbuild
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: gateway
+        key: musl-${{ inputs.target }}
+    - name: Build
+      shell: bash
+      working-directory: gateway
+      run: cargo zigbuild --release --locked --target "${{ inputs.target }}" -p frequi-gateway
+    - name: Collect and check
+      id: collect
+      shell: bash
+      run: |
+        set -euo pipefail
+        src="gateway/target/${{ inputs.target }}/release/frequi-gateway"
+        mkdir -p gateway-dist
+        out="gateway-dist/${{ inputs.name }}"
+        cp "$src" "$out"
+        chmod 755 "$out"
+        echo "path=$out" >> "$GITHUB_OUTPUT"
+
+        size=$(stat -c %s "$out")
+        echo "size: $size bytes"
+        # Target of 03 section 2.4: under 15 MB. A warning, not a failure.
+        if [ "$size" -gt 15728640 ]; then
+          echo "::warning::${{ inputs.target }} binary is $((size / 1024 / 1024)) MB, above the 15 MB target"
+        fi
+
+        # Static: no dynamic section, no interpreter.
+        if readelf -l "$out" | grep -q 'INTERP'; then
+          echo "::error::the binary asks for a dynamic loader, it is not static"
+          readelf -l "$out" | grep -A1 INTERP
+          exit 1
+        fi
+        if readelf -d "$out" 2>/dev/null | grep -q 'NEEDED'; then
+          echo "::error::the binary has shared library dependencies"
+          readelf -d "$out" | grep NEEDED
+          exit 1
+        fi
+
+        # The x86_64 binary can run on the runner; the aarch64 one is only inspected.
+        if [ "${{ inputs.target }}" = "x86_64-unknown-linux-musl" ]; then
+          "$out" version
+          "$out" print-default-config > /dev/null
+        else
+          file "$out" || true
+        fi
