@@ -44,14 +44,22 @@ export default defineConfig({
       name: 'chromium',
       // The Chromium of Playwright; FQ_E2E_CHANNEL=chrome runs the installed Chrome instead
       use: { ...devices['Desktop Chrome'], channel: process.env.FQ_E2E_CHANNEL },
-      testIgnore: /gateway-stop\.spec\.ts/,
+      testIgnore: /(gateway-stop|direct-slow)\.spec\.ts/,
+    },
+    {
+      // Slows down (5 s per call) and expires the tokens of every bot of the rig, which the
+      // gateway polls too: the other specs would see a degraded fleet, so it runs once they are done
+      name: 'rig-slow',
+      use: { ...devices['Desktop Chrome'], channel: process.env.FQ_E2E_CHANNEL },
+      testMatch: /direct-slow\.spec\.ts/,
+      dependencies: ['chromium'],
     },
     {
       // Stops the rig's gateway under the page: runs alone, once everything else is done
       name: 'rig-disruptive',
       use: { ...devices['Desktop Chrome'], channel: process.env.FQ_E2E_CHANNEL },
       testMatch: /gateway-stop\.spec\.ts/,
-      dependencies: ['chromium'],
+      dependencies: ['chromium', 'rig-slow'],
     },
     {
       name: 'msedge',
