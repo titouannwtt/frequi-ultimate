@@ -12,7 +12,9 @@ use std::pin::Pin;
 use fg_core::model::Ticker;
 use serde_json::Value;
 
-use crate::botrest::{BotFeatures, ReadEndpoint, RestError, WriteAction, WriteOutcome};
+use crate::botrest::{
+    BotFeatures, ProxyRequest, ProxyResponse, ReadEndpoint, RestError, WriteAction, WriteOutcome,
+};
 use crate::botws::{WsHandle, WsTarget, WsTopic};
 use crate::discovery::DiscoveryReport;
 use crate::external::TickerError;
@@ -20,8 +22,8 @@ use crate::ftcache::{
     DaemonError, DaemonPing, DaemonStats, FleetEvents, FleetStatus, FleetSummary,
 };
 use crate::sqlite::{
-    LedgerError, LedgerOrder, LedgerSchema, LedgerStat, LedgerSummary, LedgerTrade, ProfitChunk,
-    TradeQuery,
+    LedgerError, LedgerOrder, LedgerProbe, LedgerSchema, LedgerStat, LedgerSummary, LedgerTrade,
+    ProfitChunk, TradeQuery,
 };
 
 /// A boxed, sendable future.
@@ -38,6 +40,15 @@ pub trait LedgerReader: Send + Sync {
     fn stat(&self, db: &Path) -> Result<LedgerStat, LedgerError>;
     fn schema(&self, db: &Path) -> Result<LedgerSchema, LedgerError>;
     fn summary(&self, db: &Path) -> Result<LedgerSummary, LedgerError>;
+    /// Counts and the highest trade id, without reading every row: enough to tell that a ledger
+    /// changed only in its open trades. The default asks for the whole summary.
+    fn probe(&self, db: &Path) -> Result<LedgerProbe, LedgerError> {
+        self.summary(db).map(|s| LedgerProbe {
+            open_count: s.open_count,
+            closed_count: s.closed_count,
+            max_trade_id: s.max_trade_id,
+        })
+    }
     fn trades(&self, db: &Path, query: &TradeQuery) -> Result<Vec<LedgerTrade>, LedgerError>;
     fn orders(&self, db: &Path, trade_ids: &[i64]) -> Result<Vec<LedgerOrder>, LedgerError>;
     /// Rows of `profit_history` with `rowid > after_rowid`, or the whole table when the cursor
@@ -72,6 +83,12 @@ pub trait BotRest: Send + Sync {
         action: WriteAction,
         idempotency_key: String,
     ) -> BoxFut<'_, Result<WriteOutcome, RestError>>;
+    /// Forward a whitelisted request of the browser to the bot (03 section 8.2). A mutating
+    /// request is sent once and never retried. Clients that cannot proxy answer `NotFound`.
+    fn proxy(&self, req: ProxyRequest) -> BoxFut<'_, Result<ProxyResponse, RestError>> {
+        let _ = req;
+        Box::pin(async { Err(RestError::NotFound) })
+    }
 }
 
 /// WebSocket client of the bots. `connect` starts a supervised connection that reconnects with

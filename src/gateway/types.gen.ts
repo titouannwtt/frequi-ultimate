@@ -10,7 +10,7 @@ export const HEARTBEAT_TIMEOUT_S = 35;
 export const AUTH_TIMEOUT_S = 5;
 export const DELTA_BUFFER_SIZE = 512;
 export const RECONNECT_BACKOFF_S = [1, 2, 5, 10, 30];
-export const COLLECTIONS = ['bots', 'wallets', 'positions', 'alerts', 'events', 'health'] as const;
+export const COLLECTIONS = ['bots', 'wallets', 'positions', 'alerts', 'events', 'health', 'scopes', 'details'] as const;
 
 // ---- identity ----
 export type BotKey = string;
@@ -121,6 +121,62 @@ export type AuditEntry = { ts_ms: number, session_hash: string, ip: string | nul
 response: string | null, latency_ms: number | null, };
 export type Ticker = { symbol: string, price: number, change_24h_pct: number | null, freshness: Freshness, };
 export type BotAlias = { device_id: string, ui_id: string, bot_key: BotKey, };
+export type ScopeTotals = { 
+/**
+ * `live`, `dry` or `replay` (the key of the entity).
+ */
+scope: string, mode: BotMode, bots: number, bots_online: number, open_trades: number, 
+/**
+ * Sum of the bots' own `max_open_trades` that are known.
+ */
+max_open_trades: number | null, realized_today: number | null, realized_1d: number | null, realized_7d: number | null, realized_30d: number | null, realized_total: number | null, open_profit_abs: number | null, 
+/**
+ * Sum of the bots' starting capitals (`available_capital - capital_withdrawal`).
+ */
+starting_capital: number | null, 
+/**
+ * Bots whose starting capital is unknown: the sum above leaves them out.
+ */
+capital_unknown_bots: number, 
+/**
+ * Wallet-level equity, each wallet counted once however many bots share it.
+ */
+wallet_equity: number | null, wallets: number, 
+/**
+ * Gross long and short notional before netting, and their difference.
+ */
+exposure_long: number, exposure_short: number, exposure_net: number, drawdown_realized: DrawdownValue | null, drawdown_with_open: DrawdownValue | null, 
+/**
+ * Keys of the bots left out of at least one sum because a figure was stale or unknown.
+ */
+excluded_bots: Array<string>, alerts: AlertSummary, freshness: Freshness, };
+export type PairLock = { pair: string, reason: string | null, until_ms: number | null, side: string | null, };
+export type BotConfigSummary = { version: string | null, api_version: number | null, strategy: string | null, trading_mode: string | null, max_open_trades: number | null, dry_run: boolean | null, 
+/**
+ * The bot exposes the `/fleet/*` endpoints of the fork.
+ */
+fleet_endpoints: boolean, };
+export type BotDetail = { whitelist: Array<string>, blacklist: Array<string>, locks: Array<PairLock>, config: BotConfigSummary, 
+/**
+ * Latest log lines (at most 100), oldest first.
+ */
+logs: Array<LogLine>, freshness: Freshness, };
+export type ActionStatus = "accepted" | "rejected" | "unknown";
+export type ActionVerify = { expected_state: string, check_after_ms: number, };
+export type ActionResult = { status: ActionStatus, http_status: number | null, 
+/**
+ * Machine-readable reason of a rejection decided by the gateway (`state_mismatch`, ...).
+ */
+reason: string | null, 
+/**
+ * Answer of the bot, truncated to 2 KB.
+ */
+bot_response: string | null, verify: ActionVerify | null, idempotency_key: string, ts_ms: number, };
+export type PrefsDoc = { scope: string, 
+/**
+ * Starts at 1 and increases at every write: the value of `If-Match`.
+ */
+version: number, updated_ms: number, data: unknown, };
 
 // ---- calculations ----
 export type Market = "crypto" | "xyz_stocks" | "xyz_indices" | "xyz_commodities" | "hip3_other" | "mixed";
@@ -354,7 +410,7 @@ export type AlertTransition = { kind: TransitionKind, alert: Alert, };
 
 // ---- protocol ----
 export type Channel = string;
-export type ErrorCode = "bad_request" | "unauthorized" | "forbidden" | "origin_not_allowed" | "not_found" | "rate_limited" | "state_mismatch" | "in_progress" | "unknown_channel" | "too_many_connections" | "bot_unreachable" | "unavailable" | "internal";
+export type ErrorCode = "bad_request" | "unauthorized" | "forbidden" | "origin_not_allowed" | "not_found" | "rate_limited" | "state_mismatch" | "in_progress" | "idempotency_key_reused" | "unknown_channel" | "too_many_connections" | "bot_unreachable" | "unavailable" | "internal";
 export type ApiError = { code: ErrorCode, message: string, retry_after_ms: number | null, };
 export type ResyncReason = "gap" | "overflow" | "stale_resume";
 export type SeqCheck = { "verdict": "in_order" } | { "verdict": "duplicate" } | { "verdict": "gap", expected: number, got: number, };
@@ -375,4 +431,6 @@ export type Upsert = {
   alerts?: Record<string, PatchOf<Alert>>;
   events?: Record<string, PatchOf<Event>>;
   health?: Record<string, PatchOf<Health>>;
+  scopes?: Record<string, PatchOf<ScopeTotals>>;
+  details?: Record<string, PatchOf<BotDetail>>;
 };

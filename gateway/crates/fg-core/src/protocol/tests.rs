@@ -184,6 +184,7 @@ fn auth_token_never_appears_in_debug_output() {
 fn error_codes_map_to_http_statuses() {
     assert_eq!(ErrorCode::StateMismatch.http_status(), 409);
     assert_eq!(ErrorCode::InProgress.http_status(), 409);
+    assert_eq!(ErrorCode::IdempotencyKeyReused.http_status(), 422);
     assert_eq!(ErrorCode::Unauthorized.http_status(), 401);
     assert_eq!(ErrorCode::RateLimited.http_status(), 429);
     assert_eq!(ErrorCode::OriginNotAllowed.http_status(), 403);
