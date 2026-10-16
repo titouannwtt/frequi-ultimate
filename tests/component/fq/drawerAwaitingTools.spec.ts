@@ -78,7 +78,7 @@ describe('TradeDrawer opened from the fleet table (B194)', () => {
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy).toHaveBeenCalledWith(p.bot_key, p.trade_id);
     expect(w.text()).not.toContain('not available');
-    expect(w.text()).toContain('SO1');
+    expect(w.text()).toContain('Top-up 1');
   });
 
   it('one request serves the drawer and the page that asks for the same trade', async () => {

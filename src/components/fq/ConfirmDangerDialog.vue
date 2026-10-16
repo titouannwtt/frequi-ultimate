@@ -411,7 +411,11 @@ watch(
 
           <div v-if="position && (single || action.kind === 'forceentry')" class="pos-line">
             <DirectionChip :side="position.side" :leverage="position.leverage" />
-            <Badge v-if="position.market !== 'crypto'" kind="xyz" />
+            <Badge
+              v-if="position.market !== 'crypto'"
+              kind="neutral"
+              :label="t('fq.drawer.marketHip3')"
+            />
           </div>
 
           <template v-if="single">
@@ -436,7 +440,10 @@ watch(
             <!-- What the share represents, and the exchange minimum (it used to sit in the drawer) -->
             <p v-if="plan && plan.notional !== null" class="qty-note" data-testid="dialog-qty-note">
               <span class="num" :class="{ warn: plan.belowMin }">{{
-                t('fq.dialog.quantityAmount', { v: fmt.number(plan.notional, 2) })
+                t('fq.dialog.quantityAmount', {
+                  v: fmt.number(plan.notional, 2),
+                  lev: position?.leverage ?? 1,
+                })
               }}</span>
               <span>{{ t('fq.dialog.quantityMin', { min: MIN_NOTIONAL }) }}</span>
             </p>

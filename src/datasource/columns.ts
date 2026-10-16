@@ -95,7 +95,8 @@ export const COLUMN_REGISTRY: readonly ColumnSpec[] = [
   c('stoploss', 'right', true, 960, OPEN, []),
   c('replay', 'center', false, 1000, OPEN, []),
   c('opened', 'right', true, 880, TRADES, []),
-  c('actions', 'center', false, 0, OPEN, ['open', 'bot'], { required: true }),
+  // The Bot page has no such column: the exit and the rest are in the trade panel beside the list
+  c('actions', 'center', false, 0, ['open'], ['open'], { required: true }),
   // ---- closed trades and journal only ----
   // The Journal leaves the exit price to the trade sheet (05-friendly-plan.md, section 2.6)
   c('exit_price', 'right', false, 760, CLOSED, ['closed']),

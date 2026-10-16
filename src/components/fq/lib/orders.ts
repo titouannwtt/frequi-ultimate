@@ -28,6 +28,24 @@ const priceOf = (o: OrderRow): number | null =>
 const isFilled = (o: OrderRow): boolean =>
   !o.is_open && (o.filled != null ? o.filled > 0 : o.status === 'closed');
 
+/**
+ * Rank of a safety order from its ladder label ("SO2" is 2); null for the entry ("E") and for a
+ * label that is not a ladder one. The label stays a stable identifier, what the owner reads is
+ * "Renfort 2": the surfaces translate it from this rank.
+ */
+export function refillRank(label: string): number | null {
+  const m = /^SO(\d+)$/.exec(label);
+  return m ? Number(m[1]) : null;
+}
+
+/** "1-2" for consecutive ranks, "1, 3" otherwise: the numbers of merged top-ups in one label. */
+export function rankRange(ranks: readonly number[]): string {
+  const r = [...new Set(ranks)].sort((a, b) => a - b);
+  if (r.length <= 1) return r.map(String).join('');
+  const consecutive = r.every((v, i) => i === 0 || v === r[i - 1]! + 1);
+  return consecutive ? `${r[0]}-${r[r.length - 1]}` : r.join(', ');
+}
+
 export function orderModel(rows: readonly OrderRow[], side: Side): OrderModel {
   const entries = rows
     .filter((o) => isEntry(o, side) && o.side !== 'stoploss')

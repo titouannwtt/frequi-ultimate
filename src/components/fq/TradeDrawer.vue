@@ -9,6 +9,7 @@ import { useFqPositionsStore } from '@/datasource/stores/positions';
 import type { BotKey } from '@/gateway/types.gen';
 
 import type { ActionId } from './lib/actions';
+import { waitingLevels } from './lib/chartTrades';
 import { pairLabel } from './lib/trades';
 import TradeDrawerBody from './TradeDrawerBody.vue';
 import TradeDrawerFoot from './TradeDrawerFoot.vue';
@@ -49,6 +50,21 @@ const own = useTradeOrders(
 );
 const ladder = computed(() => props.orders ?? own.model.value?.ladder);
 const ladderLoading = computed(() => props.orders === undefined && own.loading.value);
+// The orders that wait say two levels in words: the take profit (a limit exit) and the next top-up
+// (a limit entry), read from the rows the drawer already has. A bot that sells and buys at market
+// has none, and the drawer then says it does not announce them
+const waiting = computed(() =>
+  own.rows.value && position.value
+    ? waitingLevels(
+        own.rows.value,
+        position.value.side,
+        position.value.open_rate,
+        position.value.current_rate,
+      )
+    : null,
+);
+const tpLevel = computed(() => props.tp ?? waiting.value?.tp ?? null);
+const nextLevel = computed(() => props.nextSo ?? waiting.value?.nextRefill ?? null);
 const title = computed(() =>
   position.value ? `${pairLabel(position.value.pair)} #${props.tradeId}` : `#${props.tradeId}`,
 );
@@ -60,8 +76,8 @@ const title = computed(() =>
       <TradeDrawerBody
         v-if="position"
         :position="position"
-        :tp="tp"
-        :next-so="nextSo"
+        :tp="tpLevel"
+        :next-so="nextLevel"
         :dca-max="dcaMax"
         :orders="ladder"
         :orders-loading="ladderLoading"
@@ -82,11 +98,12 @@ const title = computed(() =>
       <TradeDrawerBody
         v-if="position"
         :position="position"
-        :tp="tp"
-        :next-so="nextSo"
+        :tp="tpLevel"
+        :next-so="nextLevel"
         :dca-max="dcaMax"
         :orders="ladder"
         :orders-loading="ladderLoading"
+        hide-title
       />
       <EmptyState
         v-else

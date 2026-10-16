@@ -37,12 +37,14 @@ import {
   mergeTail,
   offscreenLevels,
   paneLayout,
+  planLevelLabels,
   resolveSubplots,
   subplotCandidates,
   subplotCount,
   toCandleSet,
   zoomStartPct,
   type CandleSet,
+  type LabelPlan,
   type OverlayToggles,
   type Overlays,
   type SubplotInfo,
@@ -242,7 +244,7 @@ watch(
 const plotEl = ref<HTMLElement | null>(null);
 const { height: plotHeight } = useElementSize(plotEl);
 const showSubs = ref(true);
-const hasVolume = computed(() => set.value?.columns.includes('volume') ?? false);
+const hasVolumeColumn = computed(() => set.value?.columns.includes('volume') ?? false);
 const subsTotal = computed(() =>
   set.value ? subplotCount(plot.value, props.rsi, set.value.columns) : 0,
 );
@@ -260,6 +262,23 @@ const candidates = computed(() =>
 const chosenIds = computed<string[] | null>(() =>
   managed.value ? resolveSubplots(candidates.value, props.subChoice) : null,
 );
+// A small chart cannot hold the volume and the sub-chart the user chose: the sub-chart wins
+const hideVolume = computed(() => {
+  if (!managed.value || !hasVolumeColumn.value || !showSubs.value) return false;
+  const want = chosenIds.value?.length ?? 0;
+  if (want === 0) return false;
+  const withVolume = paneLayout({
+    heightPx: plotHeight.value,
+    hasVolume: true,
+    subCount: want,
+    showSubplots: true,
+    subTitleH: subTitleH.value,
+    subH: SUB_H_CHOSEN,
+    mainMinShare: MAIN_MIN_SHARE_CHOSEN,
+  });
+  return withVolume.subs.length < want;
+});
+const hasVolume = computed(() => hasVolumeColumn.value && !hideVolume.value);
 const layoutIn = computed(() => ({
   heightPx: plotHeight.value,
   hasVolume: hasVolume.value,
@@ -390,6 +409,8 @@ const overlayLabels = computed(() => ({
   dca: t('fq.candle.dca'),
   exit: t('fq.candle.exit'),
   dcaTag: t('fq.candle.dcaTag'),
+  refill: t('fq.candle.refill'),
+  refills: t('fq.candle.refills'),
   closedTrade: t('fq.candle.closedTrade'),
   pending: {
     entry: t('fq.candle.pending.entry'),
@@ -410,6 +431,34 @@ const overlayLabels = computed(() => ({
     closed: t('fq.candle.tip.closed'),
   },
 }));
+
+const levels = computed(() =>
+  levelLines(props.overlays, toggles.value, tokens.value, overlayLabels.value),
+);
+// The price range on screen, read back from the chart (a pan or a zoom moves it)
+const axisRange = ref<{ lo: number; hi: number } | null>(null);
+// Level labels that would be written over each other are merged or stacked. Placing them needs the
+// price range really on screen, so the first draw writes them as they come and the next one (after
+// the chart reports its range) places them; the plan is kept as text so that a pan which moves
+// nothing does not redraw the chart.
+const planKey = computed(() =>
+  JSON.stringify(
+    planLevelLabels(
+      levels.value,
+      (v) => fmt.price(v),
+      { refills: overlayLabels.value.refills },
+      axisRange.value
+        ? {
+            lo: axisRange.value.lo,
+            hi: axisRange.value.hi,
+            top: layout.value.main.top,
+            height: layout.value.main.height,
+          }
+        : null,
+    ),
+  ),
+);
+const labelPlan = computed<Record<string, LabelPlan>>(() => JSON.parse(planKey.value));
 
 const option = computed(() => {
   if (!set.value || set.value.rows.length === 0) return null;
@@ -433,6 +482,8 @@ const option = computed(() => {
     subTitleH: layoutIn.value.subTitleH,
     subH: layoutIn.value.subH,
     mainMinShare: layoutIn.value.mainMinShare,
+    labelPlan: labelPlan.value,
+    hideVolume: hideVolume.value,
   });
 });
 
@@ -501,11 +552,6 @@ const lastClose = computed(() => {
   }
   return null;
 });
-const levels = computed(() =>
-  levelLines(props.overlays, toggles.value, tokens.value, overlayLabels.value),
-);
-// The price range on screen, read back from the chart (a pan or a zoom moves it)
-const axisRange = ref<{ lo: number; hi: number } | null>(null);
 function readRange() {
   const m = layout.value.main;
   if (!chartRef || typeof chartRef.convertFromPixel !== 'function') return;
