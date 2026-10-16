@@ -9,7 +9,8 @@ import type { BotState } from '@/components/ds/types';
 import type { ScopeDetail, ScopeTotals } from '@/datasource/types';
 import type { BotKey, BotMode, BotRow, Exposure, Position } from '@/gateway/types.gen';
 
-import { botState, drawdownPct } from './bots';
+import { botState, drawdownPct, isStaleGroup } from './bots';
+import { aggregateSlot, PENDING, READY, unavailable, type Slot } from './valueState';
 
 export interface FleetKpiModel {
   mode: BotMode;
@@ -34,6 +35,22 @@ export interface FleetKpiModel {
   /** Bots that are not online, by state. */
   states: Partial<Record<BotState, number>>;
   excluded: BotKey[];
+  /**
+   * State of each figure. A figure that is not `ready` is null above, never 0: when every position
+   * of the scope is excluded (prices unknown) the latent profit, the equity with open positions
+   * and the drawdown with open positions are unavailable, not "0.00".
+   */
+  slots: Record<
+    | 'equityOpen'
+    | 'openProfit'
+    | 'realized1d'
+    | 'realized30d'
+    | 'drawdown'
+    | 'exposure'
+    | 'margin'
+    | 'capital',
+    Slot
+  >;
 }
 
 function weightedWinrate(bots: readonly BotRow[]): number | null {
@@ -59,7 +76,6 @@ export function fleetKpiModel(
 ): FleetKpiModel {
   const bots = detail.bots.filter((b) => b.identity.mode === block.mode);
   const keys = new Set(bots.map((b) => b.bot_key));
-  const excluded = new Set(block.excluded);
 
   const capital = block.starting_capital.known > 0 ? block.starting_capital.total : null;
   const equityRealized =
@@ -69,13 +85,16 @@ export function fleetKpiModel(
       ? equityRealized + block.open_profit_abs
       : null;
 
-  // Margin is summed over fresh, owned positions of the bots of this mode only
-  const margin = detail.positions
-    .filter(
-      (p: Position) =>
-        keys.has(p.bot_key) && !p.orphan && !p.freshness.stale && !excluded.has(p.bot_key),
-    )
-    .reduce((sum, p) => sum + p.stake_amount, 0);
+  // Margin is summed over fresh, owned positions of the bots of this mode only. A bot left out of
+  // the sums because its prices are missing still has a known stake: only a silent bot is left out.
+  const posStale = new Set(
+    bots.filter((b) => isStaleGroup(b, 'positions', nowMs, skewMs)).map((b) => b.bot_key),
+  );
+  const marginPositions = detail.positions.filter(
+    (p: Position) =>
+      keys.has(p.bot_key) && !p.orphan && !p.freshness.stale && !posStale.has(p.bot_key),
+  );
+  const margin = marginPositions.reduce((sum, p) => sum + p.stake_amount, 0);
 
   const states: Partial<Record<BotState, number>> = {};
   let online = 0;
@@ -89,23 +108,83 @@ export function fleetKpiModel(
     block.drawdown !== undefined ? block.drawdown : withDrawdown ? detail.drawdown : null;
   const dd = ddSource?.with_open ?? null;
 
+  const base = { bots, nowMs, skewMs };
+  const openSlot = aggregateSlot({
+    ...base,
+    pick: (b) => b.metrics.open_profit_abs,
+    group: 'positions',
+    hasValue: block.open_profit_abs !== null,
+    prices: true,
+  });
+  const day = aggregateSlot({
+    ...base,
+    pick: (b) => b.metrics.realized_1d,
+    group: 'metrics',
+    hasValue: block.realized_1d !== null,
+  });
+  const month = aggregateSlot({
+    ...base,
+    pick: (b) => b.metrics.realized_30d,
+    group: 'metrics',
+    hasValue: block.realized_30d !== null,
+  });
+  // Nothing to sum yet: the common state of the bots says why (still being read, silent...)
+  const whyNot = (group: 'metrics' | 'capital'): Slot => {
+    if (group === 'capital') {
+      // The capital is a registry fact: once the bots that answer were read, a missing one stays
+      // missing. A bot that never answers (starting, silent) does not hold the others back
+      const answering = bots.filter((b) => b.state.status === 'online');
+      const reading = answering.length === 0 || answering.some((b) => !b.freshness.capital);
+      return reading ? PENDING : unavailable('capital');
+    }
+    return aggregateSlot({ ...base, pick: () => null, group, hasValue: false });
+  };
+  const equitySlot: Slot =
+    equityRealized === null ? whyNot(capital === null ? 'capital' : 'metrics') : openSlot;
+  const drawdownSlot: Slot = openSlot.state !== 'ready' ? openSlot : dd ? READY : whyNot('metrics');
+  const marginKnown = capital !== null && capital > 0;
+  // Margin and exposure need the positions to have been read, not priced
+  const positionsSlot = aggregateSlot({
+    ...base,
+    pick: (b) => b.metrics.exposure_long ?? b.metrics.exposure_short,
+    group: 'positions',
+    hasValue: true,
+  });
+  const marginSlot: Slot = marginKnown
+    ? positionsSlot
+    : capital === null
+      ? whyNot('capital')
+      : PENDING;
+  const exposureSlot = positionsSlot;
+  const ok = (slot: Slot) => slot.state === 'ready';
+
   return {
     mode: block.mode,
     equityRealized,
-    equityOpen,
+    equityOpen: ok(equitySlot) ? equityOpen : null,
     capitalUnknown: block.starting_capital.unknown,
-    openProfit: block.open_profit_abs,
+    openProfit: ok(openSlot) ? block.open_profit_abs : null,
     openCount: block.open_trades,
-    realized1d: block.realized_1d,
-    realized30d: block.realized_30d,
+    realized1d: ok(day) ? block.realized_1d : null,
+    realized30d: ok(month) ? block.realized_30d : null,
     winrate: weightedWinrate(bots),
-    drawdown: dd ? { abs: dd.abs, pct: drawdownPct(dd) } : null,
+    drawdown: ok(drawdownSlot) && dd ? { abs: dd.abs, pct: drawdownPct(dd) } : null,
     exposure: block.exposure,
     netted: block.netted,
-    marginPct: capital !== null && capital > 0 ? (margin / capital) * 100 : null,
+    marginPct: ok(marginSlot) && marginKnown ? (margin / capital) * 100 : null,
     online,
     total: bots.length,
     states,
     excluded: block.excluded,
+    slots: {
+      equityOpen: equitySlot,
+      openProfit: openSlot,
+      realized1d: day,
+      realized30d: month,
+      drawdown: drawdownSlot,
+      exposure: exposureSlot,
+      margin: marginSlot,
+      capital: capital === null ? whyNot('capital') : READY,
+    },
   };
 }

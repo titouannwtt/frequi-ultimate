@@ -8,6 +8,7 @@ import { useFormat } from '@/components/ds/lib/useFormat';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
 import { useScope } from '@/composables/useScope';
 import { useScopeDetail } from '@/composables/useScopeDetail';
+import { useValueSlot } from '@/composables/useValueSlot';
 import { ruleMeta } from '@/datasource/calc/alerts/rules';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
@@ -37,6 +38,7 @@ const fleet = useFqFleetStore();
 const conn = useFqConnectionStore();
 const prefs = useFqPrefsStore();
 const clock = useNowMs();
+const { vs } = useValueSlot();
 
 const loaded = useScopeDetail(() => scope.fleetScopeRef.value);
 const data = computed<ScopeDetail | null>(() => props.detail ?? loaded.detail.value);
@@ -76,6 +78,11 @@ function ddMeter(m: FleetKpiModel): KpiMeter | undefined {
   };
 }
 
+function exposureSub(m: FleetKpiModel): string | undefined {
+  if (m.slots.exposure.state !== 'ready') return undefined;
+  return `${t('fq.header.net', { n: fmt.signed(m.exposure.net, 0) })}${m.netted ? '' : ` · ${t('fq.fleet.notNetted')}`}`;
+}
+
 function excludedRefs(m: FleetKpiModel): BotRef[] {
   return m.excluded.map((k) => ({
     key: k,
@@ -112,12 +119,14 @@ const SKELETON = [
         <span>{{ t('fq.kpi.notSummed') }}</span>
       </div>
       <KpiStrip :label="t('fq.kpi.strip', { mode: t(`fq.scope.${m.mode}`) })">
-        <KpiTile :label="t('fq.kpi.equityOpen')" wide data-testid="kpi-equity">
+        <KpiTile
+          :label="t('fq.kpi.equityOpen')"
+          wide
+          data-testid="kpi-equity"
+          v-bind="vs(m.slots.equityOpen, `${m.mode}/equityOpen`)"
+        >
           <template #value>
-            <template v-if="m.equityOpen !== null">
-              {{ fmt.number(m.equityOpen, 2) }}<small> USDC</small>
-            </template>
-            <template v-else>{{ t('fq.ds.notAvailable') }}</template>
+            {{ fmt.number(m.equityOpen as number, 2) }}<small> USDC</small>
           </template>
           <template #sub>
             <template v-if="m.equityRealized !== null">
@@ -130,6 +139,7 @@ const SKELETON = [
           :label="t('fq.kpi.pnlOpen')"
           :sub="t('fq.kpi.positions', { n: m.openCount }, m.openCount)"
           data-testid="kpi-open"
+          v-bind="vs(m.slots.openProfit, `${m.mode}/openProfit`)"
         >
           <template #value><PnlValue :value="m.openProfit" /></template>
         </KpiTile>
@@ -137,6 +147,7 @@ const SKELETON = [
           :label="t('fq.kpi.realizedToday')"
           :sub="t('fq.kpi.sinceMidnight', { tz })"
           data-testid="kpi-day"
+          v-bind="vs(m.slots.realized1d, `${m.mode}/realized1d`)"
         >
           <template #value><PnlValue :value="m.realized1d" /></template>
         </KpiTile>
@@ -148,6 +159,7 @@ const SKELETON = [
               : t('fq.kpi.winrate', { v: fmt.percent(m.winrate * 100, 1, false) })
           "
           data-testid="kpi-30d"
+          v-bind="vs(m.slots.realized30d, `${m.mode}/realized30d`)"
         >
           <template #value>
             <PnlValue :value="m.realized30d" :decimals="2" />
@@ -158,25 +170,28 @@ const SKELETON = [
           :meter="ddMeter(m)"
           :sub="ddSub(m)"
           data-testid="kpi-dd"
+          v-bind="vs(m.slots.drawdown, `${m.mode}/drawdown`)"
         >
           <template #value>
-            <template v-if="m.drawdown">
-              <PnlValue :value="-m.drawdown.abs" :decimals="0" unit="USDC" />
-            </template>
-            <template v-else>{{ t('fq.ds.notAvailable') }}</template>
+            <PnlValue :value="-(m.drawdown?.abs as number)" :decimals="0" unit="USDC" />
           </template>
         </KpiTile>
         <KpiTile
           :label="t('fq.kpi.exposure')"
-          :sub="`${t('fq.header.net', { n: fmt.signed(m.exposure.net, 0) })}${m.netted ? '' : ` · ${t('fq.fleet.notNetted')}`}`"
+          :sub="exposureSub(m)"
           wide
           data-testid="kpi-exposure"
+          v-bind="vs(m.slots.exposure, `${m.mode}/exposure`)"
         >
           <template #value>
             <span class="long">{{ fmt.number(m.exposure.long, 0) }}</span> /
             <span class="short">{{ fmt.number(m.exposure.short, 0) }}</span>
           </template>
-          <SplitBar :long="m.exposure.long" :short="m.exposure.short" />
+          <SplitBar
+            v-if="m.slots.exposure.state === 'ready'"
+            :long="m.exposure.long"
+            :short="m.exposure.short"
+          />
         </KpiTile>
         <KpiTile
           :label="t('fq.kpi.margin')"
@@ -186,13 +201,9 @@ const SKELETON = [
               : { value: m.marginPct, max: 100, tone: m.marginPct >= 85 ? 'warn' : 'neutral' }
           "
           data-testid="kpi-margin"
+          v-bind="vs(m.slots.margin, `${m.mode}/margin`)"
         >
-          <template #value>
-            <template v-if="m.marginPct !== null">
-              {{ fmt.number(m.marginPct, 1) }}<small> %</small>
-            </template>
-            <template v-else>{{ t('fq.ds.notAvailable') }}</template>
-          </template>
+          <template #value> {{ fmt.number(m.marginPct as number, 1) }}<small> %</small> </template>
         </KpiTile>
         <KpiTile
           :label="t('fq.kpi.botsOnline')"
@@ -207,7 +218,13 @@ const SKELETON = [
     </div>
     <div v-if="models.length === 0" class="row" data-testid="kpi-loading">
       <KpiStrip :label="t('fq.kpi.strip', { mode: '' })">
-        <KpiTile v-for="k in SKELETON" :key="k" :label="t(`fq.kpi.${k}`)" value=" " />
+        <KpiTile
+          v-for="k in SKELETON"
+          :key="k"
+          :label="t(`fq.kpi.${k}`)"
+          state="pending"
+          :pending-key="`fleet/${k}`"
+        />
       </KpiStrip>
     </div>
   </div>

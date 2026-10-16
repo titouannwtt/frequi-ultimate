@@ -40,6 +40,10 @@ export const FQ_ICONS = {
   short: 'arrow-down-right',
   dcaLadder: 'layers',
   hold: 'hand',
+  // A value slot: not received yet (spinning) / loaded but unavailable (static, reason in tooltip)
+  valuePending: 'loader-circle',
+  valueUnavailable: 'circle-slash',
+  valueNoResponse: 'clock-alert',
   // Theme selector
   themeSystem: 'monitor',
   themeDark: 'moon',

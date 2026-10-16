@@ -19,6 +19,9 @@ import IconInfo from '~icons/lucide/info';
 import IconPlugZap from '~icons/lucide/plug-zap';
 import IconKeyRound from '~icons/lucide/key-round';
 import IconLoader from '~icons/lucide/loader';
+import IconLoaderCircle from '~icons/lucide/loader-circle';
+import IconCircleSlash from '~icons/lucide/circle-slash';
+import IconClockAlert from '~icons/lucide/clock-alert';
 import IconCheck from '~icons/lucide/check';
 import IconBell from '~icons/lucide/bell';
 import IconBellOff from '~icons/lucide/bell-off';
@@ -99,6 +102,9 @@ export const DS_ICONS = {
   'plug-zap': IconPlugZap,
   'key-round': IconKeyRound,
   loader: IconLoader,
+  'loader-circle': IconLoaderCircle,
+  'circle-slash': IconCircleSlash,
+  'clock-alert': IconClockAlert,
   check: IconCheck,
   bell: IconBell,
   'bell-off': IconBellOff,

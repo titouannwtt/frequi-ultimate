@@ -2,8 +2,9 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { Badge, DsIcon, EmptyState, PnlValue, StatusDot } from '@/components/ds';
+import { Badge, DsIcon, EmptyState, PnlValue, StatusDot, ValueState } from '@/components/ds';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
+import { useValueSlot } from '@/composables/useValueSlot';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
 import type { BotRow } from '@/gateway/types.gen';
 import type { BotGroupPrefs } from '@/migration/schema';
@@ -17,6 +18,7 @@ import {
   type FleetSort,
   type StableOrderState,
 } from './lib/bots';
+import { botSlot } from './lib/valueState';
 
 /**
  * The fleet as tiles (02 section 3.1, `M`): neutral at rest. Colour only means something: a bar
@@ -40,9 +42,20 @@ const emit = defineEmits<{ selectBot: [botKey: string] }>();
 
 const { t } = useI18n();
 const clock = useNowMs();
+const { vs } = useValueSlot();
 const conn = useFqConnectionStore();
 const now = computed(() => props.nowMs ?? clock.value);
 const skew = computed(() => conn.status.clockSkewMs);
+
+function cell(b: BotRow, field: string, group: 'positions' | 'capital', value: number | null) {
+  const slot = botSlot(b, group, value, {
+    nowMs: now.value,
+    skewMs: skew.value,
+    prices: field === 'latent',
+    settled: field === 'max' ? 'noData' : undefined,
+  });
+  return vs(slot, `${b.bot_key}/${field}`);
+}
 
 const hovered = ref(false);
 const focused = ref(false);
@@ -149,11 +162,18 @@ const legend = computed(() => [
             <PnlValue
               :value="b.metrics.open_profit_abs"
               :muted="isStaleGroup(b, 'positions', now, skew)"
+              v-bind="cell(b, 'latent', 'positions', b.metrics.open_profit_abs)"
             />
           </span>
-          <span class="t-sub">{{
-            reason(b) || `${b.state.open_trades}/${b.state.max_open_trades ?? '?'}`
-          }}</span>
+          <span class="t-sub">
+            <template v-if="reason(b)">{{ reason(b) }}</template>
+            <template v-else
+              >{{ b.state.open_trades }}/<ValueState
+                v-bind="cell(b, 'max', 'capital', b.state.max_open_trades)"
+                >{{ b.state.max_open_trades }}</ValueState
+              ></template
+            >
+          </span>
         </button>
       </div>
     </template>

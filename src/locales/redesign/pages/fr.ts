@@ -44,7 +44,7 @@ export default {
       positions: 'Positions ouvertes',
       positionsMeta: '{n} · pires en premier',
       positionsMetaPartial: '{n} lues sur {total} · pires en premier',
-      positionsAwaiting: 'positions pas encore lues',
+      positionsAwaiting: 'positions en cours de lecture',
       equity: 'Équité',
       tabs: { equity: 'Équité', leaderboard: 'Classement', calendar: 'Calendrier' },
       lbPeriod: { '1d': '1 j', '7d': '7 j', '30d': '30 j', total: 'Total' },

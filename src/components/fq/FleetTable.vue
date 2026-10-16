@@ -13,6 +13,7 @@ import {
   PnlValue,
   Sparkline,
   StatusDot,
+  ValueState,
 } from '@/components/ds';
 import type { BotRef, MeterTone } from '@/components/ds';
 import { formatAge } from '@/components/ds/lib/format';
@@ -20,6 +21,7 @@ import { useFormat } from '@/components/ds/lib/useFormat';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
 import { virtualWindow, VIRTUAL_THRESHOLD } from '@/components/ds/lib/table';
 import { useColumns } from '@/composables/useColumns';
+import { useValueSlot } from '@/composables/useValueSlot';
 import { DIGEST_STALE_MS } from '@/datasource/calc/freshness';
 import { ruleMeta } from '@/datasource/calc/alerts/rules';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
@@ -44,6 +46,14 @@ import {
   type FleetSort,
   type StableOrderState,
 } from './lib/bots';
+import {
+  aggregateSlot,
+  botSlot,
+  PENDING,
+  READY,
+  type Slot,
+  type SlotReason,
+} from './lib/valueState';
 
 /**
  * The fleet as a table (02 section 3.1): a sticky "Σ" row that says how many bots it excludes, the
@@ -91,6 +101,7 @@ const fleet = useFqFleetStore();
 const prefs = useFqPrefsStore();
 
 const now = computed(() => props.nowMs ?? clock.value);
+const { vs } = useValueSlot();
 const skew = computed(() => conn.status.clockSkewMs);
 
 // ---- width of this panel ----
@@ -187,15 +198,33 @@ const shown = computed(() => items.value.slice(win.value.start, win.value.end));
 // ---- aggregates ----
 function sumsOf(bots: BotRow[]) {
   const n = now.value;
-  const s = skew.value;
-  return {
-    latent: sumBots(bots, 'positions', (b) => b.metrics.open_profit_abs, n, s),
-    d1: sumBots(bots, 'metrics', (b) => b.metrics.realized_1d, n, s),
-    d30: sumBots(bots, 'metrics', (b) => b.metrics.realized_30d, n, s),
-    total: sumBots(bots, 'metrics', (b) => b.metrics.realized_total, n, s),
+  const sk = skew.value;
+  const sums = {
+    latent: sumBots(bots, 'positions', (b) => b.metrics.open_profit_abs, n, sk),
+    d1: sumBots(bots, 'metrics', (b) => b.metrics.realized_1d, n, sk),
+    d30: sumBots(bots, 'metrics', (b) => b.metrics.realized_30d, n, sk),
+    total: sumBots(bots, 'metrics', (b) => b.metrics.realized_total, n, sk),
     slots: bots.reduce((acc, b) => acc + b.state.open_trades, 0),
-    exposure: fleetExposure(bots, fleet.wallets, n, s),
+    exposure: fleetExposure(bots, fleet.wallets, n, sk),
   };
+  const agg = (
+    pick: (b: BotRow) => number | null | undefined,
+    group: 'positions' | 'metrics',
+    included: number,
+    prices = false,
+  ): Slot =>
+    aggregateSlot({ bots, pick, group, hasValue: included > 0, prices, nowMs: n, skewMs: sk });
+  const read = (b: BotRow) => b.state.status !== 'starting' || !!b.freshness.state;
+  const slot = {
+    latent: agg((b) => b.metrics.open_profit_abs, 'positions', sums.latent.included, true),
+    d1: agg((b) => b.metrics.realized_1d, 'metrics', sums.d1.included),
+    d30: agg((b) => b.metrics.realized_30d, 'metrics', sums.d30.included),
+    total: agg((b) => b.metrics.realized_total, 'metrics', sums.total.included),
+    exposure: agg((b) => b.metrics.exposure_long ?? b.metrics.exposure_short, 'positions', 1),
+    // The count of open slots is the bots' own: unknown while none of them was read
+    trades: bots.length > 0 && !bots.some(read) ? PENDING : READY,
+  };
+  return { ...sums, slot };
 }
 
 /**
@@ -230,16 +259,6 @@ function excludedRefsOf(sums: ReturnType<typeof sumsOf>): BotRef[] {
   return props.rows
     .filter((b) => keys.has(b.bot_key))
     .map((b) => ({ key: b.bot_key, name: b.identity.name, reason: stateReason(b) }));
-}
-
-function groupSums(bots: BotRow[]) {
-  const n = now.value;
-  const s = skew.value;
-  return {
-    latent: sumBots(bots, 'positions', (b) => b.metrics.open_profit_abs, n, s).total,
-    d1: sumBots(bots, 'metrics', (b) => b.metrics.realized_1d, n, s).total,
-    d30: sumBots(bots, 'metrics', (b) => b.metrics.realized_30d, n, s).total,
-  };
 }
 
 const sigmaLabel = computed(() => {
@@ -281,8 +300,8 @@ function stateReason(b: BotRow): string {
     case 'stale': {
       const f = b.freshness.state;
       return t('fq.fleet.state.stale', {
-        age: f ? formatAge(Math.max(0, now.value + skew.value - f.as_of_ms), locale.value) : '?',
-      });
+        age: f ? formatAge(Math.max(0, now.value + skew.value - f.as_of_ms), locale.value) : '',
+      }).trim();
     }
     default:
       return '';
@@ -314,6 +333,32 @@ function rowClass(b: BotRow): Record<string, boolean> {
 
 function numStale(b: BotRow, group: 'positions' | 'metrics') {
   return isStaleGroup(b, group, now.value, skew.value);
+}
+
+/** Slot props of one figure of a bot row (state, reason, identity of the wait). */
+function cell(
+  b: BotRow,
+  field: string,
+  group: 'positions' | 'metrics' | 'capital',
+  value: number | null | undefined,
+  o: { prices?: boolean; settled?: SlotReason } = {},
+) {
+  const slot = botSlot(b, group, value, { nowMs: now.value, skewMs: skew.value, ...o });
+  return vs(slot, `${b.bot_key}/${field}`);
+}
+
+/** A bot that never closed a trade has no last trade and no win rate: that is a fact, not a gap. */
+const noTrades = (b: BotRow): SlotReason => (b.metrics.trades_closed === 0 ? 'noTrades' : 'noData');
+
+/** Drawdown with open positions needs the prices: it follows the latent profit when that is missing. */
+function ddCell(b: BotRow) {
+  const latent = botSlot(b, 'positions', b.metrics.open_profit_abs, {
+    nowMs: now.value,
+    skewMs: skew.value,
+    prices: true,
+  });
+  if (latent.state !== 'ready') return vs(latent, `${b.bot_key}/drawdown`);
+  return cell(b, 'drawdown', 'metrics', b.metrics.drawdown_with_open ? 0 : null);
 }
 
 function lastTrade(b: BotRow): string {
@@ -387,24 +432,41 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
               />
             </template>
             <template v-else-if="c.id === 'latent'">
-              <PnlValue :value="sr.sums.latent.total" />
+              <PnlValue
+                :value="sr.sums.latent.total"
+                v-bind="vs(sr.sums.slot.latent, `${sr.id}/Σ/latent`)"
+              />
             </template>
             <template v-else-if="c.id === 'realized_1d'">
-              <PnlValue :value="sr.sums.d1.total" />
+              <PnlValue :value="sr.sums.d1.total" v-bind="vs(sr.sums.slot.d1, `${sr.id}/Σ/d1`)" />
             </template>
             <template v-else-if="c.id === 'realized_30d'">
-              <PnlValue :value="sr.sums.d30.total" :decimals="0" />
+              <PnlValue
+                :value="sr.sums.d30.total"
+                :decimals="0"
+                v-bind="vs(sr.sums.slot.d30, `${sr.id}/Σ/d30`)"
+              />
             </template>
             <template v-else-if="c.id === 'realized_total'">
-              <PnlValue :value="sr.sums.total.total" :decimals="0" />
+              <PnlValue
+                :value="sr.sums.total.total"
+                :decimals="0"
+                v-bind="vs(sr.sums.slot.total, `${sr.id}/Σ/total`)"
+              />
             </template>
             <template v-else-if="c.id === 'exposure'">
-              <span
-                :title="sr.sums.exposure.netted ? t('fq.fleet.netted') : t('fq.fleet.notNetted')"
-                >{{ fmt.number(sr.sums.exposure.total, 0) }}</span
-              >
+              <ValueState v-bind="vs(sr.sums.slot.exposure, `${sr.id}/Σ/exposure`)">
+                <span
+                  :title="sr.sums.exposure.netted ? t('fq.fleet.netted') : t('fq.fleet.notNetted')"
+                  >{{ fmt.number(sr.sums.exposure.total, 0) }}</span
+                >
+              </ValueState>
             </template>
-            <template v-else-if="c.id === 'trades'">{{ sr.sums.slots }}</template>
+            <template v-else-if="c.id === 'trades'">
+              <ValueState v-bind="vs(sr.sums.slot.trades, `${sr.id}/Σ/trades`)">{{
+                sr.sums.slots
+              }}</ValueState>
+            </template>
           </th>
         </tr>
       </thead>
@@ -448,13 +510,26 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
             <td v-for="c in cols.slice(1)" :key="c.id" :class="{ c: c.align === 'center' }">
               <template v-if="!groupMode(item.group.bots)"></template>
               <template v-else-if="c.id === 'latent'">
-                <PnlValue :value="groupSums(item.group.bots).latent" muted />
+                <PnlValue
+                  :value="sumsOf(item.group.bots).latent.total"
+                  muted
+                  v-bind="vs(sumsOf(item.group.bots).slot.latent, `${item.key}/latent`)"
+                />
               </template>
               <template v-else-if="c.id === 'realized_1d'">
-                <PnlValue :value="groupSums(item.group.bots).d1" muted />
+                <PnlValue
+                  :value="sumsOf(item.group.bots).d1.total"
+                  muted
+                  v-bind="vs(sumsOf(item.group.bots).slot.d1, `${item.key}/d1`)"
+                />
               </template>
               <template v-else-if="c.id === 'realized_30d'">
-                <PnlValue :value="groupSums(item.group.bots).d30" :decimals="0" muted />
+                <PnlValue
+                  :value="sumsOf(item.group.bots).d30.total"
+                  :decimals="0"
+                  muted
+                  v-bind="vs(sumsOf(item.group.bots).slot.d30, `${item.key}/d30`)"
+                />
               </template>
             </td>
           </tr>
@@ -512,19 +587,35 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
               <template v-else-if="c.id === 'market'">{{ item.bot.identity.market }}</template>
               <template v-else-if="c.id === 'side'">
                 <DirectionChip v-if="exposureSide(item.bot)" :side="exposureSide(item.bot)!" />
-                <span v-else class="dim">{{ t('fq.ds.dash') }}</span>
+                <ValueState
+                  v-else
+                  v-bind="
+                    cell(
+                      item.bot,
+                      'side',
+                      'positions',
+                      item.bot.metrics.exposure_long ?? item.bot.metrics.exposure_short,
+                    )
+                  "
+                />
               </template>
               <template v-else-if="c.id === 'latent'">
                 <PnlValue
                   :value="item.bot.metrics.open_profit_abs"
                   :muted="numStale(item.bot, 'positions')"
                   :flash="true"
+                  v-bind="
+                    cell(item.bot, 'latent', 'positions', item.bot.metrics.open_profit_abs, {
+                      prices: true,
+                    })
+                  "
                 />
               </template>
               <template v-else-if="c.id === 'realized_1d'">
                 <PnlValue
                   :value="item.bot.metrics.realized_1d"
                   :muted="numStale(item.bot, 'metrics')"
+                  v-bind="cell(item.bot, 'd1', 'metrics', item.bot.metrics.realized_1d)"
                 />
               </template>
               <template v-else-if="c.id === 'realized_7d'">
@@ -532,6 +623,7 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
                   :value="item.bot.metrics.realized_7d"
                   :decimals="0"
                   :muted="numStale(item.bot, 'metrics')"
+                  v-bind="cell(item.bot, 'd7', 'metrics', item.bot.metrics.realized_7d)"
                 />
               </template>
               <template v-else-if="c.id === 'realized_30d'">
@@ -539,6 +631,7 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
                   :value="item.bot.metrics.realized_30d"
                   :decimals="0"
                   :muted="numStale(item.bot, 'metrics')"
+                  v-bind="cell(item.bot, 'd30', 'metrics', item.bot.metrics.realized_30d)"
                 />
               </template>
               <template v-else-if="c.id === 'realized_total'">
@@ -546,6 +639,7 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
                   :value="item.bot.metrics.realized_total"
                   :decimals="0"
                   :muted="numStale(item.bot, 'metrics')"
+                  v-bind="cell(item.bot, 'total', 'metrics', item.bot.metrics.realized_total)"
                 />
               </template>
               <template v-else-if="c.id === 'spark24h'">
@@ -557,23 +651,39 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
                 />
               </template>
               <template v-else-if="c.id === 'exposure'">
-                {{
-                  item.bot.metrics.exposure_long === null &&
-                  item.bot.metrics.exposure_short === null
-                    ? t('fq.ds.notAvailable')
-                    : fmt.number(
-                        (item.bot.metrics.exposure_long ?? 0) +
-                          (item.bot.metrics.exposure_short ?? 0),
-                        0,
-                      )
-                }}
+                <ValueState
+                  v-bind="
+                    cell(
+                      item.bot,
+                      'exposure',
+                      'positions',
+                      item.bot.metrics.exposure_long ?? item.bot.metrics.exposure_short,
+                    )
+                  "
+                  >{{
+                    fmt.number(
+                      (item.bot.metrics.exposure_long ?? 0) +
+                        (item.bot.metrics.exposure_short ?? 0),
+                      0,
+                    )
+                  }}</ValueState
+                >
               </template>
               <template v-else-if="c.id === 'trades'">
-                <div class="slots">
+                <ValueState
+                  v-if="item.bot.state.status === 'starting' && !item.bot.freshness.state"
+                  v-bind="vs(PENDING, `${item.bot.bot_key}/slots`)"
+                />
+                <div v-else class="slots">
                   <span class="num"
-                    >{{ item.bot.state.open_trades }}/{{
-                      item.bot.state.max_open_trades ?? '?'
-                    }}</span
+                    >{{ item.bot.state.open_trades }}/<ValueState
+                      v-bind="
+                        cell(item.bot, 'max', 'capital', item.bot.state.max_open_trades, {
+                          settled: 'noData',
+                        })
+                      "
+                      >{{ item.bot.state.max_open_trades }}</ValueState
+                    ></span
                   >
                   <Meter
                     v-if="slotsRatio(item.bot) !== null"
@@ -584,7 +694,10 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
                 </div>
               </template>
               <template v-else-if="c.id === 'drawdown'">
-                <div v-if="item.bot.metrics.drawdown_with_open" class="dd">
+                <div
+                  v-if="item.bot.metrics.drawdown_with_open && ddCell(item.bot).state === 'ready'"
+                  class="dd"
+                >
                   <PnlValue :value="-item.bot.metrics.drawdown_with_open.abs" :decimals="0" />
                   <span
                     v-if="drawdownPct(item.bot.metrics.drawdown_with_open) !== null"
@@ -602,9 +715,17 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
                     :label="t('fq.col.drawdown')"
                   />
                 </div>
-                <span v-else class="dim">{{ t('fq.ds.notAvailable') }}</span>
+                <ValueState v-else v-bind="ddCell(item.bot)" />
               </template>
-              <template v-else-if="c.id === 'last_trade'">{{ lastTrade(item.bot) }}</template>
+              <template v-else-if="c.id === 'last_trade'">
+                <template v-if="lastTrade(item.bot)">{{ lastTrade(item.bot) }}</template>
+                <ValueState
+                  v-else
+                  v-bind="
+                    cell(item.bot, 'last_trade', 'metrics', null, { settled: noTrades(item.bot) })
+                  "
+                />
+              </template>
               <template v-else-if="c.id === 'alerts'">{{ item.bot.alerts.count || '' }}</template>
               <template v-else-if="c.id === 'age'">
                 <AgeBadge
@@ -614,6 +735,7 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
                   :clock-skew-ms="skew"
                   :now-ms="now"
                 />
+                <ValueState v-else v-bind="vs(PENDING, `${item.bot.bot_key}/age`)" />
               </template>
               <template v-else-if="c.id === 'exchange'">{{
                 item.bot.identity.exchange ?? ''
@@ -622,18 +744,26 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
                 item.bot.identity.strategy ?? ''
               }}</template>
               <template v-else-if="c.id === 'capital'">
-                {{
-                  item.bot.metrics.starting_capital === null
-                    ? t('fq.ds.notAvailable')
-                    : fmt.number(item.bot.metrics.starting_capital, 0)
-                }}
+                <ValueState
+                  v-bind="
+                    cell(item.bot, 'capital', 'capital', item.bot.metrics.starting_capital, {
+                      settled: 'capital',
+                    })
+                  "
+                  >{{ fmt.number(item.bot.metrics.starting_capital as number, 0) }}</ValueState
+                >
               </template>
               <template v-else-if="c.id === 'winrate'">
-                {{
-                  item.bot.metrics.winrate === null
-                    ? ''
-                    : fmt.percent(item.bot.metrics.winrate * 100, 0, false)
-                }}
+                <ValueState
+                  v-bind="
+                    cell(item.bot, 'winrate', 'metrics', item.bot.metrics.winrate, {
+                      settled: noTrades(item.bot),
+                    })
+                  "
+                  >{{
+                    fmt.percent((item.bot.metrics.winrate as number) * 100, 0, false)
+                  }}</ValueState
+                >
               </template>
               <template v-else-if="c.id === 'port'">{{ item.bot.identity.port ?? '' }}</template>
             </td>

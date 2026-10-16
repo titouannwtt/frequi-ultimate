@@ -169,7 +169,7 @@ describe('Leaderboard', () => {
       },
     });
     expect(w.find('i.bar').exists()).toBe(false);
-    expect(w.find('.unk').exists()).toBe(true);
+    expect(w.find('.val [data-state="unavailable"]').exists()).toBe(true);
   });
 
   it('emits the bot key on click', async () => {
@@ -250,7 +250,7 @@ describe('PnlCalendar', () => {
     expect((w.emitted('selectDay')![0]![0] as { label: string }).label).toBe('2026-10-10');
   });
 
-  it('a past day without any bucket is unknown (a dash), not zero', () => {
+  it('a past day without any bucket is unknown (an icon with its reason), not zero', () => {
     const now = Date.UTC(2026, 9, 15, 12);
     const buckets = build(now).filter((b) => b.label !== '2026-10-05');
     const w = mountFq(PnlCalendar, {
@@ -259,7 +259,10 @@ describe('PnlCalendar', () => {
     const day = w.findAll('button.d').find((b) => b.find('.n').text() === '5')!;
     expect(day.classes()).toContain('missing');
     expect(day.attributes('disabled')).toBeDefined();
-    expect(day.find('.v').text()).toBe('-');
+    expect(day.find('.v').text()).toBe('');
+    expect(day.find('.v [data-state="unavailable"]').attributes('aria-label')).toBe(
+      'no figure for this day',
+    );
   });
 
   it('month arrows emit the neighbour month; the next one is disabled on the current month', async () => {
@@ -600,8 +603,10 @@ describe('BotRegistry', () => {
     expect(w.find('[data-testid=registry-migration]').text()).toContain('1 entry could not');
     expect(w.find('[data-testid=registry-discovered]').text()).toContain('2 bots detected');
     expect(w.find('tr[data-key="local:9401"]').text()).toContain('ftbot.1 · local:9401');
-    // The 14th bot has no alias yet: a dash, never a renumbered ftbot.N
-    expect(w.find('tr[data-key="local:9414"]').text()).toContain('- · local:9414');
+    // The 14th bot has no alias yet: its key alone, never a renumbered ftbot.N
+    const noAlias = w.find('tr[data-key="local:9414"]').text();
+    expect(noAlias).toContain('local:9414');
+    expect(noAlias).not.toMatch(/ftbot\.\d|- · local/);
   });
 
   it('an expired session offers Reconnect, others Edit; both only emit', async () => {
@@ -648,9 +653,11 @@ describe('MaeMfeBar', () => {
     expect(w.find('[role=img]').exists()).toBe(true);
     expect(w.find('[role=img]').attributes('aria-label')).toMatch(/5/);
     const none = mountFq(MaeMfeBar, { props: { mae: null, mfe: null } });
-    expect(none.find('[role=img]').exists()).toBe(false);
+    expect(none.find('.mm').exists()).toBe(false);
+    expect(none.find('[data-state="unavailable"]').exists()).toBe(true);
     const half = mountFq(MaeMfeBar, { props: { mae: -0.02, mfe: undefined } });
-    expect(half.find('[role=img]').exists()).toBe(false);
+    expect(half.find('.mm').exists()).toBe(false);
+    expect(half.find('[data-state="unavailable"]').exists()).toBe(true);
   });
 });
 
