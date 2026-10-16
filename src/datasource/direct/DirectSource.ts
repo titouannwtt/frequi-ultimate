@@ -1255,9 +1255,9 @@ export class DirectSource implements DataSource {
 
   readonly query = {
     tradeOrders: async (botKey: BotKey, tradeId: number): Promise<OrderRow[] | null> => {
-      // The bot's own REST answer: `GET /trades/{id}` carries the orders of the trade
+      // The bot's own REST answer: `GET /trade/{id}` (singular: `/trades/{id}` is a 404) carries the orders of the trade
       try {
-        const t = await this.proxy<{ orders?: RestOrder[] }>(botKey, 'GET', `/trades/${tradeId}`);
+        const t = await this.proxy<{ orders?: RestOrder[] }>(botKey, 'GET', `/trade/${tradeId}`);
         return (t.orders ?? []).map((o, i) => ({
           id: i,
           side: o.ft_order_side ?? '',

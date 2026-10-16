@@ -25,6 +25,11 @@ export type Freshness = { as_of_ms: number, source: FreshnessSource, stale: bool
 export type FreshnessGroup = "state" | "metrics" | "positions" | "capital" | "alerts";
 export type BotIdentity = { name: string, icon: string | null, mode: BotMode, strategy: string | null, exchange: string | null, market: Market, stake_currency: string, port: number | null, 
 /**
+ * Candle timeframe of the strategy, once the bot has been probed: a bot only serves candles
+ * for this timeframe.
+ */
+timeframe: string | null, 
+/**
  * `ftbot.N` aliases of this bot on the requesting device.
  */
 ui_ids: Array<string>, 

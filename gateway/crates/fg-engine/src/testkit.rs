@@ -225,6 +225,7 @@ impl BotRest for FakeBot {
             Mode::Up => Ok(BotFeatures {
                 version: Some("2026.9".into()),
                 trading_mode: Some("futures".into()),
+                timeframe: Some("1h".into()),
                 max_open_trades: Some(3),
                 fleet_endpoints: true,
                 ..BotFeatures::default()

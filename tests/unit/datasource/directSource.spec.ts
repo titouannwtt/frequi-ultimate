@@ -107,8 +107,27 @@ function bot(host: string, world: World): FakeHandler {
           stake_currency: 'USDC',
           exchange: 'hyperliquid',
           strategy: 'TestStrat',
+          timeframe: '30m',
           max_open_trades: 3,
           state: 'running',
+        });
+      // freqtrade serves ONE trade at /trade/{id}; /trades/{id} is a 404 (B190)
+      case '/trade/1':
+        return ok({
+          trade_id: 1,
+          orders: [
+            {
+              ft_order_side: 'buy',
+              ft_is_entry: true,
+              status: 'closed',
+              is_open: false,
+              filled: 0.1,
+              amount: 0.1,
+              safe_price: 50_000,
+              cost: 5000,
+              order_filled_timestamp: NOW - 3_600_000,
+            },
+          ],
         });
       case '/status':
         return ok(world.openTrades[host] ?? []);
@@ -208,6 +227,24 @@ describe('DirectSource polling', () => {
     expect(Object.keys(rows).sort()).toEqual(['local:9056', 'local:9400']);
     expect(rows['local:9400'].identity.mode).toBe('live');
     expect(rows['local:9056'].identity.mode).toBe('dry');
+    src.stop();
+  });
+
+  it('carries the strategy timeframe of each bot: a bot only serves candles of that one (B191)', async () => {
+    const { src, fleet } = await started();
+    const rows = botsOf(fleet);
+    expect(rows['local:9400'].identity.timeframe).toBe('30m');
+    src.stop();
+  });
+
+  it('reads the orders of a trade at /trade/{id}, the route freqtrade serves (B190)', async () => {
+    const { src, fake } = await started();
+    const orders = await src.query.tradeOrders!('local:9400', 1);
+    expect(orders).toHaveLength(1);
+    expect(orders![0]).toMatchObject({ side: 'buy', is_entry: true, average: 50_000, cost: 5000 });
+    const paths = fake.calls.map((c) => new URL(c.url).pathname);
+    expect(paths).toContain('/api/v1/trade/1');
+    expect(paths).not.toContain('/api/v1/trades/1');
     src.stop();
   });
 

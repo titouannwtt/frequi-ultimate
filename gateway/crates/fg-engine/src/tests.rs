@@ -158,6 +158,21 @@ async fn a_bot_becomes_online_after_its_first_good_answer() {
 }
 
 #[tokio::test(start_paused = true)]
+async fn the_strategy_timeframe_is_part_of_the_identity_once_probed() {
+    let r = rig(&[spec(9001, "a", true)]).await;
+    settle(60).await;
+    assert_eq!(r.status_of(9001).await, BotStatus::Online);
+    assert_eq!(
+        r.h.published().bots[&key(9001)]
+            .identity
+            .timeframe
+            .as_deref(),
+        Some("1h"),
+        "the bots only serve candles of their own timeframe: the UI needs it"
+    );
+}
+
+#[tokio::test(start_paused = true)]
 async fn the_offline_detector_needs_three_transport_failures_then_pings_with_backoff() {
     let r = rig(&[spec(9001, "a", true)]).await;
     settle(130).await;
