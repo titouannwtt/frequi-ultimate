@@ -214,11 +214,28 @@ pub fn create_and_seed(
             "INSERT INTO profit_history (timestamp, profit_closed_abs, profit_open_abs, open_trades)
              VALUES (?1, ?2, ?3, ?4)",
         )?;
+        // The closed figure is the cumulated profit of the trades closed so far, as freqtrade
+        // writes it: a random walk here drifted away from the trades and made the drawdown of the
+        // rig jump by the whole drift (B280).
+        // One pass: the closes sorted by date (the text form sorts like the time), summed as
+        // the sample time moves past them.
+        let mut by_date = tx.prepare(
+            "SELECT close_date, COALESCE(close_profit_abs, 0.0) FROM trades
+             WHERE is_open = 0 AND close_date IS NOT NULL ORDER BY close_date",
+        )?;
+        let closes = by_date
+            .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, f64>(1)?)))?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        let mut next = 0;
+        let mut closed = 0.0;
         let every = spec.profit_history_every_s.max(1) * 1000;
         let mut t = now_ms - span_ms.min(30 * 86_400_000);
-        let mut closed = 0.0;
         while t < now_ms {
-            closed += rng.range(-1.0, 1.3);
+            let at = date_text(t);
+            while next < closes.len() && closes[next].0 <= at {
+                closed += closes[next].1;
+                next += 1;
+            }
             ph.execute(params![
                 date_text(t),
                 closed,
@@ -274,7 +291,16 @@ impl Writer {
                 let mut rng = Rng::new(seed);
                 let mut last_profit = std::time::Instant::now();
                 let mut last_trade = std::time::Instant::now();
-                let mut closed_sum = 0.0_f64;
+                // Same rule as the seed: the closed figure is the trades' own sum, read once and
+                // then kept up to date by the closes this writer makes (a sum per sample would
+                // slow a fast writer down).
+                let mut closed_sum: f64 = conn
+                    .query_row(
+                        "SELECT COALESCE(SUM(close_profit_abs), 0.0) FROM trades WHERE is_open = 0",
+                        [],
+                        |r| r.get(0),
+                    )
+                    .unwrap_or(0.0);
                 // The sleep is the receive timeout: a drop of the sender ends it at once.
                 while let Err(std::sync::mpsc::RecvTimeoutError::Timeout) =
                     stop_rx.recv_timeout(cfg.commit_every)
@@ -288,7 +314,6 @@ impl Writer {
                     );
                     if !cfg.profit_every.is_zero() && last_profit.elapsed() >= cfg.profit_every {
                         last_profit = std::time::Instant::now();
-                        closed_sum += rng.range(-1.0, 1.3);
                         let _ = tx.execute(
                             "INSERT INTO profit_history (timestamp, profit_closed_abs,
                                 profit_open_abs, open_trades) VALUES (?1, ?2, ?3, 3)",
@@ -297,7 +322,9 @@ impl Writer {
                     }
                     if !cfg.trade_every.is_zero() && last_trade.elapsed() >= cfg.trade_every {
                         last_trade = std::time::Instant::now();
-                        let _ = rotate_one_trade(&tx, &mut rng, now_ms);
+                        if let Ok(Some((_, _, profit))) = rotate_one_trade(&tx, &mut rng, now_ms) {
+                            closed_sum += profit;
+                        }
                     }
                     if tx.commit().is_ok() {
                         c.fetch_add(1, Ordering::Relaxed);

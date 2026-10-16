@@ -206,3 +206,60 @@ async fn the_control_protocol_drives_modes_fills_and_quits() {
     assert_eq!(f.bot(1).unwrap().mode(), Mode::Down);
     assert_eq!(f.bot(0).unwrap().mode(), Mode::Up);
 }
+
+/// The closed figure of `profit_history` is the trades' own cumulated profit, as freqtrade writes
+/// it: a history drifting away from the trades made the rig's drawdown jump (B280).
+#[test]
+fn the_profit_history_follows_the_closed_trades() {
+    use fakebot::ledger::{SeedSpec, create_and_seed, open_db};
+    let dir = tempfile::tempdir().unwrap();
+    let db = dir.path().join("bot.sqlite");
+    let spec = SeedSpec {
+        bot_seed: 7,
+        closed_trades: 300,
+        open_trades: 3,
+        history_days: 30,
+        profit_history_every_s: 300,
+        short_share: 0.5,
+    };
+    create_and_seed(&db, &spec, chrono::Utc::now().timestamp_millis()).unwrap();
+    let conn = open_db(&db).unwrap();
+    let trades: f64 = conn
+        .query_row(
+            "SELECT COALESCE(SUM(close_profit_abs), 0.0) FROM trades WHERE is_open = 0",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let mut stmt = conn
+        .prepare("SELECT profit_closed_abs FROM profit_history ORDER BY id")
+        .unwrap();
+    let closed: Vec<f64> = stmt
+        .query_map([], |r| r.get(0))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    assert!(closed.len() > 100);
+    // The last sample holds every trade closed before it; later closes, if any, are few.
+    let last = *closed.last().unwrap();
+    assert!(
+        (last - trades).abs() <= trades.abs().max(1.0) * 0.05,
+        "{last} vs {trades}"
+    );
+    // It only moves when trades close: no step bigger than the largest single trade profit.
+    let biggest: f64 = conn
+        .query_row(
+            "SELECT MAX(ABS(close_profit_abs)) FROM trades WHERE is_open = 0",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let max_step = closed
+        .windows(2)
+        .map(|w| (w[1] - w[0]).abs())
+        .fold(0.0_f64, f64::max);
+    assert!(
+        max_step <= biggest * 20.0,
+        "step {max_step}, biggest trade {biggest}"
+    );
+}
