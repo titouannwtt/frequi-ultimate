@@ -13,25 +13,31 @@ import {
   ExitReasonTable,
   JournalFilterBar,
   JournalTotals,
+  Leaderboard,
+  PnlCalendar,
   ShellSlot,
   TradeTable,
 } from '@/components/fq';
 import { resultByBot } from '@/components/fq/lib/journal';
+import type { LeaderboardPeriod } from '@/components/fq/lib/leaderboard';
 import {
   JOURNAL_PERIODS,
+  type JournalFilters,
   type JournalGrouping,
   type JournalPeriod,
 } from '@/components/fq/lib/journalPage';
 import { useJournal } from '@/composables/useJournal';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
-import type { BotKey } from '@/gateway/types.gen';
+import type { BotKey, BotMode } from '@/gateway/types.gen';
 
 /**
- * The Journal (docs/redesign/02-design.md, section 3.4): filters, filtered totals, the closed
- * trades grouped by day with the server cursor, and the analysis (distribution, DCA depth, exit
- * reasons, per bot). Live by default, replay excluded by default and said so. The list, the
- * totals and the three analysis panels all come from the same query (`useJournal`). Read only: a
- * closed trade has no action; the row opens its detail sheet.
+ * The Journal (docs/redesign/02-design.md, section 3.4; 05-friendly-plan.md, section 2.6): filters,
+ * four filtered totals, then two views: the closed trades grouped by day with the server cursor,
+ * and the analysis (distribution, DCA depth, exit reasons, per bot, then the fleet ranking and the
+ * P&L calendar that used to sit on the Fleet). Live by default, replay excluded by default and
+ * said so. The list, the totals and the first four analysis panels all come from the same query
+ * (`useJournal`). Read only: a closed trade has no action; the row opens its detail sheet.
+ * `?view=analysis&an=calendar` opens a view and a panel directly.
  */
 const { t } = useI18n();
 const route = useRoute();
@@ -70,6 +76,12 @@ watch(
   () => fleet.loaded,
   (loaded) => loaded && applyQuery(),
 );
+
+// The bar sends a whole new set of filters. `j.filters` is the composable's reactive object:
+// assigning the property of the returned object would leave it (and the query) untouched
+function setFilters(next: JournalFilters) {
+  Object.assign(j.filters, next);
+}
 
 // ---- list ----
 const grouping = computed({
@@ -126,11 +138,46 @@ const sheetRow = computed(
     null,
 );
 
+// ---- the two views: the trades, and the analysis ----
+type View = 'list' | 'analysis';
+const view = ref<View>(route.query.view === 'analysis' ? 'analysis' : 'list');
+const viewTabs = computed<TabItem[]>(() =>
+  (['list', 'analysis'] as View[]).map((id) => ({ id, label: t(`fq.jr.view.${id}`) })),
+);
+
 // ---- analysis ----
-type AnTab = 'dist' | 'dca' | 'why' | 'bot';
-const anTab = ref<AnTab>('dist');
-const anTabs = computed<TabItem[]>(() =>
-  (['dist', 'dca', 'why', 'bot'] as AnTab[]).map((id) => ({ id, label: t(`fq.jr.an.${id}`) })),
+type AnTab = 'dist' | 'dca' | 'why' | 'bot' | 'rank' | 'calendar';
+const AN_TABS: AnTab[] = ['dist', 'dca', 'why', 'bot', 'rank', 'calendar'];
+const anFromQuery = (): AnTab => AN_TABS.find((id) => id === route.query.an) ?? 'dist';
+const anTab = ref<AnTab>(anFromQuery());
+const anTabs = computed<TabItem[]>(() => AN_TABS.map((id) => ({ id, label: t(`fq.jr.an.${id}`) })));
+// The view and the panel live in the URL: a reload or a shared link comes back to the same place
+watch([view, anTab], ([v, a]) => {
+  if (route.name !== 'journal') return;
+  void router.replace({
+    query: {
+      ...route.query,
+      view: v === 'list' ? undefined : v,
+      an: v === 'list' || a === 'dist' ? undefined : a,
+    },
+  });
+});
+watch(
+  () => [route.query.view, route.query.an],
+  () => {
+    if (route.name !== 'journal') return;
+    view.value = route.query.view === 'analysis' ? 'analysis' : 'list';
+    anTab.value = anFromQuery();
+  },
+);
+/** Ranking and calendar never mix modes: "All" shows the live bots, like on the Fleet. */
+const figuresMode = computed<BotMode>(() => (j.scope.mode.value === 'dry' ? 'dry' : 'live'));
+const lbPeriod = ref<LeaderboardPeriod>('30d');
+const lbOptions = computed(() =>
+  (['1d', '7d', '30d', 'total'] as LeaderboardPeriod[]).map((p) => ({
+    value: p,
+    label: t(`fq.jr.an.rankPeriod.${p}`),
+  })),
 );
 const byBot = computed(() => resultByBot(j.analysisRows.value));
 const botScale = computed(() => Math.max(1, ...byBot.value.map((r) => Math.abs(r.pnl))));
@@ -154,19 +201,6 @@ const noBots = computed(() => fleet.loaded && j.botKeys.value.length === 0);
 
 <template>
   <div class="journal" data-testid="journal-page">
-    <component :is="phone ? 'div' : ShellSlot" :name="phone ? undefined : 'scope'">
-      <JournalFilterBar
-        v-model="j.filters"
-        :mode="j.scope.mode.value"
-        :bot-options="botOptions"
-        :reasons="reasons"
-        :depth-available="j.depthAvailable.value"
-        :export-scope="j.exportScope.value"
-        :exporting="j.exporting.value"
-        @update:mode="(m) => (j.scope.mode.value = m)"
-        @export-csv="download"
-      />
-    </component>
     <component :is="phone ? 'div' : ShellSlot" :name="phone ? undefined : 'strip'">
       <JournalTotals
         :stats="j.stats.value"
@@ -176,9 +210,28 @@ const noBots = computed(() => fleet.loaded && j.botKeys.value.length === 0);
         :bot-name="botName"
       />
     </component>
+    <component :is="phone ? 'div' : ShellSlot" :name="phone ? undefined : 'scope'">
+      <JournalFilterBar
+        :model-value="j.filters"
+        :mode="j.scope.mode.value"
+        :bot-options="botOptions"
+        :reasons="reasons"
+        :depth-available="j.depthAvailable.value"
+        :export-scope="j.exportScope.value"
+        :exporting="j.exporting.value"
+        @update:model-value="setFilters"
+        @update:mode="(m) => (j.scope.mode.value = m)"
+        @export-csv="download"
+      />
+    </component>
+
+    <div class="vbar">
+      <Tabs v-model="view" :tabs="viewTabs" :label="t('fq.jr.view.label')" data-testid="jr-view" />
+    </div>
 
     <main class="jg">
       <Pane
+        v-if="view === 'list'"
         class="list"
         :title="t('fq.jr.listTitle')"
         icon="book-open-text"
@@ -218,15 +271,15 @@ const noBots = computed(() => fleet.loaded && j.botKeys.value.length === 0);
         />
       </Pane>
 
-      <Pane class="an" icon="activity" :title="t('fq.jr.an.title')">
-        <template #tools>
-          <Tabs v-model="anTab" :tabs="anTabs" :label="t('fq.jr.an.title')" />
-        </template>
-        <div class="anbody">
+      <Pane v-else class="an" icon="activity" :title="t('fq.jr.an.title')" :meta="listMeta">
+        <div class="antabs">
+          <Tabs v-model="anTab" :tabs="anTabs" :label="t('fq.jr.an.title')" data-testid="jr-an" />
+        </div>
+        <div class="anbody" :class="{ narrow: anTab === 'rank' || anTab === 'calendar' }">
           <DistributionChart v-if="anTab === 'dist'" :trades="j.analysisRows.value" />
           <DcaDepthTable v-else-if="anTab === 'dca'" :trades="j.analysisRows.value" />
           <ExitReasonTable v-else-if="anTab === 'why'" :trades="j.analysisRows.value" />
-          <div v-else class="bots" data-testid="by-bot">
+          <div v-else-if="anTab === 'bot'" class="bots" data-testid="by-bot">
             <EmptyState v-if="byBot.length === 0" icon="bot" :title="t('fq.jr.empty')" />
             <table v-else class="tbl">
               <thead>
@@ -263,6 +316,28 @@ const noBots = computed(() => fleet.loaded && j.botKeys.value.length === 0);
               </tbody>
             </table>
           </div>
+          <div v-else class="fleetfig" :data-testid="`an-${anTab}`">
+            <p class="note">
+              {{ t(j.scope.mode.value === 'all' ? 'fq.jr.an.figNoteAll' : 'fq.jr.an.figNote') }}
+            </p>
+            <template v-if="anTab === 'rank'">
+              <div class="lbbar">
+                <SegmentedControl
+                  v-model="lbPeriod"
+                  :options="lbOptions"
+                  size="sm"
+                  :label="t('fq.jr.an.rankPeriodLabel')"
+                />
+              </div>
+              <Leaderboard
+                :scope="j.scope.fleetScopeRef.value"
+                :period="lbPeriod"
+                :mode="figuresMode"
+                @select="(k) => router.push({ name: 'bot', params: { botKey: k } })"
+              />
+            </template>
+            <PnlCalendar v-else :scope="j.scope.fleetScopeRef.value" :mode="figuresMode" />
+          </div>
         </div>
       </Pane>
     </main>
@@ -285,6 +360,12 @@ const noBots = computed(() => fleet.loaded && j.botKeys.value.length === 0);
   min-height: 100%;
   text-align: left;
 }
+.vbar {
+  display: flex;
+  padding: 0 var(--s3);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
 .jg {
   display: grid;
   gap: var(--gut, 6px);
@@ -298,6 +379,11 @@ const noBots = computed(() => fleet.loaded && j.botKeys.value.length === 0);
   min-width: 0;
   min-height: 0;
 }
+.antabs {
+  display: flex;
+  padding: 0 var(--s3);
+  border-bottom: 1px solid var(--line);
+}
 .anbody {
   min-height: 260px;
   display: flex;
@@ -305,6 +391,27 @@ const noBots = computed(() => fleet.loaded && j.botKeys.value.length === 0);
 }
 .anbody > :deep(*) {
   flex: 1;
+}
+.anbody.narrow {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.fleetfig {
+  display: grid;
+  align-content: start;
+  gap: var(--s2);
+  min-width: 0;
+}
+.fleetfig .note {
+  margin: 0;
+  padding: var(--s2) var(--s3) 0;
+  color: var(--fg-3);
+  font-size: var(--t-xs);
+}
+.lbbar {
+  display: flex;
+  padding: 0 var(--s3);
 }
 .bots {
   padding: var(--s2) var(--s3);
@@ -328,6 +435,9 @@ const noBots = computed(() => fleet.loaded && j.botKeys.value.length === 0);
   background: var(--loss);
 }
 @media (max-width: 599px) {
+  .vbar {
+    padding: 0 var(--s2);
+  }
   .jg {
     padding: 8px 0;
     gap: 8px;
@@ -343,7 +453,6 @@ const noBots = computed(() => fleet.loaded && j.botKeys.value.length === 0);
     height: 100%;
   }
   .jg {
-    grid-template-columns: minmax(0, 1fr) clamp(380px, 32vw, 480px);
     overflow: hidden;
   }
 }
