@@ -5,10 +5,12 @@
  */
 import composites from './composites/fr';
 import charts from './charts/fr';
+import pages from './pages/fr';
 
 export default {
   ...composites,
   ...charts,
+  ...pages,
   nav: {
     fleet: 'Flotte',
     bot: 'Bot',
@@ -37,6 +39,24 @@ export default {
     realizedToday: 'Réalisé jour',
     excluded: '{n} exclus',
     excludingReplay: 'Sans replay',
+    strip: 'Indicateurs {mode}',
+    notSummed: 'non sommés avec les autres modes',
+    realizedEquity: 'réalisée {v}',
+    positions: '{n} positions',
+    sinceMidnight: 'depuis 00:00 ({tz})',
+    realized30d: 'Réalisé 30 j',
+    winrate: 'réussite {v}',
+    threshold: 'seuil {v} %',
+    exposure: 'Exposition wallet long / short',
+    margin: 'Marge utilisée',
+    botsOnline: 'Bots en ligne',
+    state: {
+      offline: 'hors ligne',
+      stale: 'périmé',
+      starting: 'démarrage',
+      auth_expired: 'session expirée',
+      stopped: 'arrêté',
+    },
   },
   status: {
     stale: 'Périmé',

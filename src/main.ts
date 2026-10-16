@@ -10,12 +10,16 @@ import { PrimeVue, FtTheme, ToastService } from './plugins/primevue';
 // After the PrimeVue plugin, which loads the Tailwind layers the design system sits in
 import './styles/redesign.css';
 import { useTheme } from './composables/useTheme';
+import { bootPrefs } from './datasource/boot';
 
 const myApp = createApp(App);
 
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
 myApp.use(pinia);
+// Preferences of the redesign: load `fqu2.*` and replay the migration of the old keys, before any
+// store or page reads them (the old keys are only ever read)
+bootPrefs();
 // Sets data-theme on <html> from the persisted mode, before the first paint of the app
 useTheme();
 

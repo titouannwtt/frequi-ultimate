@@ -24,6 +24,7 @@ import { useShortcuts } from '@/composables/useShortcuts';
 import { useTheme } from '@/composables/useTheme';
 import { useFqAlertsStore } from '@/datasource/stores/alerts';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
+import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqHealthStore } from '@/datasource/stores/health';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { DataSource } from '@/datasource/types';
@@ -49,6 +50,8 @@ const props = defineProps<{
   inline?: boolean;
   /** Fill the box it is in instead of the window (previews). */
   contained?: boolean;
+  /** Bot of the page, for the actions of the palette (Bot page). */
+  currentBotKey?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -56,16 +59,20 @@ const emit = defineEmits<{
   bell: [];
   openBot: [botKey: string];
   openPair: [pair: string, botKey: string];
+  openTrade: [botKey: string, tradeId: number];
   toastAction: [actionId: string];
   openHealth: [];
   openLogs: [];
   help: [];
+  /** A "Display" command of the palette that the page owns (`view`, `language`). */
+  display: [command: 'view' | 'language'];
 }>();
 
 const { t } = useI18n();
 const conn = useFqConnectionStore();
 const alerts = useFqAlertsStore();
 const health = useFqHealthStore();
+const fleetStore = useFqFleetStore();
 const prefs = useFqPrefsStore();
 const theme = useTheme();
 const data = useDataSource();
@@ -159,6 +166,20 @@ const healthLevel = computed(() => {
       ? ('degraded' as const)
       : ('ok' as const);
 });
+const liveBots = computed(() => {
+  const live = fleetStore.list.filter((b) => b.identity.mode === 'live');
+  return { online: live.filter((b) => b.state.status === 'online').length, total: live.length };
+});
+const logErrors = computed(
+  () =>
+    alerts
+      .view(now.value, 'active')
+      .filter((a) => a.type_id === 'logErrors' || a.type_id === 'orderFailed').length,
+);
+const ageLabel = computed(() => {
+  const s = health.health?.digest_age_s;
+  return s == null ? null : s < 120 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`;
+});
 const density = useLocalStorage<Density>('fqu2.density', 'compact');
 watch(
   density,
@@ -230,6 +251,12 @@ function onToastAction(_id: number, actionId: string) {
   // "Retry" opens a NEW confirmation (a new idempotency key): it never replays the request
   if (actionId === 'retry') dialog.retryLast();
   else emit('toastAction', actionId);
+}
+
+function onPaletteDisplay(command: 'view' | 'density' | 'language') {
+  if (command === 'density')
+    density.value = density.value === 'compact' ? 'comfortable' : 'compact';
+  else emit('display', command);
 }
 
 function onPaletteNavigate(page: PalettePage) {
@@ -323,7 +350,7 @@ function openPalette() {
       </div>
     </header>
 
-    <div v-if="banners.length > 0 || $slots.banner" class="banners">
+    <div id="fq-shell-banner" class="banners">
       <Banner
         v-for="b in banners"
         :key="b.kind"
@@ -335,20 +362,50 @@ function openPalette() {
       </Banner>
       <slot name="banner" />
     </div>
-    <div v-if="$slots.strip" class="strip"><slot name="strip" /></div>
-    <div v-if="$slots.scope" class="scope"><slot name="scope" /></div>
+    <!-- The pages put their strip and scope bar here (ShellSlot): the shell mounts only once -->
+    <div id="fq-shell-strip" class="strip"><slot name="strip" /></div>
+    <div id="fq-shell-scope" class="scope"><slot name="scope" /></div>
 
     <main class="content"><slot /></main>
 
     <div class="statusbar">
       <StatusBar
         :health="healthLevel"
-        :logs-error-count="0"
+        :logs-error-count="logErrors"
         :density="density"
         @open-health="emit('openHealth')"
         @open-logs="emit('openLogs')"
         @update:density="(d) => (density = d)"
-      />
+      >
+        <span class="si" data-testid="sb-live">
+          {{ t('fq.shell.sb.liveBots') }}
+          <b class="num">{{ liveBots.online }}/{{ liveBots.total }}</b>
+        </span>
+        <button
+          v-if="
+            health.health?.rate_budget_pct !== null && health.health?.rate_budget_pct !== undefined
+          "
+          type="button"
+          class="si"
+          data-testid="sb-budget"
+          @click="emit('openHealth')"
+        >
+          {{ t('fq.shell.sb.budget') }}
+          <b class="num">{{ Math.round(health.health.rate_budget_pct) }} %</b>
+        </button>
+        <button
+          v-if="health.health?.backoff_active"
+          type="button"
+          class="si lvl-warn"
+          data-testid="sb-backoff"
+          @click="emit('openHealth')"
+        >
+          {{ t('fq.shell.sb.backoff') }}
+        </button>
+        <span v-if="ageLabel" class="si" data-testid="sb-snapshot">
+          {{ t('fq.shell.sb.snapshot') }} <b class="num">{{ ageLabel }}</b>
+        </span>
+      </StatusBar>
     </div>
     <div class="tabbar">
       <TabBar
@@ -378,9 +435,12 @@ function openPalette() {
     </AdaptiveSheet>
 
     <CommandPalette
+      :current-bot-key="currentBotKey ?? null"
       @navigate="onPaletteNavigate"
       @open-bot="(k) => emit('openBot', k)"
       @open-pair="(p, k) => emit('openPair', p, k)"
+      @open-trade="(k, id) => emit('openTrade', k, id)"
+      @display="onPaletteDisplay"
     />
     <ActionDialogHost :source="props.source" :inline="inline" />
     <Toaster :inline="inline" @action="onToastAction" />
@@ -493,8 +553,16 @@ kbd {
 .only-phone {
   display: none;
 }
-.banners {
+.banners,
+.strip,
+.scope {
   flex: none;
+  min-width: 0;
+}
+.strip:empty,
+.scope:empty,
+.banners:empty {
+  display: none;
 }
 .content {
   flex: 1;
@@ -504,6 +572,33 @@ kbd {
 .statusbar {
   position: sticky;
   bottom: 0;
+}
+/* Items the shell adds to the status bar (the bar styles only its own buttons) */
+.statusbar .si {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: var(--r-1);
+  background: none;
+  color: var(--fg-2);
+  font: inherit;
+}
+.statusbar button.si {
+  cursor: pointer;
+}
+.statusbar button.si:hover {
+  background: var(--bg-2);
+  color: var(--fg);
+}
+.statusbar .si b {
+  font-weight: 600;
+  color: var(--fg);
+}
+.statusbar .si.lvl-warn {
+  color: var(--warn);
 }
 .tabbar {
   display: none;
@@ -529,6 +624,10 @@ kbd {
     display: flex;
     position: sticky;
     bottom: 0;
+  }
+  .tabbar > :deep(*) {
+    flex: 1;
+    min-width: 0;
   }
 }
 @media (max-width: 599px) {

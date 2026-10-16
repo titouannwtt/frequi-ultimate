@@ -109,7 +109,7 @@ const status = computed(() => {
         />
         <time class="t num">{{ time }}</time>
       </header>
-      <p class="msg num">{{ message }}</p>
+      <p class="msg">{{ message }}</p>
       <p v-if="status" class="status">{{ status }}</p>
       <div v-if="view === 'active'" class="row">
         <div class="ctx">

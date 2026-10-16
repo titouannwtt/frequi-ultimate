@@ -276,6 +276,7 @@ declare global {
   const shallowReactive: typeof import('vue').shallowReactive
   const shallowReadonly: typeof import('vue').shallowReadonly
   const shallowRef: typeof import('vue').shallowRef
+  const shortcutRegistry: typeof import('./composables/useShortcuts').shortcutRegistry
   const showAlert: typeof import('./utils/alerts').showAlert
   const showNotification: typeof import('./utils/notifications').showNotification
   const splitTradePair: typeof import('./utils/formatters/pairFormat').splitTradePair
@@ -314,6 +315,7 @@ declare global {
   const unrefElement: typeof import('@vueuse/core').unrefElement
   const until: typeof import('@vueuse/core').until
   const useActionDialog: typeof import('./composables/useActionDialog').useActionDialog
+  const useActionNav: typeof import('./composables/useActionNav').useActionNav
   const useActiveElement: typeof import('@vueuse/core').useActiveElement
   const useAlertDetection: typeof import('./composables/useAlertDetection').useAlertDetection
   const useAlertForBot: typeof import('./utils/alerts').useAlertForBot
@@ -489,6 +491,7 @@ declare global {
   const useSessionStorage: typeof import('@vueuse/core').useSessionStorage
   const useSettingsStore: typeof import('./stores/settings').useSettingsStore
   const useShare: typeof import('@vueuse/core').useShare
+  const useShellBus: typeof import('./composables/useShellBus').useShellBus
   const useShortcuts: typeof import('./composables/useShortcuts').useShortcuts
   const useSlots: typeof import('vue').useSlots
   const useSorted: typeof import('@vueuse/core').useSorted
@@ -527,6 +530,7 @@ declare global {
   const useToaster: typeof import('./composables/useToaster').useToaster
   const useToggle: typeof import('@vueuse/core').useToggle
   const useTradeColumnVisibility: typeof import('./composables/tradeColumns').useTradeColumnVisibility
+  const useTradeOrders: typeof import('./composables/useTradeOrders').useTradeOrders
   const useTradePopover: typeof import('./composables/useTradePopover').useTradePopover
   const useTradeSet: typeof import('./composables/useTradeSet').useTradeSet
   const useTradingModeFilter: typeof import('./composables/useTradingModeFilter').useTradingModeFilter
@@ -579,6 +583,9 @@ declare global {
   // @ts-ignore
   export type { ActionContext, ActionRequest, RequestRefusal, RequestResult } from './composables/useActionDialog'
   import('./composables/useActionDialog')
+  // @ts-ignore
+  export type { ActionNavContext } from './composables/useActionNav'
+  import('./composables/useActionNav')
   // @ts-ignore
   export type { ConfirmLevel, PendingAction, ActionOutcome } from './composables/useBotAction'
   import('./composables/useBotAction')
@@ -964,6 +971,7 @@ declare module 'vue' {
     readonly shallowReactive: UnwrapRef<typeof import('vue')['shallowReactive']>
     readonly shallowReadonly: UnwrapRef<typeof import('vue')['shallowReadonly']>
     readonly shallowRef: UnwrapRef<typeof import('vue')['shallowRef']>
+    readonly shortcutRegistry: UnwrapRef<typeof import('./composables/useShortcuts')['shortcutRegistry']>
     readonly showAlert: UnwrapRef<typeof import('./utils/alerts')['showAlert']>
     readonly showNotification: UnwrapRef<typeof import('./utils/notifications')['showNotification']>
     readonly splitTradePair: UnwrapRef<typeof import('./utils/formatters/pairFormat')['splitTradePair']>
@@ -1002,6 +1010,7 @@ declare module 'vue' {
     readonly unrefElement: UnwrapRef<typeof import('@vueuse/core')['unrefElement']>
     readonly until: UnwrapRef<typeof import('@vueuse/core')['until']>
     readonly useActionDialog: UnwrapRef<typeof import('./composables/useActionDialog')['useActionDialog']>
+    readonly useActionNav: UnwrapRef<typeof import('./composables/useActionNav')['useActionNav']>
     readonly useActiveElement: UnwrapRef<typeof import('@vueuse/core')['useActiveElement']>
     readonly useAlertDetection: UnwrapRef<typeof import('./composables/useAlertDetection')['useAlertDetection']>
     readonly useAlertForBot: UnwrapRef<typeof import('./utils/alerts')['useAlertForBot']>
@@ -1177,6 +1186,7 @@ declare module 'vue' {
     readonly useSessionStorage: UnwrapRef<typeof import('@vueuse/core')['useSessionStorage']>
     readonly useSettingsStore: UnwrapRef<typeof import('./stores/settings')['useSettingsStore']>
     readonly useShare: UnwrapRef<typeof import('@vueuse/core')['useShare']>
+    readonly useShellBus: UnwrapRef<typeof import('./composables/useShellBus')['useShellBus']>
     readonly useShortcuts: UnwrapRef<typeof import('./composables/useShortcuts')['useShortcuts']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>
     readonly useSorted: UnwrapRef<typeof import('@vueuse/core')['useSorted']>
@@ -1215,6 +1225,7 @@ declare module 'vue' {
     readonly useToaster: UnwrapRef<typeof import('./composables/useToaster')['useToaster']>
     readonly useToggle: UnwrapRef<typeof import('@vueuse/core')['useToggle']>
     readonly useTradeColumnVisibility: UnwrapRef<typeof import('./composables/tradeColumns')['useTradeColumnVisibility']>
+    readonly useTradeOrders: UnwrapRef<typeof import('./composables/useTradeOrders')['useTradeOrders']>
     readonly useTradePopover: UnwrapRef<typeof import('./composables/useTradePopover')['useTradePopover']>
     readonly useTradeSet: UnwrapRef<typeof import('./composables/useTradeSet')['useTradeSet']>
     readonly useTradingModeFilter: UnwrapRef<typeof import('./composables/useTradingModeFilter')['useTradingModeFilter']>
