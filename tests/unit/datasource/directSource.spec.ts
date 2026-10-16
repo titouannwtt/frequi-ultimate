@@ -375,6 +375,23 @@ describe('DirectSource polling', () => {
   });
 });
 
+describe('DirectSource: positions whose prices are blocked (bug B250)', () => {
+  it('a bot whose positions have no profit has an unknown latent profit, never a 0 or a partial sum', async () => {
+    const world = makeWorld();
+    const LIVE = Object.keys(world.openTrades).find((k) => k !== 'dry-bot.test:9056')!;
+    // The exchange ticker is blocked by the 429 backoff: the bot answers profit_abs: null
+    world.openTrades[LIVE] = [
+      trade({ trade_id: 1, profit_abs: null as never }),
+      trade({ trade_id: 2, profit_abs: 5 }),
+    ];
+    const { src, fleet } = await started(world);
+    const row = botsOf(fleet)['local:9400'];
+    expect(row.state.open_trades).toBe(2);
+    expect(row.metrics.open_profit_abs).toBeNull();
+    src.stop();
+  });
+});
+
 describe('DirectSource: a bot whose mode is not read yet', () => {
   const DRY = 'dry-bot.test:9056';
 

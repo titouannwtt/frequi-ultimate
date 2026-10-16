@@ -211,12 +211,17 @@ function closedPnl(h: ClosedHistory): ClosedPnl[] {
     .map((r) => ({ ts_ms: r.close_ms as number, profit_abs: r.profit_abs as number }));
 }
 
-/** Sum of the open profit of the polled positions, null when they were never fetched. */
+/**
+ * Sum of the open profit of the polled positions, null when they were never fetched or when one of
+ * them has no profit (the bot returns `profit_abs: null` while the exchange ticker is blocked by a
+ * 429 backoff): a partial sum would pass for the real one, and 0 for "nothing open" (bug B250).
+ */
 function latentOf(rt: BotRuntime): number | null {
   if (!rt.status) return null;
   let sum = 0;
   for (const t of rt.status.data) {
-    if (typeof t.profit_abs === 'number' && Number.isFinite(t.profit_abs)) sum += t.profit_abs;
+    if (typeof t.profit_abs !== 'number' || !Number.isFinite(t.profit_abs)) return null;
+    sum += t.profit_abs;
   }
   return sum;
 }
