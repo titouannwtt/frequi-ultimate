@@ -389,9 +389,11 @@ export default {
     tp: 'Sortie visée',
     liquidation: 'Liquidation',
     entry: 'Entrée',
-    dca: 'Ordre de sécurité',
+    dca: 'Renfort',
     exit: 'Sortie',
     dcaTag: 'R',
+    refill: 'Renfort',
+    refills: 'Renforts',
     closedTrade: 'Trade fermé',
     pending: {
       entry: "Ordre d'entrée",

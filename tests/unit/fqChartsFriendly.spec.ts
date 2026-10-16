@@ -176,6 +176,8 @@ describe('sub-charts: one by default, the rest on request', () => {
     expect(grids({})).toBe(4);
     expect(grids({ subplotIds: ['RSI'], subTitleH: 24, subH: 78 })).toBe(3);
     expect(grids({ subplotIds: [] })).toBe(2);
+    // Without the volume pane the sub-chart has room where both would not fit
+    expect(grids({ subplotIds: ['RSI'], subTitleH: 24, subH: 78, hideVolume: true })).toBe(2);
   });
 });
 

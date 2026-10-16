@@ -21,6 +21,7 @@ import {
   BotHeader,
   CandleChart,
   EquityCurve,
+  IndicatorsSheet,
   Leaderboard,
   LogStream,
   PairNavigator,
@@ -28,9 +29,10 @@ import {
   TradeDrawer,
   TradeTable,
 } from '@/components/fq';
+import ChartDisplayMenu from '@/components/fq/ChartDisplayMenu.vue';
 import { buildAction } from '@/components/fq/lib/actions';
-import { overlaysFromPosition } from '@/components/fq/lib/candles';
-import { effectiveTf } from '@/components/fq/lib/chartsPage';
+import { overlaysFromPosition, type SubplotInfo } from '@/components/fq/lib/candles';
+import { effectiveTf, plotProps, resolvePlotChoice } from '@/components/fq/lib/chartsPage';
 import type { EquityDefinition, EquityPeriod } from '@/components/fq/lib/equity';
 import { knownProfit } from '@/components/fq/lib/journal';
 import type { LeaderboardItem } from '@/components/fq/lib/leaderboard';
@@ -38,6 +40,7 @@ import type { PairFilter, PairItem } from '@/components/fq/lib/pairs';
 import { pairLabel } from '@/components/fq/lib/trades';
 import { requestAction, toastRefusal } from '@/composables/useActionDialog';
 import { useActionNav } from '@/composables/useActionNav';
+import { useChartDisplay, useSubplotChoice } from '@/composables/useChartDisplay';
 import { useBotConfigEditorStore } from '@/stores/botConfigEditorStore';
 import { useCommandPalette } from '@/composables/useCommandPalette';
 import { useShortcuts } from '@/composables/useShortcuts';
@@ -269,6 +272,41 @@ const overlays = computed(() =>
 const ladderOrders = computed(() => orders.model.value?.ladder);
 const dcaMax = computed(() => null as number | null);
 
+// What is drawn over the candles is the "Affichage" menu of the Charts page (same switches, same
+// remembered choice), and the sub-chart is the one the strategy's plot gives, titled and explained
+const displayAnchor = ref<HTMLElement | null>(null);
+const displayOpen = ref(false);
+const chartDisplay = useChartDisplay();
+const measureArmed = ref(false);
+const indicatorsOpen = ref(false);
+const heikinAshi = ref(false);
+function toggleDisplay(e: MouseEvent) {
+  displayAnchor.value = e.currentTarget as HTMLElement;
+  displayOpen.value = !displayOpen.value;
+}
+function onDisplayToggle(key: string, on: boolean) {
+  if (key === 'ha') heikinAshi.value = on;
+  else if (key === 'measure') measureArmed.value = on;
+  else if (key !== 'cells') chartDisplay.set(key as keyof typeof chartDisplay.display.value, on);
+}
+const strategyKey = computed(() => bot.value?.identity.strategy ?? botKey.value);
+const subsChoice = useSubplotChoice(strategyKey);
+const subList = ref<SubplotInfo[]>([]);
+const subsHint = computed(() =>
+  subList.value.length > 0
+    ? { total: subList.value.length, shown: subList.value.filter((s) => s.shown).length }
+    : null,
+);
+function onToggleSub(id: string, on: boolean) {
+  const kept = subList.value.filter((s) => s.shown && s.id !== id).map((s) => s.id);
+  subsChoice.set(on ? [...kept, id] : kept);
+}
+const plot = computed(() =>
+  plotProps(
+    resolvePlotChoice(prefs.settings.plot?.plotConfigName, prefs.settings.plot?.customPlotConfigs),
+  ),
+);
+
 // ---- history, performance ----
 const closed = ref<TradeRow[]>([]);
 const closedCursor = ref<string | null>(null);
@@ -415,6 +453,31 @@ const configRows = computed(() => {
               :label="t('fq.pg.bot.timeframe')"
             />
             <Btn
+              size="sm"
+              :variant="displayOpen ? 'secondary' : 'ghost'"
+              icon="sliders-horizontal"
+              :title="t('fq.pg.charts.display.tip')"
+              :aria-label="t('fq.pg.charts.display.title')"
+              aria-haspopup="dialog"
+              :aria-expanded="displayOpen"
+              data-testid="bot-chart-display"
+              @click="toggleDisplay"
+              >{{ t('fq.pg.charts.display.title') }}</Btn
+            >
+            <ChartDisplayMenu
+              :open="displayOpen"
+              :anchor="displayAnchor"
+              :display="chartDisplay.display.value"
+              :heikin-ashi="heikinAshi"
+              :two-cells="false"
+              :can-split="false"
+              :measure="measureArmed"
+              :subs="subsHint"
+              @toggle="onDisplayToggle"
+              @indicators="indicatorsOpen = true"
+              @close="displayOpen = false"
+            />
+            <Btn
               v-if="pair"
               size="sm"
               variant="ghost"
@@ -431,8 +494,16 @@ const configRows = computed(() => {
             :pair="pair"
             :tf="tf"
             :overlays="overlays"
+            :toggles="chartDisplay.toggles.value"
+            :heikin-ashi="heikinAshi"
+            :measure-armed="measureArmed"
+            :plot-config="plot.plotConfig"
+            :plot-extra="plot.plotExtra"
+            :sub-choice="subsChoice.choice.value"
             :height="phone ? '320px' : '100%'"
-            controls
+            :controls="false"
+            @update:sub-choice="subsChoice.set"
+            @subplots="(l) => (subList = l)"
           />
           <EmptyState v-else icon="chart-candlestick" :title="t('fq.pg.bot.noPair')" />
         </Pane>
@@ -596,6 +667,12 @@ const configRows = computed(() => {
           (id) =>
             nav.navigateAction(id, { botKey, pair: position?.pair, tradeId: position?.trade_id })
         "
+      />
+      <IndicatorsSheet
+        :open="indicatorsOpen"
+        :subs="subList"
+        @toggle-sub="onToggleSub"
+        @close="indicatorsOpen = false"
       />
       <BotConfigEditorModal v-if="editorUsed" />
       <section v-if="phone" class="phone-alerts">

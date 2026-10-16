@@ -333,6 +333,12 @@ small {
   color: var(--fg-3);
 }
 @media (max-width: 599px) {
+  /* A phone tile is half a screen: the line under the figure wraps instead of ending in an ellipsis */
+  .bh :deep(.kpi .s) {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
   .actions {
     flex: 1 1 100%;
     margin: 0;
