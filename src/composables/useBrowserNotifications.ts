@@ -1,7 +1,7 @@
 import { watch } from 'vue';
 
 import { alertsToNotify, notifyKey, staleKeys } from '@/components/fq/lib/alertNotify';
-import { alertTarget } from '@/components/fq/lib/alerts';
+import { alertTarget, detailKind } from '@/components/fq/lib/alerts';
 import { useFqAlertsStore } from '@/datasource/stores/alerts';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
@@ -35,7 +35,12 @@ export function useBrowserNotifications(): () => void {
     const name = a.bot_key
       ? (fleet.bots[a.bot_key]?.identity.name ?? a.bot_key)
       : t('fq.alert.wallet');
-    const body = [t(`fq.alert.type.${a.type_id}`), alertTarget(a) || (a.detail ?? '')]
+    // The raw text of a bot (English, a traceback) is not a notification: its short summary is
+    const kind = detailKind(a.detail);
+    const body = [
+      t(`fq.alert.type.${a.type_id}`),
+      alertTarget(a) || (kind ? t(`fq.alert.detail.${kind}`) : ''),
+    ]
       .filter((x) => x !== '')
       .join(': ');
     try {

@@ -89,7 +89,8 @@ const ladderPos = computed(() => ({
 const ordersSummary = computed(() => {
   const list = props.orders ?? [];
   const filled = list.filter((o) => o.state === 'filled').length;
-  return t('fq.drawer.ordersSummary', { filled, pending: list.length - filled });
+  // Two counts, two nouns: each carries its own plural ("1 rempli, 0 en attente", B237)
+  return `${t('fq.drawer.ordersFilled', { n: filled }, filled)}, ${t('fq.drawer.ordersPending', { n: list.length - filled })}`;
 });
 /** Folded under 900 px of height: the ladder matters more than the order list. */
 const ordersOpen = computed(() => height.value >= 900);

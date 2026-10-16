@@ -70,6 +70,17 @@ describe('Tools > Reconciliation, when the sweep does not answer', () => {
     expect(w.find('[data-testid="reconciliation"]').exists()).toBe(false);
   });
 
+  it('does not claim there is nothing to reconcile when the sweep failed (B232)', async () => {
+    held.proxy = () => Promise.reject(apiError({ code: 'bot_unreachable', status: 504 }));
+    setFqLocale('fr');
+    const w = mountFq(ReconciliationPage);
+    await flushPromises();
+    const text = w.text();
+    expect(text).not.toContain('Aucun coin à réconcilier');
+    expect(text).not.toContain('Aucun bot live avec un wallet');
+    expect(w.find('[data-testid="recon-unavailable"]').text()).toContain('indisponible');
+  });
+
   it('retries on demand and shows the table once a sweep answers', async () => {
     held.proxy = () => Promise.reject(apiError({ code: 'bot_unreachable', status: 504 }));
     const w = mountFq(ReconciliationPage);

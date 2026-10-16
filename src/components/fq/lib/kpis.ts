@@ -77,6 +77,19 @@ export function fleetKpiModel(
     )
     .reduce((sum, p) => sum + p.stake_amount, 0);
 
+  // A bot that announces more positions than were read (direct mode reads the bots in turn, or
+  // the prices are not known yet) makes the sum a fragment: unknown, not "0,0 %"
+  const read = new Map<BotKey, number>();
+  for (const p of detail.positions) {
+    if (!p.orphan) read.set(p.bot_key, (read.get(p.bot_key) ?? 0) + 1);
+  }
+  const marginPartial = bots.some(
+    (b) =>
+      !excluded.has(b.bot_key) &&
+      (b.state.status === 'online' || b.state.status === 'starting') &&
+      b.state.open_trades > (read.get(b.bot_key) ?? 0),
+  );
+
   const states: Partial<Record<BotState, number>> = {};
   let online = 0;
   for (const b of bots) {
@@ -102,7 +115,7 @@ export function fleetKpiModel(
     drawdown: dd ? { abs: dd.abs, pct: drawdownPct(dd) } : null,
     exposure: block.exposure,
     netted: block.netted,
-    marginPct: capital !== null && capital > 0 ? (margin / capital) * 100 : null,
+    marginPct: capital !== null && capital > 0 && !marginPartial ? (margin / capital) * 100 : null,
     online,
     total: bots.length,
     states,

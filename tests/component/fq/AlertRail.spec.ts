@@ -174,6 +174,19 @@ describe('AlertRail', () => {
     expect(bot.text()).toContain(name);
   });
 
+  it('tells a raw bot message in a short sentence and keeps the raw text behind a toggle (B233)', () => {
+    setFqLocale('fr');
+    const w = mountRail();
+    const card = w.get('[data-alert-id="a5"]');
+    // The wallet alert's detail is English text from the reconciliation: not in the sentence
+    expect(card.get('.msg').text()).not.toContain('with no owner');
+    const raw = card.get('[data-testid="alert-raw"]');
+    expect(raw.text()).toContain('PENGU short 212,40 USDC with no owner');
+    expect(raw.element.tagName).toBe('DETAILS');
+    expect((raw.element as HTMLDetailsElement).open).toBe(false);
+    expect(w.text()).not.toContain('\u2014');
+  });
+
   it('the figures are written with their threshold, never NaN', () => {
     const w = mountRail();
     expect(w.text()).not.toMatch(/NaN|undefined|\{/);

@@ -11,7 +11,9 @@ import {
   alertTag,
   alertWording,
   ALERT_ACTIONS,
+  detailKind,
   isWalletAlert,
+  plainDetail,
   severityTone,
   type AlertActionId,
 } from './lib/alerts';
@@ -48,7 +50,20 @@ const fmt = useFormat();
 const prefs = useFqPrefsStore();
 
 const wording = computed(() => alertWording(props.alert, (n) => fmt.number(n, 1)));
-const message = computed(() => t(`fq.alert.${wording.value.messageKey}`, wording.value.params));
+// The bot's own text (English, a traceback, an ftcache line) is not the sentence: the sentence is
+// told in the user's language, with a short summary, and the raw text stays behind a toggle
+const raw = computed(() => plainDetail(props.alert.detail));
+const summary = computed(() => {
+  const kind = detailKind(props.alert.detail);
+  if (kind) return t(`fq.alert.detail.${kind}`);
+  return wording.value.messageKey === 'msg.noValue' ? t('fq.alert.detail.none') : '';
+});
+const message = computed(() =>
+  t(`fq.alert.${wording.value.messageKey}`, {
+    ...wording.value.params,
+    summary: summary.value,
+  }).trim(),
+);
 const tag = computed(() => alertTag(props.alert));
 const title = computed(() => t(`fq.alert.type.${props.alert.type_id}`));
 const tone = computed(() => severityTone(props.alert.severity));
@@ -108,6 +123,10 @@ const status = computed(() => {
         <time class="t num">{{ time }}</time>
       </header>
       <p class="msg">{{ message }}</p>
+      <details v-if="raw" class="raw" data-testid="alert-raw">
+        <summary>{{ t('fq.alert.detail.raw') }}</summary>
+        <pre>{{ raw }}</pre>
+      </details>
       <p v-if="status" class="status">{{ status }}</p>
       <div v-if="view === 'active'" class="row">
         <div class="ctx">
@@ -242,5 +261,20 @@ h4 {
 }
 .choices {
   padding-top: 2px;
+}
+.raw summary {
+  cursor: pointer;
+  color: var(--fg-3);
+  font-size: var(--t-xs);
+}
+.raw pre {
+  margin: var(--s1) 0 0;
+  max-height: 160px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-num);
+  font-size: var(--t-xs);
+  color: var(--fg-2);
 }
 </style>

@@ -116,8 +116,9 @@ async function send(payload: FleetviewResolvePayload) {
     <EmptyState
       v-else-if="rec.error.value"
       icon="git-compare-arrows"
-      :title="t('fq.recon.empty')"
-      :hint="t('fq.recon.emptyHint')"
+      :title="t('fq.recon.unavailable')"
+      :hint="t('fq.recon.unavailableHint')"
+      data-testid="recon-unavailable"
     />
 
     <ReconcileDialog

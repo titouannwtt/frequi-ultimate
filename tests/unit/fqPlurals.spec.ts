@@ -34,6 +34,14 @@ describe('counts agree with their noun (B196)', () => {
     );
   });
 
+  it('the drawer counts filled and pending orders with their own plural (B237)', () => {
+    expect(t('fr', 'fq.drawer.ordersFilled', { n: 1 }, 1)).toBe('1 rempli');
+    expect(t('fr', 'fq.drawer.ordersFilled', { n: 2 }, 2)).toBe('2 remplis');
+    expect(t('fr', 'fq.drawer.ordersFilled', { n: 0 }, 0)).toBe('0 rempli');
+    expect(t('fr', 'fq.drawer.ordersPending', { n: 0 }, 0)).toBe('0 en attente');
+    expect(t('en', 'fq.drawer.ordersFilled', { n: 1 }, 1)).toBe('1 filled');
+  });
+
   it('the dialog subtitle counts the entries', () => {
     const named = { pair: 'X', side: 'L', lev: 2, stake: '100' };
     expect(t('fr', 'fq.dialog.subtitle', { ...named, n: 1 }, 1)).toContain('1 entrée ·');

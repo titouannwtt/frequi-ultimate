@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import {
@@ -22,6 +22,7 @@ import type { DataSource } from '@/datasource/types';
 import type { BotKey } from '@/gateway/types.gen';
 
 import {
+  centeredScroll,
   lockItems,
   matchesPair,
   positionItems,
@@ -141,6 +142,22 @@ const loading = computed(
 );
 const failed = computed(() => active.value?.error.value ?? null);
 
+// The phone strip scrolls: bring the selected pair into view when it changes or the strip fills
+const chipsEl = ref<HTMLElement | null>(null);
+function revealSelected() {
+  const strip = chipsEl.value;
+  const chip = strip?.querySelector<HTMLElement>('.chip.on');
+  if (!strip || !chip) return;
+  const left =
+    chip.getBoundingClientRect().left - strip.getBoundingClientRect().left + strip.scrollLeft;
+  strip.scrollLeft = centeredScroll(left, chip.offsetWidth, strip.clientWidth, strip.scrollWidth);
+}
+watch(
+  () => [props.selectedKey, shown.value.map((i) => i.key).join('|')],
+  () => void nextTick(revealSelected),
+  { flush: 'post' },
+);
+
 function leftLabel(i: PairItem): string {
   if (i.lockEndMs !== null) {
     return t('fq.pairnav.lockEnds', { d: fmt.age(Math.max(0, i.lockEndMs - clock.value)) });
@@ -241,6 +258,7 @@ function leftLabel(i: PairItem): string {
 
     <div
       v-else-if="shown.length > 0"
+      ref="chipsEl"
       class="chips"
       role="listbox"
       :aria-label="t('fq.pairnav.title')"

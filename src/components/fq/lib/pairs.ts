@@ -8,6 +8,21 @@ import type { BotKey, Position, Side } from '@/gateway/types.gen';
 
 import { tradeKey } from './trades';
 
+/**
+ * Scroll position that puts an item in the middle of a horizontal strip, kept inside the strip.
+ * The phone strip of the Charts page holds every open position: the selected pair must not wait
+ * out of sight at the end of it (B235).
+ */
+export function centeredScroll(
+  itemLeft: number,
+  itemWidth: number,
+  viewWidth: number,
+  contentWidth: number,
+): number {
+  const target = itemLeft - (viewWidth - itemWidth) / 2;
+  return Math.max(0, Math.min(target, Math.max(0, contentWidth - viewWidth)));
+}
+
 export type PairFilter = 'positions' | 'signals' | 'locks' | 'all';
 
 export const PAIR_FILTERS: PairFilter[] = ['positions', 'signals', 'locks', 'all'];

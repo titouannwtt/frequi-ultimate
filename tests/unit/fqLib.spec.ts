@@ -11,6 +11,8 @@ import {
   alertTag,
   alertTarget,
   alertWording,
+  detailKind,
+  plainDetail,
   railLevel,
   severityTone,
 } from '@/components/fq/lib/alerts';
@@ -458,6 +460,21 @@ describe('alerts, digest, clock', () => {
         num,
       ).messageKey,
     ).toBe('msg.botOffline');
+  });
+
+  it('classes a raw bot message and never lets an em dash through (B233)', () => {
+    expect(detailKind(null)).toBeNull();
+    expect(detailKind('  ')).toBeNull();
+    expect(detailKind('HTTP 429 Too Many Requests from hyperliquid')).toBe('rateLimit');
+    expect(detailKind('ftcache: CacheTimedOut after 10s')).toBe('timeout');
+    expect(detailKind('Traceback (most recent call last):\n  File "x.py"\nValueError: boom')).toBe(
+      'traceback',
+    );
+    expect(detailKind('Insufficient margin to open the order')).toBe('funds');
+    expect(detailKind('Connection refused')).toBe('connection');
+    expect(detailKind('PENGU short 212,40 USDC with no owner')).toBe('other');
+    expect(plainDetail('ftcache \u2014 retry in 5 s')).toBe('ftcache - retry in 5 s');
+    expect(plainDetail(null)).toBe('');
   });
 
   it('tells a per-position alert by its pair, never by the bare trade id (QA 2026-10-15)', () => {

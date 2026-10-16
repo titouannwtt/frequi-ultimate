@@ -54,6 +54,7 @@ import {
   withTimeout,
 } from '@/components/fq/lib/logs';
 import {
+  centeredScroll,
   lockItems,
   matchesPair,
   positionItems,
@@ -747,5 +748,16 @@ describe('registry', () => {
     expect(v.unmapped).toEqual(['ftbot.31']);
     expect(v.forcedConfirmation).toBe(true);
     expect(migrationView(null, reg.bots)).toBeNull();
+  });
+});
+
+describe('centeredScroll (B235)', () => {
+  it('puts the item in the middle of the strip, never beyond its ends', () => {
+    // 390 px strip, 1500 px of chips, an item of 100 px at 1000
+    expect(centeredScroll(1000, 100, 390, 1500)).toBe(855);
+    expect(centeredScroll(1400, 100, 390, 1500)).toBe(1110);
+    expect(centeredScroll(10, 100, 390, 1500)).toBe(0);
+    // A strip that fits its content does not scroll
+    expect(centeredScroll(200, 100, 390, 300)).toBe(0);
   });
 });

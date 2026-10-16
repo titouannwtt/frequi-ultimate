@@ -408,6 +408,9 @@ export default {
     },
     empty: 'Aucun coin à réconcilier',
     emptyHint: 'Aucun bot live avec un wallet trouvé.',
+    unavailable: 'Réconciliation indisponible',
+    unavailableHint:
+      'Le balayage du wallet a échoué : on ne sait pas si des coins diffèrent. Réessayez ci-dessus.',
     lastSweep: 'Dernier balayage il y a {age}',
     nextIn: 'prochain possible dans {s} s',
   },
