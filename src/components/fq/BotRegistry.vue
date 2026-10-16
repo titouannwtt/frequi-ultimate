@@ -274,6 +274,9 @@ const dateOf = (ms: number) => formatDateTime(ms, prefs.settings.tz, locale.valu
   border-radius: var(--r-2);
   background: var(--bg-1);
   overflow: auto;
+  /* The hidden `.sr` label is absolute: without a positioned ancestor it escapes the scroll box
+     and widens the whole page (scrollWidth 536 at 390 px) */
+  position: relative;
 }
 table {
   width: 100%;
@@ -359,9 +362,69 @@ tr.m-dry td:first-child {
     display: none;
   }
 }
+/* A phone: a row is two lines (name, then state) and the edit button on its right, so nothing
+   needs a sideways scroll and the button is always reachable */
 @container (max-width: 420px) {
+  table,
+  tbody {
+    display: block;
+  }
+  thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  tr:last-child {
+    border-bottom: 0;
+  }
+  td {
+    display: block;
+    height: auto;
+    border-bottom: 0;
+    padding: 0 8px;
+  }
+  tr.m-live,
+  tr.m-dry {
+    box-shadow: none;
+  }
+  tr.m-live td:first-child,
+  tr.m-dry td:first-child {
+    box-shadow: none;
+  }
+  tr.m-live {
+    box-shadow: inset 2px 0 0 var(--live);
+  }
+  tr.m-dry {
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--dry) 50%, transparent);
+  }
+  td:first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  td.c-state {
+    grid-column: 1;
+    grid-row: 2;
+    color: var(--fg-2);
+    font-size: var(--t-xs);
+  }
+  td.c-state .mut {
+    margin-left: 6px;
+  }
+  td.act {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
   .nm {
-    max-width: 14ch;
+    max-width: 18ch;
   }
 }
 </style>

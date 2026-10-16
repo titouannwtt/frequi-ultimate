@@ -120,3 +120,30 @@ test('language and theme are remembered', async ({ page }) => {
   await expect(fleet).toContainText('Flotte');
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
 });
+
+test('on a phone the page does not scroll sideways (B321)', async ({ page }) => {
+  await defaultMocks(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'ftAuthLoginInfo',
+      JSON.stringify({
+        'ftbot.0': { botName: 'B', apiUrl: location.origin, accessToken: 'a', refreshToken: 'b' },
+      }),
+    ),
+  );
+  await page.goto('/settings');
+  await expect(page.getByTestId('bot-registry')).toContainText('B');
+  // The hidden "actions" label of the registry used to sit outside its scroll box and stretch
+  // the whole page to 536 px
+  const sideways = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(sideways).toBeLessThanOrEqual(0);
+  // The registry itself fits too: its edit button is in view without scrolling the table
+  const wrap = await page
+    .getByTestId('bot-registry')
+    .locator('.wrap')
+    .evaluate((el) => el.scrollWidth - el.clientWidth);
+  expect(wrap).toBeLessThanOrEqual(0);
+});
