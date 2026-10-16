@@ -101,6 +101,12 @@ export default {
     home: 'FreqUI, go to the fleet',
     navigation: 'Main navigation',
     alerts: 'Alerts',
+    sb: {
+      liveBots: 'Live bots',
+      budget: 'HL budget',
+      backoff: '429 backoff active',
+      snapshot: 'Snapshot',
+    },
   },
   shortcut: {
     focusSearch: 'Focus the search',
@@ -110,6 +116,17 @@ export default {
     next: 'Next line',
     prev: 'Previous line',
     exit: 'Exit the selected position (opens the confirmation)',
+    view: 'Switch table or map',
+    prevBot: 'Previous bot',
+    nextBot: 'Next bot',
+    pause: 'Pause entries of the bot (opens the confirmation)',
+    group: {
+      goto: 'Go to',
+      list: 'Lists',
+      actions: 'Actions',
+      display: 'Display',
+      general: 'General',
+    },
   },
   tools: {
     diagnostic: 'Diagnostics',

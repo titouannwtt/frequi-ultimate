@@ -208,6 +208,7 @@ const levelKind = computed(() =>
   overflow: hidden;
 }
 .hd {
+  flex: none;
   display: flex;
   align-items: center;
   gap: var(--s2);
@@ -216,6 +217,10 @@ const levelKind = computed(() =>
 h3 {
   margin: 0;
   font-size: var(--t-md);
+}
+.rail > :deep(.tabs),
+.note {
+  flex: none;
 }
 .note {
   margin: 0;

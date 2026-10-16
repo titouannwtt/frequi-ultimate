@@ -87,6 +87,14 @@ export function useScope() {
     return { kind: 'fleet' };
   });
 
+  /**
+   * Scope of the fleet views (KPI strip, equity, risk): a single group when exactly one is
+   * filtered, the whole fleet otherwise. Unlike `scopeRef` it ignores the last selected bot.
+   */
+  const fleetScopeRef = computed<ScopeRef>(() =>
+    filters.groups.length === 1 ? { kind: 'group', id: filters.groups[0]! } : { kind: 'fleet' },
+  );
+
   function selectBot(botKey: BotKey | null): void {
     prefs.update('selectedBot', botKey);
   }
@@ -98,5 +106,5 @@ export function useScope() {
     filters.attentionOnly = false;
   }
 
-  return { mode, workspace, filters, bots, botKeys, scopeRef, selectBot, reset };
+  return { mode, workspace, filters, bots, botKeys, scopeRef, fleetScopeRef, selectBot, reset };
 }

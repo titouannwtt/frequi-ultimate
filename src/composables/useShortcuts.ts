@@ -30,6 +30,9 @@ const SEQUENCE_WINDOW_MS = 1_200;
 
 const registry = shallowRef<readonly Shortcut[]>([]);
 
+/** Read-only view of the registered shortcuts, for the help sheet. */
+export const shortcutRegistry = registry;
+
 export function isTypingTarget(t: EventTarget | null): boolean {
   const el = t as HTMLElement | null;
   if (!el || typeof el.tagName !== 'string') return false;

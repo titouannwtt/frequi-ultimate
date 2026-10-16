@@ -50,6 +50,7 @@ const props = withDefaults(
     /** Replace the queries (previews, tests). */
     series?: EquitySeries | null;
     drawdown?: DrawdownResult | null;
+    /** CSS height of the chart; `fill` takes the room the container leaves. */
     height?: string;
     /** A source to use instead of the active one (previews, tests). */
     source?: DataSource | null;
@@ -220,7 +221,11 @@ const chartLabel = computed(() =>
           <span v-if="ddFromCurve" class="mut sub">{{ t('fq.eq.fromCurve') }}</span>
         </div>
       </div>
-      <div class="chart" :style="{ height }">
+      <div
+        class="chart"
+        :class="{ fill: height === 'fill' }"
+        :style="height === 'fill' ? undefined : { height }"
+      >
         <BaseChart :option="option" :animate="animateFirst" :label="chartLabel" />
       </div>
     </template>
@@ -235,10 +240,13 @@ const chartLabel = computed(() =>
 
 <style scoped>
 .eq {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--s2);
   padding: var(--s3);
   min-width: 0;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 .bar {
   display: flex;
@@ -290,5 +298,9 @@ const chartLabel = computed(() =>
 }
 .chart {
   min-width: 0;
+}
+.chart.fill {
+  flex: 1;
+  min-height: 130px;
 }
 </style>

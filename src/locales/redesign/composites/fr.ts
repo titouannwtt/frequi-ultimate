@@ -102,6 +102,12 @@ export default {
     home: 'FreqUI, aller à la flotte',
     navigation: 'Navigation principale',
     alerts: 'Alertes',
+    sb: {
+      liveBots: 'Bots live',
+      budget: 'Budget HL',
+      backoff: 'Backoff 429 actif',
+      snapshot: 'Snapshot',
+    },
   },
   shortcut: {
     focusSearch: 'Placer le curseur dans la recherche',
@@ -111,6 +117,17 @@ export default {
     next: 'Ligne suivante',
     prev: 'Ligne précédente',
     exit: 'Sortir la position sélectionnée (ouvre la confirmation)',
+    view: 'Basculer table ou carte',
+    prevBot: 'Bot précédent',
+    nextBot: 'Bot suivant',
+    pause: 'Mettre en pause les entrées du bot (ouvre la confirmation)',
+    group: {
+      goto: 'Aller à',
+      list: 'Listes',
+      actions: 'Actions',
+      display: 'Affichage',
+      general: 'Général',
+    },
   },
   tools: {
     diagnostic: 'Diagnostic',
