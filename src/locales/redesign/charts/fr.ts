@@ -60,6 +60,16 @@ export default {
   },
   jr: {
     filters: 'Filtres du journal',
+    more: 'Plus d’options',
+    exitUnknown: 'inconnue',
+    view: { label: 'Vue du journal', list: 'Liste', analysis: 'Analyse' },
+    fs: {
+      button: 'Filtres',
+      buttonN: 'Filtres ({n})',
+      title: 'Filtres du journal',
+      clear: 'Tout effacer',
+      done: 'Terminer',
+    },
     period: {
       label: 'Période',
       '24h': '24 h',
@@ -104,9 +114,22 @@ export default {
     },
     totals: {
       title: 'Totaux filtrés',
-      net: 'P&L net, frais inclus',
+      net: 'Résultat net',
+      netHint:
+        'Gains moins pertes, frais compris. Un trade sans résultat est compté mais pas additionné.',
       netSub: '{n} trades dont {u} sans P&L',
-      winrate: 'Taux de réussite',
+      winrate: 'Réussite',
+      avg: 'Gain moyen / perte moyenne',
+      avgShort: 'Gain / perte moy.',
+      avgHint: 'Ce que rapporte en moyenne un trade gagnant, puis ce que coûte un trade perdant.',
+      avgSub: 'par trade gagnant / perdant',
+      noWin: 'aucun',
+      noLossShort: 'aucune',
+      more: 'Plus de chiffres',
+      less: 'Moins de chiffres',
+      factorHint:
+        'Gains cumulés divisés par pertes cumulées. Au-dessus de 1, le journal gagne de l’argent.',
+      expectancyHint: 'Ce que rapporte en moyenne un trade, perdants compris.',
       winsLosses: '{w} G / {l} P',
       factor: 'Facteur de profit',
       noLoss: 'aucune perte',
@@ -138,6 +161,14 @@ export default {
       why: 'Raisons',
       bot: 'Par bot',
       botCol: 'Bot',
+      rank: 'Classement',
+      calendar: 'Calendrier',
+      rankPeriodLabel: 'Période du classement',
+      rankPeriod: { '1d': '1 j', '7d': '7 j', '30d': '30 j', total: 'Total' },
+      figNote:
+        'Suit le mode choisi (Live ou Dry) ; les autres filtres du journal ne s’y appliquent pas.',
+      figNoteAll:
+        'En mode Tout, seuls les bots live sont comptés ; les autres filtres du journal ne s’y appliquent pas.',
     },
     loadPrevDays: 'Charger les jours précédents',
     pageInfo: '{n} trades chargés, tri par date de fermeture',

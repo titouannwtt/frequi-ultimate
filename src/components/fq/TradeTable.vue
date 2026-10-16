@@ -670,7 +670,7 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
           :title="row.exitReason.raw ?? ''"
           >{{ t(`fq.exit.${row.exitReason.kind}`) }}</span
         >
-        <ValueState v-else v-bind="noExit" />
+        <span v-else class="dim" :title="noExit.reason">{{ t('fq.jr.exitUnknown') }}</span>
       </template>
       <template #cell-closed_at="{ row }">{{ dateOf(row.closeMs) }}</template>
       <template #cell-mae_mfe="{ row }">
