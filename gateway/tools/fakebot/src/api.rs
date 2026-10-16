@@ -684,6 +684,51 @@ async fn serve_ws(bot: Arc<Bot>, mut socket: WebSocket) {
     bot.ws_open.fetch_sub(1, Ordering::Relaxed);
 }
 
+/// The families of paths the gateway proxies to the Python tooling of a bot.
+const TOOLING_ROOTS: [&str; 15] = [
+    "pair_candles",
+    "pair_history",
+    "plot_config",
+    "signal_summary",
+    "volume_history",
+    "strategies",
+    "strategy",
+    "rate_metrics",
+    "stratdev",
+    "replay",
+    "backtest",
+    "download_data",
+    "background",
+    "pairlists",
+    "fleetview",
+];
+
+/// The Python tooling the gateway proxies (`pair_candles`, `stratdev/*`, `replay`, ...). A read
+/// answers with an echo; a mutation is recorded like any other write and nothing happens. Every
+/// other unknown path stays a 404: the engine relies on that (`/status` is absent, for instance).
+async fn any_other(
+    State(bot): State<Arc<Bot>>,
+    method: Method,
+    uri: axum::http::Uri,
+    body: Bytes,
+) -> Response {
+    // The router is nested under `/api/v1`: the prefix may or may not be there already.
+    let path = uri.path();
+    let path = path
+        .strip_prefix("/api/v1")
+        .unwrap_or(path)
+        .trim_start_matches('/')
+        .to_owned();
+    let root = path.split('/').next().unwrap_or("");
+    if !TOOLING_ROOTS.contains(&root) {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+    if method == Method::GET {
+        return Json(json!({"proxied": format!("/{path}"), "query": uri.query()})).into_response();
+    }
+    write(State(bot), method, uri, body).await.into_response()
+}
+
 /// The router of one bot.
 pub fn router(bot: Arc<Bot>) -> Router {
     let v1 = Router::new()
@@ -696,7 +741,7 @@ pub fn router(bot: Arc<Bot>) -> Router {
         .route("/status", get(status))
         .route("/balance", get(balance))
         .route("/whitelist", get(whitelist))
-        .route("/blacklist", get(blacklist))
+        .route("/blacklist", get(blacklist).post(write).delete(write))
         .route("/locks", get(locks))
         .route("/logs", get(logs))
         .route("/profit", get(profit))
@@ -713,7 +758,10 @@ pub fn router(bot: Arc<Bot>) -> Router {
         .route("/stopentry", post(write))
         .route("/reload_config", post(write))
         .route("/trades/{id}", delete(delete_trade))
-        .route("/trades/{id}/open-order", delete(delete_trade));
+        .route("/trades/{id}/open-order", delete(delete_trade))
+        .route("/trades/{id}/reload", post(write))
+        .route("/locks/{id}", delete(delete_trade))
+        .fallback(any_other);
     Router::new()
         .nest("/api/v1", v1)
         .layer(middleware::from_fn_with_state(Arc::clone(&bot), gate))

@@ -61,6 +61,12 @@ unsafe_code = "forbid"
 dbg_macro = "warn"
 todo = "warn"
 
+# Password hashing is deliberately slow; at opt-level 0 the tests would spend seconds on it.
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3
+
 [profile.release]
 lto = "thin"
 codegen-units = 1

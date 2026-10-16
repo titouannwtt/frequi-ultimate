@@ -255,6 +255,79 @@ fn set_opt(obj: &mut Value, key: &str, value: Option<Value>) {
     }
 }
 
+/// HTTP method of a [`ProxyRequest`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProxyMethod {
+    Get,
+    Post,
+    Put,
+    Patch,
+    Delete,
+}
+
+impl ProxyMethod {
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Get => "GET",
+            Self::Post => "POST",
+            Self::Put => "PUT",
+            Self::Patch => "PATCH",
+            Self::Delete => "DELETE",
+        }
+    }
+
+    /// Whether the method can change something on the bot.
+    #[must_use]
+    pub fn is_mutating(self) -> bool {
+        self != Self::Get
+    }
+}
+
+/// A request forwarded to a bot for the browser (03 section 8.2). The caller has already checked
+/// the path against its whitelist; this layer only refuses what could escape `/api/v1`.
+#[derive(Debug, Clone)]
+pub struct ProxyRequest {
+    pub method: ProxyMethod,
+    /// Relative to `/api/v1`, starting with `/`.
+    pub path: String,
+    /// Raw query string without the leading `?`.
+    pub query: Option<String>,
+    pub body: Option<Vec<u8>>,
+    pub content_type: Option<String>,
+    pub timeout: Duration,
+}
+
+/// What a bot answered to a [`ProxyRequest`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProxyResponse {
+    pub status: u16,
+    pub content_type: Option<String>,
+    pub body: Vec<u8>,
+    pub latency_ms: u64,
+}
+
+/// Longest bot answer a proxy call accepts (a backtest result can be large).
+pub const PROXY_MAX_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
+
+/// A proxied path is plain segments of `[A-Za-z0-9_.-]`, none of them `.` or `..`: nothing that a
+/// URL parser could normalise away from the prefix that was checked.
+#[must_use]
+pub fn proxy_path_is_plain(path: &str) -> bool {
+    let Some(rest) = path.strip_prefix('/') else {
+        return false;
+    };
+    !rest.is_empty()
+        && rest.split('/').all(|seg| {
+            !seg.is_empty()
+                && seg != "."
+                && seg != ".."
+                && seg
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-' | b'.'))
+        })
+}
+
 /// Result of a write that reached the bot.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WriteOutcome {
@@ -757,6 +830,99 @@ impl HttpBot {
         })
     }
 
+    /// Forward a request. A read may be tried once more after a 401 (the token expired between
+    /// two checks: nothing ran). A mutating request gets exactly one attempt: a 401 is returned as
+    /// it is, a refusal to connect is [`RestError::NotSent`], any other transport failure is
+    /// [`RestError::Uncertain`]. The token is refreshed before the request, never after a failure
+    /// of it.
+    async fn do_proxy(&self, req: ProxyRequest) -> Result<ProxyResponse, RestError> {
+        if !proxy_path_is_plain(&req.path) {
+            return Err(RestError::NotSent);
+        }
+        let mut url = self.url(&req.path);
+        if let Some(q) = req.query.as_deref().filter(|q| !q.is_empty()) {
+            if q.bytes().any(|b| b <= b' ' || b == b'#' || b == 0x7f) {
+                return Err(RestError::NotSent);
+            }
+            // The access token of the bot is added by this client, never taken from the caller.
+            let kept: Vec<&str> = q
+                .split('&')
+                .filter(|kv| kv.split('=').next().is_some_and(|k| k != "token"))
+                .collect();
+            if !kept.is_empty() {
+                url.push('?');
+                url.push_str(&kept.join("&"));
+            }
+        }
+        let mutating = req.method.is_mutating();
+        let mut forced = false;
+        loop {
+            let token = self.access_token(forced).await.map_err(|e| match e {
+                RestError::Refused | RestError::Timeout | RestError::Reset if mutating => {
+                    RestError::NotSent
+                }
+                other => other,
+            })?;
+            let mut b = match req.method {
+                ProxyMethod::Get => self.client.get(&url),
+                ProxyMethod::Post => self.client.post(&url),
+                ProxyMethod::Put => self.client.put(&url),
+                ProxyMethod::Patch => self.client.patch(&url),
+                ProxyMethod::Delete => self.client.delete(&url),
+            }
+            .bearer_auth(token.expose())
+            .timeout(req.timeout);
+            if let Some(body) = &req.body {
+                b = b.body(body.clone());
+                if let Some(ct) = &req.content_type {
+                    b = b.header(reqwest::header::CONTENT_TYPE, ct);
+                }
+            }
+            let started = Instant::now();
+            let resp = b.send().await.map_err(|e| {
+                if mutating {
+                    if e.is_connect() {
+                        RestError::NotSent
+                    } else {
+                        RestError::Uncertain
+                    }
+                } else {
+                    Self::classify(&e)
+                }
+            })?;
+            let status = resp.status().as_u16();
+            if status == 401 {
+                self.invalidate_access().await;
+                if !mutating && !forced {
+                    forced = true;
+                    continue;
+                }
+            }
+            if resp
+                .content_length()
+                .is_some_and(|n| n > PROXY_MAX_RESPONSE_BYTES as u64)
+            {
+                return Err(RestError::Decode);
+            }
+            let content_type = resp
+                .headers()
+                .get(reqwest::header::CONTENT_TYPE)
+                .and_then(|v| v.to_str().ok())
+                .map(str::to_owned);
+            // A body that cannot be read after the request went out does not make it "not sent".
+            let body = resp.bytes().await.map(|b| b.to_vec()).unwrap_or_default();
+            if body.len() > PROXY_MAX_RESPONSE_BYTES {
+                return Err(RestError::Decode);
+            }
+            return Ok(ProxyResponse {
+                status,
+                content_type,
+                body,
+                latency_ms: u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
+            });
+        }
+    }
+
     /// Token for the bot WebSocket: the JWT access token, or the static `ws_token` of the config.
     pub async fn ws_token(&self) -> Option<Secret> {
         match self.access_token(false).await {
@@ -788,6 +954,10 @@ impl BotRest for HttpBot {
         idempotency_key: String,
     ) -> BoxFut<'_, Result<WriteOutcome, RestError>> {
         Box::pin(self.do_write(action, idempotency_key))
+    }
+
+    fn proxy(&self, req: ProxyRequest) -> BoxFut<'_, Result<ProxyResponse, RestError>> {
+        Box::pin(self.do_proxy(req))
     }
 }
 
@@ -1289,6 +1459,134 @@ mod tests {
         }
         assert_eq!(fake.count("POST", "/api/v1/forceexit"), 1);
         assert!(ok >= 1 && ok + dup == 4);
+    }
+
+    fn proxy_req(method: ProxyMethod, path: &str, query: Option<&str>) -> ProxyRequest {
+        ProxyRequest {
+            method,
+            path: path.to_owned(),
+            query: query.map(str::to_owned),
+            body: None,
+            content_type: None,
+            timeout: Duration::from_secs(5),
+        }
+    }
+
+    #[test]
+    fn a_proxied_path_cannot_climb_out_of_its_prefix() {
+        for ok in [
+            "/pair_candles",
+            "/stratdev/editor/file",
+            "/strategy/My.Strat_1",
+        ] {
+            assert!(proxy_path_is_plain(ok), "{ok}");
+        }
+        for bad in [
+            "",
+            "/",
+            "pair_candles",
+            "/stratdev/../forceexit",
+            "/stratdev/./x",
+            "/a//b",
+            "/a/%2e%2e/b",
+            "/a\\b",
+            "/a b",
+            "/a?x=1",
+            "/a/",
+        ] {
+            assert!(!proxy_path_is_plain(bad), "{bad}");
+        }
+    }
+
+    #[tokio::test]
+    async fn a_proxied_read_is_retried_once_after_a_401_but_a_mutation_never() {
+        let tokens = Arc::new(AtomicUsize::new(0));
+        let t = Arc::clone(&tokens);
+        let fake = FakeHttp::start(move |req| {
+            if req.path() == "/api/v1/token/login" {
+                let n = t.fetch_add(1, Ordering::SeqCst) + 1;
+                // The first token is already rejected by the bot.
+                return FakeResponse::json(
+                    200,
+                    &format!(r#"{{"access_token":"ACCESS-{n}","refresh_token":"REFRESH-1"}}"#),
+                );
+            }
+            let ok = req
+                .headers
+                .get("authorization")
+                .is_some_and(|a| a != "Bearer ACCESS-1");
+            if ok {
+                FakeResponse::json(200, r#"{"echo":true}"#)
+            } else {
+                FakeResponse::json(401, r#"{"detail":"expired"}"#)
+            }
+        })
+        .await;
+        let b = bot(&fake, RestOptions::default());
+        let r = b
+            .proxy(proxy_req(
+                ProxyMethod::Get,
+                "/plot_config",
+                Some("token=LEAK&a=1"),
+            ))
+            .await
+            .unwrap();
+        assert_eq!(r.status, 200);
+        assert_eq!(fake.count("GET", "/api/v1/plot_config"), 2);
+        let seen = fake.requests();
+        assert!(
+            seen.iter().all(|q| !q.target.contains("LEAK")),
+            "the caller's token is dropped from the query"
+        );
+        assert!(seen.iter().any(|q| q.target.ends_with("plot_config?a=1")));
+
+        // A mutation whose token the bot rejects is returned as a 401, sent once.
+        let fake2 = FakeHttp::start(|req| {
+            if req.path() == "/api/v1/token/login" {
+                FakeResponse::json(200, r#"{"access_token":"ACCESS-1"}"#)
+            } else {
+                FakeResponse::json(401, r#"{"detail":"expired"}"#)
+            }
+        })
+        .await;
+        let b2 = bot(&fake2, RestOptions::default());
+        let r = b2
+            .proxy(proxy_req(ProxyMethod::Post, "/replay", None))
+            .await
+            .unwrap();
+        assert_eq!(r.status, 401);
+        assert_eq!(
+            fake2.count("POST", "/api/v1/replay"),
+            1,
+            "no retry of a write"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_proxied_mutation_to_a_dead_bot_is_not_sent_and_a_bad_path_never_leaves() {
+        let opts = RestOptions::default();
+        let b = HttpBot::new(
+            "127.0.0.1",
+            1,
+            BotAuth::Credentials(creds()),
+            build_http_client(&opts),
+            opts,
+        );
+        assert_eq!(
+            b.proxy(proxy_req(ProxyMethod::Post, "/replay", None))
+                .await
+                .unwrap_err(),
+            RestError::NotSent
+        );
+        let fake = FakeHttp::start(freqtrade_like).await;
+        let b = bot(&fake, RestOptions::default());
+        assert_eq!(
+            b.proxy(proxy_req(ProxyMethod::Get, "/stratdev/../forceexit", None))
+                .await
+                .unwrap_err(),
+            RestError::NotSent
+        );
+        assert_eq!(fake.requests().len(), 0, "nothing was sent for a bad path");
     }
 
     #[test]
