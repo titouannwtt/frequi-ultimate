@@ -32,11 +32,10 @@ let started = false;
 export function initDisplayPrefs(): void {
   if (started || typeof document === 'undefined') return;
   started = true;
-  watch(
-    [cvd, motion],
-    () => applyDisplayPrefs({ cvd: cvd.value, motion: motion.value }),
-    { immediate: true, flush: 'sync' },
-  );
+  watch([cvd, motion], () => applyDisplayPrefs({ cvd: cvd.value, motion: motion.value }), {
+    immediate: true,
+    flush: 'sync',
+  });
 }
 
 export function useDisplayPrefs() {

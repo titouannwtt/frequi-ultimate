@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n';
 import type { RunListEntry } from '@/types';
 import { RunType } from '@/types';
-import { getVerdict, getVerdictText } from './metricThresholds';
+import { getVerdict } from './metricThresholds';
 
 const { t } = useI18n();
 const store = useStrategyDevStore();
@@ -262,10 +262,16 @@ const filteredCompareRuns = computed(() => {
             <span class="cmp-run-strategy">{{ run.strategy }}</span>
           </div>
           <div class="cmp-run-meta">
-            <span v-if="run.best_loss != null" class="cmp-run-metric">
+            <span
+              v-if="run.best_loss !== undefined && run.best_loss !== null"
+              class="cmp-run-metric"
+            >
               loss: {{ run.best_loss.toFixed(4) }}
             </span>
-            <span v-if="run.total_profit_pct != null" class="cmp-run-metric">
+            <span
+              v-if="run.total_profit_pct !== undefined && run.total_profit_pct !== null"
+              class="cmp-run-metric"
+            >
               {{ run.total_profit_pct >= 0 ? '+' : '' }}{{ run.total_profit_pct.toFixed(1) }}%
             </span>
             <span class="cmp-run-date">
@@ -315,7 +321,7 @@ const filteredCompareRuns = computed(() => {
                 <td class="cmp-td cmp-td-label">{{ row.label }}</td>
                 <td class="cmp-td cmp-td-val">
                   <span
-                    v-if="row.valueA != null"
+                    v-if="row.valueA !== undefined && row.valueA !== null"
                     :style="{
                       color:
                         row.key !== 'total_trades'
@@ -329,7 +335,7 @@ const filteredCompareRuns = computed(() => {
                 </td>
                 <td class="cmp-td cmp-td-val">
                   <span
-                    v-if="row.valueB != null"
+                    v-if="row.valueB !== undefined && row.valueB !== null"
                     :style="{
                       color:
                         row.key !== 'total_trades'
@@ -343,7 +349,7 @@ const filteredCompareRuns = computed(() => {
                 </td>
                 <td class="cmp-td cmp-td-delta">
                   <span
-                    v-if="row.delta != null"
+                    v-if="row.delta !== undefined && row.delta !== null"
                     class="cmp-delta"
                     :class="{
                       'cmp-delta--good': row.deltaGood,

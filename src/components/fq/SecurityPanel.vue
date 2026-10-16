@@ -81,7 +81,20 @@ const samples = computed<Sample[]>(() => [
         </thead>
         <tbody>
           <tr v-for="l in LEVELS" :key="l" :data-level="l">
-            <td class="l"><Badge :kind="l === 'destructive' ? 'live' : l === 'live' ? 'live' : l === 'dry' ? 'dry' : 'neutral'" :label="t(`fq.pg.settings.sec.lv.${l}`)" /></td>
+            <td class="l">
+              <Badge
+                :kind="
+                  l === 'destructive'
+                    ? 'live'
+                    : l === 'live'
+                      ? 'live'
+                      : l === 'dry'
+                        ? 'dry'
+                        : 'neutral'
+                "
+                :label="t(`fq.pg.settings.sec.lv.${l}`)"
+              />
+            </td>
             <td class="l">{{ t(`fq.pg.settings.sec.gest.${l}`) }}</td>
             <td class="l mut">{{ t(`fq.pg.settings.sec.what.${l}`) }}</td>
           </tr>

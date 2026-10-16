@@ -1,25 +1,14 @@
 import type {
-  BalanceInterface,
   BotDescriptor,
   BotDescriptors,
   BotState,
-  ClosedTrade,
-  TimeSummaryPayload,
-  TimeSummaryRecord,
-  TimeSummaryReturnValue,
   MultiCancelOpenOrderPayload,
   MultiDeletePayload,
   MultiForceExitPayload,
   MultiReloadTradePayload,
-  ProfitStats,
-  RateMetricsResponse,
-  Trade,
-  VolumeHistoryResponse,
-  WalletHistoryPerBot,
 } from '@/types';
-import { TimeSummaryOptions } from '@/types';
 import { createBotSubStore } from './ftbot';
-import { activeBotIdForTrades, closedTradesDemand, closedTradesWanted } from './closedTradesPolicy';
+import { activeBotIdForTrades, closedTradesWanted } from './closedTradesPolicy';
 import { forgetBotName } from './botNameRegistry';
 import { fleetDigestCoversBot, publishFleetDigests } from './fleetDigestPolicy';
 import { registerSlowRefreshRunner } from './slowRefreshScheduler';
@@ -47,43 +36,6 @@ const FREQUENT_DECIMATION = 6;
 const SLOW_DECIMATION = 3;
 let frequentTick = 0;
 let slowTick = 0;
-
-/**
- * Identity-keyed memo for the fleet-wide trade aggregates.
- *
- * These getters flatten (and, for the closed list, sort) every selected bot's history: on a
- * 45-bot fleet that is an O(T log T) pass over ~180 000 elements. Pinia caches a getter, but
- * the cache is dropped as soon as *any* reactive dep it touched moves, and iterating 45
- * sub-stores touches a lot. The result was a full re-sort on invalidations where the trade
- * arrays themselves were untouched.
- *
- * Keying on the array *identities* is exact rather than heuristic: `getTrades` already
- * preserves the identity of an unchanged history (`tradesSignature`), so same identities
- * provably means same contents, and a real change swaps the identity and misses the memo.
- */
-function memoByParts<T>(compute: (parts: T[][]) => T[]) {
-  let lastParts: T[][] = [];
-  let lastResult: T[] = [];
-  return (parts: T[][]): T[] => {
-    if (parts.length === lastParts.length && parts.every((p, i) => p === lastParts[i])) {
-      return lastResult;
-    }
-    lastParts = parts;
-    lastResult = compute(parts);
-    return lastResult;
-  };
-}
-
-const memoOpenTrades = memoByParts<Trade>((parts) => parts.flat());
-const memoAllTrades = memoByParts<ClosedTrade>((parts) => parts.flat());
-const memoClosedTrades = memoByParts<Trade>((parts) =>
-  parts.flat().sort((a, b) =>
-    // Sort by close timestamp, then by tradeid
-    b.close_timestamp && a.close_timestamp
-      ? b.close_timestamp - a.close_timestamp
-      : b.trade_id - a.trade_id,
-  ),
-);
 
 // Import axios for type inference only
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -128,183 +80,14 @@ export const useBotStore = defineStore('ftbot-wrapper', {
   getters: {
     hasBots: (state) => Object.keys(state.availableBots).length > 0,
     botCount: (state) => Object.keys(state.availableBots).length,
-    availableBotsSorted: (state) => {
-      return Object.values(state.availableBots).sort((a, b) => (a.sortId ?? 0) - (b.sortId ?? 0));
-    },
     allBotStores: (state) => Object.values(state.botStores),
-    allSelectedBotsSameStake() {
-      const stakeCurrencies = Object.values(this.selectedBots).map((bot) => bot.stakeCurrency);
-      return (
-        stakeCurrencies.length > 0 &&
-        stakeCurrencies.every((currency) => currency === stakeCurrencies[0])
-      );
-    },
-    /** All selected bots have the same mode (dry or live) */
-    allSelectedBotsSameState() {
-      const modes = Object.values(this.selectedBots).map((bot) => bot.botState.dry_run);
-      return modes.length > 0 && modes.every((mode) => mode === modes[0]);
-    },
-    /** Selected bots for dashboard view */
-    selectedBots: (state) => {
-      return Object.values(state.botStores).filter((store) => store.isSelected);
-    },
-    selectedBotCount: (state) =>
-      Object.values(state.botStores).filter((store) => store.isSelected).length,
     activeBot: (state) => state.botStores[state.selectedBot] as BotSubStore,
-    activeBotorUndefined: (state) => state.botStores[state.selectedBot] as BotSubStore | undefined,
     canRunBacktest: (state) => state.botStores[state.selectedBot]?.canRunBacktest ?? false,
     isWebserverMode: (state) => state.botStores[state.selectedBot]?.isWebserverMode ?? false,
-    selectedBotObj: (state) => state.availableBots[state.selectedBot],
-    nextBotId: (state) => {
-      let botCount = Object.keys(state.availableBots).length;
-
-      while (`ftbot.${botCount}` in state.availableBots) {
-        botCount += 1;
-      }
-      return `ftbot.${botCount}`;
-    },
-    allProfit: (state): Record<string, ProfitStats | undefined> => {
-      const result: Record<string, ProfitStats | undefined> = {};
-      Object.entries(state.botStores).forEach(([k, botStore]) => {
-        result[k] = botStore.profit;
-      });
-      return result;
-    },
-    allOpenTradeCount: (state): Record<string, number> => {
-      const result: Record<string, number> = {};
-      Object.entries(state.botStores).forEach(([k, botStore]) => {
-        result[k] = botStore.openTradeCount;
-      });
-      return result;
-    },
-    allOpenTrades: (state): Record<string, Trade[]> => {
-      const result: Record<string, Trade[]> = {};
-      Object.entries(state.botStores).forEach(([k, botStore]) => {
-        result[k] = botStore.openTrades;
-      });
-      return result;
-    },
-    allBalance: (state): Record<string, BalanceInterface> => {
-      const result: Record<string, BalanceInterface> = {};
-      Object.entries(state.botStores).forEach(([k, botStore]) => {
-        result[k] = botStore.balance;
-      });
-      return result;
-    },
     allBotState: (state): Record<string, BotState> => {
       const result: Record<string, BotState> = {};
       Object.entries(state.botStores).forEach(([k, botStore]) => {
         result[k] = botStore.botState;
-      });
-      return result;
-    },
-
-    allOpenTradesSelectedBots: (state): Trade[] =>
-      memoOpenTrades(
-        Object.values(state.botStores)
-          .filter((b) => b.isSelected)
-          .map((b) => b.openTrades),
-      ),
-    allClosedTradesSelectedBots: (state): Trade[] =>
-      memoClosedTrades(
-        Object.values(state.botStores)
-          .filter((b) => b.isSelected)
-          .map((b) => b.trades),
-      ),
-    allTradesSelectedBots: (state): ClosedTrade[] =>
-      memoAllTrades(
-        Object.values(state.botStores)
-          .filter((b) => b.isSelected)
-          .map((b) => b.trades),
-      ),
-    allBalanceHistory: (state): WalletHistoryPerBot => {
-      const result: WalletHistoryPerBot = {};
-      Object.entries(state.botStores).forEach(([k, botStore]) => {
-        if (botStore.balanceHistory) {
-          result[k] = botStore.balanceHistory;
-        }
-      });
-      return result;
-    },
-    allDailyStatsSelectedBots: (state): TimeSummaryReturnValue => {
-      // Return aggregated daily stats for all bots - sorted ascending.
-      const resp: Record<string, TimeSummaryRecord> = {};
-      Object.entries(state.botStores).forEach(([, botStore]) => {
-        if (botStore.isSelected) {
-          botStore.dailyStats?.data?.forEach((d) => {
-            const existing = resp[d.date];
-            if (!existing) {
-              resp[d.date] = { ...d };
-            } else {
-              existing.abs_profit += d.abs_profit;
-              existing.fiat_value += d.fiat_value;
-              existing.trade_count += d.trade_count;
-            }
-          });
-        }
-      });
-
-      const dailyReturn: TimeSummaryReturnValue = {
-        stake_currency: 'USDT',
-        fiat_display_currency: 'USD',
-        data: Object.values(resp).sort((a, b) => (a.date > b.date ? 1 : -1)),
-      };
-      return dailyReturn;
-    },
-    allWeeklyStatsSelectedBots: (state): TimeSummaryReturnValue => {
-      const resp: Record<string, TimeSummaryRecord> = {};
-      Object.entries(state.botStores).forEach(([, botStore]) => {
-        if (botStore.isSelected) {
-          botStore.weeklyStats?.data?.forEach((d) => {
-            const existing = resp[d.date];
-            if (!existing) {
-              resp[d.date] = { ...d };
-            } else {
-              existing.abs_profit += d.abs_profit;
-              existing.fiat_value += d.fiat_value;
-              existing.trade_count += d.trade_count;
-            }
-          });
-        }
-      });
-
-      return {
-        stake_currency: 'USDT',
-        fiat_display_currency: 'USD',
-        data: Object.values(resp).sort((a, b) => (a.date > b.date ? 1 : -1)),
-      };
-    },
-    allMonthlyStatsSelectedBots: (state): TimeSummaryReturnValue => {
-      const resp: Record<string, TimeSummaryRecord> = {};
-      Object.entries(state.botStores).forEach(([, botStore]) => {
-        if (botStore.isSelected) {
-          botStore.monthlyStats?.data?.forEach((d) => {
-            const existing = resp[d.date];
-            if (!existing) {
-              resp[d.date] = { ...d };
-            } else {
-              existing.abs_profit += d.abs_profit;
-              existing.fiat_value += d.fiat_value;
-              existing.starting_balance += d.starting_balance;
-              existing.rel_profit += d.rel_profit;
-              existing.trade_count += d.trade_count;
-            }
-          });
-        }
-      });
-
-      return {
-        stake_currency: 'USDT',
-        fiat_display_currency: 'USD',
-        data: Object.values(resp).sort((a, b) => (a.date > b.date ? 1 : -1)),
-      };
-    },
-    allRateMetrics: (state): Record<string, RateMetricsResponse> => {
-      const result: Record<string, RateMetricsResponse> = {};
-      Object.entries(state.botStores).forEach(([k, botStore]) => {
-        if (botStore.isSelected && botStore.rateMetrics?.exchange) {
-          result[k] = botStore.rateMetrics;
-        }
       });
       return result;
     },
@@ -395,10 +178,6 @@ export const useBotStore = defineStore('ftbot-wrapper', {
         if (!bot) return;
         this.selectBot(bot.botId);
       }
-    },
-    setGlobalAutoRefresh(value: boolean) {
-      // TODO: could be removed.
-      this.globalAutoRefresh = value;
     },
     async allRefreshFrequent(forceUpdate = false) {
       frequentTick += 1;
@@ -561,22 +340,6 @@ export const useBotStore = defineStore('ftbot-wrapper', {
         .map((bot) => () => bot.getTrades().catch(() => {}));
       await batchedAll(tasks);
     },
-    /**
-     * A component that needs every selected bot's closed history is mounting. Pairs with
-     * `releaseClosedTrades`; use the `useClosedTradesFeed()` composable rather than calling
-     * these by hand, so the release cannot be forgotten.
-     */
-    requestClosedTrades() {
-      closedTradesDemand.value += 1;
-      // Fetch straight away rather than waiting for the next slow tick: a widget that just
-      // scrolled into view must not sit empty for a minute. The per-bot call is guarded by
-      // a one-row count probe, so when the history is already loaded this costs 45 tiny
-      // requests, not 11 MB.
-      void this.fetchAllBotsTrades();
-    },
-    releaseClosedTrades() {
-      closedTradesDemand.value = Math.max(0, closedTradesDemand.value - 1);
-    },
     stopRefresh() {
       console.log('Stopping automatic refresh.');
       if (this.visibilityHandler) {
@@ -637,46 +400,6 @@ export const useBotStore = defineStore('ftbot-wrapper', {
         }),
       );
     },
-    async allGetState() {
-      const bots = Object.values(this.botStores);
-      await batchedAll(
-        bots.map((v) => async () => {
-          try {
-            await v.getState();
-          } catch {
-            // pass
-          }
-        }),
-      );
-    },
-    async allGetDaily(payload: TimeSummaryPayload) {
-      const updates: Promise<TimeSummaryReturnValue>[] = [];
-
-      this.allBotStores.forEach((bot) => {
-        if (bot.isBotOnline) {
-          updates.push(bot.getTimeSummary(TimeSummaryOptions.daily, payload));
-        }
-      });
-      await Promise.all(updates);
-    },
-    async allGetRateMetrics() {
-      const updates: Promise<RateMetricsResponse>[] = [];
-      this.allBotStores.forEach((bot) => {
-        if (bot.isBotOnline) {
-          updates.push(bot.getRateMetrics());
-        }
-      });
-      await Promise.all(updates);
-    },
-    async allGetVolumeHistory(days = 90, bucket = '1d') {
-      const updates: Promise<VolumeHistoryResponse>[] = [];
-      this.allBotStores.forEach((bot) => {
-        if (bot.isBotOnline) {
-          updates.push(bot.getVolumeHistory(days, bucket));
-        }
-      });
-      await Promise.all(updates);
-    },
     async forceSellMulti(forcesellPayload: MultiForceExitPayload) {
       const bot = this.botStores[forcesellPayload.botId];
       if (!bot) return;
@@ -696,48 +419,6 @@ export const useBotStore = defineStore('ftbot-wrapper', {
       const bot = this.botStores[deletePayload.botId];
       if (!bot) return;
       return bot.reloadTrade(deletePayload.tradeid);
-    },
-    async allGetTimeSummary(period: TimeSummaryOptions, payload?: TimeSummaryPayload) {
-      const updates: Promise<TimeSummaryReturnValue>[] = [];
-
-      this.allBotStores.forEach((bot) => {
-        if (bot.isBotOnline && bot.isSelected) {
-          updates.push(bot.getTimeSummary(period, payload));
-        }
-      });
-      await Promise.all(updates);
-    },
-    toggleBotsByState(state: 'dry' | 'live' | 'all') {
-      for (const bot of Object.values(this.botStores)) {
-        if (state === 'all') {
-          bot.isSelected = true;
-        } else if (
-          bot.isBotOnline &&
-          ((bot.botState.dry_run && state === 'dry') || (!bot.botState.dry_run && state === 'live'))
-        ) {
-          bot.isSelected = true;
-        } else {
-          bot.isSelected = false;
-        }
-      }
-    },
-    toggleBotsByExchange(exchange: string) {
-      for (const bot of Object.values(this.botStores)) {
-        if (bot.botState.exchange?.toLowerCase() === exchange.toLowerCase()) {
-          bot.isSelected = true;
-        } else {
-          bot.isSelected = false;
-        }
-      }
-    },
-    toggleBotsByStakeCurrency(currency: string) {
-      for (const bot of Object.values(this.botStores)) {
-        if (bot.botState.stake_currency?.toLowerCase() === currency.toLowerCase()) {
-          bot.isSelected = true;
-        } else {
-          bot.isSelected = false;
-        }
-      }
     },
   },
 });

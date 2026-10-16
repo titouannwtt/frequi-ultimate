@@ -654,7 +654,11 @@ export class GatewaySource implements DataSource {
     },
 
     exportTradesCsv: async (q: TradeQuery): Promise<string> => {
-      const sortOf = { close_ms: 'close_date', open_ms: 'open_date', profit_abs: 'profit' } as const;
+      const sortOf = {
+        close_ms: 'close_date',
+        open_ms: 'open_date',
+        profit_abs: 'profit',
+      } as const;
       const params: Record<string, unknown> = {
         bots: q.bots,
         pair: q.pair,
@@ -668,7 +672,8 @@ export class GatewaySource implements DataSource {
       };
       const clean: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(params)) {
-        if (v !== undefined && v !== null && v !== '') clean[k] = Array.isArray(v) ? v.join(',') : v;
+        if (v !== undefined && v !== null && v !== '')
+          clean[k] = Array.isArray(v) ? v.join(',') : v;
       }
       const res = await this.readWithSession<unknown>('/trades/export.csv', {
         params: clean,

@@ -2,7 +2,14 @@
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { AdaptiveSheet, Badge, Btn, HoldButton, SegmentedControl, TextInput } from '@/components/ds';
+import {
+  AdaptiveSheet,
+  Badge,
+  Btn,
+  HoldButton,
+  SegmentedControl,
+  TextInput,
+} from '@/components/ds';
 import type { SegmentOption } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import type { FleetviewResolvePayload } from '@/types/fleetview';
@@ -51,7 +58,9 @@ const intents = computed<ReconIntent[]>(() => (props.row ? intentsFor(props.row)
 const intent = computed<ReconIntent | null>(
   () => intents.value[Math.min(pick.value, intents.value.length - 1)] ?? null,
 );
-const slice = computed(() => (intent.value ? sliceOf(intent.value.coin, intent.value.trade) : null));
+const slice = computed(() =>
+  intent.value ? sliceOf(intent.value.coin, intent.value.trade) : null,
+);
 const payload = computed(() => (intent.value ? payloadOf(intent.value) : null));
 /** One hold per coin, action and trade, shared with any other surface that would offer it. */
 const lockKey = computed(() =>
@@ -90,7 +99,9 @@ function holdDone() {
   emit('confirm', payload.value);
 }
 
-const outcomeKey = computed(() => (props.outcome ? `fq.reconw.result.${props.outcome.status}` : ''));
+const outcomeKey = computed(() =>
+  props.outcome ? `fq.reconw.result.${props.outcome.status}` : '',
+);
 const outcomeTone = computed(() => {
   switch (props.outcome?.status) {
     case 'accepted':
@@ -147,8 +158,10 @@ const outcomeTone = computed(() => {
         </dl>
         <details class="body">
           <summary>{{ t('fq.reconw.request') }}</summary>
-          <pre class="num">POST /fleetview/reconciliation/resolve
-{{ JSON.stringify(payload, null, 2) }}</pre>
+          <pre class="num">
+POST /fleetview/reconciliation/resolve
+{{ JSON.stringify(payload, null, 2) }}</pre
+          >
         </details>
       </section>
 

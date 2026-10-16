@@ -108,7 +108,9 @@ export function stressTest(positions: readonly StressInput[], shockPct: number):
   const hit = rows.filter((r) => r.liquidated);
   return {
     shock: shockPct,
-    rows: rows.slice().sort((a, b) => Number(b.liquidated) - Number(a.liquidated) || a.delta - b.delta),
+    rows: rows
+      .slice()
+      .sort((a, b) => Number(b.liquidated) - Number(a.liquidated) || a.delta - b.delta),
     delta: rows.reduce((s, r) => s + r.delta, 0),
     liquidated: hit.length,
     marginLost: hit.reduce((s, r) => s - r.delta, 0),

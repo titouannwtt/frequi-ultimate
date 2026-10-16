@@ -154,17 +154,6 @@
   animation-fill-mode: both;
 }
 
-/* ── Tab content transition (Vue) ── */
-.sd-tab-enter-active {
-  animation: sd-slide-up 200ms ease-out;
-}
-.sd-tab-leave-active {
-  transition: opacity 100ms ease;
-}
-.sd-tab-leave-to {
-  opacity: 0;
-}
-
 /* ══════════════════════════════════════════
    Freqtrade Dashboard — Shared Animations
    ══════════════════════════════════════════ */

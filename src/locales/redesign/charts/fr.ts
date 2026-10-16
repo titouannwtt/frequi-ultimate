@@ -1,5 +1,5 @@
 /**
- * Messages des composites du lot B (docs/redesign/02-design.md, section 5.2) : courbes, calendrier,
+ * Messages des composites du lot B (docs/redesign/02-design.md, section 5.2) : courbes, calendrier,
  * analyse du Journal, risque, santé, logs, navigateur de paires, graphique en bougies, registre et
  * réconciliation. Fusionnés dans l'espace `fq` par ../fr.ts. Mêmes clés que ./en.ts. Pas de tiret
  * cadratin ; espace insécable avant `:`, `?`, `!` ; espace fine insécable avant `%`.
@@ -122,7 +122,8 @@ export default {
       p90: 'P90 {v}',
       perDay: 'Trades par jour',
       overDays: 'sur {n} j',
-      partial: 'Totaux sur l’historique chargé seulement : la source ne donne pas tout le jeu filtré.',
+      partial:
+        'Totaux sur l’historique chargé seulement : la source ne donne pas tout le jeu filtré.',
     },
     listTitle: 'Trades fermés',
     listMeta: '{n} trade · {period} | {n} trades · {period}',

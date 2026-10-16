@@ -1,17 +1,11 @@
 import { computed, ref, shallowRef } from 'vue';
 
 import { botState } from '@/components/fq/lib/bots';
-import {
-  readWriteOutcome,
-  type WriteOutcome,
-} from '@/components/fq/lib/reconWrite';
+import { readWriteOutcome, type WriteOutcome } from '@/components/fq/lib/reconWrite';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import type { BotKey } from '@/gateway/types.gen';
-import type {
-  FleetviewReconciliationResponse,
-  FleetviewResolvePayload,
-} from '@/types/fleetview';
+import type { FleetviewReconciliationResponse, FleetviewResolvePayload } from '@/types/fleetview';
 
 import { useDataSource } from './useDataSource';
 
@@ -48,7 +42,9 @@ export function useReconciliation() {
       .map((b) => b.bot_key);
   });
 
-  const viaName = computed(() => (via.value ? (fleet.bots[via.value]?.identity.name ?? null) : null));
+  const viaName = computed(() =>
+    via.value ? (fleet.bots[via.value]?.identity.name ?? null) : null,
+  );
 
   function load(): Promise<void> {
     if (inflight) return inflight;

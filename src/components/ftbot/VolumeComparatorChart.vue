@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import type { VolumeBucketSize } from '@/types';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -54,8 +53,6 @@ const {
   botFilter: (botId: string) => isBotInMode(botId),
 });
 
-import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
-import { DashboardLayout } from '@/stores/layout';
 import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 
 const { tradingMode, hasMultipleModes, isBotInMode, restorePersistedTradingMode } =
@@ -66,51 +63,14 @@ const showProfit = ref(false);
 const showAnomalies = ref(true);
 const showVolumeRatio = ref(false);
 
-const HARDCODED_DEFAULTS_VOL = {
-  selectedDays: 90,
-  selectedBucket: '1d' as string,
-  showTradeCount: false,
-  showProfit: false,
-  showAnomalies: true,
-  showVolumeRatio: false,
-  tradingMode: 'all' as string,
-};
-
-const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults(
-  DashboardLayout.volumeComparator,
-  () => ({
-    selectedDays: selectedDays.value,
-    selectedBucket: selectedBucket.value,
-    showTradeCount: showTradeCount.value,
-    showProfit: showProfit.value,
-    showAnomalies: showAnomalies.value,
-    showVolumeRatio: showVolumeRatio.value,
-    tradingMode: tradingMode.value,
-  }),
-  (d) => {
-    if (d.selectedDays !== undefined) selectedDays.value = d.selectedDays as number;
-    if (d.selectedBucket !== undefined) selectedBucket.value = d.selectedBucket as VolumeBucketSize;
-    if (d.showTradeCount !== undefined) showTradeCount.value = d.showTradeCount as boolean;
-    if (d.showProfit !== undefined) showProfit.value = d.showProfit as boolean;
-    if (d.showAnomalies !== undefined) showAnomalies.value = d.showAnomalies as boolean;
-    if (d.showVolumeRatio !== undefined) showVolumeRatio.value = d.showVolumeRatio as boolean;
-    if (d.tradingMode !== undefined) tradingMode.value = d.tradingMode as typeof tradingMode.value;
-  },
-  HARDCODED_DEFAULTS_VOL,
-);
-
 onMounted(() => {
-  loadDefaults();
   restorePersistedTradingMode();
 });
-
-defineExpose({ filtersChanged, saveCurrentAsDefault });
 
 const BLUE = '#89b4fa';
 const GREEN = '#a6e3a1';
 const YELLOW = '#f9e2af';
 const MAUVE = '#cba6f7';
-const RED = '#f38ba8';
 const PEACH = '#fab387';
 const TEXT = '#cdd6f4';
 const SUBTEXT = '#bac2de';

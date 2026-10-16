@@ -79,7 +79,6 @@ function scrollToSection(id: string) {
 }
 
 // ── Intersection observer for active section tracking ──
-const sectionRefs = ref<Record<string, HTMLElement | null>>({});
 
 onMounted(() => {
   nextTick(() => {

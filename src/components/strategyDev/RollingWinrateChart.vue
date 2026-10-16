@@ -36,7 +36,6 @@ const { showRegimes, markAreaData } = useRegimeOverlay(regimeTimeline);
 
 const option = computed<EChartsOption>(() => {
   const dates = props.data.map((d) => d.date);
-  const values = props.data.map((d) => d.winrate);
 
   return {
     tooltip: {

@@ -355,7 +355,10 @@ function filterByType() {
           <i-mdi-circle class="rdh-meta-icon" style="width: 8px; height: 8px" />
           {{ run.dry_run ? t('strategyDev.liveDryRun') : t('strategyDev.liveReal') }}
         </span>
-        <span v-if="isLive && run.open_trades_count != null" class="rdh-meta-item">
+        <span
+          v-if="isLive && run.open_trades_count !== undefined && run.open_trades_count !== null"
+          class="rdh-meta-item"
+        >
           <i-mdi-chart-timeline class="rdh-meta-icon" /> {{ run.open_trades_count }} open
         </span>
         <span v-if="!isLive && run.timeframe" class="rdh-meta-item">

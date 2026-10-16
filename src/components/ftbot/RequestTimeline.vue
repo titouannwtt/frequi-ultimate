@@ -44,16 +44,11 @@ const {
 } = useRateMetrics({
   multiBotView: props.multiBotView,
   botFilter: (botId: string) => isBotInMode(botId),
-  // 24 h par défaut : sur une heure, la timeline ne montre qu'une tranche trop
-  // courte pour lire un régime (pics de rafraîchissement de pairlist, rafales de
-  // 429, effet d'un changement de cadence). Doit rester ALIGNÉ sur
-  // `HARDCODED_DEFAULTS_RT.selectedWindow` plus bas, sinon le défaut dépend de la
-  // présence ou non d'un réglage enregistré.
+  // 24 h by default: over one hour the timeline shows too short a slice to read a regime
+  // (pairlist refresh peaks, bursts of 429, effect of a cadence change).
   defaultWindow: 86400,
 });
 
-import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
-import { DashboardLayout } from '@/stores/layout';
 import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 
 const { tradingMode, hasMultipleModes, isBotInMode, restorePersistedTradingMode } =
@@ -66,40 +61,9 @@ type SortKeyType = 'count' | 'cached' | 'errors' | 'avg_latency_ms' | 'p95_laten
 const sortKey = ref<SortKeyType>('count');
 const sortAsc = ref(false);
 
-const HARDCODED_DEFAULTS_RT = {
-  viewMode: 'timeline' as string,
-  // ⚠️ Aligné sur le `defaultWindow` passé à `useRateMetrics` ci-dessus.
-  selectedWindow: 86400,
-  sortKey: 'count' as string,
-  sortAsc: false,
-  tradingMode: 'all' as string,
-};
-
-const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults(
-  DashboardLayout.ratePulse,
-  () => ({
-    viewMode: viewMode.value,
-    selectedWindow: selectedWindow.value,
-    sortKey: sortKey.value,
-    sortAsc: sortAsc.value,
-    tradingMode: tradingMode.value,
-  }),
-  (d) => {
-    if (d.viewMode !== undefined) viewMode.value = d.viewMode as ViewMode;
-    if (d.selectedWindow !== undefined) selectedWindow.value = d.selectedWindow as number;
-    if (d.sortKey !== undefined) sortKey.value = d.sortKey as SortKeyType;
-    if (d.sortAsc !== undefined) sortAsc.value = d.sortAsc as boolean;
-    if (d.tradingMode !== undefined) tradingMode.value = d.tradingMode as typeof tradingMode.value;
-  },
-  HARDCODED_DEFAULTS_RT,
-);
-
 onMounted(() => {
-  loadDefaults();
   restorePersistedTradingMode();
 });
-
-defineExpose({ filtersChanged, saveCurrentAsDefault });
 
 function toggleSort(key: SortKeyType) {
   if (sortKey.value === key) sortAsc.value = !sortAsc.value;
@@ -119,7 +83,6 @@ const byMethod = computed(
   (): Record<string, MethodStats> =>
     (primaryMetrics.value?.summary?.by_method as Record<string, MethodStats>) ?? {},
 );
-const hasData = computed(() => timeline.value.length > 0 || Object.keys(byMethod.value).length > 0);
 
 const sortedMethods = computed(() => {
   const entries = Object.entries(byMethod.value);

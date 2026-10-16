@@ -200,7 +200,6 @@ const shortcutActions = {
 const { showHelp, shortcuts } = useChartShortcuts(
   shortcutActions,
   toRef(() => settingsStore.chartKeyboardShortcuts),
-  chartContainerRef,
 );
 
 const dataset = computed((): PairHistory => {

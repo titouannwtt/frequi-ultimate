@@ -75,8 +75,8 @@ const positions = useFqPositionsStore();
 const clock = useNowMs();
 const q = ref('');
 
-const filters = computed<PairFilter[]>(() =>
-  props.tabs ?? (props.botKey ? ['positions', 'signals', 'locks', 'all'] : ['positions']),
+const filters = computed<PairFilter[]>(
+  () => props.tabs ?? (props.botKey ? ['positions', 'signals', 'locks', 'all'] : ['positions']),
 );
 
 function read<T>(path: string) {

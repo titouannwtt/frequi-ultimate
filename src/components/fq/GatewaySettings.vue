@@ -36,9 +36,13 @@ watch(
   (u) => (url.value = u),
 );
 const placeholder = computed(() =>
-  typeof window === 'undefined' ? '' : defaultGatewayUrl(window.location.protocol, window.location.hostname),
+  typeof window === 'undefined'
+    ? ''
+    : defaultGatewayUrl(window.location.protocol, window.location.hostname),
 );
-const urlOk = computed(() => url.value.trim() === '' || /^https?:\/\/[^\s/]+/i.test(url.value.trim()));
+const urlOk = computed(
+  () => url.value.trim() === '' || /^https?:\/\/[^\s/]+/i.test(url.value.trim()),
+);
 const urlChanged = computed(() => url.value.trim() !== prefs.gateway.url);
 
 const probing = ref(false);
@@ -97,13 +101,7 @@ const skew = computed(() => {
     </FormRow>
 
     <FormRow :label="t('fq.pg.settings.gw.address')" :hint="t('fq.pg.settings.gw.addressHint')">
-      <TextInput
-        v-model="url"
-        :placeholder="placeholder"
-        type="url"
-        mono
-        :invalid="!urlOk"
-      />
+      <TextInput v-model="url" :placeholder="placeholder" type="url" mono :invalid="!urlOk" />
       <Btn size="sm" :disabled="!urlOk || !urlChanged" data-testid="gw-apply" @click="applyUrl">{{
         t('fq.pg.settings.apply')
       }}</Btn>
@@ -121,7 +119,9 @@ const skew = computed(() => {
         <b :class="probe_.ok ? 'ok' : 'ko'">{{
           probe_.ok ? t('fq.pg.settings.gw.reachable') : t('fq.pg.settings.gw.unreachable')
         }}</b>
-        <span class="mut">{{ when(probe_.atMs) }} · {{ t('fq.pg.settings.gw.ago', { s: probeAge }) }}</span>
+        <span class="mut"
+          >{{ when(probe_.atMs) }} · {{ t('fq.pg.settings.gw.ago', { s: probeAge }) }}</span
+        >
         <span v-if="probe_.ok" class="mut num">
           {{ t('fq.pg.settings.gw.protocol') }} {{ probe_.protocol }} · v{{ probe_.version }} ·
           {{ probe_.rttMs }} ms

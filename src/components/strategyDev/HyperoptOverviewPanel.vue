@@ -164,7 +164,7 @@ const verdictColorMap: Record<string, string> = {
         :style="{ animationDelay: `${i * 40}ms` }"
       >
         <MetricPopover
-          v-if="m.metricKey && m.rawValue != null"
+          v-if="m.metricKey && m.rawValue !== undefined && m.rawValue !== null"
           :metric-key="m.metricKey"
           :value="m.value"
           :verdict="getVerdict(m.metricKey, m.rawValue)"
@@ -177,7 +177,7 @@ const verdictColorMap: Record<string, string> = {
               class="hop-metric-value"
               :style="{
                 color:
-                  m.metricKey && m.rawValue != null
+                  m.metricKey && m.rawValue !== undefined && m.rawValue !== null
                     ? verdictColorMap[getVerdict(m.metricKey, m.rawValue)]
                     : 'var(--sd-text)',
               }"
@@ -186,7 +186,7 @@ const verdictColorMap: Record<string, string> = {
             </span>
             <!-- Verdict dot -->
             <span
-              v-if="m.metricKey && m.rawValue != null"
+              v-if="m.metricKey && m.rawValue !== undefined && m.rawValue !== null"
               class="hop-verdict-dot"
               :style="{ backgroundColor: verdictColorMap[getVerdict(m.metricKey, m.rawValue)] }"
             />

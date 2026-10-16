@@ -66,7 +66,9 @@ let observer: IntersectionObserver | null = null;
 onMounted(() => {
   const wanted = typeof route.query.section === 'string' ? route.query.section : null;
   if (wanted && SECTIONS.some((s) => s.id === wanted)) {
-    void nextTick(() => document.getElementById(`set-${wanted}`)?.scrollIntoView({ block: 'start' }));
+    void nextTick(() =>
+      document.getElementById(`set-${wanted}`)?.scrollIntoView({ block: 'start' }),
+    );
     active.value = wanted;
   }
   if (typeof IntersectionObserver !== 'undefined') {
@@ -124,9 +126,11 @@ watch(() => fleet.list.length, refreshRegistry);
 
 // ---- add, edit, reconnect ----
 type SheetMode = 'add' | 'edit' | 'reconnect';
-const sheet = ref<{ mode: SheetMode; uiId: string | null; initial: Omit<BotForm, 'password'> } | null>(
-  null,
-);
+const sheet = ref<{
+  mode: SheetMode;
+  uiId: string | null;
+  initial: Omit<BotForm, 'password'>;
+} | null>(null);
 const sheetBusy = ref(false);
 const sheetError = ref<string | null>(null);
 const pending = ref<DiscoveredBot[]>([]);
@@ -223,7 +227,11 @@ async function removeBot() {
 
 /** `/login?redirect=...`: once a bot exists, go where the user was headed. */
 function leaveLogin() {
-  if (route.name !== 'login' || bots.value.length === 0 && Object.keys(readLoginInfos()).length === 0) return;
+  if (
+    route.name !== 'login' ||
+    (bots.value.length === 0 && Object.keys(readLoginInfos()).length === 0)
+  )
+    return;
   const to = typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard';
   const resolved = router.resolve(to);
   void router.push(resolved.name === '404' ? '/dashboard' : to);
@@ -352,11 +360,7 @@ const needsFirstBot = computed(() => bots.value.length === 0);
       @submit="submit"
       @remove="removeBot"
     />
-    <ConfigTransferSheet
-      :open="xfer !== null"
-      :initial="xfer ?? 'export'"
-      @close="xfer = null"
-    />
+    <ConfigTransferSheet :open="xfer !== null" :initial="xfer ?? 'export'" @close="xfer = null" />
   </div>
 </template>
 

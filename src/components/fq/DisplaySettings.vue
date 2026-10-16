@@ -61,7 +61,10 @@ function setZone(tz: Tz) {
   // The legacy pages cut their days with their own setting
   settingsStore.timezone = tz;
 }
-function setUi<K extends keyof typeof prefs.settings.ui>(key: K, value: (typeof prefs.settings.ui)[K]) {
+function setUi<K extends keyof typeof prefs.settings.ui>(
+  key: K,
+  value: (typeof prefs.settings.ui)[K],
+) {
   prefs.update('ui', { ...prefs.settings.ui, [key]: value });
 }
 const reduce = computed({
@@ -108,10 +111,20 @@ const reduce = computed({
       />
     </FormRow>
     <FormRow :label="t('fq.pg.settings.disp.cvd')" :hint="t('fq.pg.settings.disp.cvdHint')">
-      <Switch v-model="cvd" hide-label :label="t('fq.pg.settings.disp.cvd')" data-testid="set-cvd" />
+      <Switch
+        v-model="cvd"
+        hide-label
+        :label="t('fq.pg.settings.disp.cvd')"
+        data-testid="set-cvd"
+      />
     </FormRow>
     <FormRow :label="t('fq.pg.settings.disp.motion')" :hint="t('fq.pg.settings.disp.motionHint')">
-      <Switch v-model="reduce" hide-label :label="t('fq.pg.settings.disp.motion')" data-testid="set-motion" />
+      <Switch
+        v-model="reduce"
+        hide-label
+        :label="t('fq.pg.settings.disp.motion')"
+        data-testid="set-motion"
+      />
     </FormRow>
 
     <h3>{{ t('fq.pg.settings.disp.charts') }}</h3>

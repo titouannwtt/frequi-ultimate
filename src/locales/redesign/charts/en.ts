@@ -122,7 +122,8 @@ export default {
       p90: 'P90 {v}',
       perDay: 'Trades per day',
       overDays: 'over {n} d',
-      partial: 'Totals cover the loaded history only: the source does not give the whole filtered set.',
+      partial:
+        'Totals cover the loaded history only: the source does not give the whole filtered set.',
     },
     listTitle: 'Closed trades',
     listMeta: '{n} trade · {period} | {n} trades · {period}',

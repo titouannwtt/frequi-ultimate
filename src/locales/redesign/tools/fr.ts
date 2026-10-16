@@ -65,7 +65,8 @@ export default {
     na: 'n/d',
     liquidatedBadge: 'Liquidée',
     more: '{n} positions de plus',
-    untested: '{n} positions n’ont pas pu être testées entièrement (pas de prix ou pas de prix de liquidation).',
+    untested:
+      '{n} positions n’ont pas pu être testées entièrement (pas de prix ou pas de prix de liquidation).',
     byMarket: 'Exposition par marché',
     market: 'Marché',
     positions: 'Positions',
