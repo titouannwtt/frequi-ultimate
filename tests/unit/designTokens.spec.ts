@@ -138,7 +138,11 @@ describe('design tokens', () => {
     expect(compact['--t-md']).toBe('13px');
     expect(compact['--t-cell']).toBe('12px');
     expect(compact['--r-card']).toBe('5px');
-    expect(compact['--th-case']).toBe('uppercase');
+    // Column headers stay in normal case in both densities (05 plan section 1)
+    expect(compact['--th-case']).toBeUndefined();
+    expect(compact['--th-track']).toBeUndefined();
+    expect(compact['--th-weight']).toBeUndefined();
+    expect(block(':root {\n  --font-ui')['--th-case']).toBe('none');
     expect(compact['--t-xs']).toBe('11px');
   });
 

@@ -54,6 +54,7 @@ const conn = useFqConnectionStore();
 const clock = useNowMs();
 const now = computed(() => props.nowMs ?? clock.value);
 
+// The "since" line starts with a real space: without it the text reads "en lignedepuis le 17/08"
 const rows = computed(() =>
   sortRegistry(
     registryRows(
@@ -162,8 +163,8 @@ const dateOf = (ms: number) => formatDateTime(ms, prefs.settings.tz, locale.valu
                 :pending-key="`registry/${r.botKey}/state`"
               />
               <template v-else>{{ stateText(r) }}</template>
-              <span v-if="r.sinceMs !== null && r.mode === 'dry'" class="mut">{{
-                t('fq.origin.since', { date: dateOf(r.sinceMs).slice(0, 5) })
+              <span v-if="r.sinceMs !== null && r.mode === 'dry'" class="mut since">{{
+                ` ${t('fq.origin.since', { date: dateOf(r.sinceMs).slice(0, 5) })}`
               }}</span>
             </td>
             <td class="l c-tags">

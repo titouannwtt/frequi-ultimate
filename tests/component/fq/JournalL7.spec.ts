@@ -59,6 +59,29 @@ describe('JournalTotals', () => {
     expect(tile.text()).toContain(fmt(s.avgLoss as number));
   });
 
+  it('hides "dont 0 sans résultat" and says it in plain words otherwise (B382)', () => {
+    setFqLocale('fr');
+    const s = stats();
+    const none = mountFq(JournalTotals, {
+      props: { stats: { ...s, unknown: 0 }, totals: null },
+    });
+    expect(none.get('[data-testid=jt-net]').text()).toMatch(/\d+ trades?$/);
+    expect(none.get('[data-testid=jt-net]').text()).not.toMatch(/dont|P&L/);
+    const some = mountFq(JournalTotals, { props: { stats: { ...s, unknown: 3 } } });
+    expect(some.get('[data-testid=jt-net]').text()).toMatch(/dont 3 sans résultat/);
+    expect(some.get('[data-testid=jt-net]').text()).not.toContain('P&L');
+  });
+
+  it('the longest duration reads in words, the technical term only in the tooltip (B382)', async () => {
+    setFqLocale('fr');
+    localStorage.setItem('fqu2.journal.moreTotals', 'true');
+    const w = mountFq(JournalTotals, { props: { stats: stats() } });
+    const tile = w.get('[data-testid=jt-duration]');
+    expect(tile.text()).toMatch(/9 sur 10 durent moins de/);
+    expect(tile.text()).not.toMatch(/P90/);
+    expect(tile.get('.k').attributes('title')).toMatch(/P90/);
+  });
+
   it('says it in French and keeps the definition in a tooltip', () => {
     setFqLocale('fr');
     const w = mountFq(JournalTotals, { props: { stats: stats() } });

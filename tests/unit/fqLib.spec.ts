@@ -37,6 +37,7 @@ import {
 import { formatClock, tomorrowAtMs } from '@/components/fq/lib/time';
 import {
   compareWorstFirst,
+  durationNote,
   durationTone,
   ladderOf,
   lineFromPosition,
@@ -380,6 +381,11 @@ describe('trade lines', () => {
     expect(durationTone(84)).toBe('warn');
     expect(durationTone(91)).toBe('crit');
     expect(durationTone(null)).toBe('ok');
+    // Plain words: nothing while usual, "long" from p84, "longer than usual" from p91
+    expect(durationNote(83)).toBeNull();
+    expect(durationNote(null)).toBeNull();
+    expect(durationNote(86)).toEqual({ tone: 'warn', key: 'fq.trade.dur.warn', pct: 86 });
+    expect(durationNote(98.4)).toEqual({ tone: 'crit', key: 'fq.trade.dur.crit', pct: 98 });
     expect(liqTone(14.9)).toBe('crit');
     expect(liqTone(20)).toBe('warn');
     expect(liqTone(40)).toBe('neutral');

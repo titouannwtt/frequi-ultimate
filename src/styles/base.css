@@ -54,8 +54,7 @@
     color: var(--live);
   }
 
-  /* Column headers: normal case by default; spaced capitals with the compact density (the
-     --th-* tokens). KPI labels use sentence case */
+  /* Column headers: normal case in both densities (the --th-* tokens). KPI labels use sentence case */
   .colh {
     font-family: var(--font-ui);
     font-size: var(--t-xs);

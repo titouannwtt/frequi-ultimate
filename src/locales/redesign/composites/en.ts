@@ -279,6 +279,9 @@ export default {
       orphan: 'Orphans',
     },
     awaiting: '{n} position announced, being read | {n} positions announced, being read',
+    marketHip3: 'Stocks, commodities',
+    dur: { ok: 'usual', warn: 'long', crit: 'longer than usual' },
+    durHint: 'Longer than {p} % of this bot’s closed trades',
     awaitingHint: 'The bots are read one by one: the list fills in as they answer.',
     awaitingMore:
       '{n} more position announced, being read | {n} more positions announced, being read',
