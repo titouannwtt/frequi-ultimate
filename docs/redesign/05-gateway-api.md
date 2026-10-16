@@ -105,8 +105,12 @@ Bougies d'un graphique ouvert. Une bougie qui forme se corrige à chaque lecture
   `GET /pair_candles?pair=&timeframe=&limit=150` du bot par le passthrough, une fois toutes les
   `timeframe / 12` (entre 5 et 60 s), chaque lecture coûtant un jeton du budget global de requêtes. Un
   seul lecteur par graphique quel que soit le nombre de clients ; il s'arrête 30 s après le dernier
-  départ. Au plus 16 graphiques distincts à la fois (503 `unavailable` au-delà) ; un bot hors ligne,
-  arrêté ou à jeton expiré n'est pas interrogé.
+  départ. Au plus 16 graphiques distincts à la fois (503 `unavailable` au-delà) et 8 par connexion
+  WebSocket (erreur `bad_request`, « too many charts ») ; un bot hors ligne, arrêté ou à jeton expiré
+  n'est pas interrogé. Le relais a une part réservée de 0,3 req/s pour tous les graphiques ensemble
+  (B106) : ses lectures font la queue entre elles puis se paient sans attendre derrière le polling de la
+  flotte, qui ne peut donc pas être affamé ; au-delà de la part (par exemple 16 graphiques en 1 min), un
+  graphique est lu moins souvent et sa fraîcheur (`meta.freshness.stale`) suit la cadence réelle.
 * **Contenu.** Seules les colonnes OHLCV des 150 dernières bougies voyagent (les colonnes d'indicateurs
   restent côté bot ; l'historique et les indicateurs viennent de `proxy/pair_candles` et `proxy/pair_history`,
   mis en cache). Collection `candles`, clé = heure d'ouverture en ms : `{t, o, h, l, c, v}` ; collection

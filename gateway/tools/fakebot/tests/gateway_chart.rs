@@ -187,3 +187,41 @@ async fn a_malformed_or_unknown_chart_is_an_error_frame_not_a_poller() {
     assert_eq!(candle_reads(&gw, 0), 0);
     gw.stop().await;
 }
+
+/// B108: one connection could hold every chart of the relay (16 for all clients together).
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn one_connection_cannot_hold_more_than_eight_charts() {
+    let gw = Gw::start(Opts {
+        bots: 2,
+        ..Opts::default()
+    })
+    .await;
+    gw.wait_online(2, Duration::from_secs(60)).await;
+    let token = gw.session("phone").await;
+    let mut ws = Ws::connect(&gw.ws_url(), Some(UI_ORIGIN)).await;
+    ws.auth(&token, "phone").await;
+    let chart = |i: usize| format!("chart:{}:C{i}/USDC:USDC:1h", gw.key(0));
+    let first: Vec<String> = (0..8).map(chart).collect();
+    ws.send(json!({"t": "sub", "ch": first, "resume": {}}))
+        .await;
+    ws.until(Duration::from_secs(10), |v| v["t"] == "subscribed")
+        .await;
+    // The ninth is refused, and so is a batch that would go past the cap.
+    for ch in [vec![chart(8)], vec![chart(9), chart(10)]] {
+        ws.send(json!({"t": "sub", "ch": ch, "resume": {}})).await;
+        let e = ws.until(Duration::from_secs(5), |v| v["t"] == "err").await;
+        assert_eq!(e.last().unwrap()["code"], "bad_request");
+    }
+    // Joining again a chart already held does not count.
+    ws.send(json!({"t": "sub", "ch": [chart(0)], "resume": {}}))
+        .await;
+    ws.until(Duration::from_secs(10), |v| v["t"] == "subscribed")
+        .await;
+    // Leaving one makes room.
+    ws.send(json!({"t": "unsub", "ch": [chart(0)]})).await;
+    ws.send(json!({"t": "sub", "ch": [chart(8)], "resume": {}}))
+        .await;
+    ws.until(Duration::from_secs(10), |v| v["t"] == "subscribed")
+        .await;
+    gw.stop().await;
+}

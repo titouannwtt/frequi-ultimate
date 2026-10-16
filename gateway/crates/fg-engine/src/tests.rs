@@ -2040,3 +2040,129 @@ async fn a_bot_that_is_down_is_not_asked_for_candles() {
         true
     );
 }
+
+// ------------------------------------------------------------------ the relay and the budget (B106, B107)
+
+fn fleet_specs(n: u16, first_port: u16) -> Vec<Spec> {
+    (0..n)
+        .map(|i| Spec {
+            port: first_port + i,
+            name: Box::leak(format!("f{first_port}x{i}").into_boxed_str()),
+            live: i % 3 != 0,
+            wallet: (i % 3 != 0).then_some(FAKE_WALLET),
+            capital: Some(100.0),
+        })
+        .collect()
+}
+
+/// Reads of `/status` over `secs` after a warm-up, with `charts` charts of one minute open.
+async fn status_reads_with_charts(first_port: u16, charts: u16) -> (usize, usize, f64) {
+    let specs = fleet_specs(24, first_port);
+    let r = rig(&specs).await;
+    for b in &r.bots {
+        b.state.lock().unwrap().candles = Some(candles_body(5, 104.0));
+    }
+    settle(200).await;
+    let mut subs = Vec::new();
+    for i in 0..charts {
+        let bot = first_port + i % 24;
+        subs.push(
+            r.h.subscribe(&[(chart_channel(bot, &format!("C{i}/USDC:USDC"), "1m"), None)])
+                .unwrap(),
+        );
+    }
+    settle(100).await;
+    let status0: usize = r.bots.iter().map(|b| b.calls_of("status").len()).sum();
+    let pc0 = r
+        .bots
+        .iter()
+        .map(|b| {
+            b.calls
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|(_, w)| w.starts_with("proxy GET /pair_candles"))
+                .count()
+        })
+        .sum::<usize>();
+    let g0 = r.h.budget_stats().granted;
+    let t0 = tokio::time::Instant::now();
+    settle(900).await;
+    let secs = t0.elapsed().as_secs_f64();
+    let status = r
+        .bots
+        .iter()
+        .map(|b| b.calls_of("status").len())
+        .sum::<usize>()
+        - status0;
+    let pc = r
+        .bots
+        .iter()
+        .map(|b| {
+            b.calls
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|(_, w)| w.starts_with("proxy GET /pair_candles"))
+                .count()
+        })
+        .sum::<usize>()
+        - pc0;
+    let granted = (r.h.budget_stats().granted - g0) as f64 / secs;
+    drop(subs);
+    r.engine.shutdown().await;
+    (status, pc, granted)
+}
+
+/// B106: 16 charts of one minute asked for 3.2 req/s from a bucket of 2.8 shared in arrival
+/// order; the polling of the fleet (and the pre-read of a forced exit) waited behind them.
+#[tokio::test(start_paused = true)]
+async fn sixteen_one_minute_charts_cannot_starve_the_fleet_polling() {
+    let (calm, none, _) = status_reads_with_charts(9300, 0).await;
+    assert_eq!(none, 0);
+    let (busy, chart_reads, granted) = status_reads_with_charts(9400, 16).await;
+    assert!(calm > 100, "the fleet is polled: {calm}");
+    assert!(
+        busy as f64 >= calm as f64 * 0.95,
+        "status reads with charts {busy}, without {calm}"
+    );
+    let rate = chart_reads as f64 / 900.0;
+    assert!(
+        rate <= crate::chart::RELAY_RATE_PER_S * 1.05,
+        "the relay stays inside its share: {rate} req/s"
+    );
+    assert!(rate > 0.2, "and it is not starved either: {rate} req/s");
+    assert!(granted <= 2.8 * 1.02, "the global ceiling holds: {granted}");
+}
+
+/// B107: a refused chart and the snapshot of a chart nobody relays left an entry of the view
+/// registry and of the hub for the life of the process.
+#[tokio::test(start_paused = true)]
+async fn refused_charts_and_snapshots_of_unrelayed_charts_leave_no_entry() {
+    let r = rig(&[spec(9001, "a", true)]).await;
+    r.bots[0].state.lock().unwrap().candles = Some(candles_body(5, 104.0));
+    settle(100).await;
+    let mut open = Vec::new();
+    for i in 0..crate::chart::MAX_CHARTS {
+        open.push(
+            r.h.subscribe(&[(chart_channel(9001, &format!("C{i}/USDC:USDC"), "1h"), None)])
+                .unwrap(),
+        );
+    }
+    let (views0, hub0) = r.h.sh_entries();
+    for i in 0..300 {
+        let ch = chart_channel(9001, &format!("X{i}/USDC:USDC"), "1h");
+        assert!(r.h.subscribe(&[(ch.clone(), None)]).is_err());
+        r.h.snapshot(&ch).unwrap();
+        let ch = chart_channel(9001, &format!("Y{i}/USDC:USDC"), "15m");
+        r.h.snapshot(&ch).unwrap();
+    }
+    settle(600).await;
+    assert_eq!(r.h.sh_entries(), (views0, hub0));
+    assert_eq!(r.engine_charts(), crate::chart::MAX_CHARTS);
+    // The snapshot of a chart nobody relays is still empty and well-formed.
+    let snap =
+        r.h.snapshot(&chart_channel(9001, "Z/USDC:USDC", "1h"))
+            .unwrap();
+    assert!(snap.collections.is_empty());
+}
