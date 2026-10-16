@@ -1,0 +1,99 @@
+name: Frontend
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "gateway/**"
+      - "docs/**"
+      - "**/*.md"
+  pull_request:
+    paths-ignore:
+      - "gateway/**"
+      - "docs/**"
+      - "**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: lint, types, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The pnpm version comes from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # The redesign layers are held to zero lint findings.
+      - name: Lint (redesign layers)
+        run: >
+          pnpm exec eslint --no-fix
+          src/gateway src/datasource src/migration src/components/ds src/components/fq
+          tests/unit/datasource tests/unit/migration
+      # The legacy pages still have findings that are removed page by page: reported, not blocking.
+      - name: Lint (whole tree, informational)
+        continue-on-error: true
+        run: pnpm run lint-ci
+
+      # vue-tsc cannot be at zero yet (legacy pages): scripts/typecheck-budget.txt is a ratchet that
+      # may only go down, and the redesign layers must have no error at all.
+      - name: Type check
+        run: scripts/check-typecheck.sh
+
+      - name: Unit tests
+        run: pnpm exec vitest run --maxWorkers=4
+
+      - name: Build
+        run: pnpm run build
+      - name: Bundle size report
+        run: |
+          du -sh dist
+          find dist/assets -name '*.js' -printf '%s %p\n' | sort -rn | head -5
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frequi-dist
+          path: |
+            dist
+            !dist/**/*.map
+          retention-days: 7
+
+  # Optional: the Playwright suite runs the legacy specs against the preview server. It is not part
+  # of the required checks until the specs are rewritten for the new pages, and the scenarios that
+  # need a gateway (silent bootstrap, fallback to direct mode, double click on forceexit) will run
+  # against tools/fakebot + the real gateway once the pages use the data layer.
+  e2e:
+    name: Playwright (optional)
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chrome
+      - run: pnpm run build
+      - run: pnpm run test:e2e-chromium
+        env:
+          CI: "true"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

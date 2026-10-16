@@ -1,0 +1,86 @@
+name: Packaging
+
+# Shell scripts, the systemd unit, the Dockerfile and the example configuration of gateway/packaging.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "gateway/packaging/**"
+      - "gateway/.dockerignore"
+      - "scripts/**"
+      - ".github/workflows/packaging.yml"
+  pull_request:
+    paths:
+      - "gateway/packaging/**"
+      - "gateway/.dockerignore"
+      - "scripts/**"
+      - ".github/workflows/packaging.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: packaging-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scripts:
+    name: shellcheck, deploy rehearsal, unit file
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: |
+          shellcheck -x gateway/packaging/*.sh gateway/packaging/tests/*.sh scripts/*.sh
+      # Deploys a synthetic build onto a copy of a synthetic UI served by a stand-in for the bot,
+      # then rolls back, checking every byte. It never touches a real bot.
+      - name: deploy-ui.sh and its rollback
+        run: gateway/packaging/tests/test-deploy-ui.sh
+      - name: systemd unit
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          printf '#!/bin/sh\nexit 0\n' > "$HOME/.local/bin/frequi-gateway"
+          chmod +x "$HOME/.local/bin/frequi-gateway"
+          systemd-analyze --user verify gateway/packaging/frequi-gateway.service
+      - name: Release notes render
+        run: scripts/release-notes.sh v0.0.0 | grep -q 'freqtrade install-ui --ui-version v0.0.0'
+
+  config:
+    name: example configuration is accepted
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: gateway
+      - name: check-config on the example, and the default config is unchanged in keys
+        working-directory: gateway
+        run: |
+          cargo build --locked -p frequi-gateway
+          ./target/debug/frequi-gateway check-config --config packaging/config.example.toml
+          # Every section and key of the shipped default must exist in the example.
+          ./target/debug/frequi-gateway print-default-config > /tmp/default.toml
+          python3 packaging/tests/compare_config_keys.py /tmp/default.toml packaging/config.example.toml
+
+  docker:
+    name: Docker image builds and starts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        working-directory: gateway
+        run: docker build -f packaging/Dockerfile -t frequi-gateway:ci .
+      - name: Runs as a non-root user and answers
+        run: |
+          set -euo pipefail
+          docker image inspect frequi-gateway:ci --format '{{.Config.User}}' | grep -q '^65532'
+          docker run --rm frequi-gateway:ci version
+          docker run -d --name fg -p 127.0.0.1:19399:9399 frequi-gateway:ci run
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:19399/gw/v1/hello && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:19399/gw/v1/hello | grep -q frequi-gateway
+          docker rm -f fg

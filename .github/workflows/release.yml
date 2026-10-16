@@ -1,0 +1,149 @@
+name: Release
+
+# Push a tag vX.Y.Z (the same X.Y.Z as package.json and gateway/Cargo.toml).
+#
+# The release is created as a PRERELEASE: `freqtrade install-ui` without --ui-version skips
+# prereleases, so nobody receives it before it has been checked. Promote it by hand:
+#   gh release edit vX.Y.Z --prerelease=false
+#
+# Asset order matters: `freqtrade install-ui` downloads assets[0], so the UI zip is uploaded
+# first, alone, before the binaries and the checksums.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to (re)build, for example v2.0.0
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  preflight:
+    name: versions agree with the tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - name: Check tag, package.json and gateway version
+        run: |
+          set -euo pipefail
+          version=${TAG#v}
+          pkg=$(sed -n 's/^  "version": "\(.*\)",$/\1/p' package.json | head -n1)
+          gw=$(sed -n 's/^version = "\(.*\)"$/\1/p' gateway/Cargo.toml | head -n1)
+          echo "tag $TAG, package.json $pkg, gateway $gw"
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "::error::tag must look like v1.2.3"; exit 1; }
+          [ "$pkg" = "$version" ] || { echo "::error::package.json is $pkg, the tag says $version"; exit 1; }
+          [ "$gw" = "$version" ] || { echo "::error::gateway/Cargo.toml is $gw, the tag says $version"; exit 1; }
+
+  ui:
+    name: UI archive
+    needs: preflight
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec vitest run --maxWorkers=4
+      - run: pnpm run build
+      - name: Archives
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          # `freqtrade install-ui` unzips into ui/installed: index.html must be at the root of
+          # the archive, and the source maps (60 MB) stay out of it.
+          (cd dist && zip -qr "../release/frequi-ultimate-ui-$TAG.zip" . -x '*.map')
+          (cd dist && find . -name '*.map' -print0 | xargs -0 -r zip -q "../release/frequi-ultimate-sourcemaps-$TAG.zip")
+          unzip -l "release/frequi-ultimate-ui-$TAG.zip" | grep -E ' index\.html$'
+          ls -l release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui
+          path: release
+          retention-days: 7
+
+  gateway:
+    name: gateway ${{ matrix.target }}
+    needs: preflight
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - id: build
+        uses: ./.github/actions/build-gateway
+        with:
+          target: ${{ matrix.target }}
+          name: frequi-gateway-${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gateway-${{ matrix.target }}
+          path: ${{ steps.build.outputs.path }}
+          retention-days: 7
+
+  publish:
+    name: publish (prerelease)
+    needs: [ui, gateway]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Checksums and notes
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cp artifacts/ui/* artifacts/gateway-*/* out/
+          (cd out && sha256sum frequi-* > SHA256SUMS && cat SHA256SUMS)
+          scripts/release-notes.sh "$TAG" > notes.md
+      - name: Create the prerelease with the UI archive alone
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # The release name is the tag: `install-ui --ui-version vX.Y.Z` matches on it.
+          gh release create "$TAG" "out/frequi-ultimate-ui-$TAG.zip" \
+            --verify-tag --prerelease --title "$TAG" --notes-file notes.md
+      - name: Upload the rest, in order
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for f in \
+            "out/frequi-gateway-x86_64-unknown-linux-musl" \
+            "out/frequi-gateway-aarch64-unknown-linux-musl" \
+            "out/frequi-ultimate-sourcemaps-$TAG.zip" \
+            "out/SHA256SUMS"; do
+            gh release upload "$TAG" "$f"
+          done
+      - name: The UI archive is the first asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          first=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq '.assets[0].name')
+          echo "assets[0] = $first"
+          [ "$first" = "frequi-ultimate-ui-$TAG.zip" ]
