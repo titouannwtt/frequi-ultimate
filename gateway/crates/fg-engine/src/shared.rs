@@ -2,6 +2,7 @@
 
 use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
+use std::sync::atomic::AtomicI64;
 use std::sync::{Arc, Mutex, RwLock};
 
 use arc_swap::ArcSwap;
@@ -51,6 +52,9 @@ pub struct Shared {
     pub ledger: Arc<dyn LedgerReader>,
     /// The charts being relayed (channels `chart:...`).
     pub(crate) charts: Charts,
+    /// Until this instant (ms) the exchange is throttling the fleet: no bot read that costs the
+    /// bot exchange requests. Set by the daemon task each time the daemon reports a backoff.
+    pub exchange_quiet_until_ms: AtomicI64,
 }
 
 impl Shared {

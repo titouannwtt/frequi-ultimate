@@ -620,6 +620,45 @@ async fn the_health_reasons_are_stable_codes_and_the_budget_figure_is_the_share_
     }
 }
 
+#[tokio::test(start_paused = true)]
+async fn no_balance_read_while_the_exchange_throttles_the_fleet() {
+    let r = rig(&[spec(9001, "a", true)]).await;
+    let set_backoff = |on: bool| {
+        let mut st = r.daemon.status.lock().unwrap();
+        st.rate_limiters.insert(
+            "hyperliquid".to_owned(),
+            fg_sources::ftcache::RateBudget {
+                tokens_available: Some(50.0),
+                tokens_max: Some(100.0),
+                backoff_active: Some(on),
+                ..Default::default()
+            },
+        );
+    };
+    set_backoff(true);
+    settle(600).await;
+    let bot = &r.bots[0];
+    assert!(!bot.calls_of("status").is_empty(), "the other reads go on");
+    assert_eq!(
+        bot.calls_of("balance").len(),
+        0,
+        "each /balance prices the whole wallet"
+    );
+    // The backoff lifts between two 429: the quiet window covers the gap, then the reads resume.
+    set_backoff(false);
+    settle(300).await;
+    assert_eq!(
+        bot.calls_of("balance").len(),
+        0,
+        "still inside the quiet window"
+    );
+    settle(600).await;
+    assert!(
+        !bot.calls_of("balance").is_empty(),
+        "reads resume after the window"
+    );
+}
+
 fn status_body(trade: i64, pair: &str, rate: f64) -> serde_json::Value {
     json!([{"trade_id": trade, "pair": pair, "is_short": false, "amount": 2.0,
             "stake_amount": 100.0, "open_rate": 100.0, "current_rate": rate,
