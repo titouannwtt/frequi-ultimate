@@ -4,7 +4,15 @@ import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
-import { Btn, EmptyState, Pane, SegmentedControl, Skeleton, Tabs } from '@/components/ds';
+import {
+  Btn,
+  EmptyState,
+  Pane,
+  SegmentedControl,
+  Skeleton,
+  Tabs,
+  ValueState,
+} from '@/components/ds';
 import type { TabItem } from '@/components/ds';
 import {
   AlertRail,
@@ -34,6 +42,9 @@ import { useCommandPalette } from '@/composables/useCommandPalette';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { usePositionsAwaiting } from '@/composables/usePositionsAwaiting';
 import { useTradeOrders } from '@/composables/useTradeOrders';
+import { useValueSlot } from '@/composables/useValueSlot';
+import { botSlot } from '@/components/fq/lib/valueState';
+import { useFqConnectionStore } from '@/datasource/stores/connection';
 import { useTradeSet } from '@/composables/useTradeSet';
 import { useDataSource } from '@/composables/useDataSource';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
@@ -323,6 +334,18 @@ function editConfig() {
   editorUsed.value = true;
   void configEditor.open(b.bot_key, b.identity.name, b.identity.mode);
 }
+const { vs } = useValueSlot();
+const conn = useFqConnectionStore();
+/** A missing line of the config: still being read (pending) or not given by this bot. */
+function cfgSlot(v: string | number | null) {
+  const b = bot.value;
+  const slot = botSlot(b ?? undefined, 'capital', v === null ? null : 1, {
+    nowMs: Date.now(),
+    skewMs: conn.status.clockSkewMs,
+    settled: 'noData',
+  });
+  return vs(slot, `${b?.bot_key}/cfg`);
+}
 const configRows = computed(() => {
   const b = bot.value;
   if (!b) return [];
@@ -477,7 +500,9 @@ const configRows = computed(() => {
               <dl class="cfg" data-testid="bot-config">
                 <template v-for="[k, v] in configRows" :key="k">
                   <dt>{{ t(`fq.pg.bot.config.${k}`) }}</dt>
-                  <dd>{{ v ?? t('fq.ds.notAvailable') }}</dd>
+                  <dd>
+                    <ValueState v-bind="cfgSlot(v)">{{ v }}</ValueState>
+                  </dd>
                 </template>
               </dl>
               <p class="note">{{ t('fq.pg.bot.config.editHint') }}</p>
@@ -510,6 +535,7 @@ const configRows = computed(() => {
           <Pane v-else-if="desktop" :title="t('fq.pg.bot.drawer')" icon="layers">
             <EmptyState
               icon="layers"
+              :loading="!tradeGone && awaiting.missing.value > 0"
               :title="
                 tradeGone
                   ? t('fq.pg.bot.tradeClosed')

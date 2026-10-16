@@ -2,16 +2,26 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { Badge, DcaLadderH, DcaPips, DirectionChip, ModeMark, PnlValue } from '@/components/ds';
+import {
+  Badge,
+  DcaLadderH,
+  DcaPips,
+  DirectionChip,
+  ModeMark,
+  PnlValue,
+  ValueState,
+} from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useInflightLock } from '@/composables/useInflightLock';
 import { lockKeyOf } from '@/composables/useBotAction';
+import { useValueSlot } from '@/composables/useValueSlot';
 import type { Position } from '@/gateway/types.gen';
 
 import BotActionBar from './BotActionBar.vue';
 import type { ActionId } from './lib/actions';
 import { buildAction } from './lib/actions';
 import { durationTone, ladderOf, pairLabel, type TradeLine } from './lib/trades';
+import { lineSlot, unavailable } from './lib/valueState';
 
 /**
  * A position as a card, for a phone, the ScopePanel and the charts (02 sections 2.5 and 5.2): the
@@ -42,6 +52,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const fmt = useFormat();
 const lock = useInflightLock();
+const { vs } = useValueSlot();
 
 const ladder = computed(() => {
   if (!props.line.open) return null;
@@ -64,7 +75,28 @@ const busy = computed(() => {
 const tone = computed(() => durationTone(props.line.percentile));
 const hours = computed(() => props.line.durationMs / 3_600_000);
 const exitLabel = computed(() =>
-  props.line.exitReason ? t(`fq.exit.${props.line.exitReason.kind}`) : t('fq.origin.unknown'),
+  props.line.exitReason && props.line.exitReason.kind !== 'unknown'
+    ? t(`fq.exit.${props.line.exitReason.kind}`)
+    : '',
+);
+const noExit = computed(() => vs(unavailable('exitReason')));
+const pnlSlot = computed(() =>
+  vs(lineSlot(props.line, props.line.pnlAbs, props.line.open ? 'prices' : 'profit')),
+);
+const pctSlot = computed(() =>
+  vs(lineSlot(props.line, props.line.pnlPct, props.line.open ? 'prices' : 'profit')),
+);
+const priceSlot = computed(() =>
+  vs(lineSlot(props.line, props.line.open ? props.line.current : props.line.exitPrice)),
+);
+const liqSlot = computed(() =>
+  vs(
+    lineSlot(
+      props.line,
+      props.line.liqDistancePct,
+      props.line.current === null ? 'prices' : 'noData',
+    ),
+  ),
 );
 </script>
 
@@ -108,30 +140,19 @@ const exitLabel = computed(() =>
       <div class="m1">
         <span class="k">{{ t('fq.col.pnl_abs') }}</span>
         <span class="v big">
-          <PnlValue
-            :value="line.pnlAbs"
-            :unknown="line.profitUnknown"
-            :muted="line.stale"
-            unit="USDC"
-          />
+          <PnlValue :value="line.pnlAbs" :muted="line.stale" unit="USDC" v-bind="pnlSlot" />
         </span>
         <span class="sub">
-          <PnlValue v-if="line.pnlPct !== null" :value="line.pnlPct" unit="%" :muted="line.stale" />
+          <PnlValue :value="line.pnlPct" unit="%" :muted="line.stale" v-bind="pctSlot" />
         </span>
       </div>
       <div class="m2">
         <span class="k">{{ line.open ? t('fq.col.entry') : t('fq.col.exit_price') }}</span>
         <span class="v num">{{ fmt.price(line.entry) }}</span>
         <span class="sub num">
-          {{
-            line.open
-              ? line.current === null
-                ? t('fq.ds.notAvailable')
-                : fmt.price(line.current)
-              : line.exitPrice === null
-                ? t('fq.ds.notAvailable')
-                : fmt.price(line.exitPrice)
-          }}
+          <ValueState v-bind="priceSlot">{{
+            fmt.price((line.open ? line.current : line.exitPrice) as number)
+          }}</ValueState>
         </span>
       </div>
       <div class="m3">
@@ -141,11 +162,9 @@ const exitLabel = computed(() =>
             class="v num"
             :class="{ crit: line.liqDistancePct !== null && line.liqDistancePct < 15 }"
           >
-            {{
-              line.liqDistancePct === null
-                ? t('fq.ds.notAvailable')
-                : fmt.percent(line.liqDistancePct, 0, false)
-            }}
+            <ValueState v-bind="liqSlot">{{
+              fmt.percent(line.liqDistancePct as number, 0, false)
+            }}</ValueState>
           </span>
           <span class="sub"
             ><DcaPips :filled="line.dcaFilled" :max="line.dcaMax ?? line.dcaFilled" show-count
@@ -153,7 +172,10 @@ const exitLabel = computed(() =>
         </template>
         <template v-else>
           <span class="k">{{ t('fq.col.exit_reason') }}</span>
-          <span class="v">{{ exitLabel }}</span>
+          <span class="v">
+            <template v-if="exitLabel">{{ exitLabel }}</template>
+            <ValueState v-else v-bind="noExit" />
+          </span>
         </template>
       </div>
       <div class="m4">

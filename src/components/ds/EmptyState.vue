@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import DsIcon from './DsIcon.vue';
 import type { DsIconRef } from './types';
+import ValueState from './ValueState.vue';
 
 withDefaults(
   defineProps<{
     icon?: DsIconRef;
     title: string;
     hint?: string;
+    /** The content is being read: a spinner replaces the icon (the title says what is awaited). */
+    loading?: boolean;
   }>(),
   { icon: 'info' },
 );
@@ -14,7 +17,8 @@ withDefaults(
 
 <template>
   <div class="empty">
-    <DsIcon :name="icon" :size="18" />
+    <ValueState v-if="loading" class="spin" state="pending" announce />
+    <DsIcon v-else :name="icon" :size="18" />
     <strong>{{ title }}</strong>
     <p v-if="hint">{{ hint }}</p>
     <div v-if="$slots.default" class="act"><slot /></div>
@@ -29,6 +33,11 @@ withDefaults(
   display: grid;
   justify-items: center;
   gap: 6px;
+}
+/* The spinner is the size of the 18 px empty-state icon */
+.spin {
+  font-size: 20px;
+  min-width: 0;
 }
 strong {
   font-weight: 600;

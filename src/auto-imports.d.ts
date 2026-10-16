@@ -500,6 +500,7 @@ declare global {
   const useUserMedia: typeof import('@vueuse/core').useUserMedia
   const useVModel: typeof import('@vueuse/core').useVModel
   const useVModels: typeof import('@vueuse/core').useVModels
+  const useValueSlot: typeof import('./composables/useValueSlot').useValueSlot
   const useVibrate: typeof import('@vueuse/core').useVibrate
   const useVirtualList: typeof import('@vueuse/core').useVirtualList
   const useVisibleInterval: typeof import('./composables/useVisibleInterval').useVisibleInterval
@@ -1127,6 +1128,7 @@ declare module 'vue' {
     readonly useUserMedia: UnwrapRef<typeof import('@vueuse/core')['useUserMedia']>
     readonly useVModel: UnwrapRef<typeof import('@vueuse/core')['useVModel']>
     readonly useVModels: UnwrapRef<typeof import('@vueuse/core')['useVModels']>
+    readonly useValueSlot: UnwrapRef<typeof import('./composables/useValueSlot')['useValueSlot']>
     readonly useVibrate: UnwrapRef<typeof import('@vueuse/core')['useVibrate']>
     readonly useVirtualList: UnwrapRef<typeof import('@vueuse/core')['useVirtualList']>
     readonly useVisibleInterval: UnwrapRef<typeof import('./composables/useVisibleInterval')['useVisibleInterval']>

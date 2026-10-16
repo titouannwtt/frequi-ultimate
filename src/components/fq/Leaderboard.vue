@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { EmptyState, ExcludedCount, ModeMark, PnlValue } from '@/components/ds';
+import { EmptyState, ExcludedCount, ModeMark, PnlValue, ValueState } from '@/components/ds';
 import type { BotRef } from '@/components/ds';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
@@ -70,7 +70,7 @@ const excludedRefs = computed<BotRef[]>(() =>
   ranking.value.excluded.map((r) => ({
     key: r.key,
     name: r.name,
-    reason: r.stale ? t('fq.status.stale') : t('fq.lb.unknown'),
+    reason: r.stale ? t('fq.status.stale') : t('fq.value.reason.noData'),
   })),
 );
 </script>
@@ -100,7 +100,7 @@ const excludedRefs = computed<BotRef[]>(() =>
         </span>
         <span class="val">
           <PnlValue v-if="r.value !== null" :value="r.value" :muted="!r.counted" :decimals="2" />
-          <span v-else class="unk">{{ t('fq.lb.unknown') }}</span>
+          <ValueState v-else state="unavailable" :reason="t('fq.value.reason.noData')" />
         </span>
       </li>
     </ul>
@@ -212,10 +212,6 @@ const excludedRefs = computed<BotRef[]>(() =>
   text-align: right;
   font-family: var(--font-num);
   font-variant-numeric: tabular-nums slashed-zero;
-}
-.unk {
-  color: var(--fg-3);
-  font-family: var(--font-ui);
 }
 .more {
   margin: 0;

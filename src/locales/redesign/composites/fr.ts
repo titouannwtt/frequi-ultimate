@@ -275,10 +275,10 @@ export default {
       xyz: 'xyz',
       orphan: 'Orphelines',
     },
-    awaiting: '{n} position annoncée, pas encore lue | {n} positions annoncées, pas encore lues',
+    awaiting: '{n} position annoncée, lecture en cours | {n} positions annoncées, lecture en cours',
     awaitingHint: 'Les bots sont lus un par un : la liste se complète au fil de leurs réponses.',
     awaitingMore:
-      '{n} autre position annoncée, pas encore lue | {n} autres positions annoncées, pas encore lues',
+      '{n} autre position annoncée, lecture en cours | {n} autres positions annoncées, lecture en cours',
     empty: {
       open: 'Aucune position ouverte.',
       bot: 'Aucune position ouverte.',
@@ -325,7 +325,7 @@ export default {
     ordersFilled: '{n} rempli | {n} remplis',
     ordersPending: '{n} en attente',
     ordersUnavailable:
-      '{n} entrée remplie sur {max}. Les ordres ne sont pas disponibles. | {n} entrées remplies sur {max}. Les ordres ne sont pas disponibles.',
+      '{n} entrée remplie. Les ordres ne sont pas disponibles. | {n} entrées remplies. Les ordres ne sont pas disponibles.',
     maintenance: 'Maintenance de ce trade (base du bot)',
     deleteNote: 'Ne ferme pas la position : elle deviendrait orpheline.',
     minNotional: 'min. {min} USDC',
@@ -443,7 +443,6 @@ export default {
     capitalNote: 'capital disponible',
     exposure: 'Expo L / S',
     net: 'net {n} USDC',
-    exposureUnknown: 'positions pas encore lues',
     threshold: 'seuil {n}',
     backoff: 'Backoff 429',
     market: { crypto: 'Crypto', hip3: 'HIP-3', mixed: 'Crypto + xyz' },

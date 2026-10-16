@@ -53,9 +53,11 @@ describe('latent profit of a bot whose prices are unknown (B234)', () => {
     expect(buildBotRow(rt, ctx).metrics.open_profit_abs).toBeNull();
   });
 
-  it('is the sum of the known ones, and 0 for a flat book', () => {
+  it('is unknown when one position has no profit (B250), the sum otherwise, 0 for a flat book', () => {
     const rt = runtime();
     rt.status = { data: [trade(2), trade(null), trade(-0.5)] as any, atMs: NOW };
+    expect(buildBotRow(rt, ctx).metrics.open_profit_abs).toBeNull();
+    rt.status = { data: [trade(2), trade(-0.5)] as any, atMs: NOW };
     expect(buildBotRow(rt, ctx).metrics.open_profit_abs).toBe(1.5);
     rt.status = { data: [], atMs: NOW };
     expect(buildBotRow(rt, ctx).metrics.open_profit_abs).toBe(0);

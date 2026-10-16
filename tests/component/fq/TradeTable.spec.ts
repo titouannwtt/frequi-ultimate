@@ -80,14 +80,15 @@ describe('TradeTable: presets', () => {
     expect(w.findAll('thead th').map((h) => h.text().toLowerCase())).not.toContain('bot');
   });
 
-  it('closed: only that bot, with the exit reason; unknown profit shows as unknown, not zero', () => {
+  it('closed: only that bot, with the exit reason; unknown profit shows as an icon, not zero', () => {
     const trades = closedTrades();
     const botKey = trades[0]!.bot_key;
     const w = mountTrades({ preset: 'closed', botKey, trades, containerWidth: 1200 });
     const rows = w.findAll('tbody tr:not(.pad):not(.none)');
     expect(rows).toHaveLength(2);
-    const unknown = rows.find((r) => /unknown|n\/a|n\/d/i.test(r.text()));
+    const unknown = rows.find((r) => r.find('[data-state="unavailable"]').exists());
     expect(unknown).toBeDefined();
+    expect(unknown!.text()).not.toMatch(/unknown|n\/a|n\/d|\+0\.00/i);
   });
 
   it('journal: the closed trades of the whole fleet', () => {

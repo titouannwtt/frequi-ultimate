@@ -53,10 +53,10 @@ const phase = computed<Phase>(() => {
   return usable.value ? 'ready' : 'unavailable';
 });
 
+// The run mode, or empty when the bot did not say: the hint then goes without it
 const modeLabel = computed(() => {
   const m = String(runmode.value ?? '');
-  if (m === 'dry_run') return 'dry-run';
-  return m || t('fq.ds.notAvailable');
+  return m === 'dry_run' ? 'dry-run' : m;
 });
 </script>
 
@@ -87,7 +87,11 @@ const modeLabel = computed(() => {
       v-else-if="phase === 'unavailable'"
       icon="info"
       :title="t('fq.pg.legacy.unavailable')"
-      :hint="t('fq.pg.legacy.unavailableHint', { name: bot?.botName, mode: modeLabel })"
+      :hint="
+        modeLabel
+          ? t('fq.pg.legacy.unavailableHint', { name: bot?.botName, mode: modeLabel })
+          : t('fq.pg.legacy.unavailableHintNoMode', { name: bot?.botName })
+      "
       data-testid="legacy-unavailable"
     >
       <div class="acts">

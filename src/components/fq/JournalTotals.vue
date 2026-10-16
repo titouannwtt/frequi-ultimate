@@ -4,10 +4,12 @@ import { useI18n } from 'vue-i18n';
 
 import { KpiStrip, KpiTile, PnlValue, Skeleton } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
+import { useValueSlot } from '@/composables/useValueSlot';
 import type { TradeTotals } from '@/gateway/types.gen';
 
 import type { JournalStats } from './lib/journalPage';
 import { pairLabel } from './lib/trades';
+import { PENDING, READY, unavailable, type Slot } from './lib/valueState';
 
 /**
  * Filtered totals of the Journal (02 sections 3.4 and 12): net P&L (a trade without a result is
@@ -29,6 +31,10 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const fmt = useFormat();
+const { vs } = useValueSlot();
+/** A figure the filter cannot give: read again (pending) or not computable from these trades. */
+const slotOf = (v: number | null | undefined): Slot =>
+  v !== null && v !== undefined ? READY : props.loading ? PENDING : unavailable('noSample');
 
 const s = computed(() => props.stats);
 const net = computed(() => props.totals?.sum ?? s.value?.net ?? null);
@@ -49,7 +55,6 @@ const expectancy = computed(() => {
   return net.value / known;
 });
 const worstDd = computed(() => s.value?.worstDrawdown ?? null);
-const hours = (h: number | null) => (h === null ? t('fq.ds.notAvailable') : fmt.duration(h));
 const worstSub = computed(() => {
   const w = s.value?.worstTrade;
   if (!w || (props.totals && props.totals.worst_abs !== w.profit)) return undefined;
@@ -69,28 +74,27 @@ const worstSub = computed(() => {
           :label="t('fq.jr.totals.net')"
           :sub="t('fq.jr.totals.netSub', { n: count, u: unknown })"
           data-testid="jt-net"
+          v-bind="vs(slotOf(net))"
         >
-          <template #value>
-            <PnlValue v-if="net !== null" :value="net" :decimals="2" />
-            <template v-else>{{ t('fq.ds.notAvailable') }}</template>
-            <small v-if="net !== null"> USDC</small>
-          </template>
+          <template #value> <PnlValue :value="net" :decimals="2" /><small> USDC</small> </template>
         </KpiTile>
         <KpiTile
           :label="t('fq.jr.totals.winrate')"
-          :value="winrate === null ? t('fq.ds.notAvailable') : fmt.percent(winrate * 100, 1, false)"
+          :value="fmt.percent((winrate ?? 0) * 100, 1, false)"
           :sub="t('fq.jr.totals.winsLosses', { w: wins, l: losses })"
           data-testid="jt-winrate"
+          v-bind="vs(slotOf(winrate))"
         />
         <KpiTile
           :label="t('fq.jr.totals.factor')"
-          :value="factor === null ? t('fq.ds.notAvailable') : fmt.number(factor, 2)"
+          :value="fmt.number(factor ?? 0, 2)"
           :sub="
             s?.avgWin === undefined || s.avgWin === null
               ? t('fq.jr.totals.noLoss')
               : t('fq.jr.totals.avgWin', { v: fmt.signed(s.avgWin, 2) })
           "
           data-testid="jt-factor"
+          v-bind="vs(slotOf(factor))"
         />
         <KpiTile
           :label="t('fq.jr.totals.expectancy')"
@@ -100,56 +104,49 @@ const worstSub = computed(() => {
               : t('fq.jr.totals.avgLoss', { v: fmt.signed(s.avgLoss, 2) })
           "
           data-testid="jt-expectancy"
+          v-bind="vs(slotOf(expectancy))"
         >
-          <template #value>
-            <PnlValue v-if="expectancy !== null" :value="expectancy" :decimals="2" />
-            <template v-else>{{ t('fq.ds.notAvailable') }}</template>
-          </template>
+          <template #value><PnlValue :value="expectancy" :decimals="2" /></template>
         </KpiTile>
-        <KpiTile :label="t('fq.jr.totals.worst')" :sub="worstSub" data-testid="jt-worst">
-          <template #value>
-            <PnlValue v-if="worstAbs !== null" :value="worstAbs" :decimals="2" />
-            <template v-else>{{ t('fq.ds.notAvailable') }}</template>
-          </template>
+        <KpiTile
+          :label="t('fq.jr.totals.worst')"
+          :sub="worstSub"
+          data-testid="jt-worst"
+          v-bind="vs(slotOf(worstAbs))"
+        >
+          <template #value><PnlValue :value="worstAbs" :decimals="2" /></template>
         </KpiTile>
         <KpiTile
           :label="t('fq.jr.totals.worstDd')"
           :sub="worstDd === null ? t('fq.jr.totals.worstDdNoMae') : t('fq.jr.totals.worstDdSub')"
           data-testid="jt-worstdd"
+          v-bind="vs(slotOf(worstDd ?? worstAbs))"
         >
           <template #value>
             <PnlValue v-if="worstDd !== null" :value="worstDd" :decimals="2" />
-            <PnlValue
-              v-else-if="worstAbs !== null"
-              :value="Math.min(0, worstAbs)"
-              :decimals="2"
-              muted
-            />
-            <template v-else>{{ t('fq.ds.notAvailable') }}</template>
-            <small v-if="worstDd !== null || worstAbs !== null"> USDC</small>
+            <PnlValue v-else :value="Math.min(0, worstAbs ?? 0)" :decimals="2" muted />
+            <small> USDC</small>
           </template>
         </KpiTile>
         <KpiTile
           class="k-x"
           :label="t('fq.jr.totals.duration')"
-          :value="hours(s?.medianHours ?? null)"
+          :value="fmt.duration(s?.medianHours ?? 0)"
           :sub="
             s?.p90Hours === undefined || s.p90Hours === null
               ? undefined
               : t('fq.jr.totals.p90', { v: fmt.duration(s.p90Hours) })
           "
           data-testid="jt-duration"
+          v-bind="vs(slotOf(s?.medianHours))"
         />
         <KpiTile
           class="k-x"
           :label="t('fq.jr.totals.perDay')"
-          :value="
-            s?.perDay === undefined || s.perDay === null
-              ? t('fq.ds.notAvailable')
-              : fmt.number(s.perDay, 1)
-          "
+          :value="fmt.number(s?.perDay ?? 0, 1)"
           :sub="s && s.days > 0 ? t('fq.jr.totals.overDays', { n: Math.round(s.days) }) : undefined"
           data-testid="jt-perday"
+          v-bind="vs(slotOf(s?.perDay))"
         />
       </template>
     </KpiStrip>

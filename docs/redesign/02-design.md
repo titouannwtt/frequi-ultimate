@@ -635,9 +635,39 @@ Courbes : `--e-out` `cubic-bezier(.2,.8,.2,1)`, `--e-inout` `(.65,0,.35,1)`, `--
 | Erreur | le panneau garde ses dernières valeurs, marquées périmées, + cause (timeout, 401, 5xx) | pas de panneau blanc |
 | Périmé | hachures ambre, âge ambre, valeur en `--fg-3` | exclu des sommes, compteur « N exclus » cliquable ; seuil = 3 fois la cadence du canal (digest 120 s, REST 3 x cadence, WS silencieux 2 min avec positions) |
 | Indisponible | « Indisponible en mode direct » + raison | jamais une valeur inventée |
-| Inconnu | « inconnu » pour `exit_reason` ou profit nuls | compté à part dans les totaux |
+| Inconnu | icône « indisponible » (raison en infobulle) pour `exit_reason` ou profit nuls ; la catégorie « inconnu » n'existe plus que comme ligne du tableau des raisons de sortie | compté à part dans les totaux |
+| Valeur en attente | petite icône qui tourne dans l'emplacement du chiffre (voir 10.1.1) | jamais un mot (« n/d », « latent »...) |
+| Valeur non disponible | petite icône fixe, raison en infobulle et en nom accessible (voir 10.1.1) | jamais un mot, jamais 0,00 |
 | Dry ensemencé | « depuis le JJ/MM » à côté du nom et dans les KPI | |
 | Replay | badge REPLAY ; exclu du Journal par défaut (puce visible) | |
+
+#### 10.1.1 Emplacement d'une valeur : icône, jamais un mot
+
+Un emplacement de valeur (chiffre d'un KPI, cellule de tableau, fait du tiroir, barre d'état) n'écrit jamais « n/d »,
+« inconnu », « latent », « pas encore lu » ni un tiret. Il a trois états, dessinés par la primitive `ValueState`
+(`PnlValue` et `KpiTile` passent par elle) :
+
+| État | Quand | Rendu |
+|---|---|---|
+| `ready` | un chiffre | le chiffre (périmé : `--fg-3`, signe écrit, exclu des sommes comme avant) |
+| `pending` | pas encore reçu pour ce bot ou ce groupe : la source charge ou réessaie | anneau qui tourne, taille du texte, `--fg-3`, nom accessible « Chargement » ; `prefers-reduced-motion` (ou réglage) : pulsation lente d'opacité au lieu de la rotation ; `role="status"` seulement sur une tuile KPI, jamais par cellule de tableau |
+| `unavailable` | chargé, mais le chiffre n'existe pas ou ne peut pas être connu maintenant | icône fixe discrète (`circle-slash`), raison en infobulle (survol, focus, toucher) et en nom accessible, FR/EN |
+
+- **L'attente ne dure pas toujours** : au bout de **45 s** (`PENDING_TIMEOUT_MS`, trois sondages du canal REST le plus
+  rapide) un `pending` devient `unavailable` avec l'icône `clock-alert` et la raison « Pas de réponse depuis N s ». Le
+  départ de l'attente est partagé par `pendingKey` (une ligne qui sort et rentre du tableau virtualisé ne repart pas à 0).
+- **Largeur réservée** (`min-width: 2,4 ch`) : pas de décalage quand le chiffre arrive.
+- **Pending ou unavailable se décide à partir de ce que les magasins exposent déjà** (`lib/valueState.ts`) : un bot
+  `starting`, un groupe de fraîcheur jamais reçu ou un chiffre calculé plus tard (historique des clos) sont `pending` ; un bot
+  hors ligne, expiré, arrêté, un groupe périmé, un registre lu sans le chiffre (capital) ou des positions ouvertes sans
+  prix sont `unavailable`, chacun avec sa raison.
+- **Une somme n'est un chiffre que si quelque chose y contribue** (`aggregateSlot`) : si **toutes** les positions ouvertes
+  du périmètre sont exclues (prix inconnus : le backoff 429 du daemon laisse `current_rate` et `profit_abs` à `null`), le
+  P&L latent, l'équité avec latent, le drawdown avec latent sont `unavailable` (« Prix figés par le backoff 429 (N
+  positions) »), jamais « 0,00 » ; si **une partie** seulement est exclue, la somme partielle reste, avec le compteur
+  « N exclus » (l'information, pas un substitut). Un bot qui ne répond jamais ne retient pas le verdict des autres.
+- Un bot dont la lecture des positions renvoie un profit nul (`null`) a un latent **inconnu**, pas une somme partielle
+  ni 0 (bug B250).
 
 ### 10.2 États de bot
 
@@ -645,7 +675,7 @@ Courbes : `--e-out` `cubic-bezier(.2,.8,.2,1)`, `--e-inout` `(.65,0,.35,1)`, `--
 |---|---|---|---|---|
 | `online` | plein `--profit` | uptime | selon règles | toutes |
 | `starting` | `--info` pulsé | « démarrage N min » | info, **jamais hors ligne pendant 20 min** | désactivées |
-| `offline` | `--crit` | « hors ligne N min », valeurs barrées, « n/d » | critique | désactivées ; jamais « relancer pour fermer » |
+| `offline` | `--crit` | « hors ligne N min », valeurs barrées, icône « indisponible » (raison : bot hors ligne) | critique | désactivées ; jamais « relancer pour fermer » |
 | `stopped` | cercle vide | « arrêté, ledger orphelin » | aucune | lecture seule |
 | `auth_expired` | carré `--warn` | « session expirée » | vigilance | désactivées ; bouton **Se reconnecter** |
 | périmé (donnée) | `--warn` | âge ambre | vigilance (`dataStale`) | selon état du bot |
@@ -676,7 +706,7 @@ La pastille combine la source (`gateway` ou `direct`) et l'état (`connecting`, 
 | MAE/MFE | oui | « indisponible » |
 | Exports | CSV/XLSX de l'ensemble filtré | CSV de la page affichée |
 | Santé | niveau et raisons | budgets par bot lus sur les bots du fork, sinon « indisponible » |
-| Bots freqtrade amont (sans endpoints du fork) | | fonctionnent : liste, positions, actions ; colonnes du fork « n/d » |
+| Bots freqtrade amont (sans endpoints du fork) | | fonctionnent : liste, positions, actions ; colonnes du fork : icône « indisponible » |
 
 ## 11. Actions argent réel
 

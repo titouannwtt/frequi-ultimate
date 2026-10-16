@@ -21,17 +21,11 @@ describe('counts agree with their noun (B196)', () => {
   });
 
   it('"1 entrée remplie sur 1" and "1 ordre rempli sur 2", never "1 entrées" or "1 ordres"', () => {
-    expect(t('fr', 'fq.drawer.ordersUnavailable', { n: 1, max: 1 }, 1)).toContain(
-      '1 entrée remplie sur 1.',
-    );
-    expect(t('fr', 'fq.drawer.ordersUnavailable', { n: 3, max: 3 }, 3)).toContain(
-      '3 entrées remplies sur 3.',
-    );
+    expect(t('fr', 'fq.drawer.ordersUnavailable', { n: 1 }, 1)).toContain('1 entrée remplie.');
+    expect(t('fr', 'fq.drawer.ordersUnavailable', { n: 3 }, 3)).toContain('3 entrées remplies.');
     expect(t('fr', 'fq.ds.dcaFilled', { filled: 1, max: 2 }, 1)).toBe('1 ordre rempli sur 2');
     expect(t('fr', 'fq.ds.dcaFilled', { filled: 2, max: 2 }, 2)).toBe('2 ordres remplis sur 2');
-    expect(t('en', 'fq.drawer.ordersUnavailable', { n: 1, max: 1 }, 1)).toContain(
-      '1 of 1 entry filled.',
-    );
+    expect(t('en', 'fq.drawer.ordersUnavailable', { n: 1 }, 1)).toContain('1 entry filled.');
   });
 
   it('the drawer counts filled and pending orders with their own plural (B237)', () => {

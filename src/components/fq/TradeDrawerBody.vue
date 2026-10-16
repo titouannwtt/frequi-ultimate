@@ -3,14 +3,25 @@ import { useWindowSize } from '@vueuse/core';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { Badge, Btn, DcaLadderV, DirectionChip, DsIcon, ModeMark, PnlValue } from '@/components/ds';
+import {
+  Badge,
+  Btn,
+  DcaLadderV,
+  DirectionChip,
+  DsIcon,
+  ModeMark,
+  PnlValue,
+  ValueState,
+} from '@/components/ds';
 import type { LadderOrder } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
+import { useValueSlot } from '@/composables/useValueSlot';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import type { Position } from '@/gateway/types.gen';
 
 import { useBotActions } from './lib/useBotActions';
 import { durationTone, lineFromPosition, pairLabel } from './lib/trades';
+import { lineSlot, PENDING, READY, unavailable, type Slot } from './lib/valueState';
 
 /**
  * Body of the trade drawer (02 section 3.2): the target bot, the P&L, six facts, the DCA ladder
@@ -30,6 +41,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const fmt = useFormat();
+const { vs } = useValueSlot();
 const fleet = useFqFleetStore();
 const { height } = useWindowSize();
 
@@ -44,7 +56,6 @@ const acts = useBotActions(
 const tone = computed(() => durationTone(line.value.percentile));
 // A bot name wraps after an underscore or a dash, never in the middle of a word
 const nameParts = computed(() => line.value.botName.split(/(?<=[_\-.])/));
-const max = computed(() => props.dcaMax ?? props.position.dca_entries);
 
 /** Distance in percent of the price to a level, positive when the level is still ahead. */
 function toward(level: number | null | undefined, towardLower: boolean): number | null {
@@ -62,21 +73,37 @@ const nextSoPrice = computed(
 );
 const toSo = computed(() => toward(nextSoPrice.value, true));
 
-const facts = computed(() => [
-  { k: 'notional', v: fmt.number(props.position.notional, 2) },
-  { k: 'stake', v: fmt.number(props.position.stake_amount, 2) },
-  { k: 'dca', v: `${props.position.dca_entries}/${props.dcaMax ?? '?'}` },
-  { k: 'toTp', v: toTp.value === null ? t('fq.ds.notAvailable') : fmt.percent(toTp.value, 2) },
-  { k: 'toSo', v: toSo.value === null ? t('fq.ds.notAvailable') : fmt.percent(toSo.value, 2) },
-  {
-    k: 'toLiq',
-    v:
-      props.position.liq_distance_pct == null
-        ? t('fq.ds.notAvailable')
-        : fmt.percent(props.position.liq_distance_pct, 1, false),
-    crit: props.position.liq_distance_pct != null && props.position.liq_distance_pct < 15,
-  },
-]);
+// A fact the bot gives is a figure; the others say why they are not (take profit and the maximum of
+// entries have no API; the orders are read after the position, so the next safety order waits)
+const noPrice = computed<Slot>(() => lineSlot(line.value, props.position.current_rate, 'prices'));
+const facts = computed<Array<{ k: string; v: string; slot: Slot; crit?: boolean }>>(() => {
+  const dcaSlot: Slot =
+    props.dcaMax != null ? READY : props.ordersLoading ? PENDING : unavailable('noApi');
+  const levelSlot = (known: boolean, missing: Slot): Slot =>
+    noPrice.value.state !== 'ready' ? noPrice.value : known ? READY : missing;
+  const toLiq = props.position.liq_distance_pct;
+  return [
+    { k: 'notional', v: fmt.number(props.position.notional, 2), slot: READY },
+    { k: 'stake', v: fmt.number(props.position.stake_amount, 2), slot: READY },
+    { k: 'dca', v: '', slot: dcaSlot },
+    {
+      k: 'toTp',
+      v: fmt.percent(toTp.value ?? 0, 2),
+      slot: levelSlot(toTp.value !== null, unavailable('noApi')),
+    },
+    {
+      k: 'toSo',
+      v: fmt.percent(toSo.value ?? 0, 2),
+      slot: levelSlot(toSo.value !== null, props.ordersLoading ? PENDING : unavailable('noData')),
+    },
+    {
+      k: 'toLiq',
+      v: fmt.percent(toLiq ?? 0, 1, false),
+      slot: lineSlot(line.value, toLiq, props.position.current_rate === null ? 'prices' : 'noData'),
+      crit: toLiq != null && toLiq < 15,
+    },
+  ];
+});
 
 const ladderPos = computed(() => ({
   price: props.position.current_rate ?? props.position.open_rate,
@@ -123,13 +150,18 @@ const ordersOpen = computed(() => height.value >= 900);
       <span class="big">
         <PnlValue
           :value="position.profit_abs"
-          :unknown="position.profit_abs === null"
           :muted="position.freshness.stale"
           unit="USDC"
+          v-bind="vs(lineSlot(line, position.profit_abs))"
         />
       </span>
-      <span v-if="position.profit_ratio !== null" class="pct">
-        <PnlValue :value="position.profit_ratio * 100" unit="%" :muted="position.freshness.stale" />
+      <span class="pct">
+        <PnlValue
+          :value="position.profit_ratio === null ? null : position.profit_ratio * 100"
+          unit="%"
+          :muted="position.freshness.stale"
+          v-bind="vs(lineSlot(line, position.profit_ratio))"
+        />
       </span>
       <span class="dur num">
         {{ t('fq.drawer.openSince', { d: fmt.duration(position.duration_ms / 3_600_000) }) }}
@@ -144,22 +176,27 @@ const ordersOpen = computed(() => height.value >= 900);
     <section class="facts" :aria-label="t('fq.drawer.facts')">
       <div v-for="f in facts" :key="f.k" class="fact">
         <span class="k">{{ t(`fq.drawer.fact.${f.k}`) }}</span>
-        <span class="v num" :class="{ crit: f.crit }">{{ f.v }}</span>
+        <span class="v num" :class="{ crit: f.crit }"
+          ><template v-if="f.k === 'dca'"
+            >{{ position.dca_entries }}/<ValueState
+              v-bind="vs(f.slot, `drawer/${position.bot_key}/${position.trade_id}/dca`)"
+              >{{ dcaMax }}</ValueState
+            ></template
+          ><ValueState
+            v-else
+            v-bind="vs(f.slot, `drawer/${position.bot_key}/${position.trade_id}/${f.k}`)"
+            >{{ f.v }}</ValueState
+          ></span
+        >
       </div>
     </section>
 
     <section class="ladder">
       <h3><DsIcon name="layers" /> {{ t('fq.ds.ladder.title') }}</h3>
       <DcaLadderV v-if="orders && orders.length > 0" :position="ladderPos" :orders="orders" />
-      <p v-else-if="ordersLoading" class="dim">{{ t('fq.ds.loading') }}</p>
+      <p v-else-if="ordersLoading" class="dim"><ValueState state="pending" announce /></p>
       <p v-else class="dim">
-        {{
-          t(
-            'fq.drawer.ordersUnavailable',
-            { n: position.dca_entries, max: max ?? '?' },
-            position.dca_entries,
-          )
-        }}
+        {{ t('fq.drawer.ordersUnavailable', { n: position.dca_entries }, position.dca_entries) }}
       </p>
     </section>
 

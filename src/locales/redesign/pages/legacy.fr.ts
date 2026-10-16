@@ -7,6 +7,8 @@ export default {
   unavailable: 'Indisponible sur ce bot',
   unavailableHint:
     'Le bot {name} tourne en mode {mode}. Cet outil demande un bot en mode webserver : sur un bot de trading, son API répond 503.',
+  unavailableHintNoMode:
+    'Cet outil demande un bot en mode webserver  : sur un bot de trading comme {name}, son API répond 503.',
   use: 'Utiliser {name}',
   timerange: { start: 'Date de début', end: 'Date de fin', label: 'Plage' },
   download: {
