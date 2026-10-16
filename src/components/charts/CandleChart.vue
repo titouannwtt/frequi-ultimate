@@ -377,7 +377,7 @@ function updateChart(initial = false) {
     const longExit = colExitData >= 0 ? colExitData : -1;
     const shortEntry = colShortEntryData >= 0 ? colShortEntryData : -1;
     const shortExit = colShortExitData >= 0 ? colShortExitData : -1;
-    for (const row of dataset) {
+    for (const row of dataset as Array<Array<number | null>>) {
       if (longEntry >= 0 && longExit >= 0 && row[longEntry] && row[longExit]) {
         row[longEntry] = null;
         row[longExit] = null;

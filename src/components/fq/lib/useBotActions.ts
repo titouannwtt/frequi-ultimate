@@ -104,5 +104,8 @@ export function useBotActions(
     };
   }
 
-  return { bot, state, reason, reasonText, lockKey, busy, disabled, trigger, menuItem, t };
+  // A plain signature: the composer type of vue-i18n cannot be named in the declaration output
+  const translate = (key: string): string => t(key);
+
+  return { bot, state, reason, reasonText, lockKey, busy, disabled, trigger, menuItem, t: translate };
 }

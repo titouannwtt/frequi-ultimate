@@ -452,7 +452,7 @@ watch(showLatent, (v) => {
  * axes, le zoom et l'info-bulle gardent leur fusion, sinon un changement de case
  * à cocher réinitialiserait la plage temporelle que l'utilisateur vient de régler.
  */
-const CHART_UPDATE = { replaceMerge: ['series'] } as const;
+const CHART_UPDATE = { replaceMerge: ['series'] };
 
 const latentHistories = ref<Record<string, [number, number, number, number][]>>({});
 /** Bots dont la série est déjà chargée : on ne redemande jamais ce qu'on a. */
@@ -1240,13 +1240,6 @@ const chartOptions = computed<EChartsOption>(() => {
     animationDurationUpdate: 500,
     tooltip: {
       trigger: 'axis',
-      axisPointer: {
-        type: 'cross',
-        snap: true,
-        crossStyle: { color: '#555' },
-        lineStyle: { color: 'rgba(148,163,184,0.55)', width: 1, type: 'dashed' },
-        label: { backgroundColor: 'rgba(30,41,59,0.95)', fontSize: 10 },
-      },
       backgroundColor: 'rgba(15, 15, 25, 0.92)',
       borderColor: 'rgba(100, 100, 140, 0.3)',
       borderWidth: 1,

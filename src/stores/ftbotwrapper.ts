@@ -747,6 +747,10 @@ let _botsInitialized = false;
 export function initBots() {
   const botStore = useBotStore();
   if (_botsInitialized && botStore.hasBots) {
+    // A bot added since (Settings) must reach the legacy tools without a reload
+    Object.values(loggedInBots.value).forEach((v) => {
+      if (!(v.botId in botStore.availableBots)) botStore.addBot(v);
+    });
     return;
   }
   Object.entries(loggedInBots.value).forEach(([, v]) => {

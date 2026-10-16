@@ -1695,7 +1695,7 @@ function resetColumns() {
   columnOrder.value = allColumns.map((c) => c.id);
 }
 
-function showColumnPopover(event: MouseEvent) {
+function showColumnPopover(event: Event) {
   columnPopover.value?.toggle(event);
 }
 
@@ -4129,7 +4129,7 @@ const correlatedPairs = computed(() => {
         <BotInfoCard
           v-if="hoveredBotId"
           :profit="hoveredProfit"
-          :bot-state="hoveredBotState as Record<string, unknown>"
+          :bot-state="hoveredBotState as unknown as Record<string, unknown>"
           :port="hoveredBotPort"
           :stake-currency="hoveredBotState?.stake_currency as string"
           :is-online="hoveredBotId ? botStore.botStores[hoveredBotId]?.isBotOnline : undefined"
@@ -4502,9 +4502,9 @@ const correlatedPairs = computed(() => {
               <span
                 class="text-sm"
                 :class="
-                  tableItems.filter((i) => !i.botId && !i.isGroupRow)[0]?.[
+                  (tableItems.filter((i) => !i.botId && !i.isGroupRow)[0]?.[
                     summaryPeriodMode === 'monthly' ? 'monthlyProfit' : 'yearlyProfit'
-                  ] > 0
+                  ] ?? 0) > 0
                     ? 'text-green-400'
                     : 'text-red-400'
                 "
@@ -4826,15 +4826,15 @@ const correlatedPairs = computed(() => {
                     {{
                       alertType.id === 'noTradeActivity'
                         ? (getGlobalAlertSetting(alertType.id).threshold ??
-                            alertType.thresholdDefault) >= 48
+                            alertType.thresholdDefault ?? 0) >= 48
                           ? Math.floor(
                               (getGlobalAlertSetting(alertType.id).threshold ??
-                                alertType.thresholdDefault) / 24,
+                                alertType.thresholdDefault ?? 0) / 24,
                             ) + 'd'
                           : (getGlobalAlertSetting(alertType.id).threshold ??
-                              alertType.thresholdDefault) + 'h'
+                              alertType.thresholdDefault ?? 0) + 'h'
                         : (getGlobalAlertSetting(alertType.id).threshold ??
-                            alertType.thresholdDefault) + alertType.thresholdUnit
+                            alertType.thresholdDefault ?? 0) + (alertType.thresholdUnit ?? '')
                     }}
                   </span>
                 </div>

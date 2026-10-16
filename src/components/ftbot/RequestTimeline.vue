@@ -464,7 +464,6 @@ const sankeyOption = computed((): EChartsOption => {
     series: [
       {
         type: 'sankey',
-        layout: 'none',
         emphasis: { focus: 'adjacency' },
         nodeAlign: 'justify',
         orient: 'horizontal',

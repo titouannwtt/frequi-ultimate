@@ -37,6 +37,18 @@ const startBeforeData = computed(
 );
 const endInFuture = computed(() => !!store.endDate && store.endDate > today);
 
+// Wiping the dry database is destructive: the name of the bot is typed back first
+const typedName = ref('');
+watch(
+  () => [store.visible, store.botId, store.resetDb],
+  () => {
+    typedName.value = '';
+  },
+);
+const resetConfirmed = computed(
+  () => !store.resetDb || typedName.value.trim() === store.botName,
+);
+
 async function confirmRestore() {
   if (window.confirm(t('botComparison.replay.restoreConfirm'))) {
     await store.restore();
@@ -290,6 +302,21 @@ const tradesOutsideReplay = computed<number | null>(() => {
         </span>
       </label>
 
+      <div v-if="store.resetDb" class="mb-3">
+        <label for="replay-typed-name" class="block text-xs mb-1">{{
+          t('botComparison.replay.resetDbType', { name: store.botName })
+        }}</label>
+        <InputText
+          id="replay-typed-name"
+          v-model="typedName"
+          size="small"
+          class="w-full"
+          autocomplete="off"
+          :placeholder="store.botName"
+          data-testid="replay-typed-name"
+        />
+      </div>
+
       <ul class="text-xs text-surface-500 flex flex-col gap-1 mb-3">
         <li>🔒 {{ t('botComparison.replay.preventDry') }}</li>
         <li>⏱️ {{ t('botComparison.replay.preventIsolated') }}</li>
@@ -413,7 +440,7 @@ const tradesOutsideReplay = computed<number | null>(() => {
         v-else-if="!store.alreadySeeded && !store.current.result"
         severity="primary"
         size="small"
-        :disabled="!store.canRun"
+        :disabled="!store.canRun || !resetConfirmed"
         :label="t('botComparison.replay.run')"
         @click="store.start"
       />

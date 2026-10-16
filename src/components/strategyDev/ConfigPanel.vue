@@ -39,7 +39,8 @@ async function loadCurrentConfig() {
   try {
     const activeBot = botStore.activeBot;
     if (activeBot?.isBotOnline) {
-      const resp = await activeBot.api.get('/api/v1/show_config');
+      const { api } = useApi(useLoginInfo(botStore.selectedBot), botStore.selectedBot);
+      const resp = await api.get('/show_config');
       if (resp.data) {
         currentConfig.value = resp.data as Record<string, unknown>;
       }

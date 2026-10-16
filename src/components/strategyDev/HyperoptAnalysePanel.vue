@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import type { HistogramData } from '@/types/strategyDev';
 import { useBtcBenchmark } from '@/composables/useBtcBenchmark';
 
 const { t } = useI18n();
@@ -941,12 +942,12 @@ function fmtNum(v: unknown, decimals = 2): string {
               chart-id="loss-histogram"
             >
               <LossHistogramChart
-                :histogram="analysis.loss_histogram as Record<string, unknown>"
+                :histogram="analysis.loss_histogram as HistogramData"
                 :title="t('strategyDev.chartLossDistribution')"
               />
               <template #fullscreen>
                 <LossHistogramChart
-                  :histogram="analysis.loss_histogram as Record<string, unknown>"
+                  :histogram="analysis.loss_histogram as HistogramData"
                   :title="t('strategyDev.chartLossDistribution')"
                 />
               </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import CodeEditor from './CodeEditor.vue';
 
 const { t } = useI18n();
 const editorStore = useEditorStore();

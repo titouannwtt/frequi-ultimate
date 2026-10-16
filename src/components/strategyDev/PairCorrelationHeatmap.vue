@@ -76,7 +76,7 @@ const chartOptions = computed<EChartsOption>(() => {
         const [col, row, val] = item.value;
         const abs = Math.abs(val);
         let strength = t('strategyDev.corrWeak');
-        let strengthColor = C.green;
+        let strengthColor: string = C.green;
         if (abs > 0.7) {
           strength = t('strategyDev.corrStrong');
           strengthColor = C.red;

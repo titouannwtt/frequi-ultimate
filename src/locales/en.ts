@@ -11,7 +11,6 @@ export default {
     downloadData: 'Download Data',
     pairlistConfig: 'Pairlist Config',
     lockLayout: 'Lock dynamic Layout',
-    resetLayout: 'Reset Layout',
     logout: 'Logout',
     exportPdf: 'Export as PDF',
     strategyDev: 'Strategy Dev',
@@ -596,6 +595,7 @@ export default {
       resetDb: 'Reset the database first',
       resetDbHint:
         'Wipe existing dry-run trades before seeding. Unchecked: existing trades are kept and the replay stops at the first real trade.',
+      resetDbType: 'Type the bot name ({name}) to confirm the wipe.',
       detailPeriod: 'Period',
       detailDuration: 'Took',
       detailPairs: 'Pairs',
@@ -2856,8 +2856,6 @@ export default {
     // Compare mode
     compareLeft: 'Left epoch',
     compareRight: 'Right epoch',
-    compareParams: 'Parameter Differences',
-    compareMetric: 'Metric',
     compareParameter: 'Parameter',
     compareRankN: 'Rank {n}',
 
@@ -3088,7 +3086,6 @@ export default {
     // Actions
     copyJson: 'Copy JSON',
     copyAll: 'Copy all',
-    copied: 'Copied!',
     expand: 'Expand',
     collapse: 'Collapse',
 
@@ -3411,7 +3408,6 @@ export default {
     corrTopPair: 'Top Pair',
     corrHighPairs: 'High Corr. Pairs',
     corrDiversified: 'Diversified',
-    corrModerate: 'Moderate',
     corrConcentrated: 'Concentrated',
     corrVolumeShare: 'Volume Share',
     corrMaxLoss: 'Max Loss',

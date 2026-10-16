@@ -11,7 +11,6 @@ export default {
     downloadData: 'Télécharger les données',
     pairlistConfig: 'Config Pairlist',
     lockLayout: 'Verrouiller la disposition',
-    resetLayout: 'Réinitialiser la disposition',
     logout: 'Déconnexion',
     exportPdf: 'Exporter en PDF',
     strategyDev: 'Dev Stratégie',
@@ -607,6 +606,7 @@ export default {
       resetDb: 'Réinitialiser la base d’abord',
       resetDbHint:
         'Efface les trades dry-run existants avant le seed. Décoché : les trades existants sont conservés et le replay s’arrête au premier trade réel.',
+      resetDbType: 'Saisissez le nom du bot ({name}) pour confirmer l’effacement.',
       detailPeriod: 'Période',
       detailDuration: 'Durée',
       detailPairs: 'Paires',
@@ -2828,8 +2828,6 @@ export default {
     // Mode comparaison
     compareLeft: 'Epoch gauche',
     compareRight: 'Epoch droite',
-    compareParams: 'Différences de paramètres',
-    compareMetric: 'Métrique',
     compareParameter: 'Paramètre',
     compareRankN: 'Rang {n}',
 
@@ -3050,7 +3048,6 @@ export default {
 
     copyJson: 'Copier JSON',
     copyAll: 'Tout copier',
-    copied: 'Copié !',
     expand: 'Développer',
     collapse: 'Réduire',
 
@@ -3377,7 +3374,6 @@ export default {
     corrTopPair: 'Paire Principale',
     corrHighPairs: 'Paires Corr. Élevées',
     corrDiversified: 'Diversifié',
-    corrModerate: 'Modéré',
     corrConcentrated: 'Concentré',
     corrVolumeShare: 'Part du Volume',
     corrMaxLoss: 'Perte Max',

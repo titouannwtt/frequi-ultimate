@@ -240,7 +240,7 @@ function chartData(config: ChartConfig) {
 
   // Projection line (from today to end of period)
   const dailyAvg = todayIdx > 0 ? currentProfit / todayIdx : 0;
-  const projPoints = [];
+  const projPoints: Array<{ x: number; y: number }> = [];
   for (let d = todayIdx; d < totalDays; d++) {
     const val = currentProfit + dailyAvg * (d - todayIdx);
     projPoints.push({ x: xPos(d), y: yPos(val) });
