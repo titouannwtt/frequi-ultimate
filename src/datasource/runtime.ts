@@ -4,6 +4,8 @@
  * stores. One instance per app; everything here is injectable so the wiring is testable without a
  * browser (`createRuntime`), while `useDataSource` builds the real one.
  */
+import { watch, type WatchStopHandle } from 'vue';
+
 import type { AlertRulesConfig } from '@/gateway/types.gen';
 import type { GatewayPrefs } from '@/migration/schema';
 
@@ -18,6 +20,7 @@ import { GatewaySource } from './gateway/GatewaySource';
 import { createSessionManager } from './gateway/session';
 import type { WsFactory, WsLike } from './gateway/socket';
 import { SourceManager, type SourceMode } from './manager';
+import { PrefsSync } from './prefsSync';
 import { useFqConnectionStore } from './stores/connection';
 import { useFqPrefsStore } from './stores/prefs';
 import type { DataSource } from './types';
@@ -91,6 +94,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       deviceId: () => prefs.gateway.deviceId,
       wsFactory: env.wsFactory,
       aliases: () => prefs.gateway.aliases,
+      getGroups: () => prefs.settings.fleet.groups,
       now,
       onUnusable: (reason) => void manager.reportUnusable(reason),
     });
@@ -108,12 +112,14 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     onSourceChange: (next) => {
       unbind?.();
       unbind = bindSourceToStores(next, { cache: env.cache, now });
+      startPrefsSync(next);
     },
     onSwitch: (sw) => conn.recordSwitch(sw),
     now,
   });
 
   let unbind: (() => void) | null = null;
+  let stopPrefsSync: (() => void) | null = null;
   let stopWatch: (() => void) | null = null;
 
   return {
@@ -133,6 +139,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       stopWatch = watchProbeCountdown();
     },
     stop() {
+      stopPrefsSync?.();
+      stopPrefsSync = null;
       stopWatch?.();
       stopWatch = null;
       manager.stop();
@@ -140,6 +148,54 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       unbind = null;
     },
   };
+
+  /**
+   * Preferences are shared between devices only through the gateway: in direct mode nothing is
+   * sent anywhere. The first sync runs once the link is live, then at every local edit (debounced)
+   * and when the tab comes back to the foreground.
+   */
+  function startPrefsSync(source: DataSource): void {
+    stopPrefsSync?.();
+    stopPrefsSync = null;
+    if (source.kind !== 'gateway') return;
+    const sync = new PrefsSync({
+      remote: (source as GatewaySource).prefsRemote,
+      prefs: {
+        settings: () => prefs.settings,
+        applyRemote: (section, value) => prefs.applyRemote(section, value),
+      },
+      storage: localStorage,
+    });
+    const stops: WatchStopHandle[] = [];
+    let first = true;
+    stops.push(
+      watch(
+        () => source.status.value.state,
+        (state) => {
+          if (state === 'live' && first) {
+            first = false;
+            void sync.sync();
+          }
+        },
+        { immediate: true },
+      ),
+      watch(
+        () => prefs.rev,
+        () => {
+          if (!first) sync.schedulePush();
+        },
+      ),
+    );
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && !first) void sync.sync();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    stopPrefsSync = () => {
+      sync.stop();
+      for (const st of stops) st();
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }
 
   function watchProbeCountdown(): () => void {
     const timer = setInterval(() => {

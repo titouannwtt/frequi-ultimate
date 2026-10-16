@@ -14,3 +14,5 @@ export * from './duration';
 export * from './drawdown';
 export * from './periods';
 export * from './alerts';
+export * from './scopeTotals';
+export * from './tradePage';

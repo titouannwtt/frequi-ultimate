@@ -29,8 +29,10 @@ const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /**
- * Split a snapshot answer into channels. `body.channels[name]` wins when present (channels with
- * free-form collections such as `bot:<key>`); otherwise the known collections of the channel are
+ * Split a snapshot answer into channels. The gateway answers `{ channels: { fleet: { collections:
+ * { bots: {...} }, seq } }, ts }`: `body.channels[name]` wins when present (its `collections`, or
+ * the object itself for a channel with free-form collections such as `bot:<key>`), and its `seq`
+ * is the sequence number of the channel. Otherwise the known collections of the channel are
  * picked from the top level (or from `body.collections`).
  */
 export function parseSnapshot(
@@ -56,7 +58,9 @@ export function parseSnapshot(
     const names = CHANNEL_COLLECTIONS[name];
     const cols: Record<string, Record<string, unknown>> = {};
     if (own) {
-      for (const [k, v] of Object.entries(own)) if (isObject(v)) cols[k] = v;
+      if (typeof own.seq === 'number') seq[name] = own.seq;
+      const source = isObject(own.collections) ? own.collections : own;
+      for (const [k, v] of Object.entries(source)) if (isObject(v)) cols[k] = v;
     } else if (names) {
       for (const k of names) {
         const v = flat[k];

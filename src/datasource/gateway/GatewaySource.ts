@@ -14,15 +14,25 @@ import { ref, type Ref } from 'vue';
 import {
   GATEWAY_PROTOCOL_VERSION,
   type Alert,
+  type AlertRulesConfig,
   type BotKey,
+  type BotMode,
+  type BotRow,
   type DrawdownResult,
   type Event,
   type LogLine,
+  type Position,
+  type ScopeTotals as GwScopeTotals,
   type ServerFrame,
   type Silence,
+  type TradeRow,
 } from '@/gateway/types.gen';
-import type { AlertRulesConfig } from '@/gateway/types.gen';
 
+import { exposure } from '../calc/exposure';
+import { scopeTotalsByMode } from '../calc/scopeTotals';
+import { pageTradeRows } from '../calc/tradePage';
+import { positionToTradeRow } from '../direct/mappers';
+import type { PrefsRemote } from '../prefsSync';
 import { applyUpsert, type Collections } from '../protocol/apply';
 import { formatChannel, parseChannel, type Channel as WireChannel } from '../protocol/channel';
 import { SeqTracker } from '../protocol/seq';
@@ -34,26 +44,25 @@ import type {
   ChannelParams,
   ChannelUpdate,
   DataSource,
-  DiscoveredBot,
   DrawdownQuery,
   EquityQuery,
   EquitySeries,
   EventQuery,
   LogQuery,
+  OrderRow,
   Page,
   PeriodQuery,
   PeriodRow,
   ProxyOptions,
   RegistryApi,
-  RegistryBot,
   ScopeDetail,
   ScopeRef,
+  ScopeTotals,
   SourceStatus,
   StateUpdate,
   TradePage,
   TradeQuery,
 } from '../types';
-import { scopeKey } from '../types';
 import { GatewayError, type GatewayHttp } from './http';
 import type { SessionManager } from './session';
 import { isStateChannel, parseSnapshot } from './snapshot';
@@ -66,6 +75,8 @@ export interface GatewaySourceDeps {
   deviceId: () => string;
   wsFactory: WsFactory;
   aliases: () => Record<string, BotKey>;
+  /** Groups of the preferences: a group scope is the fleet restricted to its bots. */
+  getGroups?: () => ReadonlyArray<{ id: string; botKeys: BotKey[] }>;
   now?: () => number;
   timers?: SocketTimers;
   jitter?: boolean;
@@ -94,6 +105,90 @@ const ACTION_TIMEOUT_MS = 25_000;
 const LATENCY_EVERY_MS = 30_000;
 const RESYNC_STORM = 4;
 const RESYNC_STORM_WINDOW_MS = 10_000;
+
+/** Answer of `GET /scope/{live|dry|replay|bot:<key>}`. */
+interface GwScopeResponse {
+  totals: GwScopeTotals | null;
+  bots: BotRow[];
+  positions: Position[];
+  drawdown: DrawdownResult | null;
+  generated_ms: number;
+}
+
+/** Wallet of each bot (its own key when the gateway does not know one): exposure nets per wallet. */
+function walletOfRows(rows: readonly BotRow[]): (botKey: string) => string {
+  const byKey = new Map(rows.map((r) => [r.bot_key, r.state.wallet_id]));
+  return (k) => byKey.get(k) ?? `bot:${k}`;
+}
+
+/** The totals the gateway computed for one mode, in the shape the pages read. */
+function fromGatewayTotals(
+  t: GwScopeTotals,
+  rows: readonly BotRow[],
+  positions: readonly Position[],
+  drawdown: DrawdownResult | null,
+  walletOf: (botKey: string) => string,
+): ScopeTotals {
+  const excluded = new Set(t.excluded_bots);
+  // Netting per coin at wallet level, over the bots whose figures are in the sums.
+  const netted = exposure(
+    positions
+      .filter((p) => !excluded.has(p.bot_key))
+      .map((p) => ({
+        coin: `${walletOf(p.bot_key)}|${p.coin}`,
+        side: p.side,
+        notional: p.notional,
+      })),
+  );
+  return {
+    mode: t.mode,
+    bots: t.bots,
+    open_trades: t.open_trades,
+    max_open_trades: t.max_open_trades,
+    realized_1d: t.realized_1d,
+    realized_7d: t.realized_7d,
+    realized_30d: t.realized_30d,
+    realized_total: t.realized_total,
+    open_profit_abs: t.open_profit_abs,
+    starting_capital: {
+      total: t.starting_capital ?? 0,
+      known: Math.max(0, rows.length - t.capital_unknown_bots),
+      unknown: t.capital_unknown_bots,
+    },
+    exposure: {
+      long: t.exposure_long,
+      short: t.exposure_short,
+      net: t.exposure_net,
+      net_by_coin: netted.net_by_coin,
+      gross_netted: netted.gross_netted,
+    },
+    netted: true,
+    excluded: [...excluded],
+    drawdown,
+  };
+}
+
+function sortRowsByPair(rows: TradeRow[], order?: 'asc' | 'desc'): TradeRow[] {
+  const dir = order === 'asc' ? 1 : -1;
+  return [...rows].sort((a, b) => a.pair.localeCompare(b.pair) * dir);
+}
+
+/** Levels of the UI (`ERROR`, `WARNING`...) to the lower-case floor of `GET /logs`. */
+function gatewayLevel(level: string): string {
+  switch (level.toUpperCase()) {
+    case 'CRITICAL':
+    case 'FATAL':
+    case 'ERROR':
+      return 'error';
+    case 'WARNING':
+    case 'WARN':
+      return 'warning';
+    case 'INFO':
+      return 'info';
+    default:
+      return 'debug';
+  }
+}
 
 function wireOf<C extends Channel>(ch: C, params: ChannelParams[C]): WireChannel {
   switch (ch) {
@@ -513,92 +608,205 @@ export class GatewaySource implements DataSource {
 
   // ---------------------------------------------------------------- queries
 
+  /**
+   * The `scope=` / `bots=` parameters of the curves. The gateway never mixes live, dry and replay
+   * in a figure: the fleet is asked per mode (`tradingMode`, live by default). A group is the list
+   * of its bots, `null` when it is empty.
+   */
+  private scopeParams(s: ScopeRef, tradingMode?: BotMode): Record<string, string> | null {
+    switch (s.kind) {
+      case 'fleet':
+        return { scope: tradingMode ?? 'live' };
+      case 'bot':
+        return { scope: `bot:${s.botKey}` };
+      case 'group': {
+        const keys = this.d.getGroups?.().find((g) => g.id === s.id)?.botKeys ?? [];
+        return keys.length > 0 ? { bots: keys.join(',') } : null;
+      }
+    }
+  }
+
+  private modeOfBot(botKey: BotKey): BotMode {
+    const bots = this.chans.get('fleet')?.collections.bots as
+      | Record<string, { identity?: { mode?: BotMode } }>
+      | undefined;
+    return bots?.[botKey]?.identity?.mode ?? 'live';
+  }
+
   readonly query = {
+    tradeOrders: async (botKey: BotKey, tradeId: number): Promise<OrderRow[] | null> => {
+      const r = await this.getJson<{ orders?: OrderRow[]; orders_error?: boolean }>(
+        `/trades/${encodeURIComponent(botKey)}/${tradeId}`,
+      );
+      return r.orders_error || !r.orders ? null : r.orders;
+    },
+
     trades: async (q: TradeQuery): Promise<TradePage> => {
-      const r = await this.getJson<{
-        items: TradePage['items'];
-        next_cursor?: string | null;
-        totals: TradePage['totals'];
-        complete?: boolean;
-      }>('/trades', {
-        status: q.status,
+      const common = {
         bots: q.bots,
         pair: q.pair,
         side: q.side,
+        // One mode is asked of the gateway; several (or none) mean "every mode it follows".
+        mode: q.mode?.length === 1 ? q.mode[0] : undefined,
+      };
+      if (q.status === 'open') {
+        const r = await this.getJson<{ open: Position[] }>('/trades', {
+          status: 'open',
+          ...common,
+        });
+        const rows = r.open.map((p) => positionToTradeRow(p, this.modeOfBot(p.bot_key)));
+        return pageTradeRows(rows, q, true);
+      }
+      const sortOf = {
+        close_ms: 'close_date',
+        open_ms: 'open_date',
+        profit_abs: 'profit',
+      } as const;
+      const r = await this.getJson<{
+        rows: TradeRow[];
+        next_cursor?: string | null;
+        totals: TradePage['totals'];
+      }>('/trades', {
+        status: 'closed',
+        ...common,
         exit_reason: q.exitReason,
-        mode: q.mode,
         from: q.fromMs,
         to: q.toMs,
-        sort: q.sort,
+        // The gateway cannot sort by pair: that order only applies to the rows loaded.
+        sort: q.sort && q.sort !== 'pair' ? sortOf[q.sort] : undefined,
         order: q.order,
         cursor: q.cursor,
         limit: q.limit,
       });
-      return {
-        items: r.items,
-        nextCursor: r.next_cursor ?? null,
-        totals: r.totals,
-        complete: r.complete ?? true,
-      };
+      const items = q.sort === 'pair' ? sortRowsByPair(r.rows, q.order) : r.rows;
+      return { items, nextCursor: r.next_cursor ?? null, totals: r.totals, complete: true };
     },
+
     periods: async (q: PeriodQuery): Promise<PeriodRow[]> => {
-      const r = await this.getJson<PeriodRow[] | { items: PeriodRow[] }>('/pnl/periods', {
-        unit: q.unit,
-        scope: scopeKey(q.scope),
-        tz: q.tz,
-        n: q.n,
-        mode: q.tradingMode,
-      });
-      return Array.isArray(r) ? r : r.items;
+      const sp = this.scopeParams(q.scope, q.tradingMode);
+      if (!sp) return [];
+      const base = { unit: q.unit, n: q.n, ...sp };
+      type Res = { buckets: PeriodRow[] };
+      try {
+        return (await this.getJson<Res>('/pnl/periods', { ...base, tz: q.tz })).buckets;
+      } catch (e) {
+        // The gateway cuts the days in its own time zone and refuses another one: take its cut.
+        if (e instanceof GatewayError && e.code === 'bad_request') {
+          return (await this.getJson<Res>('/pnl/periods', base)).buckets;
+        }
+        throw e;
+      }
     },
+
     equity: async (q: EquityQuery): Promise<EquitySeries> => {
-      const r = await this.getJson<{ points: Array<[number, number]>; as_of_ms?: number }>(
-        '/equity',
-        {
-          scope: scopeKey(q.scope),
-          from: q.fromMs,
-          points: q.points,
-          mode: q.mode,
-          trading_mode: q.tradingMode,
-        },
-      );
+      const sp = this.scopeParams(q.scope, q.tradingMode);
+      if (!sp) return { mode: q.mode, points: [], unavailable: 'empty_scope', asOfMs: this.now() };
+      const r = await this.getJson<{ points: Array<{ ts_ms: number; value: number }> }>('/equity', {
+        ...sp,
+        from: q.fromMs,
+        points: q.points,
+        mode: q.mode,
+      });
       return {
         mode: q.mode,
-        points: r.points,
+        points: r.points.map((p) => [p.ts_ms, p.value] as [number, number]),
         unavailable: null,
-        asOfMs: r.as_of_ms ?? this.now(),
+        asOfMs: this.now() + this.status.value.clockSkewMs,
       };
     },
-    drawdown: async (q: DrawdownQuery): Promise<DrawdownResult | null> =>
-      this.getJson<DrawdownResult>('/drawdown', {
-        scope: scopeKey(q.scope),
-        def: q.def,
-        mode: q.tradingMode,
-      }),
+
+    drawdown: async (q: DrawdownQuery): Promise<DrawdownResult | null> => {
+      const sp = this.scopeParams(q.scope, q.tradingMode);
+      if (!sp) return null;
+      // Both definitions come together; the caller picks the one it names.
+      return this.getJson<DrawdownResult>('/drawdown', sp);
+    },
+
     logs: async (q: LogQuery): Promise<Page<LogLine>> => {
-      const r = await this.getJson<{ items: LogLine[]; next_cursor?: string | null }>('/logs', {
+      const r = await this.getJson<{ lines: LogLine[]; next_cursor?: number | null }>('/logs', {
         bot: q.botKey,
-        level: q.level,
+        level: q.level ? gatewayLevel(q.level) : undefined,
         q: q.q,
         cursor: q.cursor,
         limit: q.limit,
       });
-      return { items: r.items, nextCursor: r.next_cursor ?? null, complete: true };
+      return {
+        items: r.lines,
+        nextCursor: r.next_cursor == null ? null : String(r.next_cursor),
+        complete: true,
+      };
     },
+
     events: async (q: EventQuery): Promise<Page<Event>> => {
-      const r = await this.getJson<{ items: Event[]; next_cursor?: string | null }>('/events', {
+      const r = await this.getJson<{ events: Event[] }>('/events', {
         since: q.sinceMs,
         kinds: q.kinds,
         bot: q.botKey,
         limit: q.limit,
       });
-      return { items: r.items, nextCursor: r.next_cursor ?? null, complete: true };
+      return { items: r.events, nextCursor: null, complete: true };
     },
-    scope: async (s: ScopeRef): Promise<ScopeDetail> =>
-      this.getJson<ScopeDetail>(`/scope/${encodeURIComponent(scopeKey(s))}`),
+
+    scope: async (s: ScopeRef): Promise<ScopeDetail> => {
+      if (s.kind === 'bot') {
+        const r = await this.getJson<GwScopeResponse>(`/scope/bot:${encodeURIComponent(s.botKey)}`);
+        return {
+          scope: s,
+          bots: r.bots,
+          positions: r.positions,
+          totals: scopeTotalsByMode(r.bots, r.positions, walletOfRows(r.bots)),
+          drawdown: r.drawdown,
+          asOfMs: r.generated_ms,
+        };
+      }
+      const fleet = await this.fleetDetail();
+      if (s.kind === 'fleet') return fleet;
+      // A group is the fleet restricted to its bots (a group may mix modes: one block per mode).
+      const members = new Set(this.d.getGroups?.().find((g) => g.id === s.id)?.botKeys ?? []);
+      const bots = fleet.bots.filter((b) => members.has(b.bot_key));
+      const positions = fleet.positions.filter((p) => members.has(p.bot_key));
+      let drawdown: DrawdownResult | null = null;
+      if (bots.length > 0) {
+        // Refused when the bots do not share a mode: a drawdown is never mixed.
+        drawdown = await this.getJson<DrawdownResult>('/drawdown', {
+          bots: bots.map((b) => b.bot_key).join(','),
+        }).catch(() => null);
+      }
+      return {
+        scope: s,
+        bots,
+        positions,
+        totals: scopeTotalsByMode(bots, positions, walletOfRows(bots)),
+        drawdown,
+        asOfMs: fleet.asOfMs,
+      };
+    },
   };
 
+  /** The fleet, one block per mode: the gateway totals each mode, never the fleet as a whole. */
+  private async fleetDetail(): Promise<ScopeDetail> {
+    const head = await this.getJson<{ totals: Array<{ mode: BotMode }> }>('/scope/fleet');
+    const modes = [...new Set(head.totals.map((t) => t.mode))];
+    const parts = await Promise.all(modes.map((m) => this.getJson<GwScopeResponse>(`/scope/${m}`)));
+    const bots = parts.flatMap((p) => p.bots);
+    const positions = parts.flatMap((p) => p.positions);
+    const walletOf = walletOfRows(bots);
+    return {
+      scope: { kind: 'fleet' },
+      bots,
+      positions,
+      totals: parts.flatMap((p) =>
+        p.totals ? [fromGatewayTotals(p.totals, p.bots, p.positions, p.drawdown, walletOf)] : [],
+      ),
+      drawdown: parts.length === 1 ? parts[0].drawdown : null,
+      asOfMs: Math.max(0, ...parts.map((p) => p.generated_ms)),
+    };
+  }
+
   // ---------------------------------------------------------------- alerts and registry
+
+  /** Silences created from this tab: the gateway has no route to list them. */
+  private readonly silenceBook = new Map<string, Silence>();
 
   readonly alerts: AlertsApi = {
     shared: true,
@@ -609,17 +817,31 @@ export class GatewaySource implements DataSource {
     ack: async (id) => {
       await this.sendJson('POST', `/alerts/${encodeURIComponent(id)}/ack`, {});
     },
-    silence: (spec) =>
-      this.sendJson<Silence>('POST', '/alerts/silence', {
+    silence: async (spec) => {
+      const r = await this.sendJson<{ id: string; until_ms: number }>('POST', '/alerts/silence', {
         type_id: spec.typeId ?? null,
         bot_key: spec.botKey ?? null,
         subject: spec.subject ?? null,
         until_ms: spec.untilMs,
-      }),
+      });
+      const silence: Silence = {
+        id: r.id,
+        type_id: spec.typeId ?? null,
+        bot_key: spec.botKey ?? null,
+        subject: spec.subject ?? null,
+        until_ms: r.until_ms,
+      };
+      this.silenceBook.set(silence.id, silence);
+      return silence;
+    },
     unsilence: async (id) => {
       await this.sendJson('DELETE', `/alerts/silence/${encodeURIComponent(id)}`);
+      this.silenceBook.delete(id);
     },
-    silences: () => this.getJson<Silence[]>('/alerts/silence'),
+    silences: async () => {
+      const t = this.now() + this.status.value.clockSkewMs;
+      return [...this.silenceBook.values()].filter((x) => x.until_ms > t);
+    },
     list: () => {
       // Pages read alerts from the store fed by the `alerts` channel; nothing is kept here.
       const rt = this.chans.get('alerts');
@@ -628,10 +850,60 @@ export class GatewaySource implements DataSource {
   };
 
   readonly registry: RegistryApi = {
-    list: () => this.getJson<RegistryBot[]>('/bots'),
-    discovered: () => this.getJson<DiscoveredBot[]>('/bots/discovered'),
+    list: async () => {
+      const r = await this.getJson<{
+        bots: Array<{ bot_key: BotKey; name: string; ui_ids?: string[] }>;
+      }>('/bots');
+      return r.bots.map((b) => ({
+        botKey: b.bot_key,
+        uiId: b.ui_ids?.[0] ?? this.registry.uiIdOf(b.bot_key),
+        name: b.name,
+        icon: null,
+      }));
+    },
+    discovered: async () => {
+      const r = await this.getJson<{
+        discovered: Array<{
+          bot_key: BotKey;
+          name: string;
+          port: number | null;
+          mode: BotMode;
+          registered_on_device?: boolean;
+        }>;
+      }>('/bots/discovered');
+      return r.discovered
+        .filter((b) => !b.registered_on_device)
+        .map((b) => ({ botKey: b.bot_key, name: b.name, port: b.port, mode: b.mode }));
+    },
     botKeyOf: (uiId) => this.d.aliases()[uiId] ?? null,
     uiIdOf: (key) => Object.entries(this.d.aliases()).find(([, k]) => k === key)?.[0] ?? null,
+  };
+
+  // ---------------------------------------------------------------- shared preferences
+
+  /** The global preferences document (`GET/PUT /prefs`), for `PrefsSync`. */
+  readonly prefsRemote: PrefsRemote = {
+    get: async () => {
+      await this.d.session.ensure();
+      // `scope=` (empty) names the global document; without it the gateway lists every document.
+      const res = await this.d.http.raw<{ version: number; data: unknown }>('GET', '/prefs', {
+        params: { scope: '' },
+      });
+      if (res.status === 404) return null;
+      if (res.status < 200 || res.status >= 300) {
+        throw new GatewayError('internal', res.status, `HTTP ${res.status}`);
+      }
+      return { version: res.data.version, data: res.data.data };
+    },
+    put: async (data, ifMatch) => {
+      await this.d.session.ensure();
+      const res = await this.d.http.json<{ version: number }>('PUT', '/prefs', {
+        params: { scope: '' },
+        body: data,
+        headers: ifMatch === null ? {} : { 'If-Match': `"${ifMatch}"` },
+      });
+      return { version: res.version };
+    },
   };
 
   // ---------------------------------------------------------------- proxy and actions
@@ -661,26 +933,114 @@ export class GatewaySource implements DataSource {
 
   async act(botKey: BotKey, action: BotAction, idempotencyKey: string): Promise<ActionResult> {
     const t0 = this.now();
-    const result = (p: Partial<ActionResult> & Pick<ActionResult, 'status'>): ActionResult => ({
+    try {
+      await this.d.session.ensure();
+    } catch {
+      // No session means nothing was sent.
+      return this.actionResult(t0, { status: 'unauthorized', error: 'unauthorized' });
+    }
+    if (action.kind === 'forceexit' && action.tradeId === 'all') {
+      return this.exitAll(botKey, action, idempotencyKey, t0);
+    }
+    const calls = toGatewayActions(action);
+    if (calls.length === 1) {
+      return this.postAction(botKey, calls[0].name, calls[0].body, idempotencyKey, t0);
+    }
+    // The gateway takes one pair per call: one request each, with its own idempotency key.
+    const results: ActionResult[] = [];
+    for (const [i, c] of calls.entries()) {
+      const r = await this.postAction(botKey, c.name, c.body, `${idempotencyKey}:${i}`, t0);
+      results.push(r);
+      if (r.status === 'unauthorized') break;
+    }
+    return this.combineResults(results, calls.length, t0);
+  }
+
+  /** Exit every open position of a bot: the gateway has no "all", so one forceexit per trade. */
+  private async exitAll(
+    botKey: BotKey,
+    action: Extract<BotAction, { kind: 'forceexit' }>,
+    idempotencyKey: string,
+    t0: number,
+  ): Promise<ActionResult> {
+    let open: Position[];
+    try {
+      open = (
+        await this.getJson<{ open: Position[] }>('/trades', { status: 'open', bots: botKey })
+      ).open.filter((p) => !p.orphan);
+    } catch {
+      // The positions could not be read: nothing was sent.
+      return this.actionResult(t0, {
+        status: 'rejected',
+        error: 'bot_unreachable',
+        botResponse: 'positions could not be read',
+      });
+    }
+    if (open.length === 0) {
+      return this.actionResult(t0, { status: 'state_mismatch', error: 'state_mismatch' });
+    }
+    const results: ActionResult[] = [];
+    for (const p of open) {
+      const body: Record<string, unknown> = {
+        trade_id: p.trade_id,
+        expected: { pair: p.pair, is_short: p.side === 'short' },
+        ...(action.orderType ? { ordertype: action.orderType } : {}),
+        ...(action.confirm !== undefined ? { confirm: action.confirm } : {}),
+      };
+      const r = await this.postAction(
+        botKey,
+        'forceexit',
+        body,
+        `${idempotencyKey}:${p.trade_id}`,
+        t0,
+      );
+      results.push(r);
+      if (r.status === 'unauthorized') break;
+    }
+    return this.combineResults(results, open.length, t0);
+  }
+
+  /** One result for a batch: accepted only when every call was; a partial batch is `unknown`. */
+  private combineResults(results: ActionResult[], expected: number, t0: number): ActionResult {
+    const ok = results.filter((r) => r.status === 'accepted');
+    if (ok.length === expected) return { ...ok[0], latencyMs: this.now() - t0 };
+    if (ok.length === 0) return { ...results[0], latencyMs: this.now() - t0 };
+    return this.actionResult(t0, {
+      status: 'unknown',
+      botResponse: `${ok.length}/${expected}`,
+      verify: { expectedState: 'check_bot', checkAfterMs: 5_000 },
+    });
+  }
+
+  private actionResult(
+    t0: number,
+    p: Partial<ActionResult> & Pick<ActionResult, 'status'>,
+  ): ActionResult {
+    return {
       botResponse: null,
       httpStatus: null,
       error: null,
       verify: null,
       latencyMs: this.now() - t0,
       ...p,
-    });
-    const { name, body } = toGatewayAction(action);
-    try {
-      await this.d.session.ensure();
-    } catch {
-      // No session means nothing was sent.
-      return result({ status: 'unauthorized', error: 'unauthorized' });
-    }
+    };
+  }
+
+  private async postAction(
+    botKey: BotKey,
+    name: string,
+    body: Record<string, unknown>,
+    idempotencyKey: string,
+    t0: number,
+  ): Promise<ActionResult> {
+    const result = (p: Partial<ActionResult> & Pick<ActionResult, 'status'>) =>
+      this.actionResult(t0, p);
     try {
       // One request, never retried (a 401 is NOT replayed after a new session).
       const res = await this.d.http.raw<{
         status?: 'accepted' | 'rejected' | 'unknown';
         bot_response?: string;
+        reason?: string | null;
         verify?: { expected_state: string; check_after_ms: number };
         code?: string;
         message?: string;
@@ -691,6 +1051,13 @@ export class GatewaySource implements DataSource {
       });
       const d = res.data ?? {};
       if (res.status >= 200 && res.status < 300) {
+        if (d.status === 'rejected' && d.reason === 'state_mismatch') {
+          return result({
+            status: 'state_mismatch',
+            httpStatus: res.status,
+            error: 'state_mismatch',
+          });
+        }
         return result({
           status: d.status ?? 'accepted',
           httpStatus: res.status,
@@ -731,54 +1098,66 @@ export class GatewaySource implements DataSource {
   }
 }
 
-/** Typed action to the path segment and body of `POST /bots/{key}/actions/{action}`. */
-export function toGatewayAction(a: BotAction): { name: string; body: Record<string, unknown> } {
+type GatewayCall = { name: string; body: Record<string, unknown> };
+
+/**
+ * Typed action to the calls of `POST /bots/{key}/actions/{action}` (fields of the Rust `Params`:
+ * unknown ones are refused). Most are one call; the blacklist takes one pair per call.
+ * `forceexit` of `all` is expanded by `exitAll`, not here.
+ */
+export function toGatewayActions(a: BotAction): GatewayCall[] {
   switch (a.kind) {
     case 'forceexit':
-      return {
-        name: 'forceexit',
-        body: {
-          trade_id: a.tradeId,
-          ...(a.expected
-            ? { expected: { pair: a.expected.pair, is_short: a.expected.isShort } }
-            : {}),
-          ...(a.amount !== undefined ? { amount: a.amount } : {}),
-          ...(a.orderType ? { ordertype: a.orderType } : {}),
-          ...(a.price !== undefined ? { price: a.price } : {}),
-          ...(a.confirm !== undefined ? { confirm: a.confirm } : {}),
+      return [
+        {
+          name: 'forceexit',
+          body: {
+            trade_id: a.tradeId,
+            ...(a.expected
+              ? { expected: { pair: a.expected.pair, is_short: a.expected.isShort } }
+              : {}),
+            ...(a.amount !== undefined ? { amount: a.amount } : {}),
+            ...(a.orderType ? { ordertype: a.orderType } : {}),
+            ...(a.price !== undefined ? { price: a.price } : {}),
+            ...(a.confirm !== undefined ? { confirm: a.confirm } : {}),
+          },
         },
-      };
+      ];
     case 'forceentry':
-      return {
-        name: 'forceentry',
-        body: {
-          pair: a.pair,
-          ...(a.side ? { side: a.side } : {}),
-          ...(a.stakeAmount !== undefined ? { stake_amount: a.stakeAmount } : {}),
-          ...(a.price !== undefined ? { price: a.price } : {}),
-          ...(a.orderType ? { ordertype: a.orderType } : {}),
-          ...(a.leverage !== undefined ? { leverage: a.leverage } : {}),
-          ...(a.entryTag ? { entry_tag: a.entryTag } : {}),
+      return [
+        {
+          name: 'forceentry',
+          body: {
+            pair: a.pair,
+            ...(a.side ? { side: a.side } : {}),
+            ...(a.stakeAmount !== undefined ? { stake_amount: a.stakeAmount } : {}),
+            ...(a.price !== undefined ? { price: a.price } : {}),
+            ...(a.orderType ? { ordertype: a.orderType } : {}),
+            ...(a.leverage !== undefined ? { leverage: a.leverage } : {}),
+            ...(a.entryTag ? { enter_tag: a.entryTag } : {}),
+          },
         },
-      };
+      ];
     case 'stop':
-      return { name: 'stop', body: a.confirm !== undefined ? { confirm: a.confirm } : {} };
+      return [{ name: 'stop', body: a.confirm !== undefined ? { confirm: a.confirm } : {} }];
     case 'start':
     case 'stopbuy':
     case 'reload_config':
-      return { name: a.kind, body: {} };
+      return [{ name: a.kind, body: {} }];
     case 'delete_trade':
-      return {
-        name: 'delete_trade',
-        body: { trade_id: a.tradeId, ...(a.confirm !== undefined ? { confirm: a.confirm } : {}) },
-      };
+      return [
+        {
+          name: 'delete_trade',
+          body: { trade_id: a.tradeId, ...(a.confirm !== undefined ? { confirm: a.confirm } : {}) },
+        },
+      ];
     case 'cancel_open_order':
     case 'reload_trade':
-      return { name: a.kind, body: { trade_id: a.tradeId } };
+      return [{ name: a.kind, body: { trade_id: a.tradeId } }];
     case 'blacklist_add':
     case 'blacklist_remove':
-      return { name: a.kind, body: { pairs: a.pairs } };
+      return a.pairs.map((pair) => ({ name: a.kind, body: { pair } }));
     case 'lock_delete':
-      return { name: 'lock_delete', body: { lock_id: a.lockId } };
+      return [{ name: 'lock_delete', body: { lock_id: a.lockId } }];
   }
 }

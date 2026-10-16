@@ -259,7 +259,12 @@ const IMPLS: Record<string, Impl> = {
     run: (i) => normalizeExitReason(i),
   },
   'exposure.exposure': { usedBy: 'direct', symbols: ['exposure'], run: (i) => exposure(i) },
-  'stats.trade_totals': { usedBy: 'direct', symbols: ['tradeTotals'], run: (i) => tradeTotals(i) },
+  'stats.trade_totals': {
+    usedBy: 'direct',
+    symbols: ['tradeTotals'],
+    via: { caller: 'pageTradeRows', file: 'calc/tradePage.ts' },
+    run: (i) => tradeTotals(i),
+  },
   'freshness.compute': {
     usedBy: 'direct',
     symbols: ['computeFreshness'],
@@ -269,6 +274,7 @@ const IMPLS: Record<string, Impl> = {
   'freshness.sum_fresh': {
     usedBy: 'direct',
     symbols: ['sumFresh'],
+    via: { caller: 'scopeTotalsByMode', file: 'calc/scopeTotals.ts' },
     run: (i) => sumFresh(i),
   },
   'alerts.evaluate_bot': {
