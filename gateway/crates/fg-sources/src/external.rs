@@ -87,6 +87,20 @@ impl CoinGecko {
         Self::new(client, COINGECKO_BASE, Duration::from_secs(120)).expect("allowed host")
     }
 
+    /// The public API with an HTTP client of its own (10 s timeout).
+    ///
+    /// # Panics
+    /// Never in practice: the client builder only fails when the TLS backend cannot initialise.
+    #[must_use]
+    pub fn public_default() -> Self {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .user_agent(concat!("frequi-gateway/", env!("CARGO_PKG_VERSION")))
+            .build()
+            .expect("http client");
+        Self::public(client)
+    }
+
     fn render(c: &Cached, stale: bool) -> Vec<Ticker> {
         c.tickers
             .iter()

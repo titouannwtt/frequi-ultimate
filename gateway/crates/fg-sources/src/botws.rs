@@ -201,6 +201,24 @@ impl WsHandle {
     }
 }
 
+impl WsHandle {
+    /// A handle fed by the caller instead of a network supervisor: the engine tests drive the bot
+    /// feeds of fake bots through it. The returned receiver sees the topic set last requested.
+    #[must_use]
+    pub fn detached(events: mpsc::Receiver<WsEvent>) -> (Self, watch::Receiver<Vec<WsTopic>>) {
+        let (topics, topics_rx) = watch::channel(Vec::new());
+        let task = tokio::spawn(async {});
+        (
+            Self {
+                events,
+                topics,
+                task,
+            },
+            topics_rx,
+        )
+    }
+}
+
 impl Drop for WsHandle {
     fn drop(&mut self) {
         self.task.abort();

@@ -269,6 +269,14 @@ pub struct LedgerSummary {
     pub any_short: bool,
 }
 
+/// What a ledger reveals without scanning its trades: counts and the highest id.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct LedgerProbe {
+    pub open_count: i64,
+    pub closed_count: i64,
+    pub max_trade_id: i64,
+}
+
 /// Which trades to read.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct TradeQuery {
@@ -293,6 +301,10 @@ pub struct LedgerOptions {
     pub query_budget: Duration,
     /// Rows returned per `profit_history` call.
     pub profit_chunk_rows: u32,
+    /// SQLite page cache per connection, in KiB. The default of SQLite (2 MiB) times 40 cached
+    /// connections is the largest single block of memory of a gateway that otherwise holds a few
+    /// megabytes per bot; the reads are sequential scans that the operating system caches anyway.
+    pub cache_kib: u32,
 }
 
 impl Default for LedgerOptions {
@@ -301,6 +313,7 @@ impl Default for LedgerOptions {
             busy_timeout: Duration::from_millis(250),
             query_budget: Duration::from_millis(200),
             profit_chunk_rows: 50_000,
+            cache_kib: 256,
         }
     }
 }
@@ -397,6 +410,9 @@ impl SqliteLedger {
             .map_err(|e| map_err(&e))?;
         // `query_only` is belt and braces on top of the read-only open flags.
         conn.pragma_update(None, "query_only", 1)
+            .map_err(|e| map_err(&e))?;
+        // A negative `cache_size` is a size in KiB.
+        conn.pragma_update(None, "cache_size", -i64::from(self.opts.cache_kib))
             .map_err(|e| map_err(&e))?;
         let deadline = Arc::new(Deadline {
             at: Mutex::new(None),
@@ -746,6 +762,25 @@ impl LedgerReader for SqliteLedger {
         })
     }
 
+    fn probe(&self, db: &Path) -> Result<LedgerProbe, LedgerError> {
+        self.with_table(db, "trades", LedgerErrorCode::DbError, |conn, _| {
+            // Counted through the index on `is_open` that freqtrade creates: no row is decoded.
+            conn.query_row(
+                "SELECT (SELECT COUNT(*) FROM trades WHERE is_open = 1), \
+                        (SELECT COUNT(*) FROM trades WHERE is_open = 0), \
+                        (SELECT COALESCE(MAX(id), 0) FROM trades)",
+                [],
+                |r| {
+                    Ok(LedgerProbe {
+                        open_count: r.get(0)?,
+                        closed_count: r.get(1)?,
+                        max_trade_id: r.get(2)?,
+                    })
+                },
+            )
+        })
+    }
+
     fn trades(&self, db: &Path, query: &TradeQuery) -> Result<Vec<LedgerTrade>, LedgerError> {
         self.with_table(db, "trades", LedgerErrorCode::DbError, |conn, schema| {
             let select: Vec<String> = TRADE_COLUMNS
@@ -1000,6 +1035,54 @@ mod tests {
 
     fn reader() -> SqliteLedger {
         SqliteLedger::default()
+    }
+
+    #[test]
+    fn the_probe_agrees_with_the_summary_on_counts_and_ids() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = make_db(dir.path(), "bot.sqlite", true);
+        insert_trade(&db, 1, "BTC/USDC:USDC", true, Some(true), None, None, None);
+        insert_trade(
+            &db,
+            2,
+            "ETH/USDC:USDC",
+            false,
+            Some(false),
+            Some(1.0),
+            Some(0.1),
+            Some("roi"),
+        );
+        insert_trade(
+            &db,
+            5,
+            "SOL/USDC:USDC",
+            false,
+            Some(false),
+            Some(2.0),
+            Some(0.2),
+            Some("roi"),
+        );
+        let ledger = reader();
+        let (p, s) = (ledger.probe(&db).unwrap(), ledger.summary(&db).unwrap());
+        assert_eq!(
+            (p.open_count, p.closed_count, p.max_trade_id),
+            (s.open_count, s.closed_count, s.max_trade_id)
+        );
+        assert_eq!((p.open_count, p.closed_count, p.max_trade_id), (1, 2, 5));
+    }
+
+    #[test]
+    fn the_page_cache_of_a_cached_reader_connection_is_small() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = make_db(dir.path(), "bot.sqlite", true);
+        let ledger = reader();
+        ledger.summary(&db).unwrap();
+        let size: i64 = ledger
+            .with(&db, |c, _| {
+                c.query_row("PRAGMA cache_size", [], |r| r.get(0))
+            })
+            .unwrap();
+        assert_eq!(size, -256, "256 KiB, not SQLite's default of 2 MiB");
     }
 
     #[test]
