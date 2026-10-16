@@ -4,7 +4,7 @@ All notable fork-specific changes are documented here. Upstream FreqUI changes a
 
 This fork is also documented in detail in [`CHANGELOG_FORK.md`](CHANGELOG_FORK.md).
 
-## [2.0.0] - unreleased
+## [2.0.0] - 2026-10-16
 
 Full redesign of the interface, plus an optional Rust gateway. Upgrade guide: [`docs/UPGRADE.en.md`](docs/UPGRADE.en.md) ([français](docs/UPGRADE.fr.md)). Nothing to re-register: the bot list stays in the browser, and the old `localStorage` keys are never deleted.
 
@@ -13,6 +13,9 @@ Full redesign of the interface, plus an optional Rust gateway. Upgrade guide: [`
 - New design system (`src/components/ds`, `src/components/fq`), data layer with a gateway source and a direct source (`src/datasource`), idempotent `localStorage` migration to `fqu2.*` keys (`src/migration`).
 - Packaging (`gateway/packaging`): screen launcher, systemd user unit, Dockerfile (scratch, non-root), example configuration, and `deploy-ui.sh` (backup, additive copy, atomic switch of `index.html`, verification, `--rollback`).
 - GitHub Actions: `rust.yml` (fmt, clippy, tests, cargo-deny, static musl builds), `frontend.yml` (lint, type-check ratchet, unit tests, build, optional Playwright), `contract.yml` (generated types and shared vectors on both sides), `packaging.yml`, `release.yml` (tag to prerelease with the UI archive first, so `freqtrade install-ui` keeps working, then the x86_64 and aarch64 binaries and `SHA256SUMS`).
+
+- Calmer interface: the Fleet opens on one sentence that says what needs attention, then the alerts as cards with their most useful action, "Later" or "Seen"; the rest of the history is behind the bell. Plain labels (Total capital, Open, Drawdown, Top-ups) with the technical term in a tooltip; airy density by default, compact as an option; sensitive actions under "More".
+- Charts show the trade on the price: average entry, current gain, filled entries and top-ups, pending orders (limit or stop trigger) and the closed trades of the pair.
 
 ### Changed
 - Version 2.0.0 (UI and gateway). French and English only. Long and short are green and red with an arrow and an L/S letter; exiting a live position needs a one-second press-and-hold; days are cut in Europe/Paris by default.
