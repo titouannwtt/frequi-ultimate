@@ -279,7 +279,7 @@ pub type Upsert = BTreeMap<String, BTreeMap<String, Value>>;
 pub type Remove = BTreeMap<String, Vec<String>>;
 
 /// Names of the collections carried by upserts. The TypeScript `Upsert` type lists the same.
-pub const COLLECTIONS: [&str; 8] = [
+pub const COLLECTIONS: [&str; 10] = [
     "bots",
     "wallets",
     "positions",
@@ -288,6 +288,8 @@ pub const COLLECTIONS: [&str; 8] = [
     "health",
     "scopes",
     "details",
+    "candles",
+    "chart",
 ];
 
 /// Frames sent by the client.

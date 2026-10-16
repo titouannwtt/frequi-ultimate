@@ -11,6 +11,7 @@ use fg_sources::traits::LedgerReader;
 use tokio::sync::{Notify, mpsc};
 
 use crate::budget::RequestBudget;
+use crate::chart::Charts;
 use crate::clock::Clock;
 use crate::config::EngineConfig;
 use crate::connector::BotLink;
@@ -48,6 +49,8 @@ pub struct Shared {
     pub core_tx: mpsc::Sender<Msg>,
     /// The read-only ledger adapter, for the on-demand reads of the API (orders of a trade).
     pub ledger: Arc<dyn LedgerReader>,
+    /// The charts being relayed (channels `chart:...`).
+    pub(crate) charts: Charts,
 }
 
 impl Shared {

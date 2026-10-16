@@ -129,6 +129,19 @@ impl Hub {
         f(&mut tx)
     }
 
+    /// Drop the buffer of a channel nobody is subscribed to (an open chart that closed). A
+    /// later subscriber starts again from the base of the process, and a client resuming from
+    /// the old numbers is told to reload.
+    pub fn forget(&self, ch: &Channel) {
+        let mut map = self
+            .chans
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if map.get(ch).is_some_and(|c| c.tx.receiver_count() == 0) {
+            map.remove(ch);
+        }
+    }
+
     /// Current sequence number of a channel.
     #[must_use]
     pub fn head(&self, ch: &Channel) -> u64 {

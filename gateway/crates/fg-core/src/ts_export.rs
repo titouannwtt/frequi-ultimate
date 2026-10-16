@@ -27,10 +27,10 @@ use crate::calc::stats::TradeTotals;
 use crate::identity::BotKey;
 use crate::model::{
     ActionResult, ActionStatus, ActionVerify, AlertSummary, AuditEntry, BotAlias, BotConfigSummary,
-    BotDetail, BotIdentity, BotMetrics, BotMode, BotRow, BotStateInfo, BotStatus, Event, EventKind,
-    Freshness, FreshnessGroup, FreshnessSource, Health, HealthLevel, HealthReason, PairLock,
-    Position, PrefsDoc, ReconStatus, ReconSummary, ScopeTotals, Severity, Side, Ticker, TradeRow,
-    WalletRow,
+    BotDetail, BotIdentity, BotMetrics, BotMode, BotRow, BotStateInfo, BotStatus, Candle,
+    ChartInfo, Event, EventKind, Freshness, FreshnessGroup, FreshnessSource, Health, HealthLevel,
+    HealthReason, PairLock, Position, PrefsDoc, ReconStatus, ReconSummary, ScopeTotals, Severity,
+    Side, Ticker, TradeRow, WalletRow,
 };
 use crate::protocol::{
     self, ApiError, Channel, ClientFrame, ErrorCode, ResyncReason, SeqCheck, ServerFrame,
@@ -53,6 +53,8 @@ export type Upsert = {
   health?: Record<string, PatchOf<Health>>;
   scopes?: Record<string, PatchOf<ScopeTotals>>;
   details?: Record<string, PatchOf<BotDetail>>;
+  candles?: Record<string, PatchOf<Candle>>;
+  chart?: Record<string, PatchOf<ChartInfo>>;
 };
 ";
 
@@ -124,7 +126,7 @@ pub fn render() -> String {
         BotIdentity, BotStateInfo, BotMetrics, AlertSummary, BotRow, Position, TradeRow,
         ReconStatus, ReconSummary, WalletRow, HealthLevel, HealthReason, Health, EventKind, Event,
         AuditEntry, Ticker, BotAlias, ScopeTotals, PairLock, BotConfigSummary, BotDetail,
-        ActionStatus, ActionVerify, ActionResult, PrefsDoc,
+        ActionStatus, ActionVerify, ActionResult, PrefsDoc, Candle, ChartInfo,
     );
     section!("calculations";
         Market, PairInfo, DrawdownDef, ClosedPnl, OpenRisk, HistorySample, DrawdownInput,
