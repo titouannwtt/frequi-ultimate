@@ -10,13 +10,13 @@ import { useNowMs } from '@/components/ds/lib/useNowMs';
 import { useScope } from '@/composables/useScope';
 import { useScopeDetail } from '@/composables/useScopeDetail';
 import { useValueSlot } from '@/composables/useValueSlot';
-import { ruleMeta } from '@/datasource/calc/alerts/rules';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { ScopeDetail } from '@/datasource/types';
 import type { BotKey } from '@/gateway/types.gen';
 
+import { alertLimit } from './lib/fleetPage';
 import { fleetKpiModel, type FleetKpiModel } from './lib/kpis';
 import { riskModel } from './lib/risk';
 
@@ -47,8 +47,9 @@ const { vs } = useValueSlot();
 // On a phone the sub-lines are short: a half-width tile has room for a few words
 const phone = useMediaQuery('(max-width: 599px)');
 
-const loaded = useScopeDetail(() => scope.fleetScopeRef.value);
-const data = computed<ScopeDetail | null>(() => props.detail ?? loaded.detail.value);
+// A page that already reads the detail (the Fleet) hands it over: one request, not two
+const loaded = props.detail === undefined ? useScopeDetail(() => scope.fleetScopeRef.value) : null;
+const data = computed<ScopeDetail | null>(() => props.detail ?? loaded?.detail.value ?? null);
 const now = computed(() => props.nowMs ?? clock.value);
 
 const wantedModes = computed(() =>
@@ -72,10 +73,7 @@ function ddSub(m: FleetKpiModel): string | undefined {
   });
 }
 
-const ddThreshold = computed(() => {
-  const custom = prefs.settings.alerts.rules.global.highDrawdown?.threshold;
-  return Math.abs(custom ?? ruleMeta('highDrawdown').threshold?.default ?? 15);
-});
+const ddThreshold = computed(() => alertLimit(prefs.settings.alerts.rules, 'highDrawdown'));
 
 function ddMeter(m: FleetKpiModel): KpiMeter | undefined {
   if (m.drawdown?.pct == null) return undefined;

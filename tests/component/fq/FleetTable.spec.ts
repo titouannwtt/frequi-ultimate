@@ -4,6 +4,7 @@ import { nextTick } from 'vue';
 import FleetMap from '../../../src/components/fq/FleetMap.vue';
 import FleetTable from '../../../src/components/fq/FleetTable.vue';
 import { FIXTURE_NOW, makeBot, makeFleet } from '../../../src/components/fq/fixtures';
+import { attentionScore, botState } from '../../../src/components/fq/lib/bots';
 import type { BotRow } from '../../../src/gateway/types.gen';
 import { mountFq, setFqLocale, setupWorld, teardownWorld, type FqWorld } from './helpers';
 
@@ -57,15 +58,46 @@ describe('FleetTable', () => {
     }
   });
 
-  it('puts the critical bots first, calm ones last, whatever the input order', () => {
+  it('puts the problems first (silent bots, then alerts), calm ones last, whatever the input order', () => {
     const rows = [...world.fixture.bots].reverse();
     const w = mountTable(rows);
     const order = names(w).map((k) => rows.find((r) => r.bot_key === k)!);
-    const rank = (b: BotRow) =>
-      b.alerts.count === 0 ? 0 : { info: 1, warning: 2, critical: 3 }[b.alerts.max_severity!];
+    const rank = (b: BotRow) => attentionScore(b, botState(b, FIXTURE_NOW, 0));
     const ranks = order.map(rank);
     expect([...ranks].sort((a, b) => b - a)).toEqual(ranks);
-    expect(ranks[0]).toBe(3);
+    expect(ranks[0]).toBeGreaterThanOrEqual(6);
+    // No silent bot (offline or expired session) sits below a bot that answers
+    const lastSilent = order.map((b) => botState(b, FIXTURE_NOW, 0)).lastIndexOf('auth_expired');
+    const firstOnline = order.findIndex((b) => botState(b, FIXTURE_NOW, 0) === 'online');
+    expect(lastSilent).toBeLessThan(firstOnline);
+  });
+
+  it('shows a bot whose session expired among the first rows (B360)', () => {
+    const expired = makeBot(99, {
+      name: 'expired_one',
+      mode: 'live',
+      status: 'auth_expired',
+      latent: 40,
+    });
+    const rows = [...world.fixture.bots.filter((b) => b.identity.mode === 'live'), expired];
+    const w = mountTable(rows, { limit: 8 });
+    expect(names(w).slice(0, 8)).toContain(expired.bot_key);
+    expect(names(w)[0]).not.toBe(rows[0]!.bot_key);
+  });
+
+  it('draws an expired session as offline on the tiles (B362)', () => {
+    const expired = makeBot(96, { name: 'exp', mode: 'live', status: 'auth_expired' });
+    const w = mountFq(FleetMap, { props: { rows: [expired], nowMs: FIXTURE_NOW } });
+    expect(w.get('.tile').classes()).toContain('offline');
+  });
+
+  it('writes no "xyz" market tag on the row, the market is in the tooltip of the name (B363)', () => {
+    const mixed = makeBot(98, { name: 'mix', mode: 'live', market: 'mixed' });
+    const w = mountTable([mixed]);
+    expect(w.text()).not.toMatch(/xyz/i);
+    expect(w.get('.name').attributes('title')).toContain('mix');
+    const tile = mountFq(FleetMap, { props: { rows: [mixed], nowMs: FIXTURE_NOW } });
+    expect(tile.text()).not.toMatch(/xyz/i);
   });
 
   it('the order does not move at a tick, and not at all under the pointer', async () => {

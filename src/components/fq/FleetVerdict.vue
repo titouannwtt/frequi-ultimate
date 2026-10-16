@@ -10,19 +10,28 @@ import { useFqPositionsStore } from '@/datasource/stores/positions';
 import type { Alert } from '@/gateway/types.gen';
 
 import { botState } from './lib/bots';
-import { verdictOf } from './lib/fleetPage';
+import { verdictOf, type FleetNotice } from './lib/fleetPage';
 
 /**
  * The answer to "is everything fine?" in one sentence (docs/redesign/05-friendly-plan.md, L4),
  * and under it the facts that back it: how many bots of the shown mode are running and how many
- * positions are open. The sentence counts the active alerts of the scope; the alerts themselves
- * are the cards right under it.
+ * positions are open. The sentence counts everything the owner must act on: the active alerts of
+ * the scope and the notices that no alert carries (an expired session, a frozen bot, a drawdown
+ * above its limit, an orphan position); they are the cards right under it. It never says
+ * "everything is fine" before the figures it reads have arrived.
  */
-const props = defineProps<{
-  /** The active alerts of the scope (the page decides which ones belong to it). */
-  alerts: readonly Alert[];
-  nowMs?: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    /** The active alerts of the scope (the page decides which ones belong to it). */
+    alerts: readonly Alert[];
+    /** What no alert says but the owner must act on (the page derives them). */
+    notices?: readonly FleetNotice[];
+    /** The figures the notices read have arrived. */
+    ready?: boolean;
+    nowMs?: number;
+  }>(),
+  { notices: () => [], ready: true },
+);
 
 const { t } = useI18n();
 const scope = useScope();
@@ -32,9 +41,14 @@ const conn = useFqConnectionStore();
 const clock = useNowMs();
 const now = computed(() => props.nowMs ?? clock.value);
 
-const verdict = computed(() => verdictOf(props.alerts));
+const verdict = computed(() => verdictOf([...props.alerts, ...props.notices]));
 /** The bots of the shown mode: the search box and the chips do not change the answer. */
 const inMode = computed(() => fleet.list.filter((b) => modeAllows(b, scope.mode.value)));
+// Calm is only said once everything it rests on is known
+const pending = computed(
+  () =>
+    !fleet.loaded || (inMode.value.length > 0 && !props.ready && verdict.value.level === 'calm'),
+);
 const online = computed(
   () =>
     inMode.value.filter((b) => botState(b, now.value, conn.status.clockSkewMs) === 'online').length,
@@ -45,7 +59,7 @@ const openCount = computed(() => {
 });
 
 const sentence = computed(() => {
-  if (!fleet.loaded) return t('fq.pg.fleet.verdict.loading');
+  if (pending.value) return t('fq.pg.fleet.verdict.loading');
   if (inMode.value.length === 0) return t('fq.pg.fleet.verdict.empty');
   const v = verdict.value;
   switch (v.level) {
@@ -72,7 +86,7 @@ const sub = computed(() => {
     t('fq.pg.fleet.verdict.positions', { n: openCount.value }, openCount.value),
   ].join(' · ');
 });
-const level = computed(() => (fleet.loaded ? verdict.value.level : 'loading'));
+const level = computed(() => (pending.value ? 'loading' : verdict.value.level));
 </script>
 
 <template>

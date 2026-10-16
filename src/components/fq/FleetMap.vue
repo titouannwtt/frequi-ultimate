@@ -10,6 +10,7 @@ import type { BotRow } from '@/gateway/types.gen';
 import type { BotGroupPrefs } from '@/migration/schema';
 
 import {
+  attentionScore,
   botState,
   groupBots,
   isStaleGroup,
@@ -63,8 +64,9 @@ const hovered = ref(false);
 const focused = ref(false);
 const frozen = computed(() => props.freezeOnHover && (hovered.value || focused.value));
 let prev: StableOrderState | null = null;
+const rankOf = (b: BotRow) => attentionScore(b, botState(b, now.value, skew.value));
 const order = computed(() => {
-  const next = stableOrder(props.rows, props.sort, prev, frozen.value);
+  const next = stableOrder(props.rows, props.sort, prev, frozen.value, rankOf);
   prev = next;
   return next;
 });
@@ -85,7 +87,7 @@ const sections = computed(() =>
     : groupBots(ordered.value, props.groups, t('fq.fleet.ungrouped')),
 );
 
-/** The market in plain words and grey, as in the table (cyan is for information). */
+/** The market in plain words: in the tooltip of the name, not on the tile. */
 function marketLabel(b: BotRow): string {
   const m = b.identity.market;
   if (m === 'crypto') return '';
@@ -97,11 +99,15 @@ function marketLabel(b: BotRow): string {
   }[m as string];
   return t(`fq.pg.fleet.market.${key ?? 'other'}`);
 }
+function nameTitle(b: BotRow): string {
+  const m = marketLabel(b);
+  return m ? `${b.identity.name} · ${m}` : b.identity.name;
+}
 
 type Tone = 'calm' | 'warn' | 'crit' | 'stale' | 'offline';
 function toneOf(b: BotRow): Tone {
   const st = botState(b, now.value, skew.value);
-  if (st === 'offline') return 'offline';
+  if (st === 'offline' || st === 'auth_expired') return 'offline';
   if (st === 'stale') return 'stale';
   if (b.alerts.max_severity === 'critical' && b.alerts.count > 0) return 'crit';
   if (b.alerts.max_severity === 'warning' && b.alerts.count > 0) return 'warn';
@@ -181,7 +187,6 @@ const legend = computed(() => {
             ></span>
             <StatusDot :state="botState(b, now, skew)" />
             <Badge v-if="b.identity.mode !== 'live'" :kind="b.identity.mode" />
-            <Badge v-if="marketLabel(b)" kind="neutral" :label="marketLabel(b)" class="mk" />
             <DsIcon
               v-if="b.alerts.count > 0"
               :name="b.alerts.max_severity === 'critical' ? 'octagon-alert' : 'triangle-alert'"
@@ -189,7 +194,7 @@ const legend = computed(() => {
               class="al"
             />
           </span>
-          <span class="t-name" :title="b.identity.name">{{ b.identity.name }}</span>
+          <span class="t-name" :title="nameTitle(b)">{{ b.identity.name }}</span>
           <span class="t-val" :class="{ struck: toneOf(b) === 'offline' }">
             <PnlValue
               :value="b.metrics.open_profit_abs"
@@ -200,10 +205,12 @@ const legend = computed(() => {
           <span class="t-sub">
             <template v-if="reason(b)">{{ reason(b) }}</template>
             <template v-else
-              >{{ b.state.open_trades }}/<ValueState
-                v-bind="cell(b, 'max', 'capital', b.state.max_open_trades)"
-                >{{ b.state.max_open_trades }}</ValueState
-              ></template
+              >{{
+                t('fq.pg.fleet.slots.tileOf', { open: b.state.open_trades }, b.state.open_trades)
+              }}
+              <ValueState v-bind="cell(b, 'max', 'capital', b.state.max_open_trades)">{{
+                b.state.max_open_trades
+              }}</ValueState></template
             >
           </span>
         </button>
@@ -351,11 +358,6 @@ const legend = computed(() => {
   .more {
     min-height: 44px;
   }
-}
-.mk {
-  text-transform: none;
-  letter-spacing: 0;
-  font-weight: 500;
 }
 .legend {
   display: flex;
