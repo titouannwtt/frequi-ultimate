@@ -46,6 +46,8 @@ pub struct Opts {
     pub snapshot_every: Duration,
     /// Fake bots whose `/status` answers 200 with a body that is not a list of trades.
     pub odd_status: Vec<(usize, fakebot::OddBody)>,
+    /// `hyperliquid.sweep_timeout_s` of the gateway (default 40).
+    pub sweep_timeout_s: Option<u32>,
 }
 
 impl Default for Opts {
@@ -64,6 +66,7 @@ impl Default for Opts {
             writer: false,
             snapshot_every: Duration::from_millis(300),
             odd_status: Vec::new(),
+            sweep_timeout_s: None,
         }
     }
 }
@@ -111,6 +114,9 @@ impl Gw {
         cfg.auth.global_login_rate_per_min = o.global_per_min;
         cfg.auth.lockout_after_failures = o.lockout_after;
         cfg.auth.actions_per_min = o.actions_per_min;
+        if let Some(t) = o.sweep_timeout_s {
+            cfg.hyperliquid.sweep_timeout_s = t;
+        }
         cfg.storage.data_dir = state_dir.to_string_lossy().into_owned();
 
         let mut ecfg = cfg.engine_config();

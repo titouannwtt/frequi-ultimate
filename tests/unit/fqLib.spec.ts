@@ -7,7 +7,13 @@ import {
   drawerActionIds,
   rowActionIds,
 } from '@/components/fq/lib/actions';
-import { alertWording, railLevel, severityTone } from '@/components/fq/lib/alerts';
+import {
+  alertTag,
+  alertTarget,
+  alertWording,
+  railLevel,
+  severityTone,
+} from '@/components/fq/lib/alerts';
 import {
   attentionSignature,
   botState,
@@ -452,6 +458,27 @@ describe('alerts, digest, clock', () => {
         num,
       ).messageKey,
     ).toBe('msg.botOffline');
+  });
+
+  it('tells a per-position alert by its pair, never by the bare trade id (QA 2026-10-15)', () => {
+    const num = (n: number) => String(n);
+    const a = {
+      type_id: 'nearLiquidation' as const,
+      subject: '20',
+      pair: 'SKY/USDC:USDC',
+      value: 12.8,
+      threshold: 15,
+      detail: null,
+    };
+    expect(alertWording(a, num).params.subject).toBe('SKY');
+    expect(alertWording({ ...a, pair: 'xyz:GOLD/USDC:USDC' }, num).params.subject).toBe('GOLD');
+    // The trade id stays available as a tag, and as the subject that opens the position
+    expect(alertTag(a)).toBe('#20');
+    // An alert saved without a pair (older gateway) falls back on its subject
+    expect(alertTarget({ subject: 'NVDA' })).toBe('NVDA');
+    expect(alertTarget({ subject: '20', pair: null })).toBe('20');
+    expect(alertTag({ subject: null })).toBeNull();
+    expect(alertTag({ subject: 'NVDA' })).toBe('NVDA');
   });
 
   it('rail level follows the worst active alert', () => {

@@ -11,6 +11,7 @@ export const AUTH_TIMEOUT_S = 5;
 export const DELTA_BUFFER_SIZE = 512;
 export const RECONNECT_BACKOFF_S = [1, 2, 5, 10, 30];
 export const COLLECTIONS = ['bots', 'wallets', 'positions', 'alerts', 'events', 'health', 'scopes', 'details', 'candles', 'chart'] as const;
+export const HEALTH_REASON_CODES = ['daemon_unreachable', 'digest_stale', 'rate_backoff', 'rate_budget_low', 'all_bots_offline', 'bots_offline', 'ledger_unreadable', 'rate_limit_events', 'auth_expired', 'data_stale'] as const;
 
 // ---- identity ----
 export type BotKey = string;
@@ -50,7 +51,12 @@ first_real_trade_ms: number | null,
  * Date the bot was launched.
  */
 started_ms: number | null, };
-export type BotMetrics = { realized_1d: number | null, realized_7d: number | null, realized_30d: number | null, realized_total: number | null, 
+export type BotMetrics = { 
+/**
+ * Realized profit of the calendar day of the configured zone (since its local midnight),
+ * never the last 24 hours.
+ */
+realized_1d: number | null, realized_7d: number | null, realized_30d: number | null, realized_total: number | null, 
 /**
  * Latent profit of the open positions (not stale ones).
  */
@@ -73,7 +79,12 @@ coin: string, market: Market, side: Side, leverage: number, amount: number, stak
 /**
  * Distance from the current rate to the liquidation price, in percent of the rate.
  */
-liq_distance_pct: number | null, dca_entries: number, open_ms: number, duration_ms: number, 
+liq_distance_pct: number | null, 
+/**
+ * Filled entry orders of the position, the first entry included (freqtrade's
+ * `nr_of_successful_entries`): 3 means the entry plus two safety orders.
+ */
+dca_entries: number, open_ms: number, duration_ms: number, 
 /**
  * Rank of the duration among the bot's closed trades (0-100), see `crate::calc::duration`.
  */
@@ -115,8 +126,18 @@ equity: number | null,
  */
 net_exposure: { [key in string]: number }, recon: ReconSummary | null, freshness: Freshness, };
 export type HealthLevel = "ok" | "degraded" | "critical";
-export type HealthReason = { code: string, severity: Severity, detail: string | null, alert_id: string | null, };
-export type Health = { level: HealthLevel, reasons: Array<HealthReason>, rate_budget_pct: number | null, backoff_active: boolean, hit_rate: number | null, bots_process: number | null, digest_age_s: number | null, freshness: Freshness, };
+export type HealthReasonCode = "daemon_unreachable" | "digest_stale" | "rate_backoff" | "rate_budget_low" | "all_bots_offline" | "bots_offline" | "ledger_unreadable" | "rate_limit_events" | "auth_expired" | "data_stale";
+export type HealthReason = { 
+/**
+ * One of `HealthReasonCode` (a string on the wire: a client shows an unknown code as is).
+ */
+code: string, severity: Severity, detail: string | null, alert_id: string | null, };
+export type Health = { level: HealthLevel, reasons: Array<HealthReason>, 
+/**
+ * Share of the request budget of the exchange that is used (0 to 100), the most used limiter
+ * of the daemon. High is bad: `100 - rate_budget_pct` is what is left.
+ */
+rate_budget_pct: number | null, backoff_active: boolean, hit_rate: number | null, bots_process: number | null, digest_age_s: number | null, freshness: Freshness, };
 export type EventKind = "entry_fill" | "exit_fill" | "entry_cancel" | "exit_cancel" | "protection_trigger" | "warning" | "startup" | "strategy_msg" | "daemon_incident" | "alert_raised" | "alert_resolved" | "bot_online" | "bot_offline" | "bot_replaced" | "action";
 export type Event = { kind: EventKind, ts_ms: number, bot_key: BotKey | null, trade_id: number | null, pair: string | null, profit_abs: number | null, severity: Severity | null, detail: string | null, };
 export type AuditEntry = { ts_ms: number, session_hash: string, ip: string | null, user_agent: string | null, bot_key: BotKey, bot_name: string, mode: BotMode, action: string, params: Record<string, unknown>, idempotency_key: string, http_status: number | null, 
@@ -134,7 +155,11 @@ scope: string, mode: BotMode, bots: number, bots_online: number, open_trades: nu
 /**
  * Sum of the bots' own `max_open_trades` that are known.
  */
-max_open_trades: number | null, realized_today: number | null, realized_1d: number | null, realized_7d: number | null, realized_30d: number | null, realized_total: number | null, open_profit_abs: number | null, 
+max_open_trades: number | null, realized_today: number | null, 
+/**
+ * Sum of the bots' `realized_1d`: the calendar day, like `realized_today`.
+ */
+realized_1d: number | null, realized_7d: number | null, realized_30d: number | null, realized_total: number | null, open_profit_abs: number | null, 
 /**
  * Sum of the bots' starting capitals (`available_capital - capital_withdrawal`).
  */
@@ -398,7 +423,12 @@ export type Condition = { type_id: AlertTypeId,
 /**
  * Pair or trade id for per-position rules, `None` for bot-level rules.
  */
-subject: string | null, severity: Severity, value: number | null, threshold: number | null, 
+subject: string | null, 
+/**
+ * Pair of the position behind a per-position condition, to tell the alert in words. Not part
+ * of the deduplication key (the subject, a trade id, is).
+ */
+pair: string | null, severity: Severity, value: number | null, threshold: number | null, 
 /**
  * Excerpt (log lines). Not part of the deduplication key.
  */
@@ -422,7 +452,11 @@ export type Alert = { id: string, type_id: AlertTypeId,
 /**
  * `None` for wallet-level alerts.
  */
-bot_key: string | null, subject: string | null, severity: Severity, value: number | null, threshold: number | null, since_ms: number, last_seen_ms: number, state: AlertState, acked_at_ms: number | null, acked_by_session: string | null, silenced_until_ms: number | null, detail: string | null, };
+bot_key: string | null, subject: string | null, 
+/**
+ * Pair of the position the alert is about (its `subject` is the trade id), for display.
+ */
+pair: string | null, severity: Severity, value: number | null, threshold: number | null, since_ms: number, last_seen_ms: number, state: AlertState, acked_at_ms: number | null, acked_by_session: string | null, silenced_until_ms: number | null, detail: string | null, };
 export type Silence = { id: string, type_id: AlertTypeId | null, bot_key: string | null, subject: string | null, until_ms: number, };
 export type TransitionKind = "raised" | "escalated" | "re_alerted" | "resolved";
 export type AlertTransition = { kind: TransitionKind, alert: Alert, };

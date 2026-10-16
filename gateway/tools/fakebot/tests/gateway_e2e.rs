@@ -610,6 +610,22 @@ async fn preferences_follow_the_user_across_devices_and_groups_resolve_from_them
         }
         rb.send()
     };
+    // Nothing written yet: a client that asks (`missing=204`) gets a 204, not an error, so a first
+    // load stays quiet; a client that does not ask keeps the 404 (an older SPA would read a 204 as
+    // a document).
+    let none = gw
+        .req(Method::GET, "/prefs?scope=&missing=204", Some(&phone))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(none.status(), 204);
+    assert!(none.bytes().await.unwrap().is_empty());
+    let legacy = gw
+        .req(Method::GET, "/prefs?scope=", Some(&phone))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(legacy.status(), 404);
     let r = put(&phone, "", None, &groups).await.unwrap();
     assert_eq!(r.status(), 200);
     assert_eq!(r.headers()["etag"], "\"1\"");

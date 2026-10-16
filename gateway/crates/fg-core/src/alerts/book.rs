@@ -48,6 +48,9 @@ pub struct Alert {
     /// `None` for wallet-level alerts.
     pub bot_key: Option<String>,
     pub subject: Option<String>,
+    /// Pair of the position the alert is about (its `subject` is the trade id), for display.
+    #[serde(default)]
+    pub pair: Option<String>,
     pub severity: Severity,
     pub value: Option<f64>,
     pub threshold: Option<f64>,
@@ -326,6 +329,7 @@ impl AlertBook {
                 type_id: key.type_id,
                 bot_key: key.bot_key.clone(),
                 subject: key.subject.clone(),
+                pair: c.pair.clone(),
                 severity: c.severity,
                 value: c.value,
                 threshold: c.threshold,
@@ -348,6 +352,7 @@ impl AlertBook {
         entry.alert.value = c.value;
         entry.alert.threshold = c.threshold;
         entry.alert.detail.clone_from(&c.detail);
+        entry.alert.pair.clone_from(&c.pair);
         entry.alert.last_seen_ms = now_ms;
 
         let mut kind = None;

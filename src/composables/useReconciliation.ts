@@ -9,8 +9,55 @@ import type { FleetviewReconciliationResponse, FleetviewResolvePayload } from '@
 
 import { useDataSource } from './useDataSource';
 
-/** The sweep of the wallet can take a while (it asks the exchange): a real deadline, not the default. */
+/**
+ * The sweep of the wallet can take a while (it asks the exchange): a real deadline, not the
+ * default. The gateway gives up first (40 s by default) and says so; this one only bounds the
+ * direct mode, where the bot is asked as it is.
+ */
 const SWEEP_TIMEOUT_MS = 60_000;
+
+/** Why a read of the reconciliation failed, as the page tells it. */
+export type ReconError =
+  | 'source'
+  | 'noBot'
+  /** No bot offers the route (a bot without the fleet tooling). */
+  | 'noServing'
+  /** The sweep did not answer in time. */
+  | 'timeout'
+  /** The last sweep just failed and the wallets rest: nothing is asked before `retryAfterMs`. */
+  | 'resting'
+  | 'failed';
+
+export interface ReconFailure {
+  kind: ReconError;
+  retryAfterMs: number | null;
+  /**
+   * Ask the next bot. Only when this one does not serve the route: any other failure comes from
+   * the sweep of the exchange, and every bot would start another one.
+   */
+  tryNext: boolean;
+}
+
+/** Classifies a failed read, from a `GatewayError` or from the message of the direct mode. */
+export function classifyReconFailure(e: unknown): ReconFailure {
+  const x = (typeof e === 'object' && e !== null ? e : {}) as {
+    code?: string;
+    status?: number | null;
+    retryAfterMs?: number | null;
+    message?: string;
+  };
+  const message = typeof x.message === 'string' ? x.message : String(e);
+  const retryAfterMs =
+    typeof x.retryAfterMs === 'number' && x.retryAfterMs > 0 ? x.retryAfterMs : null;
+  if (x.code === 'not_found' || x.status === 404 || /\bHTTP (404|405)\b/.test(message)) {
+    return { kind: 'noServing', retryAfterMs: null, tryNext: true };
+  }
+  if (retryAfterMs !== null) return { kind: 'resting', retryAfterMs, tryNext: false };
+  if (x.code === 'timeout' || x.status === 504 || /timeout|timed out/i.test(message)) {
+    return { kind: 'timeout', retryAfterMs: null, tryNext: false };
+  }
+  return { kind: 'failed', retryAfterMs: null, tryNext: false };
+}
 
 /**
  * The reconciliation of the wallet (Tools > Reconciliation). The sweep is read from a bot that
@@ -24,7 +71,9 @@ export function useReconciliation() {
 
   const response = shallowRef<FleetviewReconciliationResponse | null>(null);
   const loading = ref(false);
-  const error = ref<string | null>(null);
+  const error = ref<ReconError | null>(null);
+  /** How long the gateway asks to wait before another sweep, when it said so. */
+  const retryAfterMs = ref<number | null>(null);
   /** The bot that answered the last read, and through which a write goes. */
   const via = ref<BotKey | null>(null);
   let inflight: Promise<void> | null = null;
@@ -56,6 +105,7 @@ export function useReconciliation() {
     loading.value = true;
     inflight = (async () => {
       error.value = null;
+      retryAfterMs.value = null;
       // The bot that answered last time first, then the others: not every bot serves /fleetview
       const order = via.value
         ? [via.value, ...candidates.value.filter((k) => k !== via.value)]
@@ -64,7 +114,7 @@ export function useReconciliation() {
         error.value = 'noBot';
         return;
       }
-      let last = 'noServing';
+      let last: ReconFailure = { kind: 'noServing', retryAfterMs: null, tryNext: true };
       for (const key of order) {
         try {
           const r = await source.proxy<FleetviewReconciliationResponse>(
@@ -80,10 +130,13 @@ export function useReconciliation() {
             return;
           }
         } catch (e) {
-          last = e instanceof Error ? e.message : String(e);
+          last = classifyReconFailure(e);
+          // A sweep that failed is not started again on the next bot
+          if (!last.tryNext) break;
         }
       }
-      error.value = last;
+      error.value = last.kind;
+      retryAfterMs.value = last.retryAfterMs;
     })().finally(() => {
       loading.value = false;
       inflight = null;
@@ -110,5 +163,5 @@ export function useReconciliation() {
     return readWriteOutcome(source.kind, raw);
   }
 
-  return { response, loading, error, via, viaName, candidates, load, resolve };
+  return { response, loading, error, retryAfterMs, via, viaName, candidates, load, resolve };
 }

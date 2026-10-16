@@ -26,6 +26,7 @@ const alert = (over: Partial<Alert> = {}): Alert => ({
   acked_by_session: null,
   silenced_until_ms: null,
   detail: null,
+  pair: null,
   ...over,
 });
 

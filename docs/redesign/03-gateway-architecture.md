@@ -176,6 +176,7 @@ pairlist_socket = "/tmp/ftpairlist-1001.sock"
 [hyperliquid]
 recon_mode = "proxy_python"       # v2 : "native"
 min_sweep_interval_s = 60
+sweep_timeout_s = 40              # un balayage sans réponse au bout de ce délai est un échec
 background_sweep_interval_s = 300
 
 [scheduler]                       # cadences, voir section 4
@@ -308,7 +309,7 @@ dans les logs, ni dans l'audit, ni dans `state.db` en clair.
 | REST `/balance` | wallet-level (1 bot live par wallet), dry : par bot | 120 s | 30 s | Jamais sommé entre bots d'un même wallet |
 | REST `/whitelist`, `/blacklist`, `/locks` | paires | 300 s | 30 s | |
 | REST `/show_config`, `/version` | features, `api_version` | 600 s + sur événement `startup`/reload | | |
-| Python `/fleetview/reconciliation` | réconciliation (lecture) | 300 s | 60 s | Seul chemin vers HL en v1, voir 4.4 |
+| Python `/fleetview/reconciliation` | réconciliation (lecture) | 40 s (`hyperliquid.sweep_timeout_s`) | 60 s | Seul chemin vers HL en v1, voir 4.4. Hors budget de requêtes (elle ne bloque pas un créneau des pollers). Un balayage en échec (délai dépassé, erreur 5xx) met toute la flotte au repos 60 s : les appels suivants, par n'importe quel bot, reçoivent le même échec avec `retry_after_ms` sans nouveau balayage |
 | CoinGecko | ticker BTC/ETH (C12) | 120 s | | Externe, pas HL ; absent = ticker masqué |
 
 Charge REST vers les bots : environ 0,07 requête/s par bot, soit moins de 3 req/s pour 40 bots, toutes en boucle locale,
@@ -500,7 +501,7 @@ La conversion de devise (C12) est supprimée en v1 : tout est en devise de mise 
 
 ### 7.1 Modèle
 
-`Alert = {id, type_id, bot_key, subject (pair ou trade_id ou null), severity, value, threshold, since_ms, last_seen_ms,
+`Alert = {id, type_id, bot_key, subject (pair ou trade_id ou null), pair (la paire de la position, pour les règles par position dont le sujet est le trade_id ; sert à l'affichage, pas à la clé), severity, value, threshold, since_ms, last_seen_ms,
 state: pending|firing|resolved, acked_by_session?, silenced_until?}`. Clé de dédup = `(type_id, bot_key, subject)` (le
 message n'en fait plus partie). Évaluation toutes les 10 s et sur delta pertinent. Hystérésis : passage `firing` après
 `for` (par défaut 30 s, 0 pour les critiques), `resolved` après 2 évaluations négatives. Ack valable jusqu'à résolution ;

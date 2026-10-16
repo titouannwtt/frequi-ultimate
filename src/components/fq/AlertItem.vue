@@ -8,6 +8,7 @@ import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { Alert } from '@/gateway/types.gen';
 
 import {
+  alertTag,
   alertWording,
   ALERT_ACTIONS,
   isWalletAlert,
@@ -48,6 +49,7 @@ const prefs = useFqPrefsStore();
 
 const wording = computed(() => alertWording(props.alert, (n) => fmt.number(n, 1)));
 const message = computed(() => t(`fq.alert.${wording.value.messageKey}`, wording.value.params));
+const tag = computed(() => alertTag(props.alert));
 const title = computed(() => t(`fq.alert.type.${props.alert.type_id}`));
 const tone = computed(() => severityTone(props.alert.severity));
 const icon = computed(() =>
@@ -102,11 +104,7 @@ const status = computed(() => {
           <ModeMark v-if="botMode" :mode="botMode" />
           {{ botName ?? alert.bot_key }}
         </span>
-        <Badge
-          v-if="alert.subject && !isWalletAlert(alert)"
-          kind="neutral"
-          :label="alert.subject"
-        />
+        <Badge v-if="tag && !isWalletAlert(alert)" kind="neutral" :label="tag" />
         <time class="t num">{{ time }}</time>
       </header>
       <p class="msg">{{ message }}</p>

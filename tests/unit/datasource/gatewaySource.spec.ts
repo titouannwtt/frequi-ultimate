@@ -34,6 +34,8 @@ interface Net {
   trades?: () => unknown;
   /** Answer for GET /pairs/{key} (whitelist, blacklist and locks of a bot). */
   pairs?: () => unknown;
+  /** Answer for GET /prefs. */
+  prefs?: () => ReturnType<FakeHandler>;
   snapshots: number;
 }
 
@@ -61,6 +63,7 @@ function setup(net: Partial<Net> = {}) {
       return ok({ version: 'test', protocol: GATEWAY_PROTOCOL_VERSION, auth_modes: ['session'] });
     if (path === '/trades' && net.trades) return ok(net.trades());
     if (path.startsWith('/pairs/') && net.pairs) return ok(net.pairs());
+    if (path === '/prefs' && net.prefs) return net.prefs();
     if (path.includes('/actions/'))
       return net.action ? net.action(req, n) : ok({ status: 'accepted' });
     return status(404);
@@ -452,5 +455,27 @@ describe('GatewaySource: the pair lists of a bot', () => {
     await h.src.proxy('local:1', 'GET', '/signal_summary').catch(() => undefined);
     const urls = h.fake.calls.map((c) => new URL(c.url).pathname);
     expect(urls).toEqual(['/gw/v1/bots/local%3A1/proxy/signal_summary']);
+  });
+});
+
+describe('GatewaySource shared preferences', () => {
+  it('asks for the global document with an empty scope and reads a missing one as none', async () => {
+    for (const code of [204, 404]) {
+      const h = setup({ prefs: () => status(code, '') });
+      expect(await h.src.prefsRemote.get()).toBeNull();
+      const call = h.fake.calls.find((c) => new URL(c.url).pathname === '/gw/v1/prefs')!;
+      // The 204 is opt-in: an SPA that predates it would read a 204 as a document.
+      expect(call.params).toEqual({ scope: '', missing: '204' });
+    }
+  });
+
+  it('reads the document and its version when it exists', async () => {
+    const h = setup({ prefs: () => ok({ scope: '', version: 3, data: { v: 1 } }) });
+    expect(await h.src.prefsRemote.get()).toEqual({ version: 3, data: { v: 1 } });
+  });
+
+  it('still fails on a real error rather than pretending nothing is stored', async () => {
+    const h = setup({ prefs: () => status(500, {}) });
+    await expect(h.src.prefsRemote.get()).rejects.toThrow();
   });
 });

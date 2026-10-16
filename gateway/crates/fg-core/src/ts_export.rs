@@ -29,8 +29,8 @@ use crate::model::{
     ActionResult, ActionStatus, ActionVerify, AlertSummary, AuditEntry, BotAlias, BotConfigSummary,
     BotDetail, BotIdentity, BotMetrics, BotMode, BotRow, BotStateInfo, BotStatus, Candle,
     ChartInfo, Event, EventKind, Freshness, FreshnessGroup, FreshnessSource, Health, HealthLevel,
-    HealthReason, PairLock, Position, PrefsDoc, ReconStatus, ReconSummary, ScopeTotals, Severity,
-    Side, Ticker, TradeRow, WalletRow,
+    HealthReason, HealthReasonCode, PairLock, Position, PrefsDoc, ReconStatus, ReconSummary,
+    ScopeTotals, Severity, Side, Ticker, TradeRow, WalletRow,
 };
 use crate::protocol::{
     self, ApiError, Channel, ClientFrame, ErrorCode, ResyncReason, SeqCheck, ServerFrame,
@@ -109,6 +109,15 @@ pub fn render() -> String {
         colls.join(", ")
     ));
 
+    let codes: Vec<String> = HealthReasonCode::ALL
+        .iter()
+        .map(|c| format!("'{}'", c.as_str()))
+        .collect();
+    out.push_str(&format!(
+        "export const HEALTH_REASON_CODES = [{}] as const;\n",
+        codes.join(", ")
+    ));
+
     macro_rules! section {
         ($title:literal; $($t:ty),+ $(,)?) => {
             out.push_str(concat!("\n// ---- ", $title, " ----\n"));
@@ -124,7 +133,7 @@ pub fn render() -> String {
     section!("model";
         Severity, Side, BotMode, BotStatus, FreshnessSource, Freshness, FreshnessGroup,
         BotIdentity, BotStateInfo, BotMetrics, AlertSummary, BotRow, Position, TradeRow,
-        ReconStatus, ReconSummary, WalletRow, HealthLevel, HealthReason, Health, EventKind, Event,
+        ReconStatus, ReconSummary, WalletRow, HealthLevel, HealthReasonCode, HealthReason, Health, EventKind, Event,
         AuditEntry, Ticker, BotAlias, ScopeTotals, PairLock, BotConfigSummary, BotDetail,
         ActionStatus, ActionVerify, ActionResult, PrefsDoc, Candle, ChartInfo,
     );
