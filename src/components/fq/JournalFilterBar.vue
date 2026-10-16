@@ -3,7 +3,15 @@ import { useLocalStorage } from '@vueuse/core';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { Btn, FilterChip, Menu, Popover, SearchField, SegmentedControl } from '@/components/ds';
+import {
+  AdaptiveSheet,
+  Btn,
+  FilterChip,
+  Menu,
+  Popover,
+  SearchField,
+  SegmentedControl,
+} from '@/components/ds';
 import type { MenuItem } from '@/components/ds';
 import type { ScopeMode } from '@/migration/schema';
 
@@ -16,10 +24,11 @@ import {
 } from './lib/journalPage';
 
 /**
- * The filter bar of the Journal (02 section 3.4): period, Live / Dry / All (the shared FleetScope
- * mode), the always visible "Without replay" chip, bots, side, exit reason, DCA depth, pair, saved
- * views and the export. An active filter is a solid chip with its value: no filter is silent. The
- * bar only edits the filters; the page turns them into a query.
+ * The filter bar of the Journal (02 section 3.4, 05 section 2.6): period, Live / Dry / All (the
+ * shared FleetScope mode), the always visible "Without replay" chip and the pair. Bots, side, exit
+ * reason and DCA depth sit behind one "Filters (n)" button that opens a sheet; an active one stays
+ * on the bar as a removable chip with its value, so no filter is silent. Saved views and the export
+ * are in the "..." menu. The bar only edits the filters; the page turns them into a query.
  */
 const props = defineProps<{
   modelValue: JournalFilters;
@@ -52,14 +61,12 @@ const periodOptions = computed(() =>
   JOURNAL_PERIODS.map((p) => ({ value: p, label: t(`fq.jr.period.${p}`) })),
 );
 const rangeOpen = ref(false);
-const rangeAnchor = ref<HTMLElement | null>(null);
-function setPeriod(p: JournalPeriod, e?: Event) {
+// The range popover hangs under the period control (the segmented control sends no click event)
+const periodEl = ref<{ $el: HTMLElement } | null>(null);
+const rangeAnchor = computed(() => periodEl.value?.$el ?? null);
+function setPeriod(p: JournalPeriod) {
   patch({ period: p });
-  if (p === 'range') {
-    rangeAnchor.value = ((e?.currentTarget as HTMLElement | null) ??
-      rangeAnchor.value) as HTMLElement | null;
-    rangeOpen.value = true;
-  }
+  if (p === 'range') rangeOpen.value = true;
 }
 const dayInput = (ms: number | null) =>
   ms === null ? '' : new Date(ms).toISOString().slice(0, 10);
@@ -74,51 +81,28 @@ const modeOptions = computed(() =>
   (['live', 'dry', 'all'] as ScopeMode[]).map((m) => ({ value: m, label: t(`fq.scope.${m}`) })),
 );
 
-// ---- menus: one at a time ----
-type MenuId = 'side' | 'reason' | 'depth' | 'export' | 'views' | 'bots';
-const open = ref<MenuId | null>(null);
-const anchor = ref<HTMLElement | null>(null);
-function toggle(id: MenuId, e: Event) {
-  // The cross of a chip removes the filter; it does not open its menu
-  if ((e.target as HTMLElement).closest?.('.x')) return;
-  const el = e.currentTarget as HTMLElement;
-  if (open.value === id) {
-    open.value = null;
-    return;
-  }
-  anchor.value = el;
-  open.value = id;
+// ---- the filters sheet, the "..." menu and the saved views ----
+const filtersOpen = ref(false);
+const moreOpen = ref(false);
+const viewsOpen = ref(false);
+const moreAnchor = ref<HTMLElement | null>(null);
+function openMore(e: Event) {
+  moreAnchor.value = e.currentTarget as HTMLElement;
+  moreOpen.value = !moreOpen.value;
+}
+function onMore(id: string) {
+  if (id === 'csv') emit('exportCsv');
+  else if (id === 'views') viewsOpen.value = true;
 }
 
-const sideItems = computed<MenuItem[]>(() => [
-  {
-    id: 'any',
-    label: t('fq.jr.f.any'),
-    icon: props.modelValue.side === null ? 'check' : undefined,
-  },
-  {
-    id: 'long',
-    label: t('fq.side.long'),
-    icon: props.modelValue.side === 'long' ? 'check' : undefined,
-  },
-  {
-    id: 'short',
-    label: t('fq.side.short'),
-    icon: props.modelValue.side === 'short' ? 'check' : undefined,
-  },
+const sideOptions = computed(() => [
+  { value: 'any', label: t('fq.jr.f.any') },
+  { value: 'long', label: t('fq.side.long') },
+  { value: 'short', label: t('fq.side.short') },
 ]);
-const reasonItems = computed<MenuItem[]>(() => [
-  {
-    id: '__any',
-    label: t('fq.jr.f.any'),
-    icon: props.modelValue.exitReason === null ? 'check' : undefined,
-  },
-  ...props.reasons.map((r) => ({
-    id: r.value,
-    label: `${r.label} · ${r.trades}`,
-    icon: props.modelValue.exitReason === r.value ? ('check' as const) : undefined,
-  })),
-]);
+const reasonOptions = computed(() =>
+  props.reasons.map((r) => ({ value: r.value, label: `${r.label} · ${r.trades}` })),
+);
 const DEPTHS: Array<{ id: string; filter: DepthFilter | null }> = [
   { id: 'any', filter: null },
   { id: 'eq1', filter: { kind: 'eq', n: 1 } },
@@ -137,19 +121,16 @@ function depthLabel(d: DepthFilter | null): string {
       ? t('fq.jr.f.depthEq', { n: d.n })
       : t('fq.jr.f.depthMin', { n: d.n });
 }
-const depthItems = computed<MenuItem[]>(() =>
-  DEPTHS.map((d) => ({
-    id: d.id,
-    label: depthLabel(d.filter),
-    icon: depthId(props.modelValue.depth) === d.id ? ('check' as const) : undefined,
-  })),
+const depthOptions = computed(() =>
+  DEPTHS.map((d) => ({ value: d.id, label: depthLabel(d.filter) })),
 );
 
-const exportItems = computed<MenuItem[]>(() => [
+const moreItems = computed<MenuItem[]>(() => [
+  { id: 'views', label: t('fq.jr.views.title'), icon: 'bookmark' },
   {
     id: 'csv',
     label: t(props.exportScope === 'all' ? 'fq.jr.export.csvAll' : 'fq.jr.export.csvPage'),
-    icon: 'file-text',
+    icon: 'download',
   },
   ...(props.exportScope === 'page'
     ? [{ id: '__note', kind: 'heading' as const, label: t('fq.jr.export.directNote') }]
@@ -176,6 +157,21 @@ const reasonValue = computed(() => {
   return props.reasons.find((r) => r.value === v)?.label ?? v;
 });
 
+const depthValue = computed(() =>
+  props.modelValue.depth ? depthLabel(props.modelValue.depth) : null,
+);
+/** Filters hidden behind the button: the number says how many are on. */
+const activeCount = computed(
+  () =>
+    (props.modelValue.bots.length > 0 ? 1 : 0) +
+    (sideValue.value ? 1 : 0) +
+    (reasonValue.value ? 1 : 0) +
+    (depthValue.value ? 1 : 0),
+);
+function clearAll() {
+  patch({ bots: [], side: null, exitReason: null, depth: null });
+}
+
 // ---- saved views (this device) ----
 interface SavedView {
   id: string;
@@ -195,7 +191,7 @@ function saveView() {
 }
 function applyView(v: SavedView) {
   emit('update:modelValue', { ...defaultJournalFilters(), ...v.filters });
-  open.value = null;
+  viewsOpen.value = false;
 }
 function dropView(id: string) {
   views.value = views.value.filter((v) => v.id !== id);
@@ -205,6 +201,7 @@ function dropView(id: string) {
 <template>
   <div class="jfb" role="toolbar" :aria-label="t('fq.jr.filters')" data-testid="journal-filters">
     <SegmentedControl
+      ref="periodEl"
       :model-value="modelValue.period"
       :options="periodOptions"
       size="sm"
@@ -254,67 +251,6 @@ function dropView(id: string) {
       @remove="patch({ sansReplay: false })"
     />
 
-    <span class="cw" @click="toggle('bots', $event)">
-      <FilterChip
-        :label="
-          modelValue.bots.length > 0
-            ? t('fq.jr.f.botsN', { n: modelValue.bots.length })
-            : t('fq.jr.f.bots')
-        "
-        icon="bot"
-        :active="modelValue.bots.length > 0"
-        :removable="modelValue.bots.length > 0"
-        data-testid="jf-bots"
-        @remove="patch({ bots: [] })"
-      />
-    </span>
-    <span class="cw" @click="toggle('side', $event)">
-      <FilterChip
-        :label="
-          sideValue
-            ? t('fq.jr.f.withValue', { label: t('fq.jr.f.side'), value: sideValue })
-            : t('fq.jr.f.side')
-        "
-        :active="sideValue !== null"
-        :removable="sideValue !== null"
-        data-testid="jf-side"
-        @remove="patch({ side: null })"
-      />
-    </span>
-    <span class="cw" @click="toggle('reason', $event)">
-      <FilterChip
-        :label="
-          reasonValue
-            ? t('fq.jr.f.withValue', { label: t('fq.jr.f.reason'), value: reasonValue })
-            : t('fq.jr.f.reason')
-        "
-        :active="reasonValue !== null"
-        :removable="reasonValue !== null"
-        data-testid="jf-reason"
-        @remove="patch({ exitReason: null })"
-      />
-    </span>
-    <span
-      class="cw"
-      :title="depthAvailable ? undefined : t('fq.jr.f.depthMissing')"
-      @click="depthAvailable && toggle('depth', $event)"
-    >
-      <FilterChip
-        :label="
-          modelValue.depth
-            ? t('fq.jr.f.withValue', {
-                label: t('fq.jr.f.depth'),
-                value: depthLabel(modelValue.depth),
-              })
-            : t('fq.jr.f.depth')
-        "
-        :active="modelValue.depth !== null"
-        :removable="modelValue.depth !== null"
-        :class="{ off: !depthAvailable }"
-        data-testid="jf-depth"
-        @remove="patch({ depth: null })"
-      />
-    </span>
     <SearchField
       class="pair"
       :model-value="modelValue.pair"
@@ -322,81 +258,80 @@ function dropView(id: string) {
       @update:model-value="(v) => patch({ pair: v })"
     />
 
-    <span class="right">
-      <Btn
-        size="sm"
-        variant="ghost"
-        icon="bookmark"
-        data-testid="jf-views"
-        @click="toggle('views', $event)"
-        >{{ t('fq.jr.views.title') }}</Btn
-      >
-      <Btn
-        size="sm"
-        icon="download"
-        :busy="exporting"
-        data-testid="jf-export"
-        @click="toggle('export', $event)"
-        >{{ t('fq.jr.export.title') }}</Btn
-      >
-    </span>
+    <Btn
+      size="sm"
+      icon="list-filter"
+      class="fbtn"
+      :class="{ on: activeCount > 0 }"
+      data-testid="jf-filters"
+      @click="filtersOpen = true"
+      >{{ activeCount > 0 ? t('fq.jr.fs.buttonN', { n: activeCount }) : t('fq.jr.fs.button') }}</Btn
+    >
+    <FilterChip
+      v-if="modelValue.bots.length > 0"
+      :label="t('fq.jr.f.botsN', { n: modelValue.bots.length })"
+      icon="bot"
+      active
+      removable
+      data-testid="jf-bots"
+      @toggle="filtersOpen = true"
+      @remove="patch({ bots: [] })"
+    />
+    <FilterChip
+      v-if="sideValue"
+      :label="t('fq.jr.f.withValue', { label: t('fq.jr.f.side'), value: sideValue })"
+      active
+      removable
+      data-testid="jf-side"
+      @toggle="filtersOpen = true"
+      @remove="patch({ side: null })"
+    />
+    <FilterChip
+      v-if="reasonValue"
+      :label="t('fq.jr.f.withValue', { label: t('fq.jr.f.reason'), value: reasonValue })"
+      active
+      removable
+      data-testid="jf-reason"
+      @toggle="filtersOpen = true"
+      @remove="patch({ exitReason: null })"
+    />
+    <FilterChip
+      v-if="depthValue"
+      :label="t('fq.jr.f.withValue', { label: t('fq.jr.f.depth'), value: depthValue })"
+      active
+      removable
+      data-testid="jf-depth"
+      @toggle="filtersOpen = true"
+      @remove="patch({ depth: null })"
+    />
+
+    <Btn
+      size="sm"
+      variant="ghost"
+      icon="ellipsis"
+      class="more"
+      :busy="exporting"
+      :aria-label="t('fq.jr.more')"
+      :title="t('fq.jr.more')"
+      aria-haspopup="menu"
+      :aria-expanded="moreOpen"
+      data-testid="jf-more"
+      @click="openMore"
+    />
 
     <Menu
-      :open="open === 'side'"
-      :anchor="anchor"
-      :items="sideItems"
-      :label="t('fq.jr.f.side')"
-      @select="(id) => patch({ side: id === 'any' ? null : (id as 'long' | 'short') })"
-      @close="open = null"
-    />
-    <Menu
-      :open="open === 'reason'"
-      :anchor="anchor"
-      :items="reasonItems"
-      :label="t('fq.jr.f.reason')"
-      @select="(id) => patch({ exitReason: id === '__any' ? null : id })"
-      @close="open = null"
-    />
-    <Menu
-      :open="open === 'depth'"
-      :anchor="anchor"
-      :items="depthItems"
-      :label="t('fq.jr.f.depth')"
-      @select="(id) => patch({ depth: DEPTHS.find((d) => d.id === id)?.filter ?? null })"
-      @close="open = null"
-    />
-    <Menu
-      :open="open === 'export'"
-      :anchor="anchor"
-      :items="exportItems"
-      :label="t('fq.jr.export.title')"
-      @select="(id) => id === 'csv' && emit('exportCsv')"
-      @close="open = null"
+      :open="moreOpen"
+      :anchor="moreAnchor"
+      :items="moreItems"
+      :label="t('fq.jr.more')"
+      @select="onMore"
+      @close="moreOpen = false"
     />
     <Popover
-      :open="open === 'bots'"
-      :anchor="anchor"
-      :label="t('fq.jr.f.bots')"
-      @close="open = null"
-    >
-      <div class="botpick" data-testid="jf-bot-list">
-        <SearchField v-model="botQuery" :placeholder="t('fq.jr.f.botSearch')" />
-        <label v-for="b in botList" :key="b.key" class="bp">
-          <input
-            type="checkbox"
-            :checked="modelValue.bots.includes(b.key)"
-            @change="toggleBot(b.key)"
-          />
-          <span>{{ b.name }}</span>
-        </label>
-        <p v-if="botList.length === 0" class="note">{{ t('fq.jr.f.noBots') }}</p>
-      </div>
-    </Popover>
-    <Popover
-      :open="open === 'views'"
-      :anchor="anchor"
+      :open="viewsOpen"
+      :anchor="moreAnchor"
       :label="t('fq.jr.views.title')"
-      @close="open = null"
+      @close="viewsOpen = false"
     >
       <div class="views" data-testid="jf-view-list">
         <p v-if="views.length === 0" class="note">{{ t('fq.jr.views.none') }}</p>
@@ -406,6 +341,7 @@ function dropView(id: string) {
             size="xs"
             variant="ghost"
             icon="trash-2"
+            :aria-label="t('fq.jr.views.remove')"
             :title="t('fq.jr.views.remove')"
             @click="dropView(v.id)"
           />
@@ -422,39 +358,156 @@ function dropView(id: string) {
         </form>
       </div>
     </Popover>
+
+    <AdaptiveSheet :open="filtersOpen" :title="t('fq.jr.fs.title')" @close="filtersOpen = false">
+      <div class="fs" data-testid="jf-sheet">
+        <section class="fsec">
+          <h3>{{ t('fq.jr.f.bots') }}</h3>
+          <SearchField v-model="botQuery" :placeholder="t('fq.jr.f.botSearch')" />
+          <div class="botpick" data-testid="jf-bot-list">
+            <label v-for="b in botList" :key="b.key" class="bp">
+              <input
+                type="checkbox"
+                :checked="modelValue.bots.includes(b.key)"
+                @change="toggleBot(b.key)"
+              />
+              <span>{{ b.name }}</span>
+            </label>
+            <p v-if="botList.length === 0" class="note">{{ t('fq.jr.f.noBots') }}</p>
+          </div>
+        </section>
+        <section class="fsec">
+          <h3>{{ t('fq.jr.f.side') }}</h3>
+          <SegmentedControl
+            :model-value="modelValue.side ?? 'any'"
+            :options="sideOptions"
+            size="sm"
+            :label="t('fq.jr.f.side')"
+            data-testid="jf-side-pick"
+            @update:model-value="
+              (v) => patch({ side: v === 'any' ? null : (v as 'long' | 'short') })
+            "
+          />
+        </section>
+        <section class="fsec">
+          <h3>{{ t('fq.jr.f.reason') }}</h3>
+          <select
+            class="sel"
+            :value="modelValue.exitReason ?? ''"
+            :aria-label="t('fq.jr.f.reason')"
+            data-testid="jf-reason-pick"
+            @change="(e) => patch({ exitReason: (e.target as HTMLSelectElement).value || null })"
+          >
+            <option value="">{{ t('fq.jr.f.any') }}</option>
+            <option v-for="r in reasonOptions" :key="r.value" :value="r.value">
+              {{ r.label }}
+            </option>
+          </select>
+        </section>
+        <section class="fsec">
+          <h3>{{ t('fq.jr.f.depth') }}</h3>
+          <select
+            class="sel"
+            :value="depthId(modelValue.depth)"
+            :disabled="!depthAvailable"
+            :aria-label="t('fq.jr.f.depth')"
+            data-testid="jf-depth-pick"
+            @change="
+              (e) =>
+                patch({
+                  depth:
+                    DEPTHS.find((d) => d.id === (e.target as HTMLSelectElement).value)?.filter ??
+                    null,
+                })
+            "
+          >
+            <option v-for="d in depthOptions" :key="d.value" :value="d.value">{{ d.label }}</option>
+          </select>
+          <p v-if="!depthAvailable" class="note">{{ t('fq.jr.f.depthMissing') }}</p>
+        </section>
+      </div>
+      <template #footer>
+        <div class="ff">
+          <Btn variant="ghost" :disabled="activeCount === 0" @click="clearAll">{{
+            t('fq.jr.fs.clear')
+          }}</Btn>
+          <Btn variant="primary" data-testid="jf-sheet-done" @click="filtersOpen = false">{{
+            t('fq.jr.fs.done')
+          }}</Btn>
+        </div>
+      </template>
+    </AdaptiveSheet>
   </div>
 </template>
 
 <style scoped>
 .jfb {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  padding: 6px var(--s3);
+  gap: 8px;
+  padding: 8px var(--s3);
   background: var(--bg);
   border-bottom: 1px solid var(--line);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.jfb::-webkit-scrollbar {
-  display: none;
 }
 .jfb > :deep(*) {
   flex: none;
 }
-.cw {
-  display: inline-flex;
-}
-.off {
-  opacity: 0.5;
-}
 .pair {
   width: 160px;
 }
-.right {
+.fbtn.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.more {
   margin-left: auto;
+}
+@media (max-width: 599px) {
+  /* The period takes its own line, then the mode, the pair and the buttons share the next ones */
+  .jfb > :deep(:first-child) {
+    max-width: 100%;
+  }
+  .pair {
+    flex: 1 1 130px;
+    width: auto;
+    min-width: 0;
+  }
+}
+.fs {
+  display: grid;
+  gap: var(--s4);
+  padding: var(--s3);
+}
+.fsec {
+  display: grid;
+  gap: var(--s2);
+  align-content: start;
+  min-width: 0;
+}
+.fsec h3 {
+  margin: 0;
+  font-size: var(--t-label);
+  font-weight: 600;
+  color: var(--fg-3);
+}
+.sel {
+  background: var(--bg-2);
+  color: var(--fg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+  padding: 0 8px;
+  height: var(--ctl);
+  min-width: 0;
+  font: inherit;
+}
+.sel:disabled {
+  opacity: 0.5;
+}
+.ff {
   display: flex;
-  gap: 6px;
+  justify-content: space-between;
+  gap: var(--s2);
 }
 .range {
   display: grid;
@@ -476,7 +529,12 @@ input[type='date'],
   padding: 6px 8px;
   font: inherit;
 }
-.botpick,
+.botpick {
+  display: grid;
+  gap: 2px;
+  max-height: 220px;
+  overflow: auto;
+}
 .views {
   display: grid;
   gap: 2px;
@@ -488,9 +546,14 @@ input[type='date'],
   display: flex;
   gap: var(--s2);
   align-items: center;
-  min-height: 32px;
+  min-height: 36px;
   font-size: var(--t-sm);
   cursor: pointer;
+}
+@media (max-width: 599px), (pointer: coarse) {
+  .bp {
+    min-height: 44px;
+  }
 }
 .vw {
   display: flex;
