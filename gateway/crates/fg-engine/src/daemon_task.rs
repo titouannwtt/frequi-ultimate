@@ -7,6 +7,7 @@
 //! open. In steady state that is about 0.5 request per second.
 
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use fg_core::model::Ticker;
@@ -15,6 +16,12 @@ use tokio::time::Instant;
 
 use crate::msg::Msg;
 use crate::shared::Shared;
+
+/// How long the bot reads that cost exchange requests stay suspended after the daemon last
+/// reported a backoff. A HARD backoff lasts 65 s, lifts, and a single 429 re-arms it: a flag that
+/// follows it would let a `/balance` of every bot through at each gap. Each such call converts
+/// every position of the shared wallet, one tickers request each, and fed the 16/10 storm.
+const EXCHANGE_QUIET: Duration = Duration::from_secs(600);
 
 /// Incidents older than this are not fetched at startup.
 const EVENTS_BACKFILL_S: f64 = 600.0;
@@ -55,6 +62,17 @@ pub(crate) async fn run_daemon(shared: Arc<Shared>, daemon: Arc<dyn DaemonClient
             let c = cad.fleet_status;
             status_due = now + jitter(if viewed { c.viewed } else { c.normal }, jit, 2);
             if let Ok(status) = daemon.fleet_status().await {
+                if status
+                    .rate_limiters
+                    .values()
+                    .any(|b| b.backoff_active.unwrap_or(false))
+                {
+                    let quiet = EXCHANGE_QUIET.div_f64(cad.time_scale.max(1e-3));
+                    shared.exchange_quiet_until_ms.store(
+                        shared.now_ms() + i64::try_from(quiet.as_millis()).unwrap_or(i64::MAX),
+                        Ordering::Relaxed,
+                    );
+                }
                 let _ = shared
                     .core_tx
                     .send(Msg::DaemonStatus {

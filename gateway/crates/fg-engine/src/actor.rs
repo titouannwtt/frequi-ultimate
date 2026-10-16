@@ -338,6 +338,17 @@ impl Actor {
         {
             return None;
         }
+        // `/balance` makes the bot price every position of its wallet on the exchange: not while
+        // the exchange throttles the fleet. The last balance stays published, marked stale.
+        if kind == Kind::Balance
+            && self.shared.now_ms()
+                < self
+                    .shared
+                    .exchange_quiet_until_ms
+                    .load(std::sync::atomic::Ordering::Relaxed)
+        {
+            return None;
+        }
         if self.status == BotStatus::AuthExpired && kind != Kind::Features {
             // Only the probe of the credentials runs until they work again.
             return None;

@@ -112,6 +112,7 @@ impl Engine {
             core_tx,
             ledger: Arc::clone(&sources.ledger),
             charts: crate::chart::Charts::default(),
+            exchange_quiet_until_ms: std::sync::atomic::AtomicI64::new(0),
             cfg,
         });
 
