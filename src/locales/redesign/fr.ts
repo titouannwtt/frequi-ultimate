@@ -82,6 +82,7 @@ export default {
   result: {
     sent: 'Transmis',
     filled: 'Rempli',
+    notSent: "Rien n'a été envoyé",
     needsChecking: 'À vérifier',
     rejected: 'Refusé par le bot',
     retry: 'Réessayer',

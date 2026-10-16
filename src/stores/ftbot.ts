@@ -101,6 +101,9 @@ export function createBotSubStore(botId: string, botName: string) {
     return '';
   }
 
+  // Handle of the bot socket, kept outside the state so it can be closed on demand
+  let wsClose: (() => void) | null = null;
+
   const useBotStore = defineStore(botId, {
     state: () => {
       return {
@@ -1204,6 +1207,7 @@ export function createBotSubStore(botId: string, botName: string) {
       startWebSocket() {
         if (
           this.websocketStarted === true ||
+          wsClose !== null ||
           this.botStatusAvailable === false ||
           !this.botFeatures.websocketConnection ||
           this.isWebserverMode === true
@@ -1225,6 +1229,7 @@ export function createBotSubStore(botId: string, botName: string) {
             onError: (ws, event) => {
               console.log('onError', event, ws);
               this.websocketStarted = false;
+              wsClose = null;
               close();
             },
             onMessage: this._handleWebsocketMessage,
@@ -1261,6 +1266,14 @@ export function createBotSubStore(botId: string, botName: string) {
             },
           },
         );
+        wsClose = close;
+      },
+      /** Close the bot socket for good (no reconnect); `startWebSocket` opens a fresh one. */
+      stopWebSocket() {
+        if (wsClose === null) return;
+        wsClose();
+        wsClose = null;
+        this.websocketStarted = false;
       },
     },
   });

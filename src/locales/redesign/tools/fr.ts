@@ -10,6 +10,8 @@ export default {
     request: 'Requête qui sera envoyée',
     typeCoin: 'Saisissez {coin} pour confirmer',
     typeFirst: 'Saisissez d’abord le nom du coin',
+    deleteNote:
+      "L'ordre est passé mais le trade peut rester dans la base du bot. Supprimez-le à la main s'il est encore listé :",
     once: 'La requête est envoyée une seule fois. Un délai dépassé n’est pas rejoué : relisez le wallet avant de réessayer.',
     action: {
       close_unowned: 'Fermer la position du wallet qu’aucun bot ne possède',

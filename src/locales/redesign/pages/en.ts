@@ -57,6 +57,7 @@ export default {
       perfPartial: 'Partial history: only what this tab has loaded.',
       drawer: 'Position',
       noPosition: 'No open position. The bot is waiting for a signal.',
+      tradeClosed: 'This trade is closed.',
       notFound: 'Bot not found: {key}',
       notFoundHint: 'This bot is not (or no longer) in the fleet of this device.',
       tabs: {
@@ -75,7 +76,9 @@ export default {
         mode: 'Mode',
         port: 'Port',
         maxTrades: 'Max open positions',
-        editLater: 'Editing with a diff review arrives with the Settings page.',
+        edit: 'Edit the configuration…',
+        editHint:
+          'Opens the configuration file of this bot. The changes are reviewed before anything is written, and nothing is applied until the bot is reloaded.',
       },
     },
   },

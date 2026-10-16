@@ -80,6 +80,8 @@ interface World {
   offline?: Set<string>;
   /** Answer of GET /fleetview/profit_history (404 when absent, like an upstream bot). */
   history?: unknown;
+  /** Hosts whose /show_config is not readable yet (the mode of the bot is then unknown). */
+  noConfig?: Set<string>;
 }
 
 function bot(host: string, world: World): FakeHandler {
@@ -97,6 +99,7 @@ function bot(host: string, world: World): FakeHandler {
     if (req.method !== 'GET') return ok({ status: 'ok' });
     switch (path) {
       case '/show_config':
+        if (world.noConfig?.has(host)) return status(404);
         return ok({
           bot_name: dry ? 'dry_one' : 'hippo_live',
           dry_run: dry,
@@ -311,6 +314,54 @@ describe('DirectSource polling', () => {
     const rows = botsOf(fleet);
     expect(rows['local:9400'].state.status).toBe('online');
     expect(rows['local:9056'].metrics.realized_total).toBeNull();
+    src.stop();
+  });
+});
+
+describe('DirectSource: a bot whose mode is not read yet', () => {
+  const DRY = 'dry-bot.test:9056';
+
+  it('is starting, in no total and no table, until its config is read (B158)', async () => {
+    const world = makeWorld();
+    // The dry bot holds a position and a profit: they must not land in the Live figures
+    world.openTrades[DRY] = [trade({ trade_id: 7, profit_abs: 99 })];
+    world.noConfig = new Set([DRY]);
+    const { src, fleet } = await started(world);
+    let rows = botsOf(fleet);
+    // Answering, but not online: the mode (live confirmation level) is not known
+    expect(rows['local:9056'].state.status).toBe('starting');
+    expect(rows['local:9056'].metrics.open_profit_abs).toBeNull();
+    expect(rows['local:9056'].metrics.realized_total).toBeNull();
+    // The strict assumption holds for what is confirmed
+    expect(rows['local:9056'].identity.mode).toBe('live');
+    expect(rows['local:9400'].state.status).toBe('online');
+
+    // Positions and fleet totals only carry the bot that is known to be live
+    const seen: any[] = [];
+    src.subscribe('positions', undefined, (u) => seen.push(u));
+    const keys = Object.keys((seen[0] as StateUpdate).upsert.positions as any);
+    expect(keys.every((k) => k.startsWith('local:9400/'))).toBe(true);
+    const detail = await src.query.scope({ kind: 'fleet' });
+    // The bot is listed (starting) and named among the excluded; its position is in no exposure
+    expect(detail.bots.map((b) => b.bot_key).sort()).toEqual(['local:9056', 'local:9400']);
+    expect(detail.positions.map((p) => p.bot_key)).toEqual(['local:9400']);
+    const live = detail.totals.find((t) => t.mode === 'live')!;
+    expect(live.excluded).toContain('local:9056');
+    expect(live.open_profit_abs).toBeCloseTo(10, 6);
+    const page = await src.query.trades({ status: 'open', mode: ['live'] });
+    expect(page.items.map((r) => r.bot_key)).toEqual(['local:9400']);
+
+    // Once the config is read the bot is dry, online, and in the dry figures only
+    world.noConfig = new Set();
+    (src as any).due((src as any).rts.get('local:9056'), 'slow');
+    (src as any).dispatchDue();
+    await src.settle();
+    src.flush();
+    rows = botsOf(fleet);
+    expect(rows['local:9056'].identity.mode).toBe('dry');
+    expect(rows['local:9056'].state.status).toBe('online');
+    const dry = await src.query.trades({ status: 'open', mode: ['dry'] });
+    expect(dry.items.map((r) => r.bot_key)).toEqual(['local:9056']);
     src.stop();
   });
 });

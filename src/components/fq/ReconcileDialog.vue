@@ -105,7 +105,8 @@ const outcomeKey = computed(() =>
 const outcomeTone = computed(() => {
   switch (props.outcome?.status) {
     case 'accepted':
-      return 'ok';
+      // An order placed whose trade could not be deleted needs a manual follow-up
+      return props.outcome.deleteNote ? 'warn' : 'ok';
     case 'unknown':
     case 'in_progress':
       return 'warn';
@@ -187,6 +188,9 @@ POST /fleetview/reconciliation/resolve
         <template v-if="outcome">
           <b>{{ t(outcomeKey) }}</b>
           <p v-if="outcome.text" class="num raw">{{ outcome.text }}</p>
+          <p v-if="outcome.deleteNote" class="num raw" data-testid="recon-delete-note">
+            <b>{{ t('fq.reconw.deleteNote') }}</b> {{ outcome.deleteNote }}
+          </p>
           <p class="hint">{{ t(`fq.reconw.next.${outcome.status}`) }}</p>
         </template>
         <template v-else>

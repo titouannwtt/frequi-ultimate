@@ -36,6 +36,7 @@ export { default as Leaderboard } from './Leaderboard.vue';
 export { default as LogStream } from './LogStream.vue';
 export { default as MaeMfeBar } from './MaeMfeBar.vue';
 export { default as PairNavigator } from './PairNavigator.vue';
+export { default as PairlistPanel } from './PairlistPanel.vue';
 export { default as PnlCalendar } from './PnlCalendar.vue';
 export { default as PositionCard } from './PositionCard.vue';
 export { default as ReconciliationTable } from './ReconciliationTable.vue';

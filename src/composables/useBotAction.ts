@@ -74,6 +74,15 @@ export function tradeIdOf(action: BotAction): number | 'all' | null {
   }
 }
 
+/**
+ * The trade a trade-scoped action targets (exit, delete, cancel, reload). `lock_delete` carries a
+ * lock id, which is NOT a trade id: looking it up among the positions would match an unrelated
+ * trade of the same number.
+ */
+export function positionTradeIdOf(action: BotAction): number | 'all' | null {
+  return action.kind === 'lock_delete' ? null : tradeIdOf(action);
+}
+
 export function lockKeyOf(botKey: BotKey, action: BotAction): string {
   const trade =
     action.kind === 'forceentry'

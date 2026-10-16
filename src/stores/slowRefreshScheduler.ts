@@ -32,7 +32,7 @@ let runner: (() => void) | null = null;
  * the wrapper already imports the sub-store factory, and closing that loop would make module
  * initialisation order load-bearing.
  */
-export function registerSlowRefreshRunner(fn: () => void) {
+export function registerSlowRefreshRunner(fn: (() => void) | null) {
   runner = fn;
 }
 

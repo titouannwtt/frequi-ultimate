@@ -1,9 +1,12 @@
 import { useRouter } from 'vue-router';
 
-import type { ActionId } from '@/components/fq/lib/actions';
+import { ACTIONS, buildAction, type ActionId } from '@/components/fq/lib/actions';
 import type { AlertActionId } from '@/components/fq/lib/alerts';
 import type { Alert, BotKey } from '@/gateway/types.gen';
+import { useFqPositionsStore } from '@/datasource/stores/positions';
 import { TOOL_PATHS } from '@/router/legacy';
+
+import { requestAction, toastRefusal } from './useActionDialog';
 
 import { useShellBus } from './useShellBus';
 
@@ -15,18 +18,36 @@ export interface ActionNavContext {
 
 /**
  * Where the actions that do not mutate anything lead (02 sections 3.1 and 3.2): the trade, the
- * chart, the config, the reconciliation preview, the logs, the diagnostic. Mutations never come
- * through here: they open their confirmation (`requestAction`), from whichever surface.
+ * chart, the config, the reconciliation preview, the logs, the diagnostic. A mutation (the `X`
+ * shortcut of a selected row) is never performed here: it only opens its confirmation
+ * (`requestAction`), exactly as the row button would, for the bot and the trade of the line.
  */
 export function useActionNav() {
   const router = useRouter();
   const bus = useShellBus();
+  const positions = useFqPositionsStore();
 
   function openBot(botKey: BotKey, query: Record<string, string> = {}) {
     void router.push({ name: 'bot', params: { botKey }, query });
   }
 
+  /** A keyboard path to a mutation: the same checks and the same dialog as the row button. */
+  function mutate(id: ActionId, ctx: ActionNavContext) {
+    const position = ctx.tradeId != null ? (positions.get(ctx.botKey, ctx.tradeId) ?? null) : null;
+    const action = buildAction(id, { position, pair: ctx.pair ?? undefined });
+    // No position to act on (closed since, or an orphan): nothing opens, and it is said
+    if (!action) {
+      toastRefusal({ ok: false, reason: 'missing_state' });
+      return;
+    }
+    toastRefusal(requestAction(ctx.botKey, action, { position }));
+  }
+
   function navigateAction(id: ActionId, ctx: ActionNavContext) {
+    if (ACTIONS[id].mutation) {
+      mutate(id, ctx);
+      return;
+    }
     switch (id) {
       case 'openTrade':
         openBot(ctx.botKey, ctx.tradeId != null ? { trade: String(ctx.tradeId) } : {});

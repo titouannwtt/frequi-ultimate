@@ -85,3 +85,30 @@ describe('ReconcileDialog (destructive level)', () => {
     w.unmount();
   });
 });
+
+describe('ReconcileDialog (result)', () => {
+  it('shows the failed trade delete apart from an accepted order, as a warning', () => {
+    const w = mountDialog({
+      outcome: {
+        status: 'accepted',
+        data: { delete: 'owning bot API not reachable, delete the trade manually' },
+        text: '{"delete":"owning bot API not reachable, delete the trade manually"}',
+        deleteNote: 'owning bot API not reachable, delete the trade manually',
+      },
+    });
+    const note = w.find('[data-testid="recon-delete-note"]');
+    expect(note.exists()).toBe(true);
+    expect(note.text()).toContain('delete the trade manually');
+    expect(w.find('[data-testid="recon-result"]').classes()).toContain('warn');
+    w.unmount();
+  });
+
+  it('shows no delete note when the delete went through', () => {
+    const w = mountDialog({
+      outcome: { status: 'accepted', data: null, text: '{}', deleteNote: null },
+    });
+    expect(w.find('[data-testid="recon-delete-note"]').exists()).toBe(false);
+    expect(w.find('[data-testid="recon-result"]').classes()).toContain('ok');
+    w.unmount();
+  });
+});

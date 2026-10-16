@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import { AdaptiveSheet } from '@/components/ds';
 import { AppShell, LogStream, ShortcutHelp, SystemHealth } from '@/components/fq';
 import type { ShellPage } from '@/components/fq';
+import { useBrowserNotifications } from '@/composables/useBrowserNotifications';
 import { useDataSource } from '@/composables/useDataSource';
 import { useShellBus } from '@/composables/useShellBus';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
@@ -53,6 +54,8 @@ watch(
 onBeforeUnmount(() => {
   if (started) data.stop();
 });
+// System notifications of the alerts, when switched on in Settings and granted by the browser
+useBrowserNotifications();
 
 // ---- hand over from the static splash of index.html once something is on screen ----
 function dropSplash() {

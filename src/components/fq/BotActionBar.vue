@@ -21,6 +21,7 @@ import { useBotActions } from './lib/useBotActions';
  * - `header`: Pause entries, Reload, Config, a "..." menu (Resume, Forced entry, Replay, then
  *   apart "Stop the bot..."), 18 px of space, then "Exit all..." (the only danger-outline of the
  *   header). On a phone: four 64 px tiles, and the sensitive actions in a folded section;
+ * - `sensitive`: only that folded section (phone), for the foot of the page;
  * - `row`: one neutral "Exit..." button (icon only in a narrow panel) and the "..." menu, shown
  *   on hover, focus or selection and always on touch;
  * - `drawer`: the sticky foot, "Exit at market..." (danger-outline) and "Add to position...";
@@ -37,8 +38,13 @@ const props = withDefaults(
     fraction?: number;
     /** Narrow panel: the row button shows an icon only. */
     iconOnly?: boolean;
+    /**
+     * Header on a phone: leave the folded sensitive section out, the page shows it at the foot
+     * (`context="sensitive"`), far from the everyday actions.
+     */
+    splitSensitive?: boolean;
   }>(),
-  { position: null, iconOnly: false },
+  { position: null, iconOnly: false, splitSensitive: false },
 );
 
 const emit = defineEmits<{
@@ -155,7 +161,7 @@ const paletteIds = computed<ActionId[]>(() =>
         <span>{{ acts.t('fq.act.more') }}</span>
       </button>
     </div>
-    <details class="sens">
+    <details v-if="!splitSensitive" class="sens">
       <summary>{{ acts.t('fq.act.sensitive') }}</summary>
       <div class="sens-body">
         <Btn
@@ -192,6 +198,39 @@ const paletteIds = computed<ActionId[]>(() =>
       @navigate="(id) => emit('navigate', id)"
       @close="menuOpen = false"
     />
+  </div>
+
+  <!-- Foot of the Bot page, phone: the sensitive actions alone, away from the everyday ones -->
+  <div v-else-if="context === 'sensitive'" class="phone">
+    <details class="sens" data-testid="sensitive-actions">
+      <summary>{{ acts.t('fq.act.sensitive') }}</summary>
+      <div class="sens-body">
+        <Btn
+          variant="danger-outline"
+          size="lg"
+          :icon="ACTIONS[HEADER_DANGER].icon"
+          :disabled="acts.disabled(HEADER_DANGER)"
+          :disabled-reason="acts.reasonText.value"
+          :lock-key="acts.lockKey(HEADER_DANGER)"
+          :data-action="HEADER_DANGER"
+          @click="fire(HEADER_DANGER)"
+        >
+          {{ label(HEADER_DANGER) }}
+        </Btn>
+        <Btn
+          variant="danger-outline"
+          size="lg"
+          :icon="ACTIONS.stop.icon"
+          :disabled="acts.disabled('stop')"
+          :disabled-reason="acts.reasonText.value"
+          :lock-key="acts.lockKey('stop')"
+          data-action="stop"
+          @click="fire('stop')"
+        >
+          {{ label('stop') }}
+        </Btn>
+      </div>
+    </details>
   </div>
 
   <!-- A table row: one neutral exit button and the menu -->

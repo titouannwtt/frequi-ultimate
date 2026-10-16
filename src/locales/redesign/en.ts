@@ -82,6 +82,7 @@ export default {
   result: {
     sent: 'Sent',
     filled: 'Filled',
+    notSent: 'Nothing was sent',
     needsChecking: 'Needs checking',
     rejected: 'Rejected by bot',
     retry: 'Retry',

@@ -959,6 +959,12 @@ export class GatewaySource implements DataSource {
     await this.d.session.ensure();
     const m = method.toUpperCase();
     const clean = path.replace(/^\/+/, '');
+    if (m === 'GET') {
+      // The pair lists of a bot are not in the passthrough whitelist (they would be a read of the
+      // bot per viewer): the gateway keeps them in the detail of the bot and serves them itself.
+      const viaPairs = await this.pairListRead<T>(botKey, clean);
+      if (viaPairs !== undefined) return viaPairs;
+    }
     const url = `/bots/${encodeURIComponent(botKey)}/proxy/${clean}`;
     if (m === 'GET') {
       return this.d.http.json<T>('GET', url, { timeoutMs: opts?.timeoutMs ?? 30_000 });
@@ -973,6 +979,43 @@ export class GatewaySource implements DataSource {
         ...(opts?.confirmBot ? { 'X-Confirm-Bot': opts.confirmBot } : {}),
       },
     });
+  }
+
+  /**
+   * `GET /whitelist`, `/blacklist` and `/locks` of a bot, answered from `GET /pairs/{key}` of the
+   * gateway in the shape the bot itself uses. `undefined` for any other path. Not available from
+   * the gateway, and therefore absent from the answer: the pairlist methods and the pipeline of
+   * the whitelist, and the id of a lock (a lock can then be listed but not lifted from here).
+   */
+  private async pairListRead<T>(botKey: BotKey, path: string): Promise<T | undefined> {
+    if (path !== 'whitelist' && path !== 'blacklist' && path !== 'locks') return undefined;
+    const d = await this.getJson<{
+      whitelist?: string[];
+      blacklist?: string[];
+      locks?: Array<{
+        pair: string;
+        reason?: string | null;
+        until_ms?: number | null;
+        side?: string | null;
+      }>;
+    }>(`/pairs/${encodeURIComponent(botKey)}`);
+    if (path === 'whitelist') {
+      const whitelist = d.whitelist ?? [];
+      return { method: [], length: whitelist.length, whitelist } as T;
+    }
+    if (path === 'blacklist') {
+      const blacklist = d.blacklist ?? [];
+      return { method: [], length: blacklist.length, blacklist, errors: {} } as T;
+    }
+    return {
+      locks: (d.locks ?? []).map((l) => ({
+        pair: l.pair,
+        reason: l.reason ?? null,
+        side: l.side ?? null,
+        lock_end_timestamp: l.until_ms ?? 0,
+        active: true,
+      })),
+    } as T;
   }
 
   async act(botKey: BotKey, action: BotAction, idempotencyKey: string): Promise<ActionResult> {

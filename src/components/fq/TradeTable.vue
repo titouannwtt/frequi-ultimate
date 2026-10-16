@@ -530,7 +530,7 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
         <span v-if="row.orphan" class="dim">{{ t('fq.trade.noBot') }}</span>
         <button v-else type="button" class="botlink" @click.stop="emit('openBot', row.botKey)">
           <ModeMark v-if="row.mode" :mode="row.mode" />
-          {{ row.botName }}
+          <span class="bn" :title="row.botName">{{ row.botName }}</span>
         </button>
       </template>
       <template #cell-side="{ row }">
@@ -677,12 +677,17 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
   color: var(--fg);
   font: inherit;
   text-align: left;
-  /* A long bot name wraps instead of stretching the table */
+  /* A long bot name is cut with an ellipsis (the full name is in the title), never wrapped */
   max-width: 220px;
-  overflow-wrap: anywhere;
-  white-space: normal;
+  min-width: 0;
   line-height: 1.15;
   cursor: pointer;
+}
+.botlink .bn {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .botlink:hover {
   color: var(--accent);

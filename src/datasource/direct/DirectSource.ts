@@ -95,6 +95,7 @@ import { mapClosedTrade, mapLogs, mapOpenTrade, positionToTradeRow, toOpenRisk }
 import {
   buildBotRow,
   inferWallets,
+  modeKnown,
   modeOf,
   nameOf,
   newRuntime,
@@ -951,6 +952,8 @@ export class DirectSource implements DataSource {
 
     const posMap: Record<string, Position> = {};
     for (const [key, list] of positionsByBot) {
+      // Positions of a bot whose mode is not read yet would land in the Live table
+      if (!modeKnown(this.rts.get(key)!)) continue;
       for (const p of list) posMap[`${key}/${p.trade_id}`] = p;
     }
     this.hubs.positions.set('positions', posMap);
@@ -1246,7 +1249,8 @@ export class DirectSource implements DataSource {
 
   private filterMode(bots: BotRuntime[], modes?: BotMode[]): BotRuntime[] {
     const want = modes ?? ['live'];
-    return bots.filter((rt) => want.includes(modeOf(rt)));
+    // A bot whose mode is not read yet is in no total: live and dry are never added together
+    return bots.filter((rt) => modeKnown(rt) && want.includes(modeOf(rt)));
   }
 
   readonly query = {
@@ -1410,7 +1414,9 @@ export class DirectSource implements DataSource {
       const rows = bots.map((rt) =>
         buildBotRow(rt, this.rowContext(rt, nowMs, wallets.get(rt.key))),
       );
-      const positions = bots.flatMap((rt) => this.positionsOf(rt, nowMs));
+      // A bot whose mode is not read yet is in the rows (starting, money figures empty, so named
+      // among the excluded of the totals) but its positions are in no exposure
+      const positions = bots.filter(modeKnown).flatMap((rt) => this.positionsOf(rt, nowMs));
       const totals = scopeTotalsByMode(rows, positions, (k) => wallets.get(k)?.walletId ?? '');
       return { scope: s, bots: rows, positions, totals, drawdown: null, asOfMs: nowMs };
     },

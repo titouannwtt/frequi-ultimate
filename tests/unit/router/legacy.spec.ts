@@ -7,10 +7,12 @@ vi.mock('@/composables/loginInfo', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   readLoginInfos: () => mocked.logins,
 }));
-// The legacy polling is not under test: only that it is asked for on legacy pages.
+// The legacy polling is not under test: only that it is asked for on legacy pages, and
+// stopped on the others.
 vi.mock('@/stores/ftbotwrapper', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   initBots: vi.fn(),
+  suspendBots: vi.fn(),
 }));
 
 // The pages are not under test, only where the paths lead: stub them (they are heavy).
@@ -36,6 +38,7 @@ vi.mock('@/views/LoginView.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/Error404View.vue', () => ({ default: { render: () => null } }));
 
 import router from '@/router';
+import { initBots, suspendBots } from '@/stores/ftbotwrapper';
 import { carryQuery, LEGACY_REDIRECTS, resolveBotParam, TOOL_PATHS } from '@/router/legacy';
 
 const lookup = {
@@ -161,6 +164,21 @@ describe('the table of old paths', () => {
       expect(r.name, path).not.toBe('404');
       expect(Boolean(r.meta.legacy), id).toBe(legacy.has(id));
     }
+  });
+
+  it('starts the legacy polling on a legacy tool and stops it on any other page', async () => {
+    mocked.logins = lookup.logins;
+    await router.push('/tools/backtest');
+    expect(initBots).toHaveBeenCalled();
+    vi.mocked(suspendBots).mockClear();
+    vi.mocked(initBots).mockClear();
+    await router.push('/dashboard');
+    expect(suspendBots).toHaveBeenCalledTimes(1);
+    expect(initBots).not.toHaveBeenCalled();
+    await router.push('/tools/logs');
+    expect(suspendBots).toHaveBeenCalledTimes(2);
+    await router.push('/tools/volume');
+    expect(initBots).toHaveBeenCalledTimes(1);
   });
 
   it('sends an unknown path, and an unknown tool, to the 404 page (the catch-all must match)', () => {
