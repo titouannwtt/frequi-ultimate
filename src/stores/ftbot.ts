@@ -71,6 +71,7 @@ import { closedTradesWanted } from '@/stores/closedTradesPolicy';
 import { blacklistWanted, locksWanted, whitelistWanted } from '@/stores/perBotFetchPolicy';
 import { rememberBotName } from '@/stores/botNameRegistry';
 import { scheduleSlowRefresh } from '@/stores/slowRefreshScheduler';
+import { legacyPollingAllowed } from '@/stores/legacyPollingGate';
 
 /**
  * Runaway guard on the closed-trade pagination, per bot.
@@ -287,6 +288,8 @@ export function createBotSubStore(botId: string, botName: string) {
         this.isBotOnline = isBotOnline;
       },
       async refreshSlow(forceUpdate = false) {
+        // A ping answered after the user left the legacy pages ends here (`setIsBotOnline`)
+        if (!legacyPollingAllowed()) return;
         if (this.isBotStarting) {
           await this.fetchPing();
           return;
@@ -330,6 +333,7 @@ export function createBotSubStore(botId: string, botName: string) {
         return Promise.resolve();
       },
       async refreshFrequent() {
+        if (!legacyPollingAllowed()) return;
         if (this.isBotStarting) {
           return;
         }
@@ -1206,6 +1210,9 @@ export function createBotSubStore(botId: string, botName: string) {
       },
       startWebSocket() {
         if (
+          // Not on a gateway page: a `/show_config` answered after the user left a legacy tool
+          // must not open the bot's own socket
+          !legacyPollingAllowed() ||
           this.websocketStarted === true ||
           wsClose !== null ||
           this.botStatusAvailable === false ||
