@@ -39,7 +39,7 @@ const AUTH_KEYS = ['ftAuthLoginInfo'];
  */
 export const FQU2_KEYS = [
   'fqu2.settings',
-  'fqu2.density',
+  'fqu2.density.v2',
   'fqu2.journal.views',
   'fqu2.fleetView',
   'fqu2.charts.rsi',

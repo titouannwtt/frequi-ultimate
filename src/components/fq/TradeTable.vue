@@ -116,7 +116,7 @@ const emit = defineEmits<{
   'update:selectedKey': [value: string | null];
 }>();
 
-const { t, locale } = useI18n();
+const { t, te, locale } = useI18n();
 const fmt = useFormat();
 const { vs } = useValueSlot();
 /** Slot props of a figure of a line: loaded, so a gap is never "loading". */
@@ -322,6 +322,7 @@ const tableCols = computed<ColumnDef<TradeLine>[]>(() =>
     .map((c) => ({
       id: c.id,
       label: t(`fq.col.${c.id}`),
+      title: te(`fq.hint.col.${c.id}`) ? t(`fq.hint.col.${c.id}`) : undefined,
       align: c.align,
       sortable: c.sortable,
       sortValue: (l: TradeLine) => sortValue(l, c.id),

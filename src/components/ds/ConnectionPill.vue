@@ -21,12 +21,13 @@ const emit = defineEmits<{ click: [] }>();
 const { t } = useI18n();
 const fmt = useFormat();
 
+// The pill is a dot and one plain word; the latency and the detail go in the tooltip
 const label = computed(() => {
   if (props.state === 'connecting') {
     return t('fq.connection.connecting');
   }
   if (props.state === 'degraded') {
-    return t('fq.connection.degraded');
+    return t('fq.ds.pill.slow');
   }
   if (props.state === 'offline') {
     return props.frozenAt
@@ -36,10 +37,20 @@ const label = computed(() => {
   if (props.kind === 'direct') {
     return t('fq.ds.pill.direct');
   }
-  return props.latencyMs !== undefined
-    ? `${t('fq.connection.gateway')} ${fmt.number(Math.round(props.latencyMs), 0)} ms`
-    : t('fq.connection.gateway');
+  return t('fq.ds.pill.upToDate');
 });
+
+const detail = computed(() => {
+  if (props.state === 'degraded') return t('fq.ds.pill.tipDegraded');
+  if (props.state === 'offline') return t('fq.ds.pill.tipOffline');
+  if (props.state === 'connecting') return '';
+  if (props.kind === 'direct') return t('fq.ds.pill.tipDirect');
+  return props.latencyMs !== undefined
+    ? t('fq.ds.pill.tipGateway', { ms: fmt.number(Math.round(props.latencyMs), 0) })
+    : t('fq.ds.pill.tipGatewayNoMs');
+});
+// Also the accessible name: the label stays hidden on a phone
+const tip = computed(() => (detail.value ? `${label.value}. ${detail.value}` : label.value));
 
 // What the live region says: the state, not the changing latency
 const announcement = computed(() => {
@@ -73,6 +84,8 @@ watch(
       :class="{ beat: beating, resync: resyncing }"
       :data-state="state"
       :data-kind="kind"
+      :title="tip"
+      :aria-label="tip"
       @click="emit('click')"
       @animationend="beating = false"
     >
@@ -182,6 +195,12 @@ b {
     min-width: 44px;
   }
   /* On a phone the live gateway is a bare dot; "Direct" stays written */
+  .conn[data-state='live'][data-kind='gateway'] {
+    justify-content: center;
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+  }
   .conn[data-state='live'][data-kind='gateway'] .lbl {
     display: none;
   }

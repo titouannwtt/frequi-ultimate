@@ -172,19 +172,24 @@ const unavailable = computed(() => alertsStore.unavailable);
           <div v-if="models[blk.mode]" class="tiles">
             <KpiTile
               :label="t('fq.kpi.pnlOpen')"
+              :hint="t('fq.hint.pnlOpen')"
               :sub="t('fq.header.openTrades', { n: blk.open_trades }, blk.open_trades)"
               v-bind="vs(models[blk.mode]!.slots.openProfit, `${blk.mode}/scope/openProfit`)"
             >
               <template #value><PnlValue :value="models[blk.mode]!.openProfit" /></template>
             </KpiTile>
             <KpiTile
-              :label="t('fq.col.realized_1d')"
+              :label="t('fq.kpi.realizedToday')"
+              :hint="t('fq.hint.realizedToday')"
+              :short-label="t('fq.kpiShort.realizedToday')"
               v-bind="vs(models[blk.mode]!.slots.realized1d, `${blk.mode}/scope/d1`)"
             >
               <template #value><PnlValue :value="models[blk.mode]!.realized1d" /></template>
             </KpiTile>
             <KpiTile
-              :label="t('fq.col.realized_30d')"
+              :label="t('fq.kpi.realized30d')"
+              :hint="t('fq.hint.realized30d')"
+              :short-label="t('fq.kpiShort.realized30d')"
               v-bind="vs(models[blk.mode]!.slots.realized30d, `${blk.mode}/scope/d30`)"
             >
               <template #value
@@ -223,6 +228,8 @@ const unavailable = computed(() => alertsStore.unavailable);
             <KpiTile
               v-if="blk.mode === data.totals[0]?.mode"
               :label="t('fq.kpi.drawdownOpen')"
+              :hint="t('fq.hint.drawdownOpen')"
+              :short-label="t('fq.kpiShort.drawdownOpen')"
               :meter="ddMeter(models[blk.mode])"
               v-bind="vs(models[blk.mode]!.slots.drawdown, `${blk.mode}/scope/drawdown`)"
             >

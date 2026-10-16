@@ -1,60 +1,65 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import DsIcon from './DsIcon.vue';
-import type { Density, HealthLevel } from './types';
+import type { HealthLevel } from './types';
 
+/**
+ * The bar at the foot of the desktop shell. It is quiet by default: the freshness (default slot) and
+ * whatever is wrong. The health appears, in plain words, only when it is not OK; the error count
+ * of the logs only when it is above zero. Rarely useful items go to `end` (right side).
+ */
 const props = defineProps<{
   health: HealthLevel;
+  /** The health in plain words, with its reason: shown only when `health` is not `ok`. */
+  healthText?: string;
   logsErrorCount: number;
-  density: Density;
 }>();
 
 const emit = defineEmits<{
   openHealth: [];
   openLogs: [];
-  'update:density': [value: Density];
 }>();
 
 const { t } = useI18n();
-
-const healthLabel = computed(() => t(`fq.ds.health.${props.health}`));
 </script>
 
 <template>
   <footer class="status" role="contentinfo">
-    <button type="button" class="si" :class="`lvl-${health}`" @click="emit('openHealth')">
-      <DsIcon name="activity" :size="13" />
-      {{ t('fq.ds.health.title') }}
-      <b>{{ healthLabel }}</b>
-    </button>
-    <button type="button" class="si" @click="emit('openLogs')">
-      <DsIcon name="terminal" :size="13" />
-      {{ t('fq.ds.logs') }}
-      <span class="num" :class="{ 'lvl-crit': logsErrorCount > 0 }">{{ logsErrorCount }}</span>
-    </button>
     <slot />
-    <span class="sp"></span>
     <button
+      v-if="props.health !== 'ok'"
       type="button"
       class="si"
-      :aria-pressed="density === 'comfortable'"
-      @click="emit('update:density', density === 'compact' ? 'comfortable' : 'compact')"
+      :class="`lvl-${health}`"
+      data-testid="sb-health"
+      @click="emit('openHealth')"
     >
-      <DsIcon name="layout-grid" :size="13" />
-      {{ density === 'compact' ? t('fq.ds.density.compact') : t('fq.ds.density.comfortable') }}
+      <DsIcon name="activity" :size="13" />
+      <b>{{ healthText ?? t(`fq.ds.health.${health}`) }}</b>
     </button>
+    <button
+      v-if="logsErrorCount > 0"
+      type="button"
+      class="si lvl-crit"
+      data-testid="sb-logs"
+      @click="emit('openLogs')"
+    >
+      <DsIcon name="terminal" :size="13" />
+      {{ t('fq.shell.sb.logs', { n: logsErrorCount }, logsErrorCount) }}
+    </button>
+    <span class="sp"></span>
+    <slot name="end" />
   </footer>
 </template>
 
 <style scoped>
 .status {
-  height: 26px;
+  height: var(--sbar);
   flex: none;
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 0 var(--s2);
+  padding: 0 var(--s3);
   border-top: 1px solid var(--line);
   background: var(--bg-1);
   font-family: var(--font-ui);
@@ -83,14 +88,8 @@ const healthLabel = computed(() => t(`fq.ds.health.${props.health}`));
 .si b {
   font-weight: 600;
 }
-.num {
-  color: var(--fg);
-}
 .sp {
   flex: 1;
-}
-.lvl-ok {
-  color: var(--profit);
 }
 .lvl-degraded {
   color: var(--warn);

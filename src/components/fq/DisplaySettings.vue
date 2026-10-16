@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useLocalStorage } from '@vueuse/core';
 import { useI18n } from 'vue-i18n';
 
 import { FormRow, SegmentedControl, Switch } from '@/components/ds';
 import type { SegmentOption } from '@/components/ds';
-import { useDisplayPrefs, type MotionPref } from '@/composables/useDisplayPrefs';
+import { useDisplayPrefs, type DensityPref, type MotionPref } from '@/composables/useDisplayPrefs';
 import { useTheme } from '@/composables/useTheme';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { Tz } from '@/gateway/types.gen';
@@ -20,14 +19,11 @@ import type { ThemeMode } from '@/types';
  * are saved with them and, for the zone, shared between devices through the gateway; theme,
  * density, palette and motion stay on this device.
  */
-type Density = 'compact' | 'comfortable';
-
 const { t, locale } = useI18n();
 const prefs = useFqPrefsStore();
 const theme = useTheme();
 const settingsStore = useSettingsStore();
-const { cvd, motion } = useDisplayPrefs();
-const density = useLocalStorage<Density>('fqu2.density', 'compact');
+const { cvd, motion, density } = useDisplayPrefs();
 
 const langs = [
   { value: 'fr', label: 'Français' },
@@ -38,9 +34,9 @@ const themes = computed<SegmentOption<ThemeMode>[]>(() => [
   { value: 'light', label: t('fq.theme.light') },
   { value: 'system', label: t('fq.theme.system') },
 ]);
-const densities = computed<SegmentOption<Density>[]>(() => [
+const densities = computed<SegmentOption<DensityPref>[]>(() => [
+  { value: 'airy', label: t('fq.pg.settings.disp.airy') },
   { value: 'compact', label: t('fq.pg.settings.disp.compact') },
-  { value: 'comfortable', label: t('fq.pg.settings.disp.comfortable') },
 ]);
 const zones = computed<SegmentOption<Tz>[]>(() => [
   { value: 'Europe/Paris', label: t('fq.pg.settings.disp.paris') },

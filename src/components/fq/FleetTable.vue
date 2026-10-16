@@ -93,7 +93,7 @@ const emit = defineEmits<{
   toggleGroup: [id: string, collapsed: boolean];
 }>();
 
-const { t, locale } = useI18n();
+const { t, te, locale } = useI18n();
 const fmt = useFormat();
 const clock = useNowMs();
 const conn = useFqConnectionStore();
@@ -384,6 +384,8 @@ function onKey(e: KeyboardEvent, b: BotRow) {
 }
 
 const headerLabel = (id: string) => t(`fq.col.${id}`);
+/** The technical term behind a plain column label, when there is one. */
+const headerHint = (id: string) => (te(`fq.hint.col.${id}`) ? t(`fq.hint.col.${id}`) : undefined);
 const hasSpark = (b: BotRow) => b.metrics.spark24h.length > 1;
 
 defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
@@ -412,6 +414,7 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
             class="colh"
             :class="{ l: c.align === 'left', c: c.align === 'center' }"
             :style="c.id === 'bot' ? { minWidth: '196px' } : undefined"
+            :title="headerHint(c.id)"
           >
             {{ headerLabel(c.id) }}
           </th>
@@ -797,22 +800,22 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: var(--t-sm);
+  font-size: var(--t-cell);
 }
 th {
   position: sticky;
   top: 0;
   z-index: 3;
-  height: 30px;
+  height: var(--th-h);
   padding: 0 8px;
   text-align: right;
   white-space: nowrap;
   background: var(--bg-1);
   border-bottom: 1px solid var(--line);
-  color: var(--fg-3);
-  font: 600 var(--t-xs) var(--font-ui);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--th-color);
+  font: var(--th-weight) var(--t-xs) var(--font-ui);
+  text-transform: var(--th-case);
+  letter-spacing: var(--th-track);
 }
 th.l,
 td.l {
@@ -823,7 +826,7 @@ td.c {
   text-align: center;
 }
 tr.sigma th {
-  top: 30px;
+  top: var(--th-h);
   z-index: 2;
   height: var(--row);
   background: var(--bg-2);
@@ -835,7 +838,7 @@ tr.sigma th {
   cursor: pointer;
 }
 tr.sigma + tr.sigma th {
-  top: calc(30px + var(--row));
+  top: calc(var(--th-h) + var(--row));
 }
 tr.sigma .sig-l {
   font-family: var(--font-ui);
@@ -845,7 +848,7 @@ td {
   height: var(--row);
   padding: 0 8px;
   text-align: right;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--row-line);
   white-space: nowrap;
   font-family: var(--font-num);
   font-variant-numeric: tabular-nums slashed-zero;

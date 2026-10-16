@@ -349,13 +349,25 @@ describe('Banner and ConnectionPill', () => {
       mountDs(ConnectionPill, { props: props as never })
         .get('.lbl')
         .text();
-    expect(label({ kind: 'gateway', state: 'live', latencyMs: 38 })).toBe('Gateway 38 ms');
+    expect(label({ kind: 'gateway', state: 'live', latencyMs: 38 })).toBe('Up to date');
     expect(label({ kind: 'gateway', state: 'connecting' })).toBe('Connecting');
-    expect(label({ kind: 'gateway', state: 'degraded' })).toBe('Degraded');
+    expect(label({ kind: 'gateway', state: 'degraded' })).toBe('Slowed');
     expect(label({ kind: 'gateway', state: 'offline', frozenAt: '14:32:08' })).toBe(
       'Offline · frozen 14:32:08',
     );
     expect(label({ kind: 'direct', state: 'live' })).toBe('Direct');
+  });
+
+  it('puts the latency and the detail in the tooltip, not in the label', () => {
+    const button = mountDs(ConnectionPill, {
+      props: { kind: 'gateway', state: 'live', latencyMs: 38 },
+    }).get('button');
+    expect(button.attributes('title')).toBe('Up to date. Gateway connected, 38 ms.');
+    expect(button.attributes('aria-label')).toBe(button.attributes('title'));
+    const direct = mountDs(ConnectionPill, { props: { kind: 'direct', state: 'live' } }).get(
+      'button',
+    );
+    expect(direct.attributes('title')).toContain('Direct');
   });
 
   it('keeps the button semantics and announces the state from a separate live region', () => {
