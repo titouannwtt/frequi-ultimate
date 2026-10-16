@@ -47,11 +47,23 @@ describe('PnlValue', () => {
 
   it('renders the unit and never invents a number for unknown or missing values', () => {
     expect(mountDs(PnlValue, { props: { value: 3, unit: 'USDC' } }).text()).toBe('+3.00\u00a0USDC');
+    // A value that is not a figure is an icon with its reason, never a word in the slot
     const unknown = mountDs(PnlValue, { props: { value: 3, unknown: true } });
-    expect(unknown.text()).toBe('unknown');
-    expect(mountDs(PnlValue, { props: { value: null } }).text()).toBe('n/a');
+    expect(unknown.text()).toBe('');
+    expect(unknown.get('[data-state="unavailable"]').attributes('aria-label')).toBe(
+      'Profit not recorded',
+    );
+    const missing = mountDs(PnlValue, { props: { value: null } });
+    expect(missing.text()).toBe('');
+    expect(missing.get('[data-state="unavailable"]').attributes('aria-label')).toBe(
+      'Value unavailable',
+    );
     setLocale('fr');
-    expect(mountDs(PnlValue, { props: { value: null, unknown: true } }).text()).toBe('inconnu');
+    expect(
+      mountDs(PnlValue, { props: { value: null, unknown: true } })
+        .get('[data-state="unavailable"]')
+        .attributes('aria-label'),
+    ).toBe('Profit non enregistré');
   });
 
   describe('flash and tween', () => {

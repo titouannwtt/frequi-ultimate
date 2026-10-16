@@ -13,7 +13,7 @@ import { useElementSize } from '@vueuse/core';
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { BaseChart, EmptyState, FilterChip, Skeleton } from '@/components/ds';
+import { BaseChart, EmptyState, FilterChip, Skeleton, ValueState } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useDataSource } from '@/composables/useDataSource';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
@@ -414,7 +414,7 @@ const moveText = computed(() => {
   if (!m) return '';
   return t('fq.candle.measureLabel', {
     price: `${m.dPrice < 0 ? '−' : '+'}${fmt.price(Math.abs(m.dPrice))}`,
-    pct: m.dPct === null ? t('fq.ds.dash') : fmt.percent(m.dPct, 2),
+    pct: m.dPct === null ? '' : fmt.percent(m.dPct, 2),
     candles: m.candles,
     duration: fmt.duration(m.durationMs / 3_600_000),
   });
@@ -486,11 +486,13 @@ const hasOverlay = (k: keyof OverlayToggles) => {
         </span>
         <span v-for="n in names" :key="n" class="ind">
           {{ n }}
-          <b class="num">{{
-            legend.values[n] === null || legend.values[n] === undefined
-              ? t('fq.ds.dash')
-              : fmt.number(legend.values[n] as number, 2)
-          }}</b>
+          <b class="num"
+            ><ValueState
+              v-if="legend.values[n] === null || legend.values[n] === undefined"
+              state="unavailable"
+              :reason="t('fq.value.reason.noData')"
+            /><template v-else>{{ fmt.number(legend.values[n] as number, 2) }}</template></b
+          >
         </span>
       </div>
       <FilterChip

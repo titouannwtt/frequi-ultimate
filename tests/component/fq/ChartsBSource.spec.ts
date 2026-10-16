@@ -491,7 +491,9 @@ describe('ClosedTradeSheet', () => {
     const w = mount(t);
     await flushPromises();
     expect(w.text()).not.toMatch(/\+0\.00/);
-    expect(w.text().toLowerCase()).toContain('unknown');
+    // The result is an icon that says why, not a word in the figure's place
+    const pnl = w.get('.pnl [data-state="unavailable"]');
+    expect(pnl.attributes('aria-label')).toBe('Profit not recorded');
   });
 
   it('a human exit is marked as such', async () => {

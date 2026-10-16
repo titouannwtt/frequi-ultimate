@@ -15,6 +15,7 @@ import { useFormat } from '@/components/ds/lib/useFormat';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
 import { usePositionsAwaiting } from '@/composables/usePositionsAwaiting';
 import { useSourceQuery } from '@/composables/useSourceQuery';
+import { useValueSlot } from '@/composables/useValueSlot';
 import { withTimeout } from './lib/logs';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPositionsStore } from '@/datasource/stores/positions';
@@ -34,6 +35,7 @@ import {
   type SignalSummary,
 } from './lib/pairs';
 import { pairLabel } from './lib/trades';
+import { READY, unavailable } from './lib/valueState';
 
 /**
  * One pair selector for the Bot and Charts pages (02 section 4.1 C11): the open positions of the
@@ -71,6 +73,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { vs } = useValueSlot();
 const fmt = useFormat();
 const fleet = useFqFleetStore();
 const positions = useFqPositionsStore();
@@ -225,8 +228,8 @@ function leftLabel(i: PairItem): string {
             <PnlValue
               :value="i.profitAbs"
               :muted="i.stale"
-              :unknown="i.profitAbs === null"
               :decimals="2"
+              v-bind="vs(i.profitAbs === null ? unavailable('prices', 1) : READY)"
             />
           </span>
           <span class="sub">
@@ -282,6 +285,7 @@ function leftLabel(i: PairItem): string {
 
     <EmptyState
       v-else-if="!loading"
+      :loading="filter === 'positions' && awaiting.missing.value > 0"
       :icon="filter === 'locks' ? 'hand' : filter === 'signals' ? 'activity' : 'layers'"
       :title="
         filter === 'positions' && awaiting.missing.value > 0

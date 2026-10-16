@@ -2,19 +2,21 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { AgeBadge, Badge, Btn, DsIcon, EmptyState, Meter } from '@/components/ds';
+import { AgeBadge, Badge, Btn, DsIcon, EmptyState, Meter, ValueState } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
+import { useValueSlot } from '@/composables/useValueSlot';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
 import { useFqHealthStore } from '@/datasource/stores/health';
 import type { Health, HealthReason } from '@/gateway/types.gen';
 
+import { unavailable } from './lib/valueState';
 import { budgetTone, hasFigureDetail, hitRateTone, isKnownReason, sortReasons } from './lib/risk';
 
 /**
  * System health (02 section 4.1 C6): the level and its reasons in words, the request budget, the
  * cache, the backoff and the freshness of the digest. The status bar shows the level in 26 px;
  * this is the sheet behind it, and the Diagnostic section of the tools (`detail`, which adds the
- * connection facts). Values are never invented: a figure the source did not give is "n/a".
+ * connection facts). Values are never invented: a figure the source did not give is an unavailable icon.
  */
 const props = withDefaults(
   defineProps<{
@@ -32,6 +34,9 @@ const { t } = useI18n();
 const fmt = useFormat();
 const store = useFqHealthStore();
 const conn = useFqConnectionStore();
+const { vs } = useValueSlot();
+// The health is loaded: a figure it does not carry is unavailable (the direct mode reads no budget)
+const gap = computed(() => vs(unavailable(conn.kind === 'direct' ? 'direct' : 'noData')));
 
 const h = computed<Health | null>(() => (props.health !== undefined ? props.health : store.health));
 const reasons = computed(() => sortReasons(h.value?.reasons ?? []));
@@ -57,6 +62,7 @@ const connState = computed(() => conn.status);
     <EmptyState
       v-if="!h"
       icon="activity"
+      :loading="!store.unavailable"
       :title="store.unavailable ? t('fq.connection.unavailableDirect') : t('fq.sysh.waiting')"
       :hint="store.unavailable ?? undefined"
     />
@@ -106,9 +112,11 @@ const connState = computed(() => conn.status);
             :tone="budgetTone(budget)"
             :label="t('fq.sysh.budget')"
           />
-          <span class="v num">{{
-            budget === null ? t('fq.ds.notAvailable') : fmt.percent(budget, 0, false)
-          }}</span>
+          <span class="v num"
+            ><ValueState v-if="budget === null" v-bind="gap" /><template v-else>{{
+              fmt.percent(budget, 0, false)
+            }}</template></span
+          >
         </div>
         <div class="g" data-testid="health-cache">
           <span class="k">{{ t('fq.sysh.cache') }}</span>
@@ -118,9 +126,11 @@ const connState = computed(() => conn.status);
             :tone="hitRateTone(hit)"
             :label="t('fq.sysh.cache')"
           />
-          <span class="v num">{{
-            hit === null ? t('fq.ds.notAvailable') : fmt.percent(hit * 100, 1, false)
-          }}</span>
+          <span class="v num"
+            ><ValueState v-if="hit === null" v-bind="gap" /><template v-else>{{
+              fmt.percent(hit * 100, 1, false)
+            }}</template></span
+          >
         </div>
         <div class="g">
           <span class="k">{{ t('fq.sysh.backoff') }}</span>
@@ -134,14 +144,20 @@ const connState = computed(() => conn.status);
         <div class="g">
           <span class="k">{{ t('fq.sysh.processes') }}</span>
           <span></span>
-          <span class="v num">{{ h.bots_process ?? t('fq.ds.notAvailable') }}</span>
+          <span class="v num"
+            ><ValueState v-if="h.bots_process === null" v-bind="gap" /><template v-else>{{
+              h.bots_process
+            }}</template></span
+          >
         </div>
         <div class="g">
           <span class="k">{{ t('fq.sysh.digestAge') }}</span>
           <span></span>
-          <span class="v num">{{
-            h.digest_age_s === null ? t('fq.ds.notAvailable') : fmt.age(h.digest_age_s * 1000)
-          }}</span>
+          <span class="v num"
+            ><ValueState v-if="h.digest_age_s === null" v-bind="gap" /><template v-else>{{
+              fmt.age(h.digest_age_s * 1000)
+            }}</template></span
+          >
         </div>
       </section>
 
@@ -149,14 +165,16 @@ const connState = computed(() => conn.status);
         <h4>{{ t('fq.sysh.connection') }}</h4>
         <dl>
           <dt>{{ t('fq.sysh.source') }}</dt>
-          <dd>{{ conn.kind ? t(`fq.sysh.kind.${conn.kind}`) : t('fq.ds.notAvailable') }}</dd>
+          <dd>
+            <template v-if="conn.kind">{{ t(`fq.sysh.kind.${conn.kind}`) }}</template>
+            <ValueState v-else state="pending" />
+          </dd>
           <dt>{{ t('fq.sysh.state') }}</dt>
           <dd>{{ t(`fq.sysh.conn.${connState.state}`) }}</dd>
           <dt>{{ t('fq.sysh.latency') }}</dt>
           <dd class="num">
-            {{
-              connState.latencyMs === null ? t('fq.ds.notAvailable') : `${connState.latencyMs} ms`
-            }}
+            <ValueState v-if="connState.latencyMs === null" v-bind="gap" />
+            <template v-else>{{ connState.latencyMs }} ms</template>
           </dd>
           <dt>{{ t('fq.sysh.skew') }}</dt>
           <dd class="num">{{ fmt.number(connState.clockSkewMs / 1000, 1) }} s</dd>

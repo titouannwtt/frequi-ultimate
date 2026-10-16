@@ -105,6 +105,10 @@
  * is a safety delay and is deliberately not touched here.
  */
 @media (prefers-reduced-motion: reduce) {
+  /* A value that is loading keeps a sign of life without rotating: a slow opacity pulse */
+  .vs-spin {
+    animation: fq-pulse 2.4s ease-in-out infinite !important;
+  }
   *,
   *::before,
   *::after {
@@ -129,4 +133,7 @@
 :root[data-motion='reduce'] .sk {
   background-image: none;
   background-color: var(--bg-2);
+}
+:root[data-motion='reduce'] .vs-spin {
+  animation: fq-pulse 2.4s ease-in-out infinite !important;
 }

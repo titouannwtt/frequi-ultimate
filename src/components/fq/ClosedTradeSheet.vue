@@ -11,9 +11,11 @@ import {
   ModeMark,
   PnlValue,
   Skeleton,
+  ValueState,
 } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useDataSource } from '@/composables/useDataSource';
+import { useValueSlot } from '@/composables/useValueSlot';
 import { mapClosedTrade } from '@/datasource/direct/mappers';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
@@ -27,6 +29,7 @@ import type { JournalTrade } from './lib/journal';
 import { withTimeout } from './lib/logs';
 import { formatDateTime } from './lib/time';
 import { pairLabel } from './lib/trades';
+import { READY, unavailable } from './lib/valueState';
 
 /**
  * Detail of a closed trade for the Journal (02 sections 3.4 and 5.2): result, exit reason with the
@@ -56,6 +59,7 @@ const emit = defineEmits<{ close: []; openBot: [botKey: BotKey] }>();
 
 const { t, locale } = useI18n();
 const fmt = useFormat();
+const { vs } = useValueSlot();
 const data = useDataSource();
 const fleet = useFqFleetStore();
 const prefs = useFqPrefsStore();
@@ -136,7 +140,7 @@ const exitOrigin = computed(() => {
 });
 const reasonLabel = computed(() => {
   const r = row.value?.exit_reason;
-  if (!r) return '';
+  if (!r || r.kind === 'unknown') return '';
   return r.kind === 'custom' ? r.raw : t(`fq.exit.${r.kind}`);
 });
 
@@ -170,8 +174,7 @@ const dcaDepth = computed(() => {
   return n > 0 ? n : null;
 });
 
-const stamp = (ms: number | null) =>
-  ms === null ? t('fq.ds.dash') : formatDateTime(ms, prefs.settings.tz, locale.value);
+const stamp = (ms: number) => formatDateTime(ms, prefs.settings.tz, locale.value);
 const title = computed(() =>
   row.value ? `${pairLabel(row.value.pair)} #${props.tradeId}` : `#${props.tradeId}`,
 );
@@ -210,7 +213,9 @@ const title = computed(() =>
           </span>
           <span v-if="pct !== null" class="pct"><PnlValue :value="pct" unit="%" /></span>
           <span class="dur num">
-            {{ t('fq.jr.sheet.closedAt', { d: stamp(row.close_ms) }) }}
+            <template v-if="row.close_ms !== null">{{
+              t('fq.jr.sheet.closedAt', { d: stamp(row.close_ms) })
+            }}</template>
             <template v-if="durationH !== null"> · {{ fmt.duration(durationH) }}</template>
           </span>
         </section>
@@ -218,15 +223,17 @@ const title = computed(() =>
         <section class="facts" :aria-label="t('fq.drawer.facts')">
           <div class="fact">
             <span class="k">{{ t('fq.jr.sheet.dca') }}</span>
-            <span class="v num" :class="{ warn: (dcaDepth ?? 0) >= 4 }">{{
-              dcaDepth ?? t('fq.ds.notAvailable')
-            }}</span>
+            <span class="v num" :class="{ warn: (dcaDepth ?? 0) >= 4 }"
+              ><ValueState v-bind="vs(unavailable('noData'))">{{ dcaDepth }}</ValueState></span
+            >
           </div>
           <div class="fact">
             <span class="k">{{ t('fq.jr.sheet.reason') }}</span>
-            <span class="v ui" :title="row.exit_reason.raw || t('fq.jr.exit.noRaw')">{{
-              reasonLabel
-            }}</span>
+            <span class="v ui" :title="row.exit_reason.raw || t('fq.jr.exit.noRaw')"
+              ><ValueState v-bind="vs(unavailable('exitReason'))">{{
+                reasonLabel
+              }}</ValueState></span
+            >
           </div>
           <div class="fact">
             <span class="k">{{ t('fq.jr.sheet.exitBy') }}</span>
@@ -238,9 +245,11 @@ const title = computed(() =>
           </div>
           <div class="fact">
             <span class="k">{{ t('fq.jr.sheet.exitPrice') }}</span>
-            <span class="v num">{{
-              row.close_rate === null ? t('fq.ds.notAvailable') : fmt.price(row.close_rate)
-            }}</span>
+            <span class="v num"
+              ><ValueState v-bind="vs(row.close_rate === null ? unavailable('noData') : READY)">{{
+                fmt.price(row.close_rate as number)
+              }}</ValueState></span
+            >
           </div>
           <div class="fact">
             <span class="k">{{ t('fq.col.stake') }}</span>
@@ -264,7 +273,14 @@ const title = computed(() =>
             <tbody>
               <tr v-for="l in lines" :key="l.key">
                 <td class="l">{{ t(`fq.jr.sheet.order.${l.side}`) }}</td>
-                <td class="num">{{ stamp(l.ts) }}</td>
+                <td class="num">
+                  <ValueState
+                    v-if="l.ts === null"
+                    state="unavailable"
+                    :reason="t('fq.value.reason.noData')"
+                  />
+                  <template v-else>{{ stamp(l.ts) }}</template>
+                </td>
                 <td class="num">{{ fmt.price(l.price) }}</td>
                 <td class="num">{{ fmt.number(l.amount, 4) }}</td>
               </tr>

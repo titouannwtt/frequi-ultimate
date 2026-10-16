@@ -12,11 +12,13 @@ import {
   PnlValue,
   SegmentedControl,
   TextInput,
+  ValueState,
 } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useFocusTrap } from '@/components/ds/lib/useFocusTrap';
 import { useBotAction, type ActionOutcome } from '@/composables/useBotAction';
 import { useInflightLock } from '@/composables/useInflightLock';
+import { useValueSlot } from '@/composables/useValueSlot';
 import { useFqPositionsStore } from '@/datasource/stores/positions';
 import type { BotAction, DataSource } from '@/datasource/types';
 import type { BotKey, Position } from '@/gateway/types.gen';
@@ -30,6 +32,7 @@ import {
   type DialogWarning,
   type QuantityChoice,
 } from './lib/dialog';
+import { READY, unavailable } from './lib/valueState';
 
 /**
  * The confirmation of a mutation (docs/redesign/02-design.md, sections 11.1 to 11.6). It always
@@ -67,6 +70,7 @@ const emit = defineEmits<{ close: []; done: [outcome: ActionOutcome] }>();
 
 const { t } = useI18n();
 const fmt = useFormat();
+const { vs } = useValueSlot();
 const lock = useInflightLock();
 const positions = useFqPositionsStore();
 const titleId = useId();
@@ -262,9 +266,11 @@ const confirmLabel = computed(() =>
 );
 
 const allPositions = computed(() => positions.byBot(props.target.botKey).filter((p) => !p.orphan));
+// A position without a profit (prices blocked by a backoff) makes the sum unknown: never a 0.00
 const allLatent = computed(() => {
   const list = allPositions.value.filter((p) => !p.freshness.stale);
-  return list.length === 0 ? null : list.reduce((acc, p) => acc + (p.profit_abs ?? 0), 0);
+  if (list.length === 0 || list.some((p) => p.profit_abs === null)) return null;
+  return list.reduce((acc, p) => acc + (p.profit_abs ?? 0), 0);
 });
 const allNotional = computed(() => {
   const list = allPositions.value.filter((p) => !p.freshness.stale);
@@ -484,30 +490,46 @@ watch(
             <div>
               <span class="k">{{ t('fq.dialog.estPnl') }}</span>
               <span class="v"
-                ><PnlValue :value="plan.pnl" :unknown="plan.pnl === null" unit="USDC"
+                ><PnlValue
+                  :value="plan.pnl"
+                  unit="USDC"
+                  v-bind="vs(plan.pnl === null ? unavailable('prices', 1) : READY)"
               /></span>
             </div>
             <div>
               <span class="k">{{ t('fq.dialog.estPrice') }}</span>
-              <span class="v num">{{
-                !position || position.current_rate === null
-                  ? t('fq.ds.notAvailable')
-                  : fmt.price(position.current_rate)
-              }}</span>
+              <span class="v num"
+                ><ValueState
+                  v-bind="
+                    vs(
+                      !position || position.current_rate === null
+                        ? unavailable('prices', 1)
+                        : READY,
+                    )
+                  "
+                  >{{ fmt.price(position?.current_rate ?? 0) }}</ValueState
+                ></span
+              >
             </div>
           </div>
           <div v-else-if="action.kind === 'forceexit' && action.tradeId === 'all'" class="est">
             <div>
               <span class="k">{{ t('fq.dialog.latentPnl') }}</span>
               <span class="v"
-                ><PnlValue :value="allLatent" :unknown="allLatent === null" unit="USDC"
+                ><PnlValue
+                  :value="allLatent"
+                  unit="USDC"
+                  v-bind="
+                    vs(allLatent === null ? unavailable('prices', allPositions.length) : READY)
+                  "
               /></span>
             </div>
             <div>
               <span class="k">{{ t('fq.dialog.notional') }}</span>
               <span class="v num"
-                >{{ allNotional === null ? t('fq.ds.notAvailable') : fmt.number(allNotional, 0)
-                }}<small> USDC</small></span
+                ><ValueState v-bind="vs(allNotional === null ? unavailable('noData') : READY)"
+                  >{{ fmt.number(allNotional ?? 0, 0) }}<small> USDC</small></ValueState
+                ></span
               >
             </div>
           </div>

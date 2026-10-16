@@ -107,7 +107,7 @@ describe('TradeDrawer opened from the fleet table (B194)', () => {
       attachTo: document.body,
     });
     await flushPromises();
-    expect(w.text()).toContain('1 of 1 entry filled. The orders are not available.');
+    expect(w.text()).toContain('1 entry filled. The orders are not available.');
   });
 });
 
@@ -163,7 +163,7 @@ describe('positions announced and not read yet (direct mode first render)', () =
       attachTo: document.body,
     });
     await flushPromises();
-    expect(w.text()).toContain('3 positions announced, not read yet');
+    expect(w.text()).toContain('3 positions announced, being read');
     expect(w.text()).not.toContain('No open position');
   });
 
@@ -174,7 +174,7 @@ describe('positions announced and not read yet (direct mode first render)', () =
       attachTo: document.body,
     });
     await flushPromises();
-    expect(w.text()).toContain('3 positions announced, not read yet');
+    expect(w.text()).toContain('3 positions announced, being read');
   });
 
   it('a partial table says how many positions are still to come', async () => {
@@ -196,7 +196,7 @@ describe('positions announced and not read yet (direct mode first render)', () =
     });
     await flushPromises();
     expect(w.find('[data-testid=positions-awaiting]').text()).toContain(
-      '2 more positions announced, not read yet',
+      '2 more positions announced, being read',
     );
   });
 

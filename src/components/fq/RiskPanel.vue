@@ -10,16 +10,22 @@ import {
   ModeMark,
   Skeleton,
   SplitBar,
+  ValueState,
 } from '@/components/ds';
 import type { BotRef } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
+import { useNowMs } from '@/components/ds/lib/useNowMs';
 import { useScopeDetail } from '@/composables/useScopeDetail';
+import { useFqConnectionStore } from '@/datasource/stores/connection';
+import { useValueSlot } from '@/composables/useValueSlot';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import type { ScopeDetail, ScopeRef } from '@/datasource/types';
 import type { BotKey, BotMode } from '@/gateway/types.gen';
 
 import { liquidationTone, riskModel } from './lib/risk';
 import { pairLabel } from './lib/trades';
+import { fleetKpiModel, type FleetKpiModel } from './lib/kpis';
+import { PENDING, READY, unavailable } from './lib/valueState';
 
 /**
  * Wallet-level risk (02 sections 4.1 C5 and 12): the closest liquidation, the effective leverage,
@@ -44,6 +50,9 @@ const emit = defineEmits<{ openBot: [botKey: BotKey]; openReconciliation: [] }>(
 const { t } = useI18n();
 const fmt = useFormat();
 const fleet = useFqFleetStore();
+const conn = useFqConnectionStore();
+const clock = useNowMs();
+const { vs } = useValueSlot();
 
 const loaded = useScopeDetail(() => props.scope);
 const data = computed<ScopeDetail | null>(() => props.scopeDetail ?? loaded.detail.value);
@@ -80,6 +89,29 @@ function openNearest() {
   const k = model.value?.nearest?.botKey;
   if (k) emit('openBot', k);
 }
+// The positions and the capital of the mode, with the state of each figure (still being read, or
+// loaded without a figure): the same rules as the KPI strip
+const kpi = computed<FleetKpiModel | null>(() => {
+  const d = data.value;
+  const block = d?.totals.find((x) => x.mode === props.mode);
+  return d && block ? fleetKpiModel(block, d, clock.value, conn.status.clockSkewMs, false) : null;
+});
+const readingPositions = computed(() => kpi.value?.slots.exposure.state === 'pending');
+const exposureSlot = computed(() =>
+  vs(kpi.value?.slots.exposure ?? READY, `${props.mode}/risk/exposure`),
+);
+// No figure: no liquidation to measure (nothing open, or the prices are missing)
+const noNearest = computed(() => {
+  if (readingPositions.value) return vs(PENDING, `${props.mode}/risk/nearest`);
+  const open = (model.value?.exposure.long ?? 0) + (model.value?.exposure.short ?? 0) > 0;
+  return vs(unavailable(open ? 'prices' : 'flat'));
+});
+const noLeverage = computed(() =>
+  vs(
+    kpi.value?.slots.capital.state === 'pending' ? PENDING : unavailable('capital'),
+    `${props.mode}/risk/leverage`,
+  ),
+);
 const tone = computed(() => liquidationTone(model.value?.nearest?.distancePct ?? null));
 </script>
 
@@ -108,7 +140,7 @@ const tone = computed(() => liquidationTone(model.value?.nearest?.distancePct ??
               {{ nameOf(model.nearest.botKey) }}
             </button>
           </template>
-          <span v-else class="mut">{{ t('fq.ds.notAvailable') }}</span>
+          <ValueState v-else v-bind="noNearest" />
         </dd>
 
         <dt>{{ t('fq.risk.leverage') }}</dt>
@@ -119,19 +151,22 @@ const tone = computed(() => liquidationTone(model.value?.nearest?.distancePct ??
               t('fq.risk.partialCapital')
             }}</span>
           </template>
-          <span v-else class="mut">{{ t('fq.ds.notAvailable') }}</span>
+          <ValueState v-else v-bind="noLeverage" />
         </dd>
 
         <dt>{{ t('fq.risk.exposure') }}</dt>
         <dd class="expo">
-          <span class="num"
-            >{{ fmt.number(model.exposure.long, 0) }} /
-            {{ fmt.number(model.exposure.short, 0) }}</span
-          >
-          <span class="mut">
-            · {{ t('fq.header.net', { n: fmt.signed(model.exposure.net, 0) }) }}</span
-          >
-          <SplitBar :long="model.exposure.long" :short="model.exposure.short" />
+          <ValueState v-if="exposureSlot.state !== 'ready'" v-bind="exposureSlot" />
+          <template v-else>
+            <span class="num"
+              >{{ fmt.number(model.exposure.long, 0) }} /
+              {{ fmt.number(model.exposure.short, 0) }}</span
+            >
+            <span class="mut">
+              · {{ t('fq.header.net', { n: fmt.signed(model.exposure.net, 0) }) }}</span
+            >
+            <SplitBar :long="model.exposure.long" :short="model.exposure.short" />
+          </template>
         </dd>
 
         <dt>{{ t('fq.risk.netting') }}</dt>

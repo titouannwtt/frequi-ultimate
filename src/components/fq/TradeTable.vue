@@ -13,6 +13,7 @@ import {
   ModeMark,
   PnlValue,
   SegmentedControl,
+  ValueState,
 } from '@/components/ds';
 import type { ColumnDef, SortState } from '@/components/ds';
 import { sortRows } from '@/components/ds/lib/table';
@@ -21,6 +22,7 @@ import { useColumns } from '@/composables/useColumns';
 import { usePositionsAwaiting } from '@/composables/usePositionsAwaiting';
 import { useScope } from '@/composables/useScope';
 import { useShortcuts } from '@/composables/useShortcuts';
+import { useValueSlot } from '@/composables/useValueSlot';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPositionsStore } from '@/datasource/stores/positions';
 import type { BotKey, Position, TradeRow } from '@/gateway/types.gen';
@@ -44,6 +46,7 @@ import {
   type TradeLine,
 } from './lib/trades';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
+import { lineSlot, unavailable, type SlotReason } from './lib/valueState';
 import PositionCard from './PositionCard.vue';
 
 /**
@@ -115,6 +118,12 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n();
 const fmt = useFormat();
+const { vs } = useValueSlot();
+/** Slot props of a figure of a line: loaded, so a gap is never "loading". */
+const slotOf = (row: TradeLine, value: number | null | undefined, reason?: SlotReason) =>
+  vs(lineSlot(row, value, reason));
+const noExit = computed(() => vs(unavailable('exitReason')));
+const noPercentile = computed(() => vs(unavailable('noPercentile')));
 const fleet = useFqFleetStore();
 const positionsStore = useFqPositionsStore();
 const prefs = useFqPrefsStore();
@@ -283,7 +292,7 @@ const groupTotals = computed(() => {
 function groupTitle(key: string): string {
   if (props.grouping !== 'day') return key;
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
-  if (!m) return t('fq.origin.unknown');
+  if (!m) return key;
   return new Intl.DateTimeFormat(locale.value, {
     timeZone: 'UTC',
     weekday: 'long',
@@ -295,7 +304,7 @@ function groupTitle(key: string): string {
 
 // ---- DataTable columns ----
 // A closed-trade column whose figure none of the loaded rows carries (the gateway does not give
-// the entries or the MAE/MFE of a closed trade in its list) is left out: a column of "n/d" only
+// the entries or the MAE/MFE of a closed trade in its list) is left out: a column of gaps only
 // takes the room of the exit reason and the duration
 const emptyCols = computed(() => {
   const out = new Set<string>();
@@ -461,8 +470,10 @@ const empty = computed(() =>
     ? {
         title: t('fq.trade.awaiting', { n: awaiting.missing.value }, awaiting.missing.value),
         hint: t('fq.trade.awaitingHint'),
+        loading: true,
       }
     : {
+        loading: false,
         title: t(`fq.trade.empty.${props.preset}`),
         hint: t(`fq.trade.emptyHint.${props.preset}`),
       },
@@ -488,12 +499,18 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
       class="awaiting"
       data-testid="positions-awaiting"
     >
+      <ValueState state="pending" />
       {{ t('fq.trade.awaitingMore', { n: awaiting.missing.value }, awaiting.missing.value) }}
     </p>
 
     <template v-if="asCards">
       <div v-if="sorted.length === 0" class="empty">
-        <EmptyState icon="layers" :title="empty.title" :hint="empty.hint" />
+        <EmptyState
+          icon="layers"
+          :title="empty.title"
+          :hint="empty.hint"
+          :loading="empty.loading"
+        />
       </div>
       <div v-else class="cards">
         <template v-for="(l, i) in visibleCards" :key="l.key">
@@ -541,6 +558,14 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
       @update:sort="(s) => (sort = s)"
       @row-activate="(l) => activate(l)"
     >
+      <template #empty>
+        <EmptyState
+          icon="layers"
+          :title="empty.title"
+          :hint="empty.hint"
+          :loading="empty.loading"
+        />
+      </template>
       <template #group="{ label }">
         <span class="grp-head" data-testid="group-head">
           <b>{{ groupTitle(label) }}</b>
@@ -575,23 +600,32 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
       <template #cell-leverage="{ row }">×{{ row.leverage }}</template>
       <template #cell-trade_id="{ row }">#{{ row.tradeId }}</template>
       <template #cell-dca="{ row }">
-        <span
+        <ValueState
           v-if="!row.open && (row.dcaEntries === null || row.dcaEntries === undefined)"
-          class="dim"
-          >{{ t('fq.ds.notAvailable') }}</span
-        >
+          v-bind="slotOf(row, null)"
+        />
         <DcaPips v-else :filled="row.dcaFilled" :max="row.dcaMax ?? row.dcaFilled" />
       </template>
       <template #cell-entry="{ row }">{{ fmt.price(row.entry) }}</template>
-      <template #cell-current="{ row }">{{
-        row.current === null ? t('fq.ds.notAvailable') : fmt.price(row.current)
-      }}</template>
+      <template #cell-current="{ row }">
+        <ValueState v-bind="slotOf(row, row.current)">{{
+          fmt.price(row.current as number)
+        }}</ValueState>
+      </template>
       <template #cell-pnl_abs="{ row }">
-        <PnlValue :value="row.pnlAbs" :unknown="row.profitUnknown" :muted="row.stale" />
+        <PnlValue
+          :value="row.pnlAbs"
+          :muted="row.stale"
+          v-bind="slotOf(row, row.pnlAbs, row.open ? 'prices' : 'profit')"
+        />
       </template>
       <template #cell-pnl_pct="{ row }">
-        <PnlValue v-if="row.pnlPct !== null" :value="row.pnlPct" unit="%" :muted="row.stale" />
-        <span v-else class="dim">{{ t('fq.ds.notAvailable') }}</span>
+        <PnlValue
+          :value="row.pnlPct"
+          unit="%"
+          :muted="row.stale"
+          v-bind="slotOf(row, row.pnlPct, row.open ? 'prices' : 'profit')"
+        />
       </template>
       <template #cell-stake="{ row }">{{ fmt.number(row.stake, 2) }}</template>
       <template #cell-tag="{ row }">{{ row.enterTag ?? '' }}</template>
@@ -607,7 +641,7 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
           />
           <span class="num">{{ fmt.percent(row.liqDistancePct, 0, false) }}</span>
         </span>
-        <span v-else class="dim">{{ t('fq.ds.notAvailable') }}</span>
+        <ValueState v-else v-bind="slotOf(row, null, row.current === null ? 'prices' : 'noData')" />
       </template>
       <template #cell-duration="{ row }">
         <span class="dur">
@@ -619,17 +653,23 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
           />
         </span>
       </template>
-      <template #cell-duration_pct="{ row }">{{
-        row.percentile === null ? t('fq.ds.notAvailable') : `p${Math.round(row.percentile)}`
-      }}</template>
+      <template #cell-duration_pct="{ row }">
+        <ValueState v-if="row.percentile === null" v-bind="noPercentile" />
+        <template v-else>{{ `p${Math.round(row.percentile)}` }}</template>
+      </template>
       <template #cell-opened="{ row }">{{ dateOf(row.openMs) }}</template>
-      <template #cell-exit_price="{ row }">{{
-        row.exitPrice === null ? t('fq.ds.notAvailable') : fmt.price(row.exitPrice)
-      }}</template>
+      <template #cell-exit_price="{ row }">
+        <ValueState v-bind="slotOf(row, row.exitPrice)">{{
+          fmt.price(row.exitPrice as number)
+        }}</ValueState>
+      </template>
       <template #cell-exit_reason="{ row }">
-        <span :title="row.exitReason?.raw ?? ''">{{
-          row.exitReason ? t(`fq.exit.${row.exitReason.kind}`) : t('fq.origin.unknown')
-        }}</span>
+        <span
+          v-if="row.exitReason && row.exitReason.kind !== 'unknown'"
+          :title="row.exitReason.raw ?? ''"
+          >{{ t(`fq.exit.${row.exitReason.kind}`) }}</span
+        >
+        <ValueState v-else v-bind="noExit" />
       </template>
       <template #cell-closed_at="{ row }">{{ dateOf(row.closeMs) }}</template>
       <template #cell-mae_mfe="{ row }">

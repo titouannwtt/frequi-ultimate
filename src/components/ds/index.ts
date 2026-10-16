@@ -43,5 +43,6 @@ export { default as TabBar } from './TabBar.vue';
 export { default as Tabs } from './Tabs.vue';
 export { default as TextInput } from './TextInput.vue';
 export { default as Toaster } from './Toaster.vue';
+export { default as ValueState } from './ValueState.vue';
 
 export type * from './types';

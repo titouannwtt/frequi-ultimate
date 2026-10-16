@@ -15,19 +15,23 @@ import {
   Sparkline,
   SplitBar,
 } from '@/components/ds';
+import { useNowMs } from '@/components/ds/lib/useNowMs';
 import type { BotRef, KpiMeter } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useScopeDetail } from '@/composables/useScopeDetail';
+import { useValueSlot } from '@/composables/useValueSlot';
+import { useFqConnectionStore } from '@/datasource/stores/connection';
 import { useFqAlertsStore } from '@/datasource/stores/alerts';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { ScopeDetail, ScopeRef, ScopeTotals } from '@/datasource/types';
-import type { Alert, BotKey } from '@/gateway/types.gen';
+import type { Alert, BotKey, BotRow } from '@/gateway/types.gen';
 
 import AlertItem from './AlertItem.vue';
 import BotActionBar from './BotActionBar.vue';
 import type { ActionId } from './lib/actions';
-import { drawdownPct } from './lib/bots';
+import { fleetKpiModel, type FleetKpiModel } from './lib/kpis';
+import { botSlot } from './lib/valueState';
 import { lineFromPosition } from './lib/trades';
 import PositionCard from './PositionCard.vue';
 
@@ -63,6 +67,9 @@ const fmt = useFormat();
 const fleet = useFqFleetStore();
 const alertsStore = useFqAlertsStore();
 const prefs = useFqPrefsStore();
+const conn = useFqConnectionStore();
+const clock = useNowMs();
+const { vs } = useValueSlot();
 
 const loaded = useScopeDetail(() => props.scope);
 const data = computed<ScopeDetail | null>(() => props.detail ?? loaded.detail.value);
@@ -92,9 +99,29 @@ function excludedRefs(b: ScopeTotals): BotRef[] {
   return b.excluded.map((k) => ({ key: k, name: nameOf(k) }));
 }
 
-function ddMeter(): KpiMeter | undefined {
-  const d = data.value?.drawdown?.with_open;
-  const pct = drawdownPct(d);
+/** One model per block: the figures and their states (pending, unavailable), like the KPI strip. */
+const models = computed<Record<string, FleetKpiModel>>(() => {
+  const d = data.value;
+  if (!d) return {};
+  return Object.fromEntries(
+    d.totals.map((blk, i) => [
+      blk.mode,
+      fleetKpiModel(blk, d, clock.value, conn.status.clockSkewMs, i === 0),
+    ]),
+  );
+});
+
+function botLatent(b: BotRow) {
+  const slot = botSlot(b, 'positions', b.metrics.open_profit_abs, {
+    nowMs: clock.value,
+    skewMs: conn.status.clockSkewMs,
+    prices: true,
+  });
+  return vs(slot, `${b.bot_key}/latent`);
+}
+
+function ddMeter(m: FleetKpiModel | undefined): KpiMeter | undefined {
+  const pct = m?.drawdown?.pct ?? null;
   if (pct === null) return undefined;
   return { value: pct, max: 22, threshold: 15, tone: pct >= 15 ? 'crit' : 'neutral' };
 }
@@ -142,18 +169,27 @@ const unavailable = computed(() => alertsStore.unavailable);
             <span class="n">{{ t('fq.fleet.bots', { n: blk.bots }) }}</span>
             <ExcludedCount :bots="excludedRefs(blk)" @select="(b) => emit('openBot', b.key)" />
           </header>
-          <div class="tiles">
+          <div v-if="models[blk.mode]" class="tiles">
             <KpiTile
               :label="t('fq.kpi.pnlOpen')"
               :sub="t('fq.header.openTrades', { n: blk.open_trades }, blk.open_trades)"
+              v-bind="vs(models[blk.mode]!.slots.openProfit, `${blk.mode}/scope/openProfit`)"
             >
-              <template #value><PnlValue :value="blk.open_profit_abs" /></template>
+              <template #value><PnlValue :value="models[blk.mode]!.openProfit" /></template>
             </KpiTile>
-            <KpiTile :label="t('fq.col.realized_1d')">
-              <template #value><PnlValue :value="blk.realized_1d" /></template>
+            <KpiTile
+              :label="t('fq.col.realized_1d')"
+              v-bind="vs(models[blk.mode]!.slots.realized1d, `${blk.mode}/scope/d1`)"
+            >
+              <template #value><PnlValue :value="models[blk.mode]!.realized1d" /></template>
             </KpiTile>
-            <KpiTile :label="t('fq.col.realized_30d')">
-              <template #value><PnlValue :value="blk.realized_30d" :decimals="0" /></template>
+            <KpiTile
+              :label="t('fq.col.realized_30d')"
+              v-bind="vs(models[blk.mode]!.slots.realized30d, `${blk.mode}/scope/d30`)"
+            >
+              <template #value
+                ><PnlValue :value="models[blk.mode]!.realized30d" :decimals="0"
+              /></template>
             </KpiTile>
             <KpiTile
               :label="t('fq.col.capital')"
@@ -163,28 +199,42 @@ const unavailable = computed(() => alertsStore.unavailable);
                   ? t('fq.scopePanel.unknownCapital', { n: blk.starting_capital.unknown })
                   : t('fq.header.capitalNote')
               "
+              v-bind="vs(models[blk.mode]!.slots.capital, `${blk.mode}/scope/capital`)"
             />
             <KpiTile
               :label="t('fq.header.exposure')"
-              :sub="`${t('fq.header.net', { n: fmt.signed(blk.exposure.net, 0) })}${blk.netted ? '' : ` · ${t('fq.fleet.notNetted')}`}`"
+              :sub="
+                models[blk.mode]!.slots.exposure.state === 'ready'
+                  ? `${t('fq.header.net', { n: fmt.signed(blk.exposure.net, 0) })}${blk.netted ? '' : ` · ${t('fq.fleet.notNetted')}`}`
+                  : undefined
+              "
+              v-bind="vs(models[blk.mode]!.slots.exposure, `${blk.mode}/scope/exposure`)"
             >
               <template #value
                 >{{ fmt.number(blk.exposure.long, 0) }} /
                 {{ fmt.number(blk.exposure.short, 0) }}</template
               >
-              <SplitBar :long="blk.exposure.long" :short="blk.exposure.short" />
+              <SplitBar
+                v-if="models[blk.mode]!.slots.exposure.state === 'ready'"
+                :long="blk.exposure.long"
+                :short="blk.exposure.short"
+              />
             </KpiTile>
             <KpiTile
-              v-if="data.drawdown && blk.mode === data.totals[0]?.mode"
+              v-if="blk.mode === data.totals[0]?.mode"
               :label="t('fq.kpi.drawdownOpen')"
-              :meter="ddMeter()"
+              :meter="ddMeter(models[blk.mode])"
+              v-bind="vs(models[blk.mode]!.slots.drawdown, `${blk.mode}/scope/drawdown`)"
             >
               <template #value>
-                <PnlValue :value="-data.drawdown.with_open.abs" :decimals="0" />
-                <small v-if="drawdownPct(data.drawdown.with_open) !== null">
-                  &nbsp;{{
-                    fmt.percent(-(drawdownPct(data.drawdown.with_open) as number), 1)
-                  }}</small
+                <PnlValue :value="-(models[blk.mode]!.drawdown?.abs ?? 0)" :decimals="0" />
+                <small
+                  v-if="
+                    models[blk.mode]!.drawdown?.pct !== null &&
+                    models[blk.mode]!.drawdown?.pct !== undefined
+                  "
+                >
+                  &nbsp;{{ fmt.percent(-(models[blk.mode]!.drawdown!.pct as number), 1) }}</small
                 >
               </template>
             </KpiTile>
@@ -236,7 +286,7 @@ const unavailable = computed(() => alertsStore.unavailable);
           >
             <ModeMark :mode="b.identity.mode" />
             <span class="bn">{{ b.identity.name }}</span>
-            <PnlValue :value="b.metrics.open_profit_abs" />
+            <PnlValue :value="b.metrics.open_profit_abs" v-bind="botLatent(b)" />
           </button>
         </section>
 

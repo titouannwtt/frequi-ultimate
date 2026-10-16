@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { EmptyState, IconBtn, ModeMark, PnlValue, Skeleton } from '@/components/ds';
+import { EmptyState, IconBtn, ModeMark, PnlValue, Skeleton, ValueState } from '@/components/ds';
 import { signClass } from '@/components/ds/lib/format';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
@@ -189,7 +189,9 @@ const isEmptyMonth = computed(
               :class="signClass(c.bucket.profit_abs, 0)"
               >{{ c.bucket.trades === 0 ? '0' : fmt.signed(c.bucket.profit_abs, 0) }}</span
             >
-            <span v-else-if="c.missing" class="v mut">{{ t('fq.ds.dash') }}</span>
+            <span v-else-if="c.missing" class="v"
+              ><ValueState state="unavailable" :reason="t('fq.cal.unknownDay')"
+            /></span>
             <span v-if="c.dstHours !== null" class="dst">{{ c.dstHours }} h</span>
           </button>
         </template>

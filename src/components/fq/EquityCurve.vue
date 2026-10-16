@@ -9,11 +9,13 @@ import {
   PnlValue,
   SegmentedControl,
   Skeleton,
+  ValueState,
 } from '@/components/ds';
 import type { SegmentOption } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
 import { useSourceQuery } from '@/composables/useSourceQuery';
+import { useValueSlot } from '@/composables/useValueSlot';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import { scopeKey, type EquitySeries, type ScopeRef } from '@/datasource/types';
 import type { BotMode, DrawdownResult, Tz } from '@/gateway/types.gen';
@@ -21,6 +23,7 @@ import type { DataSource } from '@/datasource/types';
 import { prefersReducedMotion } from '@/utils/motion';
 
 import { drawdownPct } from './lib/bots';
+import { unavailable } from './lib/valueState';
 import { useChartTokens } from './lib/chartTokens';
 import { formatClock, formatDateTime } from './lib/time';
 import {
@@ -66,6 +69,7 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n();
 const fmt = useFormat();
+const { vs } = useValueSlot();
 const prefs = useFqPrefsStore();
 const clock = useNowMs();
 const { tokens } = useChartTokens();
@@ -216,7 +220,7 @@ const chartLabel = computed(() =>
                 &nbsp;{{ fmt.percent(-(drawdownPct(ddValue) as number), 1) }}</small
               >
             </template>
-            <span v-else class="mut">{{ t('fq.ds.notAvailable') }}</span>
+            <ValueState v-else v-bind="vs(unavailable('noData'))" />
           </span>
           <span v-if="ddFromCurve" class="mut sub">{{ t('fq.eq.fromCurve') }}</span>
         </div>
