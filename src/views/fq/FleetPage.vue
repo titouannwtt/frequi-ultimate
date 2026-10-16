@@ -432,13 +432,17 @@ const incidentFirst = computed(() => phone.value && activeAlerts.value > 0);
   min-height: 0;
   height: 100%;
 }
+/* A definite height down to the chart: a min-height alone leaves the percentage of the chart
+   unresolved, and the curve fell back to its 130 px floor under an empty pane */
 .eqwrap {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
 }
 .eqwrap > :deep(.eq) {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
 }
 .lbbar {
   display: flex;
