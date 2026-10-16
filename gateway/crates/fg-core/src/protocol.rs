@@ -222,6 +222,8 @@ pub enum ErrorCode {
     StateMismatch,
     /// The same idempotency key is still being processed (409).
     InProgress,
+    /// The idempotency key was already used for another bot, action or set of parameters (422).
+    IdempotencyKeyReused,
     UnknownChannel,
     TooManyConnections,
     BotUnreachable,
@@ -239,6 +241,7 @@ impl ErrorCode {
             Self::Forbidden | Self::OriginNotAllowed => 403,
             Self::NotFound => 404,
             Self::StateMismatch | Self::InProgress => 409,
+            Self::IdempotencyKeyReused => 422,
             Self::RateLimited | Self::TooManyConnections => 429,
             Self::BotUnreachable => 502,
             Self::Unavailable => 503,

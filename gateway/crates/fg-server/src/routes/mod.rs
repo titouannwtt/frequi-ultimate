@@ -157,9 +157,10 @@ pub fn build(st: &AppState) -> (Router<AppState>, Vec<RouteInfo>) {
         .guarded("GET", "/pairs/{key}", get(data::pairs))
         .guarded("GET", "/market", get(data::market))
         .guarded("GET", "/audit", get(data::audit))
-        // Writes.
-        .guarded("POST", "/bots/{key}/actions/{action}", post(actions::act))
-        // Passthrough.
+        // Passthrough and writes: no request timeout of their own. A write answers `unknown` when
+        // the engine's deadline passes and is never cut by a timer above it, whose 408 would
+        // tell a client nothing about an order that may have gone out.
+        .long("POST", "/bots/{key}/actions/{action}", post(actions::act))
         .long(
             "ANY",
             "/bots/{key}/proxy/{*rest}",

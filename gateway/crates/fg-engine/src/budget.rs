@@ -153,6 +153,29 @@ impl RequestBudget {
         Permit { _slot: slot }
     }
 
+    /// Pay `tokens` for a request that must not queue behind the pollers (the proof of identity
+    /// of a login). It goes out at once; the bucket is left in debt, so that the pollers wait
+    /// longer afterwards and the sustained rate of the whole process holds. The debt is bounded
+    /// by one burst: past it, the caller waits like everybody else.
+    pub async fn debit(&self, tokens: u32) {
+        let burst = f64::from(self.cfg.burst.max(1));
+        let t = f64::from(tokens.max(1));
+        {
+            let mut b = self.bucket.lock().await;
+            let now = Instant::now();
+            let elapsed = now.duration_since(b.last).as_secs_f64();
+            b.last = now;
+            b.tokens = (b.tokens + elapsed * self.cfg.rate_per_s).min(burst);
+            if b.tokens - t >= -burst {
+                b.tokens -= t;
+                self.granted
+                    .fetch_add(tokens.max(1).into(), Ordering::Relaxed);
+                return;
+            }
+        }
+        drop(self.acquire(tokens).await);
+    }
+
     /// Account a write; never waits.
     pub fn note_write(&self) {
         self.writes.fetch_add(1, Ordering::Relaxed);
@@ -267,6 +290,45 @@ mod tests {
             t.await.unwrap();
         }
         assert_eq!(*order.lock().unwrap(), vec![0, 1, 2, 3, 4]);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_debit_goes_out_at_once_and_the_pollers_pay_for_it() {
+        let b = budget(2.0, 4);
+        for _ in 0..4 {
+            drop(b.acquire(1).await);
+        }
+        let t0 = Instant::now();
+        // The bucket is empty and the caller still does not wait.
+        b.debit(1).await;
+        assert_eq!(t0.elapsed(), Duration::ZERO);
+        // The next poller waits for the token it needs plus the one that was lent: 1 s at 2/s.
+        drop(b.acquire(1).await);
+        let waited = t0.elapsed();
+        assert!(waited >= Duration::from_millis(999), "{waited:?}");
+        assert!(waited < Duration::from_millis(1100), "{waited:?}");
+        assert_eq!(b.stats().granted, 6);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn the_debt_of_debits_is_bounded_by_one_burst() {
+        let b = budget(2.0, 4);
+        for _ in 0..4 {
+            drop(b.acquire(1).await);
+        }
+        let t0 = Instant::now();
+        // Four more tokens of debt are lent, the fifth waits for the bucket to climb back.
+        for _ in 0..4 {
+            b.debit(1).await;
+        }
+        assert_eq!(t0.elapsed(), Duration::ZERO);
+        b.debit(1).await;
+        // From -4 to a whole token at 2 per second: 2.5 s.
+        assert!(
+            t0.elapsed() >= Duration::from_millis(2_499),
+            "{:?}",
+            t0.elapsed()
+        );
     }
 
     #[tokio::test(start_paused = true)]

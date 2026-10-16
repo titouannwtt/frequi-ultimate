@@ -15,7 +15,7 @@ use serde_json::{Map, Value};
 
 use crate::error::{ApiFailure, rest_failure};
 use crate::passthrough::{
-    CacheKey, Class, Rule, candle_ttl, clamp_candle_limit, classify, query_param,
+    CacheKey, Class, FLEET_SCOPE, Rule, candle_ttl, clamp_candle_limit, classify, query_param,
 };
 use crate::routes::data::{guard_bot, parse_key};
 use crate::session::Session;
@@ -100,16 +100,11 @@ async fn cached(
     query: &str,
     rule: &Rule,
 ) -> Result<Response, ApiFailure> {
+    // The reconciliation sweeps every live wallet whichever bot answers, and `refresh=true` would
+    // skip the Python cache as well: one fleet-wide entry, and the client's query is not sent.
+    let query = if rule.wallet_level { "" } else { query };
     let (scope, cache_query, ttl) = if rule.wallet_level {
-        // One sweep per wallet per interval, whichever bot or query asks.
-        let scope = st
-            .engine
-            .published()
-            .bots
-            .get(key)
-            .and_then(|b| b.state.wallet_id.clone())
-            .map_or_else(|| key.to_string(), |w| format!("wallet:{w}"));
-        (scope, String::new(), st.cache.wallet_ttl)
+        (FLEET_SCOPE.to_owned(), String::new(), st.cache.wallet_ttl)
     } else if path == "pair_candles" {
         let tf = query_param(query, "timeframe").unwrap_or("");
         (key.to_string(), query.to_owned(), candle_ttl(tf, now_ms()))
@@ -269,6 +264,12 @@ pub async fn proxy(
                     },
                 })
                 .await?;
+            if rest.starts_with("fleetview/reconciliation/")
+                && result.status == fg_core::model::ActionStatus::Accepted
+            {
+                // The view it was about has changed: the next read may sweep again.
+                st.cache.forget_scope(FLEET_SCOPE);
+            }
             tracing::info!(event = "proxy_write", bot = %key, route = %rule.label, status = ?result.status,
                 session = %s.id);
             Ok(Json(result).into_response())
