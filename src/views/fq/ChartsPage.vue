@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useLocalStorage, useMediaQuery } from '@vueuse/core';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -18,7 +18,7 @@ import {
   CHART_TIMEFRAMES,
   chartsQuery,
   contextBotFor,
-  defaultPair,
+  stickyDefaultPair,
   parseChartsQuery,
   plotProps,
   resolvePlotChoice,
@@ -60,9 +60,17 @@ const desktop = useMediaQuery('(min-width: 1024px)');
 // ---- state: the URL is the source of truth, defaults are derived ----
 const requested = computed(() => parseChartsQuery(route.query));
 
-const pair = computed(
-  () => requested.value.pair ?? defaultPair(positionsStore.list, requested.value.bot),
-);
+// The default pair is chosen once (see stickyDefaultPair): the chart does not move under the user
+const defaulted = ref<{ bot: BotKey | null; pair: string | null }>({ bot: null, pair: null });
+watchEffect(() => {
+  const bot = requested.value.bot;
+  const current = defaulted.value.bot === bot ? defaulted.value.pair : null;
+  const next = stickyDefaultPair(current, positionsStore.list, bot);
+  if (next !== defaulted.value.pair || bot !== defaulted.value.bot) {
+    defaulted.value = { bot, pair: next };
+  }
+});
+const pair = computed(() => requested.value.pair ?? defaulted.value.pair);
 const botKey = computed<BotKey | null>(() =>
   contextBotFor({
     pair: pair.value,
@@ -80,11 +88,18 @@ const pair2 = computed(() =>
     ? (requested.value.pair2 ?? secondPair(positionsStore.list, pair.value))
     : null,
 );
-const heikinAshi = computed(
-  () => requested.value.ha ?? prefs.settings.ui.useHeikinAshiCandles,
-);
+const heikinAshi = computed(() => requested.value.ha ?? prefs.settings.ui.useHeikinAshiCandles);
 
-function update(patch: Partial<{ bot: BotKey | null; pair: string | null; pair2: string | null; tf: ChartTf; cells: CellCount; ha: boolean | null }>) {
+function update(
+  patch: Partial<{
+    bot: BotKey | null;
+    pair: string | null;
+    pair2: string | null;
+    tf: ChartTf;
+    cells: CellCount;
+    ha: boolean | null;
+  }>,
+) {
   const next = {
     bot: botKey.value,
     pair: pair.value,
@@ -126,7 +141,9 @@ const cellOptions = computed(() => [
   { value: 1 as CellCount, label: t('fq.pg.charts.cells1'), icon: 'square' as const },
   { value: 2 as CellCount, label: t('fq.pg.charts.cells2'), icon: 'columns-2' as const },
 ]);
-const botName = computed(() => (botKey.value ? (fleet.bots[botKey.value]?.identity.name ?? botKey.value) : null));
+const botName = computed(() =>
+  botKey.value ? (fleet.bots[botKey.value]?.identity.name ?? botKey.value) : null,
+);
 
 const ctxAnchor = ref<HTMLElement | null>(null);
 const ctxOpen = ref(false);
@@ -153,18 +170,21 @@ const measureArmed = ref(false);
 const indicatorsOpen = ref(false);
 const rsi = useLocalStorage('fqu2.charts.rsi', true);
 const plot = computed(() =>
-  plotProps(resolvePlotChoice(prefs.settings.plot?.plotConfigName, prefs.settings.plot?.customPlotConfigs)),
+  plotProps(
+    resolvePlotChoice(prefs.settings.plot?.plotConfigName, prefs.settings.plot?.customPlotConfigs),
+  ),
 );
 
 // ---- the open position of the first cell: card on a phone, sheet on request ----
 const position = computed(
   () =>
-    (botKey.value
-      ? positionsStore.byBot(botKey.value).find((p) => p.pair === pair.value)
-      : null) ?? null,
+    (botKey.value ? positionsStore.byBot(botKey.value).find((p) => p.pair === pair.value) : null) ??
+    null,
 );
 const line = computed(() =>
-  position.value ? lineFromPosition(position.value, botKey.value ? fleet.bots[botKey.value] : undefined) : null,
+  position.value
+    ? lineFromPosition(position.value, botKey.value ? fleet.bots[botKey.value] : undefined)
+    : null,
 );
 const sheet = ref<{ botKey: BotKey; tradeId: number } | null>(null);
 // The orders of the trade the sheet shows (not of the first cell's)

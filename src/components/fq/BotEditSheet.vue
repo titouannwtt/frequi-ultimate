@@ -47,7 +47,12 @@ const renameOnly = computed(() => props.mode === 'edit' && form.value.password =
 const canSubmit = computed(() =>
   renameOnly.value ? form.value.name.trim() !== '' : problem.value === null,
 );
-const shown = computed(() => (renameOnly.value ? null : problem.value));
+// Nothing is flagged on a form nobody has touched: "Give the bot a name" on an empty new form is
+// noise; the submit button stays disabled and the first edit brings the checks.
+const pristine = computed(
+  () => JSON.stringify(form.value) === JSON.stringify({ ...props.initial, password: '' }),
+);
+const shown = computed(() => (renameOnly.value || pristine.value ? null : problem.value));
 
 function submit() {
   if (canSubmit.value && !props.busy) emit('submit', { ...form.value });
@@ -55,10 +60,19 @@ function submit() {
 </script>
 
 <template>
-  <AdaptiveSheet :open="open" :title="t(`fq.pg.settings.bot.title.${mode}`)" :scrim-close="false" @close="emit('close')">
+  <AdaptiveSheet
+    :open="open"
+    :title="t(`fq.pg.settings.bot.title.${mode}`)"
+    :scrim-close="false"
+    @close="emit('close')"
+  >
     <form class="be" data-testid="bot-form" @submit.prevent="submit">
       <p class="hint">{{ t(`fq.pg.settings.bot.hint.${mode}`) }}</p>
-      <TextInput v-model="form.name" :label="t('fq.pg.settings.bot.name')" :invalid="shown === 'name'" />
+      <TextInput
+        v-model="form.name"
+        :label="t('fq.pg.settings.bot.name')"
+        :invalid="shown === 'name'"
+      />
       <TextInput
         v-model="form.url"
         :label="t('fq.pg.settings.bot.url')"
@@ -75,7 +89,11 @@ function submit() {
       />
       <TextInput
         v-model="form.password"
-        :label="mode === 'edit' ? t('fq.pg.settings.bot.passwordOptional') : t('fq.pg.settings.bot.password')"
+        :label="
+          mode === 'edit'
+            ? t('fq.pg.settings.bot.passwordOptional')
+            : t('fq.pg.settings.bot.password')
+        "
         type="password"
         autocomplete="current-password"
         :invalid="shown === 'password'"
@@ -90,13 +108,25 @@ function submit() {
           size="sm"
           data-testid="bot-remove"
           @click="confirmRemove ? emit('remove') : (confirmRemove = true)"
-          >{{ confirmRemove ? t('fq.pg.settings.bot.removeConfirm') : t('fq.pg.settings.bot.remove') }}</Btn
+          >{{
+            confirmRemove ? t('fq.pg.settings.bot.removeConfirm') : t('fq.pg.settings.bot.remove')
+          }}</Btn
         >
         <span class="grow"></span>
         <Btn size="sm" @click="emit('close')">{{ t('fq.ds.close') }}</Btn>
-        <Btn variant="primary" size="sm" type="submit" :busy="busy" :disabled="!canSubmit" data-testid="bot-submit">{{
-          t(`fq.pg.settings.bot.submit.${renameOnly ? 'rename' : mode === 'edit' ? 'reconnect' : mode}`)
-        }}</Btn>
+        <Btn
+          variant="primary"
+          size="sm"
+          type="submit"
+          :busy="busy"
+          :disabled="!canSubmit"
+          data-testid="bot-submit"
+          >{{
+            t(
+              `fq.pg.settings.bot.submit.${renameOnly ? 'rename' : mode === 'edit' ? 'reconnect' : mode}`,
+            )
+          }}</Btn
+        >
       </div>
     </form>
   </AdaptiveSheet>

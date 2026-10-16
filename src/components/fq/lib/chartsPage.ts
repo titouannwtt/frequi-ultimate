@@ -112,6 +112,24 @@ export function defaultPair(positions: readonly Position[], bot: BotKey | null):
   return (mine.length > 0 ? mine : owned).slice().sort(worstFirst)[0]?.pair ?? null;
 }
 
+/**
+ * The default pair, kept while it is still a candidate. "The worst position" moves with every price
+ * tick: recomputed each time it would make the chart jump from pair to pair, and reload, under the
+ * user's eyes. The default is chosen once and changes only when its position is gone (or the
+ * context bot changes: pass `null` as `current` then).
+ */
+export function stickyDefaultPair(
+  current: string | null,
+  positions: readonly Position[],
+  bot: BotKey | null,
+): string | null {
+  const owned = positions.filter((p) => !p.orphan);
+  const mine = bot ? owned.filter((p) => p.bot_key === bot) : [];
+  const candidates = mine.length > 0 ? mine : owned;
+  if (current && candidates.some((p) => p.pair === current)) return current;
+  return defaultPair(positions, bot);
+}
+
 /** The pair of the second cell: the next worst position on another pair. */
 export function secondPair(positions: readonly Position[], not: string | null): string | null {
   return (
@@ -160,7 +178,10 @@ export function plotProps(choice: PlotChoice): {
     case 'custom':
       return { plotConfig: choice.config, plotExtra: undefined };
     case 'template':
-      return { plotConfig: undefined, plotExtra: usePlotTemplates().getTemplateContent(choice.name) };
+      return {
+        plotConfig: undefined,
+        plotExtra: usePlotTemplates().getTemplateContent(choice.name),
+      };
     default:
       return { plotConfig: undefined, plotExtra: undefined };
   }

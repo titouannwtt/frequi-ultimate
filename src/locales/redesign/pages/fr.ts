@@ -12,10 +12,10 @@ export default {
     charts,
     tools,
     settings,
-    placeholder: {
-      title: '{name} : page en construction',
-      hint: "Cette page arrive dans une prochaine étape de la refonte. Le reste de l'application fonctionne.",
-      unknown: 'Page « {name} » introuvable',
+    notFound: {
+      title: 'Page introuvable',
+      hint: "Cette adresse ne mène nulle part. Les anciennes adresses de FreqUI fonctionnent toujours : vérifiez celle que vous avez suivie.",
+      fleet: 'Retour à la flotte',
     },
     toolsHint: {
       diagnostic: 'Timeline et 429 par bot, budget de requêtes, cache.',

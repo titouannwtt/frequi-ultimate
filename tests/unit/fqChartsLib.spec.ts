@@ -418,6 +418,14 @@ describe('candles', () => {
     expect(toCandleSet({ columns: ['open'], data: [[1]], timeframe_ms: 1 }).rows).toEqual([]);
   });
 
+  it('a reply that is not a candle set (error object, empty body) gives an empty set, not a crash', () => {
+    for (const bad of [{ proxied: '/pair_candles' }, {}, null, { columns: 'x', data: 3 }]) {
+      const set = toCandleSet(bad as never);
+      expect(set.rows).toEqual([]);
+      expect(set.columns).toEqual([]);
+    }
+  });
+
   it('merges a tail by timestamp: replace the open candle, append the new, ignore the old', () => {
     const di = base.columns.indexOf(DATE_COL);
     const last = base.rows[base.rows.length - 1]!;

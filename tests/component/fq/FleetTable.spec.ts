@@ -43,6 +43,20 @@ describe('FleetTable', () => {
     expect(Number(w.get('table').attributes('aria-rowcount'))).toBeGreaterThanOrEqual(160);
   });
 
+  it('sorts by open P&L, worst first, with the unknown ones last (B8)', () => {
+    const w = mountTable([...world.fixture.bots], { sort: 'latent' });
+    const rows = world.fixture.bots;
+    const latent = names(w).map((k) => rows.find((r) => r.bot_key === k)!.metrics.open_profit_abs);
+    const known = latent.filter((v): v is number => v !== null && v !== undefined);
+    expect(known.length).toBeGreaterThan(5);
+    expect(known).toEqual([...known].sort((a, b) => a - b));
+    // Unknown figures never sit in the middle of the order
+    const firstUnknown = latent.findIndex((v) => v === null || v === undefined);
+    if (firstUnknown !== -1) {
+      expect(latent.slice(firstUnknown).every((v) => v === null || v === undefined)).toBe(true);
+    }
+  });
+
   it('puts the critical bots first, calm ones last, whatever the input order', () => {
     const rows = [...world.fixture.bots].reverse();
     const w = mountTable(rows);

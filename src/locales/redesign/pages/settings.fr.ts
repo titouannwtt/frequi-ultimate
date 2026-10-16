@@ -14,17 +14,21 @@ export default {
     workspaces: 'Espaces de travail',
     about: 'À propos et audit',
     botsTitle: 'Bots (registre)',
-    botsSub: 'Une seule liste de bots, servie par la passerelle (ou par ce navigateur en mode direct). Import et export uniques ici.',
+    botsSub:
+      'Une seule liste de bots, servie par la passerelle (ou par ce navigateur en mode direct). Import et export uniques ici.',
     gatewayTitle: 'Passerelle',
-    gatewaySub: 'Sans passerelle, l’interface fonctionne en mode direct, y compris contre des bots freqtrade amont.',
+    gatewaySub:
+      'Sans passerelle, l’interface fonctionne en mode direct, y compris contre des bots freqtrade amont.',
     displayTitle: 'Affichage',
     displaySub: 'Langue, thème, densité et options de cet appareil.',
     alertsTitle: 'Alertes',
     alertsSub: 'Règles, seuils et sévérités. Enregistrés aussitôt.',
     securityTitle: 'Sécurité des actions',
-    securitySub: 'Ce que chaque sorte d’action demande avant d’être envoyée. Ces niveaux ne peuvent pas être relâchés.',
+    securitySub:
+      'Ce que chaque sorte d’action demande avant d’être envoyée. Ces niveaux ne peuvent pas être relâchés.',
     workspacesTitle: 'Espaces de travail',
-    workspacesSub: 'Ce que l’interface retient de sa disposition, chaque élément avec sa réinitialisation.',
+    workspacesSub:
+      'Ce que l’interface retient de sa disposition, chaque élément avec sa réinitialisation.',
     aboutTitle: 'À propos et audit',
     aboutSub: 'Versions, clés gardées dans ce navigateur et journal des écritures.',
     level: 'Niveau',
@@ -46,7 +50,8 @@ export default {
       reduce: 'Pause des entrées, acquitter une alerte, la mettre en silence.',
       dry: 'Toute action sur un bot dry, sauf effacer sa base.',
       live: 'Sortie (totale ou partielle), entrée forcée, reprise, rechargement de config, blacklist, retrait de verrou, annulation d’ordre, rechargement de trade, écriture de config.',
-      destructive: 'Tout sortir (une seule requête), arrêter, supprimer un trade, replay avec effacement de la base, réconciliation (le nom du coin est saisi).',
+      destructive:
+        'Tout sortir (une seule requête), arrêter, supprimer un trade, replay avec effacement de la base, réconciliation (le nom du coin est saisi).',
     },
     hold: 'Durée du maintien',
     holdHint: 'La même pour tous et pour toute action. Elle n’est jamais raccourcie.',
@@ -83,7 +88,8 @@ export default {
     submit: { add: 'Ajouter le bot', reconnect: 'Se connecter', rename: 'Renommer' },
     saved: 'Registre mis à jour',
     first: 'Enregistrez votre premier bot',
-    firstHint: 'Saisissez l’adresse de l’API d’un bot et ses identifiants. Rien ne s’affiche tant qu’aucun bot n’est enregistré.',
+    firstHint:
+      'Saisissez l’adresse de l’API d’un bot et ses identifiants. Rien ne s’affiche tant qu’aucun bot n’est enregistré.',
   },
   gw: {
     auto: 'Auto',
@@ -125,7 +131,8 @@ export default {
     cvd: 'Palette daltonien',
     cvdHint: 'Gain en bleu, perte en orange. Le signe et la valeur restent écrits.',
     motion: 'Réduire les animations',
-    motionHint: 'Les animations se réduisent à une seule image. Le maintien de 1 s d’une action n’est pas modifié.',
+    motionHint:
+      'Les animations se réduisent à une seule image. Le maintien de 1 s d’une action n’est pas modifié.',
     charts: 'Graphiques',
     ha: 'Bougies Heikin-Ashi par défaut',
     haHint: 'Un graphique peut toujours changer depuis sa barre d’outils.',
@@ -147,8 +154,10 @@ export default {
     notifications: 'Notifications',
     browser: 'Notifications du navigateur',
     browserHint: 'Une notification système quand une alerte critique est levée.',
-    unsupported: 'Ce navigateur ne gère pas les notifications. Les alertes restent visibles dans l’interface.',
-    insecure: 'Les notifications du navigateur sont indisponibles en HTTP simple : le navigateur les refuse hors d’un contexte sécurisé (HTTPS ou localhost). Les alertes restent visibles dans l’interface.',
+    unsupported:
+      'Ce navigateur ne gère pas les notifications. Les alertes restent visibles dans l’interface.',
+    insecure:
+      'Les notifications du navigateur sont indisponibles en HTTP simple : le navigateur les refuse hors d’un contexte sécurisé (HTTPS ou localhost). Les alertes restent visibles dans l’interface.',
   },
   ws: {
     active: 'Espace actif',
@@ -184,7 +193,8 @@ export default {
     bytes: '{n} caractères',
     audit: 'Journal d’audit',
     noAudit: 'Pas de journal d’audit en mode direct',
-    noAuditHint: 'Rien n’est enregistré quand le navigateur parle lui-même aux bots. Le journal existe avec la passerelle.',
+    noAuditHint:
+      'Rien n’est enregistré quand le navigateur parle lui-même aux bots. Le journal existe avec la passerelle.',
     auditFailed: 'Le journal d’audit n’a pas pu être lu : {detail}',
     auditEmpty: 'Aucune écriture enregistrée pour l’instant',
     when: 'Quand',
@@ -195,9 +205,11 @@ export default {
     title: 'Import et export',
     export: 'Exporter',
     import: 'Importer',
-    exportHint: 'Disposition et préférences de la refonte (format v3). La session de cet appareil n’est jamais exportée.',
+    exportHint:
+      'Disposition et préférences de la refonte (format v3). La session de cet appareil n’est jamais exportée.',
     withLogins: 'Inclure les connexions aux bots',
-    encryptHint: 'Les connexions sont chiffrées avec ce mot de passe. Sans lui le fichier est illisible.',
+    encryptHint:
+      'Les connexions sont chiffrées avec ce mot de passe. Sans lui le fichier est illisible.',
     password: 'Mot de passe',
     confirmPassword: 'Confirmer le mot de passe',
     pwShort: 'Au moins {n} caractères.',

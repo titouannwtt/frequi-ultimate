@@ -11,10 +11,10 @@ export default {
     charts,
     tools,
     settings,
-    placeholder: {
-      title: '{name}: page under construction',
-      hint: 'This page arrives in a later step of the redesign. The rest of the app works.',
-      unknown: 'Page "{name}" not found',
+    notFound: {
+      title: 'Page not found',
+      hint: 'This address leads nowhere. The old addresses of FreqUI still work: check the one you followed.',
+      fleet: 'Back to the fleet',
     },
     toolsHint: {
       diagnostic: 'Timeline and 429s per bot, request budget, cache.',
