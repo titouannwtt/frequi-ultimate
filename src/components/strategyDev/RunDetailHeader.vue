@@ -359,7 +359,8 @@ function filterByType() {
           v-if="isLive && run.open_trades_count !== undefined && run.open_trades_count !== null"
           class="rdh-meta-item"
         >
-          <i-mdi-chart-timeline class="rdh-meta-icon" /> {{ run.open_trades_count }} open
+          <i-mdi-chart-timeline class="rdh-meta-icon" />
+          {{ t('strategyDev.openCount', { n: run.open_trades_count }, run.open_trades_count) }}
         </span>
         <span v-if="!isLive && run.timeframe" class="rdh-meta-item">
           <i-mdi-clock-outline class="rdh-meta-icon" /> {{ run.timeframe }}

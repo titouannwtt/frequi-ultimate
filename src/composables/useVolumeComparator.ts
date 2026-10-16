@@ -14,7 +14,8 @@ export function useVolumeComparator(opts: UseVolumeComparatorOptions) {
   const selectedDays = ref(opts.defaultDays ?? 90);
   const selectedBucket = ref<VolumeBucketSize>(opts.defaultBucket ?? '1d');
   const localData = ref<Record<string, VolumeHistoryResponse>>({});
-  const loading = ref(false);
+  // Loading from the start: the first fetch is not delayed, the page never shows "no data" first
+  const loading = ref(true);
   const lastFetchTs = ref(0);
   const refreshInterval = ref<ReturnType<typeof setInterval> | null>(null);
 
@@ -196,7 +197,7 @@ export function useVolumeComparator(opts: UseVolumeComparatorOptions) {
 
   function startRefresh() {
     stopRefresh();
-    setTimeout(fetchData, 3000);
+    void fetchData();
     const ms = opts.refreshMs ?? 300000;
     refreshInterval.value = setInterval(fetchData, ms);
   }
@@ -211,6 +212,13 @@ export function useVolumeComparator(opts: UseVolumeComparatorOptions) {
   watch([selectedDays, selectedBucket], () => {
     fetchData();
   });
+  // Another bot picked on the page: its own history, not the one of the previous bot
+  watch(
+    () => botStore.selectedBot,
+    () => {
+      if (!opts.multiBotView) void fetchData();
+    },
+  );
 
   onMounted(startRefresh);
   onUnmounted(stopRefresh);

@@ -35,7 +35,8 @@ describe('redesign messages (fq namespace)', () => {
   });
 
   it('keeps the same placeholders in both languages', () => {
-    const placeholders = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort();
+    // A plural message repeats its placeholders once per form: compare the sets
+    const placeholders = (s: string) => [...new Set(s.match(/\{\w+\}/g) ?? [])].sort();
     for (const key of Object.keys(en)) {
       expect(placeholders(fr[key]), key).toEqual(placeholders(en[key]));
     }

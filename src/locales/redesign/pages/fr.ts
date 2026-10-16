@@ -6,12 +6,14 @@
 import charts from './charts.fr';
 import tools from './tools.fr';
 import settings from './settings.fr';
+import legacy from './legacy.fr';
 
 export default {
   pg: {
     charts,
     tools,
     settings,
+    legacy,
     notFound: {
       title: 'Page introuvable',
       hint: 'Cette adresse ne mène nulle part. Les anciennes adresses de FreqUI fonctionnent toujours : vérifiez celle que vous avez suivie.',
@@ -31,7 +33,7 @@ export default {
     },
     fleet: {
       table: 'Flotte',
-      tableMeta: '{n} bots · {online} en ligne',
+      tableMeta: '{n} bot · {online} en ligne | {n} bots · {online} en ligne',
       view: { label: 'Affichage', table: 'Table', map: 'Carte' },
       sort: {
         label: 'Tri',
@@ -41,6 +43,8 @@ export default {
       },
       positions: 'Positions ouvertes',
       positionsMeta: '{n} · pires en premier',
+      positionsMetaPartial: '{n} lues sur {total} · pires en premier',
+      positionsAwaiting: 'positions pas encore lues',
       equity: 'Équité',
       tabs: { equity: 'Équité', leaderboard: 'Classement', calendar: 'Calendrier' },
       lbPeriod: { '1d': '1 j', '7d': '7 j', '30d': '30 j', total: 'Total' },

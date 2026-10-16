@@ -29,7 +29,7 @@ const anchor = ref<HTMLElement | null>(null);
       @click="open = !open"
     >
       <DsIcon name="triangle-alert" :size="13" />
-      {{ t('fq.kpi.excluded', { n: bots.length }) }}
+      {{ t('fq.kpi.excluded', { n: bots.length }, bots.length) }}
     </button>
     <Popover
       :open="open"

@@ -168,7 +168,12 @@ const healthLevel = computed(() => {
 });
 const liveBots = computed(() => {
   const live = fleetStore.list.filter((b) => b.identity.mode === 'live');
-  return { online: live.filter((b) => b.state.status === 'online').length, total: live.length };
+  return {
+    online: live.filter((b) => b.state.status === 'online').length,
+    // Bots being read for the first time (direct mode reads them in turn): the count is partial
+    starting: live.filter((b) => b.state.status === 'starting').length,
+    total: live.length,
+  };
 });
 const logErrors = computed(
   () =>
@@ -380,6 +385,9 @@ function openPalette() {
         <span class="si" data-testid="sb-live">
           {{ t('fq.shell.sb.liveBots') }}
           <b class="num">{{ liveBots.online }}/{{ liveBots.total }}</b>
+          <span v-if="liveBots.starting > 0" class="mut"
+            >· {{ t('fq.shell.sb.liveStarting', { n: liveBots.starting }) }}</span
+          >
         </span>
         <button
           v-if="
@@ -656,5 +664,8 @@ kbd {
 }
 .shell.contained .content {
   overflow: auto;
+}
+.mut {
+  color: var(--fg-3);
 }
 </style>

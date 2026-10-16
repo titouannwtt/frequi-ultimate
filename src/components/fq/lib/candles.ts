@@ -276,8 +276,70 @@ export interface CandleOptionInput {
    */
   initialZoom: boolean;
   labelSide: 'left' | 'right';
+  /** Height of the chart in pixels, to size the panes; unknown (0) gives a default. */
+  heightPx?: number;
+  /** Draw the sub-charts that fit under the price pane (volume stays). Default true. */
+  showSubplots?: boolean;
   /** Levels farther than this share of the last close do not stretch the price axis. */
   axisReach?: number;
+}
+
+// ---- pane layout ----
+
+export interface Pane {
+  top: number;
+  height: number;
+}
+
+export interface PaneLayout {
+  main: Pane;
+  volume: Pane | null;
+  subs: Pane[];
+}
+
+const PANE_TOP = 6;
+/** Room under the last pane for the time labels. */
+const PANE_BOTTOM = 24;
+const PANE_GAP = 6;
+const VOLUME_H = 44;
+const SUB_H = 64;
+/** The price pane keeps at least this share of the chart, and never less than MAIN_MIN_PX. */
+const MAIN_MIN_SHARE = 0.55;
+const MAIN_MIN_PX = 160;
+/** In a chart too small for anything: never a negative or invisible price pane. */
+const MAIN_FLOOR_PX = 80;
+const HEIGHT_FALLBACK = 360;
+
+/**
+ * Pixel layout of the panes: the price pane first and as large as the chart allows, then the
+ * volume, then the sub-charts that still leave the price pane its minimum height (the others are
+ * dropped, not squeezed: a price pane of 60 px is useless). Percent layouts gave exactly that
+ * squeeze with four sub-charts.
+ */
+export function paneLayout(o: {
+  heightPx: number;
+  hasVolume: boolean;
+  subCount: number;
+  showSubplots: boolean;
+}): PaneLayout {
+  const height = o.heightPx > 0 ? o.heightPx : HEIGHT_FALLBACK;
+  const inner = height - PANE_TOP - PANE_BOTTOM;
+  const minMain = Math.max(MAIN_MIN_PX, height * MAIN_MIN_SHARE);
+  const volumeH = o.hasVolume ? VOLUME_H + PANE_GAP : 0;
+  const room = inner - volumeH - minMain;
+  const fit = o.showSubplots ? Math.max(0, Math.floor(room / (SUB_H + PANE_GAP))) : 0;
+  const n = Math.min(o.subCount, fit);
+  const mainH = Math.max(MAIN_FLOOR_PX, inner - volumeH - n * (SUB_H + PANE_GAP));
+  const main = { top: PANE_TOP, height: mainH };
+  let cursor = PANE_TOP + mainH + PANE_GAP;
+  const volume = o.hasVolume ? { top: cursor, height: VOLUME_H } : null;
+  if (volume) cursor += VOLUME_H + PANE_GAP;
+  const subs: Pane[] = [];
+  for (let i = 0; i < n; i++) {
+    subs.push({ top: cursor, height: SUB_H });
+    cursor += SUB_H + PANE_GAP;
+  }
+  return { main, volume, subs };
 }
 
 const SYM_TRIANGLE = 'path://M0,-8 L7,6 L-7,6 Z';
@@ -291,6 +353,13 @@ export function indicatorNames(plot: PlotConfig, withRsi: boolean, columns: stri
   }
   if (withRsi && columns.includes('rsi') && !names.includes('rsi')) names.push('rsi');
   return names;
+}
+
+/** Number of sub-charts the plot config asks for (RSI included when it is added). */
+export function subplotCount(plot: PlotConfig, withRsi: boolean, columns: string[]): number {
+  const subs = Object.values(plot.subplots ?? {});
+  const hasRsi = subs.some((s) => 'rsi' in s);
+  return subs.length + (withRsi && columns.includes('rsi') && !hasRsi ? 1 : 0);
 }
 
 export function buildCandleOption(input: CandleOptionInput): EChartsOption {
@@ -314,42 +383,20 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
     subplots.push({ name: 'rsi', series: { rsi: { color: c.fg2, type: 'line' } as never } });
   }
 
-  const SUB_H = 13;
-  const VOL_H = 10;
-  const GAP = 1.2;
-  const top = 2;
-  const bottomPad = 5;
   const hasVolume = vi >= 0;
-  const subTotal = subplots.length * (SUB_H + GAP);
-  const volTotal = hasVolume ? VOL_H + GAP : 0;
-  const mainH = 100 - top - bottomPad - subTotal - volTotal;
-  const grids: Array<Record<string, unknown>> = [
-    {
-      left: input.labelSide === 'left' ? 46 : 8,
-      right: input.labelSide === 'right' ? 52 : 8,
-      top: `${top}%`,
-      height: `${mainH}%`,
-    },
-  ];
-  let cursor = top + mainH + GAP;
-  if (hasVolume) {
-    grids.push({
-      left: grids[0]!.left,
-      right: grids[0]!.right,
-      top: `${cursor}%`,
-      height: `${VOL_H}%`,
-    });
-    cursor += VOL_H + GAP;
-  }
-  for (let i = 0; i < subplots.length; i++) {
-    grids.push({
-      left: grids[0]!.left,
-      right: grids[0]!.right,
-      top: `${cursor}%`,
-      height: `${SUB_H}%`,
-    });
-    cursor += SUB_H + GAP;
-  }
+  const layout = paneLayout({
+    heightPx: input.heightPx ?? 0,
+    hasVolume,
+    subCount: subplots.length,
+    showSubplots: input.showSubplots ?? true,
+  });
+  // Sub-charts that do not fit are left out: the price pane keeps its room
+  subplots.splice(layout.subs.length);
+  const left = input.labelSide === 'left' ? 46 : 8;
+  const right = input.labelSide === 'right' ? 52 : 8;
+  const grids: Array<Record<string, unknown>> = [layout.main, layout.volume, ...layout.subs]
+    .filter((g): g is Pane => g !== null)
+    .map((g) => ({ left, right, top: g.top, height: g.height }));
 
   const lastClose = (() => {
     for (let i = set.rows.length - 1; i >= 0; i--) {
@@ -506,6 +553,14 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
         name: f.label,
         symbol: f.kind === 'dca' ? 'rect' : f.side === 'short' ? SYM_TRIANGLE : 'circle',
         symbolSize: 10,
+        // E, SO1... under the marker (above for a short, whose entries sit on the high side)
+        label: {
+          show: true,
+          formatter: f.label,
+          position: f.side === 'short' ? 'top' : 'bottom',
+          color: c.fg3,
+          fontSize: 10,
+        },
         itemStyle: {
           color:
             f.kind === 'exit' ? (f.win ? c.profit : c.loss) : f.kind === 'dca' ? c.warn : c.accent,

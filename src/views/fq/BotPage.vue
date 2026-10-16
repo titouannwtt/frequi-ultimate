@@ -21,6 +21,7 @@ import {
 } from '@/components/fq';
 import { buildAction } from '@/components/fq/lib/actions';
 import { overlaysFromPosition } from '@/components/fq/lib/candles';
+import { effectiveTf, timeframeOptions } from '@/components/fq/lib/chartsPage';
 import type { EquityDefinition, EquityPeriod } from '@/components/fq/lib/equity';
 import { knownProfit } from '@/components/fq/lib/journal';
 import type { LeaderboardItem } from '@/components/fq/lib/leaderboard';
@@ -31,6 +32,7 @@ import { useActionNav } from '@/composables/useActionNav';
 import { useBotConfigEditorStore } from '@/stores/botConfigEditorStore';
 import { useCommandPalette } from '@/composables/useCommandPalette';
 import { useShortcuts } from '@/composables/useShortcuts';
+import { usePositionsAwaiting } from '@/composables/usePositionsAwaiting';
 import { useTradeOrders } from '@/composables/useTradeOrders';
 import { useTradeSet } from '@/composables/useTradeSet';
 import { useDataSource } from '@/composables/useDataSource';
@@ -67,6 +69,8 @@ const desktop = useMediaQuery('(min-width: 1024px)');
 const phone = useMediaQuery('(max-width: 599px)');
 
 const botKey = computed(() => String(route.params.botKey));
+// Positions the bot announces and the app has not read yet (direct mode reads the bots in turn)
+const awaiting = usePositionsAwaiting(() => [botKey.value]);
 const bot = computed(() => fleet.bots[botKey.value] ?? null);
 
 // Remember the bot: it is where "Bot" in the navigation leads next time
@@ -209,8 +213,17 @@ function liftLock(item: PairItem) {
 }
 
 // ---- chart ----
-const tf = ref('15m');
-const tfOptions = ['5m', '15m', '1h', '4h'].map((v) => ({ value: v, label: v }));
+// A bot only serves the candles of its strategy timeframe: that is the default until one is picked
+const tfPick = ref<string | null>(null);
+watch(botKey, () => (tfPick.value = null));
+const ownTf = computed(() => bot.value?.identity.timeframe ?? null);
+const tf = computed({
+  get: () => effectiveTf(tfPick.value, ownTf.value),
+  set: (v: string) => (tfPick.value = v),
+});
+const tfOptions = computed(() =>
+  timeframeOptions(ownTf.value).map((v) => ({ value: v, label: v })),
+);
 const orders = useTradeOrders(botKey, tradeId, () => position.value?.side ?? 'long');
 const overlays = computed(() =>
   overlaysFromPosition(position.value, pair.value ?? '', {
@@ -497,7 +510,13 @@ const configRows = computed(() => {
           <Pane v-else-if="desktop" :title="t('fq.pg.bot.drawer')" icon="layers">
             <EmptyState
               icon="layers"
-              :title="tradeGone ? t('fq.pg.bot.tradeClosed') : t('fq.pg.bot.noPosition')"
+              :title="
+                tradeGone
+                  ? t('fq.pg.bot.tradeClosed')
+                  : awaiting.missing.value > 0
+                    ? t('fq.trade.awaiting', { n: awaiting.missing.value }, awaiting.missing.value)
+                    : t('fq.pg.bot.noPosition')
+              "
               :data-testid="tradeGone ? 'trade-closed' : undefined"
             />
           </Pane>
@@ -631,7 +650,7 @@ const configRows = computed(() => {
   }
   .grid {
     grid-template-columns: 236px minmax(0, 1fr) clamp(340px, 26vw, 420px);
-    grid-template-rows: minmax(220px, 1.1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(320px, 1.6fr) minmax(0, 1fr);
     overflow: hidden;
   }
   .pairs {

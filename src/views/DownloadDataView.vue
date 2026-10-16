@@ -1,5 +1,13 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+import LegacyToolGate from '@/components/fq/LegacyToolGate.vue';
+
+const { t } = useI18n();
+</script>
 
 <template>
-  <DownloadDataMain class="pt-4" />
+  <LegacyToolGate :title="t('fq.tools.downloadData')" :subtitle="t('fq.pg.toolsHint.downloadData')">
+    <DownloadDataMain />
+  </LegacyToolGate>
 </template>

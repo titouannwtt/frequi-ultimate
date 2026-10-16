@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
 interface Props {
   value?: string;
   belowTimeframe?: string;
@@ -12,11 +14,12 @@ const props = withDefaults(defineProps<Props>(), {
 });
 const emit = defineEmits<{ input: [value: string] }>();
 
+const { t } = useI18n();
 const selectedTimeframe = ref('');
 // The below list must always remain sorted correctly!
-const availableTimeframesBase = [
+const availableTimeframesBase = computed(() => [
   // Placeholder value
-  { value: '', text: 'Use strategy default' },
+  { value: '', text: t('backtest.useStrategyDefault') },
   '1m',
   '3m',
   '5m',
@@ -34,15 +37,15 @@ const availableTimeframesBase = [
   '2w',
   '1M',
   '1y',
-];
+]);
 
 const availableTimeframes = computed(() => {
   if (!props.belowTimeframe) {
-    return availableTimeframesBase;
+    return availableTimeframesBase.value;
   }
-  const idx = availableTimeframesBase.findIndex((v) => v === props.belowTimeframe);
+  const idx = availableTimeframesBase.value.findIndex((v) => v === props.belowTimeframe);
 
-  return [...availableTimeframesBase].splice(0, idx);
+  return [...availableTimeframesBase.value].splice(0, idx);
 });
 
 const emitSelectedTimeframe = () => {
@@ -53,7 +56,7 @@ const emitSelectedTimeframe = () => {
 <template>
   <Select
     v-model="selectedTimeframe"
-    placeholder="Use strategy default"
+    :placeholder="t('backtest.useStrategyDefault')"
     :option-label="(option) => option.text || option"
     :option-value="(option) => option.value ?? option"
     :size="size"

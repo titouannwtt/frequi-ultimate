@@ -103,6 +103,7 @@ export default {
     alerts: 'Alerts',
     sb: {
       liveBots: 'Live bots',
+      liveStarting: '{n} starting',
       budget: 'HL budget',
       backoff: '429 backoff active',
       snapshot: 'Snapshot',
@@ -203,7 +204,8 @@ export default {
       blacklist_remove: 'The pair can be traded again by this bot.',
       lock_delete: 'The bot may enter this pair again.',
     },
-    subtitle: '{pair} {side} ×{lev} · {n} entries · {stake} USDC',
+    subtitle:
+      '{pair} {side} ×{lev} · {n} entry · {stake} USDC | {pair} {side} ×{lev} · {n} entries · {stake} USDC',
     trade: 'trade',
     allPositions: 'all positions',
     quantity: 'Quantity',
@@ -271,6 +273,10 @@ export default {
       xyz: 'xyz',
       orphan: 'Orphans',
     },
+    awaiting: '{n} position announced, not read yet | {n} positions announced, not read yet',
+    awaitingHint: 'The bots are read one by one: the list fills in as they answer.',
+    awaitingMore:
+      '{n} more position announced, not read yet | {n} more positions announced, not read yet',
     empty: {
       open: 'No open position.',
       bot: 'No open position.',
@@ -315,7 +321,8 @@ export default {
     state: 'State',
     orderState: { filled: 'filled', next: 'next', pending: 'pending' },
     ordersSummary: '{filled} filled, {pending} pending',
-    ordersUnavailable: '{n} of {max} entries filled. The orders are not available.',
+    ordersUnavailable:
+      '{n} of {max} entry filled. The orders are not available. | {n} of {max} entries filled. The orders are not available.',
     maintenance: 'Maintenance of this trade (bot database)',
     deleteNote: 'Does not close the position: it would become an orphan.',
     minNotional: 'min. {min} USDC',
@@ -418,11 +425,12 @@ export default {
     pick: 'Choose a bot',
     port: 'port {port}',
     uptime: 'online for {d}',
-    openTrades: '{n} positions',
+    openTrades: '{n} position | {n} positions',
     winrate: '{n} win rate',
     capitalNote: 'available capital',
     exposure: 'Exposure L / S',
     net: 'net {n} USDC',
+    exposureUnknown: 'positions not read yet',
     threshold: 'limit {n}',
     backoff: 'Backoff 429',
     market: { crypto: 'Crypto', hip3: 'HIP-3', mixed: 'Crypto + xyz' },

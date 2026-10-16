@@ -63,6 +63,10 @@ const now = computed(() => props.nowMs ?? Date.now());
 const skew = computed(() => conn.status.clockSkewMs);
 const state = computed(() => botState(props.bot, now.value, skew.value));
 const m = computed(() => props.bot.metrics);
+// Both sides null: the positions were not read yet, which is not the same as a flat book
+const exposureKnown = computed(
+  () => m.value.exposure_long !== null || m.value.exposure_short !== null,
+);
 
 const marketLabel = computed(() => {
   const k = props.bot.identity.market;
@@ -170,7 +174,9 @@ const stateSince = computed(
         <template #value
           ><PnlValue :value="m.open_profit_abs" :muted="stale('positions')" :flash="true"
         /></template>
-        <template #sub>{{ t('fq.header.openTrades', { n: bot.state.open_trades }) }}</template>
+        <template #sub>{{
+          t('fq.header.openTrades', { n: bot.state.open_trades }, bot.state.open_trades)
+        }}</template>
       </KpiTile>
       <KpiTile :label="t('fq.col.realized_1d')">
         <template #value><PnlValue :value="m.realized_1d" :muted="stale('metrics')" /></template>
@@ -195,14 +201,24 @@ const stateSince = computed(
       <KpiTile
         :label="t('fq.header.exposure')"
         :sub="
-          t('fq.header.net', { n: fmt.signed((m.exposure_long ?? 0) - (m.exposure_short ?? 0), 0) })
+          exposureKnown
+            ? t('fq.header.net', {
+                n: fmt.signed((m.exposure_long ?? 0) - (m.exposure_short ?? 0), 0),
+              })
+            : t('fq.header.exposureUnknown')
         "
       >
         <template #value
-          >{{ fmt.number(m.exposure_long ?? 0, 0) }} /
-          {{ fmt.number(m.exposure_short ?? 0, 0) }}</template
+          ><template v-if="exposureKnown"
+            >{{ fmt.number(m.exposure_long ?? 0, 0) }} /
+            {{ fmt.number(m.exposure_short ?? 0, 0) }}</template
+          ><template v-else>{{ t('fq.ds.notAvailable') }}</template></template
         >
-        <SplitBar :long="m.exposure_long ?? 0" :short="m.exposure_short ?? 0" />
+        <SplitBar
+          v-if="exposureKnown"
+          :long="m.exposure_long ?? 0"
+          :short="m.exposure_short ?? 0"
+        />
       </KpiTile>
       <KpiTile
         :label="t('fq.kpi.drawdownOpen')"
@@ -211,8 +227,8 @@ const stateSince = computed(
       >
         <template #value>
           <template v-if="dd"
-            ><PnlValue :value="-dd.abs" :decimals="0" /><small v-if="ddPct !== null">
-              {{ fmt.percent(-ddPct, 1) }}</small
+            ><PnlValue :value="-dd.abs" :decimals="0" /><small v-if="ddPct !== null"
+              >&nbsp;{{ fmt.percent(-ddPct, 1) }}</small
             ></template
           >
           <template v-else>{{ t('fq.ds.notAvailable') }}</template>

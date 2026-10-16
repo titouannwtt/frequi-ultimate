@@ -62,6 +62,12 @@ const keepsContent = computed(
     (effective.value === 'error' && props.hasData),
 );
 const marked = computed(() => effective.value === 'stale' || effective.value === 'error');
+// One string: the whitespace between template fragments is dropped, which glued the parts together
+const errorLine = computed(() =>
+  [t('fq.ds.pane.error'), props.errorMessage, props.hasData ? t('fq.ds.pane.lastValues') : null]
+    .filter(Boolean)
+    .join(' \u00b7 '),
+);
 </script>
 
 <template>
@@ -87,11 +93,7 @@ const marked = computed(() => effective.value === 'stale' || effective.value ===
     <div class="pb" :class="{ pad: padded, marked }">
       <div v-if="effective === 'error'" class="err" role="alert">
         <DsIcon name="triangle-alert" :size="13" />
-        <span>
-          {{ t('fq.ds.pane.error') }}
-          <template v-if="errorMessage">&middot; {{ errorMessage }}</template>
-          <template v-if="hasData">&middot; {{ t('fq.ds.pane.lastValues') }}</template>
-        </span>
+        <span>{{ errorLine }}</span>
       </div>
       <div v-else-if="effective === 'stale'" class="err stale" role="status">
         <DsIcon name="history" :size="13" />

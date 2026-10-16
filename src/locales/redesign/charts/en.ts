@@ -354,11 +354,15 @@ export default {
       safetyOrders: 'Safety orders',
       fills: 'Fills',
       liquidation: 'Liquidation',
+      subplots: 'Sub-charts {shown}/{total}',
     },
     chartLabel: 'Candles of {pair} in {tf}',
     empty: 'No candle',
-    emptyHint: 'The bot has not returned candles for this pair yet.',
+    emptyHint:
+      'No candle received for this pair. A bot only serves its own strategy timeframe: try that one.',
     emptyError: 'The bot did not answer.',
+    emptyTf: 'No candles in {tf}',
+    onlyTf: 'This bot only serves {tf}.',
   },
   recon: {
     coin: 'Coin',

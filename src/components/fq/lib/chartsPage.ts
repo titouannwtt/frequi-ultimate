@@ -8,20 +8,26 @@ import { deepMerge } from '@/utils/deepMerge';
 import type { BotKey, BotRow, Position } from '@/gateway/types.gen';
 import type { PlotConfig } from '@/types';
 
-export const CHART_TIMEFRAMES = ['5m', '15m', '1h', '4h', '1d'] as const;
-export type ChartTf = (typeof CHART_TIMEFRAMES)[number];
+/**
+ * The usual freqtrade timeframes. A bot only serves the candles of its strategy timeframe (the
+ * others come back empty), so this list is a menu, not a promise: see `timeframeOptions`.
+ */
+export const CHART_TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '2h', '4h', '1d'] as const;
+export type ChartTf = string;
 
 /** Two cells in v1 (decision 6 of the owner); the render budget allows three. */
 export const MAX_CELLS = 2;
 export type CellCount = 1 | 2;
 
+/** Used only when the bot's own timeframe is not known (yet). */
 export const DEFAULT_TF: ChartTf = '15m';
 
 export interface ChartsState {
   bot: BotKey | null;
   pair: string | null;
   pair2: string | null;
-  tf: ChartTf;
+  /** The timeframe the URL asks for; null: the one of the context bot's strategy. */
+  tf: ChartTf | null;
   cells: CellCount;
   /** Heikin-Ashi candles; null: the user's preference decides. */
   ha: boolean | null;
@@ -32,8 +38,27 @@ const first = (v: unknown): string | null => {
   return typeof x === 'string' && x.trim() !== '' ? x.trim() : null;
 };
 
+const TF_RE = /^[1-9]\d{0,2}[mhdwM]$/;
+const TF_UNIT_MS = { m: 60_000, h: 3_600_000, d: 86_400_000, w: 604_800_000, M: 2_592_000_000 };
+
+/** A freqtrade timeframe (`5m`, `1h`, `1d`...), whether or not it is in the standard menu. */
 export function isChartTf(v: unknown): v is ChartTf {
-  return typeof v === 'string' && (CHART_TIMEFRAMES as readonly string[]).includes(v);
+  return typeof v === 'string' && TF_RE.test(v);
+}
+
+const tfMs = (tf: string): number =>
+  Number(tf.slice(0, -1)) * TF_UNIT_MS[tf.slice(-1) as keyof typeof TF_UNIT_MS];
+
+/** The timeframe shown: the one asked for, else the bot's own, else the default. */
+export function effectiveTf(requested: ChartTf | null, own: string | null | undefined): ChartTf {
+  return requested ?? (isChartTf(own) ? own : DEFAULT_TF);
+}
+
+/** The menu of timeframes: the standard ones plus the bot's own when it is an unusual one. */
+export function timeframeOptions(own: string | null | undefined): ChartTf[] {
+  const all: ChartTf[] = [...CHART_TIMEFRAMES];
+  if (isChartTf(own) && !all.includes(own)) all.push(own);
+  return all.sort((a, b) => tfMs(a) - tfMs(b));
 }
 
 /** The state a URL describes; anything unknown or malformed falls back to the default. */
@@ -44,13 +69,13 @@ export function parseChartsQuery(query: Record<string, unknown>): ChartsState {
     bot: first(query.bot),
     pair: first(query.pair),
     pair2: first(query.pair2),
-    tf: isChartTf(tf) ? tf : DEFAULT_TF,
+    tf: isChartTf(tf) ? tf : null,
     cells: cells === 2 ? 2 : 1,
     ha: first(query.ha) === '1' ? true : first(query.ha) === '0' ? false : null,
   };
 }
 
-/** The URL of a state: defaults are left out so a shared link stays short. */
+/** The URL of a state: defaults (including the bot's own timeframe) are left out. */
 export function chartsQuery(s: ChartsState): Record<string, string> {
   const q: Record<string, string> = {};
   if (s.bot) q.bot = s.bot;
@@ -59,7 +84,7 @@ export function chartsQuery(s: ChartsState): Record<string, string> {
     q.cells = '2';
     if (s.pair2) q.pair2 = s.pair2;
   }
-  if (s.tf !== DEFAULT_TF) q.tf = s.tf;
+  if (s.tf !== null) q.tf = s.tf;
   if (s.ha !== null) q.ha = s.ha ? '1' : '0';
   return q;
 }

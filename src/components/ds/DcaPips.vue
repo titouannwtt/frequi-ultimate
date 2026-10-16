@@ -22,7 +22,7 @@ const pips = computed(() =>
 </script>
 
 <template>
-  <span class="pips" role="img" :aria-label="t('fq.ds.dcaFilled', { filled, max })">
+  <span class="pips" role="img" :aria-label="t('fq.ds.dcaFilled', { filled, max }, filled)">
     <i v-for="(p, k) in pips" :key="k" :class="{ e: !p.filled, last: p.last }"></i>
     <span v-if="showCount" class="n num" aria-hidden="true">{{ filled }}/{{ max }}</span>
   </span>

@@ -15,14 +15,15 @@ import {
   TradeDrawer,
 } from '@/components/fq';
 import {
-  CHART_TIMEFRAMES,
   chartsQuery,
   contextBotFor,
+  effectiveTf,
   stickyDefaultPair,
   parseChartsQuery,
   plotProps,
   resolvePlotChoice,
   secondPair,
+  timeframeOptions,
   type CellCount,
   type ChartTf,
 } from '@/components/fq/lib/chartsPage';
@@ -45,7 +46,7 @@ import type { BotKey } from '@/gateway/types.gen';
  * context bot is the one whose strategy computes the indicators; it defaults to the bot holding a
  * position on the pair. Candles are read through the bot proxy (GET only), nothing here writes.
  */
-const { t } = useI18n();
+const { t, te } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const fleet = useFqFleetStore();
@@ -80,7 +81,11 @@ const botKey = computed<BotKey | null>(() =>
     bots: fleet.list,
   }),
 );
-const tf = computed<ChartTf>(() => requested.value.tf);
+// A bot only serves the candles of its strategy timeframe: that is the default, not a fixed 15m
+const ownTf = computed(() =>
+  botKey.value ? (fleet.bots[botKey.value]?.identity.timeframe ?? null) : null,
+);
+const tf = computed<ChartTf>(() => effectiveTf(requested.value.tf, ownTf.value));
 // Under 1024 px there is room for one cell only
 const cellCount = computed<CellCount>(() => (desktop.value ? requested.value.cells : 1));
 const pair2 = computed(() =>
@@ -95,7 +100,7 @@ function update(
     bot: BotKey | null;
     pair: string | null;
     pair2: string | null;
-    tf: ChartTf;
+    tf: ChartTf | null;
     cells: CellCount;
     ha: boolean | null;
   }>,
@@ -104,7 +109,8 @@ function update(
     bot: botKey.value,
     pair: pair.value,
     pair2: pair2.value,
-    tf: tf.value,
+    // Still implicit unless the user chose one: it follows the context bot
+    tf: requested.value.tf,
     cells: requested.value.cells,
     ha: requested.value.ha,
     ...patch,
@@ -135,7 +141,10 @@ const filterTabs: PairFilter[] = ['positions', 'signals', 'all'];
 
 // ---- toolbar ----
 const tfOptions = computed(() =>
-  CHART_TIMEFRAMES.map((v) => ({ value: v, label: t(`fq.pg.charts.tf.${v}`) })),
+  timeframeOptions(ownTf.value).map((v) => ({
+    value: v,
+    label: te(`fq.pg.charts.tf.${v}`) ? t(`fq.pg.charts.tf.${v}`) : v,
+  })),
 );
 const cellOptions = computed(() => [
   { value: 1 as CellCount, label: t('fq.pg.charts.cells1'), icon: 'square' as const },

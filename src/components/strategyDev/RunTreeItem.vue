@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import type { RunListEntry } from '@/types';
 import { RunType } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -12,6 +13,7 @@ defineEmits<{
   click: [];
 }>();
 
+const { t } = useI18n();
 const store = useStrategyDevStore();
 
 const isCached = computed(() => store.runCache.has(props.run.filename));
@@ -97,7 +99,10 @@ const verdictDot = computed<string | null>(() => {
         <span v-else-if="isNew" class="run-new-badge">new</span>
       </div>
       <span v-if="isLiveBot" class="run-time">
-        {{ run.exchange }} · {{ run.open_trades_count ?? 0 }} open
+        {{ run.exchange }}
+        <template v-if="run.open_trades_count !== undefined"
+          >· {{ t('strategyDev.openCount', { n: run.open_trades_count }, run.open_trades_count) }}
+        </template>
       </span>
       <span v-else class="run-time">{{ timeAgo(run.timestamp) }}</span>
     </div>

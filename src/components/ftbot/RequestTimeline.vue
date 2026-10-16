@@ -454,7 +454,7 @@ const sankeyOption = computed((): EChartsOption => {
         <button
           v-for="mode in ['timeline', 'flow', 'table'] as ViewMode[]"
           :key="mode"
-          class="text-[10px] px-2 py-0.5 rounded transition-colors capitalize"
+          class="text-[10px] px-2 py-0.5 rounded transition-colors"
           :class="
             viewMode === mode
               ? 'bg-indigo-500/20 text-indigo-300'
@@ -462,7 +462,8 @@ const sankeyOption = computed((): EChartsOption => {
           "
           @click="viewMode = mode"
         >
-          {{ mode === 'timeline' ? '📈' : mode === 'flow' ? '🔀' : '📊' }} {{ mode }}
+          {{ mode === 'timeline' ? '📈' : mode === 'flow' ? '🔀' : '📊' }}
+          {{ t(`rateMonitor.view.${mode}`) }}
         </button>
       </div>
 

@@ -41,6 +41,19 @@ describe('BotHeader', () => {
     expect(w.get('[data-action=exitAll]').attributes('aria-disabled')).toBeUndefined();
   });
 
+  it('exposure not read yet shows n/a and says why, never a flat "0 / 0" (B198)', () => {
+    const bot = bots((b) => b.identity.mode === 'live' && b.state.status === 'online');
+    const unread = {
+      ...bot,
+      metrics: { ...bot.metrics, exposure_long: null, exposure_short: null },
+    } as BotRow;
+    const w = header(unread);
+    const tile = w.findAll('*').find((e) => e.text().startsWith('Exposure'));
+    expect(tile).toBeDefined();
+    expect(w.text()).toContain('positions not read yet');
+    expect(w.text()).not.toMatch(/0\s*\/\s*0/);
+  });
+
   it('an offline bot: frozen values, banner telling NOT to restart it, every action disabled with the reason', () => {
     const bot = bots((b) => b.state.status === 'offline');
     const w = header(bot);

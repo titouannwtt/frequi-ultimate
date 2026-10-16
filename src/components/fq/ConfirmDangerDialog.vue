@@ -233,13 +233,17 @@ const subtitle = computed(() => {
   const p = props.position;
   if (p && (single.value || props.action.kind === 'forceentry')) {
     const side = p.side === 'long' ? t('fq.side.long') : t('fq.side.short');
-    return t('fq.dialog.subtitle', {
-      pair: p.pair,
-      side,
-      lev: p.leverage,
-      n: p.dca_entries,
-      stake: fmt.number(p.stake_amount, 2),
-    });
+    return t(
+      'fq.dialog.subtitle',
+      {
+        pair: p.pair,
+        side,
+        lev: p.leverage,
+        n: p.dca_entries,
+        stake: fmt.number(p.stake_amount, 2),
+      },
+      p.dca_entries,
+    );
   }
   return t(`fq.dialog.sub.${kindKey.value}`);
 });

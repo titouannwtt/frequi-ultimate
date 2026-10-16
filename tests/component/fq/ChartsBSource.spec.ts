@@ -345,6 +345,7 @@ describe('CandleChart', () => {
     expect(json()).toContain('5.2345');
     expect(json()).toContain('3.1111');
     const chips = w.findAll('.ov button');
+    // The sub-chart chip is not an overlay: it sits by the legend, not in this row
     expect(chips.map((c) => c.attributes('aria-pressed'))).toEqual(['true', 'true', 'true']);
     await chips[1]!.trigger('click');
     await flushPromises();
@@ -357,6 +358,33 @@ describe('CandleChart', () => {
     const w = mountFq(CandleChart, { props: props({ controls: true }), attachTo: document.body });
     await flushPromises();
     expect(w.find('.ov').exists()).toBe(false);
+  });
+
+  it('no candle in a timeframe the bot does not serve says so, not "not yet" (B191)', async () => {
+    const own = world.fixture.bots.find((b) => b.bot_key === bot)!.identity.timeframe;
+    expect(own).toBe('15m');
+    sb = sourceB(world.fixture, { candles: { columns: ['date'], data: [], timeframe_ms: 0 } });
+    const w = mountFq(CandleChart, {
+      props: props({ tf: '1h', source: sb.source }),
+      attachTo: document.body,
+    });
+    await flushPromises();
+    const empty = w.find('[data-testid=candle-empty]');
+    expect(empty.text()).toContain('No candles in 1h');
+    expect(empty.text()).toContain('This bot only serves 15m');
+    expect(empty.text()).not.toMatch(/not .*yet/i);
+  });
+
+  it('sub-charts that fit are drawn, and the chip switches them off (B193)', async () => {
+    const w = mountFq(CandleChart, { props: props({ controls: true }), attachTo: document.body });
+    await flushPromises();
+    const chip = w.find('[data-testid=candle-subplots]');
+    expect(chip.text()).toMatch(/Sub-charts \d+\/\d+/);
+    const grids = () => (charts[0]!.last() as { grid: unknown[] }).grid.length;
+    const withSubs = grids();
+    await chip.find('button').trigger('click');
+    await flushPromises();
+    expect(grids()).toBeLessThan(withSubs);
   });
 
   it('a bot that does not answer: the note, no chart and no zero candles', async () => {

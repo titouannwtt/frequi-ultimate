@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
 
+const { t } = useI18n();
 const settingsStore = useSettingsStore();
 
 const now = new Date();
@@ -69,7 +71,7 @@ onMounted(() => {
   <div>
     <div class="flex justify-content-center">
       <div>
-        <label for="dateFrom">Start Date</label>
+        <label for="dateFrom">{{ t('fq.pg.legacy.timerange.start') }}</label>
         <VueDatePicker
           id="dateFrom"
           v-model="dateFrom"
@@ -84,7 +86,7 @@ onMounted(() => {
         ></VueDatePicker>
       </div>
       <div class="ms-2">
-        <label for="dateTo">End Date</label>
+        <label for="dateTo">{{ t('fq.pg.legacy.timerange.end') }}</label>
         <VueDatePicker
           v-model="dateTo"
           :dark="settingsStore.isDarkTheme"
@@ -100,7 +102,7 @@ onMounted(() => {
     </div>
 
     <label class="mt-1 text-start">
-      Timerange: <b>{{ timeRange }}</b>
+      {{ t('fq.pg.legacy.timerange.label') }}: <b>{{ timeRange }}</b>
     </label>
   </div>
 </template>

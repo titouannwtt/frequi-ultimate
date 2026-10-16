@@ -33,7 +33,11 @@ const levels = computed(() => {
   }));
 });
 const label = computed(() =>
-  t('fq.ds.dcaFilled', { filled: props.position.filled, max: props.position.max }),
+  t(
+    'fq.ds.dcaFilled',
+    { filled: props.position.filled, max: props.position.max },
+    props.position.filled,
+  ),
 );
 </script>
 

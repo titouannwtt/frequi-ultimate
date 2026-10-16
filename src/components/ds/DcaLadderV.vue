@@ -101,7 +101,9 @@ function barLabel(o: LadderOrder): string {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
+  /* The last column is kept free for the labels of the level lines (Moy., Prix, TP): they used to
+     be drawn over the labels of the bars */
+  grid-template-columns: 64px minmax(0, 1fr) 92px;
   align-items: center;
   height: 28px;
   gap: 8px;

@@ -169,7 +169,20 @@ export default {
     noData:
       'Données OHLCV non disponibles. Lancez freqtrade download-data pour les pairs whitelist.',
     loading: 'Chargement des données de volume...',
+    loadingSlow: "Chargement toujours en cours : le bot lit l'historique de volume de ses paires.",
     profitPerVol: 'Profit/Vol',
+    retry: 'Réessayer',
+    avgRatio: 'Ratio moyen',
+    pairsOn: '{n} paires · {exchange}',
+    agoSeconds: 'il y a {n} s',
+    agoMinutes: 'il y a {n} min',
+    buckets: {
+      '1d': '1 jour',
+      '3d': '3 jours',
+      '7d': '7 jours',
+      '1M': '1 mois',
+      '1Q': '1 trimestre',
+    },
   },
 
   // Profit cumulé amélioré
@@ -2390,6 +2403,7 @@ export default {
 
   // Widgets de monitoring des taux
   rateMonitor: {
+    view: { timeline: 'Chronologie', flow: 'Flux', table: 'Tableau' },
     rateBudget: 'Budget de taux',
     rateBudgetDesc:
       'Budget de limitation de taux — indique combien de jetons sont disponibles pour les appels API. 100% = budget complet, chaque requête consomme des jetons qui se rechargent au fil du temps. En dessous de 30% = risque de blocage 429.',
@@ -2507,7 +2521,8 @@ export default {
   strategyDev: {
     title: 'Développement Stratégie',
     noRunSelected: 'Sélectionnez un run dans la barre latérale pour voir les détails.',
-    selectRunHint: 'Sélectionnez un run dans la barre latérale',
+    selectRunHint: 'Ou lancez un nouveau job depuis le haut de la barre latérale.',
+    openCount: '{n} ouverte | {n} ouvertes',
     shortcutSearch: 'Rechercher',
     shortcutSidebar: 'Barre latérale',
     shortcutNavigate: 'Naviguer les runs',

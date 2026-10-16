@@ -18,6 +18,7 @@ import type { ColumnDef, SortState } from '@/components/ds';
 import { sortRows } from '@/components/ds/lib/table';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useColumns } from '@/composables/useColumns';
+import { usePositionsAwaiting } from '@/composables/usePositionsAwaiting';
 import { useScope } from '@/composables/useScope';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
@@ -293,9 +294,22 @@ function groupTitle(key: string): string {
 }
 
 // ---- DataTable columns ----
+// A closed-trade column whose figure none of the loaded rows carries (the gateway does not give
+// the entries or the MAE/MFE of a closed trade in its list) is left out: a column of "n/d" only
+// takes the room of the exit reason and the duration
+const emptyCols = computed(() => {
+  const out = new Set<string>();
+  if (isOpenPreset.value || lines.value.length === 0) return out;
+  if (lines.value.every((l) => l.dcaEntries == null)) out.add('dca');
+  if (lines.value.every((l) => l.mae == null && l.mfe == null)) out.add('mae_mfe');
+  return out;
+});
 const tableCols = computed<ColumnDef<TradeLine>[]>(() =>
   columnState.columns.value
-    .filter((c) => !(props.preset === 'bot' && c.id === 'bot') && !c.unavailable)
+    .filter(
+      (c) =>
+        !(props.preset === 'bot' && c.id === 'bot') && !c.unavailable && !emptyCols.value.has(c.id),
+    )
     .map((c) => ({
       id: c.id,
       label: t(`fq.col.${c.id}`),
@@ -435,10 +449,24 @@ function rowClass(l: TradeLine): string[] {
   if (l.stale) out.push('stale');
   return out;
 }
-const empty = computed(() => ({
-  title: t(`fq.trade.empty.${props.preset}`),
-  hint: t(`fq.trade.emptyHint.${props.preset}`),
-}));
+// Positions a bot announces and the app has not read yet (direct mode reads the bots in turn)
+const awaitingKeys = computed(() => {
+  if (!isOpenPreset.value || props.positions) return [];
+  if (props.preset === 'bot') return props.botKey ? [props.botKey] : [];
+  return props.scoped ? scope.botKeys.value : fleet.list.map((b) => b.bot_key);
+});
+const awaiting = usePositionsAwaiting(awaitingKeys);
+const empty = computed(() =>
+  awaiting.missing.value > 0
+    ? {
+        title: t('fq.trade.awaiting', { n: awaiting.missing.value }, awaiting.missing.value),
+        hint: t('fq.trade.awaitingHint'),
+      }
+    : {
+        title: t(`fq.trade.empty.${props.preset}`),
+        hint: t(`fq.trade.emptyHint.${props.preset}`),
+      },
+);
 
 defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
 </script>
@@ -454,6 +482,14 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
         @update:model-value="(v: QuickFilter) => emit('update:filter', v)"
       />
     </div>
+
+    <p
+      v-if="awaiting.missing.value > 0 && sorted.length > 0"
+      class="awaiting"
+      data-testid="positions-awaiting"
+    >
+      {{ t('fq.trade.awaitingMore', { n: awaiting.missing.value }, awaiting.missing.value) }}
+    </p>
 
     <template v-if="asCards">
       <div v-if="sorted.length === 0" class="empty">
@@ -658,6 +694,12 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
 }
 .empty {
   padding: var(--s4);
+}
+.awaiting {
+  margin: 0;
+  padding: var(--s1) var(--s3);
+  color: var(--warn);
+  font-size: var(--t-xs);
 }
 .more {
   justify-self: center;

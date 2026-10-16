@@ -7,6 +7,8 @@ import type {
   SnapshotDiffResponse,
 } from '@/types';
 import { RunType } from '@/types';
+import { useDataSource } from '@/composables/useDataSource';
+import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { buildLiveBotAnalytics } from '@/utils/liveBotAnalytics';
 import type { LiveBotInput } from '@/utils/liveBotAnalytics';
 
@@ -60,6 +62,19 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     return useApi(loginInfo, botStore.selectedBot).api;
   }
 
+  const fleet = useFqFleetStore();
+  const dataSource = useDataSource();
+  /**
+   * Open positions of a bot. The data layer knows them for the whole fleet; the legacy store only
+   * holds the open trades of the bots it has polled so far (most are skipped while the fleet
+   * snapshot covers them), so its count was 0 for a bot with open positions.
+   */
+  function openCountOf(botId: string, legacyCount: number | undefined): number | undefined {
+    const key = dataSource.source.value?.registry.botKeyOf(botId) ?? null;
+    const known = key ? fleet.bots[key]?.state.open_trades : undefined;
+    return known ?? legacyCount;
+  }
+
   const liveBotEntries = computed<RunListEntry[]>(() => {
     const entries: RunListEntry[] = [];
     for (const [botId, subStore] of Object.entries(botStore.botStores)) {
@@ -79,7 +94,7 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
         botId,
         exchange: state?.exchange || '',
         dry_run: state?.dry_run ?? false,
-        open_trades_count: subStore.openTrades?.length ?? 0,
+        open_trades_count: openCountOf(botId, subStore.openTrades?.length),
       });
     }
     return entries;

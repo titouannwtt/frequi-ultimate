@@ -40,6 +40,14 @@ const i18n = createI18n({
   legacy: false,
   locale: initial.locale,
   fallbackLocale: 'en',
+  // French writes "0 position", "1 position", "2 positions": zero is singular (the default rule of
+  // vue-i18n makes it plural, like English)
+  pluralRules: {
+    fr: (choice, choicesLength) => {
+      if (choicesLength === 2) return choice < 2 ? 0 : 1;
+      return choice ? (choice > 1 ? 2 : 1) : 0;
+    },
+  },
   messages: {
     // Redesign keys live in the `fq` namespace so the legacy message files stay untouched
     en: { ...en, fq: fqEn },

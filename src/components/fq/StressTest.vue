@@ -69,14 +69,14 @@ const shown = computed(() => result.value.rows.slice(0, 12));
       <KpiStrip>
         <KpiTile
           :label="t('fq.stress.delta')"
-          :sub="t('fq.stress.deltaSub', { n: result.counted })"
+          :sub="t('fq.stress.deltaSub', { n: result.counted }, result.counted)"
         >
           <template #value><PnlValue :value="result.delta" :decimals="0" unit="USDC" /></template>
         </KpiTile>
         <KpiTile
           :label="t('fq.stress.liquidated')"
           :value="String(result.liquidated)"
-          :sub="t('fq.stress.liquidatedSub', { n: result.counted })"
+          :sub="t('fq.stress.liquidatedSub', { n: result.counted }, result.counted)"
           :alert="result.liquidated > 0"
         />
         <KpiTile
@@ -122,7 +122,13 @@ const shown = computed(() => result.value.rows.slice(0, 12));
           </tbody>
         </table>
         <p v-if="result.rows.length > shown.length" class="more">
-          {{ t('fq.stress.more', { n: result.rows.length - shown.length }) }}
+          {{
+            t(
+              'fq.stress.more',
+              { n: result.rows.length - shown.length },
+              result.rows.length - shown.length,
+            )
+          }}
         </p>
       </div>
 

@@ -4,6 +4,8 @@ import {
   chartsQuery,
   contextBotFor,
   defaultPair,
+  effectiveTf,
+  timeframeOptions,
   stickyDefaultPair,
   parseChartsQuery,
   resolvePlotChoice,
@@ -64,14 +66,42 @@ const position = (bot_key: string, pair: string, profit_abs: number | null, orph
 
 describe('charts page model', () => {
   it('reads the URL with defaults for anything unknown and writes a short URL back', () => {
-    const s = parseChartsQuery({ bot: 'b1', pair: 'ARB/USDC:USDC', tf: '3m', cells: '2', ha: '1' });
-    expect(s).toMatchObject({ bot: 'b1', tf: '15m', cells: 2, ha: true });
+    const s = parseChartsQuery({
+      bot: 'b1',
+      pair: 'ARB/USDC:USDC',
+      tf: 'weekly',
+      cells: '2',
+      ha: '1',
+    });
+    // An unknown timeframe is no timeframe: the bot's own is used (B191)
+    expect(s).toMatchObject({ bot: 'b1', tf: null, cells: 2, ha: true });
     expect(parseChartsQuery({}).cells).toBe(1);
     expect(parseChartsQuery({ ha: '0' }).ha).toBe(false);
     expect(chartsQuery(parseChartsQuery({}))).toEqual({});
     expect(chartsQuery({ ...s, tf: '1h' })).toMatchObject({ tf: '1h', cells: '2', ha: '1' });
     // The second pair is only carried when two cells are shown.
     expect(chartsQuery({ ...s, cells: 1, pair2: 'X' }).pair2).toBeUndefined();
+  });
+
+  it('defaults to the timeframe of the bot strategy, not to a fixed 15m (B191)', () => {
+    // A bot only serves the candles of its own timeframe: 19 bots of 24 got an empty chart
+    expect(parseChartsQuery({ tf: '1h' }).tf).toBe('1h');
+    expect(parseChartsQuery({ tf: '30m' }).tf).toBe('30m');
+    expect(effectiveTf(null, '30m')).toBe('30m');
+    expect(effectiveTf('5m', '30m')).toBe('5m');
+    expect(effectiveTf(null, null)).toBe('15m');
+    expect(effectiveTf(null, 'nonsense')).toBe('15m');
+    // The own timeframe stays implicit in the URL; an explicit choice is written
+    expect(chartsQuery(parseChartsQuery({}))).toEqual({});
+    expect(chartsQuery({ ...parseChartsQuery({}), tf: '4h' }).tf).toBe('4h');
+  });
+
+  it('offers the usual timeframes, the bot own one included, in order (B191)', () => {
+    expect(timeframeOptions('30m')).toEqual(['1m', '5m', '15m', '30m', '1h', '2h', '4h', '1d']);
+    expect(timeframeOptions(null)).toContain('1d');
+    const odd = timeframeOptions('3m');
+    expect(odd.indexOf('3m')).toBe(odd.indexOf('1m') + 1);
+    expect(timeframeOptions('15m').filter((t) => t === '15m')).toHaveLength(1);
   });
 
   it('picks the worst open position as the default pair and another one for the second cell', () => {
