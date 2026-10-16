@@ -1,0 +1,83 @@
+/** English messages of the Tools composites (`fq.reconw.*`, `fq.stress.*`). Same keys as ./fr.ts. */
+export default {
+  reconw: {
+    title: 'Resolve {coin} on the wallet',
+    via: 'The request goes through the bot {bot}',
+    pickSlice: 'Slice to close',
+    trade: 'Trade',
+    sliceAmount: 'Amount of the slice',
+    sliceStake: 'Margin of the slice',
+    request: 'Request that will be sent',
+    typeCoin: 'Type {coin} to confirm',
+    typeFirst: 'Type the name of the coin first',
+    once: 'The request is sent once. A timeout is not retried: read the wallet again before trying anew.',
+    action: {
+      close_unowned: 'Close the position of the wallet that no bot owns',
+      delete_phantom: 'Delete the phantom trade from the database of its bot',
+      close_minority: 'Close the minority slice of the coin',
+    },
+    warn: {
+      close_unowned:
+        'A market order closes the whole position on the exchange, with real money. No bot database is changed.',
+      delete_phantom:
+        'The trade is removed from the database of its bot because the wallet holds nothing for it. No order is sent.',
+      close_minority:
+        'A market order closes this slice on the exchange, with real money, and the trade of its bot is closed with it.',
+    },
+    hold: {
+      close_unowned: 'Hold to close the position',
+      delete_phantom: 'Hold to delete the trade',
+      close_minority: 'Hold to close the slice',
+    },
+    result: {
+      accepted: 'Transmitted to the bot',
+      rejected: 'Refused by the bot, nothing was done',
+      unknown: 'No answer in time: the outcome is unknown',
+      unauthorized: 'Session expired, nothing was sent',
+      in_progress: 'The same request is already running',
+      failed: 'The request failed',
+    },
+    next: {
+      accepted: 'The wallet is read again to check the result.',
+      rejected: 'Read the wallet again before trying anew.',
+      unknown: 'Do not repeat it: read the wallet again and look at the positions first.',
+      unauthorized: 'Sign in again from the settings, then start over.',
+      in_progress: 'Wait for the first one to end.',
+      failed: 'Nothing is known about the outcome. Read the wallet again before trying anew.',
+    },
+  },
+  stress: {
+    title: 'Stress test',
+    shock: 'Move of every price',
+    allPrices: 'Every price moves by the same percentage',
+    empty: 'No position to test',
+    emptyHint: 'No open position of this trading mode.',
+    delta: 'Change of the result',
+    deltaSub: 'on {n} positions',
+    liquidated: 'Liquidated',
+    liquidatedSub: 'of {n} positions',
+    marginLost: 'Margin lost',
+    pair: 'Pair',
+    bot: 'Bot',
+    price: 'Price after the move',
+    liq: 'Liquidation',
+    deltaCol: 'Change',
+    na: 'n/a',
+    liquidatedBadge: 'Liquidated',
+    more: '{n} more positions',
+    untested: '{n} positions could not be fully tested (no price or no liquidation price).',
+    byMarket: 'Exposure by market',
+    market: 'Market',
+    positions: 'Positions',
+    mk: {
+      crypto: 'Crypto',
+      xyz_stocks: 'HIP-3 stocks',
+      xyz_indices: 'HIP-3 indices',
+      xyz_commodities: 'HIP-3 commodities',
+      hip3_other: 'HIP-3 other',
+      mixed: 'Mixed',
+    },
+    limits:
+      'The model is plain: one percentage for every price, the liquidation price the exchange reports, the whole margin lost on a liquidation. Funding, fees, slippage and a margin that moves are not modelled.',
+  },
+};

@@ -39,9 +39,17 @@ function walk(dir: string, out: string[] = []): string[] {
 const files = [
   ...walk(join(SRC, 'components/fq')),
   ...walk(join(SRC, 'views/ds')),
-  ...['useActionDialog', 'useCommandPalette', 'useLastVisit', 'useScopeDetail', 'useBotAction'].map(
-    (n) => join(SRC, `composables/${n}.ts`),
-  ),
+  ...walk(join(SRC, 'views/fq')),
+  ...[
+    'useActionDialog',
+    'useCommandPalette',
+    'useLastVisit',
+    'useScopeDetail',
+    'useBotAction',
+    'useReconciliation',
+    'useBotRegistryEdit',
+    'useJournal',
+  ].map((n) => join(SRC, `composables/${n}.ts`)),
 ];
 
 const staticKeys = new Map<string, string>();

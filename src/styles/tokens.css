@@ -227,3 +227,12 @@
     --d-flash: 1ms;
   }
 }
+
+/* The same, when the user forces it in Settings (data-motion on <html>) */
+:root[data-motion='reduce'] {
+  --d-instant: 1ms;
+  --d-fast: 1ms;
+  --d-base: 1ms;
+  --d-slow: 1ms;
+  --d-flash: 1ms;
+}

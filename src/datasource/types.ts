@@ -10,6 +10,7 @@ import type {
   AlertRulesConfig,
   AlertTypeId,
   ApiError,
+  AuditEntry,
   BotKey,
   BotMode,
   BotRow,
@@ -356,6 +357,11 @@ export interface RegistryApi {
 
 export interface ProxyOptions {
   timeoutMs?: number;
+  /**
+   * Name of the bot, typed back by the user: the gateway refuses the most dangerous writes
+   * (reconciliation, replay with `reset_db`) without it (`X-Confirm-Bot`). Ignored in direct mode.
+   */
+  confirmBot?: string;
 }
 
 // ---- the contract ----
@@ -385,6 +391,16 @@ export interface DataSource {
      * not be read (the ladder then says so instead of inventing levels).
      */
     tradeOrders?(botKey: BotKey, tradeId: number): Promise<OrderRow[] | null>;
+    /**
+     * CSV of the whole filtered set, produced by the gateway (`GET /trades/export.csv`). Absent in
+     * direct mode, where the Journal can only export the rows it holds.
+     */
+    exportTradesCsv?(q: TradeQuery): Promise<string>;
+    /**
+     * The audit trail of the writes made through the gateway (`GET /audit`), newest first. Absent
+     * in direct mode, where nothing is recorded.
+     */
+    audit?(q?: { limit?: number; botKey?: BotKey }): Promise<AuditEntry[]>;
   };
   /** One request, never retried. The idempotency key makes a duplicate return the first result. */
   act(botKey: BotKey, action: BotAction, idempotencyKey: string): Promise<ActionResult>;

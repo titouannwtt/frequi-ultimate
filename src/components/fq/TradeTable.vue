@@ -29,6 +29,7 @@ import BotActionBar from './BotActionBar.vue';
 import BotActionMenu from './BotActionMenu.vue';
 import MaeMfeBar from './MaeMfeBar.vue';
 import type { ActionId } from './lib/actions';
+import { dayKey, groupTotal } from './lib/journalPage';
 import { formatDateTime } from './lib/time';
 import {
   compareWorstFirst,
@@ -84,6 +85,10 @@ const props = withDefaults(
     scoped?: boolean;
     /** Hide the quick filter bar. */
     hideFilters?: boolean;
+    /** Closed trades grouped by day (sticky header with the day's total), bot or pair. */
+    grouping?: 'day' | 'bot' | 'pair' | null;
+    /** Days shown as cards before "Load the previous days". */
+    cardDays?: number;
   }>(),
   {
     cardsBelow: 560,
@@ -93,6 +98,8 @@ const props = withDefaults(
     cardLimit: 7,
     scoped: false,
     hideFilters: false,
+    grouping: null,
+    cardDays: 2,
   },
 );
 
@@ -215,12 +222,74 @@ function sortValue(l: TradeLine, id: string): unknown {
   }
 }
 
+// ---- grouping (Journal): by day of closing, bot or pair ----
+const grouped = computed(() => !isOpenPreset.value && props.grouping !== null);
+function groupKeyOf(l: TradeLine): string {
+  switch (props.grouping) {
+    case 'bot':
+      return l.botName;
+    case 'pair':
+      return pairLabel(l.pair);
+    default:
+      return l.closeMs == null ? '' : dayKey(l.closeMs, prefs.settings.tz);
+  }
+}
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+function compareGrouped(a: TradeLine, b: TradeLine): number {
+  const ka = groupKeyOf(a);
+  const kb = groupKeyOf(b);
+  // Days newest first, bots and pairs by name; inside a group the latest close comes first
+  const byGroup = props.grouping === 'day' ? (ka < kb ? 1 : ka > kb ? -1 : 0) : collator.compare(ka, kb);
+  return byGroup || (b.closeMs ?? 0) - (a.closeMs ?? 0) || a.tradeId - b.tradeId;
+}
+
 /** Worst first when nothing is sorted: the order of the open positions list. */
 const sorted = computed(() =>
-  sort.value
-    ? sortRows(filtered.value, sort.value, (l, id) => sortValue(l, id))
-    : [...filtered.value].sort(compareWorstFirst),
+  grouped.value
+    ? [...filtered.value].sort(compareGrouped)
+    : sort.value
+      ? sortRows(filtered.value, sort.value, (l, id) => sortValue(l, id))
+      : [...filtered.value].sort(compareWorstFirst),
 );
+
+const groupTotals = computed(() => {
+  const by = new Map<string, TradeLine[]>();
+  if (grouped.value) {
+    for (const l of sorted.value) {
+      const k = groupKeyOf(l);
+      const list = by.get(k);
+      if (list) list.push(l);
+      else by.set(k, [l]);
+    }
+  }
+  return new Map(
+    [...by.entries()].map(([k, ls]) => [
+      k,
+      groupTotal(
+        ls.map(
+          (l) =>
+            ({
+              profit_abs: l.pnlAbs,
+              profit_unknown: l.profitUnknown,
+            }) as never,
+        ),
+      ),
+    ]),
+  );
+});
+/** Title of a group: a readable date for a day key, the name otherwise. */
+function groupTitle(key: string): string {
+  if (props.grouping !== 'day') return key;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
+  if (!m) return t('fq.origin.unknown');
+  return new Intl.DateTimeFormat(locale.value, {
+    timeZone: 'UTC',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    ...(Number(m[1]) !== new Date().getUTCFullYear() ? { year: 'numeric' as const } : {}),
+  }).format(new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12)));
+}
 
 // ---- DataTable columns ----
 const tableCols = computed<ColumnDef<TradeLine>[]>(() =>
@@ -271,11 +340,35 @@ function onNavigate(id: ActionId, l: TradeLine) {
 }
 
 // ---- cards ----
+const CARD_CAP = 30;
 const showAll = ref(false);
-const visibleCards = computed(() =>
-  showAll.value ? sorted.value : sorted.value.slice(0, props.cardLimit),
-);
+const visibleCards = computed(() => {
+  if (showAll.value) return sorted.value;
+  if (grouped.value && props.grouping === 'day') {
+    // The Journal shows the last days, whatever the number of trades they hold
+    const days: string[] = [];
+    const out: TradeLine[] = [];
+    for (const l of sorted.value) {
+      const k = groupKeyOf(l);
+      if (!days.includes(k)) days.push(k);
+      // Two days, and never an unbounded wall of cards when one day holds many trades
+      if (days.length > props.cardDays || out.length >= CARD_CAP) break;
+      out.push(l);
+    }
+    return out;
+  }
+  return sorted.value.slice(0, props.cardLimit);
+});
 const hiddenCards = computed(() => Math.max(0, sorted.value.length - visibleCards.value.length));
+/** A card list starts a new group at this line. */
+function startsGroup(l: TradeLine, i: number): boolean {
+  return grouped.value && (i === 0 || groupKeyOf(visibleCards.value[i - 1]!) !== groupKeyOf(l));
+}
+/** The single "previous days" button of the card list: reveals what is loaded, else asks for more. */
+function morePrevious() {
+  if (hiddenCards.value > 0) showAll.value = true;
+  else emit('loadMore');
+}
 
 // ---- keyboard: J / K / X ----
 function move(delta: number) {
@@ -366,19 +459,26 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
         <EmptyState icon="layers" :title="empty.title" :hint="empty.hint" />
       </div>
       <div v-else class="cards">
-        <PositionCard
-          v-for="l in visibleCards"
-          :key="l.key"
-          :line="l"
-          :tp="tpOf?.(l) ?? null"
-          :position="positionOf(l)"
-          :selected="selected === l.key"
-          @activate="activate"
-          @navigate="onNavigate"
-          @open-menu="openMenu"
-          @open-bot="(k) => emit('openBot', k)"
-        />
-        <Btn v-if="hiddenCards > 0" class="more" @click="showAll = true">
+        <template v-for="(l, i) in visibleCards" :key="l.key">
+          <div v-if="startsGroup(l, i)" class="dayc" data-testid="group-head">
+            <span class="gt">{{ groupTitle(groupKeyOf(l)) }}</span>
+            <PnlValue :value="groupTotals.get(groupKeyOf(l))?.sum ?? null" :decimals="2" />
+          </div>
+          <PositionCard
+            :line="l"
+            :tp="tpOf?.(l) ?? null"
+            :position="positionOf(l)"
+            :selected="selected === l.key"
+            @activate="activate"
+            @navigate="onNavigate"
+            @open-menu="openMenu"
+            @open-bot="(k) => emit('openBot', k)"
+          />
+        </template>
+        <Btn v-if="preset === 'journal' && (hiddenCards > 0 || cursor)" class="more" @click="morePrevious">
+          {{ t('fq.jr.loadPrevDays') }}
+        </Btn>
+        <Btn v-else-if="hiddenCards > 0" class="more" @click="showAll = true">
           {{ t('fq.trade.seeOthers', { n: hiddenCards }) }}
         </Btn>
       </div>
@@ -394,11 +494,21 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
       :container-width="width || undefined"
       :selected-key="selected"
       :row-class="rowClass"
+      :group-by="grouped ? groupKeyOf : undefined"
       :empty-text="empty.title"
       max-height="min(70vh, 640px)"
       @update:sort="(s) => (sort = s)"
       @row-activate="(l) => activate(l)"
     >
+      <template #group="{ label }">
+        <span class="grp-head" data-testid="group-head">
+          <b>{{ groupTitle(label) }}</b>
+          <span class="dim">{{
+            t('fq.jr.tradesN', { n: groupTotals.get(label)?.trades ?? 0 }, groupTotals.get(label)?.trades ?? 0)
+          }}</span>
+          <PnlValue :value="groupTotals.get(label)?.sum ?? null" :decimals="2" />
+        </span>
+      </template>
       <template #cell-pair="{ row }">
         <span class="pair">
           <b>{{ pairLabel(row.pair) }}</b>
@@ -420,7 +530,8 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
       <template #cell-leverage="{ row }">×{{ row.leverage }}</template>
       <template #cell-trade_id="{ row }">#{{ row.tradeId }}</template>
       <template #cell-dca="{ row }">
-        <DcaPips :filled="row.dcaFilled" :max="row.dcaMax ?? row.dcaFilled" />
+        <span v-if="!row.open && (row.dcaEntries === null || row.dcaEntries === undefined)" class="dim">{{ t('fq.ds.notAvailable') }}</span>
+        <DcaPips v-else :filled="row.dcaFilled" :max="row.dcaMax ?? row.dcaFilled" />
       </template>
       <template #cell-entry="{ row }">{{ fmt.price(row.entry) }}</template>
       <template #cell-current="{ row }">{{
@@ -490,7 +601,11 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
     <p v-if="unavailableNote.length > 0" class="note">
       {{ t('fq.connection.unavailableDirect') }}: {{ unavailableNote.join(', ') }}
     </p>
-    <div v-if="cursor" class="loadmore">
+    <div v-if="cursor && preset === 'journal' && !asCards" class="pager" data-testid="journal-pager">
+      <span>{{ t('fq.jr.pageInfo', { n: lines.length }) }}</span>
+      <Btn size="sm" @click="emit('loadMore')">{{ t('fq.jr.older') }}</Btn>
+    </div>
+    <div v-else-if="cursor && preset !== 'journal'" class="loadmore">
       <Btn @click="emit('loadMore')">{{ t('fq.trade.loadMore') }}</Btn>
     </div>
 
@@ -584,5 +699,48 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
   display: flex;
   justify-content: center;
   padding: var(--s2);
+}
+.pager {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+  border-top: 1px solid var(--line);
+  color: var(--fg-3);
+  font-size: var(--t-xs);
+}
+.pager :deep(.btn) {
+  margin-left: auto;
+}
+.grp-head {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s3);
+}
+.grp-head b {
+  display: inline-block;
+}
+.grp-head b::first-letter,
+.dayc .gt::first-letter {
+  text-transform: uppercase;
+}
+.grp-head .dim {
+  font-weight: 400;
+  text-transform: none;
+}
+.dayc {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  padding: 8px var(--s3);
+  background: var(--bg-2);
+  font-weight: 600;
+  font-size: var(--t-sm);
+  border-bottom: 1px solid var(--line);
+}
+.dayc .gt {
+  display: inline-block;
 }
 </style>

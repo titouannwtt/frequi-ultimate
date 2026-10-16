@@ -165,6 +165,8 @@ const dominates = computed(() => (dist.value.tail.share ?? 0) >= 0.5);
 .chart {
   min-width: 0;
   padding: var(--s2) var(--s2) 0;
+  /* The given height is the basis; a taller panel gives the rest to the chart */
+  flex: 1 1 auto;
 }
 .note {
   margin: 0;

@@ -3,8 +3,15 @@
  * l'espace `fq` sous `pg`. Mêmes clés que ./en.ts. Pas de tiret cadratin ; espace insécable avant
  * `:`, `?`, `!` ; espace fine insécable avant `%`.
  */
+import charts from './charts.fr';
+import tools from './tools.fr';
+import settings from './settings.fr';
+
 export default {
   pg: {
+    charts,
+    tools,
+    settings,
     placeholder: {
       title: '{name} : page en construction',
       hint: "Cette page arrive dans une prochaine étape de la refonte. Le reste de l'application fonctionne.",

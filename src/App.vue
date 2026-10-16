@@ -95,6 +95,11 @@ function openBot(botKey: string) {
   void router.push({ name: 'bot', params: { botKey } });
 }
 function openPair(pair: string, botKey: string) {
+  // On the Charts page a pair stays on the Charts page
+  if (route.name === 'charts') {
+    void router.replace({ name: 'charts', query: { ...route.query, pair, bot: botKey } });
+    return;
+  }
   void router.push({ name: 'bot', params: { botKey }, query: { pair } });
 }
 function openTrade(botKey: string, tradeId: number) {
@@ -177,6 +182,8 @@ function onDisplay(command: 'view' | 'language') {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   text-align: center;
   min-height: 100%;
+  /* The old tools are not built for a phone: scroll them sideways instead of clipping them */
+  overflow-x: auto;
 }
 </style>
 

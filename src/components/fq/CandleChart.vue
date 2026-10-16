@@ -34,6 +34,8 @@ import {
   type Overlays,
 } from './lib/candles';
 import { withTimeout } from './lib/logs';
+import { measure as measureMove, type MeasurePoint } from './lib/measure';
+import { mergePlot } from './lib/chartsPage';
 
 /**
  * Candle chart of one pair of one bot (02 sections 3.3 and 5.2). Candles, volume, the indicators
@@ -55,6 +57,10 @@ const props = withDefaults(
     rsi?: boolean;
     /** The strategy's plot config; read from the bot when omitted. */
     plotConfig?: PlotConfig | null;
+    /** Indicators layered on top of the plot config (a built-in template). */
+    plotExtra?: Partial<PlotConfig> | null;
+    /** The measure tool is armed: a plain drag measures instead of panning (Shift does it too). */
+    measureArmed?: boolean;
     /** Preloaded candles (previews, tests); otherwise read from the bot. */
     candles?: Pick<PairHistory, 'columns' | 'data' | 'timeframe_ms'> | null;
     visibleCandles?: number;
@@ -84,7 +90,8 @@ const { tokens } = useChartTokens();
 
 const activeSource = computed(() => props.source ?? data.source.value);
 const set = shallowRef<CandleSet | null>(null);
-const plot = shallowRef<PlotConfig>({ main_plot: {}, subplots: {} });
+const basePlot = shallowRef<PlotConfig>({ main_plot: {}, subplots: {} });
+const plot = computed(() => mergePlot(basePlot.value, props.plotExtra ?? undefined));
 const loading = ref(false);
 const error = ref<string | null>(null);
 const toggles = ref<OverlayToggles>({ ...ALL_OVERLAYS, ...(props.toggles ?? {}) });
@@ -126,7 +133,7 @@ async function loadAll(): Promise<void> {
     ]);
     if (mine !== token) return;
     set.value = toCandleSet(history);
-    plot.value = { main_plot: {}, subplots: {}, ...(cfg ?? {}) } as PlotConfig;
+    basePlot.value = { main_plot: {}, subplots: {}, ...(cfg ?? {}) } as PlotConfig;
     error.value = null;
   } catch (e) {
     if (mine !== token) return;
@@ -189,7 +196,7 @@ watch(
 watch(
   () => props.plotConfig,
   (p) => {
-    if (p !== undefined) plot.value = { main_plot: {}, subplots: {}, ...(p ?? {}) } as PlotConfig;
+    if (p !== undefined) basePlot.value = { main_plot: {}, subplots: {}, ...(p ?? {}) } as PlotConfig;
   },
   { immediate: true },
 );
@@ -266,8 +273,133 @@ function onReady(chart: ECharts) {
     cancelAnimationFrame(rafId);
     hover.value = null;
   });
+  // A measurement is drawn in pixels: a zoom or a pan would leave it on the wrong candles
+  chart.on('datazoom', () => {
+    drag.value = null;
+  });
   emit('ready', chart);
 }
+
+// ---- measure tool: Shift + drag (or armed, or long press on touch) ----
+interface Drag {
+  a: MeasurePoint;
+  b: MeasurePoint;
+  ax: number;
+  ay: number;
+  bx: number;
+  by: number;
+}
+const plotEl = ref<HTMLElement | null>(null);
+const drag = ref<Drag | null>(null);
+const LONG_PRESS_MS = 450;
+const PRESS_SLOP_PX = 10;
+let swallowing = false;
+let dragging = false;
+let pressTimer: ReturnType<typeof setTimeout> | undefined;
+let press: { id: number; x: number; y: number } | null = null;
+
+function toPoint(x: number, y: number): MeasurePoint | null {
+  const v = chartRef?.convertFromPixel({ xAxisIndex: 0, yAxisIndex: 0 }, [x, y]) as
+    | number[]
+    | undefined;
+  return v && Number.isFinite(v[0]) && Number.isFinite(v[1]) ? { ts: v[0]!, price: v[1]! } : null;
+}
+function localXY(e: PointerEvent): { x: number; y: number } {
+  const r = plotEl.value?.getBoundingClientRect();
+  return { x: e.clientX - (r?.left ?? 0), y: e.clientY - (r?.top ?? 0) };
+}
+function startMeasure(x: number, y: number) {
+  const p = toPoint(x, y);
+  if (!p) return;
+  drag.value = { a: p, b: p, ax: x, ay: y, bx: x, by: y };
+  dragging = true;
+  swallowing = true;
+  window.addEventListener('pointermove', onWindowMove, true);
+  window.addEventListener('pointerup', endMeasure, true);
+  window.addEventListener('pointercancel', endMeasure, true);
+}
+function onDown(e: PointerEvent) {
+  if (e.button !== 0 || !chartRef) return;
+  const { x, y } = localXY(e);
+  if (e.pointerType === 'touch') {
+    // Long press: until it fires, the touch belongs to the chart (pan, zoom)
+    press = { id: e.pointerId, x, y };
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => press && startMeasure(press.x, press.y), LONG_PRESS_MS);
+    window.addEventListener('pointermove', onWindowMove, true);
+    window.addEventListener('pointerup', endMeasure, true);
+    window.addEventListener('pointercancel', endMeasure, true);
+    return;
+  }
+  if (!(e.shiftKey || props.measureArmed)) {
+    drag.value = null;
+    return;
+  }
+  e.stopPropagation();
+  e.preventDefault();
+  startMeasure(x, y);
+}
+function onWindowMove(e: PointerEvent) {
+  const { x, y } = localXY(e);
+  if (!dragging) {
+    // A finger that moves before the long press fires is a pan, not a measurement
+    if (press && Math.hypot(x - press.x, y - press.y) > PRESS_SLOP_PX) cancelPress();
+    return;
+  }
+  const d = drag.value;
+  const p = toPoint(x, y);
+  if (d && p) drag.value = { ...d, b: p, bx: x, by: y };
+}
+function cancelPress() {
+  clearTimeout(pressTimer);
+  press = null;
+  if (!dragging) removeWindowListeners();
+}
+function removeWindowListeners() {
+  window.removeEventListener('pointermove', onWindowMove, true);
+  window.removeEventListener('pointerup', endMeasure, true);
+  window.removeEventListener('pointercancel', endMeasure, true);
+}
+function endMeasure() {
+  clearTimeout(pressTimer);
+  press = null;
+  dragging = false;
+  removeWindowListeners();
+  // The mouseup that follows must not reach the chart either; the flag drops after it
+  setTimeout(() => (swallowing = false), 0);
+  const d = drag.value;
+  if (d && d.ax === d.bx && d.ay === d.by) drag.value = null;
+}
+function swallow(e: Event) {
+  if (swallowing) e.stopPropagation();
+}
+function onKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && drag.value) drag.value = null;
+}
+if (typeof window !== 'undefined') window.addEventListener('keydown', onKey);
+const move = computed(() =>
+  drag.value ? measureMove(drag.value.a, drag.value.b, set.value?.timeframeMs ?? 0) : null,
+);
+const moveText = computed(() => {
+  const m = move.value;
+  if (!m) return '';
+  return t('fq.candle.measureLabel', {
+    price: `${m.dPrice < 0 ? '−' : '+'}${fmt.price(Math.abs(m.dPrice))}`,
+    pct: m.dPct === null ? t('fq.ds.dash') : fmt.percent(m.dPct, 2),
+    candles: m.candles,
+    duration: fmt.duration(m.durationMs / 3_600_000),
+  });
+});
+const boxStyle = computed(() => {
+  const d = drag.value;
+  if (!d) return {};
+  return {
+    left: `${Math.min(d.ax, d.bx)}px`,
+    top: `${Math.min(d.ay, d.by)}px`,
+    width: `${Math.abs(d.bx - d.ax)}px`,
+    height: `${Math.abs(d.by - d.ay)}px`,
+  };
+});
 
 function setToggle(k: keyof OverlayToggles) {
   toggles.value = { ...toggles.value, [k]: !toggles.value[k] };
@@ -277,6 +409,9 @@ function setToggle(k: keyof OverlayToggles) {
 onBeforeUnmount(() => {
   token += 1;
   cancelAnimationFrame(rafId);
+  clearTimeout(pressTimer);
+  removeWindowListeners();
+  if (typeof window !== 'undefined') window.removeEventListener('keydown', onKey);
   chartRef?.off('updateAxisPointer');
   chartRef?.off('globalout');
   chartRef = null;
@@ -344,7 +479,21 @@ const hasOverlay = (k: keyof OverlayToggles) => {
     <p v-if="error" class="note" role="status" data-testid="candle-error">
       {{ t('fq.ds.pane.error') }} · {{ error }}
     </p>
-    <div class="plot" :style="{ height }">
+    <div
+      ref="plotEl"
+      class="plot"
+      :class="{ armed: measureArmed }"
+      :style="{ height }"
+      @pointerdown.capture="onDown"
+      @mousedown.capture="swallow"
+      @touchstart.capture="swallow"
+      @pointermove.capture="swallow"
+      @mousemove.capture="swallow"
+      @touchmove.capture="swallow"
+      @pointerup.capture="swallow"
+      @mouseup.capture="swallow"
+      @touchend.capture="swallow"
+    >
       <Skeleton v-if="loading && !option" shape="row" :count="6" />
       <BaseChart
         v-else-if="option"
@@ -359,6 +508,15 @@ const hasOverlay = (k: keyof OverlayToggles) => {
         :title="t('fq.candle.empty')"
         :hint="error ? t('fq.candle.emptyError') : t('fq.candle.emptyHint')"
       />
+      <div
+        v-if="drag && move"
+        class="measure"
+        :class="move.dPrice >= 0 ? 'up' : 'down'"
+        :style="boxStyle"
+        data-testid="candle-measure"
+      >
+        <span class="mlabel num">{{ moveText }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -399,6 +557,17 @@ const hasOverlay = (k: keyof OverlayToggles) => {
   flex-wrap: wrap;
   border-bottom: 1px solid var(--line);
 }
+@media (max-width: 599px) {
+  /* One scrolling row: four wrapped rows of chips would eat the chart */
+  .ov {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ov > :deep(*) {
+    flex: none;
+  }
+}
 .note {
   margin: 0;
   padding: 4px var(--s3);
@@ -406,9 +575,41 @@ const hasOverlay = (k: keyof OverlayToggles) => {
   font-size: var(--t-xs);
 }
 .plot {
-  flex: 1;
+  /* The basis is the given height (a phone gives 62vh); in a bounded panel it shrinks to fit */
+  flex: 1 1 auto;
   min-height: 220px;
   min-width: 0;
   position: relative;
+}
+.plot.armed {
+  cursor: crosshair;
+}
+.measure {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  border: 1px dashed var(--fg-2);
+  background: color-mix(in srgb, var(--fg-2) 10%, transparent);
+}
+.measure.up {
+  border-color: var(--profit);
+  background: color-mix(in srgb, var(--profit) 12%, transparent);
+}
+.measure.down {
+  border-color: var(--loss);
+  background: color-mix(in srgb, var(--loss) 12%, transparent);
+}
+.mlabel {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, 4px);
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: var(--r-1);
+  background: var(--bg-3);
+  border: 1px solid var(--line-2);
+  color: var(--fg);
+  font-size: var(--t-xs);
 }
 </style>

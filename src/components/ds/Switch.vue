@@ -3,6 +3,8 @@ defineProps<{
   modelValue: boolean;
   /** Visible label, also the accessible name. */
   label?: string;
+  /** Keep the label for assistive technology only (the row around the switch already says it). */
+  hideLabel?: boolean;
   disabled?: boolean;
 }>();
 
@@ -20,7 +22,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>();
       :aria-disabled="disabled || undefined"
       @click="!disabled && emit('update:modelValue', !modelValue)"
     ></button>
-    <span v-if="label || $slots.default" class="text"
+    <span v-if="label || $slots.default" class="text" :class="{ sr: hideLabel }"
       ><slot>{{ label }}</slot></span
     >
   </label>
@@ -37,6 +39,14 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>();
 .sw.disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .track {
   width: 32px;

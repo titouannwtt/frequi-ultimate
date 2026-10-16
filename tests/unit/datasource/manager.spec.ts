@@ -7,6 +7,7 @@ import {
   REPROBE_EVERY_MS,
   SourceManager,
   WS_LOST_GRACE_MS,
+  type ProbeRecord,
   type ProbeResult,
   type SourceMode,
 } from '@/datasource/manager';
@@ -53,6 +54,7 @@ function setup(opts: { mode?: SourceMode; probe?: () => ProbeResult | null; url?
   const probes: string[] = [];
   const changes: Array<[SourceKind, SourceKind | null]> = [];
   const switches: string[] = [];
+  const records: ProbeRecord[] = [];
   let clock = 0;
   const mgr = new SourceManager({
     mode: () => state.mode,
@@ -75,6 +77,7 @@ function setup(opts: { mode?: SourceMode; probe?: () => ProbeResult | null; url?
     },
     onSourceChange: (next, prev) => changes.push([next.kind, prev?.kind ?? null]),
     onSwitch: (sw) => switches.push(`${sw.from ?? '-'}>${sw.to}:${sw.reason}`),
+    onProbe: (p) => records.push(p),
     now: () => clock,
     timers,
   });
@@ -85,7 +88,7 @@ function setup(opts: { mode?: SourceMode; probe?: () => ProbeResult | null; url?
     await Promise.resolve();
     await new Promise((r) => setTimeout(r, 0));
   };
-  return { mgr, state, gateways, directs, probes, changes, switches, timers, advance };
+  return { mgr, state, gateways, directs, probes, changes, switches, records, timers, advance };
 }
 
 describe('SourceManager', () => {
@@ -243,5 +246,45 @@ describe('SourceManager', () => {
     expect(h.probes[0]).toBe(`https://my-gw.test:1234@${PROBE_TIMEOUT_MS}`);
     expect(defaultGatewayUrl('http:', '192.0.2.1')).toBe('http://192.0.2.1:9399');
     expect(defaultGatewayUrl('https:', '::1')).toBe('https://[::1]:9399');
+  });
+});
+
+describe('SourceManager: probe record for Settings', () => {
+  it('records every probe, answered or not, with the round trip and the version', async () => {
+    const h = setup();
+    await h.mgr.start();
+    expect(h.records).toEqual([
+      {
+        atMs: 0,
+        url: 'https://ui.test:9399',
+        ok: true,
+        rttMs: 12,
+        protocol: GATEWAY_PROTOCOL_VERSION,
+        version: 't',
+      },
+    ]);
+    const silent = setup({ probe: () => null });
+    await silent.mgr.start();
+    expect(silent.records[0]).toMatchObject({
+      ok: false,
+      rttMs: null,
+      protocol: null,
+      version: null,
+    });
+  });
+
+  it('probes again on "probe now" while on the gateway, without switching or restarting it', async () => {
+    const h = setup();
+    await h.mgr.start();
+    await h.mgr.probeNow();
+    expect(h.records).toHaveLength(2);
+    expect(h.gateways).toHaveLength(1);
+    expect(h.gateways[0].stop).not.toHaveBeenCalled();
+  });
+
+  it('does nothing before start', async () => {
+    const h = setup();
+    await h.mgr.probeNow();
+    expect(h.records).toEqual([]);
   });
 });

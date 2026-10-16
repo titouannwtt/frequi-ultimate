@@ -84,11 +84,11 @@ export const COLUMN_REGISTRY: readonly ColumnSpec[] = [
   c('winrate', 'right', true, 1000, ['fleet'], []),
   c('port', 'right', true, 1100, ['fleet'], []),
   // ---- trades (open positions, closed trades, journal) ----
-  c('trade_id', 'right', true, 640, TRADES, ['journal']),
+  c('trade_id', 'right', true, 640, TRADES, []),
   c('pair', 'left', true, 0, TRADES, ['open', 'bot', 'closed', 'journal'], { required: true }),
   c('leverage', 'right', true, 760, TRADES, []),
-  c('dca', 'center', true, 700, TRADES, ['open', 'bot']),
-  c('entry', 'right', false, 640, TRADES, ['open', 'bot', 'closed', 'journal']),
+  c('dca', 'center', true, 700, TRADES, ['open', 'bot', 'journal']),
+  c('entry', 'right', false, 640, TRADES, ['open', 'bot', 'closed']),
   c('current', 'right', true, 560, OPEN, ['open', 'bot']),
   c('pnl_abs', 'right', true, 0, TRADES, ['open', 'bot', 'closed', 'journal']),
   c('pnl_pct', 'right', true, 0, TRADES, ['open', 'bot', 'closed', 'journal']),
@@ -107,7 +107,7 @@ export const COLUMN_REGISTRY: readonly ColumnSpec[] = [
   c('closed_at', 'right', true, 640, CLOSED, ['closed', 'journal']),
   c('closed_ago', 'right', true, 900, CLOSED, []),
   c('fee', 'right', true, 1000, CLOSED, []),
-  c('mae_mfe', 'right', false, 1000, CLOSED, ['journal'], { gatewayOnly: true }),
+  c('mae_mfe', 'right', false, 860, CLOSED, ['journal'], { gatewayOnly: true }),
 ];
 
 const BY_ID = new Map(COLUMN_REGISTRY.map((col) => [col.id, col]));
@@ -125,7 +125,19 @@ const PRESET_ORDER: Record<ColumnPreset, readonly string[]> = {
   open: ['pair', 'bot', 'side', 'dca', 'entry', 'current', 'pnl_abs', 'pnl_pct', 'liq_distance'],
   bot: ['pair', 'bot', 'side', 'dca', 'entry', 'current', 'pnl_abs', 'pnl_pct', 'liq_distance'],
   closed: ['pair', 'bot', 'side', 'entry', 'exit_price', 'pnl_abs', 'pnl_pct', 'duration'],
-  journal: ['pair', 'bot', 'side', 'entry', 'exit_price', 'pnl_abs', 'pnl_pct', 'duration'],
+  // 02 section 3.4: closed, bot, pair, side, DCA, P&L, %, MAE/MFE, reason, duration
+  journal: [
+    'closed_at',
+    'bot',
+    'pair',
+    'side',
+    'dca',
+    'pnl_abs',
+    'pnl_pct',
+    'mae_mfe',
+    'exit_reason',
+    'duration',
+  ],
 };
 
 export function columnsFor(preset: ColumnPreset): ColumnSpec[] {

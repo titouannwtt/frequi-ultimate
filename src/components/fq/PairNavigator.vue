@@ -48,6 +48,13 @@ const props = withDefaults(
     /** `bot_key/trade_id` of a position row, or the pair of another list. */
     selectedKey?: string | null;
     layout?: 'list' | 'chips';
+    /**
+     * List the open positions of the whole fleet under "Positions" even when a bot is given
+     * (the Charts page: the bot is the context of the signals and the whitelist, not a filter).
+     */
+    fleetPositions?: boolean;
+    /** The filters offered; by default every filter that makes sense for the bot. */
+    tabs?: PairFilter[];
     /** A source to use instead of the active one (previews, tests). */
     source?: DataSource | null;
     timeoutMs?: number;
@@ -69,7 +76,7 @@ const clock = useNowMs();
 const q = ref('');
 
 const filters = computed<PairFilter[]>(() =>
-  props.botKey ? ['positions', 'signals', 'locks', 'all'] : ['positions'],
+  props.tabs ?? (props.botKey ? ['positions', 'signals', 'locks', 'all'] : ['positions']),
 );
 
 function read<T>(path: string) {
@@ -105,7 +112,7 @@ const items = computed<PairItem[]>(() => {
   const key = props.botKey;
   switch (props.filter) {
     case 'positions':
-      return positionItems(positions.list, key);
+      return positionItems(positions.list, props.fleetPositions ? null : key);
     case 'signals':
       return key ? signalItems(signals.data.value, key) : [];
     case 'locks':

@@ -115,6 +115,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       startPrefsSync(next);
     },
     onSwitch: (sw) => conn.recordSwitch(sw),
+    onProbe: (p) => conn.recordProbe(p),
     now,
   });
 

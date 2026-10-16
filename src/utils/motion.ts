@@ -27,6 +27,10 @@ export const EASINGS = {
 export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 export function prefersReducedMotion(): boolean {
+  // The Settings override (`data-motion` on <html>) counts as much as the system preference
+  if (typeof document !== 'undefined' && document.documentElement.dataset.motion === 'reduce') {
+    return true;
+  }
   return typeof window !== 'undefined' && !!window.matchMedia?.(REDUCED_MOTION_QUERY).matches;
 }
 
