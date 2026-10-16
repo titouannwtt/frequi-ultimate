@@ -158,8 +158,9 @@ export interface OrderRow {
   filled_ms: number | null;
   tag: string | null;
   /**
-   * Limit or stop price of the order. Only the bot's own REST answer carries it (direct mode): the
-   * gateway ledger does not, and an order that waits then has no price in this row.
+   * What a waiting order waits for: the limit price, or the trigger of a stop. The bot's REST answer
+   * (direct mode) and the gateway ledger (`price`, `stop_price` columns) both carry it; an older
+   * ledger without those columns leaves it null.
    */
   price?: number | null;
 }
