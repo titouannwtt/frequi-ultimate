@@ -1,5 +1,5 @@
 import { ref, watch, type Ref } from 'vue';
-import { fetchBenchmarkHistory, normalizeToPercent } from '@/utils/benchmarkData';
+import { fetchBenchmarkHistory } from '@/utils/benchmarkData';
 
 export interface BenchmarkPoint {
   date: string;

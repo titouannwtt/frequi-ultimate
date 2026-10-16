@@ -56,7 +56,9 @@ export function useJournal() {
   // The pair typed by the user finds its market among the pairs already seen
   const seenPairs = shallowRef<string[]>([]);
   const pair = computed(() =>
-    resolvePair(filters.pair, [...new Set([...seenPairs.value, ...positions.list.map((p) => p.pair)])]),
+    resolvePair(filters.pair, [
+      ...new Set([...seenPairs.value, ...positions.list.map((p) => p.pair)]),
+    ]),
   );
 
   function queryOf(extra: { cursor?: string | null; limit?: number }): TradeQuery {
@@ -168,7 +170,11 @@ export function useJournal() {
     knownReasons.clear();
     for (const r of exitReasons(set).rows) {
       const value = r.kind === 'unknown' ? 'unknown' : (r.raws[0] ?? r.key);
-      knownReasons.set(value, { label: r.kind === 'custom' ? (r.raws[0] ?? r.key) : r.kind, kind: r.kind, trades: r.trades });
+      knownReasons.set(value, {
+        label: r.kind === 'custom' ? (r.raws[0] ?? r.key) : r.kind,
+        kind: r.kind,
+        trades: r.trades,
+      });
     }
   });
 

@@ -52,8 +52,7 @@ export function ruleRows(cfg: Partial<AlertRulesConfig>): RuleRow[] {
       threshold,
       spec,
       defaultEnabled: meta.default_enabled,
-      changed:
-        c.enabled !== meta.default_enabled || (spec !== null && threshold !== spec.default),
+      changed: c.enabled !== meta.default_enabled || (spec !== null && threshold !== spec.default),
     };
   });
   return rows.sort(
@@ -98,7 +97,9 @@ export function withBotEnabled(
 }
 
 /** Rules of this category, for the section headings. */
-export function byCategory(rows: readonly RuleRow[]): Array<{ category: AlertCategory; rows: RuleRow[] }> {
+export function byCategory(
+  rows: readonly RuleRow[],
+): Array<{ category: AlertCategory; rows: RuleRow[] }> {
   return CATEGORY_ORDER.map((category) => ({
     category,
     rows: rows.filter((r) => r.category === category),

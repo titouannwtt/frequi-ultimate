@@ -87,7 +87,9 @@ const resetJournalViews = () => {
       :label="t('fq.pg.settings.ws.columns')"
       :hint="
         columns.length > 0
-          ? t('fq.pg.settings.ws.columnsSome', { list: columns.map((c) => t(`fq.pg.settings.ws.preset.${c}`)).join(', ') })
+          ? t('fq.pg.settings.ws.columnsSome', {
+              list: columns.map((c) => t(`fq.pg.settings.ws.preset.${c}`)).join(', '),
+            })
           : t('fq.pg.settings.ws.columnsNone')
       "
     >
@@ -97,15 +99,13 @@ const resetJournalViews = () => {
         :variant="armed === 'cols-all' ? 'danger' : 'secondary'"
         data-reset="cols-all"
         @click="ask('cols-all', () => resetColumns('all'))"
-        >{{ armed === 'cols-all' ? t('fq.pg.settings.confirm') : t('fq.pg.settings.ws.resetAll') }}</Btn
+        >{{
+          armed === 'cols-all' ? t('fq.pg.settings.confirm') : t('fq.pg.settings.ws.resetAll')
+        }}</Btn
       >
       <span v-if="done === 'cols-all'" class="ok">{{ t('fq.pg.settings.done') }}</span>
     </FormRow>
-    <FormRow
-      v-for="p in columns"
-      :key="p"
-      :label="t(`fq.pg.settings.ws.preset.${p}`)"
-    >
+    <FormRow v-for="p in columns" :key="p" :label="t(`fq.pg.settings.ws.preset.${p}`)">
       <Btn
         size="sm"
         :variant="armed === `cols-${p}` ? 'danger' : 'secondary'"
@@ -135,7 +135,9 @@ const resetJournalViews = () => {
         :variant="armed === 'journal-views' ? 'danger' : 'secondary'"
         data-reset="journal-views"
         @click="ask('journal-views', resetJournalViews)"
-        >{{ armed === 'journal-views' ? t('fq.pg.settings.confirm') : t('fq.pg.settings.reset') }}</Btn
+        >{{
+          armed === 'journal-views' ? t('fq.pg.settings.confirm') : t('fq.pg.settings.reset')
+        }}</Btn
       >
       <span v-if="done === 'journal-views'" class="ok">{{ t('fq.pg.settings.done') }}</span>
     </FormRow>

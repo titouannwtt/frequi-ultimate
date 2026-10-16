@@ -29,7 +29,9 @@ const current = computed(() => prefs.settings.plot?.plotConfigName ?? STRATEGY_P
 const choice = computed(() =>
   resolvePlotChoice(current.value, prefs.settings.plot?.customPlotConfigs),
 );
-const customNames = computed(() => Object.keys(prefs.settings.plot?.customPlotConfigs ?? {}).sort());
+const customNames = computed(() =>
+  Object.keys(prefs.settings.plot?.customPlotConfigs ?? {}).sort(),
+);
 const templates = computed(() => plotTemplateNames());
 
 function isOn(name: string): boolean {
@@ -74,7 +76,11 @@ function pick(name: string) {
 
       <section>
         <h4>{{ t('fq.pg.charts.ind.mine') }}</h4>
-        <EmptyState v-if="customNames.length === 0" icon="info" :title="t('fq.pg.charts.ind.noneMine')" />
+        <EmptyState
+          v-if="customNames.length === 0"
+          icon="info"
+          :title="t('fq.pg.charts.ind.noneMine')"
+        />
         <button
           v-for="n in customNames"
           :key="n"

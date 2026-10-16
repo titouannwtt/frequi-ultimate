@@ -3,6 +3,7 @@ import type {
   ReplayRequest,
   ReplaySeededInfo,
   ReplayStatus,
+  ReplayQueue,
   ReplaySummary,
 } from '@/types/replay';
 
@@ -71,7 +72,7 @@ export const useReplayStore = defineStore('replayStore', () => {
   const resetDb = ref(false); // wipe the dry DB first (else preserve existing trades)
 
   // ── Coordinator queue (machine-wide view) ────────────────────────────
-  const queue = ref<import('@/types/replay').ReplayQueue | null>(null);
+  const queue = ref<ReplayQueue | null>(null);
 
   // ── Local data coverage (drives fidelity warnings), cached per timeframe ──
   const coverageByTf = ref<Record<string, ReplayCoverage | null>>({});
@@ -203,7 +204,7 @@ export const useReplayStore = defineStore('replayStore', () => {
   async function fetchQueue(id = botId.value) {
     if (!id) return;
     try {
-      const { data } = await getApi(id).get<import('@/types/replay').ReplayQueue>('/replay/queue');
+      const { data } = await getApi(id).get<ReplayQueue>('/replay/queue');
       queue.value = data;
     } catch {
       queue.value = null;

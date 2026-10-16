@@ -45,9 +45,7 @@ watch(
     typedName.value = '';
   },
 );
-const resetConfirmed = computed(
-  () => !store.resetDb || typedName.value.trim() === store.botName,
-);
+const resetConfirmed = computed(() => !store.resetDb || typedName.value.trim() === store.botName);
 
 async function confirmRestore() {
   if (window.confirm(t('botComparison.replay.restoreConfirm'))) {

@@ -50,7 +50,12 @@ const shown = computed(() => result.value.rows.slice(0, 12));
 <template>
   <div class="st" data-testid="stress-test">
     <div class="bar">
-      <SegmentedControl v-model="shock" :options="options" :label="t('fq.stress.shock')" size="sm" />
+      <SegmentedControl
+        v-model="shock"
+        :options="options"
+        :label="t('fq.stress.shock')"
+        size="sm"
+      />
       <span class="note">{{ t('fq.stress.allPrices') }}</span>
     </div>
 
@@ -62,7 +67,10 @@ const shown = computed(() => result.value.rows.slice(0, 12));
     />
     <template v-else>
       <KpiStrip>
-        <KpiTile :label="t('fq.stress.delta')" :sub="t('fq.stress.deltaSub', { n: result.counted })">
+        <KpiTile
+          :label="t('fq.stress.delta')"
+          :sub="t('fq.stress.deltaSub', { n: result.counted })"
+        >
           <template #value><PnlValue :value="result.delta" :decimals="0" unit="USDC" /></template>
         </KpiTile>
         <KpiTile
@@ -96,13 +104,13 @@ const shown = computed(() => result.value.rows.slice(0, 12));
           </thead>
           <tbody>
             <tr v-for="r in shown" :key="`${r.botKey}|${r.pair}|${r.side}`">
-              <td class="l">
-                <DirectionChip :side="r.side" /> {{ pairLabel(r.pair) }}
-              </td>
+              <td class="l"><DirectionChip :side="r.side" /> {{ pairLabel(r.pair) }}</td>
               <td class="l mut">{{ nameOf(r.botKey) }}</td>
               <td class="num">{{ fmt.price(r.shockedPrice) }}</td>
               <td class="num">
-                {{ r.liquidationPrice === null ? t('fq.stress.na') : fmt.price(r.liquidationPrice) }}
+                {{
+                  r.liquidationPrice === null ? t('fq.stress.na') : fmt.price(r.liquidationPrice)
+                }}
               </td>
               <td class="num" :class="r.delta >= 0 ? 'pos' : 'neg'">
                 {{ r.delta >= 0 ? '+' : '' }}{{ fmt.number(r.delta, 0) }}

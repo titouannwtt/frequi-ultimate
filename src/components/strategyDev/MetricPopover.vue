@@ -78,7 +78,11 @@ const verdictStyle = computed(() => verdictColors[props.verdict]);
         <!-- Header -->
         <div class="pop-header">
           <span class="pop-label">{{ displayLabel }}</span>
-          <span v-if="value != null" class="pop-value" :style="{ color: verdictStyle.text }">
+          <span
+            v-if="value !== undefined && value !== null"
+            class="pop-value"
+            :style="{ color: verdictStyle.text }"
+          >
             {{ value }}
           </span>
         </div>

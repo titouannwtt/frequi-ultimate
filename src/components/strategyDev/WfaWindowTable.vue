@@ -71,7 +71,7 @@ function profitClass(v: number | null): string {
         <template #body="{ data }">
           <template v-if="col.field === 'wfe'">
             <span :class="wfeClass(data.wfe)" class="font-semibold">
-              {{ data.wfe != null ? data.wfe.toFixed(3) : '—' }}
+              {{ data.wfe !== undefined && data.wfe !== null ? data.wfe.toFixed(3) : '—' }}
             </span>
           </template>
           <template v-else-if="col.field === 'train_profit'">
@@ -81,8 +81,20 @@ function profitClass(v: number | null): string {
             <span :class="profitClass(data.test_profit)">{{ fmtPct(data.test_profit) }}</span>
           </template>
           <template v-else-if="col.field === 'degradation'">
-            <span :class="data.degradation != null && data.degradation > 0.5 ? 'text-red-500' : ''">
-              {{ data.degradation != null ? data.degradation.toFixed(3) : '—' }}
+            <span
+              :class="
+                data.degradation !== undefined &&
+                data.degradation !== null &&
+                data.degradation > 0.5
+                  ? 'text-red-500'
+                  : ''
+              "
+            >
+              {{
+                data.degradation !== undefined && data.degradation !== null
+                  ? data.degradation.toFixed(3)
+                  : '—'
+              }}
             </span>
           </template>
           <template v-else>

@@ -153,74 +153,56 @@ watch(
 
       <TabPanels>
         <TabPanel value="overview">
-          <Transition name="sd-tab" mode="out-in">
-            <div key="overview" class="sd-panel-enter">
-              <HyperoptOverviewPanel v-if="isHyperopt" />
-              <WfaOverviewPanel v-else-if="isWfa" />
-              <LiveBotOverviewPanel
-                v-else-if="isLive"
-                @reconstitute="(p) => emit('reconstitute', p)"
-              />
-              <OverviewPanel v-else />
-            </div>
-          </Transition>
+          <div class="sd-panel-enter">
+            <HyperoptOverviewPanel v-if="isHyperopt" />
+            <WfaOverviewPanel v-else-if="isWfa" />
+            <LiveBotOverviewPanel
+              v-else-if="isLive"
+              @reconstitute="(p) => emit('reconstitute', p)"
+            />
+            <OverviewPanel v-else />
+          </div>
         </TabPanel>
         <TabPanel v-if="isHyperopt || isBacktest || isLive" value="analyse">
-          <Transition name="sd-tab" mode="out-in">
-            <div key="analyse" class="sd-panel-enter">
-              <HyperoptAnalysePanel v-if="isHyperopt" />
-              <BacktestAnalysePanel v-else-if="isBacktest || isLive" />
-            </div>
-          </Transition>
+          <div class="sd-panel-enter">
+            <HyperoptAnalysePanel v-if="isHyperopt" />
+            <BacktestAnalysePanel v-else-if="isBacktest || isLive" />
+          </div>
         </TabPanel>
         <TabPanel v-if="isBacktest" value="graphiques">
-          <Transition name="sd-tab" mode="out-in">
-            <div key="graphiques" class="sd-panel-enter">
-              <BacktestChartsPanel />
-            </div>
-          </Transition>
+          <div class="sd-panel-enter">
+            <BacktestChartsPanel />
+          </div>
         </TabPanel>
         <TabPanel v-if="isWfa" value="wfa-charts">
-          <Transition name="sd-tab" mode="out-in">
-            <div key="wfa-charts" class="sd-panel-enter">
-              <WfaChartsPanel />
-            </div>
-          </Transition>
+          <div class="sd-panel-enter">
+            <WfaChartsPanel />
+          </div>
         </TabPanel>
         <TabPanel v-if="!isLive" value="params">
-          <Transition name="sd-tab" mode="out-in">
-            <div key="params" class="sd-panel-enter">
-              <ParamPanel />
-            </div>
-          </Transition>
+          <div class="sd-panel-enter">
+            <ParamPanel />
+          </div>
         </TabPanel>
         <TabPanel v-if="!isLive" value="config">
-          <Transition name="sd-tab" mode="out-in">
-            <div key="config" class="sd-panel-enter">
-              <ConfigPanel />
-            </div>
-          </Transition>
+          <div class="sd-panel-enter">
+            <ConfigPanel />
+          </div>
         </TabPanel>
         <TabPanel v-if="!isLive" value="source">
-          <Transition name="sd-tab" mode="out-in">
-            <div key="source" class="sd-panel-enter">
-              <SourcePanel />
-            </div>
-          </Transition>
+          <div class="sd-panel-enter">
+            <SourcePanel />
+          </div>
         </TabPanel>
         <TabPanel v-if="!isLive" value="command">
-          <Transition name="sd-tab" mode="out-in">
-            <div key="command" class="sd-panel-enter">
-              <CommandPanel @reconstitute="(p) => emit('reconstitute', p)" />
-            </div>
-          </Transition>
+          <div class="sd-panel-enter">
+            <CommandPanel @reconstitute="(p) => emit('reconstitute', p)" />
+          </div>
         </TabPanel>
         <TabPanel v-if="!isLive" value="compare">
-          <Transition name="sd-tab" mode="out-in">
-            <div key="compare" class="sd-panel-enter">
-              <ComparePanel />
-            </div>
-          </Transition>
+          <div class="sd-panel-enter">
+            <ComparePanel />
+          </div>
         </TabPanel>
       </TabPanels>
     </Tabs>
@@ -243,16 +225,5 @@ watch(
   display: flex;
   align-items: center;
   gap: 4px;
-}
-
-/* Tab content transitions */
-.sd-tab-enter-active {
-  animation: sd-slide-up 200ms ease-out;
-}
-.sd-tab-leave-active {
-  transition: opacity 100ms ease;
-}
-.sd-tab-leave-to {
-  opacity: 0;
 }
 </style>

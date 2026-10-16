@@ -196,7 +196,8 @@ watch(
 watch(
   () => props.plotConfig,
   (p) => {
-    if (p !== undefined) basePlot.value = { main_plot: {}, subplots: {}, ...(p ?? {}) } as PlotConfig;
+    if (p !== undefined)
+      basePlot.value = { main_plot: {}, subplots: {}, ...(p ?? {}) } as PlotConfig;
   },
   { immediate: true },
 );

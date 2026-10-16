@@ -54,7 +54,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <ToolFrame :title="t('fq.tools.replay')" :subtitle="t('fq.pg.tools.replay.sub')" :tags="['python', 'perBot']">
+  <ToolFrame
+    :title="t('fq.tools.replay')"
+    :subtitle="t('fq.pg.tools.replay.sub')"
+    :tags="['python', 'perBot']"
+  >
     <div v-if="dry.length > 0" class="wrap">
       <table data-testid="replay-bots">
         <thead>
@@ -72,15 +76,25 @@ onMounted(() => {
             </td>
             <td class="l mut">
               <template v-if="statusOf(b.bot_key)?.running">
-                {{ t('fq.pg.tools.replay.running', { p: Math.round((statusOf(b.bot_key)?.progress ?? 0) * 100) }) }}
+                {{
+                  t('fq.pg.tools.replay.running', {
+                    p: Math.round((statusOf(b.bot_key)?.progress ?? 0) * 100),
+                  })
+                }}
               </template>
-              <template v-else-if="seeded(b.bot_key)">{{ t('fq.pg.tools.replay.seeded') }}</template>
+              <template v-else-if="seeded(b.bot_key)">{{
+                t('fq.pg.tools.replay.seeded')
+              }}</template>
               <template v-else>{{ t('fq.pg.tools.replay.idle') }}</template>
             </td>
             <td>
-              <Btn size="xs" :disabled="!uiIdOf(b.bot_key)" :data-bot="b.bot_key" @click="open(b.bot_key)">{{
-                t('fq.pg.tools.replay.open')
-              }}</Btn>
+              <Btn
+                size="xs"
+                :disabled="!uiIdOf(b.bot_key)"
+                :data-bot="b.bot_key"
+                @click="open(b.bot_key)"
+                >{{ t('fq.pg.tools.replay.open') }}</Btn
+              >
             </td>
           </tr>
         </tbody>

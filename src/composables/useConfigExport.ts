@@ -374,7 +374,7 @@ export function importConfig(
           payload = JSON.parse(decrypted);
         } catch (err: any) {
           if (err?.message === 'WRONG_PASSWORD') throw err;
-          throw new Error('WRONG_PASSWORD');
+          throw new Error('WRONG_PASSWORD', { cause: err });
         }
 
         const dataJson = JSON.stringify(payload.data);

@@ -2,7 +2,6 @@ import { createPinia } from 'pinia';
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 
 import App from './App.vue';
-import { VueDraggableGrid } from './plugins/vue-grid-layout';
 import router from './router';
 import i18n from './locales';
 
@@ -45,7 +44,6 @@ myApp.directive('tooltip', Tooltip);
 
 myApp.use(router);
 myApp.use(i18n);
-myApp.use(VueDraggableGrid);
 
 myApp.config.errorHandler = (err, instance, info) => {
   console.error('[Vue Error]', err, info);

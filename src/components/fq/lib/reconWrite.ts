@@ -77,7 +77,13 @@ export interface WriteOutcome {
   text: string | null;
 }
 
-const STATUSES = new Set<string>(['accepted', 'rejected', 'unknown', 'unauthorized', 'in_progress']);
+const STATUSES = new Set<string>([
+  'accepted',
+  'rejected',
+  'unknown',
+  'unauthorized',
+  'in_progress',
+]);
 
 function parseObject(text: string | null): Record<string, unknown> | null {
   if (!text) return null;

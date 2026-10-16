@@ -1,5 +1,5 @@
 import type { ClosedTrade, Trade } from '@/types/trades';
-import type { ProfitStats, AllProfitStats } from '@/types/profit';
+import type { AllProfitStats } from '@/types/profit';
 import type { PerformanceEntry, EntryStats, ExitStats, MixTagStats } from '@/types/tradeStats';
 import type { TimeSummaryReturnValue } from '@/types/daily';
 import type { WalletHistory } from '@/types/daily';
@@ -83,7 +83,6 @@ export function buildLiveBotAnalytics(input: LiveBotInput): Record<string, unkno
 
   const wins = allTrades.filter((t) => (t.profit_ratio ?? 0) > 0);
   const losses = allTrades.filter((t) => (t.profit_ratio ?? 0) < 0);
-  const draws = allTrades.filter((t) => (t.profit_ratio ?? 0) === 0);
 
   const totalProfitAbs = allTrades.reduce((s, t) => s + (t.profit_abs ?? 0), 0);
   const totalProfitPct = startingBalance > 0 ? (totalProfitAbs / startingBalance) * 100 : 0;
@@ -102,7 +101,7 @@ export function buildLiveBotAnalytics(input: LiveBotInput): Record<string, unkno
   const durationScatter = buildDurationScatter(allTrades);
   const exitReasonDetail = buildExitReasonDetail(allTrades);
   const streaks = buildStreaks(allTrades);
-  const riskMetrics = buildRiskMetrics(allTrades, startingBalance);
+  const riskMetrics = buildRiskMetrics(allTrades);
   const longShortSplit = buildLongShortSplit(allTrades);
   const weekdayPattern = buildWeekdayPattern(allTrades);
   const rollingWinrate = buildRollingWinrate(allTrades, 20);
@@ -504,7 +503,7 @@ function buildStreaks(trades: ClosedTrade[]) {
   };
 }
 
-function buildRiskMetrics(trades: ClosedTrade[], startingBalance: number) {
+function buildRiskMetrics(trades: ClosedTrade[]) {
   const returns = trades.map((t) => t.profit_ratio ?? 0);
   if (returns.length < 2) return {};
 
@@ -515,7 +514,6 @@ function buildRiskMetrics(trades: ClosedTrade[], startingBalance: number) {
     (sorted.slice(0, idx95 + 1).reduce((s, v) => s + Math.abs(v), 0) / Math.max(1, idx95 + 1)) *
     100;
 
-  const mean = returns.reduce((s, v) => s + v, 0) / returns.length;
   const totalProfit = returns.reduce((s, v) => s + v, 0);
   const totalLoss = returns.filter((r) => r < 0).reduce((s, v) => s + Math.abs(v), 0);
   const gainPainRatio = totalLoss > 0 ? totalProfit / totalLoss : totalProfit > 0 ? Infinity : 0;

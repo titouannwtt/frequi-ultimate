@@ -52,12 +52,16 @@ const tabs = computed(() => [
 
 const MIN_PW = 8;
 const exportOk = computed(
-  () => !includeAuth.value || (password.value.length >= MIN_PW && password.value === confirmPw.value),
+  () =>
+    !includeAuth.value || (password.value.length >= MIN_PW && password.value === confirmPw.value),
 );
 
 function doExport() {
   if (!exportOk.value) return;
-  exportConfig({ includeAuth: includeAuth.value, password: includeAuth.value ? password.value : undefined });
+  exportConfig({
+    includeAuth: includeAuth.value,
+    password: includeAuth.value ? password.value : undefined,
+  });
   info.value = t('fq.pg.settings.xfer.exported');
 }
 
@@ -86,7 +90,12 @@ async function doImport() {
     window.setTimeout(() => window.location.reload(), 900);
   } catch (e) {
     const code = e instanceof Error ? e.message : '';
-    error.value = ['PASSWORD_REQUIRED', 'WRONG_PASSWORD', 'INTEGRITY_FAILED', 'INVALID_FORMAT'].includes(code)
+    error.value = [
+      'PASSWORD_REQUIRED',
+      'WRONG_PASSWORD',
+      'INTEGRITY_FAILED',
+      'INVALID_FORMAT',
+    ].includes(code)
       ? t(`fq.pg.settings.xfer.err.${code}`)
       : t('fq.pg.settings.xfer.err.INVALID_FORMAT');
   } finally {
@@ -98,14 +107,24 @@ async function doImport() {
 <template>
   <AdaptiveSheet :open="open" :title="t('fq.pg.settings.xfer.title')" @close="emit('close')">
     <div class="xf" data-testid="config-transfer">
-      <SegmentedControl v-model="tab" :options="tabs" size="sm" :label="t('fq.pg.settings.xfer.title')" />
+      <SegmentedControl
+        v-model="tab"
+        :options="tabs"
+        size="sm"
+        :label="t('fq.pg.settings.xfer.title')"
+      />
 
       <template v-if="tab === 'export'">
         <p class="hint">{{ t('fq.pg.settings.xfer.exportHint') }}</p>
         <Switch v-model="includeAuth" :label="t('fq.pg.settings.xfer.withLogins')" />
         <template v-if="includeAuth">
           <p class="hint">{{ t('fq.pg.settings.xfer.encryptHint') }}</p>
-          <TextInput v-model="password" type="password" :label="t('fq.pg.settings.xfer.password')" autocomplete="new-password" />
+          <TextInput
+            v-model="password"
+            type="password"
+            :label="t('fq.pg.settings.xfer.password')"
+            autocomplete="new-password"
+          />
           <TextInput
             v-model="confirmPw"
             type="password"
@@ -117,9 +136,14 @@ async function doImport() {
             {{ t('fq.pg.settings.xfer.pwShort', { n: MIN_PW }) }}
           </p>
         </template>
-        <Btn variant="primary" size="sm" :disabled="!exportOk" data-testid="xfer-export" @click="doExport">{{
-          t('fq.pg.settings.xfer.download')
-        }}</Btn>
+        <Btn
+          variant="primary"
+          size="sm"
+          :disabled="!exportOk"
+          data-testid="xfer-export"
+          @click="doExport"
+          >{{ t('fq.pg.settings.xfer.download') }}</Btn
+        >
       </template>
 
       <template v-else>
@@ -147,7 +171,9 @@ async function doImport() {
             </dd>
           </template>
         </dl>
-        <Banner v-if="preview?.isExpired" kind="degraded">{{ t('fq.pg.settings.xfer.old', { n: preview.ageInDays }) }}</Banner>
+        <Banner v-if="preview?.isExpired" kind="degraded">{{
+          t('fq.pg.settings.xfer.old', { n: preview.ageInDays })
+        }}</Banner>
         <TextInput
           v-if="preview?.encrypted"
           v-model="importPw"
@@ -155,9 +181,15 @@ async function doImport() {
           :label="t('fq.pg.settings.xfer.password')"
           autocomplete="off"
         />
-        <Btn variant="primary" size="sm" :busy="busy" :disabled="!preview" data-testid="xfer-import" @click="doImport">{{
-          t('fq.pg.settings.xfer.apply')
-        }}</Btn>
+        <Btn
+          variant="primary"
+          size="sm"
+          :busy="busy"
+          :disabled="!preview"
+          data-testid="xfer-import"
+          @click="doImport"
+          >{{ t('fq.pg.settings.xfer.apply') }}</Btn
+        >
       </template>
 
       <p v-if="error" class="err" role="alert">{{ error }}</p>

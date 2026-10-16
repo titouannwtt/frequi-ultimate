@@ -17,7 +17,11 @@ import {
   TradeTable,
 } from '@/components/fq';
 import { resultByBot } from '@/components/fq/lib/journal';
-import { JOURNAL_PERIODS, type JournalGrouping, type JournalPeriod } from '@/components/fq/lib/journalPage';
+import {
+  JOURNAL_PERIODS,
+  type JournalGrouping,
+  type JournalPeriod,
+} from '@/components/fq/lib/journalPage';
 import { useJournal } from '@/composables/useJournal';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import type { BotKey } from '@/gateway/types.gen';
@@ -44,7 +48,11 @@ function applyQuery() {
     j.filters.bots = [bot];
     // A bot hidden by the current mode would give an empty page without saying why
     const mode = fleet.bots[bot]?.identity.mode;
-    if ((mode === 'live' || mode === 'dry') && j.scope.mode.value !== 'all' && j.scope.mode.value !== mode) {
+    if (
+      (mode === 'live' || mode === 'dry') &&
+      j.scope.mode.value !== 'all' &&
+      j.scope.mode.value !== mode
+    ) {
       j.scope.mode.value = mode;
     }
   }
@@ -54,7 +62,9 @@ function applyQuery() {
     j.filters.period = p as JournalPeriod;
   }
 }
-watch(() => [route.query.bot, route.query.pair, route.query.period], applyQuery, { immediate: true });
+watch(() => [route.query.bot, route.query.pair, route.query.period], applyQuery, {
+  immediate: true,
+});
 // Bots load after the first render: re-check once the fleet is known
 watch(
   () => fleet.loaded,
@@ -67,7 +77,10 @@ const grouping = computed({
   set: (g: JournalGrouping) => (j.filters.grouping = g),
 });
 const groupOptions = computed(() =>
-  (['day', 'bot', 'pair'] as JournalGrouping[]).map((g) => ({ value: g, label: t(`fq.jr.group.${g}`) })),
+  (['day', 'bot', 'pair'] as JournalGrouping[]).map((g) => ({
+    value: g,
+    label: t(`fq.jr.group.${g}`),
+  })),
 );
 const total = computed(() =>
   j.totals.value ? j.totals.value.count + j.totals.value.unknown : j.listRows.value.length,
@@ -104,7 +117,9 @@ const reasons = computed(() =>
 const sheet = ref<{ botKey: BotKey; tradeId: number } | null>(null);
 const sheetRow = computed(
   () =>
-    j.listRows.value.find((r) => r.bot_key === sheet.value?.botKey && r.trade_id === sheet.value?.tradeId) ??
+    j.listRows.value.find(
+      (r) => r.bot_key === sheet.value?.botKey && r.trade_id === sheet.value?.tradeId,
+    ) ??
     j.analysisRows.value.find(
       (r) => r.bot_key === sheet.value?.botKey && r.trade_id === sheet.value?.tradeId,
     ) ??
@@ -223,9 +238,16 @@ const noBots = computed(() => fleet.loaded && j.botKeys.value.length === 0);
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="r in byBot" :key="r.botKey" :class="fleet.bots[r.botKey]?.identity.mode === 'live' ? 'is-live' : 'is-dry'">
+                <tr
+                  v-for="r in byBot"
+                  :key="r.botKey"
+                  :class="fleet.bots[r.botKey]?.identity.mode === 'live' ? 'is-live' : 'is-dry'"
+                >
                   <td class="l ui">
-                    <ModeMark v-if="fleet.bots[r.botKey]" :mode="fleet.bots[r.botKey]!.identity.mode" />
+                    <ModeMark
+                      v-if="fleet.bots[r.botKey]"
+                      :mode="fleet.bots[r.botKey]!.identity.mode"
+                    />
                     {{ botName(r.botKey) }}
                   </td>
                   <td>{{ r.trades }}</td>

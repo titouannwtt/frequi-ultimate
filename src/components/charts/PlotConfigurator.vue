@@ -173,15 +173,6 @@ function deleteSubplot(name: string) {
   selSubPlot.value = subplots.value[subplots.value.length - 1] ?? 'main_plot';
 }
 
-function renameSubplot(oldName: string, newName: string) {
-  if (!newName.trim() || oldName === newName) return;
-  pushUndo();
-  const old = plotStore.editablePlotConfig.subplots[oldName];
-  if (old) plotStore.editablePlotConfig.subplots[newName] = old;
-  delete plotStore.editablePlotConfig.subplots[oldName];
-  selSubPlot.value = newName;
-}
-
 function loadPlotConfig() {
   const existingConf = plotStore.customPlotConfigs[plotStore.plotConfigName];
   if (existingConf) plotStore.editablePlotConfig = deepClone(existingConf);
@@ -258,7 +249,7 @@ const markAreaZIndex = computed({
 const newSubplotName = ref('');
 
 // Template system
-const { plotTemplateNames, applyPlotTemplate, getTemplateContent } = usePlotTemplates();
+const { plotTemplateNames, applyPlotTemplate } = usePlotTemplates();
 const showTemplates = ref(false);
 
 function applyTemplate(templateName: string) {

@@ -63,7 +63,6 @@ export const loggedInBots = computed<BotDescriptors>(() => {
 });
 
 export function useLoginInfo(botId: string) {
-
   const currentInfo = computed({
     get: () => allLoginInfos.value[botId]!,
     set: (val) => (allLoginInfos.value[botId] = val),

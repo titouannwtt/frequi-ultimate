@@ -78,11 +78,17 @@ function fmtPct(v: unknown): string {
             <span class="config-key">{{ t('strategyDev.btConfigTrailing') }}</span>
             <span class="config-val">{{ trailingConfig.enabled ? '✓' : '✗' }}</span>
           </div>
-          <div v-if="trailingConfig.positive != null" class="config-row">
+          <div
+            v-if="trailingConfig.positive !== undefined && trailingConfig.positive !== null"
+            class="config-row"
+          >
             <span class="config-key">{{ t('strategyDev.btConfigTrailingPositive') }}</span>
             <span class="config-val">{{ fmtPct(trailingConfig.positive) }}</span>
           </div>
-          <div v-if="trailingConfig.offset != null" class="config-row">
+          <div
+            v-if="trailingConfig.offset !== undefined && trailingConfig.offset !== null"
+            class="config-row"
+          >
             <span class="config-key">{{ t('strategyDev.btConfigTrailingOffset') }}</span>
             <span class="config-val">{{ fmtPct(trailingConfig.offset) }}</span>
           </div>
@@ -113,7 +119,10 @@ function fmtPct(v: unknown): string {
     <div class="config-card">
       <h4 class="config-title">{{ t('strategyDev.btConfigMarket') }}</h4>
       <div class="config-rows">
-        <div v-if="summary.market_change != null" class="config-row">
+        <div
+          v-if="summary.market_change !== undefined && summary.market_change !== null"
+          class="config-row"
+        >
           <span class="config-key">{{ t('strategyDev.btMarketChange') }}</span>
           <span
             class="config-val"
@@ -122,7 +131,10 @@ function fmtPct(v: unknown): string {
             {{ fmtPct(summary.market_change) }}
           </span>
         </div>
-        <div v-if="summary.final_balance != null" class="config-row">
+        <div
+          v-if="summary.final_balance !== undefined && summary.final_balance !== null"
+          class="config-row"
+        >
           <span class="config-key">{{ t('strategyDev.btFinalBalance') }}</span>
           <span class="config-val">{{ Number(summary.final_balance).toFixed(2) }}</span>
         </div>

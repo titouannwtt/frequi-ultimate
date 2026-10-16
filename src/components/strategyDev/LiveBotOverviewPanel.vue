@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { RunType } from '@/types';
 import type { JobStartRequest } from '@/types';
 import { buildPrefillFromLiveBot } from '@/utils/reconstitute';
 

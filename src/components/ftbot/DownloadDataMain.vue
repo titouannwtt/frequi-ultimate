@@ -98,7 +98,8 @@ async function startDownload() {
 <template>
   <div class="px-1 mx-auto w-full max-w-4xl lg:max-w-7xl">
     <BackgroundJobTracking class="mb-4" />
-    <DraggableContainer :header="t('downloadData.title')" class="mx-1 p-4">
+    <section class="mx-1 p-4 rounded-lg border border-surface-300 dark:border-surface-700">
+      <h2 class="text-start font-bold text-xl mb-3">{{ t('downloadData.title') }}</h2>
       <div class="flex mb-3 gap-3 flex-col">
         <div class="flex flex-col gap-3">
           <div class="flex flex-col lg:flex-row gap-3">
@@ -246,6 +247,6 @@ async function startDownload() {
           </div>
         </div>
       </div>
-    </DraggableContainer>
+    </section>
   </div>
 </template>

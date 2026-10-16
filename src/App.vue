@@ -187,14 +187,14 @@ function onDisplay(command: 'view' | 'language') {
 }
 </style>
 
-<style>
+<style scoped>
 /* Toast container must not intercept clicks on elements below it (navbar).
    PrimeVue sets position:fixed + high z-index on .p-toast, which can cover
    the navbar and swallow click events even when no messages are visible. */
-.p-toast {
+:global(.p-toast) {
   pointer-events: none !important;
 }
-.p-toast-message {
+:global(.p-toast-message) {
   pointer-events: auto;
 }
 </style>

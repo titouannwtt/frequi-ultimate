@@ -22,14 +22,20 @@ const prefs = useFqPrefsStore();
 const start = (): BotKey | null => {
   const sel = prefs.settings.selectedBot;
   if (sel && fleet.bots[sel]) return sel;
-  return fleet.list.find((b) => b.identity.mode === 'live')?.bot_key ?? fleet.list[0]?.bot_key ?? null;
+  return (
+    fleet.list.find((b) => b.identity.mode === 'live')?.bot_key ?? fleet.list[0]?.bot_key ?? null
+  );
 };
 const picked = ref<BotKey | null>(start());
 useLegacyBot(() => picked.value);
 </script>
 
 <template>
-  <ToolFrame :title="t('fq.tools.volume')" :subtitle="t('fq.pg.tools.volume.sub')" :tags="['perBot']">
+  <ToolFrame
+    :title="t('fq.tools.volume')"
+    :subtitle="t('fq.pg.tools.volume.sub')"
+    :tags="['perBot']"
+  >
     <template #actions><BotPicker v-model="picked" /></template>
     <div class="legacy"><VolumeComparatorChart /></div>
   </ToolFrame>

@@ -47,7 +47,11 @@ export function formatPrice(value: number | null | undefined, decimals = 15): st
  * @param decimals Decimals
  * @returns
  */
-export function formatPriceCurrency(price: number | null | undefined, currency: string, decimals = 3) {
+export function formatPriceCurrency(
+  price: number | null | undefined,
+  currency: string,
+  decimals = 3,
+) {
   return `${formatPrice(price, decimals)} ${currency ?? ''}`;
 }
 

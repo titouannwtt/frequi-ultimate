@@ -239,7 +239,8 @@ function compareGrouped(a: TradeLine, b: TradeLine): number {
   const ka = groupKeyOf(a);
   const kb = groupKeyOf(b);
   // Days newest first, bots and pairs by name; inside a group the latest close comes first
-  const byGroup = props.grouping === 'day' ? (ka < kb ? 1 : ka > kb ? -1 : 0) : collator.compare(ka, kb);
+  const byGroup =
+    props.grouping === 'day' ? (ka < kb ? 1 : ka > kb ? -1 : 0) : collator.compare(ka, kb);
   return byGroup || (b.closeMs ?? 0) - (a.closeMs ?? 0) || a.tradeId - b.tradeId;
 }
 
@@ -475,7 +476,11 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
             @open-bot="(k) => emit('openBot', k)"
           />
         </template>
-        <Btn v-if="preset === 'journal' && (hiddenCards > 0 || cursor)" class="more" @click="morePrevious">
+        <Btn
+          v-if="preset === 'journal' && (hiddenCards > 0 || cursor)"
+          class="more"
+          @click="morePrevious"
+        >
           {{ t('fq.jr.loadPrevDays') }}
         </Btn>
         <Btn v-else-if="hiddenCards > 0" class="more" @click="showAll = true">
@@ -504,7 +509,11 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
         <span class="grp-head" data-testid="group-head">
           <b>{{ groupTitle(label) }}</b>
           <span class="dim">{{
-            t('fq.jr.tradesN', { n: groupTotals.get(label)?.trades ?? 0 }, groupTotals.get(label)?.trades ?? 0)
+            t(
+              'fq.jr.tradesN',
+              { n: groupTotals.get(label)?.trades ?? 0 },
+              groupTotals.get(label)?.trades ?? 0,
+            )
           }}</span>
           <PnlValue :value="groupTotals.get(label)?.sum ?? null" :decimals="2" />
         </span>
@@ -530,7 +539,11 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
       <template #cell-leverage="{ row }">×{{ row.leverage }}</template>
       <template #cell-trade_id="{ row }">#{{ row.tradeId }}</template>
       <template #cell-dca="{ row }">
-        <span v-if="!row.open && (row.dcaEntries === null || row.dcaEntries === undefined)" class="dim">{{ t('fq.ds.notAvailable') }}</span>
+        <span
+          v-if="!row.open && (row.dcaEntries === null || row.dcaEntries === undefined)"
+          class="dim"
+          >{{ t('fq.ds.notAvailable') }}</span
+        >
         <DcaPips v-else :filled="row.dcaFilled" :max="row.dcaMax ?? row.dcaFilled" />
       </template>
       <template #cell-entry="{ row }">{{ fmt.price(row.entry) }}</template>
@@ -601,7 +614,11 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
     <p v-if="unavailableNote.length > 0" class="note">
       {{ t('fq.connection.unavailableDirect') }}: {{ unavailableNote.join(', ') }}
     </p>
-    <div v-if="cursor && preset === 'journal' && !asCards" class="pager" data-testid="journal-pager">
+    <div
+      v-if="cursor && preset === 'journal' && !asCards"
+      class="pager"
+      data-testid="journal-pager"
+    >
       <span>{{ t('fq.jr.pageInfo', { n: lines.length }) }}</span>
       <Btn size="sm" @click="emit('loadMore')">{{ t('fq.jr.older') }}</Btn>
     </div>

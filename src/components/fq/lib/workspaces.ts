@@ -5,7 +5,13 @@
  */
 import type { ColumnPreset, FqSettings, Workspace } from '@/migration/schema';
 
-export const COLUMN_PRESETS: readonly ColumnPreset[] = ['fleet', 'open', 'bot', 'closed', 'journal'];
+export const COLUMN_PRESETS: readonly ColumnPreset[] = [
+  'fleet',
+  'open',
+  'bot',
+  'closed',
+  'journal',
+];
 export const WORKSPACES: readonly Workspace[] = ['surveillance', 'incident', 'analysis'];
 
 /** Local keys cleared by the resets that live outside the settings document. */

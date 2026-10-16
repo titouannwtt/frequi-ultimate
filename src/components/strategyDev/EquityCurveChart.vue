@@ -224,7 +224,7 @@ const option = computed<EChartsOption>(() => {
 <template>
   <div class="eq-chart-wrap">
     <div
-      v-if="hasBenchmark && alpha != null"
+      v-if="hasBenchmark && alpha !== undefined && alpha !== null"
       class="eq-alpha-badge"
       :class="alpha >= 0 ? 'eq-alpha-pos' : 'eq-alpha-neg'"
     >

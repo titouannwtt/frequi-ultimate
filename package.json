@@ -14,13 +14,14 @@
     "test:e2e": "playwright test",
     "test:e2e-chromium": "playwright test --project=chromium",
     "test:e2e-msedge": "playwright test --project=msedge",
-    "test:e2e-firefox": "playwright test --project=firefox"
+    "test:e2e-firefox": "playwright test --project=firefox",
+    "e2e:rig": "node scripts/e2e-rig/rig.mjs test",
+    "e2e:rig:up": "node scripts/e2e-rig/rig.mjs up"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.8.0",
     "@fontsource-variable/inter": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
-    "@noction/vue-draggable-grid": "1.9.16",
     "@primeuix/themes": "^2.0.3",
     "@vuepic/vue-datepicker": "^14.0.0",
     "@vueuse/core": "^14.3.0",
@@ -30,21 +31,16 @@
     "date-fns-tz": "^3.2.0",
     "deepmerge": "^4.3.1",
     "echarts": "^6.1.0",
-    "emojibase-data": "^17.0.0",
-    "favico.js": "^0.3.10",
-    "html-to-image": "^1.11.13",
     "humanize-duration": "^3.33.2",
     "monaco-editor": "^0.55.1",
     "pinia": "3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "primevue": "^4.5.5",
-    "sortablejs": "^1.15.7",
     "tweetnacl": "^1.0.3",
     "vue": "^3.5.32",
     "vue-echarts": "^8.0.1",
     "vue-i18n": "^11.4.4",
-    "vue-router": "^5.0.4",
-    "xlsx": "^0.18.5"
+    "vue-router": "^5.0.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -55,7 +51,6 @@
     "@tailwindcss/vite": "^4.2.4",
     "@tsconfig/node22": "^22.0.5",
     "@types/node": "^25.6.0",
-    "@types/sortablejs": "^1.15.9",
     "@typescript-eslint/parser": "^8.57.2",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vue/compiler-sfc": "3.5.39",

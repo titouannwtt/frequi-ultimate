@@ -65,7 +65,11 @@ async function save(next: AlertRulesConfig) {
 }
 
 const groups = computed(() => (cfg.value ? byCategory(ruleRows(cfg.value)) : []));
-const SEV: Record<Severity, 'info' | 'warn' | 'crit'> = { info: 'info', warning: 'warn', critical: 'crit' };
+const SEV: Record<Severity, 'info' | 'warn' | 'crit'> = {
+  info: 'info',
+  warning: 'warn',
+  critical: 'crit',
+};
 
 function toggle(id: AlertTypeId, enabled: boolean) {
   if (cfg.value) void save(withRule(cfg.value, id, { enabled }));
@@ -86,11 +90,12 @@ function reset() {
 }
 
 const bots = computed(() =>
-  fleet.list
-    .slice()
-    .sort((a, b) =>
-      a.identity.name.localeCompare(b.identity.name, undefined, { numeric: true, sensitivity: 'base' }),
-    ),
+  fleet.list.slice().sort((a, b) =>
+    a.identity.name.localeCompare(b.identity.name, undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    }),
+  ),
 );
 const muted = (key: string) => cfg.value?.perBotEnabled[key] === false;
 function setBot(key: string, enabled: boolean) {
@@ -117,7 +122,9 @@ async function setBrowser(on: boolean) {
 
 <template>
   <div class="as" data-testid="alert-settings">
-    <Banner v-if="error" kind="degraded">{{ t('fq.pg.settings.al.saveFailed', { detail: error }) }}</Banner>
+    <Banner v-if="error" kind="degraded">{{
+      t('fq.pg.settings.al.saveFailed', { detail: error })
+    }}</Banner>
     <p v-if="data.source.value && !data.source.value.alerts.shared" class="note">
       {{ t('fq.alert.notShared') }}
     </p>

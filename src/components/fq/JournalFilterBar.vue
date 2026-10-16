@@ -56,16 +56,16 @@ const rangeAnchor = ref<HTMLElement | null>(null);
 function setPeriod(p: JournalPeriod, e?: Event) {
   patch({ period: p });
   if (p === 'range') {
-    rangeAnchor.value = ((e?.currentTarget as HTMLElement | null) ?? rangeAnchor.value) as HTMLElement | null;
+    rangeAnchor.value = ((e?.currentTarget as HTMLElement | null) ??
+      rangeAnchor.value) as HTMLElement | null;
     rangeOpen.value = true;
   }
 }
-const dayInput = (ms: number | null) => (ms === null ? '' : new Date(ms).toISOString().slice(0, 10));
+const dayInput = (ms: number | null) =>
+  ms === null ? '' : new Date(ms).toISOString().slice(0, 10);
 function setRange(end: 'fromMs' | 'toMs', value: string) {
   const ms =
-    value === ''
-      ? null
-      : Date.parse(`${value}T${end === 'fromMs' ? '00:00:00' : '23:59:59'}Z`);
+    value === '' ? null : Date.parse(`${value}T${end === 'fromMs' ? '00:00:00' : '23:59:59'}Z`);
   patch({ range: { ...props.modelValue.range, [end]: Number.isFinite(ms) ? ms : null } });
 }
 
@@ -91,12 +91,28 @@ function toggle(id: MenuId, e: Event) {
 }
 
 const sideItems = computed<MenuItem[]>(() => [
-  { id: 'any', label: t('fq.jr.f.any'), icon: props.modelValue.side === null ? 'check' : undefined },
-  { id: 'long', label: t('fq.side.long'), icon: props.modelValue.side === 'long' ? 'check' : undefined },
-  { id: 'short', label: t('fq.side.short'), icon: props.modelValue.side === 'short' ? 'check' : undefined },
+  {
+    id: 'any',
+    label: t('fq.jr.f.any'),
+    icon: props.modelValue.side === null ? 'check' : undefined,
+  },
+  {
+    id: 'long',
+    label: t('fq.side.long'),
+    icon: props.modelValue.side === 'long' ? 'check' : undefined,
+  },
+  {
+    id: 'short',
+    label: t('fq.side.short'),
+    icon: props.modelValue.side === 'short' ? 'check' : undefined,
+  },
 ]);
 const reasonItems = computed<MenuItem[]>(() => [
-  { id: '__any', label: t('fq.jr.f.any'), icon: props.modelValue.exitReason === null ? 'check' : undefined },
+  {
+    id: '__any',
+    label: t('fq.jr.f.any'),
+    icon: props.modelValue.exitReason === null ? 'check' : undefined,
+  },
   ...props.reasons.map((r) => ({
     id: r.value,
     label: `${r.label} · ${r.trades}`,
@@ -254,7 +270,11 @@ function dropView(id: string) {
     </span>
     <span class="cw" @click="toggle('side', $event)">
       <FilterChip
-        :label="sideValue ? t('fq.jr.f.withValue', { label: t('fq.jr.f.side'), value: sideValue }) : t('fq.jr.f.side')"
+        :label="
+          sideValue
+            ? t('fq.jr.f.withValue', { label: t('fq.jr.f.side'), value: sideValue })
+            : t('fq.jr.f.side')
+        "
         :active="sideValue !== null"
         :removable="sideValue !== null"
         data-testid="jf-side"
@@ -263,7 +283,11 @@ function dropView(id: string) {
     </span>
     <span class="cw" @click="toggle('reason', $event)">
       <FilterChip
-        :label="reasonValue ? t('fq.jr.f.withValue', { label: t('fq.jr.f.reason'), value: reasonValue }) : t('fq.jr.f.reason')"
+        :label="
+          reasonValue
+            ? t('fq.jr.f.withValue', { label: t('fq.jr.f.reason'), value: reasonValue })
+            : t('fq.jr.f.reason')
+        "
         :active="reasonValue !== null"
         :removable="reasonValue !== null"
         data-testid="jf-reason"
@@ -278,7 +302,10 @@ function dropView(id: string) {
       <FilterChip
         :label="
           modelValue.depth
-            ? t('fq.jr.f.withValue', { label: t('fq.jr.f.depth'), value: depthLabel(modelValue.depth) })
+            ? t('fq.jr.f.withValue', {
+                label: t('fq.jr.f.depth'),
+                value: depthLabel(modelValue.depth),
+              })
             : t('fq.jr.f.depth')
         "
         :active="modelValue.depth !== null"
@@ -296,9 +323,14 @@ function dropView(id: string) {
     />
 
     <span class="right">
-      <Btn size="sm" variant="ghost" icon="bookmark" data-testid="jf-views" @click="toggle('views', $event)">{{
-        t('fq.jr.views.title')
-      }}</Btn>
+      <Btn
+        size="sm"
+        variant="ghost"
+        icon="bookmark"
+        data-testid="jf-views"
+        @click="toggle('views', $event)"
+        >{{ t('fq.jr.views.title') }}</Btn
+      >
       <Btn
         size="sm"
         icon="download"
@@ -341,7 +373,12 @@ function dropView(id: string) {
       @select="(id) => id === 'csv' && emit('exportCsv')"
       @close="open = null"
     />
-    <Popover :open="open === 'bots'" :anchor="anchor" :label="t('fq.jr.f.bots')" @close="open = null">
+    <Popover
+      :open="open === 'bots'"
+      :anchor="anchor"
+      :label="t('fq.jr.f.bots')"
+      @close="open = null"
+    >
       <div class="botpick" data-testid="jf-bot-list">
         <SearchField v-model="botQuery" :placeholder="t('fq.jr.f.botSearch')" />
         <label v-for="b in botList" :key="b.key" class="bp">
@@ -355,16 +392,33 @@ function dropView(id: string) {
         <p v-if="botList.length === 0" class="note">{{ t('fq.jr.f.noBots') }}</p>
       </div>
     </Popover>
-    <Popover :open="open === 'views'" :anchor="anchor" :label="t('fq.jr.views.title')" @close="open = null">
+    <Popover
+      :open="open === 'views'"
+      :anchor="anchor"
+      :label="t('fq.jr.views.title')"
+      @close="open = null"
+    >
       <div class="views" data-testid="jf-view-list">
         <p v-if="views.length === 0" class="note">{{ t('fq.jr.views.none') }}</p>
         <div v-for="v in views" :key="v.id" class="vw">
           <button type="button" class="vn" @click="applyView(v)">{{ v.name }}</button>
-          <Btn size="xs" variant="ghost" icon="trash-2" :title="t('fq.jr.views.remove')" @click="dropView(v.id)" />
+          <Btn
+            size="xs"
+            variant="ghost"
+            icon="trash-2"
+            :title="t('fq.jr.views.remove')"
+            @click="dropView(v.id)"
+          />
         </div>
         <form class="save" @submit.prevent="saveView">
-          <input v-model="viewName" :placeholder="t('fq.jr.views.name')" :aria-label="t('fq.jr.views.name')" />
-          <Btn size="sm" type="submit" :disabled="viewName.trim() === ''">{{ t('fq.jr.views.save') }}</Btn>
+          <input
+            v-model="viewName"
+            :placeholder="t('fq.jr.views.name')"
+            :aria-label="t('fq.jr.views.name')"
+          />
+          <Btn size="sm" type="submit" :disabled="viewName.trim() === ''">{{
+            t('fq.jr.views.save')
+          }}</Btn>
         </form>
       </div>
     </Popover>

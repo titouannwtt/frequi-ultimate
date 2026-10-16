@@ -64,7 +64,9 @@ const gatewayVersion = computed(() =>
 <template>
   <div class="ab" data-testid="about-panel">
     <FormRow :label="t('fq.pg.settings.ab.ui')">
-      <span class="num">v{{ uiVersion }}<template v-if="commit"> · {{ commit.slice(0, 8) }}</template></span>
+      <span class="num"
+        >v{{ uiVersion }}<template v-if="commit"> · {{ commit.slice(0, 8) }}</template></span
+      >
     </FormRow>
     <FormRow :label="t('fq.pg.settings.ab.gateway')">
       <span v-if="gatewayVersion" class="num">v{{ gatewayVersion }}</span>
@@ -82,7 +84,9 @@ const gatewayVersion = computed(() =>
 
     <h3>
       {{ t('fq.pg.settings.ab.audit') }}
-      <Btn v-if="supported" size="xs" :busy="loading" @click="loadAudit">{{ t('fq.pg.tools.refresh') }}</Btn>
+      <Btn v-if="supported" size="xs" :busy="loading" @click="loadAudit">{{
+        t('fq.pg.tools.refresh')
+      }}</Btn>
     </h3>
     <EmptyState
       v-if="!supported"
