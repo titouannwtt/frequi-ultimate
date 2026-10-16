@@ -32,7 +32,23 @@ const LAYOUT_KEYS = [
 
 const AUTH_KEYS = ['ftAuthLoginInfo'];
 
-const ALL_KEYS = [...LAYOUT_KEYS, ...AUTH_KEYS];
+/**
+ * Keys of the redesigned UI (format v3). `fqu2.gateway` is not copied as is: it holds the session
+ * of this device, which never leaves it; only the address and the source mode are exported.
+ * `fqu2.migration`, `fqu2.sync` and `fqu2.lastVisit` are caches of this device.
+ */
+export const FQU2_KEYS = [
+  'fqu2.settings',
+  'fqu2.density',
+  'fqu2.journal.views',
+  'fqu2.fleetView',
+  'fqu2.charts.rsi',
+  'fqu2.cvd',
+  'fqu2.motion',
+];
+const GATEWAY_KEY = 'fqu2.gateway';
+
+const ALL_KEYS = [...LAYOUT_KEYS, ...AUTH_KEYS, ...FQU2_KEYS, GATEWAY_KEY];
 
 interface ConfigPayload {
   integrity: string;
@@ -40,7 +56,7 @@ interface ConfigPayload {
 }
 
 interface FreqUIConfigV2 {
-  version: 2;
+  version: 2 | 3;
   exportedAt: string;
   includesAuth: boolean;
   encrypted?: boolean;
@@ -143,16 +159,73 @@ function decrypt(ciphertext: string, salt: string, nonce: string, password: stri
 
 // ── Export ──
 
-export function exportConfig(options: { includeAuth: boolean; password?: string }): void {
-  const keys = options.includeAuth ? ALL_KEYS : LAYOUT_KEYS;
+/** What an export holds: the layout keys, the `fqu2.*` keys, and the logins when asked for. */
+export function collectExportData(
+  includeAuth: boolean,
+  storage: Pick<Storage, 'getItem'> = localStorage,
+): Record<string, string> {
+  const keys = [...LAYOUT_KEYS, ...FQU2_KEYS, ...(includeAuth ? AUTH_KEYS : [])];
   const data: Record<string, string> = {};
-
   for (const key of keys) {
-    const value = localStorage.getItem(key);
+    const value = storage.getItem(key);
     if (value !== null) {
       data[key] = value;
     }
   }
+  // Address and mode of the gateway, never its session or the device id
+  const gw = storage.getItem(GATEWAY_KEY);
+  if (gw !== null) {
+    try {
+      const parsed = JSON.parse(gw) as { url?: unknown; mode?: unknown };
+      data[GATEWAY_KEY] = JSON.stringify({
+        ...(typeof parsed.url === 'string' ? { url: parsed.url } : {}),
+        ...(typeof parsed.mode === 'string' ? { mode: parsed.mode } : {}),
+      });
+    } catch {
+      /* unreadable: left out */
+    }
+  }
+  return data;
+}
+
+/**
+ * Writes the keys of an export back. `fqu2.gateway` is merged into what this device already has,
+ * so its session and device id survive; any other key of the list replaces the stored one.
+ * Returns the number of keys written.
+ */
+export function applyImportData(
+  data: Record<string, string>,
+  storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
+): number {
+  let written = 0;
+  for (const [key, value] of Object.entries(data)) {
+    if (!ALL_KEYS.includes(key)) continue;
+    if (key === GATEWAY_KEY) {
+      try {
+        const incoming = JSON.parse(value) as { url?: unknown; mode?: unknown };
+        const current = JSON.parse(storage.getItem(GATEWAY_KEY) ?? '{}') as Record<string, unknown>;
+        storage.setItem(
+          GATEWAY_KEY,
+          JSON.stringify({
+            ...current,
+            ...(typeof incoming.url === 'string' ? { url: incoming.url } : {}),
+            ...(typeof incoming.mode === 'string' ? { mode: incoming.mode } : {}),
+          }),
+        );
+        written++;
+      } catch {
+        /* unreadable: left out */
+      }
+      continue;
+    }
+    storage.setItem(key, value);
+    written++;
+  }
+  return written;
+}
+
+export function exportConfig(options: { includeAuth: boolean; password?: string }): void {
+  const data = collectExportData(options.includeAuth);
 
   const dataJson = JSON.stringify(data);
   const integrity = hashIntegrity(dataJson);
@@ -163,7 +236,7 @@ export function exportConfig(options: { includeAuth: boolean; password?: string 
     const payload: ConfigPayload = { integrity, data };
     const enc = encrypt(JSON.stringify(payload), options.password);
     config = {
-      version: 2,
+      version: 3,
       exportedAt: new Date().toISOString(),
       includesAuth: true,
       encrypted: true,
@@ -171,7 +244,7 @@ export function exportConfig(options: { includeAuth: boolean; password?: string 
     };
   } else {
     config = {
-      version: 2,
+      version: 3,
       exportedAt: new Date().toISOString(),
       includesAuth: options.includeAuth,
       integrity,
@@ -238,7 +311,7 @@ export function previewConfig(file: File): Promise<ConfigPreview> {
         settingsCount: 0,
         botCount: 0,
         integrityValid: null,
-        version: 2,
+        version: v2.version,
       };
     }
 
@@ -266,7 +339,7 @@ export function previewConfig(file: File): Promise<ConfigPreview> {
       settingsCount: Object.keys(data).length,
       botCount,
       integrityValid,
-      version: 2,
+      version: v2.version,
     };
   });
 }
@@ -322,13 +395,7 @@ export function importConfig(
       }
     }
 
-    let keysRestored = 0;
-    for (const [key, value] of Object.entries(data)) {
-      if (ALL_KEYS.includes(key)) {
-        localStorage.setItem(key, value);
-        keysRestored++;
-      }
-    }
+    const keysRestored = applyImportData(data);
 
     let botCount = 0;
     const authData = data['ftAuthLoginInfo'];

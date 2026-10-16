@@ -380,3 +380,59 @@ describe('toGatewayActions: the fields the Rust `Params` accepts', () => {
     ]);
   });
 });
+
+describe('GatewaySource: audit, CSV export and confirmed proxy writes', () => {
+  it('reads the audit newest first with the limit and the bot filter', async () => {
+    const h = setup({
+      'GET /audit': () => ({ entries: [{ ts_ms: 1 }, { ts_ms: 3 }, { ts_ms: 2 }] }),
+    });
+    const rows = await h.src.query.audit({ botKey: 'local:1', limit: 20 });
+    expect(rows.map((r) => r.ts_ms)).toEqual([3, 2, 1]);
+    const call = h.fake.calls.find((c) => c.url.includes('/audit'))!;
+    expect(call.params).toMatchObject({ limit: 20, bot: 'local:1' });
+  });
+
+  it('exports the CSV with the filters of the Journal and returns the text as is', async () => {
+    const h = setup({ 'GET /trades/export.csv': () => 'bot_key,trade_id\nlocal:1,1\n' });
+    const csv = await h.src.query.exportTradesCsv({
+      status: 'closed',
+      bots: ['local:1', 'local:2'],
+      side: 'short',
+      mode: ['live'],
+      exitReason: 'roi',
+      fromMs: 5,
+      sort: 'close_ms',
+      order: 'desc',
+    });
+    expect(csv).toBe('bot_key,trade_id\nlocal:1,1\n');
+    const call = h.fake.calls.find((c) => c.url.includes('export.csv'))!;
+    expect(call.params).toEqual({
+      bots: 'local:1,local:2',
+      side: 'short',
+      mode: 'live',
+      exit_reason: 'roi',
+      from: 5,
+      sort: 'close_date',
+      order: 'desc',
+    });
+  });
+
+  it('sends the name of the bot in X-Confirm-Bot for a write that asks for it, and an idempotency key', async () => {
+    const h = setup({
+      'POST /bots/local%3A1/proxy/fleetview/resolve': () => ({ status: 'accepted' }),
+    });
+    await h.src.proxy(
+      'local:1',
+      'POST',
+      'fleetview/resolve',
+      { confirm: true },
+      { confirmBot: 'hippo_1' },
+    );
+    const w = h.fake.writes();
+    expect(w).toHaveLength(1);
+    expect(w[0].headers?.['X-Confirm-Bot']).toBe('hippo_1');
+    expect(w[0].headers?.['Idempotency-Key']).toMatch(/^proxy-/);
+    await h.src.proxy('local:1', 'POST', 'fleetview/resolve', { confirm: true });
+    expect(h.fake.writes()[1].headers?.['X-Confirm-Bot']).toBeUndefined();
+  });
+});

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
+import type { ProbeRecord } from '../manager';
 import type { SourceKind, SourceStatus } from '../types';
 
 export interface SourceSwitch {
@@ -34,6 +35,8 @@ export const useFqConnectionStore = defineStore('fqConnection', () => {
   const nextProbeAtMs = ref<number | null>(null);
   /** Direct mode only: since when the gateway has been unreachable. */
   const directSinceMs = ref<number | null>(null);
+  /** The last `hello` probe of the gateway, answered or not. */
+  const lastProbe = ref<ProbeRecord | null>(null);
   /** Incremented at every applied delta: the connection dot beats once. */
   const beat = ref(0);
 
@@ -46,6 +49,10 @@ export const useFqConnectionStore = defineStore('fqConnection', () => {
     directSinceMs.value = sw.to === 'direct' ? sw.atMs : null;
   }
 
+  function recordProbe(p: ProbeRecord) {
+    lastProbe.value = p;
+  }
+
   return {
     kind,
     status,
@@ -55,6 +62,8 @@ export const useFqConnectionStore = defineStore('fqConnection', () => {
     nextProbeAtMs,
     directSinceMs,
     beat,
+    lastProbe,
+    recordProbe,
     setStatus,
     recordSwitch,
   };

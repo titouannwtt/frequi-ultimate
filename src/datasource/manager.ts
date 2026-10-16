@@ -27,6 +27,16 @@ export interface ProbeResult {
   rttMs: number;
 }
 
+/** What the last `hello` probe found (Settings > Gateway). */
+export interface ProbeRecord {
+  atMs: number;
+  url: string;
+  ok: boolean;
+  rttMs: number | null;
+  protocol: number | null;
+  version: string | null;
+}
+
 export interface ManagerTimers {
   setTimeout(fn: () => void, ms: number): unknown;
   clearTimeout(h: unknown): void;
@@ -45,6 +55,8 @@ export interface SourceManagerDeps {
   /** The active source changed (the stores are bound to the new one). */
   onSourceChange: (next: DataSource, previous: DataSource | null) => void;
   onSwitch?: (sw: SourceSwitch) => void;
+  /** Every probe, answered or not. */
+  onProbe?: (p: ProbeRecord) => void;
   now?: () => number;
   timers?: ManagerTimers;
 }
@@ -105,6 +117,11 @@ export class SourceManager {
   async probeNow(): Promise<void> {
     if (!this.running) return;
     this.clearProbeTimer();
+    // Already on the gateway: nothing to switch, the probe only refreshes what Settings shows
+    if (this.kind.value === 'gateway') {
+      await this.probe(this.baseUrl());
+      return;
+    }
     await this.choose();
   }
 
@@ -192,10 +209,24 @@ export class SourceManager {
     }
   }
 
+  /** One `hello`, recorded for the Settings page. */
+  private async probe(base: string): Promise<ProbeResult | null> {
+    const r = await this.d.probe(base, PROBE_TIMEOUT_MS);
+    this.d.onProbe?.({
+      atMs: this.now(),
+      url: base,
+      ok: r !== null,
+      rttMs: r?.rttMs ?? null,
+      protocol: r?.hello.protocol ?? null,
+      version: r?.hello.version ?? null,
+    });
+    return r;
+  }
+
   /** Probe, start a gateway source, and swap it in. False when any step failed. */
   private async trySwitchToGateway(reason: string): Promise<boolean> {
     const base = this.baseUrl();
-    const probe = await this.d.probe(base, PROBE_TIMEOUT_MS);
+    const probe = await this.probe(base);
     if (!probe || probe.hello.protocol !== GATEWAY_PROTOCOL_VERSION) {
       return false;
     }
@@ -244,7 +275,7 @@ export class SourceManager {
     if (state === 'offline') {
       this.offlineSince ??= t;
       if (this.d.mode() === 'auto' && t - this.offlineSince >= WS_LOST_GRACE_MS) {
-        const probe = await this.d.probe(this.baseUrl(), PROBE_TIMEOUT_MS);
+        const probe = await this.probe(this.baseUrl());
         if (!probe) {
           this.offlineSince = null;
           await this.switchTo('direct', 'ws_lost');

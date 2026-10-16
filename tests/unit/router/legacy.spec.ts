@@ -17,6 +17,15 @@ vi.mock('@/stores/ftbotwrapper', async (importOriginal) => ({
 vi.mock('@/views/fq/FleetPage.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/fq/BotPage.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/fq/PlaceholderPage.vue', () => ({ default: { render: () => null } }));
+vi.mock('@/views/fq/ChartsPage.vue', () => ({ default: { render: () => null } }));
+vi.mock('@/views/fq/JournalPage.vue', () => ({ default: { render: () => null } }));
+vi.mock('@/views/fq/SettingsPage.vue', () => ({ default: { render: () => null } }));
+vi.mock('@/views/fq/tools/DiagnosticPage.vue', () => ({ default: { render: () => null } }));
+vi.mock('@/views/fq/tools/ReconciliationPage.vue', () => ({ default: { render: () => null } }));
+vi.mock('@/views/fq/tools/RiskToolPage.vue', () => ({ default: { render: () => null } }));
+vi.mock('@/views/fq/tools/LogsPage.vue', () => ({ default: { render: () => null } }));
+vi.mock('@/views/fq/tools/ReplayPage.vue', () => ({ default: { render: () => null } }));
+vi.mock('@/views/fq/tools/VolumePage.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/fq/ToolsIndex.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/TradeJournalView.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/LogView.vue', () => ({ default: { render: () => null } }));
@@ -137,6 +146,31 @@ describe('the table of old paths', () => {
 
   it('points every tool to a /tools path', () => {
     for (const p of Object.values(TOOL_PATHS)) expect(p.startsWith('/tools/')).toBe(true);
+  });
+
+  it('gives every tool its own page, and only the legacy ones start the legacy polling', () => {
+    const legacy = new Set([
+      'strategyDev',
+      'backtest',
+      'downloadData',
+      'pairlistConfig',
+      'diagnostic',
+      'replay',
+      'volume',
+    ]);
+    for (const [id, path] of Object.entries(TOOL_PATHS)) {
+      const r = router.resolve(path);
+      expect(r.name, path).not.toBe('tools-placeholder');
+      expect(r.name, path).not.toBe('404');
+      expect(Boolean(r.meta.legacy), id).toBe(legacy.has(id));
+    }
+  });
+
+  it('serves Settings at /settings and, open to anonymous visitors, at /login', () => {
+    expect(router.resolve('/settings').meta.allowAnonymous).toBeFalsy();
+    expect(router.resolve('/login').meta.allowAnonymous).toBe(true);
+    expect(router.resolve('/charts').name).toBe('charts');
+    expect(router.resolve('/journal').name).toBe('journal');
   });
 
   it('forwards to the login page when no bot is known', async () => {

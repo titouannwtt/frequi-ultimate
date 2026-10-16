@@ -198,6 +198,12 @@ td {
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
+td.num {
+  white-space: nowrap;
+}
+td.num small {
+  display: block;
+}
 th.l,
 td.l {
   text-align: left;

@@ -11,6 +11,7 @@ import { PrimeVue, FtTheme, ToastService } from './plugins/primevue';
 import './styles/redesign.css';
 import { useTheme } from './composables/useTheme';
 import { bootPrefs } from './datasource/boot';
+import { initDisplayPrefs } from './composables/useDisplayPrefs';
 
 const myApp = createApp(App);
 
@@ -22,6 +23,8 @@ myApp.use(pinia);
 bootPrefs();
 // Sets data-theme on <html> from the persisted mode, before the first paint of the app
 useTheme();
+// Colour-blind palette and reduced-motion override (data-cvd, data-motion on <html>)
+initDisplayPrefs();
 
 myApp.use(PrimeVue, {
   theme: {

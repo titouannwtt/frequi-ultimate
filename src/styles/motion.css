@@ -117,3 +117,16 @@
     background-color: var(--bg-2);
   }
 }
+
+/* The same rules when the user forces reduced motion in Settings (data-motion on <html>) */
+:root[data-motion='reduce'] *,
+:root[data-motion='reduce'] *::before,
+:root[data-motion='reduce'] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0s !important;
+}
+:root[data-motion='reduce'] .sk {
+  background-image: none;
+  background-color: var(--bg-2);
+}

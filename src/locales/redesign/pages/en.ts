@@ -2,8 +2,15 @@
  * Messages of the redesigned pages (Fleet, Bot, Tools, temporary pages), merged under the `fq`
  * namespace as `pg`. Same keys as ./fr.ts. No em dash.
  */
+import charts from './charts.en';
+import tools from './tools.en';
+import settings from './settings.en';
+
 export default {
   pg: {
+    charts,
+    tools,
+    settings,
     placeholder: {
       title: '{name}: page under construction',
       hint: 'This page arrives in a later step of the redesign. The rest of the app works.',

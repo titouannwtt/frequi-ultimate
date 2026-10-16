@@ -15,6 +15,7 @@ import {
   GATEWAY_PROTOCOL_VERSION,
   type Alert,
   type AlertRulesConfig,
+  type AuditEntry,
   type BotKey,
   type BotMode,
   type BotRow,
@@ -570,7 +571,10 @@ export class GatewaySource implements DataSource {
   // ---------------------------------------------------------------- requests
 
   /** GET with the session; a 401 opens a new session and the read is replayed once. */
-  private async readWithSession<T>(path: string, opts: { params?: Record<string, unknown> } = {}) {
+  private async readWithSession<T>(
+    path: string,
+    opts: { params?: Record<string, unknown>; timeoutMs?: number } = {},
+  ) {
     await this.d.session.ensure();
     let res = await this.d.http.raw<T>('GET', path, opts);
     if (res.status === 401) {
@@ -639,6 +643,38 @@ export class GatewaySource implements DataSource {
         `/trades/${encodeURIComponent(botKey)}/${tradeId}`,
       );
       return r.orders_error || !r.orders ? null : r.orders;
+    },
+
+    audit: async (q: { limit?: number; botKey?: BotKey } = {}): Promise<AuditEntry[]> => {
+      const r = await this.getJson<{ entries: AuditEntry[] }>('/audit', {
+        limit: q.limit ?? 100,
+        bot: q.botKey,
+      });
+      return [...(r.entries ?? [])].sort((a, b) => b.ts_ms - a.ts_ms);
+    },
+
+    exportTradesCsv: async (q: TradeQuery): Promise<string> => {
+      const sortOf = { close_ms: 'close_date', open_ms: 'open_date', profit_abs: 'profit' } as const;
+      const params: Record<string, unknown> = {
+        bots: q.bots,
+        pair: q.pair,
+        side: q.side,
+        mode: q.mode?.length === 1 ? q.mode[0] : undefined,
+        exit_reason: q.exitReason,
+        from: q.fromMs,
+        to: q.toMs,
+        sort: q.sort && q.sort !== 'pair' ? sortOf[q.sort] : undefined,
+        order: q.order,
+      };
+      const clean: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined && v !== null && v !== '') clean[k] = Array.isArray(v) ? v.join(',') : v;
+      }
+      const res = await this.readWithSession<unknown>('/trades/export.csv', {
+        params: clean,
+        timeoutMs: 60_000,
+      });
+      return typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
     },
 
     trades: async (q: TradeQuery): Promise<TradePage> => {
@@ -927,7 +963,10 @@ export class GatewaySource implements DataSource {
     return this.d.http.json<T>(m, url, {
       body,
       timeoutMs: opts?.timeoutMs ?? 30_000,
-      headers: { 'Idempotency-Key': `proxy-${this.now()}-${Math.random().toString(36).slice(2)}` },
+      headers: {
+        'Idempotency-Key': `proxy-${this.now()}-${Math.random().toString(36).slice(2)}`,
+        ...(opts?.confirmBot ? { 'X-Confirm-Bot': opts.confirmBot } : {}),
+      },
     });
   }
 

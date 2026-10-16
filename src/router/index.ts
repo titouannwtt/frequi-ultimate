@@ -78,16 +78,14 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/charts',
     name: 'charts',
-    component: () => import('@/views/fq/PlaceholderPage.vue'),
-    props: { id: 'charts' },
+    component: () => import('@/views/fq/ChartsPage.vue'),
     meta: { page: 'charts' },
   },
   {
     path: '/journal',
     name: 'journal',
-    // Legacy page until the Journal of the redesign lands (step 2)
-    component: () => import('@/views/TradeJournalView.vue'),
-    meta: { page: 'journal', legacy: true },
+    component: () => import('@/views/fq/JournalPage.vue'),
+    meta: { page: 'journal' },
   },
   {
     path: '/tools',
@@ -96,9 +94,41 @@ const routes: Array<RouteRecordRaw> = [
     meta: { page: 'tools' },
   },
   {
+    path: '/tools/diagnostic',
+    name: 'tools-diagnostic',
+    // The request timeline is the legacy chart: it needs the legacy stores
+    component: () => import('@/views/fq/tools/DiagnosticPage.vue'),
+    meta: { page: 'tools', legacy: true },
+  },
+  {
+    path: '/tools/reconciliation',
+    name: 'tools-reconciliation',
+    component: () => import('@/views/fq/tools/ReconciliationPage.vue'),
+    meta: { page: 'tools' },
+  },
+  {
+    path: '/tools/risk',
+    name: 'tools-risk',
+    component: () => import('@/views/fq/tools/RiskToolPage.vue'),
+    meta: { page: 'tools' },
+  },
+  {
     path: '/tools/logs',
     name: 'tools-logs',
-    component: () => import('@/views/LogView.vue'),
+    component: () => import('@/views/fq/tools/LogsPage.vue'),
+    meta: { page: 'tools' },
+  },
+  {
+    path: '/tools/replay',
+    name: 'tools-replay',
+    // The replay form is the legacy modal: it needs the legacy stores
+    component: () => import('@/views/fq/tools/ReplayPage.vue'),
+    meta: { page: 'tools', legacy: true },
+  },
+  {
+    path: '/tools/volume',
+    name: 'tools-volume',
+    component: () => import('@/views/fq/tools/VolumePage.vue'),
     meta: { page: 'tools', legacy: true },
   },
   {
@@ -135,16 +165,15 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/settings',
     name: 'settings',
-    // Legacy page until the Settings of the redesign lands (step 3)
-    component: () => import('@/views/SettingsViewCustom.vue'),
-    meta: { page: 'settings', legacy: true },
+    component: () => import('@/views/fq/SettingsPage.vue'),
+    meta: { page: 'settings' },
   },
   {
     path: '/login',
     name: 'login',
-    // Legacy page: it is how a bot is registered until Settings > Bots lands (step 3)
-    component: () => import('@/views/LoginView.vue'),
-    meta: { page: 'settings', legacy: true, allowAnonymous: true },
+    // Settings, on the bots section: it is also how a first bot is registered
+    component: () => import('@/views/fq/SettingsPage.vue'),
+    meta: { page: 'settings', allowAnonymous: true },
   },
 
   // ---- old paths, kept ----

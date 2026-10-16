@@ -1,0 +1,38 @@
+/*
+ * Legacy bridge: the tool pages that still run on the old components (StrategyDev, Backtest,
+ * Download data, Pairlist, Logs) read PrimeVue surface variables and the `--sd-*` palette. Those
+ * were warm greys; here they are pointed at the redesign tokens (tokens.css) so the pages sit in
+ * the new shell in both themes. Unlayered on purpose: it must win over the `frequi` layer.
+ */
+:root:not(.ft-dark-theme) {
+  --p-surface-0: var(--bg-1);
+  --p-surface-50: var(--bg-2);
+  --p-surface-100: var(--bg-3);
+  --p-surface-200: var(--line);
+  --p-surface-300: var(--line-2);
+  --p-surface-400: var(--fg-4);
+  --p-surface-500: var(--fg-3);
+  --p-text-color: var(--fg);
+  --sd-base: var(--bg-2);
+  --sd-mantle: var(--bg-3);
+  --sd-crust: var(--line);
+  --sd-surface0: var(--line);
+  --sd-surface1: var(--line-2);
+  --sd-surface2: var(--fg-4);
+  --sd-text: var(--fg);
+  --sd-subtext: var(--fg-2);
+  --sd-overlay: var(--fg-3);
+  --sd-border: var(--line-2);
+  --sd-border-subtle: var(--line);
+}
+
+:root:not(.ft-dark-theme) .glass-card,
+:root:not(.ft-dark-theme) .glass-panel {
+  background: var(--bg-1) !important;
+  border-color: var(--line-2) !important;
+  color: var(--fg) !important;
+}
+
+.legacy-host {
+  color: var(--fg);
+}

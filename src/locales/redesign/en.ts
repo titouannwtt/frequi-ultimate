@@ -5,11 +5,13 @@
  */
 import composites from './composites/en';
 import charts from './charts/en';
+import tools from './tools/en';
 import pages from './pages/en';
 
 export default {
   ...composites,
   ...charts,
+  ...tools,
   ...pages,
   nav: {
     fleet: 'Fleet',

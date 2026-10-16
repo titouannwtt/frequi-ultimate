@@ -88,7 +88,10 @@ export function toOpenRisk(t: Trade): OpenRisk {
   };
 }
 
-export function mapClosedTrade(t: ClosedTrade, botKey: BotKey, mode: BotMode): TradeRow {
+/** A closed trade with the depth of its DCA ladder, which the bot's REST gives (`nr_of_successful_entries`). */
+export type ClosedTradeRow = TradeRow & { dca_entries?: number | null };
+
+export function mapClosedTrade(t: ClosedTrade, botKey: BotKey, mode: BotMode): ClosedTradeRow {
   const info = parsePair(t.pair);
   const profit = num(t.profit_abs);
   const closeMs =
@@ -114,6 +117,7 @@ export function mapClosedTrade(t: ClosedTrade, botKey: BotKey, mode: BotMode): T
     exit_reason: normalizeExitReason(t.exit_reason),
     enter_tag: t.enter_tag ?? null,
     manual: false,
+    dca_entries: num(t.nr_of_successful_entries),
   };
 }
 

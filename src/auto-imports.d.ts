@@ -17,6 +17,7 @@ declare global {
   const CHART_FONT_FALLBACK: typeof import('./utils/designTokens').CHART_FONT_FALLBACK
   const CONFIG_CATALOG: typeof import('./utils/configEditorCatalog').CONFIG_CATALOG
   const COUNTER_MS: typeof import('./utils/motion').COUNTER_MS
+  const CVD_KEY: typeof import('./composables/useDisplayPrefs').CVD_KEY
   const ColorPreferences: typeof import('./stores/colors').ColorPreferences
   const DIGEST_SUBSTITUTION_MAX_AGE_S: typeof import('./stores/fleetDigestPolicy').DIGEST_SUBSTITUTION_MAX_AGE_S
   const DURATIONS: typeof import('./utils/motion').DURATIONS
@@ -24,12 +25,15 @@ declare global {
   const EASINGS: typeof import('./utils/motion').EASINGS
   const EffectScope: typeof import('vue').EffectScope
   const FLEET_DIGEST_MAX_AGE_S: typeof import('./composables/useFleetSnapshot').FLEET_DIGEST_MAX_AGE_S
+  const FQU2_KEYS: typeof import('./composables/useConfigExport').FQU2_KEYS
   const FQ_ICONS: typeof import('./utils/icons').FQ_ICONS
   const FQ_ICON_SIZES: typeof import('./utils/icons').FQ_ICON_SIZES
   const HOLD_MS: typeof import('./utils/motion').HOLD_MS
   const KNOWN_BENCHMARKS: typeof import('./utils/benchmarkData').KNOWN_BENCHMARKS
+  const MOTION_KEY: typeof import('./composables/useDisplayPrefs').MOTION_KEY
   const OFFLINE_AFTER_CONSECUTIVE_FAILURES: typeof import('./composables/api').OFFLINE_AFTER_CONSECUTIVE_FAILURES
   const OpenTradeVizOptions: typeof import('./stores/settings').OpenTradeVizOptions
+  const PAGE_SIZE: typeof import('./composables/useJournal').PAGE_SIZE
   const PROFIT_PERIODS: typeof import('./utils/botProfit').PROFIT_PERIODS
   const REDUCED_MOTION_QUERY: typeof import('./utils/motion').REDUCED_MOTION_QUERY
   const REGIME_COLORS: typeof import('./composables/useRegimeOverlay').REGIME_COLORS
@@ -44,6 +48,8 @@ declare global {
   const activeBotIdForTrades: typeof import('./stores/closedTradesPolicy').activeBotIdForTrades
   const aggregateProfitByBot: typeof import('./utils/botProfit').aggregateProfitByBot
   const apiPortFromUrl: typeof import('./stores/botApiPort').apiPortFromUrl
+  const applyDisplayPrefs: typeof import('./composables/useDisplayPrefs').applyDisplayPrefs
+  const applyImportData: typeof import('./composables/useConfigExport').applyImportData
   const applyThemeToDocument: typeof import('./utils/theme').applyThemeToDocument
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
@@ -66,6 +72,7 @@ declare global {
   const clone: typeof import('./utils/configEditorObject').clone
   const closedTradesDemand: typeof import('./stores/closedTradesPolicy').closedTradesDemand
   const closedTradesWanted: typeof import('./stores/closedTradesPolicy').closedTradesWanted
+  const collectExportData: typeof import('./composables/useConfigExport').collectExportData
   const computeAggregateDrawdown: typeof import('./utils/maxDrawdown').computeAggregateDrawdown
   const computeMaxDrawdown: typeof import('./utils/maxDrawdown').computeMaxDrawdown
   const computed: typeof import('vue').computed
@@ -169,6 +176,7 @@ declare global {
   const ignorableWatch: typeof import('@vueuse/core').ignorableWatch
   const importConfig: typeof import('./composables/useConfigExport').importConfig
   const initBots: typeof import('./stores/ftbotwrapper').initBots
+  const initDisplayPrefs: typeof import('./composables/useDisplayPrefs').initDisplayPrefs
   const inject: typeof import('vue').inject
   const injectLocal: typeof import('@vueuse/core').injectLocal
   const isDefined: typeof import('@vueuse/core').isDefined
@@ -345,6 +353,7 @@ declare global {
   const useBotComparisonStore: typeof import('./stores/botComparison').useBotComparisonStore
   const useBotConfigEditorStore: typeof import('./stores/botConfigEditorStore').useBotConfigEditorStore
   const useBotListSort: typeof import('./composables/useBotListSort').useBotListSort
+  const useBotRegistryEdit: typeof import('./composables/useBotRegistryEdit').useBotRegistryEdit
   const useBotStore: typeof import('./stores/ftbotwrapper').useBotStore
   const useBreakpoints: typeof import('@vueuse/core').useBreakpoints
   const useBroadcastChannel: typeof import('@vueuse/core').useBroadcastChannel
@@ -383,6 +392,7 @@ declare global {
   const useDevicePixelRatio: typeof import('@vueuse/core').useDevicePixelRatio
   const useDevicesList: typeof import('@vueuse/core').useDevicesList
   const useDisplayMedia: typeof import('@vueuse/core').useDisplayMedia
+  const useDisplayPrefs: typeof import('./composables/useDisplayPrefs').useDisplayPrefs
   const useDocumentVisibility: typeof import('@vueuse/core').useDocumentVisibility
   const useDraggable: typeof import('@vueuse/core').useDraggable
   const useDropZone: typeof import('@vueuse/core').useDropZone
@@ -423,10 +433,12 @@ declare global {
   const useIntersectionObserver: typeof import('@vueuse/core').useIntersectionObserver
   const useInterval: typeof import('@vueuse/core').useInterval
   const useIntervalFn: typeof import('@vueuse/core').useIntervalFn
+  const useJournal: typeof import('./composables/useJournal').useJournal
   const useKeyModifier: typeof import('@vueuse/core').useKeyModifier
   const useLastChanged: typeof import('@vueuse/core').useLastChanged
   const useLastVisit: typeof import('./composables/useLastVisit').useLastVisit
   const useLayoutStore: typeof import('./stores/layout').useLayoutStore
+  const useLegacyBot: typeof import('./composables/useLegacyBot').useLegacyBot
   const useLink: typeof import('vue-router').useLink
   const useLocalStorage: typeof import('@vueuse/core').useLocalStorage
   const useLogConsoleStore: typeof import('./stores/logConsole').useLogConsoleStore
@@ -474,6 +486,7 @@ declare global {
   const usePrevious: typeof import('@vueuse/core').usePrevious
   const useRafFn: typeof import('@vueuse/core').useRafFn
   const useRateMetrics: typeof import('./composables/useRateMetrics').useRateMetrics
+  const useReconciliation: typeof import('./composables/useReconciliation').useReconciliation
   const useRefHistory: typeof import('@vueuse/core').useRefHistory
   const useRegimeOverlay: typeof import('./composables/useRegimeOverlay').useRegimeOverlay
   const useReplayStore: typeof import('./stores/replayStore').useReplayStore
@@ -608,6 +621,9 @@ declare global {
   export type { DaemonHealthState, HealthLevel } from './composables/useDaemonHealth'
   import('./composables/useDaemonHealth')
   // @ts-ignore
+  export type { MotionPref } from './composables/useDisplayPrefs'
+  import('./composables/useDisplayPrefs')
+  // @ts-ignore
   export type { EmojiEntry, EmojiGroup } from './composables/useEmojiCatalog'
   import('./composables/useEmojiCatalog')
   // @ts-ignore
@@ -626,7 +642,7 @@ declare global {
   export type { Shortcut } from './composables/useShortcuts'
   import('./composables/useShortcuts')
   // @ts-ignore
-  export type { SourceQueryOptions } from './composables/useSourceQuery'
+  export type { SourceQueryOptions, SourceQuery } from './composables/useSourceQuery'
   import('./composables/useSourceQuery')
   // @ts-ignore
   export type { ToastItem, ToastInput } from './composables/useToaster'
@@ -715,6 +731,7 @@ declare module 'vue' {
     readonly CHART_FONT_FALLBACK: UnwrapRef<typeof import('./utils/designTokens')['CHART_FONT_FALLBACK']>
     readonly CONFIG_CATALOG: UnwrapRef<typeof import('./utils/configEditorCatalog')['CONFIG_CATALOG']>
     readonly COUNTER_MS: UnwrapRef<typeof import('./utils/motion')['COUNTER_MS']>
+    readonly CVD_KEY: UnwrapRef<typeof import('./composables/useDisplayPrefs')['CVD_KEY']>
     readonly ColorPreferences: UnwrapRef<typeof import('./stores/colors')['ColorPreferences']>
     readonly DIGEST_SUBSTITUTION_MAX_AGE_S: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['DIGEST_SUBSTITUTION_MAX_AGE_S']>
     readonly DURATIONS: UnwrapRef<typeof import('./utils/motion')['DURATIONS']>
@@ -722,12 +739,15 @@ declare module 'vue' {
     readonly EASINGS: UnwrapRef<typeof import('./utils/motion')['EASINGS']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly FLEET_DIGEST_MAX_AGE_S: UnwrapRef<typeof import('./composables/useFleetSnapshot')['FLEET_DIGEST_MAX_AGE_S']>
+    readonly FQU2_KEYS: UnwrapRef<typeof import('./composables/useConfigExport')['FQU2_KEYS']>
     readonly FQ_ICONS: UnwrapRef<typeof import('./utils/icons')['FQ_ICONS']>
     readonly FQ_ICON_SIZES: UnwrapRef<typeof import('./utils/icons')['FQ_ICON_SIZES']>
     readonly HOLD_MS: UnwrapRef<typeof import('./utils/motion')['HOLD_MS']>
     readonly KNOWN_BENCHMARKS: UnwrapRef<typeof import('./utils/benchmarkData')['KNOWN_BENCHMARKS']>
+    readonly MOTION_KEY: UnwrapRef<typeof import('./composables/useDisplayPrefs')['MOTION_KEY']>
     readonly OFFLINE_AFTER_CONSECUTIVE_FAILURES: UnwrapRef<typeof import('./composables/api')['OFFLINE_AFTER_CONSECUTIVE_FAILURES']>
     readonly OpenTradeVizOptions: UnwrapRef<typeof import('./stores/settings')['OpenTradeVizOptions']>
+    readonly PAGE_SIZE: UnwrapRef<typeof import('./composables/useJournal')['PAGE_SIZE']>
     readonly PROFIT_PERIODS: UnwrapRef<typeof import('./utils/botProfit')['PROFIT_PERIODS']>
     readonly REDUCED_MOTION_QUERY: UnwrapRef<typeof import('./utils/motion')['REDUCED_MOTION_QUERY']>
     readonly REGIME_COLORS: UnwrapRef<typeof import('./composables/useRegimeOverlay')['REGIME_COLORS']>
@@ -742,6 +762,8 @@ declare module 'vue' {
     readonly activeBotIdForTrades: UnwrapRef<typeof import('./stores/closedTradesPolicy')['activeBotIdForTrades']>
     readonly aggregateProfitByBot: UnwrapRef<typeof import('./utils/botProfit')['aggregateProfitByBot']>
     readonly apiPortFromUrl: UnwrapRef<typeof import('./stores/botApiPort')['apiPortFromUrl']>
+    readonly applyDisplayPrefs: UnwrapRef<typeof import('./composables/useDisplayPrefs')['applyDisplayPrefs']>
+    readonly applyImportData: UnwrapRef<typeof import('./composables/useConfigExport')['applyImportData']>
     readonly applyThemeToDocument: UnwrapRef<typeof import('./utils/theme')['applyThemeToDocument']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
@@ -764,6 +786,7 @@ declare module 'vue' {
     readonly clone: UnwrapRef<typeof import('./utils/configEditorObject')['clone']>
     readonly closedTradesDemand: UnwrapRef<typeof import('./stores/closedTradesPolicy')['closedTradesDemand']>
     readonly closedTradesWanted: UnwrapRef<typeof import('./stores/closedTradesPolicy')['closedTradesWanted']>
+    readonly collectExportData: UnwrapRef<typeof import('./composables/useConfigExport')['collectExportData']>
     readonly computeAggregateDrawdown: UnwrapRef<typeof import('./utils/maxDrawdown')['computeAggregateDrawdown']>
     readonly computeMaxDrawdown: UnwrapRef<typeof import('./utils/maxDrawdown')['computeMaxDrawdown']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
@@ -867,6 +890,7 @@ declare module 'vue' {
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
     readonly importConfig: UnwrapRef<typeof import('./composables/useConfigExport')['importConfig']>
     readonly initBots: UnwrapRef<typeof import('./stores/ftbotwrapper')['initBots']>
+    readonly initDisplayPrefs: UnwrapRef<typeof import('./composables/useDisplayPrefs')['initDisplayPrefs']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
     readonly injectLocal: UnwrapRef<typeof import('@vueuse/core')['injectLocal']>
     readonly isDefined: UnwrapRef<typeof import('@vueuse/core')['isDefined']>
@@ -1040,6 +1064,7 @@ declare module 'vue' {
     readonly useBotComparisonStore: UnwrapRef<typeof import('./stores/botComparison')['useBotComparisonStore']>
     readonly useBotConfigEditorStore: UnwrapRef<typeof import('./stores/botConfigEditorStore')['useBotConfigEditorStore']>
     readonly useBotListSort: UnwrapRef<typeof import('./composables/useBotListSort')['useBotListSort']>
+    readonly useBotRegistryEdit: UnwrapRef<typeof import('./composables/useBotRegistryEdit')['useBotRegistryEdit']>
     readonly useBotStore: UnwrapRef<typeof import('./stores/ftbotwrapper')['useBotStore']>
     readonly useBreakpoints: UnwrapRef<typeof import('@vueuse/core')['useBreakpoints']>
     readonly useBroadcastChannel: UnwrapRef<typeof import('@vueuse/core')['useBroadcastChannel']>
@@ -1078,6 +1103,7 @@ declare module 'vue' {
     readonly useDevicePixelRatio: UnwrapRef<typeof import('@vueuse/core')['useDevicePixelRatio']>
     readonly useDevicesList: UnwrapRef<typeof import('@vueuse/core')['useDevicesList']>
     readonly useDisplayMedia: UnwrapRef<typeof import('@vueuse/core')['useDisplayMedia']>
+    readonly useDisplayPrefs: UnwrapRef<typeof import('./composables/useDisplayPrefs')['useDisplayPrefs']>
     readonly useDocumentVisibility: UnwrapRef<typeof import('@vueuse/core')['useDocumentVisibility']>
     readonly useDraggable: UnwrapRef<typeof import('@vueuse/core')['useDraggable']>
     readonly useDropZone: UnwrapRef<typeof import('@vueuse/core')['useDropZone']>
@@ -1118,10 +1144,12 @@ declare module 'vue' {
     readonly useIntersectionObserver: UnwrapRef<typeof import('@vueuse/core')['useIntersectionObserver']>
     readonly useInterval: UnwrapRef<typeof import('@vueuse/core')['useInterval']>
     readonly useIntervalFn: UnwrapRef<typeof import('@vueuse/core')['useIntervalFn']>
+    readonly useJournal: UnwrapRef<typeof import('./composables/useJournal')['useJournal']>
     readonly useKeyModifier: UnwrapRef<typeof import('@vueuse/core')['useKeyModifier']>
     readonly useLastChanged: UnwrapRef<typeof import('@vueuse/core')['useLastChanged']>
     readonly useLastVisit: UnwrapRef<typeof import('./composables/useLastVisit')['useLastVisit']>
     readonly useLayoutStore: UnwrapRef<typeof import('./stores/layout')['useLayoutStore']>
+    readonly useLegacyBot: UnwrapRef<typeof import('./composables/useLegacyBot')['useLegacyBot']>
     readonly useLink: UnwrapRef<typeof import('vue-router')['useLink']>
     readonly useLocalStorage: UnwrapRef<typeof import('@vueuse/core')['useLocalStorage']>
     readonly useLogConsoleStore: UnwrapRef<typeof import('./stores/logConsole')['useLogConsoleStore']>
@@ -1169,6 +1197,7 @@ declare module 'vue' {
     readonly usePrevious: UnwrapRef<typeof import('@vueuse/core')['usePrevious']>
     readonly useRafFn: UnwrapRef<typeof import('@vueuse/core')['useRafFn']>
     readonly useRateMetrics: UnwrapRef<typeof import('./composables/useRateMetrics')['useRateMetrics']>
+    readonly useReconciliation: UnwrapRef<typeof import('./composables/useReconciliation')['useReconciliation']>
     readonly useRefHistory: UnwrapRef<typeof import('@vueuse/core')['useRefHistory']>
     readonly useRegimeOverlay: UnwrapRef<typeof import('./composables/useRegimeOverlay')['useRegimeOverlay']>
     readonly useReplayStore: UnwrapRef<typeof import('./stores/replayStore')['useReplayStore']>

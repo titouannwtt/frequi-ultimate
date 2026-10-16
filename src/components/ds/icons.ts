@@ -52,6 +52,27 @@ import IconArrowUpDown from '~icons/lucide/arrow-up-down';
 import IconMonitor from '~icons/lucide/monitor';
 import IconMoon from '~icons/lucide/moon';
 import IconSun from '~icons/lucide/sun';
+import IconRuler from '~icons/lucide/ruler';
+import IconDownload from '~icons/lucide/download';
+import IconUpload from '~icons/lucide/upload';
+import IconBookmark from '~icons/lucide/bookmark';
+import IconRewind from '~icons/lucide/rewind';
+import IconFileText from '~icons/lucide/file-text';
+import IconChartLine from '~icons/lucide/chart-line';
+import IconColumns2 from '~icons/lucide/columns-2';
+import IconTrash2 from '~icons/lucide/trash-2';
+import IconExternalLink from '~icons/lucide/external-link';
+import IconRotateCcw from '~icons/lucide/rotate-ccw';
+import IconCopy from '~icons/lucide/copy';
+import IconCalendar from '~icons/lucide/calendar';
+import IconShieldCheck from '~icons/lucide/shield-check';
+import IconLanguages from '~icons/lucide/languages';
+import IconPalette from '~icons/lucide/palette';
+import IconServer from '~icons/lucide/server';
+import IconPlug from '~icons/lucide/plug';
+import IconPencil from '~icons/lucide/pencil';
+import IconSlidersHorizontal from '~icons/lucide/sliders-horizontal';
+import IconListFilter from '~icons/lucide/list-filter';
 
 /**
  * Lucide icons used by the design system, by Lucide name. The meaning of each icon is listed in
@@ -111,6 +132,27 @@ export const DS_ICONS = {
   monitor: IconMonitor,
   moon: IconMoon,
   sun: IconSun,
+  ruler: IconRuler,
+  download: IconDownload,
+  upload: IconUpload,
+  bookmark: IconBookmark,
+  rewind: IconRewind,
+  'file-text': IconFileText,
+  'chart-line': IconChartLine,
+  'columns-2': IconColumns2,
+  'trash-2': IconTrash2,
+  'external-link': IconExternalLink,
+  'rotate-ccw': IconRotateCcw,
+  copy: IconCopy,
+  calendar: IconCalendar,
+  'shield-check': IconShieldCheck,
+  languages: IconLanguages,
+  palette: IconPalette,
+  server: IconServer,
+  plug: IconPlug,
+  pencil: IconPencil,
+  'sliders-horizontal': IconSlidersHorizontal,
+  'list-filter': IconListFilter,
 } as const satisfies Record<string, Component>;
 
 export type DsIconName = keyof typeof DS_ICONS;
