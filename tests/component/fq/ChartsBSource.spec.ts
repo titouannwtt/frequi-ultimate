@@ -259,6 +259,35 @@ describe('PairNavigator', () => {
     expect(w.findAll('[role=option]').length).toBe(world.fixture.positions.length);
   });
 
+  it('scrolls the phone strip to the selected pair, centered, when it is out of sight (B235)', async () => {
+    const w = mountFq(PairNavigator, {
+      props: { source: sb.source, filter: 'positions', layout: 'chips' },
+      attachTo: document.body,
+    });
+    const strip = w.get('[role=listbox]').element as HTMLElement;
+    const chips = w.findAll('[role=option]');
+    // jsdom has no layout: 100 px chips in a 390 px strip
+    Object.defineProperty(strip, 'clientWidth', { value: 390, configurable: true });
+    Object.defineProperty(strip, 'scrollWidth', { value: chips.length * 106, configurable: true });
+    chips.forEach((c, i) => {
+      Object.defineProperty(c.element, 'offsetWidth', { value: 100, configurable: true });
+      c.element.getBoundingClientRect = () => ({ left: i * 106 - strip.scrollLeft }) as DOMRect;
+    });
+    strip.getBoundingClientRect = () => ({ left: 0 }) as DOMRect;
+    expect(chips.length).toBeGreaterThan(5);
+    const last = chips.length - 1;
+    // Select the last chip: the click gives the key of its row
+    await chips[last]!.trigger('click');
+    const item = w.emitted('select')![0]![0] as { key: string };
+    await w.setProps({ selectedKey: item.key });
+    await flushPromises();
+    expect(strip.scrollLeft).toBeGreaterThan(0);
+    // Centered, or against the end of the strip
+    const maxScroll = chips.length * 106 - 390;
+    expect(strip.scrollLeft).toBeCloseTo(Math.min(maxScroll, last * 106 - 145), 0);
+    w.unmount();
+  });
+
   it('a bot that does not answer: the error, not an empty list', async () => {
     sb.failNext.proxy = true;
     const w = mount('locks');

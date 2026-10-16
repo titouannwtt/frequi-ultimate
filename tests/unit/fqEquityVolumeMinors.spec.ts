@@ -40,6 +40,25 @@ describe('equity axis ticks (B207)', () => {
   });
 });
 
+describe('equity chart: the drawdown axis is named (B236)', () => {
+  it('names the lower scale so that "-300" is not read as a tick of the curve', () => {
+    const opt = buildEquityOption({
+      points: [
+        [1_000, 5000],
+        [2_000, 5600],
+        [3_000, 5300],
+      ],
+      tokens: new Proxy({}, { get: () => '#888' }) as never,
+      fmtValue: (v, d) => v.toFixed(d ?? 2),
+      fmtDate: () => '',
+      labels: { equity: 'Equity', drawdown: 'Drawdown' },
+    });
+    const axes = opt.yAxis as Array<{ name?: string }>;
+    expect(axes[0]!.name).toBeUndefined();
+    expect(axes[1]!.name).toBe('Drawdown');
+  });
+});
+
 describe('Volume page loads at once (B203)', () => {
   afterEach(() => {
     hoisted.store = null;

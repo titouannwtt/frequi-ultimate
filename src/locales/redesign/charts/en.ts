@@ -406,6 +406,9 @@ export default {
     },
     empty: 'No coin to reconcile',
     emptyHint: 'No live bot with a wallet was found.',
+    unavailable: 'Reconciliation unavailable',
+    unavailableHint:
+      'The wallet sweep failed: it is not known whether any coin differs. Try again above.',
     lastSweep: 'Last sweep {age} ago',
     nextIn: 'next possible in {s} s',
   },

@@ -42,6 +42,29 @@ describe('fleetKpiModel', () => {
     expect(m.capitalUnknown).toBe(3);
   });
 
+  it('the margin is unknown while the positions the bots announce are not read (B234)', () => {
+    const live = detail.totals.find((t) => t.mode === 'live')!;
+    const liveKeys = new Set(
+      detail.bots
+        .filter((b) => b.identity.mode === 'live' && b.state.status === 'online')
+        .map((b) => b.bot_key),
+    );
+    // Consistent book: every announced position is there
+    const bots = detail.bots.map((b) => ({
+      ...b,
+      state: {
+        ...b.state,
+        open_trades: detail.positions.filter((p) => p.bot_key === b.bot_key && !p.orphan).length,
+      },
+    }));
+    const whole = { ...detail, bots };
+    expect(fleetKpiModel(live, whole, FIXTURE_NOW, 0).marginPct).not.toBeNull();
+    // Positions announced, none read: not "0,0 %"
+    const unread = { ...whole, positions: whole.positions.filter((p) => !liveKeys.has(p.bot_key)) };
+    expect(liveKeys.size).toBeGreaterThan(0);
+    expect(fleetKpiModel(live, unread, FIXTURE_NOW, 0).marginPct).toBeNull();
+  });
+
   it('takes the drawdown of the block when the source gives one per mode', () => {
     const dd: DrawdownResult = {
       realized: { abs: 1, pct: 0.01, peak_ms: null, trough_ms: null, current_abs: 0 },

@@ -132,6 +132,12 @@ export function buildEquityOption(input: EquityOptionInput): EChartsOption {
         gridIndex: 1,
         splitNumber: 1,
         max: 0,
+        // The lower grid has its own scale (the distance to the high-water mark, 0 and below): its
+        // ticks sit under the curve's and read as one axis ("5 600, 5 200, -300") unless named
+        name: input.labels.drawdown,
+        nameLocation: 'end',
+        nameGap: 4,
+        nameTextStyle: { color: c.fg3, fontSize: 10, align: 'left' },
         axisLabel: {
           color: c.fg3,
           fontSize: 11,

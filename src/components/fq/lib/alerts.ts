@@ -76,6 +76,32 @@ export function alertWording(
   return { messageKey: `msg.${a.type_id}`, params };
 }
 
+/** What a raw bot message is about, when it can be told from its text. */
+export type DetailKind = 'rateLimit' | 'timeout' | 'connection' | 'traceback' | 'funds' | 'other';
+
+/**
+ * Short class of a raw bot message (English text, a Python traceback, an ftcache log line): the
+ * alert tells it in the user's language and keeps the raw text behind a toggle.
+ */
+export function detailKind(detail: string | null | undefined): DetailKind | null {
+  const d = detail?.trim();
+  if (!d) return null;
+  if (/insufficient|not enough (margin|funds|balance)/i.test(d)) return 'funds';
+  if (/\b429\b|rate.?limit|too many requests|backoff/i.test(d)) return 'rateLimit';
+  if (/time(d)?[ -]?out|CacheTimedOut/i.test(d)) return 'timeout';
+  if (/Traceback|\b\w*(Error|Exception)\b/.test(d)) return 'traceback';
+  if (/connection|network|unreachable|refused|reset by peer|socket/i.test(d)) return 'connection';
+  return 'other';
+}
+
+/**
+ * A raw message made fit to show: no em dash (the app never prints one, the bots' logs do) and no
+ * trailing blanks.
+ */
+export function plainDetail(detail: string | null | undefined): string {
+  return (detail ?? '').replace(/\s*\u2014\s*/g, ' - ').trim();
+}
+
 /** Whether the alert is about the wallet and not about one bot. */
 export function isWalletAlert(a: Pick<Alert, 'bot_key'>): boolean {
   return a.bot_key === null;
