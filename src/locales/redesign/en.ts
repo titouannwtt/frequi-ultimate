@@ -37,13 +37,13 @@ export default {
     equityOpen: 'Total capital',
     equityRealized: 'Capital without open positions',
     drawdownOpen: 'Drop from the peak',
-    pnlOpen: 'Open P&L',
+    pnlOpen: 'Open',
     realizedToday: 'Made today',
     excluded: '{n} excluded | {n} excluded',
     excludingReplay: 'Excluding replay',
     strip: '{mode} indicators',
     notSummed: 'not added to the other modes',
-    realizedEquity: 'excl. open P&L: {v}',
+    realizedEquity: 'excl. open: {v}',
     positions: '{n} position | {n} positions',
     sinceMidnight: 'since 00:00 ({tz})',
     realized30d: 'Made over 30 days',
@@ -69,19 +69,20 @@ export default {
   hint: {
     equityOpen:
       'Equity including open positions: the wallet capital with the gains and losses of positions still open.',
-    pnlOpen: 'Open P&L: gain or loss of positions still open, not yet cashed in.',
+    pnlOpen: 'Open (unrealized P&L): gain or loss of positions still open, not yet cashed in.',
     realizedToday: 'Realized today: gains and losses of the trades closed since midnight.',
     realized30d: 'Realized over 30 days: gains and losses of closed trades.',
     drawdownOpen:
       'Drawdown including open positions: gap between the current capital (open positions included) and its 30-day high.',
     margin: 'Share of the wallet margin used by the open positions.',
     col: {
-      latent: 'Open P&L: gain or loss of positions still open, not yet cashed in.',
+      latent: 'Open (unrealized P&L): gain or loss of positions still open, not yet cashed in.',
       realized_1d: 'Realized today: trades closed since midnight.',
       realized_7d: 'Realized over 7 days: closed trades.',
       realized_30d: 'Realized over 30 days: closed trades.',
       realized_total: 'Realized in total: closed trades.',
-      trades: 'Slots: open positions out of the maximum allowed for the bot.',
+      trades:
+        'Open positions out of the maximum this bot can open: one filled bar per open position.',
       drawdown: 'Drawdown / limit: drop from the peak, open positions included, and the limit set.',
       exposure: 'Exposure: amount of the open positions (notional).',
       dca: 'DCA: number of top-up orders filled.',
@@ -89,7 +90,7 @@ export default {
       duration_pct:
         'Duration compared with the closed trades of this bot (percentile): beyond P98, longer than 98 % of the trades.',
       mae_mfe: 'MAE / MFE: worst (MAE) and best (MFE) point reached during the trade.',
-      pnl_abs: 'P&L: gain or loss in USDC.',
+      pnl_abs: 'Result (P&L): gain or loss in USDC.',
     },
   },
   status: {

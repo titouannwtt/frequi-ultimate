@@ -215,3 +215,63 @@ Statuts : `corrigé` (avec commit), `corrigé par la refonte` (le code fautif di
 - **Cause** : une alerte par position a pour sujet le trade_id ; la carte n'affichait que le nom du bot, jamais la position.
 - **Correction** : `FleetAlerts.vue` résout la paire via le store des positions (`bot_key/trade_id`) et l'affiche après le bot (« bot · BTC »), sinon `#trade_id` ; le message reçoit aussi la paire.
 - **Test** : `tests/component/fq/FleetL4.spec.ts` « two alerts of one bot name their position ».
+
+## B392 - Le jargon « P&L » restait visible dans le Journal et les Réglages
+- **Symptôme** : Journal > Analyse (Renforts, Raisons, Par bot) écrivait « P&L par raison de sortie », « P&L » en tête de colonne et dans la phrase des renforts, et Réglages « Fuseau du P&L quotidien ».
+- **Cause** : libellés techniques jamais passés au glossaire ; l'en-tête de « Par bot » était écrit en dur dans `JournalPage.vue`.
+- **Correction** : « résultat » dans les introductions, la phrase et le libellé de barre (« gain » pour le fuseau quotidien), l'en-tête de « Par bot » lit `fq.col.pnl_abs`, l'anglais « Open P&L » devient « Open » comme le français « En cours ». Les infobulles gardent le terme, mais le mot simple vient d'abord (« En cours (P&L latent) : … »). Restent, car hors des écrans refondus : l'ancienne interface (`src/locales/{fr,en}.ts`, outils de stratégie, infobulles de `tradeChartData.ts`) et la page de démonstration `DesignSystemShowcase.vue`.
+- **Test** : `tests/component/fq/MinorsQa.spec.ts` (aucun « P&L » hors de `fq.hint`, mot simple en tête des infobulles, fuseau, en-tête sans « P&L » en dur), `e2e/charts-journal.spec.ts` (les trois vues d'analyse).
+
+## B393 - Ligne « inconnu » brute dans Journal > Analyse > Raisons
+- **Symptôme** : une ligne « inconnu » sans explication.
+- **Cause** : le texte de `fq.exit.unknown` était le mot brut, sans infobulle.
+- **Correction** : « Raison non enregistrée » / « Reason not recorded » (partout où la raison est nommée : filtre, fiche, carte), et l'infobulle de la ligne dit que le bot n'a pas enregistré de raison de sortie (`ExitReasonTable.vue`).
+- **Test** : `tests/component/fq/ChartsB.spec.ts` (« exit reasons: custom and unknown reasons… »), `e2e/charts-journal.spec.ts`.
+
+## B394 - Marqueurs R1/R2 écrits l'un sur l'autre sur le graphique du Bot à 1920 px
+- **Symptôme** : « R1-2 » dessiné sur « R2 », et « E » sur « R1 » quand l'entrée et un renfort tombent sur les mêmes pixels.
+- **Cause** : deux défauts. (1) `fillWords[fi] ?? tag` : la valeur `null` de « n'écrire rien » retombait sur l'étiquette propre, donc la fusion de B373 n'a jamais caché le second repère. (2) la fusion ne regardait que le temps (4 bougies) et le prix (1 %), pas la distance à l'écran : une fenêtre large tasse beaucoup de bougies dans peu de pixels.
+- **Correction** : `fillPlan` (`lib/candles.ts`) fusionne aussi les renforts proches en pixels (positions relues du graphique à chaque rendu, `CandleChart.vue`, gardées en texte pour qu'un déplacement ne redessine rien), empile d'une ligne les étiquettes qui se rencontrent encore (E puis R1), et chaque repère superposé nomme tous les autres dans son infobulle (rang, prix, quantité, coût, heure) : aucun n'est perdu derrière un autre.
+- **Test** : `tests/unit/fqBotQaLabels.spec.ts`, `tests/unit/fqChartOverlays.spec.ts` (« merged execution markers… »), captures 1920 px.
+
+## B395 - Carte de position sur téléphone : « ▮ 1/1 » et un prix sans libellé
+- **Symptôme** : à 390 px, sous « Liquidation » une barre et « 1/1 » sans mot, et sous « Entrée moy. » un prix sans nom.
+- **Cause** : sous-lignes écrites sans libellé ; de plus, pour un trade fermé la carte titrait « Sortie » au-dessus du prix d'entrée.
+- **Correction** : « Ordres ▮ 1/1 » avec une infobulle et un `aria-label` (« 1 ordre rempli sur 1 », aussi sur les barres du tableau), « Prix 12,5 » (« Sortie » pour un trade fermé) avec infobulle ; le titre est toujours « Entrée moy. ».
+- **Test** : `tests/component/fq/MinorsQa.spec.ts` (carte ouverte, carte fermée, français), `e2e/bot.spec.ts` (390 px).
+
+## B396 - Graphiques : l'annonce « Liquidation … hors écran » sur le gain et sur l'axe des prix
+- **Symptôme** : le bandeau posé sur le graphique recouvrait l'étiquette de gain et l'axe.
+- **Cause** : l'annonce était superposée au tracé, à une place fixe, sans regarder ce qui s'y trouvait.
+- **Correction** : l'annonce a sa propre ligne au-dessus du tracé (`CandleChart.vue`), jamais dessus.
+- **Test** : `tests/component/fq/ChartsFriendly.spec.ts` (hors du `.plot`), captures 1920 px.
+
+## B397 - Page Bot à 1280 px : le sous-graphique RSI disparaissait
+- **Symptôme** : « Pas la place pour 1 de plus à l'écran », RSI et volume absents.
+- **Cause** : la rangée du graphique ne valait que 320 px au minimum, soit 235 px de tracé, alors que le prix (160 px) plus un sous-graphique titré (108 px) en demandent 298.
+- **Correction** : `minHeightForSubs` donne au tracé la hauteur qu'il faut pour le premier sous-graphique choisi, la rangée du graphique passe à 410 px minimum, celle des positions à 220 px, et la grille défile (`overflow: auto`) au lieu de cacher le sous-graphique ou d'écraser les positions.
+- **Test** : `tests/unit/fqChartsFriendly.spec.ts` (le minimum est exact : un pixel de moins et le sous-graphique tombe), `e2e/bot.spec.ts` (1280 x 720).
+
+## B398 - Message « mode direct » en mode passerelle (Journal > Renforts)
+- **Symptôme** : « La source ne donne pas le nombre d'ordres remplis (mode direct) » alors que l'application lit la passerelle ; même défaut dans la note MAE/MFE de la fiche d'un trade.
+- **Cause** : phrase unique écrite pour le mode direct.
+- **Correction** : le texte suit `fqConnection.kind` : mode direct, passerelle (« La passerelle ne donne pas… ») ou neutre tant que la source n'est pas connue (`DcaDepthTable.vue`, `ClosedTradeSheet.vue`).
+- **Test** : `tests/component/fq/MinorsQa.spec.ts` (trois modes), `e2e/charts-journal.spec.ts`.
+
+## B399 - Réglages : tableau des bots limité à environ 1180 px
+- **Symptôme** : sur un écran de 1920 px le tableau s'arrêtait à 950 px de large, avec des cellules à la ligne (« Autres / bots »).
+- **Cause** : `max-width: 1200px` sur toute la page.
+- **Correction** : la page n'a plus de plafond ; les autres sections gardent 960 px, largeur de lecture d'un formulaire (`SettingsPage.vue`).
+- **Test** : `e2e/settings.spec.ts` (1920 px : le registre dépasse 1400 px, les formulaires restent sous 961 px), captures.
+
+## B400 - Flotte : colonne « Positions » dessinée en barres sans légende
+- **Symptôme** : ▮▮▮▮ sous « Positions » sans dire ce que c'est.
+- **Cause** : l'infobulle de cellule existait mais l'en-tête disait « Slots : … » (jargon) et rien n'était visible sans survol.
+- **Correction** : « 4/4 » discret à côté des barres, infobulle d'en-tête en mots (« une barre pleine par position ouverte »), infobulle de cellule inchangée (« 4 positions ouvertes sur 4 possibles »).
+- **Test** : `tests/component/fq/MinorsQa.spec.ts`, `e2e/fleet.spec.ts`, captures 1920 px.
+
+## B401 - Journal : cellules « Raison » vides sans explication
+- **Symptôme** : colonne Raison vide pour les trades sans raison enregistrée (B383 avait supprimé le mot « inconnu » sans rien mettre à la place).
+- **Cause** : cellule rendue vide.
+- **Correction** : un « – » discret avec une infobulle et un `aria-label` : « Position encore ouverte : pas encore de raison de sortie. » ou « Le bot n'a pas enregistré de raison de sortie pour ce trade. » selon le cas, dans le tableau et dans les cartes (`TradeTable.vue`).
+- **Test** : `tests/component/fq/TradeTable.spec.ts` (« unknown exit reason (B383, B401) »).

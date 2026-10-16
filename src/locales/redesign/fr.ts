@@ -69,19 +69,22 @@ export default {
   hint: {
     equityOpen:
       'Équité avec latent : le capital du wallet, gains et pertes des positions encore ouvertes compris.',
-    pnlOpen: 'P&L latent : gain ou perte des positions encore ouvertes, pas encore encaissé.',
+    pnlOpen:
+      'En cours (P&L latent) : gain ou perte des positions encore ouvertes, pas encore encaissé.',
     realizedToday: 'Réalisé du jour : gains et pertes des trades fermés depuis minuit.',
     realized30d: 'Réalisé sur 30 jours : gains et pertes des trades fermés.',
     drawdownOpen:
       'Drawdown avec latent : écart entre le capital actuel (positions comprises) et son plus haut des 30 derniers jours.',
     margin: 'Part de la marge du wallet utilisée par les positions ouvertes.',
     col: {
-      latent: 'P&L latent : gain ou perte des positions encore ouvertes, pas encore encaissé.',
+      latent:
+        'En cours (P&L latent) : gain ou perte des positions encore ouvertes, pas encore encaissé.',
       realized_1d: 'Réalisé du jour : trades fermés depuis minuit.',
       realized_7d: 'Réalisé sur 7 jours : trades fermés.',
       realized_30d: 'Réalisé sur 30 jours : trades fermés.',
       realized_total: 'Réalisé total : trades fermés.',
-      trades: 'Slots : positions ouvertes sur le maximum autorisé du bot.',
+      trades:
+        'Positions ouvertes sur le maximum que ce bot peut ouvrir : une barre pleine par position ouverte.',
       drawdown:
         'Drawdown / seuil : recul depuis le plus haut, positions comprises, et limite fixée.',
       exposure: 'Exposition : montant des positions ouvertes (notionnel).',
@@ -90,7 +93,7 @@ export default {
       duration_pct:
         'Durée comparée aux trades fermés de ce bot (percentile) : au-delà de P98, plus long que 98 % des trades.',
       mae_mfe: 'MAE / MFE : plus mauvais (MAE) et meilleur (MFE) point atteint pendant le trade.',
-      pnl_abs: 'P&L : gain ou perte en USDC.',
+      pnl_abs: 'Résultat (P&L) : gain ou perte en USDC.',
     },
   },
   status: {

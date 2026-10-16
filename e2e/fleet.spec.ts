@@ -45,6 +45,22 @@ test.describe('Fleet on a desktop', () => {
     await expect(page.locator(`tr[data-bot-key="${botKey(dry)}"]`)).toHaveCount(0);
   });
 
+  test('the Positions column says "open/max" next to its bars, and its header says what they are (B400)', async ({
+    page,
+  }) => {
+    await page.goto('/dashboard');
+    await expect(page.getByTestId('fleet-page')).toBeVisible();
+    await showEveryBot(page);
+    const cell = page.getByTestId('slots').first();
+    await expect(cell).toBeVisible();
+    await expect(page.getByTestId('slots-of').first()).toHaveText(/^\d+\/\d+$/);
+    await expect(cell).toHaveAttribute('title', /\d+ positions? open of \d+ possible/);
+    await expect(page.getByRole('columnheader', { name: 'Positions' })).toHaveAttribute(
+      'title',
+      /one filled bar per open position/,
+    );
+  });
+
   test('the All scope lists every bot and the offline one is flagged', async ({ page }) => {
     test.setTimeout(120_000);
     await page.goto('/dashboard');

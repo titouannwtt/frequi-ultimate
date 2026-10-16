@@ -35,6 +35,7 @@ function label(r: ExitRow): string {
   return r.kind === 'custom' ? (r.raws[0] ?? t('fq.exit.custom')) : t(`fq.exit.${r.kind}`);
 }
 function tip(r: ExitRow): string {
+  if (r.kind === 'unknown') return t('fq.jr.exit.unknownTip');
   return r.raws.length > 0 ? r.raws.join(', ') : t('fq.jr.exit.noRaw');
 }
 const widthOf = (r: ExitRow) =>

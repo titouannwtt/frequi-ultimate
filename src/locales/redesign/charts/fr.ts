@@ -177,7 +177,7 @@ export default {
     older: 'Plus ancien',
     trades: 'Trades',
     winrate: 'Réussite',
-    bar: 'Barre de P&L',
+    bar: 'Barre de résultat',
     tradesN: '{n} trade | {n} trades',
     empty: 'Aucun trade fermé dans cette sélection',
     emptyHint: 'Élargissez la période ou retirez un filtre.',
@@ -198,18 +198,21 @@ export default {
     },
     depth: {
       filled: 'Ordres remplis',
-      intro: "P&L par nombre d'ordres remplis.",
-      missing: "La source ne donne pas le nombre d'ordres remplis (mode direct).",
+      intro: "Résultat par nombre d'ordres remplis.",
+      missing: "La source ne donne pas le nombre d'ordres remplis.",
+      missingDirect: "La source ne donne pas le nombre d'ordres remplis (mode direct).",
+      missingGateway: "La passerelle ne donne pas le nombre d'ordres remplis pour ces trades.",
       unknown: 'Profondeur inconnue',
       sentence:
-        'À partir de {from} ordres remplis : {n} trades, réussite {deepWin} contre {shallowWin} en dessous, P&L',
+        'À partir de {from} ordres remplis : {n} trades, réussite {deepWin} contre {shallowWin} en dessous, résultat',
     },
     exit: {
       intro:
-        'P&L par raison de sortie. Une sortie forcée regroupe les sorties manuelles, marquées « manuel ».',
+        'Résultat par raison de sortie. Une sortie forcée regroupe les sorties manuelles, marquées « manuel ».',
       reason: 'Raison',
       manualN: 'manuel {n}',
       noRaw: 'pas de valeur brute',
+      unknownTip: 'Le bot n’a pas enregistré de raison de sortie pour ces trades.',
     },
     sheet: {
       closedAt: 'fermé {d}',
@@ -219,7 +222,11 @@ export default {
       exitPrice: 'Prix de sortie',
       excursions: 'Excursions (MAE / MFE)',
       maeNote:
+        'MAE et MFE sont calculés par la passerelle sur les bougies du trade ; indisponibles pour ce trade.',
+      maeNoteDirect:
         'MAE et MFE sont calculés par la passerelle sur les bougies du trade ; indisponibles en mode direct.',
+      maeNoteGateway:
+        'MAE et MFE indisponibles pour ce trade : la passerelle n’a pas pu les calculer.',
       originHuman: 'un humain (audit)',
       originForced: "forcée (auteur absent de l'audit)",
       originStrategy: 'la stratégie',

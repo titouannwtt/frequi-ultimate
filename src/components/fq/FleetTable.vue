@@ -692,6 +692,10 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
                       class="pip"
                       :class="{ on }"
                     ></i>
+                    <!-- The bars alone say nothing: the figure says how many of how many -->
+                    <span class="of num" data-testid="slots-of"
+                      >{{ item.bot.state.open_trades }}/{{ item.bot.state.max_open_trades }}</span
+                    >
                   </template>
                   <span v-else class="num">{{ item.bot.state.open_trades }}</span>
                 </div>
@@ -1001,6 +1005,11 @@ tr.grp td {
 }
 .slots {
   gap: 3px;
+}
+.slots .of {
+  margin-left: 4px;
+  font-size: var(--t-xs);
+  color: var(--fg-3);
 }
 .hbtn {
   display: inline-flex;

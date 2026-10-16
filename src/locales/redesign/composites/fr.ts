@@ -284,6 +284,11 @@ export default {
     marketHip3: 'Actions, matières',
     dur: { ok: 'habituel', warn: 'long', crit: 'plus long que d’habitude' },
     durHint: 'Plus long que {p} % des trades fermés de ce bot',
+    ordersShort: 'Ordres',
+    priceNow: 'Prix actuel',
+    priceExit: 'Prix de sortie',
+    noReasonOpen: 'Position encore ouverte : pas encore de raison de sortie.',
+    noReasonClosed: 'Le bot n’a pas enregistré de raison de sortie pour ce trade.',
     awaitingHint: 'Les bots sont lus un par un : la liste se complète au fil de leurs réponses.',
     awaitingMore:
       '{n} autre position annoncée, lecture en cours | {n} autres positions annoncées, lecture en cours',
@@ -311,7 +316,7 @@ export default {
     emergency_exit: 'Sortie d’urgence',
     external: 'Fermeture externe',
     custom: 'Personnalisée',
-    unknown: 'inconnu',
+    unknown: 'Raison non enregistrée',
   },
   drawer: {
     facts: 'Faits du trade',

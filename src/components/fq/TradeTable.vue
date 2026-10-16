@@ -681,6 +681,15 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
           :title="row.exitReason.raw ?? ''"
           >{{ t(`fq.exit.${row.exitReason.kind}`) }}</span
         >
+        <span
+          v-else
+          class="dim"
+          role="img"
+          :title="t(row.open ? 'fq.trade.noReasonOpen' : 'fq.trade.noReasonClosed')"
+          :aria-label="t(row.open ? 'fq.trade.noReasonOpen' : 'fq.trade.noReasonClosed')"
+          data-testid="exit-reason-none"
+          >–</span
+        >
       </template>
       <template #cell-closed_at="{ row }">{{ dateOf(row.closeMs) }}</template>
       <template #cell-mae_mfe="{ row }">

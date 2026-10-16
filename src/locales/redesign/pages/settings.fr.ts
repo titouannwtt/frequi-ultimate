@@ -126,7 +126,7 @@ export default {
       'Aérée (par défaut) est plus lisible ; compacte montre plus de lignes. Sur un écran tactile, la densité reste aérée.',
     airy: 'Aérée',
     compact: 'Compacte',
-    tz: 'Fuseau du P&L quotidien',
+    tz: 'Fuseau du gain quotidien',
     tzHint: 'Il coupe les jours, semaines et mois. Partagé entre vos appareils par la passerelle.',
     paris: 'Europe/Paris',
     cvd: 'Palette daltonien',
