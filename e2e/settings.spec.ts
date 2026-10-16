@@ -147,3 +147,27 @@ test('on a phone the page does not scroll sideways (B321)', async ({ page }) => 
     .evaluate((el) => el.scrollWidth - el.clientWidth);
   expect(wrap).toBeLessThanOrEqual(0);
 });
+
+test('on a wide screen the bots table uses the room the page has (B399)', async ({ page }) => {
+  await defaultMocks(page);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'ftAuthLoginInfo',
+      JSON.stringify({
+        'ftbot.0': { botName: 'B', apiUrl: location.origin, accessToken: 'a', refreshToken: 'b' },
+      }),
+    ),
+  );
+  await page.goto('/settings');
+  const registry = page.getByTestId('bot-registry');
+  await expect(registry).toContainText('B');
+  // The page used to stop at 1200 px, the table at about 950
+  const width = await registry.evaluate((el) => el.getBoundingClientRect().width);
+  expect(width).toBeGreaterThan(1400);
+  // The forms below keep a width a line can be read at
+  const display = await page
+    .locator('[data-section="display"]')
+    .evaluate((el) => el.getBoundingClientRect().width);
+  expect(display).toBeLessThanOrEqual(961);
+});
