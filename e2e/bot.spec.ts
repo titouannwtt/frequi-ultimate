@@ -23,8 +23,45 @@ test.describe('Bot page on a desktop', () => {
     const header = page.getByTestId('bot-header');
     await expect(header).toContainText(bot.name);
     await expect(header).toContainText(/live/i);
-    await expect(page.getByTestId('pair-navigator')).toBeVisible();
+    // The positions are listed once, by the Positions tab: no second list beside the chart
+    await expect(page.getByTestId('pair-navigator')).toHaveCount(0);
     await expect(page.getByTestId('bot-page').locator('tbody tr.act').first()).toBeVisible();
+  });
+
+  test('the header has one action and four figures; the rest is in the More menu', async ({
+    page,
+  }) => {
+    await page.goto(`/bot/${botKey(liveBot())}`);
+    const header = page.getByTestId('bot-header');
+    await expect(header.locator('.bar [data-action]')).toHaveCount(2);
+    await expect(header.locator('button[data-action="pause"]')).toBeVisible();
+    await expect(header.locator('button[data-action="exitAll"]')).toHaveCount(0);
+    await expect(header.locator('.kpi')).toHaveCount(4);
+    await header.locator('button[data-action="more"]').click();
+    const menu = page.getByRole('menu');
+    for (const name of [/Reload the config/, /See the config/, /Forced entry/]) {
+      await expect(menu.getByRole('menuitem', { name })).toBeVisible();
+    }
+    // Sensitive actions come last, under their own heading
+    await expect(menu.getByText('Sensitive actions')).toBeVisible();
+    const items = await menu.getByRole('menuitem').allInnerTexts();
+    expect(items.slice(-2).map((t) => t.trim())).toEqual(['Exit all…', 'Stop the bot…']);
+    // The port and the exchange moved here from the header line
+    await expect(menu).toContainText(`port ${liveBot().port}`);
+    await expect(header.getByTestId('bot-meta')).not.toContainText('port');
+  });
+
+  test('three tabs and a More menu, and the chart offers four timeframes', async ({ page }) => {
+    await page.goto(`/bot/${botKey(liveBot())}`);
+    const page_ = page.getByTestId('bot-page');
+    await expect(page_.getByRole('tab')).toHaveText([/Positions/, /History/, /Performance/]);
+    await page_.getByTestId('bot-tabs-more').click();
+    await page.getByRole('menuitem', { name: 'Logs' }).click();
+    await expect(page_.getByRole('tab', { selected: true })).toHaveText(/Logs/);
+    await expect(page).toHaveURL(/tab=logs/);
+    expect(
+      await page_.getByRole('radiogroup', { name: 'Timeframe' }).getByRole('radio').count(),
+    ).toBeLessThanOrEqual(5);
   });
 
   test('a position opens the trade drawer, docked, with its exit and add foot', async ({
@@ -39,7 +76,14 @@ test.describe('Bot page on a desktop', () => {
     await expect(drawer.getByTestId('drawer-target')).toContainText(bot.name);
     await expect(drawer.locator('button[data-action="exit"]')).toBeVisible();
     await expect(drawer.locator('button[data-action="add"]')).toBeVisible();
-    await expect(page.getByTestId('trade-drawer-body')).toContainText('Top-up ladder');
+    // Three sentences, each with its distance, and the top-up bar
+    const body = page.getByTestId('trade-drawer-body');
+    await expect(body.locator('[data-sentence="target"]')).toBeVisible();
+    await expect(body.locator('[data-sentence="refill"]')).toBeVisible();
+    await expect(body.locator('[data-sentence="liq"]')).toContainText(/Liquidation/);
+    await expect(body.getByTestId('drawer-refills')).toContainText('Top-ups used');
+    // The share to exit is chosen in the confirmation, not in the foot
+    await expect(drawer.getByRole('radio')).toHaveCount(0);
   });
 
   test('the last bot opened is where the Bot tab leads', async ({ page }) => {
@@ -57,6 +101,20 @@ test.describe('Bot page on a phone', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'isMobile is Chromium only');
   test.beforeEach(async ({ context }) => {
     await seed(context);
+  });
+
+  test('two action tiles and four figures in two columns, no overflow', async ({ page }) => {
+    await page.goto(`/bot/${botKey(liveBot())}`);
+    await expect(page.getByTestId('bot-page')).toBeVisible();
+    const tiles = page.locator('.tiles .tile');
+    await expect(tiles).toHaveCount(2);
+    await expect(tiles.first()).toHaveAttribute('data-action', 'pause');
+    await expect(tiles.last()).toHaveAttribute('data-action', 'more');
+    await expect(page.getByTestId('bot-header').locator('.kpi')).toHaveCount(4);
+    // "Exit all" stays at the foot of the page and in the More menu, never among the tiles
+    await expect(page.locator('.tiles button[data-action="exitAll"]')).toHaveCount(0);
+    await expect(page.getByTestId('sensitive-actions')).toBeAttached();
+    expect(await noHorizontalOverflow(page)).toBe(true);
   });
 
   test('lists positions as cards and opens the drawer as a bottom sheet', async ({ page }) => {

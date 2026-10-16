@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { AdaptiveSheet, EmptyState } from '@/components/ds';
@@ -49,7 +49,6 @@ const own = useTradeOrders(
 );
 const ladder = computed(() => props.orders ?? own.model.value?.ladder);
 const ladderLoading = computed(() => props.orders === undefined && own.loading.value);
-const fraction = ref(1);
 const title = computed(() =>
   position.value ? `${pairLabel(position.value.pair)} #${props.tradeId}` : `#${props.tradeId}`,
 );
@@ -75,11 +74,7 @@ const title = computed(() =>
       />
     </div>
     <footer v-if="position" class="sticky">
-      <TradeDrawerFoot
-        v-model="fraction"
-        :position="position"
-        @navigate="(id) => emit('navigate', id)"
-      />
+      <TradeDrawerFoot :position="position" @navigate="(id) => emit('navigate', id)" />
     </footer>
   </aside>
   <AdaptiveSheet v-else :open="open" :title="title" :inline="inline" @close="emit('close')">
@@ -101,11 +96,7 @@ const title = computed(() =>
       />
     </div>
     <template v-if="position" #footer>
-      <TradeDrawerFoot
-        v-model="fraction"
-        :position="position"
-        @navigate="(id) => emit('navigate', id)"
-      />
+      <TradeDrawerFoot :position="position" @navigate="(id) => emit('navigate', id)" />
     </template>
   </AdaptiveSheet>
 </template>

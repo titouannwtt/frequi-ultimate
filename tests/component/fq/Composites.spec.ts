@@ -1,3 +1,4 @@
+import { DOMWrapper, type VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 
@@ -24,6 +25,18 @@ beforeEach(() => {
 });
 afterEach(teardownWorld);
 
+/** Open the "More" menu of a header or action bar and return its items (it opens in <body>). */
+async function openMore(w: VueWrapper<any>) {
+  await w.get('[data-action=more]').trigger('click');
+  await nextTick();
+  await nextTick();
+  const all = () => Array.from(document.body.querySelectorAll<HTMLElement>('[role=menuitem]'));
+  return {
+    all,
+    item: (re: RegExp) => new DOMWrapper(all().find((i) => re.test(i.textContent ?? ''))!),
+  };
+}
+
 describe('BotHeader', () => {
   const header = (bot: BotRow) =>
     mountFq(BotHeader, {
@@ -40,10 +53,43 @@ describe('BotHeader', () => {
     expect(w.text()).toContain('Live');
     expect(w.find('[class*=banner]').exists()).toBe(false);
     expect(w.get('[data-action=pause]').attributes('aria-disabled')).toBeUndefined();
-    expect(w.get('[data-action=exitAll]').attributes('aria-disabled')).toBeUndefined();
+    // One visible action and a "More" menu: Reload, Config and Exit all are not on the bar
+    expect(w.findAll('.bar [data-action]').map((b) => b.attributes('data-action'))).toEqual([
+      'pause',
+      'more',
+    ]);
+    expect(w.find('[data-action=exitAll]').exists()).toBe(false);
   });
 
-  it('exposure not read yet shows the loading icon, never a flat "0 / 0" (B198)', () => {
+  it('the More menu: everyday actions, the information, then Exit all and Stop apart', async () => {
+    const bot = bots(
+      (b) => b.identity.mode === 'live' && b.state.status === 'online' && !b.freshness.state?.stale,
+    );
+    const w = header(bot);
+    const menu = await openMore(w);
+    const labels = menu.all().map((i) => i.textContent?.trim());
+    expect(labels).toEqual([
+      'Resume entries',
+      'Reload the config',
+      'See the config',
+      'Forced entry…',
+      'Dry replay',
+      'Exit all…',
+      'Stop the bot…',
+    ]);
+    const text = document.body.textContent ?? '';
+    // The port, the exchange and the age moved here from the header
+    expect(text).toContain(`port ${bot.identity.port}`);
+    expect(text.indexOf('Sensitive actions')).toBeGreaterThan(
+      text.indexOf(`port ${bot.identity.port}`),
+    );
+    expect(text.indexOf('Sensitive actions')).toBeLessThan(text.indexOf('Exit all'));
+    expect(menu.item(/Exit all/).attributes('aria-disabled')).toBeUndefined();
+    // The header no longer carries the port: the meta line is strategy, timeframe, uptime
+    expect(w.get('[data-testid=bot-meta]').text()).not.toContain('port');
+  });
+
+  it('exposure not read yet is not invented, the exposure is read once the book is known (B198)', () => {
     const bot = bots((b) => b.identity.mode === 'live' && b.state.status === 'online');
     const unread = {
       ...bot,
@@ -53,32 +99,33 @@ describe('BotHeader', () => {
     const tile = w
       .get('[data-testid=bot-header]')
       .findAll('.kpi')
-      .find((e) => e.text().startsWith('Exposure'))!;
+      .find((e) => e.text().startsWith('Bot capital'))!;
     expect(tile).toBeDefined();
-    // The figure is a spinner (an unread position book is not a flat one), no word in its place
-    expect(tile.find('.v [data-state="pending"]').exists()).toBe(true);
-    expect(tile.get('.v').text()).toBe('');
-    expect(w.text()).not.toMatch(/not read yet|0\s*\/\s*0/);
+    // Four figures in the header; the exposure is the line under the capital
+    expect(w.get('[data-testid=bot-header]').findAll('.kpi')).toHaveLength(4);
+    // An unread position book is not a flat one: no "exposed 0 (long 0, short 0)" is invented
+    expect(tile.find('.s').exists() ? tile.get('.s').text() : '').not.toMatch(/exposed/);
+    expect(w.text()).not.toMatch(/not read yet|0\s*\/\s*0|exposed 0/);
   });
 
-  it('an offline bot: frozen values, banner telling NOT to restart it, every action disabled with the reason', () => {
+  it('an offline bot: frozen values, banner telling NOT to restart it, every action disabled with the reason', async () => {
     const bot = bots((b) => b.state.status === 'offline');
     const w = header(bot);
     const text = w.text();
     expect(text).toMatch(/offline/i);
     expect(text).toMatch(/frozen|figées/i);
-    for (const id of ['pause', 'reload', 'exitAll']) {
-      const btn = w.get(`[data-action=${id}]`);
-      expect(btn.attributes('aria-disabled')).toBe('true');
-      expect(btn.attributes('title')).toBeTruthy();
+    const pause = w.get('[data-action=pause]');
+    expect(pause.attributes('aria-disabled')).toBe('true');
+    expect(pause.attributes('title')).toBeTruthy();
+    const menu = await openMore(w);
+    for (const re of [/Resume/, /Reload/, /Exit all/, /Stop the bot/]) {
+      const item = menu.item(re);
+      expect(item.attributes('aria-disabled')).toBe('true');
+      expect(item.attributes('title')).toBeTruthy();
     }
-    // A click on a disabled danger button opens nothing
-    return w
-      .get('[data-action=exitAll]')
-      .trigger('click')
-      .then(() => {
-        expect(useActionDialog().current.value).toBeNull();
-      });
+    // A click on a disabled danger item opens nothing
+    await menu.item(/Exit all/).trigger('click');
+    expect(useActionDialog().current.value).toBeNull();
   });
 
   it('an expired session: banner with a reconnect button, actions disabled, nothing replayed', async () => {
@@ -91,19 +138,23 @@ describe('BotHeader', () => {
     expect(world.fake.acts).toHaveLength(0);
   });
 
-  it('a starting bot and a stopped bot are told apart and not actionable', () => {
+  it('a starting bot and a stopped bot are told apart and not actionable', async () => {
     const starting = header(bots((b) => b.state.status === 'starting'));
     expect(starting.text()).toMatch(/starting/i);
     expect(starting.get('[data-action=pause]').attributes('aria-disabled')).toBe('true');
+    // B300: the word was said twice ("Starting starting 0 min")
+    expect(starting.text()).not.toMatch(/starting\s+starting/i);
+    expect(starting.text()).toMatch(/Starting for \d+ min\./);
     const stopped = header(bots((b) => b.state.status === 'stopped'));
     expect(stopped.text()).toMatch(/stopped/i);
-    expect(stopped.get('[data-action=reload]').attributes('aria-disabled')).toBe('true');
+    const menu = await openMore(stopped);
+    expect(menu.item(/Reload/).attributes('aria-disabled')).toBe('true');
   });
 
   it('unknown values stay unknown: no zero is invented for capital or drawdown', () => {
     const bot = bots((b) => b.metrics.starting_capital == null);
     const w = header(bot);
-    const capital = w.findAll('.kpi').find((e) => e.text().startsWith('Capital'))!;
+    const capital = w.findAll('.kpi').find((e) => e.text().startsWith('Bot capital'))!;
     expect(capital.get('.v').text()).toBe('');
     expect(capital.get('.v [data-state="unavailable"]').attributes('aria-label')).toBe(
       'Starting capital unknown',
@@ -116,7 +167,8 @@ describe('BotHeader', () => {
       (b) => b.identity.mode === 'live' && b.state.status === 'online' && !b.freshness.state?.stale,
     );
     const w = header(bot);
-    await w.get('[data-action=exitAll]').trigger('click');
+    const menu = await openMore(w);
+    await menu.item(/Exit all/).trigger('click');
     expect(useActionDialog().current.value).toMatchObject({
       botKey: bot.bot_key,
       action: { kind: 'forceexit', tradeId: 'all' },
@@ -159,7 +211,8 @@ describe('BotActionBar', () => {
       props: { botKey: bot.bot_key, context: 'header' },
       attachTo: document.body,
     });
-    await w.get('[data-action=config]').trigger('click');
+    const menu = await openMore(w);
+    await menu.item(/See the config/).trigger('click');
     expect(w.emitted('navigate')![0]).toEqual(['config']);
     expect(useActionDialog().current.value).toBeNull();
   });
@@ -229,25 +282,16 @@ describe('TradeDrawer', () => {
     expect(w.find('[data-action=reconcile]').exists()).toBe(true);
   });
 
-  it('the share under 10 USDC is flagged and the minimum is displayed', async () => {
+  it('the foot has no share choice: it is made in the exit confirmation, and 100 % by default', async () => {
     const p = world.fixture.positions.find((x) => !x.orphan)!;
-    useFqPositionsStore().apply({
-      kind: 'delta',
-      seq: 3,
-      ts: FIXTURE_NOW,
-      replace: [],
-      upsert: { positions: { [`${p.bot_key}/${p.trade_id}`]: { ...p, notional: 30 } } },
-      remove: {},
-    } as never);
     const w = mountFq(TradeDrawer, {
       props: { botKey: p.bot_key, tradeId: p.trade_id, docked: true },
       attachTo: document.body,
     });
     await nextTick();
-    expect(w.text()).toContain('10');
-    const quarter = w.findAll('button').find((b) => b.text().trim() === '25 %')!;
-    await quarter.trigger('click');
-    expect(w.get('.amt').classes()).toContain('warn');
+    expect(w.findAll('button').some((b) => /^\d+ %$/.test(b.text().trim()))).toBe(false);
+    expect(w.text()).not.toMatch(/min\. 10 USDC/);
+    expect(w.find('[data-action=exit]').exists()).toBe(true);
   });
 });
 

@@ -3,8 +3,6 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import {
-  AgeBadge,
-  Badge,
   Banner,
   DsIcon,
   IconBtn,
@@ -12,12 +10,10 @@ import {
   KpiTile,
   ModeMark,
   PnlValue,
-  SplitBar,
   StatusDot,
 } from '@/components/ds';
 import type { KpiMeter } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
-import { DIGEST_STALE_MS } from '@/datasource/calc/freshness';
 import { ruleMeta } from '@/datasource/calc/alerts/rules';
 import { useValueSlot } from '@/composables/useValueSlot';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
@@ -31,8 +27,10 @@ import { formatClockSeconds } from './lib/time';
 import { botSlot, READY, type Slot, type SlotReason } from './lib/valueState';
 
 /**
- * Header of the Bot page (02 section 3.2): previous and next bot, the state dot, the name, the
- * full LIVE badge, the market badge, the meta line, the six KPIs of the bot and the actions. The
+ * Header of the Bot page (02 section 3.2, 05 section 2.4): previous and next bot, the state dot,
+ * the name, the full LIVE badge, ONE meta line (strategy, timeframe, uptime; the port, the exchange
+ * and the age of the data are in the "More" menu), the four KPIs of the bot and the actions (Pause
+ * entries and "More"). The
  * state banners say what is wrong without a second page: session expired (Reconnect), starting
  * (no offline alert for 20 minutes), offline (values frozen, "do not relaunch a bot only to close
  * a position"), stopped (orphan ledger, read only).
@@ -78,6 +76,27 @@ const exposureSlot = computed(() =>
   slotOf('positions', m.value.exposure_long ?? m.value.exposure_short),
 );
 const exposureKnown = computed(() => exposureSlot.value.state === 'ready');
+/** Under the capital: how much of it is exposed, long and short (unread positions: nothing). */
+const exposedSub = computed(() =>
+  exposureKnown.value
+    ? t('fq.pg.bot.kpi.exposed', {
+        total: fmt.number((m.value.exposure_long ?? 0) + (m.value.exposure_short ?? 0), 0),
+        long: fmt.number(m.value.exposure_long ?? 0, 0),
+        short: fmt.number(m.value.exposure_short ?? 0, 0),
+      })
+    : undefined,
+);
+/** Under the 30 days: today's gain and the share of winning trades, whichever is known. */
+const realizedSub = computed(() => {
+  const parts: string[] = [];
+  if (m.value.realized_1d != null) {
+    parts.push(t('fq.pg.bot.kpi.today', { v: fmt.signed(m.value.realized_1d, 2) }));
+  }
+  if (m.value.winrate != null) {
+    parts.push(t('fq.pg.bot.kpi.winners', { n: fmt.percent(m.value.winrate * 100, 0, false) }));
+  }
+  return parts.join(' · ');
+});
 const ddSlot = computed<Slot>(() =>
   latentSlot.value.state !== 'ready'
     ? latentSlot.value
@@ -92,6 +111,13 @@ const marketLabel = computed(() => {
   if (k === 'crypto') return t('fq.header.market.crypto');
   if (k === 'mixed') return t('fq.header.market.mixed');
   return t('fq.header.market.hip3');
+});
+
+/** "15m" as "15 min", "1h" as "1 h": the unit in words, the raw code stays in the tooltip. */
+const tfText = computed(() => {
+  const tf = props.bot.identity.timeframe;
+  const m = tf ? /^(\d+)([mhdw])$/.exec(tf) : null;
+  return m ? `${m[1]} ${t(`fq.pg.bot.tfUnit.${m[2]}`)}` : (tf ?? '');
 });
 
 const uptime = computed(() => {
@@ -151,15 +177,14 @@ const stateSince = computed(
       <StatusDot :state="state" />
       <h1 class="name" :title="bot.identity.name">{{ bot.identity.name }}</h1>
       <ModeMark :mode="bot.identity.mode" full />
-      <Badge v-if="bot.identity.market !== 'crypto'" kind="xyz" :label="marketLabel" />
       <IconBtn icon="chevron-down" :label="t('fq.header.pick')" @click="emit('selectBot')" />
-      <div class="meta">
-        <span v-if="bot.identity.strategy">{{ bot.identity.strategy }}</span>
-        <span v-if="bot.identity.exchange">{{ bot.identity.exchange }}</span>
-        <span v-if="bot.identity.port !== null">{{
-          t('fq.header.port', { port: bot.identity.port })
+      <div class="meta" data-testid="bot-meta">
+        <span v-if="bot.identity.strategy" :title="bot.identity.strategy">{{
+          bot.identity.strategy
         }}</span>
-        <span v-if="state === 'online' && uptime">{{ t('fq.header.uptime', { d: uptime }) }}</span>
+        <span v-if="bot.identity.timeframe" :title="bot.identity.timeframe">{{ tfText }}</span>
+        <span v-if="bot.identity.market !== 'crypto'">{{ marketLabel }}</span>
+        <span v-if="state === 'online' && uptime">{{ t('fq.pg.bot.since', { d: uptime }) }}</span>
         <span v-if="bot.identity.mode === 'dry' && bot.state.first_real_trade_ms">
           {{
             t('fq.origin.since', {
@@ -170,13 +195,6 @@ const stateSince = computed(
             })
           }}
         </span>
-        <AgeBadge
-          v-if="bot.freshness.state"
-          :as-of-ms="bot.freshness.state.as_of_ms"
-          :stale-after-ms="DIGEST_STALE_MS"
-          :clock-skew-ms="skew"
-          :now-ms="now"
-        />
       </div>
       <div class="actions">
         <BotActionBar
@@ -198,16 +216,8 @@ const stateSince = computed(
           ><PnlValue :value="m.open_profit_abs" :muted="stale('positions')" :flash="true"
         /></template>
         <template #sub>{{
-          t('fq.header.openTrades', { n: bot.state.open_trades }, bot.state.open_trades)
+          t('fq.pg.bot.kpi.onPositions', { n: bot.state.open_trades }, bot.state.open_trades)
         }}</template>
-      </KpiTile>
-      <KpiTile
-        :label="t('fq.kpi.realizedToday')"
-        :hint="t('fq.hint.realizedToday')"
-        :short-label="t('fq.kpiShort.realizedToday')"
-        v-bind="vs(slotOf('metrics', m.realized_1d), key('d1'))"
-      >
-        <template #value><PnlValue :value="m.realized_1d" :muted="stale('metrics')" /></template>
       </KpiTile>
       <KpiTile
         :label="t('fq.kpi.realized30d')"
@@ -218,39 +228,15 @@ const stateSince = computed(
         <template #value
           ><PnlValue :value="m.realized_30d" :decimals="0" :muted="stale('metrics')"
         /></template>
-        <template #sub>{{
-          m.winrate === null
-            ? ''
-            : t('fq.header.winrate', { n: fmt.percent(m.winrate * 100, 0, false) })
-        }}</template>
+        <template #sub>{{ realizedSub }}</template>
       </KpiTile>
       <KpiTile
-        :label="t('fq.col.capital')"
+        :label="t('fq.pg.bot.kpi.capital')"
+        :short-label="t('fq.pg.bot.kpi.capitalShort')"
         :value="fmt.number(m.starting_capital ?? 0, 0)"
-        :sub="t('fq.header.capitalNote')"
+        :sub="exposedSub"
         v-bind="vs(slotOf('capital', m.starting_capital, { settled: 'capital' }), key('capital'))"
       />
-      <KpiTile
-        :label="t('fq.header.exposure')"
-        :sub="
-          exposureKnown
-            ? t('fq.header.net', {
-                n: fmt.signed((m.exposure_long ?? 0) - (m.exposure_short ?? 0), 0),
-              })
-            : undefined
-        "
-        v-bind="vs(exposureSlot, key('exposure'))"
-      >
-        <template #value
-          >{{ fmt.number(m.exposure_long ?? 0, 0) }} /
-          {{ fmt.number(m.exposure_short ?? 0, 0) }}</template
-        >
-        <SplitBar
-          v-if="exposureKnown"
-          :long="m.exposure_long ?? 0"
-          :short="m.exposure_short ?? 0"
-        />
-      </KpiTile>
       <KpiTile
         :label="t('fq.kpi.drawdownOpen')"
         :hint="t('fq.hint.drawdownOpen')"
@@ -285,7 +271,7 @@ const stateSince = computed(
       <b>{{ t('fq.status.sessionExpired') }}.</b> {{ t('fq.banner.authBody') }}
     </Banner>
     <Banner v-else-if="state === 'starting'" kind="starting">
-      <b>{{ t('fq.status.starting') }}</b> {{ t('fq.fleet.state.starting', { n: stateSince }) }}.
+      <b>{{ t('fq.status.starting') }}</b> {{ t('fq.pg.bot.startingFor', { n: stateSince }) }}
       {{ t('fq.banner.startingBody') }}
     </Banner>
     <Banner v-else-if="state === 'offline'" kind="offline">
@@ -326,13 +312,16 @@ const stateSince = computed(
   overflow-wrap: anywhere;
 }
 .meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
   color: var(--fg-3);
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.meta > span + span::before {
+  content: '·';
+  margin: 0 6px;
 }
 .actions {
   margin-left: auto;
