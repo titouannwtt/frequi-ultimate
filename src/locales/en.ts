@@ -635,6 +635,14 @@ export default {
   },
 
   configEditor: {
+    liveBadge: 'LIVE',
+    unset: '(not set)',
+    reviewTitle: 'Review the changes',
+    reviewIntro:
+      'These changes will be written to {file}. Nothing is applied to the running bot until you reload it.',
+    reviewLive: 'This is a live bot with real money. A wrong value is applied at the next reload.',
+    reviewType: 'Type the name of the bot ({name}) to confirm',
+    reviewConfirm: 'Write the file',
     title: 'Edit configuration',
     loading: 'Loading configuration…',
     unsupportedTitle: 'Backend not supported',

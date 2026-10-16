@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core';
-import { computed, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -8,12 +8,14 @@ import { Btn, EmptyState, Pane, SegmentedControl, Skeleton, Tabs } from '@/compo
 import type { TabItem } from '@/components/ds';
 import {
   AlertRail,
+  BotActionBar,
   BotHeader,
   CandleChart,
   EquityCurve,
   Leaderboard,
   LogStream,
   PairNavigator,
+  PairlistPanel,
   TradeDrawer,
   TradeTable,
 } from '@/components/fq';
@@ -24,8 +26,9 @@ import { knownProfit } from '@/components/fq/lib/journal';
 import type { LeaderboardItem } from '@/components/fq/lib/leaderboard';
 import type { PairFilter, PairItem } from '@/components/fq/lib/pairs';
 import { pairLabel } from '@/components/fq/lib/trades';
-import { requestAction } from '@/composables/useActionDialog';
+import { requestAction, toastRefusal } from '@/composables/useActionDialog';
 import { useActionNav } from '@/composables/useActionNav';
+import { useBotConfigEditorStore } from '@/stores/botConfigEditorStore';
 import { useCommandPalette } from '@/composables/useCommandPalette';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useTradeOrders } from '@/composables/useTradeOrders';
@@ -52,6 +55,13 @@ const prefs = useFqPrefsStore();
 const data = useDataSource();
 const palette = useCommandPalette();
 const nav = useActionNav();
+
+// The per-bot config editor is the legacy modal (Python endpoints), loaded on first use
+const BotConfigEditorModal = defineAsyncComponent(
+  () => import('@/components/ftbot/configEditor/BotConfigEditorModal.vue'),
+);
+const configEditor = useBotConfigEditorStore();
+const editorUsed = ref(false);
 
 const desktop = useMediaQuery('(min-width: 1024px)');
 const phone = useMediaQuery('(max-width: 599px)');
@@ -125,20 +135,45 @@ const worst = computed(
       .slice()
       .sort((a, b) => (a.profit_abs ?? Infinity) - (b.profit_abs ?? Infinity))[0] ?? null,
 );
+/**
+ * The chosen trade, else the worst one only when nothing was chosen. A chosen trade that has
+ * since closed (or left the snapshot) must NOT fall back on another one: the drawer carries the
+ * exit and add buttons, and a hold on a trade the user did not pick would act on it.
+ */
 const position = computed(() => {
   const id = selectedTradeId.value;
-  const picked = id === null ? null : positionsStore.get(botKey.value, id);
-  return picked ?? worst.value;
+  if (id === null) return worst.value;
+  return positionsStore.get(botKey.value, id) ?? null;
 });
+const tradeGone = computed(() => selectedTradeId.value !== null && position.value === null);
 const tradeId = computed(() => position.value?.trade_id ?? null);
 
 const queryPair = computed(() => (route.query.pair ? String(route.query.pair) : null));
 const pickedPair = ref<string | null>(null);
 watch(queryPair, (v) => v && (pickedPair.value = v), { immediate: true });
 watch(botKey, () => (pickedPair.value = queryPair.value));
-const pair = computed(() => pickedPair.value ?? position.value?.pair ?? null);
+// The pair of the trade being shown, kept when that trade closes so the chart does not blank
+const lastPair = ref<string | null>(null);
+watch(
+  () => position.value?.pair ?? null,
+  (v) => v && (lastPair.value = v),
+  { immediate: true },
+);
+watch(botKey, () => (lastPair.value = null));
+const pair = computed(
+  () => pickedPair.value ?? position.value?.pair ?? (tradeGone.value ? lastPair.value : null),
+);
 
 const sheetOpen = ref(false);
+/** J and K move the selected row: the key is `<bot_key>/<trade_id>` and a bot key holds slashes. */
+function moveSelection(key: string | null) {
+  if (!key) return;
+  const i = key.lastIndexOf('/');
+  const id = Number(key.slice(i + 1));
+  if (key.slice(0, i) !== botKey.value || !Number.isInteger(id)) return;
+  selectedTradeId.value = id;
+  pickedPair.value = null;
+}
 function selectTrade(_k: string, id: number) {
   selectedTradeId.value = id;
   pickedPair.value = null;
@@ -149,6 +184,8 @@ watch(
   (v) => v && !desktop.value && (sheetOpen.value = true),
   { immediate: true },
 );
+// The phone sheet must not stay open (and reopen later) on a trade that is gone
+watch(tradeGone, (gone) => gone && (sheetOpen.value = false));
 
 // ---- pairs ----
 const pairFilter = ref<PairFilter>('positions');
@@ -168,7 +205,7 @@ function onPairSelect(item: PairItem) {
 function liftLock(item: PairItem) {
   if (item.lockId === null) return;
   // A lock removal mutates the bot: it goes through the same confirmation as every action
-  requestAction(botKey.value, { kind: 'lock_delete', lockId: item.lockId });
+  toastRefusal(requestAction(botKey.value, { kind: 'lock_delete', lockId: item.lockId }));
 }
 
 // ---- chart ----
@@ -267,6 +304,12 @@ useShortcuts([
 
 const header = ref<HTMLElement | null>(null);
 const unknownBot = computed(() => fleet.loaded && !bot.value);
+function editConfig() {
+  const b = bot.value;
+  if (!b) return;
+  editorUsed.value = true;
+  void configEditor.open(b.bot_key, b.identity.name, b.identity.mode);
+}
 const configRows = computed(() => {
   const b = bot.value;
   if (!b) return [];
@@ -289,6 +332,7 @@ const configRows = computed(() => {
         :bot="bot"
         :can-prev="prevKey !== null"
         :can-next="nextKey !== null"
+        :split-sensitive="phone"
         @prev="goBot(prevKey)"
         @next="goBot(nextKey)"
         @select-bot="palette.show()"
@@ -353,6 +397,7 @@ const configRows = computed(() => {
                 :bot-key="botKey"
                 :selected-key="position ? `${position.bot_key}/${position.trade_id}` : null"
                 shortcuts
+                @update:selected-key="moveSelection"
                 hide-filters
                 @open="selectTrade"
                 @navigate="
@@ -410,6 +455,7 @@ const configRows = computed(() => {
                 @select="onPairSelect"
                 @lift-lock="liftLock"
               />
+              <PairlistPanel :bot-key="botKey" />
             </template>
             <template v-else-if="tab === 'logs'">
               <LogStream mode="compact" :bot="botKey" :limit="80" />
@@ -421,7 +467,12 @@ const configRows = computed(() => {
                   <dd>{{ v ?? t('fq.ds.notAvailable') }}</dd>
                 </template>
               </dl>
-              <p class="note">{{ t('fq.pg.bot.config.editLater') }}</p>
+              <p class="note">{{ t('fq.pg.bot.config.editHint') }}</p>
+              <p class="more">
+                <Btn size="sm" icon="settings" data-testid="bot-config-edit" @click="editConfig">{{
+                  t('fq.pg.bot.config.edit')
+                }}</Btn>
+              </p>
             </template>
           </div>
         </section>
@@ -444,7 +495,11 @@ const configRows = computed(() => {
             "
           />
           <Pane v-else-if="desktop" :title="t('fq.pg.bot.drawer')" icon="layers">
-            <EmptyState icon="layers" :title="t('fq.pg.bot.noPosition')" />
+            <EmptyState
+              icon="layers"
+              :title="tradeGone ? t('fq.pg.bot.tradeClosed') : t('fq.pg.bot.noPosition')"
+              :data-testid="tradeGone ? 'trade-closed' : undefined"
+            />
           </Pane>
         </aside>
       </div>
@@ -462,9 +517,14 @@ const configRows = computed(() => {
             nav.navigateAction(id, { botKey, pair: position?.pair, tradeId: position?.trade_id })
         "
       />
+      <BotConfigEditorModal v-if="editorUsed" />
       <section v-if="phone" class="phone-alerts">
         <AlertRail :bot-key="botKey" :limit="4" />
       </section>
+      <!-- Phone: "Exit all" and "Stop" at the very bottom, not next to Pause and Reload -->
+      <div v-if="phone" class="foot-sens">
+        <BotActionBar context="sensitive" :bot-key="botKey" />
+      </div>
     </template>
 
     <div v-else-if="unknownBot" class="missing">
@@ -544,6 +604,9 @@ const configRows = computed(() => {
 }
 .phone-alerts {
   padding: 0 var(--gut, 6px) var(--s3);
+}
+.foot-sens {
+  padding: 0 var(--gut, 6px) var(--s4);
 }
 
 /* Phone and tablet: one column, the tabs first, then the chart and the pairs */

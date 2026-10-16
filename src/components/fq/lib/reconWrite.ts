@@ -75,6 +75,12 @@ export interface WriteOutcome {
   data: Record<string, unknown> | null;
   /** The answer as text (truncated by the gateway), or the reason of a refusal. */
   text: string | null;
+  /**
+   * What the bot said about deleting the trade after an accepted order, when it does not read as
+   * a success ("HTTP 502 (verify on next refresh)", "owning bot API not reachable, delete the
+   * trade manually"). The order is placed then: the trade may still need a manual delete.
+   */
+  deleteNote: string | null;
 }
 
 const STATUSES = new Set<string>([
@@ -97,27 +103,48 @@ function parseObject(text: string | null): Record<string, unknown> | null {
   }
 }
 
+/** The bot's own wording of a delete that went through ("Deleted trade #12 for pair ...") or "ok". */
+const DELETE_OK = /^(ok\b|deleted trade\b)/i;
+
+function deleteNoteOf(data: Record<string, unknown> | null): string | null {
+  const d = data?.delete;
+  if (typeof d !== 'string' || d.trim() === '' || DELETE_OK.test(d.trim())) return null;
+  return d;
+}
+
 /**
- * The answer of a proxied write. The gateway wraps the bot's answer in an action result (`status`,
- * `botResponse`, `error`); a direct call returns the bot's own JSON. `state_mismatch` cannot
- * happen here (nothing is pre-checked against a displayed state) and is read as a refusal.
+ * The answer of a proxied write. The gateway wraps the bot's answer in an action result
+ * (`ActionResult` in snake_case: `status`, `bot_response`, `reason`); a direct call returns the
+ * bot's own JSON. `state_mismatch` cannot happen here (nothing is pre-checked against a displayed
+ * state) and is read as a refusal. The camelCase names are read as a fallback only.
  */
 export function readWriteOutcome(kind: 'gateway' | 'direct', raw: unknown): WriteOutcome {
   if (kind === 'direct') {
     const obj = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : null;
-    return { status: 'accepted', data: obj, text: obj ? JSON.stringify(obj) : null };
+    return {
+      status: 'accepted',
+      data: obj,
+      text: obj ? JSON.stringify(obj) : null,
+      deleteNote: deleteNoteOf(obj),
+    };
   }
   const r = (typeof raw === 'object' && raw !== null ? raw : {}) as {
     status?: unknown;
+    bot_response?: unknown;
+    reason?: unknown;
     botResponse?: unknown;
     error?: unknown;
   };
-  const text = typeof r.botResponse === 'string' ? r.botResponse : null;
+  const answer = [r.bot_response, r.botResponse].find((v) => typeof v === 'string' && v !== '');
+  const text = typeof answer === 'string' ? answer : null;
+  const why = [r.reason, r.error].find((v) => typeof v === 'string' && v !== '');
   const status: WriteStatus =
     typeof r.status === 'string' && STATUSES.has(r.status) ? (r.status as WriteStatus) : 'rejected';
+  const data = parseObject(text);
   return {
     status,
-    data: parseObject(text),
-    text: text ?? (typeof r.error === 'string' ? r.error : null),
+    data,
+    text: text ?? (typeof why === 'string' ? why : null),
+    deleteNote: deleteNoteOf(data),
   };
 }

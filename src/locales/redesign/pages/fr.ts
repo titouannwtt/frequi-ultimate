@@ -14,7 +14,7 @@ export default {
     settings,
     notFound: {
       title: 'Page introuvable',
-      hint: "Cette adresse ne mène nulle part. Les anciennes adresses de FreqUI fonctionnent toujours : vérifiez celle que vous avez suivie.",
+      hint: 'Cette adresse ne mène nulle part. Les anciennes adresses de FreqUI fonctionnent toujours : vérifiez celle que vous avez suivie.',
       fleet: 'Retour à la flotte',
     },
     toolsHint: {
@@ -58,6 +58,7 @@ export default {
       perfPartial: 'Historique partiel : seulement ce que cet onglet a chargé.',
       drawer: 'Position',
       noPosition: 'Aucune position ouverte. Le bot attend un signal.',
+      tradeClosed: 'Ce trade est clos.',
       notFound: 'Bot introuvable : {key}',
       notFoundHint: "Ce bot n'est pas (ou plus) dans la flotte de cet appareil.",
       tabs: {
@@ -76,7 +77,9 @@ export default {
         mode: 'Mode',
         port: 'Port',
         maxTrades: 'Positions ouvertes max.',
-        editLater: "L'édition avec revue du diff arrive avec la page Réglages.",
+        edit: 'Modifier la configuration…',
+        editHint:
+          'Ouvre le fichier de configuration de ce bot. Les modifications sont relues avant toute écriture, et rien n’est appliqué tant que le bot n’est pas rechargé.',
       },
     },
   },

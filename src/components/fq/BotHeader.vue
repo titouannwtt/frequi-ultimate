@@ -42,6 +42,8 @@ const props = defineProps<{
   /** Backoff 429 of the bot read through the proxy, when available (`count` of `max`). */
   backoff?: { count: number; max: number } | null;
   nowMs?: number;
+  /** Phone: the sensitive actions are shown by the page at its foot, not in the header. */
+  splitSensitive?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -157,6 +159,7 @@ const stateSince = computed(
         <BotActionBar
           context="header"
           :bot-key="bot.bot_key"
+          :split-sensitive="splitSensitive"
           @navigate="(id) => emit('navigate', id)"
         />
       </div>

@@ -424,6 +424,23 @@ export const useBotStore = defineStore('ftbot-wrapper', {
 });
 
 let _botsInitialized = false;
+let _botsPolling = false;
+
+/**
+ * Stop every direct request of the legacy stores (status, slow tier, trades sweep, bot
+ * sockets). Called when the user leaves the last legacy page: the new pages read through
+ * the gateway, and a browser still polling each bot adds to the gateway's own budget on
+ * the shared exchange IP. Idempotent; `initBots` resumes on the next legacy page.
+ */
+export function suspendBots() {
+  if (!_botsPolling) return;
+  _botsPolling = false;
+  const botStore = useBotStore();
+  botStore.stopRefresh();
+  // A pending coalesced sweep must not fire after the stop
+  registerSlowRefreshRunner(null);
+  botStore.allBotStores.forEach((b) => b.stopWebSocket());
+}
 
 export function initBots() {
   const botStore = useBotStore();
@@ -432,8 +449,15 @@ export function initBots() {
     Object.values(loggedInBots.value).forEach((v) => {
       if (!(v.botId in botStore.availableBots)) botStore.addBot(v);
     });
+    if (!_botsPolling) {
+      // Back on a legacy page after a suspend: resume (startRefresh refreshes at once)
+      _botsPolling = true;
+      botStore.startRefresh();
+      botStore.allBotStores.forEach((b) => b.startWebSocket());
+    }
     return;
   }
+  _botsPolling = true;
   Object.entries(loggedInBots.value).forEach(([, v]) => {
     botStore.addBot(v);
   });

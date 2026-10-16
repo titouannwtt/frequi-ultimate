@@ -98,6 +98,19 @@ describe('the sources of truth: trade 1180 exists on two bots', () => {
     expect(r).toMatchObject({ ok: false, reason: 'missing_state' });
   });
 
+  it('a lock removal is not looked up among the trades: its id is a lock id', () => {
+    // No trade 999987 on the bot: the lock request must still open (it is not a trade action)
+    const free = requestAction(botA.bot_key, { kind: 'lock_delete', lockId: 999_987 });
+    expect(free).toEqual({ ok: true });
+    expect(useActionDialog().current.value?.context.position).toBeNull();
+    useActionDialog().close();
+
+    // A lock whose id equals the id of an open trade must not borrow that trade as context
+    const same = requestAction(botA.bot_key, { kind: 'lock_delete', lockId: posA.trade_id });
+    expect(same).toEqual({ ok: true });
+    expect(useActionDialog().current.value?.context.position).toBeNull();
+  });
+
   it('a request for an unknown bot is refused', () => {
     expect(requestAction('local:1', { kind: 'stopbuy' })).toMatchObject({
       ok: false,

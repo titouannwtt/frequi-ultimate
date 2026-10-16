@@ -114,13 +114,28 @@ export function nameOf(rt: BotRuntime): string {
   );
 }
 
+function dryFlag(rt: BotRuntime): boolean | undefined {
+  return rt.config?.data.dry_run ?? rt.overview?.data.dry_run ?? rt.digest?.data.dry_run;
+}
+
+/**
+ * Whether the bot told us if it is live or dry yet. Until it does (`/show_config` is read at the
+ * slow cadence, behind the status of the whole fleet), its figures belong to neither total.
+ */
+export function modeKnown(rt: BotRuntime): boolean {
+  return dryFlag(rt) !== undefined;
+}
+
 export function modeOf(rt: BotRuntime): BotMode {
-  const dry = rt.config?.data.dry_run ?? rt.overview?.data.dry_run ?? rt.digest?.data.dry_run;
-  // Unknown is treated as live: the stricter confirmation applies and no dry figure is hidden.
-  return dry === true ? 'dry' : 'live';
+  // Unknown is treated as live for what is confirmed (the stricter confirmation applies), but
+  // `modeKnown` keeps such a bot out of every sum and out of the wallet inference.
+  return dryFlag(rt) === true ? 'dry' : 'live';
 }
 
 export function statusOf(rt: BotRuntime): BotStatus {
+  // A bot answering whose mode is not read yet is still starting for the UI: not counted online,
+  // and no action can be sent to it before its mode (live confirmation level) is known
+  if (rt.reach === 'online' && !modeKnown(rt)) return 'starting';
   switch (rt.reach) {
     case 'offline':
       return 'offline';
@@ -154,7 +169,7 @@ export function inferWallets(
 ): Map<string, { walletId: string; shared: boolean }> {
   const liveByExchange = new Map<string, BotRuntime[]>();
   for (const rt of rts) {
-    if (modeOf(rt) !== 'live') continue;
+    if (modeOf(rt) !== 'live' || !modeKnown(rt)) continue;
     const ex = exchangeOf(rt) ?? '?';
     const list = liveByExchange.get(ex) ?? [];
     list.push(rt);
@@ -162,7 +177,7 @@ export function inferWallets(
   }
   const out = new Map<string, { walletId: string; shared: boolean }>();
   for (const rt of rts) {
-    if (modeOf(rt) !== 'live') {
+    if (modeOf(rt) !== 'live' || !modeKnown(rt)) {
       out.set(rt.key, { walletId: `dry:${rt.key}`, shared: false });
       continue;
     }
@@ -306,6 +321,18 @@ export function buildBotRow(rt: BotRuntime, ctx: RowContext): BotRow {
     // The 24 h sparkline needs the server's hourly samples: gateway only.
     spark24h: [],
   };
+  if (!modeKnown(rt)) {
+    // Live or dry, we do not know yet: no money figure that a total could pick up
+    metrics.realized_1d = null;
+    metrics.realized_7d = null;
+    metrics.realized_30d = null;
+    metrics.realized_total = null;
+    metrics.open_profit_abs = null;
+    metrics.exposure_long = null;
+    metrics.exposure_short = null;
+    metrics.drawdown_realized = null;
+    metrics.drawdown_with_open = null;
+  }
 
   // ---- state ----
   const openCount = rt.status

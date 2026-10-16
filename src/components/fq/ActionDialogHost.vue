@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import { tradeIdOf } from '@/composables/useBotAction';
+import { positionTradeIdOf } from '@/composables/useBotAction';
 import { useActionDialog } from '@/composables/useActionDialog';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPositionsStore } from '@/datasource/stores/positions';
@@ -39,7 +39,7 @@ const netted = computed(() => {
     v-if="req"
     open
     :action="req.action"
-    :target="{ botKey: req.botKey, name, tradeId: tradeIdOf(req.action) }"
+    :target="{ botKey: req.botKey, name, tradeId: positionTradeIdOf(req.action) }"
     :position="req.context.position ?? null"
     :netted-with="netted"
     :initial-fraction="req.context.initialFraction"

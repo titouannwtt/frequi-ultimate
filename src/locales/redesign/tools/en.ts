@@ -10,6 +10,8 @@ export default {
     request: 'Request that will be sent',
     typeCoin: 'Type {coin} to confirm',
     typeFirst: 'Type the name of the coin first',
+    deleteNote:
+      'The order was placed but the trade may still be in the bot database. Delete it by hand if it is still listed:',
     once: 'The request is sent once. A timeout is not retried: read the wallet again before trying anew.',
     action: {
       close_unowned: 'Close the position of the wallet that no bot owns',

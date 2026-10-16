@@ -87,6 +87,8 @@ function openTrade(botKey: string, tradeId: number) {
 
 // ---- positions ----
 const posFilter = ref<QuickFilter>('all');
+// The selected row of the positions table: J and K move it, X asks to exit it
+const posSelected = ref<string | null>(null);
 
 // ---- equity panel ----
 type EqTab = 'equity' | 'leaderboard' | 'calendar';
@@ -126,7 +128,11 @@ watch(ws, (now, before) => {
 // ---- counts for headers ----
 const online = computed(() => scope.bots.value.filter((b) => b.state.status === 'online').length);
 const activeAlerts = computed(() => alerts.view(Date.now(), 'active').length);
-const openCount = computed(() => positions.list.length);
+// The number the table shows: the positions of the bots in scope, plus the orphans (no bot)
+const openCount = computed(() => {
+  const inScope = new Set(scope.botKeys.value);
+  return positions.list.filter((p) => p.orphan || inScope.has(p.bot_key)).length;
+});
 
 // ---- bell and palette: focus the rail, toggle the view ----
 const rail = ref<HTMLElement | null>(null);
@@ -147,10 +153,16 @@ watch(
   { immediate: true },
 );
 // `/open_trades` lands here with `?view=positions`
-const positionsEl = ref<HTMLElement | null>(null);
+// A ref on a component is its instance, not its element: the element is `$el`
+const positionsEl = ref<{ $el?: HTMLElement } | HTMLElement | null>(null);
 watch(
   () => route.query.view,
-  (v) => v === 'positions' && void nextTick(() => positionsEl.value?.scrollIntoView()),
+  (v) =>
+    v === 'positions' &&
+    void nextTick(() => {
+      const r = positionsEl.value;
+      (r instanceof HTMLElement ? r : r?.$el)?.scrollIntoView?.();
+    }),
   { immediate: true },
 );
 
@@ -252,6 +264,7 @@ const incidentFirst = computed(() => phone.value && activeAlerts.value > 0);
     >
       <TradeTable
         v-model:filter="posFilter"
+        v-model:selected-key="posSelected"
         preset="open"
         scoped
         shortcuts

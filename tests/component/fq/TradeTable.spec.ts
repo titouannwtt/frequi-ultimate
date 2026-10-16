@@ -44,6 +44,22 @@ function mountTrades(props: Record<string, unknown>) {
   return mountFq(TradeTable, { props, attachTo: document.body });
 }
 
+describe('TradeTable: the bot cell', () => {
+  it('cuts a long bot name in one line and keeps the full name in the title', async () => {
+    const live = world.fixture.bots.find((b) => b.identity.mode === 'live')!;
+    const long = 'très long nom de stratégie avec accents éèà et suite sans fin de mots';
+    // The fleet store is the source of the name on a line
+    live.identity.name = long;
+    const { useFqFleetStore } = await import('../../../src/datasource/stores/fleet');
+    useFqFleetStore().bots[live.bot_key]!.identity.name = long;
+    const w = mountTrades({ preset: 'open', containerWidth: 1200 });
+    const cell = w.find('.botlink .bn');
+    expect(cell.exists()).toBe(true);
+    const titled = w.findAll('.botlink .bn').filter((e) => e.attributes('title') === long);
+    expect(titled.length).toBeGreaterThan(0);
+  });
+});
+
 describe('TradeTable: presets', () => {
   it('open: every open position of the fleet, worst P&L first, unknown last', () => {
     const w = mountTrades({ preset: 'open', containerWidth: 1200 });

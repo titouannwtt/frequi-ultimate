@@ -98,7 +98,8 @@ export function signalItems(summary: SignalSummary | null | undefined, botKey: B
 }
 
 export interface LockRecord {
-  id: number;
+  /** Absent behind the gateway, which does not report it: the lock is listed, not liftable. */
+  id?: number | null;
   pair: string;
   lock_end_timestamp: number;
   reason?: string | null;
@@ -112,10 +113,10 @@ export function lockItems(locks: readonly LockRecord[] | undefined, botKey: BotK
     .filter((l) => l.active !== false)
     .map<PairItem>((l) => ({
       ...blank(),
-      key: `lock:${l.id}`,
+      key: `lock:${l.id ?? l.pair}`,
       pair: l.pair,
       botKey,
-      lockId: l.id,
+      lockId: l.id ?? null,
       lockEndMs: l.lock_end_timestamp,
       lockReason: l.reason ?? null,
     }))

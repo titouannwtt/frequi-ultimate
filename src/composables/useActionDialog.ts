@@ -9,7 +9,7 @@ import type { BotAction } from '@/datasource/types';
 import type { BotKey, Position } from '@/gateway/types.gen';
 import i18n from '@/locales';
 
-import { tradeIdOf, useBotAction } from './useBotAction';
+import { positionTradeIdOf, useBotAction } from './useBotAction';
 import { useToaster } from './useToaster';
 
 /**
@@ -69,7 +69,7 @@ export function requestAction(
   if (!bot) return { ok: false, reason: 'unknown_bot', disabled: 'unknownBot' };
 
   const state = botState(bot, Date.now(), conn.status.clockSkewMs);
-  const tradeId = tradeIdOf(action);
+  const tradeId = positionTradeIdOf(action);
   const position =
     typeof tradeId === 'number'
       ? (context.position ?? useFqPositionsStore().get(botKey, tradeId) ?? null)
@@ -113,6 +113,19 @@ export function requestAction(
   current.value = req;
   last = req;
   return { ok: true };
+}
+
+/**
+ * Say why a request opened nothing. A busy request already toasts by itself and an open dialog is
+ * visible, so only the other refusals are reported; without this a refused click is silent.
+ */
+export function toastRefusal(r: RequestResult): void {
+  if (r.ok || r.reason === 'busy' || r.reason === 'dialog_open') return;
+  useToaster().push({
+    kind: 'err',
+    title: t('result.notSent'),
+    body: t(`act.disabled.${r.disabled ?? 'target'}`),
+  });
 }
 
 export function useActionDialog() {

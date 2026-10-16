@@ -117,26 +117,70 @@ describe('reconciliation write helpers', () => {
   });
 
   it('reads the answer of the gateway and of a bot', () => {
+    // The wire form of the gateway is the snake_case ActionResult (types.gen.ts)
     expect(
-      readWriteOutcome('gateway', { status: 'accepted', botResponse: '{"order":{"filled":1}}' }),
+      readWriteOutcome('gateway', { status: 'accepted', bot_response: '{"order":{"filled":1}}' }),
     ).toEqual({
       status: 'accepted',
       data: { order: { filled: 1 } },
       text: '{"order":{"filled":1}}',
+      deleteNote: null,
     });
-    const refused = readWriteOutcome('gateway', { status: 'unauthorized', error: 'confirm' });
+    const refused = readWriteOutcome('gateway', {
+      status: 'unauthorized',
+      bot_response: null,
+      reason: 'confirm',
+    });
     expect(refused.status).toBe('unauthorized');
     expect(refused.text).toBe('confirm');
     // An unknown status is a refusal, never a success.
     expect(readWriteOutcome('gateway', { status: 'weird' }).status).toBe('rejected');
     expect(readWriteOutcome('gateway', null).status).toBe('rejected');
     expect(
-      readWriteOutcome('gateway', { status: 'accepted', botResponse: 'not json' }).data,
+      readWriteOutcome('gateway', { status: 'accepted', bot_response: 'not json' }).data,
     ).toBeNull();
     expect(readWriteOutcome('direct', { delete: 'ok' })).toMatchObject({
       status: 'accepted',
       data: { delete: 'ok' },
+      deleteNote: null,
     });
+  });
+
+  it('keeps the refusal of the bot (409 detail), which the gateway carries in bot_response', () => {
+    const out = readWriteOutcome('gateway', {
+      status: 'rejected',
+      http_status: 409,
+      reason: null,
+      bot_response: '{"detail":"Coin is not unowned (state changed?)"}',
+    });
+    expect(out.status).toBe('rejected');
+    expect(out.text).toContain('Coin is not unowned');
+    expect(out.data).toEqual({ detail: 'Coin is not unowned (state changed?)' });
+  });
+
+  it('flags an order placed whose trade delete did not go through', () => {
+    const wire = (del: string) =>
+      readWriteOutcome('gateway', {
+        status: 'accepted',
+        bot_response: JSON.stringify({ order: { id: 1 }, delete: del }),
+      });
+    for (const note of [
+      'owning bot API not reachable, delete the trade manually',
+      'HTTP 502 (verify on next refresh)',
+      'bot does not expose /trades/<id>/amount yet',
+    ]) {
+      const out = wire(note);
+      expect(out.status).toBe('accepted');
+      expect(out.deleteNote).toBe(note);
+    }
+    expect(wire('Deleted trade #12 for pair ARB/USDC:USDC. Closed 0 open orders.').deleteNote).toBe(
+      null,
+    );
+    expect(wire('ok').deleteNote).toBeNull();
+    // Direct mode carries the bot's JSON as is
+    expect(
+      readWriteOutcome('direct', { delete: 'HTTP 500 (verify on next refresh)' }).deleteNote,
+    ).toContain('HTTP 500');
   });
 });
 

@@ -32,6 +32,8 @@ interface Net {
   action?: FakeHandler;
   /** Answer for GET /trades (the open positions of the bot). */
   trades?: () => unknown;
+  /** Answer for GET /pairs/{key} (whitelist, blacklist and locks of a bot). */
+  pairs?: () => unknown;
   snapshots: number;
 }
 
@@ -58,6 +60,7 @@ function setup(net: Partial<Net> = {}) {
     if (path === '/hello')
       return ok({ version: 'test', protocol: GATEWAY_PROTOCOL_VERSION, auth_modes: ['session'] });
     if (path === '/trades' && net.trades) return ok(net.trades());
+    if (path.startsWith('/pairs/') && net.pairs) return ok(net.pairs());
     if (path.includes('/actions/'))
       return net.action ? net.action(req, n) : ok({ status: 'accepted' });
     return status(404);
@@ -403,5 +406,51 @@ describe('GatewaySource actions', () => {
     const r = await h.src.act('local:1', { kind: 'forceexit', tradeId: 'all' }, 'k8');
     expect(r.status).toBe('state_mismatch');
     expect(h.fake.writes()).toEqual([]);
+  });
+});
+
+describe('GatewaySource: the pair lists of a bot', () => {
+  const pairs = () => ({
+    bot_key: 'local:1',
+    whitelist: ['ETH/USDC:USDC', 'BTC/USDC:USDC'],
+    blacklist: ['SHIB/USDC:USDC'],
+    locks: [{ pair: 'DOGE/USDC:USDC', reason: 'stoploss', until_ms: NOW + 60_000, side: '*' }],
+  });
+
+  it('reads whitelist, blacklist and locks from /pairs, not from the passthrough', async () => {
+    const h = setup({ pairs });
+    const wl = await h.src.proxy<{ whitelist: string[]; length: number }>(
+      'local:1',
+      'GET',
+      '/whitelist',
+    );
+    expect(wl.whitelist).toEqual(['ETH/USDC:USDC', 'BTC/USDC:USDC']);
+    expect(wl.length).toBe(2);
+    const bl = await h.src.proxy<{ blacklist: string[] }>('local:1', 'GET', '/blacklist');
+    expect(bl.blacklist).toEqual(['SHIB/USDC:USDC']);
+    const lk = await h.src.proxy<{ locks: Array<Record<string, unknown>> }>(
+      'local:1',
+      'GET',
+      '/locks',
+    );
+    expect(lk.locks).toEqual([
+      {
+        pair: 'DOGE/USDC:USDC',
+        reason: 'stoploss',
+        side: '*',
+        lock_end_timestamp: NOW + 60_000,
+        active: true,
+      },
+    ]);
+    const urls = h.fake.calls.map((c) => new URL(c.url).pathname);
+    expect(urls.every((u) => u.startsWith('/gw/v1/pairs/'))).toBe(true);
+    expect(urls.some((u) => u.includes('/proxy/'))).toBe(false);
+  });
+
+  it('sends every other path through the passthrough, unchanged', async () => {
+    const h = setup({ pairs });
+    await h.src.proxy('local:1', 'GET', '/signal_summary').catch(() => undefined);
+    const urls = h.fake.calls.map((c) => new URL(c.url).pathname);
+    expect(urls).toEqual(['/gw/v1/bots/local%3A1/proxy/signal_summary']);
   });
 });

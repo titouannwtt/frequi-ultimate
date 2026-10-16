@@ -646,6 +646,15 @@ export default {
   },
 
   configEditor: {
+    liveBadge: 'LIVE',
+    unset: '(non défini)',
+    reviewTitle: 'Revue des modifications',
+    reviewIntro:
+      'Ces modifications seront écrites dans {file}. Rien n’est appliqué au bot en marche tant que vous ne le rechargez pas.',
+    reviewLive:
+      'Ce bot est en réel avec de l’argent. Une valeur erronée est appliquée au prochain rechargement.',
+    reviewType: 'Tapez le nom du bot ({name}) pour confirmer',
+    reviewConfirm: 'Écrire le fichier',
     title: 'Modifier la configuration',
     loading: 'Chargement de la configuration…',
     unsupportedTitle: 'Backend non compatible',

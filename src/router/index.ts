@@ -245,8 +245,6 @@ function hasAnyBot(): boolean {
 }
 
 router.beforeEach((to) => {
-  // The legacy polling only starts for the pages that still need it
-  if (to.meta?.legacy) initBots();
   if (!to.meta?.allowAnonymous && !hasAnyBot()) {
     // Forward to login if login is required
     return {
@@ -255,6 +253,14 @@ router.beforeEach((to) => {
     };
   }
   return true;
+});
+
+// The legacy polling only runs on the pages that still need it: it stops on leaving them, so the
+// browser does not poll every bot behind the gateway's back. Decided once the navigation is
+// certain (lazy page loaded, no redirect to the login): a navigation that fails starts nothing.
+router.beforeResolve((to) => {
+  if (to.meta?.legacy) initBots();
+  else suspendBots();
 });
 
 export default router;

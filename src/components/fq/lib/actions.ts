@@ -27,7 +27,7 @@ export type ActionId =
   | 'chart'
   | 'reconcile';
 
-export type ActionContextKind = 'row' | 'header' | 'drawer' | 'palette';
+export type ActionContextKind = 'row' | 'header' | 'sensitive' | 'drawer' | 'palette';
 
 export interface ActionDef {
   id: ActionId;
