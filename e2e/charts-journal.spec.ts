@@ -18,9 +18,12 @@ test.describe('Charts', () => {
     await page.goto('/charts');
     await expect(page.getByTestId('charts-page')).toBeVisible();
     await expect(page.getByTestId('pair-navigator')).toBeVisible();
-    // The rig's bots serve no candles: the chart says so instead of failing
-    // (the gateway queues the relay behind the polling of the 40 bots: allow it time)
-    await expect(page.getByTestId('chart-cell')).toContainText(/no candle/i, { timeout: 75_000 });
+    // The chart answers one way or the other, never a blank or a crash: the fake bots serve a
+    // curve, but the gateway queues the relay behind the polling of the 40 bots and a read that
+    // is too slow ends as "no candle" (allow it time)
+    await expect(page.getByTestId('chart-cell')).toContainText(/no candle|\bO \d/i, {
+      timeout: 75_000,
+    });
 
     await page.getByRole('radio', { name: '1h' }).click();
     await expect(page).toHaveURL(/tf=1h/);

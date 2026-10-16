@@ -802,6 +802,7 @@ impl EngineHandle {
             .filter(|o| o.trade_id == trade_id)
             .map(|o| OrderRow {
                 is_entry: is_short.map(|s| o.is_entry_for(s)),
+                price: o.wait_price(),
                 id: o.id,
                 side: o.side,
                 status: o.status,

@@ -65,9 +65,20 @@ export function orderModel(rows: readonly OrderRow[], side: Side): OrderModel {
         kind: idx === 0 ? 'entry' : 'dca',
         side,
         label: idx === 0 ? 'E' : `SO${idx}`,
+        n: idx > 0 ? idx : undefined,
+        amount: o.filled ?? o.amount ?? null,
+        cost: o.cost ?? null,
       });
     } else {
-      fills.push({ ts: o.filled_ms, price, kind: 'exit', side, label: 'S' });
+      fills.push({
+        ts: o.filled_ms,
+        price,
+        kind: 'exit',
+        side,
+        label: 'S',
+        amount: o.filled ?? o.amount ?? null,
+        cost: o.cost ?? null,
+      });
     }
   });
   fills.sort((a, b) => a.ts - b.ts);
