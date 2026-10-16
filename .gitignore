@@ -41,6 +41,7 @@ yarn-error.log*
 !CONTRIBUTING.md
 !.github/**/*.md
 !docs/redesign/**/*.md
+!docs/UPGRADE.*.md
 
 # Build artifacts (built locally, attached to GitHub Releases instead)
 frequi-dist.tar.gz
