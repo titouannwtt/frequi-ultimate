@@ -322,7 +322,9 @@ describe('CandleChart', () => {
     expect(w.findAllComponents(BaseChart)).toHaveLength(1);
     expect(liveCharts()).toHaveLength(1);
     expect(w.find('[data-testid=candle-legend]').text()).toMatch(/O \d/);
-    expect(w.find('[data-testid=candle-legend]').text()).toContain('ema_50');
+    // The legend speaks plainly; the column name stays in the tooltip
+    expect(w.find('[data-testid=candle-legend]').text()).toContain('Average 50');
+    expect(w.find('[data-testid=candle-legend] .ind').attributes('title')).toBe('ema_50');
   });
 
   it('is released on unmount: instance disposed, subscription gone', async () => {

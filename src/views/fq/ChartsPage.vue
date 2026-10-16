@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useLocalStorage, useMediaQuery } from '@vueuse/core';
+import { useMediaQuery } from '@vueuse/core';
 import { computed, ref, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 
-import { Btn, EmptyState, Menu, Pane, SegmentedControl } from '@/components/ds';
+import { Btn, DirectionChip, DsIcon, EmptyState, Menu, Pane } from '@/components/ds';
 import type { MenuItem } from '@/components/ds';
 import {
   ChartCell,
@@ -23,13 +23,16 @@ import {
   plotProps,
   resolvePlotChoice,
   secondPair,
-  timeframeOptions,
   type CellCount,
   type ChartTf,
 } from '@/components/fq/lib/chartsPage';
+import ChartDisplayMenu from '@/components/fq/ChartDisplayMenu.vue';
+import ChartTimeframes from '@/components/fq/ChartTimeframes.vue';
+import type { SubplotInfo } from '@/components/fq/lib/candles';
 import type { PairFilter, PairItem } from '@/components/fq/lib/pairs';
-import { lineFromPosition } from '@/components/fq/lib/trades';
+import { lineFromPosition, pairLabel } from '@/components/fq/lib/trades';
 import { useActionNav } from '@/composables/useActionNav';
+import { useChartDisplay, useSubplotChoice } from '@/composables/useChartDisplay';
 import { useCommandPalette } from '@/composables/useCommandPalette';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useTradeOrders } from '@/composables/useTradeOrders';
@@ -39,14 +42,15 @@ import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { BotKey } from '@/gateway/types.gen';
 
 /**
- * The Charts page (docs/redesign/02-design.md, section 3.3): the toolbar (pair, context bot,
- * timeframe, one or two cells, Heikin-Ashi, measure, indicators), the pair navigator with the open
- * positions of the fleet first, and the chart cells. What is on screen lives in the URL
+ * The Charts page (docs/redesign/02-design.md, section 3.3, calmed by docs/redesign/05-friendly-plan.md):
+ * a toolbar of three things (the pair and the bot that computes its indicators in one button, four
+ * timeframes and "Other", the "Affichage" menu that holds everything else), the pair navigator with
+ * the open positions of the fleet first, and the chart cells. What is on screen lives in the URL
  * (`/charts?bot=&pair=&tf=&cells=&pair2=&ha=`), so a view can be shared and survives a reload. The
  * context bot is the one whose strategy computes the indicators; it defaults to the bot holding a
  * position on the pair. Candles are read through the bot proxy (GET only), nothing here writes.
  */
-const { t, te } = useI18n();
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const fleet = useFqFleetStore();
@@ -140,24 +144,20 @@ const filter = ref<PairFilter>('positions');
 const filterTabs: PairFilter[] = ['positions', 'signals', 'all'];
 
 // ---- toolbar ----
-const tfOptions = computed(() =>
-  timeframeOptions(ownTf.value).map((v) => ({
-    value: v,
-    label: te(`fq.pg.charts.tf.${v}`) ? t(`fq.pg.charts.tf.${v}`) : v,
-  })),
-);
-const cellOptions = computed(() => [
-  { value: 1 as CellCount, label: t('fq.pg.charts.cells1'), icon: 'square' as const },
-  { value: 2 as CellCount, label: t('fq.pg.charts.cells2'), icon: 'columns-2' as const },
-]);
 const botName = computed(() =>
   botKey.value ? (fleet.bots[botKey.value]?.identity.name ?? botKey.value) : null,
 );
 
+// One button for the pair and the bot that computes its indicators
 const ctxAnchor = ref<HTMLElement | null>(null);
 const ctxOpen = ref(false);
+const PAIR_ITEM = '__pair';
 const ctxItems = computed<MenuItem[]>(() => {
-  const out: MenuItem[] = [];
+  const out: MenuItem[] = [
+    { id: PAIR_ITEM, label: t('fq.pg.charts.changePair'), icon: 'search', shortcut: 'Ctrl K' },
+    { id: '__sep', kind: 'separator' },
+    { id: '__h-ctx', kind: 'heading', label: t('fq.pg.charts.contextTip') },
+  ];
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
   for (const mode of ['live', 'dry'] as const) {
     const bots = fleet.list
@@ -165,7 +165,13 @@ const ctxItems = computed<MenuItem[]>(() => {
       .sort((a, b) => collator.compare(a.identity.name, b.identity.name));
     if (bots.length === 0) continue;
     out.push({ id: `__h-${mode}`, kind: 'heading', label: t(`fq.scope.${mode}`) });
-    for (const b of bots) out.push({ id: b.bot_key, label: b.identity.name });
+    for (const b of bots) {
+      out.push({
+        id: b.bot_key,
+        label: b.identity.name,
+        icon: b.bot_key === botKey.value ? 'check' : undefined,
+      });
+    }
   }
   return out;
 });
@@ -173,11 +179,47 @@ function toggleCtx(e: MouseEvent) {
   ctxAnchor.value = e.currentTarget as HTMLElement;
   ctxOpen.value = !ctxOpen.value;
 }
+function onCtxSelect(id: string) {
+  if (id === PAIR_ITEM) palette.show();
+  else update({ bot: id });
+}
 
-// ---- measure, indicators ----
+// ---- the "Affichage" menu: overlays, Heikin-Ashi, two cells, indicators, measure ----
+const displayAnchor = ref<HTMLElement | null>(null);
+const displayOpen = ref(false);
+const chartDisplay = useChartDisplay();
 const measureArmed = ref(false);
 const indicatorsOpen = ref(false);
-const rsi = useLocalStorage('fqu2.charts.rsi', true);
+function toggleDisplay(e: MouseEvent) {
+  displayAnchor.value = e.currentTarget as HTMLElement;
+  displayOpen.value = !displayOpen.value;
+}
+function onDisplayToggle(key: string, on: boolean) {
+  if (key === 'ha') update({ ha: on });
+  else if (key === 'cells') update({ cells: on ? 2 : 1 });
+  else if (key === 'measure') measureArmed.value = on;
+  else chartDisplay.set(key as keyof typeof chartDisplay.display.value, on);
+}
+
+// The sub-charts the strategy offers, as the cells report them (for the menu and the sheet)
+const subLists = ref<[SubplotInfo[], SubplotInfo[]]>([[], []]);
+function onSubplots(cell: 0 | 1, list: SubplotInfo[]) {
+  subLists.value[cell] = list;
+}
+const activeSubs = computed(() => subLists.value[cellCount.value === 2 ? activeCell.value : 0]);
+const subsHint = computed(() =>
+  activeSubs.value.length > 0
+    ? { total: activeSubs.value.length, shown: activeSubs.value.filter((s) => s.shown).length }
+    : null,
+);
+const strategyKey = computed(() =>
+  botKey.value ? (fleet.bots[botKey.value]?.identity.strategy ?? botKey.value) : null,
+);
+const subsChoice = useSubplotChoice(strategyKey);
+function onToggleSub(id: string, on: boolean) {
+  const kept = activeSubs.value.filter((s) => s.shown && s.id !== id).map((s) => s.id);
+  subsChoice.set(on ? [...kept, id] : kept);
+}
 const plot = computed(() =>
   plotProps(
     resolvePlotChoice(prefs.settings.plot?.plotConfigName, prefs.settings.plot?.customPlotConfigs),
@@ -225,73 +267,60 @@ useShortcuts([
   <div class="charts" data-testid="charts-page" :data-cells="cellCount">
     <component :is="phone ? 'div' : ShellSlot" :name="phone ? undefined : 'scope'">
       <div class="cbar" role="toolbar" :aria-label="t('fq.pg.charts.toolbar')">
-        <Btn size="sm" icon="search" data-testid="charts-pair" @click="palette.show()">
-          <b>{{ pair ?? t('fq.pg.charts.pickPair') }}</b>
-        </Btn>
         <Btn
           size="sm"
-          icon="bot"
           :title="t('fq.pg.charts.contextTip')"
-          data-testid="charts-context"
-          :aria-expanded="ctxOpen"
+          class="pairbtn"
+          data-testid="charts-pair"
           aria-haspopup="menu"
+          :aria-expanded="ctxOpen"
           @click="toggleCtx"
         >
-          <span class="lab">{{ t('fq.pg.charts.context') }}</span>
-          <b v-if="botName">{{ botName }}</b>
+          <b class="pair">{{ pair ? pairLabel(pair) : t('fq.pg.charts.pickPair') }}</b>
+          <DirectionChip v-if="position" :side="position.side" :leverage="position.leverage" />
+          <span v-if="botName" class="by">{{ t('fq.pg.charts.calcBy', { bot: botName }) }}</span>
+          <DsIcon name="chevron-down" :size="13" />
         </Btn>
         <Menu
           :open="ctxOpen"
           :anchor="ctxAnchor"
           :items="ctxItems"
           :label="t('fq.pg.charts.context')"
-          @select="(k) => update({ bot: k })"
+          @select="onCtxSelect"
           @close="ctxOpen = false"
         />
-        <SegmentedControl
-          :model-value="tf"
-          :options="tfOptions"
-          size="sm"
-          :label="t('fq.pg.charts.timeframe')"
-          @update:model-value="(v) => update({ tf: v as ChartTf })"
-        />
-        <SegmentedControl
-          v-if="desktop"
-          :model-value="cellCount"
-          :options="cellOptions"
-          size="sm"
-          :label="t('fq.pg.charts.cells')"
-          @update:model-value="(v) => update({ cells: v })"
+        <ChartTimeframes
+          v-if="!phone"
+          :tf="tf"
+          :own-tf="ownTf"
+          @select="(v) => update({ tf: v })"
         />
         <span class="right">
           <Btn
             size="sm"
-            :variant="heikinAshi ? 'secondary' : 'ghost'"
-            :aria-pressed="heikinAshi"
-            :title="t('fq.pg.charts.haTip')"
-            :aria-label="t('fq.pg.charts.haTip')"
-            data-testid="charts-ha"
-            @click="update({ ha: !heikinAshi })"
-            >{{ t('fq.pg.charts.ha') }}</Btn
+            :variant="displayOpen ? 'secondary' : 'ghost'"
+            icon="sliders-horizontal"
+            :title="t('fq.pg.charts.display.tip')"
+            :aria-label="t('fq.pg.charts.display.title')"
+            aria-haspopup="dialog"
+            :aria-expanded="displayOpen"
+            data-testid="charts-display"
+            @click="toggleDisplay"
+            ><span class="hide-m">{{ t('fq.pg.charts.display.title') }}</span></Btn
           >
-          <Btn
-            size="sm"
-            :variant="measureArmed ? 'secondary' : 'ghost'"
-            icon="ruler"
-            :aria-pressed="measureArmed"
-            :title="t('fq.pg.charts.measureTip')"
-            data-testid="charts-measure"
-            @click="measureArmed = !measureArmed"
-            ><span class="hide-m">{{ t('fq.pg.charts.measure') }}</span></Btn
-          >
-          <Btn
-            size="sm"
-            variant="ghost"
-            icon="chart-line"
-            data-testid="charts-indicators"
-            @click="indicatorsOpen = true"
-            >{{ t('fq.pg.charts.indicators') }}</Btn
-          >
+          <ChartDisplayMenu
+            :open="displayOpen"
+            :anchor="displayAnchor"
+            :display="chartDisplay.display.value"
+            :heikin-ashi="heikinAshi"
+            :two-cells="cellCount === 2"
+            :can-split="desktop"
+            :measure="measureArmed"
+            :subs="subsHint"
+            @toggle="onDisplayToggle"
+            @indicators="indicatorsOpen = true"
+            @close="displayOpen = false"
+          />
         </span>
       </div>
     </component>
@@ -304,8 +333,17 @@ useShortcuts([
       :bot-key="botKey"
       fleet-positions
       :tabs="filterTabs"
+      positions-first
+      :positions-label="t('fq.pg.charts.myPositions')"
       :selected-key="selectedKey"
       @select="onSelect"
+    />
+    <ChartTimeframes
+      v-if="phone"
+      class="tfrow"
+      :tf="tf"
+      :own-tf="ownTf"
+      @select="(v) => update({ tf: v })"
     />
 
     <div class="grid">
@@ -315,6 +353,8 @@ useShortcuts([
           :bot-key="botKey"
           fleet-positions
           :tabs="filterTabs"
+          positions-first
+          :positions-label="t('fq.pg.charts.myPositions')"
           :selected-key="selectedKey"
           @select="onSelect"
         />
@@ -330,9 +370,11 @@ useShortcuts([
             :plot-config="plot.plotConfig"
             :plot-extra="plot.plotExtra"
             :measure-armed="measureArmed"
+            :toggles="chartDisplay.toggles.value"
             :active="cellCount === 2 && activeCell === 0"
             :height="desktop ? '100%' : '62vh'"
             @select="activeCell = 0"
+            @subplots="(l) => onSubplots(0, l)"
             @open-bot="openBot"
             @open-trade="(k, id) => (sheet = { botKey: k, tradeId: id })"
           />
@@ -345,8 +387,10 @@ useShortcuts([
             :plot-config="plot.plotConfig"
             :plot-extra="plot.plotExtra"
             :measure-armed="measureArmed"
+            :toggles="chartDisplay.toggles.value"
             :active="activeCell === 1"
             @select="activeCell = 1"
+            @subplots="(l) => onSubplots(1, l)"
             @open-bot="openBot"
             @open-trade="(k, id) => (sheet = { botKey: k, tradeId: id })"
           />
@@ -370,7 +414,12 @@ useShortcuts([
       />
     </section>
 
-    <IndicatorsSheet v-model:rsi="rsi" :open="indicatorsOpen" @close="indicatorsOpen = false" />
+    <IndicatorsSheet
+      :open="indicatorsOpen"
+      :subs="activeSubs"
+      @toggle-sub="onToggleSub"
+      @close="indicatorsOpen = false"
+    />
     <TradeDrawer
       v-if="sheet"
       :bot-key="sheet.botKey"
@@ -418,14 +467,34 @@ useShortcuts([
 .hide-m {
   display: inline;
 }
+.pair {
+  font-weight: 600;
+}
+.tfrow {
+  padding: 6px var(--s3);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+}
+.by {
+  color: var(--fg-3);
+  font-weight: 400;
+}
 @media (max-width: 599px) {
   .hide-m {
     display: none;
   }
-}
-.lab {
-  color: var(--fg-3);
-  font-size: var(--t-xs);
+  /* The pair and its bot take the row, the Display button sits at its end */
+  .cbar > :deep(.pairbtn) {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+  .by {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
 }
 .right {
   margin-left: auto;

@@ -141,8 +141,17 @@ test.describe('Charts overlays on the rig', () => {
     await expect(chart).toHaveAttribute('data-gain', '1');
     // No candle of the rig is hidden: the entry date is inside the window, so no edge marker
     await expect(page.getByTestId('candle-entry-edge')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Closed trades' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Current gain' })).toBeVisible();
+    // The overlays are switched from the Display menu, all on at first
+    await page.getByTestId('charts-display').click();
+    await expect(page.getByRole('switch', { name: 'Closed trades' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await expect(page.getByRole('switch', { name: 'Current gain' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await expect(page.getByRole('switch', { name: 'Pending orders' })).toBeVisible();
   });
 
   test('direct to the bot: pending orders, closed trades, the edge marker and the screenshot', async ({
@@ -280,9 +289,13 @@ test.describe('Charts overlays on the rig', () => {
     await page.waitForTimeout(500);
     await shot(page, 'chart-overlays-edge');
 
-    // The chips switch the drawings off
-    const closed = page.getByRole('button', { name: 'Closed trades' });
+    // The Display menu switches the drawings off, and the chart follows
+    await page.getByTestId('charts-display').click();
+    const closed = page.getByRole('switch', { name: 'Closed trades' });
     await closed.click();
-    await expect(closed).toHaveAttribute('aria-pressed', 'false');
+    await expect(closed).toHaveAttribute('aria-checked', 'false');
+    await expect(chart).toHaveAttribute('data-closed', '2');
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('charts-display-menu')).toHaveCount(0);
   });
 });

@@ -9,7 +9,7 @@ use([DatasetComponent]);
 
 <script setup lang="ts">
 import type { ECharts } from 'echarts/core';
-import { useElementSize } from '@vueuse/core';
+import { useElementSize, useMediaQuery } from '@vueuse/core';
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -21,24 +21,31 @@ import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { DataSource } from '@/datasource/types';
 import type { BotKey } from '@/gateway/types.gen';
 import type { PairHistory, PlotConfig } from '@/types';
+import { indicatorLabel, subplotLabel } from '@/utils/indicatorLabel';
 
 import { useChartTokens } from './lib/chartTokens';
 import { entryEdge, frameCandles, recentreOn } from './lib/chartTrades';
 import {
   ALL_OVERLAYS,
+  BUILTIN_RSI,
   DATE_COL,
   buildCandleOption,
   indexAt,
   indicatorNames,
   legendAt,
+  levelLines,
   mergeTail,
+  offscreenLevels,
   paneLayout,
+  resolveSubplots,
+  subplotCandidates,
   subplotCount,
   toCandleSet,
   zoomStartPct,
   type CandleSet,
   type OverlayToggles,
   type Overlays,
+  type SubplotInfo,
 } from './lib/candles';
 import { withTimeout } from './lib/logs';
 import { measure as measureMove, type MeasurePoint } from './lib/measure';
@@ -72,6 +79,14 @@ const props = withDefaults(
     candles?: Pick<PairHistory, 'columns' | 'data' | 'timeframe_ms'> | null;
     visibleCandles?: number;
     controls?: boolean;
+    /**
+     * Sub-charts, chosen by the user: undefined draws them all (Bot page); null draws the default
+     * one (the RSI, else the first); a list draws those. Each is titled, with a "Hide" button, and
+     * the others are offered under the chart. The parent keeps the choice (`update:subChoice`).
+     */
+    subChoice?: readonly string[] | null;
+    /** Say at the edge of the chart which levels lie outside the price range. */
+    announce?: boolean;
     height?: string;
     /** A source to use instead of the active one (previews, tests). */
     source?: DataSource | null;
@@ -82,12 +97,19 @@ const props = withDefaults(
     heikinAshi: false,
     rsi: true,
     controls: true,
+    announce: true,
+    subChoice: undefined,
     height: '100%',
     timeoutMs: 20_000,
   },
 );
 
-const emit = defineEmits<{ 'update:toggles': [t: OverlayToggles]; ready: [chart: ECharts] }>();
+const emit = defineEmits<{
+  'update:toggles': [t: OverlayToggles];
+  'update:subChoice': [ids: string[]];
+  subplots: [list: SubplotInfo[]];
+  ready: [chart: ECharts];
+}>();
 
 const { t } = useI18n();
 const fmt = useFormat();
@@ -224,14 +246,83 @@ const hasVolume = computed(() => set.value?.columns.includes('volume') ?? false)
 const subsTotal = computed(() =>
   set.value ? subplotCount(plot.value, props.rsi, set.value.columns) : 0,
 );
-const subsShown = computed(
-  () =>
-    paneLayout({
-      heightPx: plotHeight.value,
-      hasVolume: hasVolume.value,
-      subCount: subsTotal.value,
-      showSubplots: showSubs.value,
-    }).subs.length,
+
+// Chosen sub-charts: titled bands above them are part of the layout
+const touch = useMediaQuery('(max-width: 599px), (pointer: coarse)');
+const subTitleH = computed(() => (touch.value ? 44 : 24));
+const SUB_H_CHOSEN = 78;
+// The user chose these sub-charts: they get room, the price pane keeps at least 40 % of the chart
+const MAIN_MIN_SHARE_CHOSEN = 0.4;
+const managed = computed(() => props.subChoice !== undefined);
+const candidates = computed(() =>
+  set.value ? subplotCandidates(plot.value, props.rsi, set.value.columns) : [],
+);
+const chosenIds = computed<string[] | null>(() =>
+  managed.value ? resolveSubplots(candidates.value, props.subChoice) : null,
+);
+const layoutIn = computed(() => ({
+  heightPx: plotHeight.value,
+  hasVolume: hasVolume.value,
+  subCount: managed.value ? (chosenIds.value?.length ?? 0) : subsTotal.value,
+  showSubplots: showSubs.value,
+  subTitleH: managed.value ? subTitleH.value : 0,
+  subH: managed.value ? SUB_H_CHOSEN : undefined,
+  mainMinShare: managed.value ? MAIN_MIN_SHARE_CHOSEN : undefined,
+}));
+const layout = computed(() => paneLayout(layoutIn.value));
+const subsShown = computed(() => layout.value.subs.length);
+
+/** Plain title, one-line explanation and raw names of a sub-chart. */
+function subInfo(c: {
+  id: string;
+  series: Record<string, unknown>;
+}): SubplotInfo & { short: string } {
+  const raw = Object.keys(c.series);
+  const group = c.id === BUILTIN_RSI ? 'rsi' : c.id;
+  const l = subplotLabel(group, raw, lang.value);
+  return {
+    id: c.id,
+    label: l.label,
+    short: l.short,
+    explain: l.explain ?? t('fq.pg.charts.sub.generic'),
+    raw,
+    shown: chosenIds.value?.includes(c.id) ?? true,
+  };
+}
+const lang = computed(() => (fmt.lang() === 'fr' ? 'fr' : 'en') as 'fr' | 'en');
+const subList = computed(() => candidates.value.map(subInfo));
+// What the panes draw, in order (the ones that do not fit are not on screen)
+const panes = computed(() =>
+  (chosenIds.value ?? [])
+    .slice(0, layout.value.subs.length)
+    .map((id) => subList.value.find((s) => s.id === id))
+    .filter((s): s is NonNullable<typeof s> => !!s)
+    .map((s, k) => ({ ...s, band: layout.value.subs[k]!.top - subTitleH.value })),
+);
+// Chosen but without room on this screen: said, not silently dropped
+const noRoom = computed(() =>
+  managed.value && set.value
+    ? Math.max(0, (chosenIds.value?.length ?? 0) - layout.value.subs.length)
+    : 0,
+);
+const addable = computed(() => subList.value.filter((s) => !s.shown));
+function hideSub(id: string) {
+  emit(
+    'update:subChoice',
+    (chosenIds.value ?? []).filter((x) => x !== id),
+  );
+}
+function addSub(id: string) {
+  emit('update:subChoice', [...(chosenIds.value ?? []), id]);
+}
+watch(
+  subList,
+  (l) =>
+    emit(
+      'subplots',
+      l.map(({ id, label, explain, raw, shown }) => ({ id, label, explain, raw, shown })),
+    ),
+  { immediate: true },
 );
 
 // A bot only serves the candles of its own strategy timeframe: say so rather than "no candle yet"
@@ -289,6 +380,37 @@ const chartFmt = {
   duration: (ms: number) => fmt.duration(ms / 3_600_000),
 };
 
+const overlayLabels = computed(() => ({
+  candles: t('fq.candle.candles'),
+  volume: t('fq.candle.volume'),
+  average: t('fq.candle.average'),
+  tp: t('fq.candle.tp'),
+  liquidation: t('fq.candle.liquidation'),
+  entry: t('fq.candle.entry'),
+  dca: t('fq.candle.dca'),
+  exit: t('fq.candle.exit'),
+  dcaTag: t('fq.candle.dcaTag'),
+  closedTrade: t('fq.candle.closedTrade'),
+  pending: {
+    entry: t('fq.candle.pending.entry'),
+    dca: t('fq.candle.pending.dca'),
+    tp: t('fq.candle.pending.tp'),
+    exit: t('fq.candle.pending.exit'),
+    stop: t('fq.candle.pending.stop'),
+  },
+  tip: {
+    amount: t('fq.candle.tip.amount'),
+    price: t('fq.candle.tip.price'),
+    cost: t('fq.candle.tip.cost'),
+    time: t('fq.candle.tip.time'),
+    duration: t('fq.candle.tip.duration'),
+    reason: t('fq.candle.tip.reason'),
+    result: t('fq.candle.tip.result'),
+    opened: t('fq.candle.tip.opened'),
+    closed: t('fq.candle.tip.closed'),
+  },
+}));
+
 const option = computed(() => {
   if (!set.value || set.value.rows.length === 0) return null;
   return buildCandleOption({
@@ -299,36 +421,7 @@ const option = computed(() => {
     overlays: props.overlays,
     toggles: toggles.value,
     tokens: tokens.value,
-    labels: {
-      candles: t('fq.candle.candles'),
-      volume: t('fq.candle.volume'),
-      average: t('fq.candle.average'),
-      tp: t('fq.candle.tp'),
-      liquidation: t('fq.candle.liquidation'),
-      entry: t('fq.candle.entry'),
-      dca: t('fq.candle.dca'),
-      exit: t('fq.candle.exit'),
-      dcaTag: t('fq.candle.dcaTag'),
-      closedTrade: t('fq.candle.closedTrade'),
-      pending: {
-        entry: t('fq.candle.pending.entry'),
-        dca: t('fq.candle.pending.dca'),
-        tp: t('fq.candle.pending.tp'),
-        exit: t('fq.candle.pending.exit'),
-        stop: t('fq.candle.pending.stop'),
-      },
-      tip: {
-        amount: t('fq.candle.tip.amount'),
-        price: t('fq.candle.tip.price'),
-        cost: t('fq.candle.tip.cost'),
-        time: t('fq.candle.tip.time'),
-        duration: t('fq.candle.tip.duration'),
-        reason: t('fq.candle.tip.reason'),
-        result: t('fq.candle.tip.result'),
-        opened: t('fq.candle.tip.opened'),
-        closed: t('fq.candle.tip.closed'),
-      },
-    },
+    labels: overlayLabels.value,
     fmtPrice: (v) => fmt.price(v),
     fmt: chartFmt,
     visibleCandles: frame.value.visible,
@@ -336,6 +429,10 @@ const option = computed(() => {
     labelSide: prefs.settings.ui.chartLabelSide,
     heightPx: plotHeight.value,
     showSubplots: showSubs.value,
+    subplotIds: chosenIds.value,
+    subTitleH: layoutIn.value.subTitleH,
+    subH: layoutIn.value.subH,
+    mainMinShare: layoutIn.value.mainMinShare,
   });
 });
 
@@ -385,9 +482,76 @@ const legend = computed(() =>
   set.value ? legendAt(set.value, hover.value ?? undefined, names.value) : null,
 );
 const up = computed(() => (legend.value?.close ?? 0) >= (legend.value?.open ?? 0));
+// The legend speaks plainly ("RSI 14"); the column name stays in the tooltip
+const legendNames = computed(() =>
+  names.value.map((raw) => ({
+    raw,
+    short: indicatorLabel(raw, lang.value).short,
+  })),
+);
+
+// ---- levels outside the price range: announced at the edge, with their distance ----
+const lastClose = computed(() => {
+  const s_ = set.value;
+  const ci = s_ ? s_.columns.indexOf('close') : -1;
+  if (!s_ || ci < 0) return null;
+  for (let i = s_.rows.length - 1; i >= 0; i--) {
+    const v = s_.rows[i]![ci];
+    if (v != null) return v as number;
+  }
+  return null;
+});
+const levels = computed(() =>
+  levelLines(props.overlays, toggles.value, tokens.value, overlayLabels.value),
+);
+// The price range on screen, read back from the chart (a pan or a zoom moves it)
+const axisRange = ref<{ lo: number; hi: number } | null>(null);
+function readRange() {
+  const m = layout.value.main;
+  if (!chartRef || typeof chartRef.convertFromPixel !== 'function') return;
+  const a = chartRef.convertFromPixel({ yAxisIndex: 0 }, m.top) as unknown;
+  const b = chartRef.convertFromPixel({ yAxisIndex: 0 }, m.top + m.height) as unknown;
+  if (
+    typeof a !== 'number' ||
+    typeof b !== 'number' ||
+    !Number.isFinite(a) ||
+    !Number.isFinite(b)
+  ) {
+    return;
+  }
+  const lo = Math.min(a, b);
+  const hi = Math.max(a, b);
+  const cur = axisRange.value;
+  const eps = (hi - lo) * 1e-6;
+  if (cur && Math.abs(cur.lo - lo) < eps && Math.abs(cur.hi - hi) < eps) return;
+  axisRange.value = { lo, hi };
+}
+const FAR_MAX = 3;
+const far = computed(() => {
+  if (!props.announce || !axisRange.value) return { up: [], down: [], moreUp: 0, moreDown: 0 };
+  const all = offscreenLevels(levels.value, axisRange.value, lastClose.value).map((o) => ({
+    ...o,
+    color: levels.value.find((l) => l.id === o.id)?.color,
+    text: t('fq.candle.far.level', {
+      arrow: o.dir === 'up' ? '↑' : '↓',
+      label: o.label,
+      price: fmt.price(o.price),
+      pct: o.pct === null ? '' : fmt.percent(o.pct, 0),
+    }),
+  }));
+  const upList = all.filter((o) => o.dir === 'up');
+  const downList = all.filter((o) => o.dir === 'down');
+  return {
+    up: upList.slice(0, FAR_MAX),
+    down: downList.slice(0, FAR_MAX),
+    moreUp: Math.max(0, upList.length - FAR_MAX),
+    moreDown: Math.max(0, downList.length - FAR_MAX),
+  };
+});
 
 function onReady(chart: ECharts) {
   chartRef = chart;
+  chart.on('finished', readRange);
   chart.on('updateAxisPointer', (ev: unknown) => {
     const info = (ev as { axesInfo?: Array<{ value?: number }> }).axesInfo?.[0];
     if (info?.value === undefined || !set.value) return;
@@ -560,6 +724,7 @@ onBeforeUnmount(() => {
   removeWindowListeners();
   if (typeof window !== 'undefined') window.removeEventListener('keydown', onKey);
   chartRef?.off('updateAxisPointer');
+  chartRef?.off('finished');
   chartRef?.off('globalout');
   chartRef = null;
   unsubscribe?.();
@@ -620,14 +785,14 @@ const hasOverlay = (k: keyof OverlayToggles) => {
             legend.close === null ? '' : fmt.price(legend.close)
           }}</b>
         </span>
-        <span v-for="n in names" :key="n" class="ind">
-          {{ n }}
+        <span v-for="n in legendNames" :key="n.raw" class="ind" :title="n.raw">
+          {{ n.short }}
           <b class="num"
             ><ValueState
-              v-if="legend.values[n] === null || legend.values[n] === undefined"
+              v-if="legend.values[n.raw] === null || legend.values[n.raw] === undefined"
               state="unavailable"
               :reason="t('fq.value.reason.noData')"
-            /><template v-else>{{ fmt.number(legend.values[n] as number, 2) }}</template></b
+            /><template v-else>{{ fmt.number(legend.values[n.raw] as number, 2) }}</template></b
           >
         </span>
       </div>
@@ -692,6 +857,60 @@ const hasOverlay = (k: keyof OverlayToggles) => {
         "
         data-testid="candle-empty"
       />
+      <div
+        v-if="option && (far.up.length > 0 || far.down.length > 0)"
+        class="far"
+        :class="prefs.settings.ui.chartLabelSide"
+        :style="{ top: `${layout.main.top}px`, height: `${layout.main.height}px` }"
+        data-testid="candle-far"
+      >
+        <div class="grp">
+          <span
+            v-for="o in far.up"
+            :key="o.id"
+            class="item num"
+            :style="{ color: o.color }"
+            data-testid="candle-far-level"
+            >{{ o.text }}</span
+          >
+          <span v-if="far.moreUp > 0" class="item num">{{
+            t('fq.candle.far.more', { n: far.moreUp })
+          }}</span>
+        </div>
+        <div class="grp">
+          <span
+            v-for="o in far.down"
+            :key="o.id"
+            class="item num"
+            :style="{ color: o.color }"
+            data-testid="candle-far-level"
+            >{{ o.text }}</span
+          >
+          <span v-if="far.moreDown > 0" class="item num">{{
+            t('fq.candle.far.more', { n: far.moreDown })
+          }}</span>
+        </div>
+      </div>
+      <div
+        v-for="p in option ? panes : []"
+        :key="p.id"
+        class="subhd"
+        :class="prefs.settings.ui.chartLabelSide"
+        :style="{ top: `${p.band}px`, height: `${subTitleH}px` }"
+        data-testid="candle-subhd"
+      >
+        <b :title="p.raw.join(', ')">{{ p.label }}</b>
+        <span class="why" :title="p.explain ?? undefined">{{ p.explain }}</span>
+        <button
+          type="button"
+          class="hide"
+          :aria-label="t('fq.pg.charts.sub.hideNamed', { name: p.label })"
+          data-testid="candle-sub-hide"
+          @click="hideSub(p.id)"
+        >
+          {{ t('fq.pg.charts.sub.hide') }}
+        </button>
+      </div>
       <button
         v-if="edge && option"
         type="button"
@@ -711,6 +930,23 @@ const hasOverlay = (k: keyof OverlayToggles) => {
       >
         <span class="mlabel num">{{ moveText }}</span>
       </div>
+    </div>
+    <p v-if="noRoom > 0" class="note" role="status" data-testid="candle-sub-noroom">
+      {{ t('fq.pg.charts.sub.noRoom', { n: noRoom }) }}
+    </p>
+    <div v-if="managed && addable.length > 0" class="addsub" data-testid="candle-addsub">
+      <span class="lead">{{ t('fq.pg.charts.sub.add') }}</span>
+      <button
+        v-for="a in addable"
+        :key="a.id"
+        type="button"
+        class="pick"
+        :title="a.raw.join(', ')"
+        data-testid="candle-sub-add"
+        @click="addSub(a.id)"
+      >
+        {{ a.label }}
+      </button>
     </div>
   </div>
 </template>
@@ -791,6 +1027,119 @@ const hasOverlay = (k: keyof OverlayToggles) => {
 }
 .plot.armed {
   cursor: crosshair;
+}
+.far {
+  position: absolute;
+  z-index: 3;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
+  padding: 2px 0;
+}
+/* The price axis labels are on the right: keep clear of them */
+.far.right {
+  right: 56px;
+}
+.far.left {
+  left: 50px;
+}
+.far .grp {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+.far .item {
+  padding: 1px 8px;
+  border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--bg-1) 88%, transparent);
+  border: 1px solid var(--line-2);
+  color: var(--fg-2);
+  font-size: var(--t-xs);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.subhd {
+  position: absolute;
+  z-index: 3;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  padding: 4px 4px 0;
+  font-size: var(--t-sm);
+  white-space: nowrap;
+}
+.subhd.left {
+  left: 46px;
+}
+.subhd b {
+  flex: none;
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+.subhd .why {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--fg-3);
+  font-size: var(--t-xs);
+}
+.subhd .hide,
+.addsub .pick {
+  flex: none;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--t-xs);
+  cursor: pointer;
+  padding: 0 2px;
+}
+.subhd .hide:hover,
+.addsub .pick:hover {
+  text-decoration: underline;
+}
+.addsub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 2px var(--s3) var(--s2);
+  padding: 7px 12px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-2);
+  color: var(--fg-3);
+  font-size: var(--t-sm);
+}
+.addsub .pick {
+  font-size: var(--t-sm);
+  min-height: 24px;
+}
+@media (max-width: 599px), (pointer: coarse) {
+  .subhd .hide,
+  .addsub .pick {
+    min-height: 44px;
+    padding: 0 8px;
+  }
+  .subhd {
+    align-items: center;
+    padding-top: 0;
+  }
+  .addsub {
+    margin: 2px var(--s3) var(--s2);
+  }
 }
 .edge {
   position: absolute;
