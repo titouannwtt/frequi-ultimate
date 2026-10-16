@@ -38,6 +38,7 @@ import {
   groupBots,
   isStaleGroup,
   minutesSince,
+  attentionScore,
   drawdownPct,
   stableOrder,
   sumBots,
@@ -141,8 +142,11 @@ const hovered = ref(false);
 const focused = ref(false);
 const frozen = computed(() => props.freezeOnHover && (hovered.value || focused.value));
 let prevOrder: StableOrderState | null = null;
+// Problems first: a bot that is offline, whose session expired or whose figures are frozen goes
+// before the ones with an alert, whatever its latent profit
+const rankOf = (b: BotRow) => attentionScore(b, botState(b, now.value, skew.value));
 const order = computed(() => {
-  const next = stableOrder(props.rows, props.sort, prevOrder, frozen.value);
+  const next = stableOrder(props.rows, props.sort, prevOrder, frozen.value, rankOf);
   prevOrder = next;
   return next;
 });
@@ -389,7 +393,7 @@ function slotsTitle(b: BotRow): string {
     : t('fq.pg.fleet.slots.title', { open: b.state.open_trades, max }, b.state.open_trades);
 }
 
-// ---- the market of a bot, in plain words and in grey (cyan is for information) ----
+// ---- the market of a bot, in plain words: in the tooltip of its name, not on the row ----
 function marketLabel(b: BotRow): string {
   const m = b.identity.market;
   if (m === 'crypto') return '';
@@ -400,6 +404,10 @@ function marketLabel(b: BotRow): string {
     mixed: 'mixed',
   }[m as string];
   return t(`fq.pg.fleet.market.${key ?? 'other'}`);
+}
+function nameTitle(b: BotRow): string {
+  const m = marketLabel(b);
+  return m ? `${b.identity.name} · ${m}` : b.identity.name;
 }
 
 // ---- a bot that is silent has a frozen number: the cell says so instead of looking alive ----
@@ -542,17 +550,11 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
               <template v-if="c.id === 'bot'">
                 <div class="name-cell">
                   <StatusDot :state="botState(item.bot, now, skew)" />
-                  <span class="name" :title="item.bot.identity.name">{{
+                  <span class="name" :title="nameTitle(item.bot)">{{
                     item.bot.identity.name
                   }}</span>
                   <Badge v-if="item.bot.identity.mode === 'dry'" kind="dry" />
                   <Badge v-else-if="item.bot.identity.mode === 'replay'" kind="replay" />
-                  <Badge
-                    v-if="marketLabel(item.bot)"
-                    kind="neutral"
-                    :label="marketLabel(item.bot)"
-                    class="mk"
-                  />
                   <span
                     v-if="item.bot.alerts.count > 0"
                     class="al"
@@ -1020,11 +1022,6 @@ tr.grp td {
   color: var(--fg-3);
   font-family: var(--font-ui);
   font-size: var(--t-sm);
-}
-.mk {
-  text-transform: none;
-  letter-spacing: 0;
-  font-weight: 500;
 }
 .foot {
   display: flex;

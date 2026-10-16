@@ -17,6 +17,7 @@ import {
   severityTone,
 } from '@/components/fq/lib/alerts';
 import {
+  attentionScore,
   attentionSignature,
   botState,
   fleetExposure,
@@ -79,6 +80,46 @@ describe('bots: state, order, sums', () => {
       (k) => rows.find((r) => r.bot_key === k)!.identity.name,
     );
     expect(order).toEqual(['crit', 'warn', 'info', 'calm_bad', 'calm_good']);
+  });
+
+  // An online bot whose state stopped arriving: its figures are frozen
+  const silent = (b: ReturnType<typeof bot>) => ({
+    ...b,
+    freshness: { ...b.freshness, state: { stale: true, as_of_ms: FIXTURE_NOW - 600_000 } as never },
+  });
+
+  it('attention order: the bots that are silent come first, then the alerts (B360)', () => {
+    const rows = [
+      bot(1, { name: 'calm', mode: 'live', latent: -80 }),
+      bot(2, { name: 'warn', mode: 'live', latent: -5, alert: 'warning' }),
+      bot(3, { name: 'crit', mode: 'live', latent: 10, alert: 'critical' }),
+      bot(4, { name: 'expired', mode: 'live', latent: 50, status: 'auth_expired' }),
+      silent(bot(5, { name: 'frozen', mode: 'live', latent: 20 })),
+      bot(6, { name: 'off', mode: 'live', latent: 0, status: 'offline', alert: 'critical' }),
+      bot(7, { name: 'stopped', mode: 'live', latent: -90, status: 'stopped' }),
+    ];
+    const state = (b: (typeof rows)[number]) => botState(b, FIXTURE_NOW, 0);
+    const rankOf = (b: (typeof rows)[number]) => attentionScore(b, state(b));
+    const order = stableOrder(rows, 'attention', null, false, rankOf).keys.map(
+      (k) => rows.find((r) => r.bot_key === k)!.identity.name,
+    );
+    // Offline and expired sessions, then the critical alert, then the frozen one, then a warning;
+    // a stopped bot is a decision of the owner, not a problem
+    expect(order.slice(0, 5)).toEqual(['off', 'expired', 'crit', 'frozen', 'warn']);
+    expect(order.slice(5).sort()).toEqual(['calm', 'stopped']);
+  });
+
+  it('a bot that goes silent changes the signature, so the order is recomputed', () => {
+    const rows = [
+      bot(1, { name: 'a', mode: 'live', latent: -10 }),
+      bot(2, { name: 'b', mode: 'live', latent: -20 }),
+    ];
+    const first = stableOrder(rows, 'attention', null, false);
+    const silent = rows.map((r, i) =>
+      i === 0 ? { ...r, state: { ...r.state, status: 'auth_expired' as const } } : r,
+    );
+    expect(attentionSignature(silent)).not.toBe(attentionSignature(rows));
+    expect(stableOrder(silent, 'attention', first, false).keys[0]).toBe(rows[0]!.bot_key);
   });
 
   it('the attention order does not move at a tick, only when an alert appears or resolves', () => {
