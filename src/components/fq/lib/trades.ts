@@ -190,6 +190,18 @@ export function durationTone(percentile: number | null): DurationTone {
   return 'ok';
 }
 
+/**
+ * The duration of an open line in plain words: nothing while it is usual, "long" from p84 and
+ * "longer than usual" from p91. The percentile itself only goes in the tooltip.
+ */
+export function durationNote(
+  percentile: number | null,
+): { tone: 'warn' | 'crit'; key: 'fq.trade.dur.warn' | 'fq.trade.dur.crit'; pct: number } | null {
+  const tone = durationTone(percentile);
+  if (tone === 'ok' || percentile == null) return null;
+  return { tone, key: `fq.trade.dur.${tone}`, pct: Math.round(percentile) };
+}
+
 /** Tone of the liquidation distance: under 15 % is critical (the rule `nearLiquidation`). */
 export function liqTone(distancePct: number | null): 'ok' | 'warn' | 'crit' | 'neutral' {
   if (distancePct == null) return 'neutral';

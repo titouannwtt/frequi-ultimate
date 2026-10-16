@@ -128,6 +128,68 @@ describe('TradeTable: presets', () => {
   });
 });
 
+describe('TradeTable: plain words (B381, B382)', () => {
+  const longRunning = (botIdx = 0, percentile = 98): Position => {
+    const bot = world.fixture.bots.filter((b) => b.identity.mode === 'live')[botIdx]!;
+    return { ...makePosition(bot, 'SOL/USDC:USDC', 90 + percentile, 'long', 0.5), percentile };
+  };
+
+  it('says "longer than usual" instead of P98, and keeps the percentile in the tooltip', () => {
+    const w = mountTrades({ preset: 'open', containerWidth: 1200, positions: [longRunning()] });
+    const note = w.get('.durnote');
+    expect(note.text()).toBe('longer than usual');
+    expect(note.attributes('title')).toContain('98');
+    expect(w.text()).not.toMatch(/\bP\d\d\b/i);
+  });
+
+  it('says "long" from p84 and nothing while the duration is usual', () => {
+    const w = mountTrades({
+      preset: 'open',
+      containerWidth: 1200,
+      positions: [longRunning(0, 86), longRunning(1, 40)],
+    });
+    expect(w.findAll('.durnote').map((n) => n.text())).toEqual(['long']);
+  });
+
+  it('cards use the same words', () => {
+    const w = mountTrades({ preset: 'open', containerWidth: 400, positions: [longRunning()] });
+    expect(w.get('.dnote').text()).toBe('longer than usual');
+    expect(w.text()).not.toMatch(/\bp98\b/i);
+  });
+
+  it('the market badge only shows where the market matters: open positions, never the journal', () => {
+    const bot = world.fixture.bots.find((b) => b.identity.mode === 'live')!;
+    const gold = {
+      ...makePosition(bot, 'xyz:GOLD/USDC:USDC', 70, 'long', 0.5),
+      market: 'xyz_commodities' as const,
+    };
+    const open = mountTrades({ preset: 'open', containerWidth: 1200, positions: [gold] });
+    expect(open.find('.badge.xyz').text()).toBe('Stocks, commodities');
+    const closed = closedTrades().map((t) => ({
+      ...t,
+      pair: 'xyz:GOLD/USDC:USDC',
+      market: 'xyz_commodities' as const,
+    }));
+    const journal = mountTrades({ preset: 'journal', containerWidth: 1200, trades: closed });
+    expect(journal.find('.badge.xyz').exists()).toBe(false);
+    expect(journal.text()).not.toContain('HIP-3');
+  });
+});
+
+describe('TradeTable: unknown exit reason (B383)', () => {
+  it('shows nothing, not "unknown", and the row stays', () => {
+    const trades = closedTrades().map((t) => ({
+      ...t,
+      exit_reason: { raw: '', kind: 'unknown' as const, class: 'other' as const },
+    }));
+    const w = mountTrades({ preset: 'journal', trades, containerWidth: 1200 });
+    expect(w.findAll('tbody tr:not(.pad):not(.none)')).toHaveLength(4);
+    expect(w.text().toLowerCase()).not.toContain('unknown');
+    const cards = mountTrades({ preset: 'journal', trades, containerWidth: 400 });
+    expect(cards.text().toLowerCase()).not.toContain('unknown');
+  });
+});
+
 describe('TradeTable: the same trade id on two bots', () => {
   const dupes = () => world.fixture.positions.filter((p) => p.trade_id === 1180);
 
