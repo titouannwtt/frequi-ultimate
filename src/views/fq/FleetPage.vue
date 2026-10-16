@@ -4,7 +4,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 
-import { Pane, SegmentedControl, Tabs } from '@/components/ds';
+import { ExcludedCount, Pane, SegmentedControl, Tabs } from '@/components/ds';
 import type { TabItem } from '@/components/ds';
 import {
   AlertRail,
@@ -27,6 +27,7 @@ import type { FleetSort } from '@/components/fq/lib/bots';
 import type { LeaderboardPeriod } from '@/components/fq/lib/leaderboard';
 import type { QuickFilter } from '@/components/fq/lib/trades';
 import { useActionNav } from '@/composables/useActionNav';
+import { usePositionsAwaiting } from '@/composables/usePositionsAwaiting';
 import { useScope } from '@/composables/useScope';
 import { useShellBus } from '@/composables/useShellBus';
 import { useShortcuts } from '@/composables/useShortcuts';
@@ -42,7 +43,7 @@ import type { Workspace } from '@/migration/schema';
  * The Fleet page (docs/redesign/02-design.md, section 3.1): KPI strip, scope bar, the fleet as a
  * table or a map, the open positions, "needs attention", equity / leaderboard / calendar and the
  * wallet risk, in named zones that follow the workspace (Surveillance, Incident, Analysis). On a
- * phone the order is incident first: the alerts come before the figures.
+ * phone the figures come first, then the alerts (four at most), then the scope and the table.
  */
 const { t } = useI18n();
 const route = useRoute();
@@ -134,6 +135,25 @@ const openCount = computed(() => {
   return positions.list.filter((p) => p.orphan || inScope.has(p.bot_key)).length;
 });
 
+// Bots that announce positions the table has not read yet (direct mode reads the bots in turn):
+// the table is partial, and says so instead of looking complete
+const awaiting = usePositionsAwaiting(() => scope.botKeys.value);
+const awaitingBots = computed(() =>
+  awaiting.bots.value.map((b) => ({
+    key: b.bot_key,
+    name: b.identity.name,
+    reason: t('fq.pg.fleet.positionsAwaiting'),
+  })),
+);
+const positionsMeta = computed(() =>
+  awaiting.missing.value > 0
+    ? t('fq.pg.fleet.positionsMetaPartial', {
+        n: openCount.value,
+        total: openCount.value + awaiting.missing.value,
+      })
+    : t('fq.pg.fleet.positionsMeta', { n: openCount.value }),
+);
+
 // ---- bell and palette: focus the rail, toggle the view ----
 const rail = ref<HTMLElement | null>(null);
 function focusRail() {
@@ -201,11 +221,15 @@ const incidentFirst = computed(() => phone.value && activeAlerts.value > 0);
       <ShellSlot name="scope"><FleetScope /></ShellSlot>
     </template>
 
+    <!-- Phone: the figures first (they were pushed below the fold by four alert cards), then the
+         alerts, which come before the scope and the table -->
+    <template v-if="phone">
+      <FleetKpis @open-bot="(k) => nav.openBot(k)" />
+    </template>
     <section v-if="phone && incidentFirst" ref="rail" class="area attention" id="attention">
       <AlertRail :limit="4" @action="nav.alertAction" />
     </section>
     <template v-if="phone">
-      <FleetKpis @open-bot="(k) => nav.openBot(k)" />
       <FleetScope />
     </template>
 
@@ -213,7 +237,9 @@ const incidentFirst = computed(() => phone.value && activeAlerts.value > 0);
       class="area table"
       :title="t('fq.pg.fleet.table')"
       icon="layout-grid"
-      :meta="t('fq.pg.fleet.tableMeta', { n: scope.bots.value.length, online })"
+      :meta="
+        t('fq.pg.fleet.tableMeta', { n: scope.bots.value.length, online }, scope.bots.value.length)
+      "
       :state="fleet.loaded ? 'ready' : 'loading'"
       :unavailable-reason="fleet.unavailable ?? undefined"
     >
@@ -258,10 +284,13 @@ const incidentFirst = computed(() => phone.value && activeAlerts.value > 0);
       class="area positions"
       :title="t('fq.pg.fleet.positions')"
       icon="layers"
-      :meta="t('fq.pg.fleet.positionsMeta', { n: openCount })"
+      :meta="positionsMeta"
       :state="positions.loaded ? 'ready' : 'loading'"
       :unavailable-reason="positions.unavailable ?? undefined"
     >
+      <template #tools>
+        <ExcludedCount :bots="awaitingBots" @select="(b) => nav.openBot(b.key)" />
+      </template>
       <TradeTable
         v-model:filter="posFilter"
         v-model:selected-key="posSelected"

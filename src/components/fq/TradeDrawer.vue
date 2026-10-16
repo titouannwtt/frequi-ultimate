@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 
 import { AdaptiveSheet, EmptyState } from '@/components/ds';
 import type { LadderOrder } from '@/components/ds';
+import { useTradeOrders } from '@/composables/useTradeOrders';
 import { useFqPositionsStore } from '@/datasource/stores/positions';
 import type { BotKey } from '@/gateway/types.gen';
 
@@ -39,6 +40,15 @@ const emit = defineEmits<{ close: []; navigate: [id: ActionId] }>();
 const { t } = useI18n();
 const positions = useFqPositionsStore();
 const position = computed(() => positions.get(props.botKey, props.tradeId) ?? null);
+// The drawer reads the orders of its own trade when the page did not hand them over: a drawer
+// opened from the fleet table or the journal has no other way to know its ladder
+const own = useTradeOrders(
+  () => props.botKey,
+  () => props.tradeId,
+  () => position.value?.side ?? 'long',
+);
+const ladder = computed(() => props.orders ?? own.model.value?.ladder);
+const ladderLoading = computed(() => props.orders === undefined && own.loading.value);
 const fraction = ref(1);
 const title = computed(() =>
   position.value ? `${pairLabel(position.value.pair)} #${props.tradeId}` : `#${props.tradeId}`,
@@ -54,7 +64,8 @@ const title = computed(() =>
         :tp="tp"
         :next-so="nextSo"
         :dca-max="dcaMax"
-        :orders="orders"
+        :orders="ladder"
+        :orders-loading="ladderLoading"
       />
       <EmptyState
         v-else
@@ -79,7 +90,8 @@ const title = computed(() =>
         :tp="tp"
         :next-so="nextSo"
         :dca-max="dcaMax"
-        :orders="orders"
+        :orders="ladder"
+        :orders-loading="ladderLoading"
       />
       <EmptyState
         v-else

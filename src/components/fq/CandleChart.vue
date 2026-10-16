@@ -9,12 +9,14 @@ use([DatasetComponent]);
 
 <script setup lang="ts">
 import type { ECharts } from 'echarts/core';
+import { useElementSize } from '@vueuse/core';
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { BaseChart, EmptyState, FilterChip, Skeleton } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useDataSource } from '@/composables/useDataSource';
+import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { DataSource } from '@/datasource/types';
 import type { BotKey } from '@/gateway/types.gen';
@@ -28,6 +30,8 @@ import {
   indicatorNames,
   legendAt,
   mergeTail,
+  paneLayout,
+  subplotCount,
   toCandleSet,
   type CandleSet,
   type OverlayToggles,
@@ -85,6 +89,7 @@ const emit = defineEmits<{ 'update:toggles': [t: OverlayToggles]; ready: [chart:
 const { t } = useI18n();
 const fmt = useFormat();
 const prefs = useFqPrefsStore();
+const fleet = useFqFleetStore();
 const data = useDataSource();
 const { tokens } = useChartTokens();
 
@@ -208,6 +213,28 @@ watch(
   },
 );
 
+// The panes are sized in pixels from the room the chart really has
+const plotEl = ref<HTMLElement | null>(null);
+const { height: plotHeight } = useElementSize(plotEl);
+const showSubs = ref(true);
+const hasVolume = computed(() => set.value?.columns.includes('volume') ?? false);
+const subsTotal = computed(() =>
+  set.value ? subplotCount(plot.value, props.rsi, set.value.columns) : 0,
+);
+const subsShown = computed(
+  () =>
+    paneLayout({
+      heightPx: plotHeight.value,
+      hasVolume: hasVolume.value,
+      subCount: subsTotal.value,
+      showSubplots: showSubs.value,
+    }).subs.length,
+);
+
+// A bot only serves the candles of its own strategy timeframe: say so rather than "no candle yet"
+const ownTf = computed(() => fleet.bots[props.botKey]?.identity.timeframe ?? null);
+const wrongTf = computed(() => ownTf.value !== null && ownTf.value !== props.tf);
+
 const visibleCount = computed(
   () => props.visibleCandles ?? prefs.settings.ui.chartDefaultCandleCount,
 );
@@ -240,6 +267,8 @@ const option = computed(() => {
     visibleCandles: visibleCount.value,
     initialZoom: zoomApplied.value !== zoomKey.value,
     labelSide: prefs.settings.ui.chartLabelSide,
+    heightPx: plotHeight.value,
+    showSubplots: showSubs.value,
   });
 });
 
@@ -290,7 +319,6 @@ interface Drag {
   bx: number;
   by: number;
 }
-const plotEl = ref<HTMLElement | null>(null);
 const drag = ref<Drag | null>(null);
 const LONG_PRESS_MS = 450;
 const PRESS_SLOP_PX = 10;
@@ -446,23 +474,33 @@ const hasOverlay = (k: keyof OverlayToggles) => {
 
 <template>
   <div class="cc" data-testid="candle-chart" :aria-busy="loading || undefined">
-    <div v-if="legend" class="legend" data-testid="candle-legend">
-      <span class="ohlc num">
-        O <b>{{ legend.open === null ? '' : fmt.price(legend.open) }}</b> H
-        <b>{{ legend.high === null ? '' : fmt.price(legend.high) }}</b> L
-        <b>{{ legend.low === null ? '' : fmt.price(legend.low) }}</b> C
-        <b :class="up ? 'up' : 'down'">{{
-          legend.close === null ? '' : fmt.price(legend.close)
-        }}</b>
-      </span>
-      <span v-for="n in names" :key="n" class="ind">
-        {{ n }}
-        <b class="num">{{
-          legend.values[n] === null || legend.values[n] === undefined
-            ? t('fq.ds.dash')
-            : fmt.number(legend.values[n] as number, 2)
-        }}</b>
-      </span>
+    <div v-if="legend" class="legrow">
+      <div class="legend" data-testid="candle-legend">
+        <span class="ohlc num">
+          O <b>{{ legend.open === null ? '' : fmt.price(legend.open) }}</b> H
+          <b>{{ legend.high === null ? '' : fmt.price(legend.high) }}</b> L
+          <b>{{ legend.low === null ? '' : fmt.price(legend.low) }}</b> C
+          <b :class="up ? 'up' : 'down'">{{
+            legend.close === null ? '' : fmt.price(legend.close)
+          }}</b>
+        </span>
+        <span v-for="n in names" :key="n" class="ind">
+          {{ n }}
+          <b class="num">{{
+            legend.values[n] === null || legend.values[n] === undefined
+              ? t('fq.ds.dash')
+              : fmt.number(legend.values[n] as number, 2)
+          }}</b>
+        </span>
+      </div>
+      <FilterChip
+        v-if="controls && subsTotal > 0"
+        class="subs"
+        :label="t('fq.candle.ov.subplots', { shown: subsShown, total: subsTotal })"
+        :active="showSubs"
+        data-testid="candle-subplots"
+        @toggle="showSubs = !showSubs"
+      />
     </div>
     <div
       v-if="controls && toggleKeys.some(hasOverlay)"
@@ -506,8 +544,15 @@ const hasOverlay = (k: keyof OverlayToggles) => {
       <EmptyState
         v-else
         icon="chart-candlestick"
-        :title="t('fq.candle.empty')"
-        :hint="error ? t('fq.candle.emptyError') : t('fq.candle.emptyHint')"
+        :title="wrongTf ? t('fq.candle.emptyTf', { tf }) : t('fq.candle.empty')"
+        :hint="
+          error
+            ? t('fq.candle.emptyError')
+            : wrongTf
+              ? t('fq.candle.onlyTf', { tf: ownTf })
+              : t('fq.candle.emptyHint')
+        "
+        data-testid="candle-empty"
       />
       <div
         v-if="drag && move"
@@ -530,12 +575,26 @@ const hasOverlay = (k: keyof OverlayToggles) => {
   min-height: 0;
   height: 100%;
 }
+.legrow {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding-right: var(--s2);
+  border-bottom: 1px solid var(--line);
+}
+.subs {
+  flex: none;
+}
 .legend {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   gap: 12px;
-  flex-wrap: wrap;
+  /* One line: a strategy with a dozen indicators must not eat the price pane */
+  flex-wrap: nowrap;
+  overflow: hidden;
+  white-space: nowrap;
   padding: 4px var(--s3);
-  border-bottom: 1px solid var(--line);
   color: var(--fg-3);
   font-family: var(--font-num);
   font-size: var(--t-xs);

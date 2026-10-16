@@ -24,7 +24,7 @@ use([
   MarkAreaComponent,
 ]);
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const settingsStore = useSettingsStore();
 
 const props = defineProps<{
@@ -92,9 +92,9 @@ function formatDateLabel(d: string, bucket: string): string {
     return `Q${q} ${date.getFullYear()}`;
   }
   if (bucket === '1M') {
-    return date.toLocaleDateString('en', { month: 'short', year: '2-digit' });
+    return date.toLocaleDateString(locale.value, { month: 'short', year: '2-digit' });
   }
-  return date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' });
 }
 
 const chartOptions = computed((): EChartsOption => {
@@ -294,11 +294,25 @@ const chartOptions = computed((): EChartsOption => {
   };
 });
 
+// A slow bot says so instead of leaving the spinner alone
+const slow = ref(false);
+let slowTimer: ReturnType<typeof setTimeout> | undefined;
+watch(
+  loading,
+  (isLoading) => {
+    clearTimeout(slowTimer);
+    slow.value = false;
+    if (isLoading) slowTimer = setTimeout(() => (slow.value = true), 8_000);
+  },
+  { immediate: true },
+);
+onBeforeUnmount(() => clearTimeout(slowTimer));
+
 const refreshLabel = computed(() => {
   const s = secondsSinceRefresh.value;
   if (s === Infinity) return '';
-  if (s < 60) return `${s}s ago`;
-  return `${Math.floor(s / 60)}m ago`;
+  if (s < 60) return t('volumeComparator.agoSeconds', { n: s });
+  return t('volumeComparator.agoMinutes', { n: Math.floor(s / 60) });
 });
 </script>
 
@@ -329,7 +343,7 @@ const refreshLabel = computed(() => {
             :class="{ 'vc-btn--active': selectedBucket === opt.value }"
             @click="selectedBucket = opt.value"
           >
-            {{ opt.text }}
+            {{ t(`volumeComparator.buckets.${opt.value}`) }}
           </button>
         </div>
 
@@ -369,12 +383,13 @@ const refreshLabel = computed(() => {
       <div v-if="loading && !hasData" class="vc-empty">
         <div class="vc-spinner" />
         <span>{{ t('volumeComparator.loading') }}</span>
+        <small v-if="slow" class="vc-slow">{{ t('volumeComparator.loadingSlow') }}</small>
       </div>
       <div v-else-if="!hasData" class="vc-empty">
         <i-mdi-chart-bar class="vc-empty-icon" />
         <span>{{ t('volumeComparator.noData') }}</span>
         <button class="vc-retry-btn" @click="fetchData">
-          <i-mdi-refresh class="w-3.5 h-3.5" /> Retry
+          <i-mdi-refresh class="w-3.5 h-3.5" /> {{ t('volumeComparator.retry') }}
         </button>
       </div>
       <ECharts
@@ -392,13 +407,18 @@ const refreshLabel = computed(() => {
         <b>ρ</b> = {{ correlation.toFixed(2) }}
       </span>
       <span v-if="avgVolumeRatio !== null" class="vc-stat">
-        Avg ratio: {{ avgVolumeRatio.toFixed(3) }}%
+        {{ t('volumeComparator.avgRatio') }}: {{ avgVolumeRatio.toFixed(3) }}%
       </span>
       <span v-if="avgProfitPerVolume !== null" class="vc-stat">
         {{ t('volumeComparator.profitPerVol') }}: {{ avgProfitPerVolume.toFixed(2) }}%
       </span>
       <span v-if="mergedData" class="vc-stat">
-        {{ mergedData.whitelist_count }} pairs · {{ mergedData.exchange_name }}
+        {{
+          t('volumeComparator.pairsOn', {
+            n: mergedData.whitelist_count,
+            exchange: mergedData.exchange_name,
+          })
+        }}
       </span>
     </div>
   </div>

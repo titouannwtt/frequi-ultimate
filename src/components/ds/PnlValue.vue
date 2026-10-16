@@ -57,7 +57,10 @@ const tone = computed(() =>
     <template v-if="unknown">{{ t('fq.origin.unknown') }}</template>
     <template v-else-if="!known">{{ t('fq.ds.notAvailable') }}</template>
     <template v-else
-      >{{ text }}<small v-if="unit">{{ unit }}</small></template
+      >{{ text
+      }}<template v-if="unit"
+        >&nbsp;<small>{{ unit }}</small></template
+      ></template
     >
   </span>
 </template>
@@ -82,7 +85,6 @@ small {
   font-size: 0.9em;
   font-weight: 500;
   color: var(--fg-3);
-  margin-left: 3px;
   letter-spacing: 0;
 }
 </style>

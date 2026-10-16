@@ -5,12 +5,14 @@
 import charts from './charts.en';
 import tools from './tools.en';
 import settings from './settings.en';
+import legacy from './legacy.en';
 
 export default {
   pg: {
     charts,
     tools,
     settings,
+    legacy,
     notFound: {
       title: 'Page not found',
       hint: 'This address leads nowhere. The old addresses of FreqUI still work: check the one you followed.',
@@ -30,7 +32,7 @@ export default {
     },
     fleet: {
       table: 'Fleet',
-      tableMeta: '{n} bots · {online} online',
+      tableMeta: '{n} bot · {online} online | {n} bots · {online} online',
       view: { label: 'View', table: 'Table', map: 'Map' },
       sort: {
         label: 'Sort',
@@ -40,6 +42,8 @@ export default {
       },
       positions: 'Open positions',
       positionsMeta: '{n} · worst first',
+      positionsMetaPartial: '{n} read of {total} · worst first',
+      positionsAwaiting: 'positions not read yet',
       equity: 'Equity',
       tabs: { equity: 'Equity', leaderboard: 'Leaderboard', calendar: 'Calendar' },
       lbPeriod: { '1d': '1 d', '7d': '7 d', '30d': '30 d', total: 'Total' },

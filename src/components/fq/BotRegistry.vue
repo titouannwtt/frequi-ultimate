@@ -146,7 +146,7 @@ const dateOf = (ms: number) => formatDateTime(ms, prefs.settings.tz, locale.valu
             </td>
             <td class="l num mut c-key">{{ r.alias ?? t('fq.ds.dash') }} · {{ r.botKey }}</td>
             <td class="l c-grp">{{ r.group ?? t('fq.fleet.ungrouped') }}</td>
-            <td class="l">
+            <td class="l c-state">
               {{ stateText(r) }}
               <span v-if="r.sinceMs !== null && r.mode === 'dry'" class="mut">{{
                 t('fq.origin.since', { date: dateOf(r.sinceMs).slice(0, 5) })
@@ -334,11 +334,20 @@ tr.m-dry td:first-child {
   overflow: hidden;
   clip: rect(0 0 0 0);
 }
+/* The state never wraps word by word ("en" / "ligne" on two lines) */
+.c-state {
+  white-space: nowrap;
+}
 @container (max-width: 640px) {
   .c-key,
   .c-tags,
   .c-grp {
     display: none;
+  }
+}
+@container (max-width: 420px) {
+  .nm {
+    max-width: 14ch;
   }
 }
 </style>

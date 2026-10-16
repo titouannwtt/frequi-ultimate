@@ -9,6 +9,8 @@ import { makeCandles } from '@/components/fq/fixtures/charts';
 import {
   ALL_OVERLAYS,
   buildCandleOption,
+  paneLayout,
+  subplotCount,
   toCandleSet,
   type CandleOptionInput,
 } from '@/components/fq/lib/candles';
@@ -114,5 +116,73 @@ describe('CandleChart option rendered by ECharts', () => {
     );
     const after = seriesCounts(chart)[0]!;
     expect(Math.abs(after - before)).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('pane layout of the candle chart (B193)', () => {
+  const four = {
+    main_plot: {},
+    subplots: { a: { a: {} }, b: { b: {} }, c: { c: {} }, d: { d: {} } },
+  } as never;
+
+  it('keeps a price pane of a useful height when four sub-charts are asked for', () => {
+    // The QA chart was about 330 px high: the old percent layout left ~60 px to the price pane
+    const l = paneLayout({ heightPx: 330, hasVolume: true, subCount: 4, showSubplots: true });
+    expect(l.main.height).toBeGreaterThanOrEqual(160);
+    expect(l.main.height).toBeGreaterThan(330 * 0.5);
+    // What does not fit is dropped, not squeezed
+    expect(l.subs.length).toBeLessThan(4);
+    const last = l.subs[l.subs.length - 1] ?? l.volume!;
+    expect(last.top + last.height).toBeLessThanOrEqual(330);
+  });
+
+  it('shows every sub-chart when the chart is tall enough, and none when they are switched off', () => {
+    expect(
+      paneLayout({ heightPx: 900, hasVolume: true, subCount: 4, showSubplots: true }).subs,
+    ).toHaveLength(4);
+    const off = paneLayout({ heightPx: 900, hasVolume: true, subCount: 4, showSubplots: false });
+    expect(off.subs).toHaveLength(0);
+    expect(off.volume).not.toBeNull();
+    expect(off.main.height).toBeGreaterThan(700);
+  });
+
+  it('never gives the panes overlapping positions, and survives an unknown height', () => {
+    const l = paneLayout({ heightPx: 0, hasVolume: true, subCount: 2, showSubplots: true });
+    const panes = [l.main, l.volume!, ...l.subs];
+    for (let i = 1; i < panes.length; i++) {
+      expect(panes[i]!.top).toBeGreaterThanOrEqual(panes[i - 1]!.top + panes[i - 1]!.height);
+    }
+  });
+
+  it('the option has one grid per drawn pane: the sub-charts that do not fit leave no series', () => {
+    const set = toCandleSet(makeCandles(60));
+    const plotConfig = {
+      main_plot: {},
+      subplots: { rsi_pane: { rsi: {} }, ema_pane: { ema_50: {} } },
+    } as never;
+    const small = buildCandleOption(input({ set, plotConfig, heightPx: 330 })) as {
+      grid: unknown[];
+    };
+    const tall = buildCandleOption(input({ set, plotConfig, heightPx: 900 })) as {
+      grid: unknown[];
+    };
+    const off = buildCandleOption(
+      input({ set, plotConfig, heightPx: 900, showSubplots: false }),
+    ) as {
+      grid: unknown[];
+    };
+    expect(small.grid.length).toBeLessThan(tall.grid.length);
+    expect(tall.grid).toHaveLength(4); // price, volume, two sub-charts
+    expect(off.grid).toHaveLength(2);
+  });
+
+  it('counts the sub-charts the plot config asks for, RSI included when it is added', () => {
+    const columns = ['date', 'rsi'];
+    expect(subplotCount(four, true, columns)).toBe(5);
+    expect(subplotCount(four, false, columns)).toBe(4);
+    expect(subplotCount({ main_plot: {}, subplots: {} } as never, true, ['rsi'])).toBe(1);
+    expect(
+      subplotCount({ main_plot: {}, subplots: { r: { rsi: {} } } } as never, true, columns),
+    ).toBe(1);
   });
 });

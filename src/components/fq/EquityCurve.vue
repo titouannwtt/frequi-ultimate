@@ -143,7 +143,7 @@ const option = computed(() =>
   buildEquityOption({
     points: points.value,
     tokens: tokens.value,
-    fmtValue: (v) => fmt.number(v, Math.abs(v) >= 1000 ? 0 : 2),
+    fmtValue: (v, decimals) => fmt.number(v, decimals ?? (Math.abs(v) >= 1000 ? 0 : 2)),
     fmtDate: (ts) =>
       props.period === '24h'
         ? formatClock(ts, zone.value)
@@ -213,7 +213,7 @@ const chartLabel = computed(() =>
             <template v-if="ddAbs !== null">
               <PnlValue :value="-ddAbs" unit="USDC" :decimals="0" />
               <small v-if="drawdownPct(ddValue) !== null" class="pct">
-                {{ fmt.percent(-(drawdownPct(ddValue) as number), 1) }}</small
+                &nbsp;{{ fmt.percent(-(drawdownPct(ddValue) as number), 1) }}</small
               >
             </template>
             <span v-else class="mut">{{ t('fq.ds.notAvailable') }}</span>

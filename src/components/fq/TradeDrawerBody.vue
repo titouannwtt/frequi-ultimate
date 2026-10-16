@@ -24,6 +24,8 @@ const props = defineProps<{
   nextSo?: number | null;
   dcaMax?: number | null;
   orders?: LadderOrder[];
+  /** The orders are being read: say so instead of "not available". */
+  ordersLoading?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -40,6 +42,8 @@ const acts = useBotActions(
 );
 
 const tone = computed(() => durationTone(line.value.percentile));
+// A bot name wraps after an underscore or a dash, never in the middle of a word
+const nameParts = computed(() => line.value.botName.split(/(?<=[_\-.])/));
 const max = computed(() => props.dcaMax ?? props.position.dca_entries);
 
 /** Distance in percent of the price to a level, positive when the level is still ahead. */
@@ -52,7 +56,11 @@ function toward(level: number | null | undefined, towardLower: boolean): number 
   return ((up ? level - cur : cur - level) / cur) * 100;
 }
 const toTp = computed(() => toward(props.tp, false));
-const toSo = computed(() => toward(props.nextSo, true));
+// The next safety order is the first ladder level that is not filled yet, when the ladder knows it
+const nextSoPrice = computed(
+  () => props.nextSo ?? props.orders?.find((o) => o.state === 'next')?.price ?? null,
+);
+const toSo = computed(() => toward(nextSoPrice.value, true));
 
 const facts = computed(() => [
   { k: 'notional', v: fmt.number(props.position.notional, 2) },
@@ -99,7 +107,9 @@ const ordersOpen = computed(() => height.value >= 900);
       </div>
       <div v-if="!position.orphan" class="target" data-testid="drawer-target">
         <span class="k">{{ t('fq.action.targetBot') }}</span>
-        <span class="nm">{{ line.botName }}</span>
+        <span class="nm" :title="line.botName"
+          ><template v-for="(part, i) in nameParts" :key="i">{{ part }}<wbr /></template
+        ></span>
         <ModeMark v-if="line.mode" :mode="line.mode" full />
       </div>
       <p v-else class="orph">
@@ -140,8 +150,15 @@ const ordersOpen = computed(() => height.value >= 900);
     <section class="ladder">
       <h3><DsIcon name="layers" /> {{ t('fq.ds.ladder.title') }}</h3>
       <DcaLadderV v-if="orders && orders.length > 0" :position="ladderPos" :orders="orders" />
+      <p v-else-if="ordersLoading" class="dim">{{ t('fq.ds.loading') }}</p>
       <p v-else class="dim">
-        {{ t('fq.drawer.ordersUnavailable', { n: position.dca_entries, max }) }}
+        {{
+          t(
+            'fq.drawer.ordersUnavailable',
+            { n: position.dca_entries, max: max ?? '?' },
+            position.dca_entries,
+          )
+        }}
       </p>
     </section>
 
@@ -250,7 +267,8 @@ const ordersOpen = computed(() => height.value >= 900);
 .nm {
   font-weight: 700;
   margin-right: auto;
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 .orph {
   display: flex;

@@ -46,7 +46,7 @@ describe('PnlValue', () => {
   });
 
   it('renders the unit and never invents a number for unknown or missing values', () => {
-    expect(mountDs(PnlValue, { props: { value: 3, unit: 'USDC' } }).text()).toBe('+3.00USDC');
+    expect(mountDs(PnlValue, { props: { value: 3, unit: 'USDC' } }).text()).toBe('+3.00\u00a0USDC');
     const unknown = mountDs(PnlValue, { props: { value: 3, unknown: true } });
     expect(unknown.text()).toBe('unknown');
     expect(mountDs(PnlValue, { props: { value: null } }).text()).toBe('n/a');

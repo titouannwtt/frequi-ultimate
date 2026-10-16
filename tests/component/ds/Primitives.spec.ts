@@ -406,3 +406,14 @@ describe('Toaster', () => {
     expect(toaster.toasts.value.some((t) => t.id === id)).toBe(false);
   });
 });
+
+describe('Pane error line (B197)', () => {
+  it('separates the parts of the error line with spaces, never glued', () => {
+    const w = mountDs(Pane, {
+      props: { title: 'T', state: 'error', hasData: true, errorMessage: 'the bot is out of scope' },
+    });
+    const line = w.get('[role=alert]').text();
+    expect(line).toMatch(/ · the bot is out of scope · /);
+    expect(line).not.toMatch(/\S·|·\S/);
+  });
+});

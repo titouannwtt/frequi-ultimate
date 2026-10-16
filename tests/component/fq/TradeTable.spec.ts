@@ -95,6 +95,15 @@ describe('TradeTable: presets', () => {
     expect(w.findAll('tbody tr:not(.pad):not(.none)')).toHaveLength(4);
   });
 
+  it('journal: leaves out the DCA and MAE/MFE columns when no loaded trade carries them (B201)', () => {
+    const w = mountTrades({ preset: 'journal', trades: closedTrades(), containerWidth: 1200 });
+    const heads = w.findAll('thead th').map((h) => h.text().toLowerCase());
+    expect(heads.some((h) => h.includes('mae'))).toBe(false);
+    expect(heads.some((h) => h === 'dca')).toBe(false);
+    // The room goes to the exit reason and the duration
+    expect(heads.some((h) => h.includes('reason') || h.includes('exit'))).toBe(true);
+  });
+
   it('empty states say what to do, per preset', () => {
     for (const preset of ['open', 'bot', 'closed', 'journal'] as const) {
       const w = mountTrades({

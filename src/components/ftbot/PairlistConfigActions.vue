@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import EditValue from '../general/EditValue.vue';
+const { t } = useI18n();
 const pairlistStore = usePairlistConfigStore();
 </script>
 <template>
   <div class="flex flex-col sm:flex-row mb-2 gap-2">
     <Button
-      title="Save configuration"
+      :title="t('fq.pg.legacy.pairlist.save')"
       size="small"
       severity="primary"
       @click="pairlistStore.saveConfig(pairlistStore.config.name)"
@@ -35,7 +37,7 @@ const pairlistStore = usePairlistConfigStore();
       />
     </EditValue>
     <Button
-      title="Evaluate pairlist"
+      :title="t('fq.pg.legacy.pairlist.evaluateTip')"
       :disabled="pairlistStore.evaluating || !pairlistStore.pairlistValid"
       severity="primary"
       class="px-5"
@@ -43,7 +45,7 @@ const pairlistStore = usePairlistConfigStore();
       @click="pairlistStore.startPairlistEvaluation()"
     >
       <ProgressSpinner v-if="pairlistStore.evaluating" class="h-5 w-5"></ProgressSpinner>
-      <span v-else>Evaluate</span>
+      <span v-else>{{ t('fq.pg.legacy.pairlist.evaluate') }}</span>
     </Button>
   </div>
 </template>

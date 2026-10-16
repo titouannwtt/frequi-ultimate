@@ -13,6 +13,7 @@ import {
 } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
+import { usePositionsAwaiting } from '@/composables/usePositionsAwaiting';
 import { useSourceQuery } from '@/composables/useSourceQuery';
 import { withTimeout } from './lib/logs';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
@@ -74,6 +75,10 @@ const fleet = useFqFleetStore();
 const positions = useFqPositionsStore();
 const clock = useNowMs();
 const q = ref('');
+// Positions the bot announces and the app has not read yet: not "no open position"
+const awaiting = usePositionsAwaiting(() =>
+  props.botKey && !props.fleetPositions ? [props.botKey] : fleet.list.map((b) => b.bot_key),
+);
 
 const filters = computed<PairFilter[]>(
   () => props.tabs ?? (props.botKey ? ['positions', 'signals', 'locks', 'all'] : ['positions']),
@@ -261,9 +266,11 @@ function leftLabel(i: PairItem): string {
       v-else-if="!loading"
       :icon="filter === 'locks' ? 'hand' : filter === 'signals' ? 'activity' : 'layers'"
       :title="
-        botKey === null && filter !== 'positions'
-          ? t('fq.pairnav.pickBot')
-          : t(`fq.pairnav.empty.${filter}`)
+        filter === 'positions' && awaiting.missing.value > 0
+          ? t('fq.trade.awaiting', { n: awaiting.missing.value }, awaiting.missing.value)
+          : botKey === null && filter !== 'positions'
+            ? t('fq.pairnav.pickBot')
+            : t(`fq.pairnav.empty.${filter}`)
       "
       :hint="q ? t('fq.pairnav.noMatch') : undefined"
     />

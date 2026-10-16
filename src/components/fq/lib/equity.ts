@@ -74,11 +74,21 @@ export function downsample(points: readonly Point[], max = 600): Point[] {
 export interface EquityOptionInput {
   points: readonly Point[];
   tokens: ChartTokens;
-  /** Formats the axis values (numbers) and the dates; the caller owns the language. */
-  fmtValue: (v: number) => string;
+  /**
+   * Formats the axis values (numbers) and the dates; the caller owns the language. `decimals` is
+   * given for the axis labels: every tick of an axis has the same, so "5 000" and "-300,00" never
+   * share an axis; without it the value is formatted for a tooltip.
+   */
+  fmtValue: (v: number, decimals?: number) => string;
   fmtDate: (ts: number) => string;
   /** Labels of the two series, already translated. */
   labels: { equity: string; drawdown: string };
+}
+
+/** Decimals of the ticks of an axis spanning `span`: whole numbers from 20 up, never mixed. */
+export function tickDecimals(span: number): number {
+  if (!Number.isFinite(span) || span >= 20) return 0;
+  return span >= 2 ? 1 : 2;
 }
 
 /** One ECharts instance, two grids: the curve above, the drawdown (absolute) below. */
@@ -86,6 +96,9 @@ export function buildEquityOption(input: EquityOptionInput): EChartsOption {
   const { tokens: c, fmtValue, fmtDate } = input;
   const pts = downsample(input.points);
   const dd = drawdownSeries(pts);
+  const values = pts.map((p) => p[1]);
+  const mainDecimals = tickDecimals(values.length ? Math.max(...values) - Math.min(...values) : 0);
+  const ddDecimals = tickDecimals(dd.length ? -Math.min(...dd.map((p) => p[1])) : 0);
   return {
     grid: [
       { left: 8, right: 12, top: 10, bottom: '36%', containLabel: true },
@@ -107,7 +120,11 @@ export function buildEquityOption(input: EquityOptionInput): EChartsOption {
         scale: true,
         gridIndex: 0,
         splitNumber: 3,
-        axisLabel: { color: c.fg3, fontSize: 11, formatter: (v: number) => fmtValue(v) },
+        axisLabel: {
+          color: c.fg3,
+          fontSize: 11,
+          formatter: (v: number) => fmtValue(v, mainDecimals),
+        },
         splitLine: { lineStyle: { color: c.line } },
       },
       {
@@ -115,7 +132,11 @@ export function buildEquityOption(input: EquityOptionInput): EChartsOption {
         gridIndex: 1,
         splitNumber: 1,
         max: 0,
-        axisLabel: { color: c.fg3, fontSize: 11, formatter: (v: number) => fmtValue(v) },
+        axisLabel: {
+          color: c.fg3,
+          fontSize: 11,
+          formatter: (v: number) => fmtValue(v, ddDecimals),
+        },
         splitLine: { show: false },
       },
     ],

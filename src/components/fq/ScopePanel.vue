@@ -145,7 +145,7 @@ const unavailable = computed(() => alertsStore.unavailable);
           <div class="tiles">
             <KpiTile
               :label="t('fq.kpi.pnlOpen')"
-              :sub="t('fq.header.openTrades', { n: blk.open_trades })"
+              :sub="t('fq.header.openTrades', { n: blk.open_trades }, blk.open_trades)"
             >
               <template #value><PnlValue :value="blk.open_profit_abs" /></template>
             </KpiTile>
@@ -182,7 +182,9 @@ const unavailable = computed(() => alertsStore.unavailable);
               <template #value>
                 <PnlValue :value="-data.drawdown.with_open.abs" :decimals="0" />
                 <small v-if="drawdownPct(data.drawdown.with_open) !== null">
-                  {{ fmt.percent(-(drawdownPct(data.drawdown.with_open) as number), 1) }}</small
+                  &nbsp;{{
+                    fmt.percent(-(drawdownPct(data.drawdown.with_open) as number), 1)
+                  }}</small
                 >
               </template>
             </KpiTile>

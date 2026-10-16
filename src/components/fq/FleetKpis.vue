@@ -128,7 +128,7 @@ const SKELETON = [
         </KpiTile>
         <KpiTile
           :label="t('fq.kpi.pnlOpen')"
-          :sub="t('fq.kpi.positions', { n: m.openCount })"
+          :sub="t('fq.kpi.positions', { n: m.openCount }, m.openCount)"
           data-testid="kpi-open"
         >
           <template #value><PnlValue :value="m.openProfit" /></template>

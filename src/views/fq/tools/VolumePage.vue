@@ -43,6 +43,8 @@ useLegacyBot(() => picked.value);
 
 <style scoped>
 .legacy {
+  /* The chart fills its parent: without a height it collapsed to a strip of a few pixels */
+  height: clamp(420px, 68vh, 760px);
   border: 1px solid var(--line);
   border-radius: var(--r-2);
   background: var(--bg-1);

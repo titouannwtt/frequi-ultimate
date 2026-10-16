@@ -356,11 +356,15 @@ export default {
       safetyOrders: 'Ordres de sécurité',
       fills: 'Exécutions',
       liquidation: 'Liquidation',
+      subplots: 'Sous-graphiques {shown}/{total}',
     },
     chartLabel: 'Bougies de {pair} en {tf}',
     empty: 'Aucune bougie',
-    emptyHint: "Le bot n'a pas encore renvoyé de bougies pour cette paire.",
+    emptyHint:
+      "Aucune bougie reçue pour cette paire. Un bot ne sert que l'unité de temps de sa stratégie : essayez-la.",
     emptyError: "Le bot n'a pas répondu.",
+    emptyTf: 'Pas de bougies en {tf}',
+    onlyTf: 'Ce bot ne sert que {tf}.',
   },
   recon: {
     coin: 'Coin',

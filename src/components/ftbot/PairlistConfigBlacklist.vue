@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 const pairlistStore = usePairlistConfigStore();
 const copyFromConfig = ref('');
 
@@ -7,12 +9,12 @@ const configNames = computed(() =>
 );
 </script>
 <template>
-  <Panel toggleable header="Blacklist" collapsed>
+  <Panel toggleable :header="t('fq.pg.legacy.pairlist.blacklist')" collapsed>
     <div class="flex mb-4 items-center gap-2">
-      <span class="col-auto">Copy from:</span>
+      <span class="col-auto">{{ t('fq.pg.legacy.pairlist.copyFrom') }}:</span>
       <Select v-model="copyFromConfig" size="small" class="grow" :options="configNames" />
       <Button
-        title="Copy"
+        :title="t('fq.pg.legacy.pairlist.copy')"
         size="small"
         severity="secondary"
         @click="pairlistStore.duplicateBlacklist(copyFromConfig)"
@@ -32,6 +34,8 @@ const configNames = computed(() =>
         </Button>
       </InputGroupAddon>
     </InputGroup>
-    <Button size="small" @click="pairlistStore.addToBlacklist()">Add</Button>
+    <Button size="small" @click="pairlistStore.addToBlacklist()">{{
+      t('fq.pg.legacy.pairlist.add')
+    }}</Button>
   </Panel>
 </template>

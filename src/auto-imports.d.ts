@@ -157,6 +157,7 @@ declare global {
   const isShallow: typeof import('vue').isShallow
   const isTransportFailure: typeof import('./composables/api').isTransportFailure
   const isTypingTarget: typeof import('./composables/useShortcuts').isTypingTarget
+  const legacyPollingAllowed: typeof import('./stores/legacyPollingGate').legacyPollingAllowed
   const legacyThemeToResolved: typeof import('./utils/theme').legacyThemeToResolved
   const lockKeyOf: typeof import('./composables/useBotAction').lockKeyOf
   const locksDemand: typeof import('./stores/perBotFetchPolicy').locksDemand
@@ -245,6 +246,7 @@ declare global {
   const runTypeToJobType: typeof import('./utils/reconstitute').runTypeToJobType
   const scheduleSlowRefresh: typeof import('./stores/slowRefreshScheduler').scheduleSlowRefresh
   const setActivePinia: typeof import('pinia').setActivePinia
+  const setLegacyPollingAllowed: typeof import('./stores/legacyPollingGate').setLegacyPollingAllowed
   const setMapStoreSuffix: typeof import('pinia').setMapStoreSuffix
   const setTimezone: typeof import('./utils/formatters/timeformat').setTimezone
   const shallowReactive: typeof import('vue').shallowReactive
@@ -424,6 +426,7 @@ declare global {
   const usePointer: typeof import('@vueuse/core').usePointer
   const usePointerLock: typeof import('@vueuse/core').usePointerLock
   const usePointerSwipe: typeof import('@vueuse/core').usePointerSwipe
+  const usePositionsAwaiting: typeof import('./composables/usePositionsAwaiting').usePositionsAwaiting
   const usePreferredColorScheme: typeof import('@vueuse/core').usePreferredColorScheme
   const usePreferredContrast: typeof import('@vueuse/core').usePreferredContrast
   const usePreferredDark: typeof import('@vueuse/core').usePreferredDark
@@ -780,6 +783,7 @@ declare module 'vue' {
     readonly isShallow: UnwrapRef<typeof import('vue')['isShallow']>
     readonly isTransportFailure: UnwrapRef<typeof import('./composables/api')['isTransportFailure']>
     readonly isTypingTarget: UnwrapRef<typeof import('./composables/useShortcuts')['isTypingTarget']>
+    readonly legacyPollingAllowed: UnwrapRef<typeof import('./stores/legacyPollingGate')['legacyPollingAllowed']>
     readonly legacyThemeToResolved: UnwrapRef<typeof import('./utils/theme')['legacyThemeToResolved']>
     readonly lockKeyOf: UnwrapRef<typeof import('./composables/useBotAction')['lockKeyOf']>
     readonly locksDemand: UnwrapRef<typeof import('./stores/perBotFetchPolicy')['locksDemand']>
@@ -865,6 +869,7 @@ declare module 'vue' {
     readonly runTypeToJobType: UnwrapRef<typeof import('./utils/reconstitute')['runTypeToJobType']>
     readonly scheduleSlowRefresh: UnwrapRef<typeof import('./stores/slowRefreshScheduler')['scheduleSlowRefresh']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
+    readonly setLegacyPollingAllowed: UnwrapRef<typeof import('./stores/legacyPollingGate')['setLegacyPollingAllowed']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>
     readonly setTimezone: UnwrapRef<typeof import('./utils/formatters/timeformat')['setTimezone']>
     readonly shallowReactive: UnwrapRef<typeof import('vue')['shallowReactive']>
@@ -1044,6 +1049,7 @@ declare module 'vue' {
     readonly usePointer: UnwrapRef<typeof import('@vueuse/core')['usePointer']>
     readonly usePointerLock: UnwrapRef<typeof import('@vueuse/core')['usePointerLock']>
     readonly usePointerSwipe: UnwrapRef<typeof import('@vueuse/core')['usePointerSwipe']>
+    readonly usePositionsAwaiting: UnwrapRef<typeof import('./composables/usePositionsAwaiting')['usePositionsAwaiting']>
     readonly usePreferredColorScheme: UnwrapRef<typeof import('@vueuse/core')['usePreferredColorScheme']>
     readonly usePreferredContrast: UnwrapRef<typeof import('@vueuse/core')['usePreferredContrast']>
     readonly usePreferredDark: UnwrapRef<typeof import('@vueuse/core')['usePreferredDark']>

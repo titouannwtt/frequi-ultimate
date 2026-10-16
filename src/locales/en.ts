@@ -161,7 +161,14 @@ export default {
     correlation: 'Correlation',
     noData: 'No OHLCV data available. Run freqtrade download-data for whitelist pairs.',
     loading: 'Loading volume data...',
+    loadingSlow: 'Still loading: the bot is reading the volume history of its pairs.',
     profitPerVol: 'Profit/Vol',
+    retry: 'Retry',
+    avgRatio: 'Avg ratio',
+    pairsOn: '{n} pairs · {exchange}',
+    agoSeconds: '{n} s ago',
+    agoMinutes: '{n} min ago',
+    buckets: { '1d': '1 day', '3d': '3 days', '7d': '7 days', '1M': '1 month', '1Q': '1 quarter' },
   },
 
   // Cumulative Profit Enhanced
@@ -2418,6 +2425,7 @@ export default {
 
   // Rate Monitor widgets
   rateMonitor: {
+    view: { timeline: 'Timeline', flow: 'Flow', table: 'Table' },
     rateBudget: 'Rate Budget',
     rateBudgetDesc:
       'Rate limit budget — shows how many tokens are available for API calls. 100% = full budget, each request consumes tokens, they refill over time. Below 30% = risk of 429 rate-limiting.',
@@ -2532,7 +2540,8 @@ export default {
   strategyDev: {
     title: 'Strategy Development',
     noRunSelected: 'Select a run from the sidebar to view details.',
-    selectRunHint: 'Select a run from the sidebar to view details',
+    selectRunHint: 'Or launch a new job from the top of the sidebar.',
+    openCount: '{n} open | {n} open',
     shortcutSearch: 'Search runs',
     shortcutSidebar: 'Toggle sidebar',
     shortcutNavigate: 'Navigate runs',

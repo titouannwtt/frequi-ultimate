@@ -109,4 +109,14 @@ button.kpi:hover {
   flex-grow: 1.4;
   min-width: 190px;
 }
+/* Phone: two tiles per row, so a long figure ("15 292 / 10 203") shrinks to its tile instead of
+   being cut at the screen edge */
+@media (max-width: 599px) {
+  .kpi {
+    container-type: inline-size;
+  }
+  .v {
+    font-size: clamp(14px, 10.5cqw, var(--t-xl));
+  }
+}
 </style>
