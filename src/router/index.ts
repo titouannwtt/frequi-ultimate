@@ -156,13 +156,6 @@ const routes: Array<RouteRecordRaw> = [
     meta: { page: 'tools', legacy: true },
   },
   {
-    path: '/tools/:tool',
-    name: 'tools-placeholder',
-    component: () => import('@/views/fq/PlaceholderPage.vue'),
-    props: (to) => ({ id: String(to.params.tool) }),
-    meta: { page: 'tools' },
-  },
-  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/fq/SettingsPage.vue'),
@@ -215,7 +208,8 @@ const routes: Array<RouteRecordRaw> = [
     }),
   ),
   {
-    path: '/(.*)*',
+    // vue-router 4 and later: a named parameter, not a bare group
+    path: '/:pathMatch(.*)*',
     name: '404',
     component: () => import('@/views/Error404View.vue'),
     meta: { allowAnonymous: true, page: 'fleet' },

@@ -49,6 +49,8 @@ function startBgJob(api: AxiosInstance, showAlert: ShowAlertType, jobId: string,
 async function recoverBgJobs(api: AxiosInstance, showAlert: ShowAlertType) {
   try {
     const { data } = await api.get<BackgroundTaskStatus[]>('/background');
+    // A bot without the endpoint (or a proxy answering something else) gives no list: no job to recover
+    if (!Array.isArray(data)) return;
 
     for (const job of data) {
       if (job.running) {

@@ -9,7 +9,8 @@ export default {
     tooSoon: 'The next sweep is possible in {s} s',
     err: {
       noBot: 'No bot answers: the wallet cannot be read.',
-      failed: 'No bot could give the reconciliation. It is served by bots that run the fleet tooling.',
+      failed:
+        'No bot could give the reconciliation. It is served by bots that run the fleet tooling.',
     },
   },
   diagnostic: {
@@ -18,9 +19,13 @@ export default {
     timeline: 'Request timeline',
     timelineHint: 'Taken from the bot chosen here, through its own metrics.',
   },
-  risk: { sub: 'The exposure of the wallet in full, and a stress test against the real liquidation prices.' },
+  risk: {
+    sub: 'The exposure of the wallet in full, and a stress test against the real liquidation prices.',
+  },
   logs: { sub: 'Logs of one bot or the errors of all of them, filtered by the server.' },
-  volume: { sub: 'Traded volume of the pairs of one bot over time. The answer is kept five minutes.' },
+  volume: {
+    sub: 'Traded volume of the pairs of one bot over time. The answer is kept five minutes.',
+  },
   replay: {
     sub: 'Replays the live loop on history into the database of a dry bot. Wiping the database first needs the name of the bot.',
     state: 'Replay',

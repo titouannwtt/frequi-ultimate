@@ -16,7 +16,6 @@ vi.mock('@/stores/ftbotwrapper', async (importOriginal) => ({
 // The pages are not under test, only where the paths lead: stub them (they are heavy).
 vi.mock('@/views/fq/FleetPage.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/fq/BotPage.vue', () => ({ default: { render: () => null } }));
-vi.mock('@/views/fq/PlaceholderPage.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/fq/ChartsPage.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/fq/JournalPage.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/fq/SettingsPage.vue', () => ({ default: { render: () => null } }));
@@ -27,7 +26,6 @@ vi.mock('@/views/fq/tools/LogsPage.vue', () => ({ default: { render: () => null 
 vi.mock('@/views/fq/tools/ReplayPage.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/fq/tools/VolumePage.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/fq/ToolsIndex.vue', () => ({ default: { render: () => null } }));
-vi.mock('@/views/TradeJournalView.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/LogView.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/StrategyDevView.vue', () => ({ default: { render: () => null } }));
 vi.mock('@/views/BacktestingView.vue', () => ({ default: { render: () => null } }));
@@ -160,9 +158,16 @@ describe('the table of old paths', () => {
     ]);
     for (const [id, path] of Object.entries(TOOL_PATHS)) {
       const r = router.resolve(path);
-      expect(r.name, path).not.toBe('tools-placeholder');
       expect(r.name, path).not.toBe('404');
       expect(Boolean(r.meta.legacy), id).toBe(legacy.has(id));
+    }
+  });
+
+  it('sends an unknown path, and an unknown tool, to the 404 page (the catch-all must match)', () => {
+    for (const path of ['/nope', '/tools/nope', '/a/b/c?x=1']) {
+      const r = router.resolve(path);
+      expect(r.name, path).toBe('404');
+      expect(r.matched.length, path).toBe(1);
     }
   });
 

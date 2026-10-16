@@ -30,6 +30,11 @@ export interface CandleSet {
  * an ISO `date` column exists it is parsed (UTC), never read in the browser's zone.
  */
 export function toCandleSet(h: Pick<PairHistory, 'columns' | 'data' | 'timeframe_ms'>): CandleSet {
+  // A bot that answers with something else than candles (an error object, an empty body) gives an
+  // empty set: the chart says "no candle" instead of failing on `undefined.slice`
+  if (!Array.isArray(h?.columns) || !Array.isArray(h?.data)) {
+    return { columns: [], rows: [], timeframeMs: Number(h?.timeframe_ms) || 0 };
+  }
   const columns = h.columns.slice();
   const rows = h.data.map((r) => r.slice()) as Array<Array<number | null>>;
   if (!columns.includes(DATE_COL)) {

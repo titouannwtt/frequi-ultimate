@@ -14,9 +14,11 @@ export default {
     workspaces: 'Workspaces',
     about: 'About and audit',
     botsTitle: 'Bots (registry)',
-    botsSub: 'One list of bots, served by the gateway (or by this browser in direct mode). Import and export live here and nowhere else.',
+    botsSub:
+      'One list of bots, served by the gateway (or by this browser in direct mode). Import and export live here and nowhere else.',
     gatewayTitle: 'Gateway',
-    gatewaySub: 'Without a gateway the interface works in direct mode, including against upstream freqtrade bots.',
+    gatewaySub:
+      'Without a gateway the interface works in direct mode, including against upstream freqtrade bots.',
     displayTitle: 'Display',
     displaySub: 'Language, theme, density and the options of this device.',
     alertsTitle: 'Alerts',
@@ -46,7 +48,8 @@ export default {
       reduce: 'Pause entries, acknowledge an alert, silence it.',
       dry: 'Any action on a dry bot, except wiping its database.',
       live: 'Exit (all or part), force entry, resume, reload config, blacklist, lock removal, cancel an order, reload a trade, write a config.',
-      destructive: 'Exit everything (one single request), stop, delete a trade, replay with a database wipe, reconciliation (the name of the coin is typed).',
+      destructive:
+        'Exit everything (one single request), stop, delete a trade, replay with a database wipe, reconciliation (the name of the coin is typed).',
     },
     hold: 'Hold duration',
     holdHint: 'The same for everyone and for every action. It is never shortened.',
@@ -83,7 +86,8 @@ export default {
     submit: { add: 'Add the bot', reconnect: 'Log in', rename: 'Rename' },
     saved: 'Registry updated',
     first: 'Register your first bot',
-    firstHint: 'Enter the address of a bot API and its credentials. Nothing is shown until a bot is registered.',
+    firstHint:
+      'Enter the address of a bot API and its credentials. Nothing is shown until a bot is registered.',
   },
   gw: {
     auto: 'Auto',
@@ -148,7 +152,8 @@ export default {
     browser: 'Browser notifications',
     browserHint: 'A system notification when a critical alert is raised.',
     unsupported: 'This browser has no notification support. Alerts stay visible in the interface.',
-    insecure: 'Browser notifications are unavailable over plain HTTP: the browser refuses them outside a secure context (HTTPS or localhost). Alerts stay visible in the interface.',
+    insecure:
+      'Browser notifications are unavailable over plain HTTP: the browser refuses them outside a secure context (HTTPS or localhost). Alerts stay visible in the interface.',
   },
   ws: {
     active: 'Active workspace',
@@ -184,7 +189,8 @@ export default {
     bytes: '{n} characters',
     audit: 'Audit trail',
     noAudit: 'No audit trail in direct mode',
-    noAuditHint: 'Nothing is recorded when the browser talks to the bots itself. The trail exists with the gateway.',
+    noAuditHint:
+      'Nothing is recorded when the browser talks to the bots itself. The trail exists with the gateway.',
     auditFailed: 'The audit trail could not be read: {detail}',
     auditEmpty: 'No write recorded yet',
     when: 'When',
@@ -195,7 +201,8 @@ export default {
     title: 'Import and export',
     export: 'Export',
     import: 'Import',
-    exportHint: 'Layout and preferences of the redesign (format v3). The session of this device is never exported.',
+    exportHint:
+      'Layout and preferences of the redesign (format v3). The session of this device is never exported.',
     withLogins: 'Include the bot logins',
     encryptHint: 'The logins are encrypted with this password. Without it the file cannot be read.',
     password: 'Password',

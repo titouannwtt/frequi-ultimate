@@ -4,6 +4,7 @@ import {
   chartsQuery,
   contextBotFor,
   defaultPair,
+  stickyDefaultPair,
   parseChartsQuery,
   resolvePlotChoice,
   secondPair,
@@ -84,6 +85,25 @@ describe('charts page model', () => {
     expect(defaultPair(ps, 'b3' as BotKey)).toBe('B');
     expect(defaultPair([], null)).toBeNull();
     expect(secondPair(ps, 'B')).toBe('A');
+  });
+
+  it('keeps the default pair while it is still held, so the chart does not jump with every tick (B156)', () => {
+    const ps = [position('b1', 'A', -5), position('b1', 'B', -20)];
+    expect(stickyDefaultPair(null, ps, 'b1' as BotKey)).toBe('B');
+    // A moves to the worst place: the pair already shown stays
+    const moved = [position('b1', 'A', -50), position('b1', 'B', -20)];
+    expect(defaultPair(moved, 'b1' as BotKey)).toBe('A');
+    expect(stickyDefaultPair('B', moved, 'b1' as BotKey)).toBe('B');
+    // Its position is gone, or it belongs to no candidate: a new default is chosen
+    expect(stickyDefaultPair('B', [position('b1', 'A', -5)], 'b1' as BotKey)).toBe('A');
+    expect(
+      stickyDefaultPair(
+        'B',
+        [position('b1', 'B', -1, true), position('b1', 'A', -5)],
+        'b1' as BotKey,
+      ),
+    ).toBe('A');
+    expect(stickyDefaultPair('B', [], null)).toBeNull();
   });
 
   it('chooses the bot that computes the indicators of a pair', () => {
