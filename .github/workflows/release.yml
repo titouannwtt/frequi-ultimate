@@ -66,10 +66,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release
+          # Same bytes for the same commit: file times come from the commit, the entries are
+          # sorted, no extra attributes, UTC for the DOS time of the zip format.
+          export TZ=UTC
+          epoch=$(git log -1 --format=%ct)
+          find dist -exec touch -h -d "@$epoch" {} +
           # `freqtrade install-ui` unzips into ui/installed: index.html must be at the root of
           # the archive, and the source maps (60 MB) stay out of it.
-          (cd dist && zip -qr "../release/frequi-ultimate-ui-$TAG.zip" . -x '*.map')
-          (cd dist && find . -name '*.map' -print0 | xargs -0 -r zip -q "../release/frequi-ultimate-sourcemaps-$TAG.zip")
+          (cd dist && find . -type f ! -name '*.map' | LC_ALL=C sort | zip -qX@ "../release/frequi-ultimate-ui-$TAG.zip")
+          (cd dist && find . -type f -name '*.map' | LC_ALL=C sort | zip -qX@ "../release/frequi-ultimate-sourcemaps-$TAG.zip")
           unzip -l "release/frequi-ultimate-ui-$TAG.zip" | grep -E ' index\.html$'
           ls -l release
       - uses: actions/upload-artifact@v4
@@ -124,9 +129,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # The release name is the tag: `install-ui --ui-version vX.Y.Z` matches on it.
-          gh release create "$TAG" "out/frequi-ultimate-ui-$TAG.zip" \
-            --verify-tag --prerelease --title "$TAG" --notes-file notes.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # A rebuild of a tag that already has a release (workflow_dispatch): `gh release create`
+            # would be refused. Keep the release as it is (title, notes, prerelease flag, which may
+            # have been promoted by hand), drop its assets and upload them again in the order
+            # below, so that the UI archive is still assets[0].
+            echo "release $TAG exists: replacing its assets, nothing else"
+            gh release view "$TAG" --json isPrerelease --jq '"prerelease: \(.isPrerelease)"'
+            gh release view "$TAG" --json assets --jq '.assets[].name' | while IFS= read -r name; do
+              gh release delete-asset "$TAG" "$name" --yes
+            done
+            gh release upload "$TAG" "out/frequi-ultimate-ui-$TAG.zip" --clobber
+          else
+            # The release name is the tag: `install-ui --ui-version vX.Y.Z` matches on it.
+            gh release create "$TAG" "out/frequi-ultimate-ui-$TAG.zip" \
+              --verify-tag --prerelease --title "$TAG" --notes-file notes.md
+          fi
       - name: Upload the rest, in order
         env:
           GH_TOKEN: ${{ github.token }}
@@ -137,7 +155,7 @@ jobs:
             "out/frequi-gateway-aarch64-unknown-linux-musl" \
             "out/frequi-ultimate-sourcemaps-$TAG.zip" \
             "out/SHA256SUMS"; do
-            gh release upload "$TAG" "$f"
+            gh release upload "$TAG" "$f" --clobber
           done
       - name: The UI archive is the first asset
         env:

@@ -134,4 +134,16 @@ sleep 1
 "$deploy" --target "$installed" --dist "$dist" --version "$new_marker.b" --url "$url" --keep 2 >/dev/null
 check "--keep 2 leaves two backups" bash -c "[ $(ls -d "$installed".bak.* | wc -l) = 2 ]"
 
+# ---- B109: backups made by hand are neither pruned nor chosen by --rollback
+cp -a "$work/original" "$installed.bak.20260521_084930"
+cp -a "$work/original" "$installed.bak.99991231_235959"
+"$deploy" --target "$installed" --dist "$dist" --version "$new_marker.c" --url "$url" --keep 1 >/dev/null
+sleep 1
+"$deploy" --target "$installed" --dist "$dist" --version "$new_marker.d" --url "$url" --keep 1 >/dev/null
+check "--keep 1 leaves one backup of the script" bash -c "[ \$(ls -d $installed.bak.????????T??????Z* | wc -l) = 1 ]"
+check "a manual backup was not pruned" test -d "$installed.bak.20260521_084930"
+check "a later-sorting manual backup was not pruned" test -d "$installed.bak.99991231_235959"
+"$deploy" --target "$installed" --rollback --url "$url" >/dev/null
+check "rollback restores the last deploy, not the manual copy" bash -c "[ \"\$(cat $installed/.uiversion)\" = $new_marker.c ]"
+
 echo "all $pass checks passed"

@@ -38,7 +38,7 @@ The fork-only panels (market pulse, risk overview, strategy editor) need the ext
 ### Safer: with a backup and a rollback
 
 If you manage the `installed` directory yourself, `gateway/packaging/deploy-ui.sh` (in this repository) copies the new files next to the old
-ones, switches `index.html` atomically, checks the result and keeps a backup:
+ones, switches `index.html` atomically, checks the result and keeps a backup (`installed.bak.<UTC stamp>`; only the 5 newest of those are kept, see `--keep`; copies you made by hand under other names are never pruned nor restored by `--rollback`):
 
 ```bash
 unzip frequi-ultimate-ui-v2.0.0.zip -d /tmp/frequi-ui
@@ -91,7 +91,7 @@ trade databases read-only). It never changes a bot's config and never restarts a
    - **screen**: `gateway/packaging/run-in-screen.sh` starts a detached session `frequi-gateway`, refuses to start if the port is taken, and is
      safe to run twice. Stop it with `screen -x frequi-gateway` then Ctrl+C.
    - **Docker**: `docker build -f gateway/packaging/Dockerfile -t frequi-gateway gateway`. Limits: bot discovery needs `--pid=host`, the bot
-     config and database directories must be mounted at the same paths (read-only is enough) with the bots' user id, so in practice the
+     config and database directories must be mounted at the same paths (read-only is enough while the bot runs; the database of a cleanly stopped bot cannot be read on a `:ro` mount, mount it read-write if you need that) with the bots' user id, so in practice the
      container mode suits a setup where the bots run on the same Docker host.
    - Plain: `frequi-gateway run`.
 
@@ -125,5 +125,5 @@ None of these steps touches a bot or its config.
 | The UI stays in direct mode | The gateway is not reachable from the browser: check the port (`curl http://<host>:9399/gw/v1/hello`), the firewall, and that `cors_origins` has the exact address of the page. |
 | `403 origin_not_allowed` | `server.cors_origins` does not list the page's address (scheme, host, port). |
 | The gateway starts with no bot | Not on the machine of the bots, another user, or `discovery.proc_scan = false`. Run `frequi-gateway doctor`. |
-| `ledger_unreadable` in the health view | A database cannot be read: run `frequi-gateway doctor --deep` for the reason (permissions, another user, a moved file). With systemd, see the note on `ReadWritePaths` in the unit file. |
+| `ledger_unreadable` in the health view | A database cannot be read: run `frequi-gateway doctor --deep` for the reason (permissions, another user, a moved file). With systemd, see the sandbox note in the unit file (a cleanly stopped bot leaves a database without `-shm`, unreadable on a read-only file system). |
 | `check-config` says a secret is in the main file | `auth.password_hash` goes in `secrets.toml` only. |

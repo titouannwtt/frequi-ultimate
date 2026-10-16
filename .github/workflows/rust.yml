@@ -33,7 +33,7 @@ jobs:
         working-directory: gateway
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: ./.github/actions/setup-rust
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2

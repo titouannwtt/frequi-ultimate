@@ -14,9 +14,22 @@ clean_paths='^(src/gateway|src/datasource|src/migration|src/components/ds|src/co
 
 out=$(mktemp)
 trap 'rm -f "$out"' EXIT
-./node_modules/.bin/vue-tsc --build --noEmit >"$out" 2>&1 || true
+# vue-tsc exits 1 or 2 when it reports diagnostics; any other status (out of memory, binary missing
+# or broken) is a crash, and a crash is not "0 errors".
+rc=0
+./node_modules/.bin/vue-tsc --build --noEmit >"$out" 2>&1 || rc=$?
+if [ "$rc" -ne 0 ] && [ "$rc" -ne 1 ] && [ "$rc" -ne 2 ]; then
+  echo "::error::vue-tsc crashed (exit $rc), the type check did not run:"
+  tail -20 "$out"
+  exit 1
+fi
 
 total=$(grep -c 'error TS' "$out" || true)
+if [ "$rc" -ne 0 ] && [ "$total" -eq 0 ]; then
+  echo "::error::vue-tsc failed (exit $rc) without reporting any error, the type check did not run:"
+  tail -20 "$out"
+  exit 1
+fi
 strict=$(grep 'error TS' "$out" | grep -Ec "$clean_paths" || true)
 
 if [ "${1:-}" = "--update" ]; then

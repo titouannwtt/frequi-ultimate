@@ -16,7 +16,7 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: dtolnay/rust-toolchain@stable
+    - uses: ./.github/actions/setup-rust
       with:
         targets: ${{ inputs.target }}
     # The zig version is the one this build was checked with (x86_64 and aarch64, static, 14.7 MB).
