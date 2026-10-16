@@ -5,7 +5,7 @@
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWrite, AsyncWriteExt, BufReader};
 
-use crate::api::Mode;
+use crate::api::{Mode, OddBody};
 use crate::fleet::Fleet;
 
 fn mode_of(v: &Value) -> Option<Mode> {
@@ -15,6 +15,13 @@ fn mode_of(v: &Value) -> Option<Mode> {
         "starting" => Mode::Starting,
         "auth_fail" => Mode::AuthFail,
         "slow" => Mode::Slow(v.get("ms").and_then(Value::as_u64).unwrap_or(500)),
+        "odd_status" => Mode::OddStatus(match v.get("body").and_then(Value::as_str)? {
+            "object" => OddBody::Object,
+            "html" => OddBody::Html,
+            "null" => OddBody::Null,
+            "strings" => OddBody::Strings,
+            _ => return None,
+        }),
         _ => return None,
     })
 }

@@ -493,6 +493,73 @@ async fn positions_come_from_the_ledger_and_prices_from_the_websocket() {
     assert!((longs - 2.0 * 110.0).abs() < 1e-9 && (shorts - 2.0 * 95.0).abs() < 1e-9);
 }
 
+fn status_body(trade: i64, pair: &str, rate: f64) -> serde_json::Value {
+    json!([{"trade_id": trade, "pair": pair, "is_short": false, "amount": 2.0,
+            "stake_amount": 100.0, "open_rate": 100.0, "current_rate": rate,
+            "profit_abs": rate - 100.0, "profit_ratio": (rate - 100.0) / 100.0}])
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_status_body_that_is_not_a_list_of_trades_blocks_nobody_and_wipes_nothing() {
+    let r = rig(&[spec(9001, "a", true), spec(9002, "b", true)]).await;
+    for (name, pair) in [("a", "BTC/USDC:USDC"), ("b", "ETH/USDC:USDC")] {
+        r.ledger.with(&db_path(name), |db| {
+            db.trades = vec![open_trade(1, pair, false, T0 - HOUR)];
+        });
+    }
+    r.bots[0].state.lock().unwrap().status = status_body(1, "BTC/USDC:USDC", 101.0);
+    r.bots[1].state.lock().unwrap().status = status_body(1, "ETH/USDC:USDC", 101.0);
+    settle(100).await;
+    r.h.publish_now().await.unwrap();
+    let p = r.h.published();
+    assert_eq!(p.positions["local:9001/1"].current_rate, Some(101.0));
+    assert_eq!(p.positions["local:9002/1"].current_rate, Some(101.0));
+
+    for odd in [
+        json!({"detail": "Not Found"}),
+        json!(null),
+        json!("<html>sign in</html>"),
+        json!(["a", "b"]),
+    ] {
+        r.bots[0].state.lock().unwrap().status = odd;
+        r.bots[1].state.lock().unwrap().status = status_body(1, "ETH/USDC:USDC", 120.0);
+        settle(75).await;
+        r.h.publish_now().await.unwrap();
+        let p = r.h.published();
+        // The other bot's positions keep being published with their new prices.
+        assert_eq!(p.positions["local:9002/1"].current_rate, Some(120.0));
+        assert!(!p.positions["local:9002/1"].freshness.stale);
+        // The odd bot is still alive, and its last known price was not replaced by "no price":
+        // it ages instead.
+        assert_eq!(p.bots[&key(9001)].state.status, BotStatus::Online);
+        assert_eq!(p.positions["local:9001/1"].current_rate, Some(101.0));
+        r.bots[1].state.lock().unwrap().status = status_body(1, "ETH/USDC:USDC", 101.0);
+        r.bots[0].state.lock().unwrap().status = status_body(1, "BTC/USDC:USDC", 101.0);
+        settle(75).await;
+    }
+    // Once it answers properly again, its prices are fresh.
+    r.bots[0].state.lock().unwrap().status = status_body(1, "BTC/USDC:USDC", 103.0);
+    settle(75).await;
+    r.h.publish_now().await.unwrap();
+    let p = r.h.published();
+    assert_eq!(p.positions["local:9001/1"].current_rate, Some(103.0));
+    assert!(!p.positions["local:9001/1"].freshness.stale);
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_forced_exit_is_not_judged_on_a_status_body_that_is_not_a_list_of_trades() {
+    let r = trading_rig().await;
+    // The model is old (no fresh price) and the bot answers 200 with an error envelope.
+    settle(30).await;
+    r.bots[0].state.lock().unwrap().status = json!({"detail": "boom"});
+    let err =
+        r.h.act(exit_req(9001, "k-odd", "BTC/USDC:USDC", false))
+            .await
+            .unwrap_err();
+    assert_eq!(err.code, fg_core::protocol::ErrorCode::BotUnreachable);
+    assert!(writes(&r, 9001).is_empty());
+}
+
 #[tokio::test(start_paused = true)]
 async fn a_silent_websocket_makes_prices_stale_and_excludes_them_from_sums() {
     let r = rig(&[spec(9001, "a", true), spec(9002, "b", true)]).await;

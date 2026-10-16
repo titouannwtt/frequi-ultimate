@@ -50,13 +50,14 @@ pub struct LivePosition {
     pub entries: Option<u32>,
 }
 
-/// Parse the body of `/status` (an array of trades; anything else is "no trades").
+/// Parse the body of `/status`: an array of trades. `None` when the body is not one (an error
+/// envelope under a success status, a login page, `null`, a list of something else): that is an
+/// unreadable answer, not "no open trades", and must not replace what is known. An empty array is
+/// a real answer; items without an id or a pair are dropped one by one.
 #[must_use]
-pub fn parse_status(v: &Value) -> Vec<LivePosition> {
-    let Some(items) = v.as_array() else {
-        return Vec::new();
-    };
-    items
+pub fn parse_status(v: &Value) -> Option<Vec<LivePosition>> {
+    let items = v.as_array()?;
+    let parsed: Vec<LivePosition> = items
         .iter()
         .filter_map(|t| {
             let trade_id = i64_of(t, "trade_id")?;
@@ -77,7 +78,9 @@ pub fn parse_status(v: &Value) -> Vec<LivePosition> {
                 entries: i64_of(t, "nr_of_successful_entries").and_then(|n| u32::try_from(n).ok()),
             })
         })
-        .collect()
+        .collect();
+    // A non-empty list of which nothing is a trade is not a list of trades.
+    (!parsed.is_empty() || items.is_empty()).then_some(parsed)
 }
 
 /// Figures of `/balance` the engine uses.
@@ -295,12 +298,21 @@ mod tests {
             {"pair": "ETH/USDC:USDC"},
             {"trade_id": 2}
         ]);
-        let got = parse_status(&v);
+        let got = parse_status(&v).unwrap();
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].is_short, Some(true));
         assert_eq!(got[0].open_ms, Some(1_760_000_000_000));
         assert_eq!(got[0].entries, Some(3));
-        assert_eq!(parse_status(&json!({"detail": "x"})), vec![]);
+        assert_eq!(parse_status(&json!([])), Some(vec![]));
+        for odd in [
+            json!({"detail": "x"}),
+            json!(null),
+            json!("<html>"),
+            json!(["a", 3]),
+            json!([{"pair": "ETH/USDC:USDC"}]),
+        ] {
+            assert_eq!(parse_status(&odd), None, "{odd}");
+        }
     }
 
     #[test]

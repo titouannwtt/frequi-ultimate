@@ -22,6 +22,8 @@ use ts_rs::TS;
 use crate::identity::BotKey;
 use crate::model::Event;
 
+pub mod differ;
+
 /// Protocol version announced by `GET /gw/v1/hello` and by the `authed` frame.
 pub const PROTOCOL_VERSION: u32 = 1;
 /// Server heartbeat period.
