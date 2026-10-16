@@ -6,7 +6,9 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use fg_core::model::Ticker;
-use fg_sources::botrest::{BotFeatures, ReadEndpoint, RestError, WriteAction, WriteOutcome};
+use fg_sources::botrest::{
+    BotFeatures, ProxyRequest, ProxyResponse, ReadEndpoint, RestError, WriteAction, WriteOutcome,
+};
 use fg_sources::botws::{WsAuth, WsEvent, WsHandle, WsTarget, WsTopic};
 use fg_sources::discovery::{
     ApiCredentials, ApiServerInfo, BotConfig, ConfigStamp, DiscoveredBot, DiscoveryReport,
@@ -112,6 +114,8 @@ pub struct FakeBotState {
     pub whitelist: Value,
     pub write_result: Result<WriteOutcome, RestError>,
     pub write_delay: Duration,
+    /// Body of `GET /pair_candles` (status 200), or `None` for a 404.
+    pub candles: Option<Vec<u8>>,
 }
 
 pub struct FakeBot {
@@ -138,6 +142,7 @@ impl FakeBot {
                     latency_ms: 3,
                 }),
                 write_delay: Duration::ZERO,
+                candles: None,
             }),
             calls: Mutex::new(Vec::new()),
             writes: Mutex::new(Vec::new()),
@@ -224,6 +229,27 @@ impl BotRest for FakeBot {
                 fleet_endpoints: true,
                 ..BotFeatures::default()
             }),
+        };
+        Box::pin(async move { res })
+    }
+
+    fn proxy(&self, req: ProxyRequest) -> BoxFut<'_, Result<ProxyResponse, RestError>> {
+        self.note(&format!(
+            "proxy {} {}?{}",
+            req.method.as_str(),
+            req.path,
+            req.query.clone().unwrap_or_default()
+        ));
+        let st = self.state.lock().unwrap();
+        let res = match (&st.mode, req.path.as_str(), &st.candles) {
+            (Mode::Fail(e), _, _) => Err(e.clone()),
+            (Mode::Up, "/pair_candles", Some(body)) => Ok(ProxyResponse {
+                status: 200,
+                content_type: Some("application/json".into()),
+                body: body.clone(),
+                latency_ms: 2,
+            }),
+            _ => Err(RestError::NotFound),
         };
         Box::pin(async move { res })
     }

@@ -110,7 +110,7 @@ impl Published {
     /// The entities of a channel.
     ///
     /// # Errors
-    /// [`EngineError::Unsupported`] for the chart relay, which this engine does not provide.
+    /// [`EngineError::Unsupported`] for a chart: its state lives in the relay (`crate::chart`).
     pub fn collections_for(&self, ch: &Channel) -> Result<Collections, EngineError> {
         let mut out = Collections::new();
         match ch {
@@ -159,7 +159,9 @@ impl Published {
                 );
             }
             Channel::Events | Channel::Logs(LogScope::Errors | LogScope::Bot(_)) => {}
-            Channel::Chart { .. } => return Err(EngineError::Unsupported("chart relay")),
+            Channel::Chart { .. } => {
+                return Err(EngineError::Unsupported("chart state is not in Published"));
+            }
         }
         Ok(out)
     }

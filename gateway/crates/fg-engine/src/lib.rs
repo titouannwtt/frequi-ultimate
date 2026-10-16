@@ -16,6 +16,7 @@
 pub mod actions;
 pub mod aggregate;
 pub mod budget;
+pub mod chart;
 pub mod clock;
 pub mod closed;
 pub mod config;

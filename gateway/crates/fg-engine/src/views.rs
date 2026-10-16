@@ -16,6 +16,8 @@ pub enum ViewKey {
     Bot(BotKey),
     /// The health panel: raises the daemon polling cadences.
     Health,
+    /// An open chart (its relay polls the bot for candles while somebody looks).
+    Chart(crate::chart::ChartKey),
 }
 
 struct Entry {
@@ -78,6 +80,18 @@ impl Views {
             })
             .tx
             .subscribe()
+    }
+
+    /// Forget a view nobody has: its entry would otherwise stay as long as the process lives
+    /// (charts are keyed by a pair and a timeframe the clients choose).
+    pub fn forget_idle(&self, key: &ViewKey) {
+        let mut map = self.lock();
+        if map
+            .get(key)
+            .is_some_and(|e| e.count == 0 && !*e.tx.borrow())
+        {
+            map.remove(key);
+        }
     }
 
     /// Any bot is being looked at.
