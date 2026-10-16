@@ -1141,16 +1141,24 @@ impl Core {
                 Some(format!("{offline}/{total}")),
             );
         }
-        let unreadable = self
-            .bots
-            .values()
-            .filter(|rt| rt.meta.read_ledger && rt.ledger.error.is_some())
-            .count();
-        if unreadable > 0 {
+        // How many ledgers cannot be read and why (`11 (timeout 9, db_locked 2)`): the code is
+        // the only thing that tells a host problem from a gateway one.
+        let mut unreadable: BTreeMap<&'static str, usize> = BTreeMap::new();
+        for rt in self.bots.values().filter(|rt| rt.meta.read_ledger) {
+            if let Some(code) = rt.ledger.error {
+                *unreadable.entry(code.as_str()).or_default() += 1;
+            }
+        }
+        if !unreadable.is_empty() {
+            let total: usize = unreadable.values().sum();
+            let by_code: Vec<String> = unreadable
+                .iter()
+                .map(|(code, n)| format!("{code} {n}"))
+                .collect();
             reason(
                 "ledger_unreadable",
                 Severity::Warning,
-                Some(unreadable.to_string()),
+                Some(format!("{total} ({})", by_code.join(", "))),
             );
         }
         let rate_limited = self
