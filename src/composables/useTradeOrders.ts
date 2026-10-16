@@ -52,6 +52,8 @@ export function useTradeOrders(
   );
   return {
     model,
+    /** The rows as the source gave them (null: none read, or they could not be read). */
+    rows: computed<OrderRow[] | null>(() => q.data.value),
     loading: q.loading,
     available: computed(() => q.data.value !== null),
     reload: q.reload,

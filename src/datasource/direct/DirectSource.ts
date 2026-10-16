@@ -220,7 +220,7 @@ function eventKey(e: Event): string {
   return `${e.kind}|${e.bot_key}|${e.trade_id}|${e.ts_ms}`;
 }
 
-/** Order of a trade as freqtrade's REST API writes it (`GET /trades/{id}`). */
+/** Order of a trade as freqtrade's REST API writes it (`GET /trade/{id}`). */
 interface RestOrder {
   ft_order_side?: string;
   ft_is_entry?: boolean;
@@ -231,6 +231,7 @@ interface RestOrder {
   amount?: number;
   safe_price?: number;
   price?: number;
+  stop_price?: number;
   cost?: number;
   order_filled_timestamp?: number | null;
 }
@@ -1382,6 +1383,9 @@ export class DirectSource implements DataSource {
           cost: o.cost ?? null,
           filled_ms: o.order_filled_timestamp ? normalizeTsMs(o.order_filled_timestamp) : null,
           tag: o.ft_order_tag ?? null,
+          // The limit price (the trigger price of a stop): the gateway ledger has no such column
+          price:
+            o.ft_order_side === 'stoploss' ? (o.stop_price ?? o.price ?? null) : (o.price ?? null),
         }));
       } catch {
         return null;

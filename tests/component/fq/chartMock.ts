@@ -14,6 +14,7 @@ export interface FakeChart {
   setOption: ReturnType<typeof vi.fn>;
   dispose: ReturnType<typeof vi.fn>;
   resize: ReturnType<typeof vi.fn>;
+  dispatchAction: ReturnType<typeof vi.fn>;
   on: ReturnType<typeof vi.fn>;
   off: ReturnType<typeof vi.fn>;
   isDisposed: () => boolean;
@@ -37,6 +38,7 @@ export function fakeInit(el: HTMLElement, theme: string): FakeChart {
       c.disposed = true;
     }),
     resize: vi.fn(),
+    dispatchAction: vi.fn(),
     on: vi.fn((name: string, fn: (ev: unknown) => void) => {
       c.handlers.set(name, fn);
     }),

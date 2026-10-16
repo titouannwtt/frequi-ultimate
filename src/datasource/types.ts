@@ -157,6 +157,11 @@ export interface OrderRow {
   cost: number | null;
   filled_ms: number | null;
   tag: string | null;
+  /**
+   * Limit or stop price of the order. Only the bot's own REST answer carries it (direct mode): the
+   * gateway ledger does not, and an order that waits then has no price in this row.
+   */
+  price?: number | null;
 }
 
 export interface PeriodQuery {

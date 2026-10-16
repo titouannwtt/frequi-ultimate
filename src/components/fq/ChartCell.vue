@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { Btn, DirectionChip, Pane } from '@/components/ds';
+import { useClosedOnPair } from '@/composables/useClosedOnPair';
 import { useTradeOrders } from '@/composables/useTradeOrders';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPositionsStore } from '@/datasource/stores/positions';
@@ -11,6 +12,7 @@ import type { PlotConfig } from '@/types';
 
 import CandleChart from './CandleChart.vue';
 import { overlaysFromPosition } from './lib/candles';
+import { closedMarks, gainFromPosition, pendingOrders } from './lib/chartTrades';
 import { pairLabel } from './lib/trades';
 
 /**
@@ -54,10 +56,34 @@ const orders = useTradeOrders(
   tradeId,
   () => position.value?.side ?? 'long',
 );
+// The orders that wait (DCA, take profit, stop), the gain now and the closed trades of this pair
+// Direct mode reads their price from the bot; the gateway ledger has none, so there they are unknown
+const pending = computed(() =>
+  orders.rows.value
+    ? pendingOrders(orders.rows.value, position.value?.side ?? 'long', position.value?.open_rate)
+    : null,
+);
+const closedRows = useClosedOnPair(
+  () => props.botKey,
+  () => props.pair,
+);
+const closed = computed(() =>
+  closedMarks(closedRows.trades.value, props.pair, (r) =>
+    r.kind === 'custom' ? r.raw : t(`fq.exit.${r.kind}`),
+  ),
+);
+// A new fill (a safety order, a partial exit) changes the orders of the open trade
+watch(
+  () => [position.value?.dca_entries, position.value?.amount],
+  () => void orders.reload(),
+);
 const overlays = computed(() =>
   overlaysFromPosition(position.value, props.pair, {
     orders: orders.model.value?.ladder ?? [],
     fills: orders.model.value?.fills ?? [],
+    pending: pending.value,
+    gain: gainFromPosition(position.value, null),
+    closed: closed.value,
   }),
 );
 const meta = computed(() => {
