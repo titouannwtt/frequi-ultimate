@@ -150,7 +150,7 @@ pub async fn rules_put(
 
 #[derive(Deserialize, Default)]
 pub struct PrefParams {
-    /// Empty or absent: the global document; otherwise a `bot_key`.
+    /// Empty: the global document; a `bot_key`: that bot's document. Absent: `GET` lists them all.
     scope: Option<String>,
 }
 
@@ -184,11 +184,11 @@ pub async fn prefs_get(
     match q.scope {
         Some(scope) => {
             pref_scope_guard(&st, &s, &scope)?;
-            let doc = st
-                .engine
-                .prefs_get(PREFS_USER, &scope)
-                .await?
-                .ok_or_else(ApiFailure::not_found)?;
+            // A document that was never written is not an error: 204 keeps a first load (nothing
+            // customised yet) out of the console, where a 404 would show on every page load.
+            let Some(doc) = st.engine.prefs_get(PREFS_USER, &scope).await? else {
+                return Ok(StatusCode::NO_CONTENT.into_response());
+            };
             let mut resp = Json(&doc).into_response();
             if let Ok(v) = HeaderValue::from_str(&format!("\"{}\"", doc.version)) {
                 resp.headers_mut().insert(header::ETAG, v);

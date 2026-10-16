@@ -313,7 +313,7 @@ fn build_positions(rt: &BotRuntime, ctx: &AssembleCtx<'_>) -> Option<Vec<Positio
                 (Some(r), Some(l)) => Some(distance_pct(r, l)),
                 _ => None,
             },
-            dca_entries: v.entries.saturating_sub(1),
+            dca_entries: v.entries,
             open_ms: v.open_ms,
             duration_ms,
             percentile: rt.ledger.derived.percentile(duration_ms),
@@ -536,7 +536,8 @@ pub fn assemble(rt: &mut BotRuntime, ctx: &AssembleCtx<'_>) -> Assembled {
 
     let totals = derived.totals.as_ref();
     let metrics = BotMetrics {
-        realized_1d: realized(PeriodKey::H24),
+        // The day is the calendar day of the configured zone, as the column header says.
+        realized_1d: realized(PeriodKey::Today),
         realized_7d: realized(PeriodKey::D7),
         realized_30d: realized(PeriodKey::D30),
         realized_total,

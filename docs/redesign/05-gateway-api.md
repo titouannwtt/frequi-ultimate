@@ -71,7 +71,7 @@ Toutes sous `/gw/v1`, sauf mention, avec session.
 | `GET /trades/export.csv` | Export CSV ; les cellules texte commençant par `=`, `+`, `-`, `@`, tabulation ou retour chariot sont préfixées d'une apostrophe. |
 | `GET /pnl/periods`, `/equity`, `/drawdown`, `/leaderboard`, `/risk` | Calendrier (fuseau Europe/Paris), courbes, drawdown réalisé et avec latent, classement, exposition. `scope=` ou `bots=`. |
 | `GET /health`, `/health/rate`, `/logs`, `/events`, `/pairs/{clé}`, `/market`, `/audit` | Santé, débit vers un bot, journaux, événements, paires d'un bot, marché, journal d'audit des écritures. `/pairs`, `/logs?bot=` et `/scope/bot:...` fonctionnent aussi pour un bot dont personne n'observe le canal (le détail est construit à la demande). |
-| `GET/PUT/DELETE /prefs?scope=` | Préférences synchronisées entre appareils (256 Ko au plus), version par `ETag` et `If-Match` (409 `state_mismatch` en cas de conflit). Le premier bootstrap peut les amorcer ; les suivants ne les écrasent jamais. |
+| `GET/PUT/DELETE /prefs?scope=` | Préférences synchronisées entre appareils (256 Ko au plus), version par `ETag` et `If-Match` (409 `state_mismatch` en cas de conflit). `scope=` (vide) est le document global, `scope=<bot_key>` celui d'un bot, sans `scope` le `GET` liste tous les documents. Un document jamais écrit répond `204` (et non `404`, qui s'afficherait en erreur à chaque chargement). Le premier bootstrap peut les amorcer ; les suivants ne les écrasent jamais. |
 | `GET /alerts`, `POST /alerts/{id}/ack`, `POST /alerts/silence`, `DELETE /alerts/silence/{id}`, `GET/PUT /alerts/rules` | Alertes actives, acquittement, silences (une fin est obligatoire), règles. |
 | `POST /bots`, `PATCH /bots/{clé}`, `DELETE /bots/{clé}`, `POST /bots/{clé}/credentials` | Le registre est la découverte de l'hôte : répondent 501. |
 
@@ -178,11 +178,24 @@ sans secret, de forme stable pour fail2ban (`event=auth_failed ip=... path=...`)
 `GET /gw/v1/health` : niveau global, bots par état, requêtes accordées/écritures/attente cumulée du
 budget, horodatage de génération. C'est la même vue que le canal `health`.
 
-Raisons possibles (`reasons[].code`) : `daemon_unreachable`, `digest_stale`, `rate_backoff`,
-`rate_budget_low` (moins de 20 % du budget Hyperliquid du démon : constat de la flotte, pas un défaut de
-la passerelle), `all_bots_offline`, `bots_offline`, `rate_limit_events` et `ledger_unreadable`, dont le
-détail donne le nombre de registres et le code d'échec (`11 (timeout 11)`, `db_locked`, `db_corrupt`,
-`db_missing`, `db_error`).
+Raisons possibles (`reasons[].code`) : des codes machine stables, le catalogue `HealthReasonCode`
+(exporté dans `types.gen.ts` sous `HEALTH_REASON_CODES`). Le texte d'une raison ne fait jamais partie
+du contrat : le client traduit le code (un code inconnu est affiché tel quel), et `detail` ne porte que
+des valeurs sans langue.
+
+| Code | Sens | `detail` |
+|---|---|---|
+| `daemon_unreachable` | le démon de cache ne répond pas depuis trois sondages | |
+| `digest_stale` | le digest du démon est trop ancien | |
+| `rate_backoff` | un limiteur du démon est en backoff après un 429 | |
+| `rate_budget_low` | moins de 20 % du budget de l'exchange restent (constat de la flotte, pas un défaut de la passerelle) | le pourcentage restant, sans unité (`20`) |
+| `all_bots_offline`, `bots_offline` | tous les bots, ou une partie, hors ligne | `hors ligne/total` (`3/24`) |
+| `rate_limit_events` | des bots ont reçu des 429 récemment | le nombre de bots |
+| `ledger_unreadable` | des registres illisibles | le nombre et le code d'échec (`11 (timeout 11)`, `db_locked`, `db_corrupt`, `db_missing`, `db_error`) |
+| `auth_expired`, `data_stale` | mode direct seulement | les noms des bots |
+
+`rate_budget_pct` est la part du budget **utilisée** (0 à 100, le limiteur le plus chargé) : une valeur
+haute est la mauvaise, comme dans le mode direct ; `100 - rate_budget_pct` est ce qui reste.
 
 Un registre qui dépasse son budget de requête (200 ms) obtient un budget multiplié par 4 à chaque
 dépassement, jusqu'à 16 fois (3,2 s) ; sans cela une requête trop lente pour l'hôte échouerait à chaque

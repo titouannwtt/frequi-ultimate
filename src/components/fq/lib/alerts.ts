@@ -5,6 +5,8 @@
  */
 import type { Alert, AlertTypeId, Severity } from '@/gateway/types.gen';
 
+import { pairLabel } from './trades';
+
 export type AlertActionId = 'pause' | 'open' | 'logs' | 'reconcile' | 'diagnostic' | 'reconnect';
 
 /** Actions offered next to an alert, in order. The first is the most useful one. */
@@ -40,13 +42,30 @@ export interface AlertWording {
   params: Record<string, string | number>;
 }
 
+/**
+ * What an alert is about, in words: the pair of its position, else its subject. The subject of a
+ * per-position alert is the trade id, which says nothing to the reader.
+ */
+export function alertTarget(a: Pick<Alert, 'subject'> & { pair?: string | null }): string {
+  if (a.pair) return pairLabel(a.pair);
+  return a.subject ?? '';
+}
+
+/** Short tag next to the title: `#310` for a trade id, the subject as it is otherwise. */
+export function alertTag(a: Pick<Alert, 'subject'>): string | null {
+  if (!a.subject) return null;
+  return /^\d+$/.test(a.subject) ? `#${a.subject}` : a.subject;
+}
+
 /** Sentence of an alert with its figure and threshold, or the detail when the figure is missing. */
 export function alertWording(
-  a: Pick<Alert, 'type_id' | 'subject' | 'value' | 'threshold' | 'detail'>,
+  a: Pick<Alert, 'type_id' | 'subject' | 'value' | 'threshold' | 'detail'> & {
+    pair?: string | null;
+  },
   num: (n: number) => string,
 ): AlertWording {
   const params: Record<string, string | number> = {
-    subject: a.subject ?? '',
+    subject: alertTarget(a),
     detail: a.detail ?? '',
   };
   if (a.value != null) params.value = num(a.value);

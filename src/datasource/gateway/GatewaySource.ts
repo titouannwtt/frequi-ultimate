@@ -930,7 +930,8 @@ export class GatewaySource implements DataSource {
       const res = await this.d.http.raw<{ version: number; data: unknown }>('GET', '/prefs', {
         params: { scope: '' },
       });
-      if (res.status === 404) return null;
+      // 204: no document written yet. 404 is what a gateway before that contract answered.
+      if (res.status === 204 || res.status === 404) return null;
       if (res.status < 200 || res.status >= 300) {
         throw new GatewayError('internal', res.status, `HTTP ${res.status}`);
       }

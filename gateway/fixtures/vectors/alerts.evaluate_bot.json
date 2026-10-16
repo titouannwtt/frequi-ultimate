@@ -73,7 +73,8 @@
       "severity": "warning",
       "value": -11,
       "threshold": -10,
-      "for_ms": 30000
+      "for_ms": 30000,
+      "pair": "ETH/USDC:USDC"
      },
      {
       "type_id": "positionLoss",
@@ -81,7 +82,8 @@
       "severity": "critical",
       "value": -21,
       "threshold": -10,
-      "for_ms": 0
+      "for_ms": 0,
+      "pair": "ETH/USDC:USDC"
      }
     ],
     "evaluated": [
@@ -123,7 +125,8 @@
       "severity": "warning",
       "value": -4,
       "threshold": -3,
-      "for_ms": 30000
+      "for_ms": 30000,
+      "pair": "ETH/USDC:USDC"
      }
     ]
    }
@@ -162,7 +165,8 @@
       "severity": "critical",
       "value": -50,
       "threshold": -10,
-      "for_ms": 90000
+      "for_ms": 90000,
+      "pair": "ETH/USDC:USDC"
      }
     ]
    }
@@ -211,7 +215,8 @@
       "severity": "warning",
       "value": 3.5,
       "threshold": 3,
-      "for_ms": 30000
+      "for_ms": 30000,
+      "pair": "ETH/USDC:USDC"
      }
     ]
    }
@@ -299,7 +304,8 @@
       "severity": "critical",
       "value": 10,
       "threshold": 15,
-      "for_ms": 0
+      "for_ms": 0,
+      "pair": "ETH/USDC:USDC"
      },
      {
       "type_id": "nearLiquidation",
@@ -307,7 +313,8 @@
       "severity": "critical",
       "value": 10,
       "threshold": 15,
-      "for_ms": 0
+      "for_ms": 0,
+      "pair": "ETH/USDC:USDC"
      }
     ]
    }
@@ -343,7 +350,8 @@
       "severity": "critical",
       "value": 0,
       "threshold": 15,
-      "for_ms": 0
+      "for_ms": 0,
+      "pair": "ETH/USDC:USDC"
      }
     ]
    }
@@ -444,7 +452,8 @@
       "severity": "critical",
       "value": 10,
       "threshold": 20,
-      "for_ms": 0
+      "for_ms": 0,
+      "pair": "ETH/USDC:USDC"
      },
      {
       "type_id": "liquidationBeforeStoploss",
@@ -452,7 +461,8 @@
       "severity": "critical",
       "value": 10,
       "threshold": 20,
-      "for_ms": 0
+      "for_ms": 0,
+      "pair": "ETH/USDC:USDC"
      }
     ]
    }

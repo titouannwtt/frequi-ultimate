@@ -371,6 +371,9 @@ pub struct Condition {
     pub type_id: AlertTypeId,
     /// Pair or trade id for per-position rules, `None` for bot-level rules.
     pub subject: Option<String>,
+    /// Pair of the position behind a per-position condition, to tell the alert in words. Not part
+    /// of the deduplication key (the subject, a trade id, is).
+    pub pair: Option<String>,
     pub severity: Severity,
     pub value: Option<f64>,
     pub threshold: Option<f64>,
@@ -378,6 +381,15 @@ pub struct Condition {
     pub detail: Option<String>,
     /// How long the condition must hold before the alert fires.
     pub for_ms: i64,
+}
+
+impl Condition {
+    /// The condition tells the position of `pair` in words.
+    #[must_use]
+    fn with_pair(mut self, pair: &str) -> Self {
+        self.pair = Some(pair.to_owned());
+        self
+    }
 }
 
 /// Outcome of evaluating a bot.
@@ -460,6 +472,7 @@ pub fn evaluate_bot(
         |t: AlertTypeId, subject: Option<String>, severity, value, threshold, detail| Condition {
             type_id: t,
             subject,
+            pair: None,
             severity,
             value,
             threshold,
@@ -517,7 +530,8 @@ pub fn evaluate_bot(
                                     Some(pct),
                                     Some(thr_pct),
                                     None,
-                                ),
+                                )
+                                .with_pair(&p.pair),
                             );
                         }
                     }
@@ -543,7 +557,8 @@ pub fn evaluate_bot(
                                     Some(ratio),
                                     Some(mult),
                                     None,
-                                ),
+                                )
+                                .with_pair(&p.pair),
                             );
                         }
                     }
@@ -574,7 +589,8 @@ pub fn evaluate_bot(
                                     Some(dist),
                                     Some(thr_pct),
                                     None,
-                                ),
+                                )
+                                .with_pair(&p.pair),
                             );
                         }
                     }
@@ -605,7 +621,8 @@ pub fn evaluate_bot(
                                     Some(liq_d),
                                     Some(sl_d),
                                     None,
-                                ),
+                                )
+                                .with_pair(&p.pair),
                             );
                         }
                     }
