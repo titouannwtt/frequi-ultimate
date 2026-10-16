@@ -376,7 +376,10 @@ const needsFirstBot = computed(() => bots.value.length === 0);
 .set.wide {
   grid-template-columns: 200px minmax(0, 1fr);
   align-items: start;
-  max-width: 1200px;
+}
+/* The bots table uses the room the page has; the forms stay at a width a line can be read at */
+.main > :deep(.ss:not([data-section='bots'])) {
+  max-width: 960px;
 }
 .nav {
   display: flex;
