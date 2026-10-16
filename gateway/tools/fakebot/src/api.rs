@@ -35,6 +35,21 @@ pub enum Mode {
     AuthFail,
     /// Every call is delayed by this many milliseconds.
     Slow(u64),
+    /// `/status` answers 200 with a body that is not a list of trades; everything else works.
+    OddStatus(OddBody),
+}
+
+/// The unexpected bodies of [`Mode::OddStatus`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum OddBody {
+    /// A JSON object (an error envelope with a success status).
+    Object,
+    /// A web page (a proxy or a login portal in front of the bot).
+    Html,
+    /// The JSON `null`.
+    Null,
+    /// A list, but not of trades.
+    Strings,
 }
 
 /// A bot as the manifest describes it.
@@ -440,13 +455,25 @@ async fn fleet_status() -> Json<Value> {
     Json(json!({}))
 }
 
-async fn status(State(bot): State<Arc<Bot>>) -> Json<Value> {
+async fn status(State(bot): State<Arc<Bot>>) -> Response {
+    if let Mode::OddStatus(odd) = bot.mode() {
+        return match odd {
+            OddBody::Object => Json(json!({"detail": "unexpected"})).into_response(),
+            OddBody::Html => (
+                [(header::CONTENT_TYPE, "text/html")],
+                "<html><body>sign in</body></html>",
+            )
+                .into_response(),
+            OddBody::Null => Json(Value::Null).into_response(),
+            OddBody::Strings => Json(json!(["a", "b", 3])).into_response(),
+        };
+    }
     let t = now_ms();
     let items: Vec<Value> = lock(&bot.opens)
         .iter()
         .map(|o| Bot::open_json(o, t))
         .collect();
-    Json(Value::Array(items))
+    Json(Value::Array(items)).into_response()
 }
 
 async fn balance(State(bot): State<Arc<Bot>>) -> Json<Value> {
@@ -633,7 +660,12 @@ async fn serve_ws(bot: Arc<Bot>, mut socket: WebSocket) {
     bot.ws_open.fetch_add(1, Ordering::Relaxed);
     let mut rx = bot.events.subscribe();
     let mut topics: HashSet<String> = HashSet::new();
-    let mut tick = tokio::time::interval(bot.snapshot_every);
+    // The first snapshot comes one period after the connection, never before the client said
+    // what it wants (otherwise it is a coin toss whether a long period still pushes one).
+    let mut tick = tokio::time::interval_at(
+        tokio::time::Instant::now() + bot.snapshot_every,
+        bot.snapshot_every,
+    );
     tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     loop {
         tokio::select! {

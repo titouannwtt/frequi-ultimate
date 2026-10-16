@@ -226,6 +226,8 @@ struct Actor {
     snapshot_at: Option<Instant>,
     ws_whitelist_at: Option<Instant>,
     last_alive_sent: Option<Instant>,
+    /// The last `/status` body was not a list of trades (logged once per streak).
+    odd_status: bool,
 }
 
 impl Actor {
@@ -251,6 +253,7 @@ impl Actor {
             snapshot_at: None,
             ws_whitelist_at: None,
             last_alive_sent: None,
+            odd_status: false,
         }
     }
 
@@ -483,7 +486,19 @@ impl Actor {
         }
         let Ok(v) = res else { return };
         let obs = match kind {
-            Kind::Status => Obs::Positions(wire::parse_status(&v)),
+            Kind::Status => {
+                // An answer that is not a list of trades says nothing about the positions: keep
+                // what is known (its age shows) and say so once per streak.
+                let Some(positions) = wire::parse_status(&v) else {
+                    if !self.odd_status {
+                        self.odd_status = true;
+                        tracing::warn!(bot = %self.key, "unexpected /status body, ignored");
+                    }
+                    return;
+                };
+                self.odd_status = false;
+                Obs::Positions(positions)
+            }
             Kind::Logs => Obs::Logs(wire::parse_logs(&v)),
             Kind::Balance => Obs::Balance(wire::parse_balance(&v)),
             Kind::Whitelist => Obs::Whitelist(wire::parse_list(&v, "whitelist")),

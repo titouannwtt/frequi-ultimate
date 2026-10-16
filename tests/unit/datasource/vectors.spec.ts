@@ -44,6 +44,7 @@ import {
   whitelistMarket,
   ALERT_TYPE_IDS,
 } from '@/datasource/calc';
+import { StateHub } from '@/datasource/hub';
 import {
   applyUpsert,
   formatChannel,
@@ -302,6 +303,27 @@ const IMPLS: Record<string, Impl> = {
       if (typeof i.baseline === 'number') t.reset(i.baseline);
       const verdicts = (i.observe as number[]).map((s) => t.observe(s));
       return { verdicts, last: t.last };
+    },
+  },
+  'protocol.diff': {
+    usedBy: 'direct',
+    symbols: ['StateHub'],
+    run: (i) => {
+      const name: string = i.collection;
+      const hub = new StateHub([name], () => 1);
+      const client: Collections = {};
+      hub.subscribe((u) => {
+        if (u.kind === 'unavailable') return;
+        if (u.kind === 'snapshot') client[name] = {};
+        applyUpsert(client, u.upsert as Upsert, u.remove);
+      });
+      const states: Json[] = [];
+      const changed: boolean[] = [];
+      for (const step of i.steps) {
+        changed.push(hub.set(name, step));
+        states.push(structuredClone(client[name] ?? {}));
+      }
+      return { states, changed };
     },
   },
   'protocol.apply': {

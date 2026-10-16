@@ -1,0 +1,524 @@
+{
+ "function": "protocol.diff",
+ "description": "Server half of the delta protocol: a client that applies the frames built from two consecutive states ends up equal to the new state, also when an object field group loses a key (B76, B100). Input: the successive full states of one collection. Expected: the client state after each step, and whether any frame was sent.",
+ "cases": [
+  {
+   "name": "a coin whose position closed leaves net_exposure",
+   "input": {
+    "collection": "wallets",
+    "steps": [
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 100,
+        "ETH": -50
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 100
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {}
+      }
+     }
+    ]
+   },
+   "expected": {
+    "states": [
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 100,
+        "ETH": -50
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 100
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {}
+      }
+     }
+    ],
+    "changed": [
+     true,
+     true,
+     true
+    ]
+   }
+  },
+  {
+   "name": "a group that gains or changes keys is patched and nothing else changes",
+   "input": {
+    "collection": "wallets",
+    "steps": [
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 100
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 120,
+        "ETH": 5
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 120,
+        "ETH": 5
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 2,
+       "net_exposure": {
+        "BTC": 120,
+        "ETH": 6
+       }
+      }
+     }
+    ]
+   },
+   "expected": {
+    "states": [
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 100
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 120,
+        "ETH": 5
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 120,
+        "ETH": 5
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 2,
+       "net_exposure": {
+        "BTC": 120,
+        "ETH": 6
+       }
+      }
+     }
+    ],
+    "changed": [
+     true,
+     true,
+     false,
+     true
+    ]
+   }
+  },
+  {
+   "name": "one coin closes while another opens in the same tick",
+   "input": {
+    "collection": "wallets",
+    "steps": [
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 100,
+        "ETH": -50
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 100,
+        "SOL": 7
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "SOL": 7,
+        "XRP": 1
+       }
+      }
+     }
+    ]
+   },
+   "expected": {
+    "states": [
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 100,
+        "ETH": -50
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 100,
+        "SOL": 7
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "SOL": 7,
+        "XRP": 1
+       }
+      }
+     }
+    ],
+    "changed": [
+     true,
+     true,
+     true
+    ]
+   }
+  },
+  {
+   "name": "a freshness record that loses a group",
+   "input": {
+    "collection": "bots",
+    "steps": [
+     {
+      "b": {
+       "bot_key": "b",
+       "metrics": {
+        "n": 1
+       },
+       "freshness": {
+        "state": {
+         "stale": false
+        },
+        "metrics": {
+         "stale": false
+        }
+       }
+      }
+     },
+     {
+      "b": {
+       "bot_key": "b",
+       "metrics": {
+        "n": 1
+       },
+       "freshness": {
+        "state": {
+         "stale": false
+        }
+       }
+      }
+     },
+     {
+      "b": {
+       "bot_key": "b",
+       "metrics": {
+        "n": 2
+       },
+       "freshness": {
+        "state": {
+         "stale": true
+        },
+        "metrics": {
+         "stale": false
+        }
+       }
+      }
+     }
+    ]
+   },
+   "expected": {
+    "states": [
+     {
+      "b": {
+       "bot_key": "b",
+       "metrics": {
+        "n": 1
+       },
+       "freshness": {
+        "state": {
+         "stale": false
+        },
+        "metrics": {
+         "stale": false
+        }
+       }
+      }
+     },
+     {
+      "b": {
+       "bot_key": "b",
+       "metrics": {
+        "n": 1
+       },
+       "freshness": {
+        "state": {
+         "stale": false
+        }
+       }
+      }
+     },
+     {
+      "b": {
+       "bot_key": "b",
+       "metrics": {
+        "n": 2
+       },
+       "freshness": {
+        "state": {
+         "stale": true
+        },
+        "metrics": {
+         "stale": false
+        }
+       }
+      }
+     }
+    ],
+    "changed": [
+     true,
+     true,
+     true
+    ]
+   }
+  },
+  {
+   "name": "a dropped key and an unrelated change travel together",
+   "input": {
+    "collection": "wallets",
+    "steps": [
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "a": {
+        "x": 1,
+        "y": 2
+       },
+       "b": {
+        "u": 1
+       },
+       "net_exposure": {
+        "BTC": 1
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "a": {
+        "x": 1
+       },
+       "b": {
+        "u": 2
+       },
+       "net_exposure": {
+        "BTC": 1
+       }
+      }
+     }
+    ]
+   },
+   "expected": {
+    "states": [
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "a": {
+        "x": 1,
+        "y": 2
+       },
+       "b": {
+        "u": 1
+       },
+       "net_exposure": {
+        "BTC": 1
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "a": {
+        "x": 1
+       },
+       "b": {
+        "u": 2
+       },
+       "net_exposure": {
+        "BTC": 1
+       }
+      }
+     }
+    ],
+    "changed": [
+     true,
+     true
+    ]
+   }
+  },
+  {
+   "name": "an entity removed and added back is complete again",
+   "input": {
+    "collection": "wallets",
+    "steps": [
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 1
+       }
+      },
+      "w2": {
+       "wallet_id": "w2",
+       "n": 2,
+       "net_exposure": {
+        "ETH": 2
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 1
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 1
+       }
+      },
+      "w2": {
+       "wallet_id": "w2",
+       "n": 3,
+       "net_exposure": {}
+      }
+     }
+    ]
+   },
+   "expected": {
+    "states": [
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 1
+       }
+      },
+      "w2": {
+       "wallet_id": "w2",
+       "n": 2,
+       "net_exposure": {
+        "ETH": 2
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 1
+       }
+      }
+     },
+     {
+      "w1": {
+       "wallet_id": "w1",
+       "n": 1,
+       "net_exposure": {
+        "BTC": 1
+       }
+      },
+      "w2": {
+       "wallet_id": "w2",
+       "n": 3,
+       "net_exposure": {}
+      }
+     }
+    ],
+    "changed": [
+     true,
+     true,
+     true
+    ]
+   }
+  }
+ ]
+}

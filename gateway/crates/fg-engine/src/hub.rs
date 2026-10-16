@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use fg_core::model::Event;
+use fg_core::protocol::differ::{CollectionDiff, frame_bodies};
 use fg_core::protocol::{
     CLIENT_QUEUE_SIZE, Channel, DELTA_BUFFER_SIZE, DeltaBuffer, Remove, Resume, ResyncReason,
     ServerFrame, Upsert,
@@ -64,6 +65,19 @@ impl HubTx<'_> {
         let frame = c.buf.push_up(ts, upsert, remove);
         // Nobody listening is fine: the buffer keeps the frame for a later resume.
         let _ = c.tx.send(frame);
+    }
+
+    /// Publish the diffs of several collections of one channel: the reset frame first when a field
+    /// group dropped a key, then the upserts and removals (see [`frame_bodies`]).
+    pub fn up_diffs<'a>(
+        &mut self,
+        ch: &Channel,
+        ts: i64,
+        parts: impl IntoIterator<Item = (&'a str, CollectionDiff)>,
+    ) {
+        for (upsert, remove) in frame_bodies(parts) {
+            self.up(ch, ts, upsert, remove);
+        }
     }
 
     pub fn ev(&mut self, ch: &Channel, ev: Event) {

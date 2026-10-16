@@ -359,7 +359,12 @@ async fn check_trade(
         let _permit = sh.budget.acquire(1).await;
         match t.link.rest.read(ReadEndpoint::Status).await {
             Ok(v) => {
-                let live = parse_status(&v);
+                let Some(live) = parse_status(&v) else {
+                    return Err(ActionError::new(
+                        ErrorCode::BotUnreachable,
+                        "the bot answered something that is not its open trades",
+                    ));
+                };
                 match live.iter().find(|p| p.trade_id == trade_id) {
                     Some(p) => (Some(p.pair.clone()), p.is_short),
                     None if needs_open => return Err(mismatch("the trade is not open on the bot")),
