@@ -384,7 +384,13 @@ const noBots = computed(() => fleet.loaded && j.botKeys.value.length === 0);
   padding: 0 var(--s3);
   border-bottom: 1px solid var(--line);
 }
+/* The analysis body takes the rest of the panel, so a chart can fill it */
+.an :deep(.pb) {
+  display: flex;
+  flex-direction: column;
+}
 .anbody {
+  flex: 1 1 auto;
   min-height: 260px;
   display: flex;
   flex-direction: column;

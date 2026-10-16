@@ -129,6 +129,30 @@ describe('journal: known values', () => {
     expect(binLabel(d.bins[d.bins.length - 1]!)).toMatch(/^≥ /);
   });
 
+  it('fits the axis to the data with one empty bin of margin (B384)', () => {
+    const base = trades()[0]!;
+    const mk = (pct: number): JournalTrade => ({
+      ...base,
+      profit_unknown: false,
+      profit_abs: pct,
+      profit_ratio: pct / 100,
+    });
+    const d = distribution([mk(-3.4), mk(-0.5), mk(2.6)]);
+    // Data from -4 to +2: margin of one bin on each side, at least 8 bins
+    expect(d.bins[0]!.from).toBeGreaterThanOrEqual(-8);
+    expect(d.bins[0]!.from).toBeLessThanOrEqual(-5);
+    expect(d.bins[d.bins.length - 1]!.to).toBeLessThanOrEqual(6);
+    expect(d.bins[0]!.count).toBe(0);
+    expect(d.bins[d.bins.length - 1]!.count).toBe(0);
+    expect(d.bins.reduce((s, b) => s + b.count, 0)).toBe(3);
+    // A fat tail does not stretch the axis beyond its limit: the edge bin holds it
+    const wide = distribution([mk(-60), mk(1)]);
+    expect(wide.bins[0]!.from).toBe(-20);
+    expect(wide.bins[0]!.count).toBe(1);
+    // Nothing to fit: the fixed range
+    expect(distribution([]).bins[0]!.from).toBe(-14);
+  });
+
   it('tail share is null without any loss, and the tail sums only losses', () => {
     const base = trades()[0]!;
     const win: JournalTrade = {

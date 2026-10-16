@@ -202,6 +202,7 @@ function dropView(id: string) {
   <div class="jfb" role="toolbar" :aria-label="t('fq.jr.filters')" data-testid="journal-filters">
     <SegmentedControl
       ref="periodEl"
+      class="period"
       :model-value="modelValue.period"
       :options="periodOptions"
       size="sm"
@@ -467,6 +468,16 @@ function dropView(id: string) {
   /* The period takes its own line, then the mode, the pair and the buttons share the next ones */
   .jfb > :deep(:first-child) {
     max-width: 100%;
+  }
+  /* The seven periods share the width of the screen instead of scrolling past its edge */
+  .period {
+    display: flex;
+    width: 100%;
+  }
+  .period :deep(button) {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0 4px;
   }
   .pair {
     flex: 1 1 130px;

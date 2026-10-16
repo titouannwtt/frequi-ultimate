@@ -59,6 +59,12 @@ const expectancy = computed(() => {
   if (net.value === null || known <= 0) return null;
   return net.value / known;
 });
+/** "460 trades", and the share without a result only when there is one */
+const netSub = computed(() =>
+  unknown.value > 0
+    ? t('fq.jr.totals.netSubUnknown', { n: count.value, u: unknown.value }, count.value)
+    : t('fq.jr.totals.netSub', { n: count.value }, count.value),
+);
 const avgWin = computed(() => s.value?.avgWin ?? null);
 const avgLoss = computed(() => s.value?.avgLoss ?? null);
 const worstDd = computed(() => s.value?.worstDrawdown ?? null);
@@ -80,7 +86,7 @@ const worstSub = computed(() => {
         <KpiTile
           :label="t('fq.jr.totals.net')"
           :hint="t('fq.jr.totals.netHint')"
-          :sub="t('fq.jr.totals.netSub', { n: count, u: unknown })"
+          :sub="netSub"
           data-testid="jt-net"
           v-bind="vs(slotOf(net))"
         >
@@ -168,6 +174,7 @@ const worstSub = computed(() => {
         </KpiTile>
         <KpiTile
           :label="t('fq.jr.totals.duration')"
+          :hint="t('fq.jr.totals.durationHint')"
           :value="fmt.duration(s?.medianHours ?? 0)"
           :sub="
             s?.p90Hours === undefined || s.p90Hours === null
@@ -224,6 +231,14 @@ const worstSub = computed(() => {
 }
 .none {
   font-size: var(--t-md);
+}
+/* A phone tile is narrow: the line under the figure wraps instead of ending in an ellipsis */
+@media (max-width: 599px) {
+  .jt :deep(.kpi .s) {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
 }
 .partial {
   margin: 0;

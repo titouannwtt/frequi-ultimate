@@ -281,6 +281,9 @@ export default {
       orphan: 'Orphelines',
     },
     awaiting: '{n} position annoncée, lecture en cours | {n} positions annoncées, lecture en cours',
+    marketHip3: 'Actions, matières',
+    dur: { ok: 'habituel', warn: 'long', crit: 'plus long que d’habitude' },
+    durHint: 'Plus long que {p} % des trades fermés de ce bot',
     awaitingHint: 'Les bots sont lus un par un : la liste se complète au fil de leurs réponses.',
     awaitingMore:
       '{n} autre position annoncée, lecture en cours | {n} autres positions annoncées, lecture en cours',
