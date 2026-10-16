@@ -17,6 +17,7 @@ import { generateCandleSeries } from '@/utils/charts/candleChartSeries';
 import { heikinAshiDataset } from '@/utils/charts/heikinAshiDataset';
 
 import { markWin, visibleClosed } from './chartTrades';
+import { rankRange, refillRank } from './orders';
 
 export const DATE_COL = '__date_ts';
 
@@ -237,6 +238,9 @@ export interface OverlayLabels {
   pending?: Partial<Record<PendingKind, string>>;
   /** Tag of a safety order: `R` gives R1, R2... */
   dcaTag?: string;
+  /** Plain names of the top-ups: "Renfort" gives "Renfort 2", "Renforts" gives "Renforts 1-2". */
+  refill?: string;
+  refills?: string;
 }
 
 export interface LevelLine {
@@ -253,6 +257,8 @@ export interface LevelLine {
   priority: boolean;
   /** The line is kept in the price range whatever its distance (the average entry). */
   always?: boolean;
+  /** Rank of the top-up this line is (1 for the first one), when it is one. */
+  rank?: number;
 }
 
 /** The horizontal levels to draw, in drawing order. Levels that are not finite are dropped. */
@@ -270,10 +276,13 @@ export function levelLines(
   };
   if (on.safetyOrders) {
     for (const so of o.safetyOrders ?? []) {
+      const rank = refillRank(so.label);
       add({
         id: `so:${so.label}`,
         price: so.price,
-        label: so.label,
+        // "Renfort 2", not the identifier "SO2": the owner reads words
+        label: rank !== null && labels.refill ? `${labels.refill} ${rank}` : so.label,
+        ...(rank !== null ? { rank } : {}),
         color: so.state === 'next' ? tokens.warn : tokens.fg3,
         dash: so.state === 'filled' ? 'solid' : so.state === 'next' ? 'dashed' : 'dotted',
         width: so.state === 'next' ? 1.4 : 1,
@@ -346,6 +355,131 @@ export function levelLines(
   return out;
 }
 
+// ---- labels of the levels: no two written over each other ----
+
+/** What to write for one level line: its own text (merged lines), hidden, and a vertical nudge. */
+export interface LabelPlan {
+  /** Replaces the default "name price" text (several lines at one price share one label). */
+  text?: string;
+  /** The line is drawn, its label is carried by another line of the group. */
+  hide?: boolean;
+  /** Pixels to move the label down (positive) from its place just above its line. */
+  dy: number;
+}
+
+/** The price pane as it is on screen: the price range and where it sits in the chart, in pixels. */
+export interface LabelGeometry {
+  lo: number;
+  hi: number;
+  top: number;
+  height: number;
+}
+
+/** Height a label takes, with a little air. */
+export const LABEL_H = 14;
+
+/**
+ * Where each level label goes. Two steps, both pure:
+ * 1. lines of one side that print the same price share one label ("Renforts 1-2 12,456"): the
+ *    first line carries the text, the others hide theirs;
+ * 2. once the price range on screen is known (`geo`), labels that would still overlap are stacked:
+ *    each one tries the place above its line, then under it, then further away, and takes the
+ *    first one that no other label occupies. The ladder labels are on the left, the position's own
+ *    levels on the right, so only labels of one side compete.
+ */
+export function planLevelLabels(
+  lines: ReadonlyArray<
+    Pick<LevelLine, 'id' | 'price' | 'label' | 'side'> & Partial<Pick<LevelLine, 'rank'>>
+  >,
+  fmtPrice: (v: number) => string,
+  names: { refills?: string } = {},
+  geo: LabelGeometry | null = null,
+): Record<string, LabelPlan> {
+  const plan: Record<string, LabelPlan> = {};
+  for (const side of ['start', 'end'] as const) {
+    // One entry per printed price: the lines that say the same number are one label
+    const groups = new Map<string, (typeof lines)[number][]>();
+    for (const l of lines.filter((x) => x.side === side)) {
+      const k = fmtPrice(l.price);
+      groups.set(k, [...(groups.get(k) ?? []), l]);
+    }
+    const heads: Array<{ line: (typeof lines)[number]; y: number | null }> = [];
+    for (const [priceText, group] of groups) {
+      const head = group[0]!;
+      plan[head.id] = { dy: 0 };
+      for (const other of group.slice(1)) plan[other.id] = { dy: 0, hide: true };
+      if (group.length > 1) {
+        const ranks = group.map((g) => g.rank);
+        const allRefills = ranks.every((r): r is number => r !== undefined);
+        const names_ =
+          allRefills && names.refills
+            ? `${names.refills} ${rankRange(ranks as number[])}`
+            : group.map((g) => g.label).join(' · ');
+        plan[head.id]!.text = `${names_} ${priceText}`;
+      }
+      const y =
+        geo && geo.hi > geo.lo
+          ? geo.top + ((geo.hi - head.price) / (geo.hi - geo.lo)) * geo.height
+          : null;
+      heads.push({ line: head, y });
+    }
+    if (!geo) continue;
+    const bottom = geo.top + geo.height;
+    const placed: Array<[number, number]> = [];
+    const free = (t: number) => placed.every(([a, b]) => t + LABEL_H <= a || t >= b);
+    for (const h of heads
+      .filter((x) => x.y !== null && x.y >= geo.top && x.y <= bottom)
+      .sort((a, b) => a.y! - b.y!)) {
+      const y = h.y!;
+      const above = y - LABEL_H - 1;
+      const tries = [above, y + 2];
+      for (let k = 1; k <= 4; k++) tries.push(y + 2 + k * LABEL_H, above - k * LABEL_H);
+      const inside = (t: number) => t >= geo.top - 2 && t + LABEL_H <= bottom + 2;
+      const at = tries.find((t) => inside(t) && free(t)) ?? above;
+      placed.push([at, at + LABEL_H]);
+      plan[h.line.id]!.dy = Math.round(at - above);
+    }
+  }
+  return plan;
+}
+
+/**
+ * The tag each execution marker writes. Top-ups of one candle or a few next to each other, at about
+ * the same price, would write "R1" over "R2": the first marker carries one merged tag ("R1-2") and
+ * the others write nothing (each keeps its own tooltip). `null` is "write nothing".
+ */
+export function fillTags(
+  fills: ReadonlyArray<Pick<FillMark, 'ts' | 'price' | 'kind' | 'label' | 'n'>>,
+  tag: string,
+  timeframeMs: number,
+  candles = 4,
+): Array<string | null> {
+  const own = fills.map((f) =>
+    f.kind === 'entry' ? 'E' : f.kind === 'dca' ? (f.n ? `${tag}${f.n}` : f.label) : 'S',
+  );
+  const out: Array<string | null> = [...own];
+  const near = (a: (typeof fills)[number], b: (typeof fills)[number]) =>
+    a.kind === b.kind &&
+    a.kind === 'dca' &&
+    a.n !== undefined &&
+    b.n !== undefined &&
+    Math.abs(a.ts - b.ts) <= (timeframeMs > 0 ? timeframeMs * candles : 0) &&
+    Math.abs(a.price - b.price) <= Math.max(a.price, b.price) * 0.01;
+  const done = new Set<number>();
+  fills.forEach((f, i) => {
+    if (done.has(i) || f.kind !== 'dca' || f.n === undefined) return;
+    const group = [i];
+    fills.forEach((g, j) => {
+      if (j > i && !done.has(j) && near(f, g)) group.push(j);
+    });
+    if (group.length < 2) return;
+    group.forEach((j) => done.add(j));
+    out[i] = `${tag}${rankRange(group.map((j) => fills[j]!.n!))}`;
+    for (const j of group.slice(1)) out[j] = null;
+  });
+  return out;
+}
+
 // ---- option ----
 
 export interface CandleOptionInput {
@@ -391,6 +525,10 @@ export interface CandleOptionInput {
   mainMinShare?: number;
   /** Levels farther than this share of the last close do not stretch the price axis. */
   axisReach?: number;
+  /** Leave the volume pane out (a small chart where the chosen sub-chart would not fit). */
+  hideVolume?: boolean;
+  /** Where the level labels go (see `planLevelLabels`); written as they come when omitted. */
+  labelPlan?: Record<string, LabelPlan>;
 }
 
 export interface TipLabels {
@@ -708,7 +846,7 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
       .filter((s) => !wanted || wanted.has(s.id))
       .map((s) => ({ name: s.id, series: s.series }));
 
-  const hasVolume = vi >= 0;
+  const hasVolume = vi >= 0 && !input.hideVolume;
   const layout = paneLayout({
     heightPx: input.heightPx ?? 0,
     hasVolume,
@@ -766,7 +904,15 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
             gridIndex: 0,
             position: input.labelSide,
             axisLine: { show: false },
-            axisLabel: { color: c.fg3, fontSize: 11, formatter: (v: number) => input.fmtPrice(v) },
+            // The bounds are the candles plus a margin, never round numbers: written, they sit
+            // on top of the nearest round tick ("131,51" over "120,00")
+            axisLabel: {
+              color: c.fg3,
+              fontSize: 11,
+              showMinLabel: false,
+              showMaxLabel: false,
+              formatter: (v: number) => input.fmtPrice(v),
+            },
             splitLine: { lineStyle: { color: c.line, type: 'dashed' } },
             min: (v: { min: number; max: number }) => priceBounds(v, near, layout.main.height)[0],
             max: (v: { min: number; max: number }) => priceBounds(v, near, layout.main.height)[1],
@@ -825,18 +971,22 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
             silent: true,
             symbol: 'none',
             animation: false,
-            data: lines.map((l) => ({
-              yAxis: l.price,
-              name: l.id,
-              lineStyle: { color: l.color, type: l.dash, width: l.width, opacity: l.opacity },
-              label: {
-                show: true,
-                position: l.side === 'start' ? 'insideStartTop' : 'insideEndTop',
-                color: l.color,
-                fontSize: 11,
-                formatter: `${l.label} ${input.fmtPrice(l.price)}`,
-              },
-            })),
+            data: lines.map((l) => {
+              const lp = input.labelPlan?.[l.id];
+              return {
+                yAxis: l.price,
+                name: l.id,
+                lineStyle: { color: l.color, type: l.dash, width: l.width, opacity: l.opacity },
+                label: {
+                  show: !lp?.hide,
+                  position: l.side === 'start' ? 'insideStartTop' : 'insideEndTop',
+                  color: l.color,
+                  fontSize: 11,
+                  ...(lp?.dy ? { offset: [0, lp.dy] } : {}),
+                  formatter: lp?.text ?? `${l.label} ${input.fmtPrice(l.price)}`,
+                },
+              };
+            }),
           }
         : undefined,
       markArea: gainBand
@@ -943,6 +1093,7 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
   });
 
   // Fills: a triangle up for a buy, down for a sell, so a short is mirrored by its own orders
+  const fillWords = fillTags(input.overlays.fills ?? [], dcaTag, set.timeframeMs);
   if (input.toggles.fills && (input.overlays.fills?.length ?? 0) > 0) {
     series.push({
       id: 'fills',
@@ -952,10 +1103,11 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
       yAxisIndex: 0,
       z: 5,
       animation: false,
-      data: (input.overlays.fills ?? []).map((f) => {
+      data: (input.overlays.fills ?? []).map((f, fi) => {
         const buy = f.kind === 'exit' ? f.side === 'short' : f.side !== 'short';
         const tag =
           f.kind === 'entry' ? 'E' : f.kind === 'dca' ? (f.n ? `${dcaTag}${f.n}` : f.label) : 'S';
+        const written = fillWords[fi] ?? tag;
         const kindName =
           f.kind === 'entry'
             ? input.labels.entry
@@ -969,8 +1121,8 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
           symbolSize: f.kind === 'entry' ? 13 : 11,
           // E, R1... under a buy (above a sell)
           label: {
-            show: true,
-            formatter: tag,
+            show: written !== null,
+            formatter: written ?? '',
             position: buy ? 'bottom' : 'top',
             color: c.fg2,
             fontSize: 10,

@@ -40,7 +40,7 @@ export default {
       openCharts: 'Ouvrir en grand',
       noPair: 'Choisissez une paire ou une position.',
       openJournal: 'Voir dans le Journal',
-      perfPairs: 'P&L par paire',
+      perfPairs: 'Résultat par paire',
       perfPartial: 'Historique partiel : seulement ce que cet onglet a chargé.',
       drawer: 'Position',
       noPosition: 'Aucune position ouverte. Le bot attend un signal.',

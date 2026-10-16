@@ -87,7 +87,7 @@ describe('trade drawer sentences', () => {
   it('an unknown level is an icon with its reason, not an invented number', () => {
     const w = mountBody(position({}), { tp: null, orders: [], ordersLoading: false });
     expect(w.get('[data-sentence=target]').find('[data-state="unavailable"]').exists()).toBe(true);
-    expect(row(w, 'target')).toBe('Target exit');
+    expect(row(w, 'target')).toBe('Target exitNot provided by this bot');
   });
 
   it('is written in French too', () => {
@@ -131,6 +131,49 @@ describe('trade drawer sentences', () => {
     expect(details.attributes('open')).toBeUndefined();
     expect(details.text()).toContain('Notional');
     expect(details.text()).toContain('Stake');
-    expect(details.text()).toContain('SO2');
+    expect(details.text()).toContain('Top-up 2');
+  });
+});
+
+describe('trade drawer wording (QA of the friendlier build)', () => {
+  it('a level the bot does not give is a visible phrase, not only an icon', () => {
+    const w = mountBody(position({}), { tp: null, nextSo: null, orders: [], ordersLoading: false });
+    const t = w.get('[data-sentence=target]');
+    expect(t.get('[data-testid=drawer-missing]').text()).toBe('Not provided by this bot');
+    const r = w.get('[data-sentence=refill]');
+    expect(r.get('[data-testid=drawer-missing]').text()).toBe('Not provided by this bot');
+  });
+
+  it('is said in French too', () => {
+    setFqLocale('fr');
+    try {
+      const w = mountBody(position({}), { tp: null, orders: [], ordersLoading: false });
+      expect(w.get('[data-sentence=target] [data-testid=drawer-missing]').text()).toBe(
+        'Non fourni par ce bot',
+      );
+    } finally {
+      setFqLocale('en');
+    }
+  });
+
+  it('the next top-up comes with its price and its distance when the ladder knows it', () => {
+    const w = mountBody(position({ side: 'long' }), { tp: null });
+    expect(row(w, 'refill')).toContain('Next top-up at 94');
+    expect(row(w, 'refill')).toContain('6.0%');
+  });
+
+  it('a long duration says "long", never P98', () => {
+    const w = mountBody(position({ percentile: 98 }));
+    const d = w.get('[data-testid=drawer-long]');
+    expect(d.text()).toBe('longer than usual');
+    expect(w.text()).not.toMatch(/\bP9\d\b/i);
+    expect(d.attributes('title')).toContain('98');
+  });
+
+  it('the orders of the details say Top-up 2, not SO2', () => {
+    const w = mountBody(position({}));
+    const details = w.get('[data-testid=drawer-details]').text();
+    expect(details).toContain('Top-up 2');
+    expect(details).not.toContain('SO2');
   });
 });

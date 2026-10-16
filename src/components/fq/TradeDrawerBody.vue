@@ -10,6 +10,7 @@ import { useFqFleetStore } from '@/datasource/stores/fleet';
 import type { Position } from '@/gateway/types.gen';
 
 import { useBotActions } from './lib/useBotActions';
+import { refillRank } from './lib/orders';
 import { durationTone, lineFromPosition, pairLabel } from './lib/trades';
 import { lineSlot, PENDING, READY, unavailable, type Slot } from './lib/valueState';
 
@@ -29,11 +30,13 @@ const props = defineProps<{
   orders?: LadderOrder[];
   /** The orders are being read: say so instead of "not available". */
   ordersLoading?: boolean;
+  /** The sheet already carries the pair and the trade number in its title: do not say them twice. */
+  hideTitle?: boolean;
 }>();
 
 const { t } = useI18n();
 const fmt = useFormat();
-const { vs } = useValueSlot();
+const { vs, reason: reasonOf } = useValueSlot();
 const fleet = useFqFleetStore();
 
 const line = computed(() =>
@@ -79,6 +82,18 @@ interface Sentence {
   /** The line under it: the distance, in words. */
   detail: string;
   tone?: 'warn' | 'crit';
+}
+
+/**
+ * A level the drawer cannot give says it in words, under its title: an icon alone (the reason only
+ * in its tooltip) read as a broken line. The bot that does not announce the level and the orders
+ * that say nothing of it are one short phrase; the other reasons (prices, offline) keep theirs.
+ */
+function missingText(slot: Slot): string {
+  if (slot.state !== 'unavailable') return '';
+  if (slot.reason === 'noApi' || slot.reason === 'noData')
+    return t('fq.drawer.sentence.notProvided');
+  return reasonOf(slot) ?? t('fq.drawer.sentence.notProvided');
 }
 
 /** "2,7 %": a distance, always positive in the sentence (the verb says the direction). */
@@ -177,6 +192,13 @@ const facts = computed<Array<{ k: string; v: string }>>(() => [
   { k: 'stake', v: fmt.number(props.position.stake_amount, 2) },
 ]);
 
+/** "E" is the entry, "SO2" the second top-up: the words, not the identifiers of the ladder. */
+function orderName(label: string): string {
+  const rank = refillRank(label);
+  if (rank !== null) return t('fq.drawer.refillN', { n: rank });
+  return label === 'E' ? t('fq.drawer.entryName') : label;
+}
+
 const ordersSummary = computed(() => {
   const list = props.orders ?? [];
   const filled = list.filter((o) => o.state === 'filled').length;
@@ -189,11 +211,11 @@ const ordersSummary = computed(() => {
   <div class="body" :class="{ stale: position.freshness.stale }" data-testid="trade-drawer-body">
     <section class="head">
       <div class="h1">
-        <b class="pair">{{ pairLabel(position.pair) }}</b>
+        <b v-if="!hideTitle" class="pair">{{ pairLabel(position.pair) }}</b>
         <DirectionChip :side="position.side" :leverage="position.leverage" />
-        <Badge v-if="line.xyz" kind="xyz" />
+        <Badge v-if="line.xyz" kind="neutral" :label="t('fq.drawer.marketHip3')" />
         <Badge v-if="position.orphan" kind="orphan" />
-        <span class="tid num">#{{ position.trade_id }}</span>
+        <span v-if="!hideTitle" class="tid num">#{{ position.trade_id }}</span>
       </div>
       <div v-if="!position.orphan" class="target" data-testid="drawer-target">
         <span class="k">{{ t('fq.action.targetBot') }}</span>
@@ -227,11 +249,15 @@ const ordersSummary = computed(() => {
       </span>
       <span class="dur num">
         {{ t('fq.drawer.openSince', { d: fmt.duration(position.duration_ms / 3_600_000) }) }}
-        <Badge
+        <!-- "long", not "P98": the percentile is a statistic, only in the tooltip -->
+        <span
           v-if="position.percentile !== null && tone !== 'ok'"
-          :kind="tone === 'crit' ? 'crit' : 'warn'"
-          :label="`p${Math.round(position.percentile)}`"
-        />
+          class="long"
+          :class="tone"
+          data-testid="drawer-long"
+          :title="t('fq.drawer.durHint', { p: Math.round(position.percentile) })"
+          >{{ t(`fq.drawer.dur.${tone}`) }}</span
+        >
       </span>
     </section>
 
@@ -241,10 +267,16 @@ const ordersSummary = computed(() => {
         <div class="tx">
           <b>{{ r.title }}</b>
           <span v-if="r.slot.state === 'ready'" class="sub">{{ r.detail }}</span>
-          <span v-else class="sub"
+          <span v-else class="sub" :class="{ na: r.slot.state === 'unavailable' }"
             ><ValueState
               v-bind="vs(r.slot, `drawer/${position.bot_key}/${position.trade_id}/${r.k}`)"
-          /></span>
+            /><span
+              v-if="r.slot.state === 'unavailable'"
+              class="na-t"
+              data-testid="drawer-missing"
+              >{{ missingText(r.slot) }}</span
+            ></span
+          >
         </div>
       </div>
     </section>
@@ -256,7 +288,7 @@ const ordersSummary = computed(() => {
           v-for="o in orders"
           :key="o.id"
           :class="{ f: o.state === 'filled', n: o.state === 'next' }"
-          :title="`${o.label} ${fmt.price(o.price)}`"
+          :title="`${orderName(o.label)} ${fmt.price(o.price)}`"
         ></i>
       </div>
       <p v-if="ordersLoading && !orders?.length" class="dim">
@@ -294,7 +326,7 @@ const ordersSummary = computed(() => {
           </thead>
           <tbody>
             <tr v-for="o in orders" :key="o.id">
-              <td class="l">{{ o.label }}</td>
+              <td class="l">{{ orderName(o.label) }}</td>
               <td>{{ fmt.price(o.price) }}</td>
               <td>{{ fmt.number(o.stake, 2) }}</td>
               <td>{{ t(`fq.drawer.orderState.${o.state}`) }}</td>
@@ -464,6 +496,22 @@ const ordersSummary = computed(() => {
   color: var(--fg-2);
   font-size: var(--t-sm);
   overflow-wrap: anywhere;
+}
+.sub.na {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-3);
+}
+.long {
+  font-weight: 600;
+  font-size: var(--t-xs);
+}
+.long.warn {
+  color: var(--warn);
+}
+.long.crit {
+  color: var(--crit);
 }
 .refills {
   display: grid;
