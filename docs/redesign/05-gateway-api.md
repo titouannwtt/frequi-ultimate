@@ -57,6 +57,13 @@ requête portant un `Origin` hors liste reçoit 403 `origin_not_allowed`, y comp
 avec session valide. Sans `Origin` (curl, script) la requête passe : elle exige tout de même une
 session. Le WebSocket vérifie l'origine dans le gestionnaire et ferme en 4403.
 
+Déploiement : la passerelle et l'interface se déploient ensemble. Deux champs ont changé de sens
+sans version de protocole (la version de `/hello` n'est lue par aucun client) : `rate_budget_pct` est la
+part **utilisée** du budget (et non la part disponible) et `Position.dca_entries` compte les ordres
+d'entrée remplis, le premier compris (et non les renforts). Une interface d'avant ces changements face à
+la passerelle courante, ou l'inverse, affiche une jauge inversée et une entrée de moins ou de plus. Les
+routes qui changent de réponse doivent, comme `missing=204`, être demandées explicitement.
+
 ## 4. Routes de lecture
 
 Toutes sous `/gw/v1`, sauf mention, avec session.
@@ -71,7 +78,7 @@ Toutes sous `/gw/v1`, sauf mention, avec session.
 | `GET /trades/export.csv` | Export CSV ; les cellules texte commençant par `=`, `+`, `-`, `@`, tabulation ou retour chariot sont préfixées d'une apostrophe. |
 | `GET /pnl/periods`, `/equity`, `/drawdown`, `/leaderboard`, `/risk` | Calendrier (fuseau Europe/Paris), courbes, drawdown réalisé et avec latent, classement, exposition. `scope=` ou `bots=`. |
 | `GET /health`, `/health/rate`, `/logs`, `/events`, `/pairs/{clé}`, `/market`, `/audit` | Santé, débit vers un bot, journaux, événements, paires d'un bot, marché, journal d'audit des écritures. `/pairs`, `/logs?bot=` et `/scope/bot:...` fonctionnent aussi pour un bot dont personne n'observe le canal (le détail est construit à la demande). |
-| `GET/PUT/DELETE /prefs?scope=` | Préférences synchronisées entre appareils (256 Ko au plus), version par `ETag` et `If-Match` (409 `state_mismatch` en cas de conflit). `scope=` (vide) est le document global, `scope=<bot_key>` celui d'un bot, sans `scope` le `GET` liste tous les documents. Un document jamais écrit répond `204` (et non `404`, qui s'afficherait en erreur à chaque chargement). Le premier bootstrap peut les amorcer ; les suivants ne les écrasent jamais. |
+| `GET/PUT/DELETE /prefs?scope=` | Préférences synchronisées entre appareils (256 Ko au plus), version par `ETag` et `If-Match` (409 `state_mismatch` en cas de conflit). `scope=` (vide) est le document global, `scope=<bot_key>` celui d'un bot, sans `scope` le `GET` liste tous les documents. Un document jamais écrit répond `204` si la requête porte `missing=204` (le `404` s'afficherait en erreur à chaque chargement) et `404` sinon : un client qui ignore l'option prendrait le `204` pour un document. Le premier bootstrap peut les amorcer ; les suivants ne les écrasent jamais. |
 | `GET /alerts`, `POST /alerts/{id}/ack`, `POST /alerts/silence`, `DELETE /alerts/silence/{id}`, `GET/PUT /alerts/rules` | Alertes actives, acquittement, silences (une fin est obligatoire), règles. |
 | `POST /bots`, `PATCH /bots/{clé}`, `DELETE /bots/{clé}`, `POST /bots/{clé}/credentials` | Le registre est la découverte de l'hôte : répondent 501. |
 

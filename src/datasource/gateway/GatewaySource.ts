@@ -927,8 +927,10 @@ export class GatewaySource implements DataSource {
     get: async () => {
       await this.d.session.ensure();
       // `scope=` (empty) names the global document; without it the gateway lists every document.
+      // `missing=204` asks for a 204 when none is written yet (a gateway that predates the option
+      // ignores it and answers 404).
       const res = await this.d.http.raw<{ version: number; data: unknown }>('GET', '/prefs', {
-        params: { scope: '' },
+        params: { scope: '', missing: '204' },
       });
       // 204: no document written yet. 404 is what a gateway before that contract answered.
       if (res.status === 204 || res.status === 404) return null;

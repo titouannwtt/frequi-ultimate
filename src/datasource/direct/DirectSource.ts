@@ -94,6 +94,8 @@ import { createFailureStreak } from './offline';
 import { mapClosedTrade, mapLogs, mapOpenTrade, positionToTradeRow, toOpenRisk } from './mappers';
 import {
   buildBotRow,
+  closedCountOf,
+  closedHistoryOutdated,
   inferWallets,
   modeKnown,
   modeOf,
@@ -150,6 +152,9 @@ const GUARD_MAX_AGE_MS = 10_000;
 const CLOSED_PAGE = 500;
 const CLOSED_CAP_PER_BOT = 2_000;
 const CLOSED_TTL_MS = 10 * 60_000;
+/** Background read of the closed trades: one bot at a time, spaced out, retried slowly. */
+const CLOSED_WARM_GAP_MS = 3_000;
+const CLOSED_RETRY_MS = 60_000;
 const HISTORY_TTL_MS = 60_000;
 const STALE_REFETCH_AFTER_ACTION_MS = [1_000, 4_000];
 
@@ -247,6 +252,8 @@ export class DirectSource implements DataSource {
   private readonly actions = new Map<string, StoredAction>();
   private readonly lockedKeys = new Set<string>();
   private readonly inflight = new Set<Promise<unknown>>();
+  private closedWarm: Task = { next: 0, running: false };
+  private closedRetryAt = new Map<string, number>();
   private fleetTask: Record<'digest' | 'overview' | 'fleetStatus', Task> = {
     digest: { next: 0, running: false },
     overview: { next: 0, running: false },
@@ -439,6 +446,29 @@ export class DirectSource implements DataSource {
       this.botJob(rt, t.slow, now, c.slowMs, () => this.pollSlow(rt));
       this.botJob(rt, t.logs, now, c.logsMs, () => this.pollLogs(rt));
     }
+    this.warmClosed(sorted, now);
+  }
+
+  /**
+   * Keep the closed history of every reachable bot loaded (the day figure is computed from it,
+   * whatever the page): read once, then again only when the bot reports another closed-trade
+   * count. One bot at a time, so the fleet sees a trickle of requests.
+   */
+  private warmClosed(bots: BotRuntime[], now: number): void {
+    const t = this.closedWarm;
+    if (t.running || now < t.next || this.inflight.size >= this.maxConcurrent) return;
+    const rt = bots.find(
+      (b) =>
+        b.reach === 'online' &&
+        modeKnown(b) &&
+        (!b.closed || closedHistoryOutdated(b)) &&
+        now >= (this.closedRetryAt.get(b.key) ?? 0),
+    );
+    if (!rt) return;
+    t.running = true;
+    t.next = now + CLOSED_WARM_GAP_MS;
+    this.closedRetryAt.set(rt.key, now + CLOSED_RETRY_MS);
+    void this.track(this.ensureClosed(rt).finally(() => (t.running = false)));
   }
 
   /** The bot that answers for the whole fleet: the first reachable one, the UI's own first. */
@@ -1155,8 +1185,11 @@ export class DirectSource implements DataSource {
   /** Make sure the closed trades of a bot are loaded (capped, cached 10 minutes). */
   private async ensureClosed(rt: BotRuntime): Promise<ClosedHistory | null> {
     const now = this.now();
-    if (rt.closed && now - rt.closed.atMs < CLOSED_TTL_MS) return rt.closed;
+    if (rt.closed && now - rt.closed.atMs < CLOSED_TTL_MS && !closedHistoryOutdated(rt)) {
+      return rt.closed;
+    }
     const mode = modeOf(rt);
+    const countAtLoad = closedCountOf(rt);
     const rows: TradeRow[] = [];
     let total: number | null = null;
     let offset = 0;
@@ -1183,6 +1216,7 @@ export class DirectSource implements DataSource {
       total,
       complete: total !== null && rows.length >= total - this.openCountOf(rt, total),
       atMs: this.now(),
+      countAtLoad,
     };
     this.scheduleEmit();
     return rt.closed;
