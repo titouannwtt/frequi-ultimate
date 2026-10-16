@@ -791,8 +791,10 @@ const configRows = computed(() => {
   }
   .grid {
     grid-template-columns: minmax(0, 1fr) clamp(340px, 26vw, 420px);
-    grid-template-rows: minmax(320px, 1.6fr) minmax(0, 1fr);
-    overflow: hidden;
+    /* The chart row holds the price pane and the chosen sub-chart (RSI); under that the page scrolls
+       instead of dropping the sub-chart or squeezing the positions to nothing */
+    grid-template-rows: minmax(410px, 1.6fr) minmax(220px, 1fr);
+    overflow: auto;
   }
   .chart {
     grid-column: 1;

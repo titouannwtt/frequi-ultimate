@@ -7,6 +7,7 @@ import {
   axisLevels,
   buildCandleOption,
   levelLines,
+  minHeightForSubs,
   offscreenLevels,
   paneLayout,
   resolveSubplots,
@@ -233,4 +234,20 @@ describe('what the Affichage menu switches', () => {
     ]);
     expect([off.fills, off.pending, off.gain, off.closed]).toEqual([true, true, true, true]);
   });
+});
+
+describe('the chosen sub-chart is never dropped for lack of room (B397)', () => {
+  const sizes = [
+    { subTitleH: 24, subH: 78, mainMinShare: 0.4 },
+    { subTitleH: 44, subH: 78, mainMinShare: 0.4 },
+  ];
+  for (const z of sizes) {
+    it(`one sub-chart fits at the minimum height (title ${z.subTitleH} px)`, () => {
+      const heightPx = minHeightForSubs({ subs: 1, subTitleH: z.subTitleH, subH: z.subH });
+      const o = { heightPx, hasVolume: false, subCount: 1, showSubplots: true, ...z };
+      expect(paneLayout(o).subs).toHaveLength(1);
+      // A pixel less and the same chart drops it: the minimum is exact, not a guess
+      expect(paneLayout({ ...o, heightPx: heightPx - 2 }).subs).toHaveLength(0);
+    });
+  }
 });

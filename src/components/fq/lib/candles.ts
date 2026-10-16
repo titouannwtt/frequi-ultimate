@@ -443,41 +443,141 @@ export function planLevelLabels(
   return plan;
 }
 
+/** Where a marker is drawn on screen, in pixels of the chart. */
+export interface FillPx {
+  x: number;
+  y: number;
+}
+
+/** Two top-ups closer than this (in pixels) write their tags over each other. */
+const FILL_NEAR_X = 26;
+const FILL_NEAR_Y = 13;
+/** Two markers closer than this sit on top of each other: hovering one must still name both. */
+const FILL_ON_X = 12;
+const FILL_ON_Y = 12;
+/** Height of one written tag, and its width per character, to stack tags that would meet. */
+const FILL_TAG_H = 12;
+const FILL_TAG_CHAR_W = 6.5;
+
+type FillIn = Pick<FillMark, 'ts' | 'price' | 'kind' | 'label' | 'n'> &
+  Partial<Pick<FillMark, 'side'>>;
+
+/** A buy draws its triangle up and writes its tag under it; a sell the opposite. */
+export const fillIsBuy = (f: Pick<FillMark, 'kind'> & Partial<Pick<FillMark, 'side'>>): boolean =>
+  f.kind === 'exit' ? f.side === 'short' : f.side !== 'short';
+
+export interface FillPlan {
+  /** The tag each marker writes; `null` is "write nothing" (a merged marker). */
+  tags: Array<string | null>;
+  /** The first marker of a merged group, with the index of every marker of the group. */
+  groups: Record<number, number[]>;
+  /** Markers that are one on top of the other (merged or not): each one lists all of them. */
+  members: Record<number, number[]>;
+  /** Pixels a written tag is pushed away from its marker so that it does not meet another tag. */
+  offsets: Record<number, number>;
+}
+
 /**
  * The tag each execution marker writes. Top-ups of one candle or a few next to each other, at about
  * the same price, would write "R1" over "R2": the first marker carries one merged tag ("R1-2") and
- * the others write nothing (each keeps its own tooltip). `null` is "write nothing".
+ * the others write nothing. Once the markers are placed on screen (`px`), top-ups that are close in
+ * pixels merge as well, whatever their time and price (a wide window packs many candles into a few
+ * pixels), the tags that still meet (an entry and a top-up on the same candle) are stacked, and
+ * markers that sit on top of each other each name all of them in their tooltip: none is lost
+ * behind another. `null` is "write nothing".
  */
-export function fillTags(
-  fills: ReadonlyArray<Pick<FillMark, 'ts' | 'price' | 'kind' | 'label' | 'n'>>,
+export function fillPlan(
+  fills: ReadonlyArray<FillIn>,
   tag: string,
   timeframeMs: number,
   candles = 4,
-): Array<string | null> {
+  px: ReadonlyArray<FillPx | null> | null = null,
+): FillPlan {
   const own = fills.map((f) =>
     f.kind === 'entry' ? 'E' : f.kind === 'dca' ? (f.n ? `${tag}${f.n}` : f.label) : 'S',
   );
-  const out: Array<string | null> = [...own];
-  const near = (a: (typeof fills)[number], b: (typeof fills)[number]) =>
-    a.kind === b.kind &&
-    a.kind === 'dca' &&
-    a.n !== undefined &&
-    b.n !== undefined &&
-    Math.abs(a.ts - b.ts) <= (timeframeMs > 0 ? timeframeMs * candles : 0) &&
-    Math.abs(a.price - b.price) <= Math.max(a.price, b.price) * 0.01;
+  const tags: Array<string | null> = [...own];
+  const groups: Record<number, number[]> = {};
+  const near = (i: number, j: number) => {
+    const a = fills[i]!;
+    const b = fills[j]!;
+    if (a.kind !== 'dca' || b.kind !== 'dca' || a.n === undefined || b.n === undefined) {
+      return false;
+    }
+    const pa = px?.[i];
+    const pb = px?.[j];
+    if (pa && pb && Math.abs(pa.x - pb.x) <= FILL_NEAR_X && Math.abs(pa.y - pb.y) <= FILL_NEAR_Y) {
+      return true;
+    }
+    return (
+      Math.abs(a.ts - b.ts) <= (timeframeMs > 0 ? timeframeMs * candles : 0) &&
+      Math.abs(a.price - b.price) <= Math.max(a.price, b.price) * 0.01
+    );
+  };
   const done = new Set<number>();
   fills.forEach((f, i) => {
     if (done.has(i) || f.kind !== 'dca' || f.n === undefined) return;
     const group = [i];
-    fills.forEach((g, j) => {
-      if (j > i && !done.has(j) && near(f, g)) group.push(j);
+    fills.forEach((_, j) => {
+      if (j > i && !done.has(j) && near(i, j)) group.push(j);
     });
     if (group.length < 2) return;
     group.forEach((j) => done.add(j));
-    out[i] = `${tag}${rankRange(group.map((j) => fills[j]!.n!))}`;
-    for (const j of group.slice(1)) out[j] = null;
+    tags[i] = `${tag}${rankRange(group.map((j) => fills[j]!.n!))}`;
+    groups[i] = group;
+    for (const j of group.slice(1)) tags[j] = null;
   });
-  return out;
+
+  // Markers on top of each other, merged or not
+  const members: Record<number, number[]> = {};
+  fills.forEach((_, i) => {
+    const set = new Set<number>([i]);
+    for (const g of Object.values(groups)) if (g.includes(i)) g.forEach((j) => set.add(j));
+    const pi = px?.[i];
+    if (pi) {
+      fills.forEach((__, j) => {
+        const pj = px?.[j];
+        if (pj && Math.abs(pi.x - pj.x) <= FILL_ON_X && Math.abs(pi.y - pj.y) <= FILL_ON_Y) {
+          set.add(j);
+        }
+      });
+    }
+    if (set.size > 1) members[i] = [...set].sort((a, b) => a - b);
+  });
+
+  // The tags left are stacked away from each other (an entry and a top-up of the same candle)
+  const offsets: Record<number, number> = {};
+  if (px) {
+    const placed: Array<{ buy: boolean; x: number; y: number; w: number }> = [];
+    fills.forEach((f, i) => {
+      const p = px[i];
+      const text = tags[i];
+      if (!p || text === null || text === undefined) return;
+      const buy = fillIsBuy(f);
+      const w = text.length * FILL_TAG_CHAR_W + 4;
+      const meets = (y: number) =>
+        placed.some(
+          (o) =>
+            o.buy === buy && Math.abs(o.x - p.x) < (o.w + w) / 2 && Math.abs(o.y - y) < FILL_TAG_H,
+        );
+      let off = 0;
+      while (meets(p.y + off) && off < FILL_TAG_H * 4) off += FILL_TAG_H;
+      if (off > 0) offsets[i] = off;
+      placed.push({ buy, x: p.x, y: p.y + off, w });
+    });
+  }
+  return { tags, groups, members, offsets };
+}
+
+/** The tags alone (see `fillPlan`). */
+export function fillTags(
+  fills: ReadonlyArray<FillIn>,
+  tag: string,
+  timeframeMs: number,
+  candles = 4,
+  px: ReadonlyArray<FillPx | null> | null = null,
+): Array<string | null> {
+  return fillPlan(fills, tag, timeframeMs, candles, px).tags;
 }
 
 // ---- option ----
@@ -529,6 +629,8 @@ export interface CandleOptionInput {
   hideVolume?: boolean;
   /** Where the level labels go (see `planLevelLabels`); written as they come when omitted. */
   labelPlan?: Record<string, LabelPlan>;
+  /** Which execution markers merge their tag (see `fillPlan`); worked out from the time and price when omitted. */
+  fillPlan?: FillPlan;
 }
 
 export interface TipLabels {
@@ -690,6 +792,15 @@ const MAIN_MIN_PX = 160;
 /** In a chart too small for anything: never a negative or invisible price pane. */
 const MAIN_FLOOR_PX = 80;
 const HEIGHT_FALLBACK = 360;
+
+/**
+ * Height under which a chart cannot hold both its price pane and `subs` sub-charts (volume apart,
+ * which gives way first): the chart is given at least this much, so that the sub-chart the user
+ * chose is never the thing that is dropped for lack of room.
+ */
+export function minHeightForSubs(o: { subs: number; subTitleH: number; subH: number }): number {
+  return PANE_TOP + PANE_BOTTOM + MAIN_MIN_PX + o.subs * (o.subTitleH + o.subH + PANE_GAP);
+}
 
 /**
  * Pixel layout of the panes: the price pane first and as large as the chart allows, then the
@@ -1093,8 +1204,10 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
   });
 
   // Fills: a triangle up for a buy, down for a sell, so a short is mirrored by its own orders
-  const fillWords = fillTags(input.overlays.fills ?? [], dcaTag, set.timeframeMs);
-  if (input.toggles.fills && (input.overlays.fills?.length ?? 0) > 0) {
+  const fills = input.overlays.fills ?? [];
+  const plan = input.fillPlan ?? fillPlan(fills, dcaTag, set.timeframeMs);
+  const fillWords = plan.tags;
+  if (input.toggles.fills && fills.length > 0) {
     series.push({
       id: 'fills',
       name: 'fills',
@@ -1103,11 +1216,19 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
       yAxisIndex: 0,
       z: 5,
       animation: false,
-      data: (input.overlays.fills ?? []).map((f, fi) => {
-        const buy = f.kind === 'exit' ? f.side === 'short' : f.side !== 'short';
+      data: fills.map((f, fi) => {
+        const buy = fillIsBuy(f);
         const tag =
           f.kind === 'entry' ? 'E' : f.kind === 'dca' ? (f.n ? `${dcaTag}${f.n}` : f.label) : 'S';
-        const written = fillWords[fi] ?? tag;
+        // `null` is "write nothing": it must not fall back to the own tag (`??` would)
+        const written: string | null = fillWords[fi] === undefined ? tag : (fillWords[fi] ?? null);
+        // Markers on top of each other each list all of them: none is lost behind another
+        const ownTag = (m: (typeof fills)[number]) =>
+          m.kind === 'entry' ? 'E' : m.kind === 'dca' ? (m.n ? `${dcaTag}${m.n}` : m.label) : 'S';
+        const mergedTip = plan.members?.[fi]?.map((j) => ({
+          f: fills[j]!,
+          tag: ownTag(fills[j]!),
+        }));
         const kindName =
           f.kind === 'entry'
             ? input.labels.entry
@@ -1124,6 +1245,8 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
             show: written !== null,
             formatter: written ?? '',
             position: buy ? 'bottom' : 'top',
+            // An entry and a top-up of the same candle: the second tag is pushed one line away
+            offset: [0, buy ? (plan.offsets?.[fi] ?? 0) : -(plan.offsets?.[fi] ?? 0)],
             color: c.fg2,
             fontSize: 10,
           },
@@ -1141,12 +1264,22 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
             borderColor: c.bg1,
             borderWidth: 1,
           },
-          tip: tipHtml(`${tag} · ${kindName}`, [
-            [tip.amount, f.amount != null ? fmt.number(f.amount, 4) : ''],
-            [tip.price, input.fmtPrice(f.price)],
-            [tip.cost, f.cost != null ? `${fmt.number(f.cost, 2)} ${tip.unit}` : ''],
-            [tip.time, fmt.time(f.ts)],
-          ]),
+          tip: mergedTip
+            ? tipHtml(
+                [...new Set(mergedTip.map((m) => m.tag))].join(' · '),
+                mergedTip.flatMap((m) => [
+                  [`${m.tag}`, input.fmtPrice(m.f.price)],
+                  [tip.amount, m.f.amount != null ? fmt.number(m.f.amount, 4) : ''],
+                  [tip.cost, m.f.cost != null ? `${fmt.number(m.f.cost, 2)} ${tip.unit}` : ''],
+                  [tip.time, fmt.time(m.f.ts)],
+                ]),
+              )
+            : tipHtml(`${tag} · ${kindName}`, [
+                [tip.amount, f.amount != null ? fmt.number(f.amount, 4) : ''],
+                [tip.price, input.fmtPrice(f.price)],
+                [tip.cost, f.cost != null ? `${fmt.number(f.cost, 2)} ${tip.unit}` : ''],
+                [tip.time, fmt.time(f.ts)],
+              ]),
         };
       }),
       tooltip: { formatter: (p: { data?: { tip?: string } }) => p.data?.tip ?? '' },

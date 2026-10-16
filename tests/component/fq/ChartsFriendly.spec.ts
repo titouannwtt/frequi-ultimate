@@ -162,6 +162,9 @@ describe('Charts: a level off the price range is announced at the edge', () => {
     const items = w.findAll('[data-testid=candle-far-level]');
     expect(items).toHaveLength(1);
     expect(items[0]!.text()).toMatch(/^↑ Liquidation at .* \(\+47%\), off screen$/);
+    // The announcement has its own row above the plot: on the plot it sat on the gain label (B396)
+    expect(w.find('[data-testid=candle-far]').exists()).toBe(true);
+    expect(w.find('.plot [data-testid=candle-far]').exists()).toBe(false);
     // The user zooms out: the liquidation is in range, the announcement goes
     chart.convertFromPixel.mockImplementation((_f: unknown, y: number) =>
       y < 100 ? last * 1.6 : last * 0.5,

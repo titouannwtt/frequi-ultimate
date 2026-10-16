@@ -30,11 +30,13 @@ import {
   BUILTIN_RSI,
   DATE_COL,
   buildCandleOption,
+  fillPlan,
   indexAt,
   indicatorNames,
   legendAt,
   levelLines,
   mergeTail,
+  minHeightForSubs,
   offscreenLevels,
   paneLayout,
   planLevelLabels,
@@ -44,6 +46,8 @@ import {
   toCandleSet,
   zoomStartPct,
   type CandleSet,
+  type FillPx,
+  type FillPlan,
   type LabelPlan,
   type OverlayToggles,
   type Overlays,
@@ -289,6 +293,13 @@ const layoutIn = computed(() => ({
   mainMinShare: managed.value ? MAIN_MIN_SHARE_CHOSEN : undefined,
 }));
 const layout = computed(() => paneLayout(layoutIn.value));
+// The first sub-chart the user chose keeps its room: a chart given less (a short window) grows to
+// this height and its panel scrolls, rather than dropping the sub-chart
+const minPlot = computed(() =>
+  managed.value && showSubs.value && (chosenIds.value?.length ?? 0) > 0
+    ? `${minHeightForSubs({ subs: 1, subTitleH: subTitleH.value, subH: SUB_H_CHOSEN })}px`
+    : undefined,
+);
 const subsShown = computed(() => layout.value.subs.length);
 
 /** Plain title, one-line explanation and raw names of a sub-chart. */
@@ -460,6 +471,23 @@ const planKey = computed(() =>
 );
 const labelPlan = computed<Record<string, LabelPlan>>(() => JSON.parse(planKey.value));
 
+// Execution markers that sit on top of each other on screen (a wide window packs many candles into
+// a few pixels) merge their tags. The merge needs the markers' pixels, read back from the chart; it
+// is kept as text so that a pan that moves every marker together does not redraw the chart.
+const fillPx = ref<Array<FillPx | null>>([]);
+const fillKey = computed(() =>
+  JSON.stringify(
+    fillPlan(
+      props.overlays.fills ?? [],
+      overlayLabels.value.dcaTag,
+      set.value?.timeframeMs ?? 0,
+      4,
+      fillPx.value,
+    ),
+  ),
+);
+const fillPlanNow = computed<FillPlan>(() => JSON.parse(fillKey.value));
+
 const option = computed(() => {
   if (!set.value || set.value.rows.length === 0) return null;
   return buildCandleOption({
@@ -483,6 +511,7 @@ const option = computed(() => {
     subH: layoutIn.value.subH,
     mainMinShare: layoutIn.value.mainMinShare,
     labelPlan: labelPlan.value,
+    fillPlan: fillPlanNow.value,
     hideVolume: hideVolume.value,
   });
 });
@@ -552,7 +581,21 @@ const lastClose = computed(() => {
   }
   return null;
 });
+function readFillPx() {
+  const fills = props.overlays.fills ?? [];
+  if (!chartRef || typeof chartRef.convertToPixel !== 'function') return;
+  fillPx.value = fills.map((f) => {
+    const p = chartRef!.convertToPixel({ xAxisIndex: 0, yAxisIndex: 0 }, [
+      f.ts,
+      f.price,
+    ]) as unknown;
+    return Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1])
+      ? { x: Math.round(p[0] as number), y: Math.round(p[1] as number) }
+      : null;
+  });
+}
 function readRange() {
+  readFillPx();
   const m = layout.value.main;
   if (!chartRef || typeof chartRef.convertFromPixel !== 'function') return;
   const a = chartRef.convertFromPixel({ yAxisIndex: 0 }, m.top) as unknown;
@@ -867,11 +910,30 @@ const hasOverlay = (k: keyof OverlayToggles) => {
     <p v-if="error" class="note" role="status" data-testid="candle-error">
       {{ t('fq.ds.pane.error') }} · {{ error }}
     </p>
+    <!-- Levels off the screen are announced in their own row above the chart, never over it: on
+         the plot they sat on the gain label and on the price axis -->
+    <div
+      v-if="option && (far.up.length > 0 || far.down.length > 0)"
+      class="far"
+      data-testid="candle-far"
+    >
+      <span
+        v-for="o in [...far.up, ...far.down]"
+        :key="o.id"
+        class="item num"
+        :style="{ color: o.color }"
+        data-testid="candle-far-level"
+        >{{ o.text }}</span
+      >
+      <span v-if="far.moreUp + far.moreDown > 0" class="item num">{{
+        t('fq.candle.far.more', { n: far.moreUp + far.moreDown })
+      }}</span>
+    </div>
     <div
       ref="plotEl"
       class="plot"
       :class="{ armed: measureArmed }"
-      :style="{ height }"
+      :style="{ height, minHeight: minPlot }"
       @pointerdown.capture="onDown"
       @mousedown.capture="swallow"
       @touchstart.capture="swallow"
@@ -903,40 +965,6 @@ const hasOverlay = (k: keyof OverlayToggles) => {
         "
         data-testid="candle-empty"
       />
-      <div
-        v-if="option && (far.up.length > 0 || far.down.length > 0)"
-        class="far"
-        :class="prefs.settings.ui.chartLabelSide"
-        :style="{ top: `${layout.main.top}px`, height: `${layout.main.height}px` }"
-        data-testid="candle-far"
-      >
-        <div class="grp">
-          <span
-            v-for="o in far.up"
-            :key="o.id"
-            class="item num"
-            :style="{ color: o.color }"
-            data-testid="candle-far-level"
-            >{{ o.text }}</span
-          >
-          <span v-if="far.moreUp > 0" class="item num">{{
-            t('fq.candle.far.more', { n: far.moreUp })
-          }}</span>
-        </div>
-        <div class="grp">
-          <span
-            v-for="o in far.down"
-            :key="o.id"
-            class="item num"
-            :style="{ color: o.color }"
-            data-testid="candle-far-level"
-            >{{ o.text }}</span
-          >
-          <span v-if="far.moreDown > 0" class="item num">{{
-            t('fq.candle.far.more', { n: far.moreDown })
-          }}</span>
-        </div>
-      </div>
       <div
         v-for="p in option ? panes : []"
         :key="p.id"
@@ -1075,29 +1103,13 @@ const hasOverlay = (k: keyof OverlayToggles) => {
   cursor: crosshair;
 }
 .far {
-  position: absolute;
-  z-index: 3;
-  left: 8px;
-  right: 8px;
+  flex: none;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px var(--s3);
+  border-bottom: 1px solid var(--line);
   pointer-events: none;
-  padding: 2px 0;
-}
-/* The price axis labels are on the right: keep clear of them */
-.far.right {
-  right: 56px;
-}
-.far.left {
-  left: 50px;
-}
-.far .grp {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  align-items: flex-end;
 }
 .far .item {
   padding: 1px 8px;
