@@ -1,0 +1,26 @@
+name: Set up the pinned Rust toolchain
+description: >
+  Installs the toolchain named by gateway/rust-toolchain.toml (the single place where the version is
+  chosen), with the targets and components asked for. The repository must be checked out.
+inputs:
+  targets:
+    description: Comma-separated extra targets
+    default: ""
+  components:
+    description: Comma-separated extra components
+    default: ""
+runs:
+  using: composite
+  steps:
+    - id: channel
+      shell: bash
+      run: |
+        set -euo pipefail
+        channel=$(sed -n 's/^channel *= *"\(.*\)".*$/\1/p' gateway/rust-toolchain.toml | head -n1)
+        [ -n "$channel" ] || { echo "::error::no channel in gateway/rust-toolchain.toml"; exit 1; }
+        echo "channel=$channel" >> "$GITHUB_OUTPUT"
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ steps.channel.outputs.channel }}
+        targets: ${{ inputs.targets }}
+        components: ${{ inputs.components }}

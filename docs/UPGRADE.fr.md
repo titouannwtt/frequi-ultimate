@@ -42,7 +42,7 @@ Les panneaux propres au fork (pouls du marché, vue des risques, éditeur de str
 ### Plus sûr : avec sauvegarde et retour arrière
 
 Si vous gérez vous-même le dossier `installed`, `gateway/packaging/deploy-ui.sh` (dans ce dépôt) copie les nouveaux fichiers à côté des
-anciens, bascule `index.html` de façon atomique, vérifie le résultat et garde une sauvegarde :
+anciens, bascule `index.html` de façon atomique, vérifie le résultat et garde une sauvegarde (`installed.bak.<horodatage UTC>` ; seules les 5 plus récentes sont conservées, voir `--keep` ; les copies faites à la main sous un autre nom ne sont jamais élaguées ni restaurées par `--rollback`) :
 
 ```bash
 unzip frequi-ultimate-ui-v2.0.0.zip -d /tmp/frequi-ui
@@ -96,7 +96,7 @@ redémarre jamais un bot.
    - **screen** : `gateway/packaging/run-in-screen.sh` démarre une session détachée `frequi-gateway`, refuse de démarrer si le port est pris
      et peut être lancé deux fois sans risque. Arrêt : `screen -x frequi-gateway` puis Ctrl+C.
    - **Docker** : `docker build -f gateway/packaging/Dockerfile -t frequi-gateway gateway`. Limites : la découverte des bots demande
-     `--pid=host`, les dossiers de configuration et de bases des bots doivent être montés aux mêmes chemins (la lecture seule suffit), avec
+     `--pid=host`, les dossiers de configuration et de bases des bots doivent être montés aux mêmes chemins (la lecture seule suffit tant que le bot tourne ; la base d'un bot arrêté proprement n'est plus lisible sur un montage `:ro`, montez-le en lecture-écriture si besoin), avec
      l'identifiant utilisateur des bots ; en pratique le mode conteneur convient quand les bots tournent sur le même hôte Docker.
    - Directement : `frequi-gateway run`.
 
@@ -131,5 +131,5 @@ Aucune de ces étapes ne touche un bot ni sa configuration.
 | L'interface reste en mode direct | La passerelle n'est pas joignable depuis le navigateur : vérifiez le port (`curl http://<hôte>:9399/gw/v1/hello`), le pare-feu, et que `cors_origins` contient l'adresse exacte de la page. |
 | `403 origin_not_allowed` | `server.cors_origins` ne contient pas l'adresse de la page (schéma, hôte, port). |
 | La passerelle démarre sans aucun bot | Pas sur la machine des bots, autre utilisateur, ou `discovery.proc_scan = false`. Lancez `frequi-gateway doctor`. |
-| `ledger_unreadable` dans la vue santé | Une base n'est pas lisible : lancez `frequi-gateway doctor --deep` pour la raison (droits, autre utilisateur, fichier déplacé). Avec systemd, voir la note sur `ReadWritePaths` dans l'unité. |
+| `ledger_unreadable` dans la vue santé | Une base n'est pas lisible : lancez `frequi-gateway doctor --deep` pour la raison (droits, autre utilisateur, fichier déplacé). Avec systemd, voir la note sur le bac à sable dans l'unité (un bot arrêté proprement laisse une base sans `-shm`, illisible si le système de fichiers est en lecture seule). |
 | `check-config` dit qu'un secret est dans le fichier principal | `auth.password_hash` va uniquement dans `secrets.toml`. |

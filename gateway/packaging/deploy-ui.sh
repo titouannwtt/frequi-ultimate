@@ -30,7 +30,8 @@
 #   --version V    marker written to .uiversion (default: DIST/.uiversion, else the package.json
 #                  version plus the git commit when --build)
 #   --url URL      base URL the target is served on, for example http://127.0.0.1:9400
-#   --keep N       keep the N newest backups after a verified deploy (default 5, 0 = keep all)
+#   --keep N       keep the N newest backups made by this script (installed.bak.<UTC stamp>) after a
+#                  verified deploy (default 5, 0 = keep all); other installed.bak.* copies are left alone
 #   --with-maps    also copy the *.map files (left out by default: 60 MB of source maps)
 #   --dry-run      print what would be done, change nothing
 set -euo pipefail
@@ -113,11 +114,30 @@ verify_files() { # verify_files DIR
   return $missing
 }
 
-latest_backup() {
+# The backups this script made: installed.bak.<UTC stamp>[.N]. Anything else next to the target
+# (a copy made by hand, installed.bak.20260521_084930) is never pruned and never restored by
+# --rollback; it is only mentioned.
+list_backups() {
   local parent base
   parent=$(dirname "$target"); base=$(basename "$target")
-  # UTC timestamps sort lexicographically.
-  find "$parent" -maxdepth 1 -type d -name "$base.bak.*" | sort | tail -n1
+  find "$parent" -maxdepth 1 -type d -name "$base.bak.*" -print0 \
+    | while IFS= read -r -d '' d; do
+        case "$(basename "$d")" in
+          "$base".bak.[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z \
+          | "$base".bak.[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z.[0-9]*)
+            printf '%s\n' "$d" ;;
+        esac
+      done | LC_ALL=C sort -V
+}
+
+latest_backup() { list_backups | tail -n1; }
+
+note_foreign_backups() {
+  local parent base d
+  parent=$(dirname "$target"); base=$(basename "$target")
+  while IFS= read -r -d '' d; do
+    if ! list_backups | grep -Fxq -- "$d"; then log "leaving alone (not made by this script): $d"; fi
+  done < <(find "$parent" -maxdepth 1 -type d -name "$base.bak.*" -print0)
 }
 
 restore_entry_files() { # restore_entry_files BACKUP : index.html and .uiversion only
@@ -131,7 +151,7 @@ restore_entry_files() { # restore_entry_files BACKUP : index.html and .uiversion
 if [ "$rollback" = 1 ]; then
   [ "$build" = 0 ] || die "--rollback does not take --build"
   b=${backup:-$(latest_backup)}
-  [ -n "$b" ] && [ -d "$b" ] || die "no backup found next to $target (expected $target.bak.<timestamp>)"
+  [ -n "$b" ] && [ -d "$b" ] || die "no backup found next to $target (expected $target.bak.<YYYYMMDDTHHMMSSZ>, as made by a deploy)"
   [ -f "$b/index.html" ] || die "backup $b has no index.html"
   log "rolling back $target from $b"
   changed=()
@@ -255,7 +275,7 @@ verify_http "$new_sha" "$version" || fail "the served UI does not match"
 log "deployed $version (previous: ${previous_marker:-none}); rollback: $0 --target $target --rollback"
 
 if [ "$keep" -gt 0 ]; then
-  parent=$(dirname "$target"); base=$(basename "$target")
-  mapfile -t old < <(find "$parent" -maxdepth 1 -type d -name "$base.bak.*" | sort | head -n "-$keep")
+  mapfile -t old < <(list_backups | head -n "-$keep")
   for d in ${old[@]+"${old[@]}"}; do log "pruning old backup $d"; rm -rf -- "$d"; done
+  note_foreign_backups
 fi

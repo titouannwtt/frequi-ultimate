@@ -37,6 +37,13 @@ jobs:
       # then rolls back, checking every byte. It never touches a real bot.
       - name: deploy-ui.sh and its rollback
         run: gateway/packaging/tests/test-deploy-ui.sh
+      # A stub binary in a throwaway screen session (never the real gateway).
+      - name: run-in-screen.sh follows the gateway, not the session
+        run: |
+          sudo apt-get install -y --no-install-recommends screen
+          gateway/packaging/tests/test-run-in-screen.sh
+      - name: the typecheck ratchet fails on a crash
+        run: scripts/test-check-typecheck.sh
       - name: systemd unit
         run: |
           mkdir -p "$HOME/.local/bin"
@@ -51,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: ./.github/actions/setup-rust
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: gateway

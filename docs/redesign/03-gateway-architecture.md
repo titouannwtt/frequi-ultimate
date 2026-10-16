@@ -200,11 +200,15 @@ format = "json"
   `kill` de l'extérieur).
   Arrêt propre sur SIGINT/SIGTERM : fermeture WS avec code 1001, vidage de l'audit, en moins de 5 s.
 - Open-source : unité systemd **utilisateur** `frequi-gateway.service` (`Restart=on-failure`, `NoNewPrivileges=yes`,
-  `ProtectSystem=strict`, `ReadWritePaths=%h/.local/share/frequi-gateway`, suffisant : mesuré, une base WAL se lit sans chemin
-  inscriptible, B105). Piège documenté : **pas de `PrivateTmp`**
+  `RestrictSUIDSGID`, `RestrictAddressFamilies`, `LockPersonality` : les filtres seccomp s'appliquent sans privilège). Les
+  directives de bac à sable de système de fichiers (`ProtectSystem`, `ReadWritePaths`...) ne sont PAS dans l'unité : un
+  gestionnaire utilisateur les ignore en silence sans `PrivateUsers=yes` (mesuré, systemd 247, B110). Avec ce drop-in
+  optionnel le système de fichiers devient réellement en lecture seule, et une base WAL sans `-shm` (bot arrêté
+  proprement) ne s'ouvre plus en `mode=ro` : il faut alors un chemin inscriptible sur le répertoire des bases (B105, corrigé
+  par B110). Piège documenté : **pas de `PrivateTmp`**
   (le socket ftcache est dans `/tmp`) et pas de `ProtectProc=invisible` (scan `/proc`).
 - Docker : image `scratch` + binaire statique. Limites documentées : pas de scan `/proc` sans `--pid=host`, montages
-  requis (répertoire des bases, la lecture seule suffit, B105 ; socket ftcache ; même UID que les bots) ; en pratique le mode Docker = registre + REST.
+  requis (répertoire des bases : la lecture seule suffit tant que le bot tourne, ses fichiers `-wal` et `-shm` existent ; pour un bot arrêté proprement une base WAL sans `-shm` est illisible en lecture seule réelle, B110 ; socket ftcache ; même UID que les bots) ; en pratique le mode Docker = registre + REST.
 
 ## 3. Authentification
 
