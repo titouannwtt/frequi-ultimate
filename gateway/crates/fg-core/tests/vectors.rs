@@ -15,6 +15,7 @@ use fg_core::calc::{
     capital, drawdown, duration, exit_reason, exposure, freshness, hip3, periods, stats,
 };
 use fg_core::model::Freshness;
+use fg_core::protocol::differ::{Differ, frame_bodies};
 use fg_core::protocol::{
     Channel, ChannelState, DELTA_BUFFER_SIZE, DeltaBuffer, Remove, Resume, SeqTracker, Upsert,
 };
@@ -304,6 +305,31 @@ fn run(function: &str, input: &Value, defaults: &Value) -> Value {
                 s.apply(&up, &rm);
             }
             to(&s.collections)
+        }
+        "protocol.diff" => {
+            let name = input["collection"].as_str().unwrap();
+            let mut differ = Differ::new();
+            let mut client = ChannelState::default();
+            let (mut states, mut changed) = (Vec::new(), Vec::new());
+            for step in input["steps"].as_array().unwrap() {
+                let items: Vec<(String, Value)> = step
+                    .as_object()
+                    .unwrap()
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect();
+                let bodies = frame_bodies([(name, differ.diff(name, items, &[]))]);
+                changed.push(!bodies.is_empty());
+                for (up, rm) in &bodies {
+                    client.apply(up, rm);
+                }
+                states.push(to(&client
+                    .collections
+                    .get(name)
+                    .cloned()
+                    .unwrap_or_default()));
+            }
+            json!({"states": states, "changed": changed})
         }
         "protocol.buffer_resume" => {
             let cap = input

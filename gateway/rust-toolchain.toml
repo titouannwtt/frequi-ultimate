@@ -1,0 +1,7 @@
+# The Rust toolchain every build and every CI job uses (.github/actions/setup-rust reads the channel
+# from here), so that a release can be rebuilt from its tag with the same compiler and the same
+# lints. Raise it on purpose, in a commit of its own.
+[toolchain]
+channel = "1.99.0"
+profile = "minimal"
+components = ["rustfmt", "clippy"]

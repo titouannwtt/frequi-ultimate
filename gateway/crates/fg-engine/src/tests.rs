@@ -121,6 +121,11 @@ fn key(port: u16) -> BotKey {
 }
 
 impl Rig {
+    /// Charts being relayed.
+    fn engine_charts(&self) -> usize {
+        self.h.sh_charts_len()
+    }
+
     async fn status_of(&self, port: u16) -> BotStatus {
         self.h.publish_now().await.unwrap();
         self.h.published().bots[&key(port)].state.status
@@ -493,6 +498,73 @@ async fn positions_come_from_the_ledger_and_prices_from_the_websocket() {
     assert!((longs - 2.0 * 110.0).abs() < 1e-9 && (shorts - 2.0 * 95.0).abs() < 1e-9);
 }
 
+fn status_body(trade: i64, pair: &str, rate: f64) -> serde_json::Value {
+    json!([{"trade_id": trade, "pair": pair, "is_short": false, "amount": 2.0,
+            "stake_amount": 100.0, "open_rate": 100.0, "current_rate": rate,
+            "profit_abs": rate - 100.0, "profit_ratio": (rate - 100.0) / 100.0}])
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_status_body_that_is_not_a_list_of_trades_blocks_nobody_and_wipes_nothing() {
+    let r = rig(&[spec(9001, "a", true), spec(9002, "b", true)]).await;
+    for (name, pair) in [("a", "BTC/USDC:USDC"), ("b", "ETH/USDC:USDC")] {
+        r.ledger.with(&db_path(name), |db| {
+            db.trades = vec![open_trade(1, pair, false, T0 - HOUR)];
+        });
+    }
+    r.bots[0].state.lock().unwrap().status = status_body(1, "BTC/USDC:USDC", 101.0);
+    r.bots[1].state.lock().unwrap().status = status_body(1, "ETH/USDC:USDC", 101.0);
+    settle(100).await;
+    r.h.publish_now().await.unwrap();
+    let p = r.h.published();
+    assert_eq!(p.positions["local:9001/1"].current_rate, Some(101.0));
+    assert_eq!(p.positions["local:9002/1"].current_rate, Some(101.0));
+
+    for odd in [
+        json!({"detail": "Not Found"}),
+        json!(null),
+        json!("<html>sign in</html>"),
+        json!(["a", "b"]),
+    ] {
+        r.bots[0].state.lock().unwrap().status = odd;
+        r.bots[1].state.lock().unwrap().status = status_body(1, "ETH/USDC:USDC", 120.0);
+        settle(75).await;
+        r.h.publish_now().await.unwrap();
+        let p = r.h.published();
+        // The other bot's positions keep being published with their new prices.
+        assert_eq!(p.positions["local:9002/1"].current_rate, Some(120.0));
+        assert!(!p.positions["local:9002/1"].freshness.stale);
+        // The odd bot is still alive, and its last known price was not replaced by "no price":
+        // it ages instead.
+        assert_eq!(p.bots[&key(9001)].state.status, BotStatus::Online);
+        assert_eq!(p.positions["local:9001/1"].current_rate, Some(101.0));
+        r.bots[1].state.lock().unwrap().status = status_body(1, "ETH/USDC:USDC", 101.0);
+        r.bots[0].state.lock().unwrap().status = status_body(1, "BTC/USDC:USDC", 101.0);
+        settle(75).await;
+    }
+    // Once it answers properly again, its prices are fresh.
+    r.bots[0].state.lock().unwrap().status = status_body(1, "BTC/USDC:USDC", 103.0);
+    settle(75).await;
+    r.h.publish_now().await.unwrap();
+    let p = r.h.published();
+    assert_eq!(p.positions["local:9001/1"].current_rate, Some(103.0));
+    assert!(!p.positions["local:9001/1"].freshness.stale);
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_forced_exit_is_not_judged_on_a_status_body_that_is_not_a_list_of_trades() {
+    let r = trading_rig().await;
+    // The model is old (no fresh price) and the bot answers 200 with an error envelope.
+    settle(30).await;
+    r.bots[0].state.lock().unwrap().status = json!({"detail": "boom"});
+    let err =
+        r.h.act(exit_req(9001, "k-odd", "BTC/USDC:USDC", false))
+            .await
+            .unwrap_err();
+    assert_eq!(err.code, fg_core::protocol::ErrorCode::BotUnreachable);
+    assert!(writes(&r, 9001).is_empty());
+}
+
 #[tokio::test(start_paused = true)]
 async fn a_silent_websocket_makes_prices_stale_and_excludes_them_from_sums() {
     let r = rig(&[spec(9001, "a", true), spec(9002, "b", true)]).await;
@@ -576,13 +648,18 @@ async fn a_ledger_that_cannot_be_read_makes_the_metrics_stale() {
     let row = &p.bots[&key(9001)];
     assert!(row.freshness[&FreshnessGroup::Metrics].stale);
     assert_eq!(row.metrics.realized_1d, None);
-    assert!(
-        p.health
-            .reasons
-            .iter()
-            .any(|x| x.code == "ledger_unreadable")
-            || r.h.health().level != fg_core::model::HealthLevel::Critical
+    let reason = p
+        .health
+        .reasons
+        .iter()
+        .find(|x| x.code == "ledger_unreadable")
+        .expect("the unreadable ledger is a health reason");
+    assert_eq!(
+        reason.detail.as_deref(),
+        Some("1 (db_locked 1)"),
+        "the reason says how many ledgers and why"
     );
+    assert_eq!(p.health.level, fg_core::model::HealthLevel::Degraded);
     // Recovery.
     r.ledger.with(&db_path("a"), |db| db.fail = None);
     settle(10).await;
@@ -1673,4 +1750,419 @@ async fn the_budget_and_the_engine_stop_cleanly() {
     let r = rig(&[spec(9001, "a", true)]).await;
     settle(30).await;
     r.engine.shutdown().await;
+}
+
+// ------------------------------------------------------------------ chart relay
+
+fn chart_channel(port: u16, pair: &str, tf: &str) -> Channel {
+    Channel::Chart {
+        bot: key(port),
+        pair: pair.into(),
+        timeframe: tf.into(),
+    }
+}
+
+/// A `pair_candles` answer with `n` candles of 15 minutes ending at `last_close` and an indicator
+/// column that must not travel.
+fn candles_body(n: i64, last_close: f64) -> Vec<u8> {
+    let rows: Vec<serde_json::Value> = (0..n)
+        .map(|i| {
+            let t = T0 - (n - 1 - i) * 900_000;
+            let c = if i == n - 1 {
+                last_close
+            } else {
+                100.0 + i as f64
+            };
+            json!(["d", c - 1.0, c + 2.0, c - 2.0, c, 10.0 + i as f64, 55.0, t])
+        })
+        .collect();
+    serde_json::to_vec(&json!({
+        "pair": "BTC/USDC:USDC", "timeframe": "15m",
+        "columns": ["date", "open", "high", "low", "close", "volume", "rsi", "__date_ts"],
+        "data": rows,
+    }))
+    .unwrap()
+}
+
+fn candle_reads(r: &Rig) -> usize {
+    r.bots[0]
+        .calls
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|(_, w)| w.starts_with("proxy GET /pair_candles"))
+        .count()
+}
+
+/// A client that applies deltas may lag on the timestamp of a freshness (it is not pushed alone).
+fn without_as_of(
+    mut c: BTreeMap<String, BTreeMap<String, serde_json::Value>>,
+) -> BTreeMap<String, BTreeMap<String, serde_json::Value>> {
+    if let Some(meta) = c.get_mut("chart").and_then(|m| m.get_mut("meta")) {
+        meta["freshness"]["as_of_ms"] = json!(0);
+    }
+    c
+}
+
+async fn frames_until_quiet(
+    sub: &mut crate::hub::Subscription,
+    state: &mut ChannelState,
+) -> Vec<ServerFrame> {
+    let mut seen = Vec::new();
+    while let Ok(Some(f)) = tokio::time::timeout(Duration::from_millis(5), sub.next()).await {
+        if let ServerFrame::Up { upsert, remove, .. } = &f {
+            state.apply(upsert, remove);
+        }
+        seen.push(f);
+    }
+    seen
+}
+
+#[tokio::test(start_paused = true)]
+async fn an_open_chart_relays_the_candles_and_a_client_that_applies_the_frames_equals_the_snapshot()
+{
+    let r = rig(&[spec(9001, "a", true)]).await;
+    r.bots[0].state.lock().unwrap().candles = Some(candles_body(5, 104.0));
+    settle(100).await;
+    let ch = chart_channel(9001, "BTC/USDC:USDC", "15m");
+
+    // Nothing is read for a chart nobody holds; its snapshot is empty, not an error.
+    assert_eq!(candle_reads(&r), 0);
+    assert!(r.h.snapshot(&ch).unwrap().collections.is_empty());
+
+    let mut sub = r.h.subscribe(&[(ch.clone(), None)]).unwrap();
+    let mut client = ChannelState::default();
+    settle(2).await;
+    frames_until_quiet(&mut sub, &mut client).await;
+    let snap = r.h.snapshot(&ch).unwrap();
+    assert_eq!(snap.collections["candles"].len(), 5);
+    assert_eq!(
+        without_as_of(client.collections.clone()),
+        without_as_of(snap.collections.clone())
+    );
+    let last = &snap.collections["candles"][&T0.to_string()];
+    assert_eq!(last["c"], json!(104.0));
+    assert!(last.get("rsi").is_none(), "only OHLCV travels: {last}");
+    let meta = &snap.collections["chart"]["meta"];
+    assert_eq!(meta["pair"], "BTC/USDC:USDC");
+    assert_eq!(meta["candles"], 5);
+    assert_eq!(meta["freshness"]["stale"], false);
+
+    // The forming candle moves, a new one opens and the oldest leaves the window.
+    let mut body: serde_json::Value = serde_json::from_slice(&candles_body(5, 104.0)).unwrap();
+    let rows = body["data"].as_array_mut().unwrap();
+    rows.remove(0);
+    rows.last_mut().unwrap()[4] = json!(106.0);
+    rows.push(json!([
+        "d",
+        106.0,
+        109.0,
+        105.0,
+        108.0,
+        3.0,
+        50.0,
+        T0 + 900_000
+    ]));
+    r.bots[0].state.lock().unwrap().candles = Some(serde_json::to_vec(&body).unwrap());
+    settle(65).await;
+    let frames = frames_until_quiet(&mut sub, &mut client).await;
+    assert!(frames.iter().any(|f| matches!(f, ServerFrame::Up { .. })));
+    let snap = r.h.snapshot(&ch).unwrap();
+    assert_eq!(snap.collections["candles"].len(), 5);
+    assert!(!snap.collections["candles"].contains_key(&(T0 - 4 * 900_000).to_string()));
+    assert_eq!(
+        without_as_of(client.collections.clone()),
+        without_as_of(snap.collections.clone()),
+        "applying the frames gives the snapshot"
+    );
+    assert_eq!(
+        snap.collections["candles"][&T0.to_string()]["c"],
+        json!(106.0)
+    );
+    assert_eq!(
+        snap.collections["candles"][&(T0 + 900_000).to_string()]["c"],
+        json!(108.0)
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn many_clients_on_a_chart_cost_one_read_per_period_inside_the_budget_and_it_stops_after_them()
+ {
+    let r = rig(&[spec(9001, "a", true)]).await;
+    r.bots[0].state.lock().unwrap().candles = Some(candles_body(5, 104.0));
+    settle(100).await;
+    let ch = chart_channel(9001, "BTC/USDC:USDC", "15m");
+    let subs: Vec<_> = (0..20)
+        .map(|_| r.h.subscribe(&[(ch.clone(), None)]).unwrap())
+        .collect();
+    assert_eq!(r.engine_charts(), 1, "one poller for twenty clients");
+    let granted0 = r.h.budget_stats().granted;
+    let reads0 = candle_reads(&r);
+    settle(600).await;
+    // 15m: a read every 60 s.
+    let reads = candle_reads(&r) - reads0;
+    assert!((9..=11).contains(&reads), "{reads} reads in 10 minutes");
+    let granted = r.h.budget_stats().granted - granted0;
+    assert!(
+        granted >= reads as u64,
+        "the reads are counted in the budget"
+    );
+
+    // Everybody leaves: it keeps going for the hold-over, then stops and forgets the chart.
+    drop(subs);
+    settle(100).await;
+    let after = candle_reads(&r);
+    settle(600).await;
+    assert_eq!(candle_reads(&r), after, "no read for a chart nobody holds");
+    assert_eq!(r.engine_charts(), 0);
+
+    // Coming back starts it again from a clean state.
+    let mut sub = r.h.subscribe(&[(ch.clone(), None)]).unwrap();
+    settle(5).await;
+    assert!(candle_reads(&r) > after);
+    assert_eq!(r.h.snapshot(&ch).unwrap().collections["candles"].len(), 5);
+    drop(sub.next());
+}
+
+#[tokio::test(start_paused = true)]
+async fn charts_are_validated_and_capped() {
+    let r = rig(&[spec(9001, "a", true)]).await;
+    settle(100).await;
+    let sub = |ch: Channel| r.h.subscribe(&[(ch, None)]).map(|_| ()).unwrap_err();
+    assert_eq!(
+        sub(chart_channel(9001, "BTC&limit=1", "15m")).code(),
+        fg_core::protocol::ErrorCode::BadRequest
+    );
+    assert_eq!(
+        sub(chart_channel(9001, "BTC/USDC:USDC", "15 m")).code(),
+        fg_core::protocol::ErrorCode::BadRequest
+    );
+    assert_eq!(
+        sub(chart_channel(9999, "BTC/USDC:USDC", "15m")).code(),
+        fg_core::protocol::ErrorCode::NotFound
+    );
+    assert_eq!(
+        r.engine_charts(),
+        0,
+        "a refused chart leaves nothing behind"
+    );
+
+    let mut open = Vec::new();
+    for i in 0..crate::chart::MAX_CHARTS {
+        open.push(
+            r.h.subscribe(&[(chart_channel(9001, &format!("C{i}/USDC:USDC"), "1h"), None)])
+                .unwrap(),
+        );
+    }
+    let err = sub(chart_channel(9001, "ONE/USDC:USDC", "1h"));
+    assert_eq!(err.code(), fg_core::protocol::ErrorCode::Unavailable);
+    // A client joining a chart that is already open does not count against the cap.
+    open.push(
+        r.h.subscribe(&[(chart_channel(9001, "C0/USDC:USDC", "1h"), None)])
+            .unwrap(),
+    );
+    assert_eq!(r.engine_charts(), crate::chart::MAX_CHARTS);
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_bot_that_cannot_be_read_leaves_the_last_candles_and_the_chart_goes_stale() {
+    let r = rig(&[spec(9001, "a", true)]).await;
+    r.bots[0].state.lock().unwrap().candles = Some(candles_body(5, 104.0));
+    settle(100).await;
+    let ch = chart_channel(9001, "BTC/USDC:USDC", "15m");
+    let mut sub = r.h.subscribe(&[(ch.clone(), None)]).unwrap();
+    let mut client = ChannelState::default();
+    settle(5).await;
+    frames_until_quiet(&mut sub, &mut client).await;
+    assert_eq!(
+        client.collections["chart"]["meta"]["freshness"]["stale"],
+        false
+    );
+
+    for odd in [
+        None,
+        Some(b"<html>sign in</html>".to_vec()),
+        Some(serde_json::to_vec(&json!({"detail": "boom"})).unwrap()),
+    ] {
+        r.bots[0].state.lock().unwrap().candles = odd;
+        settle(300).await;
+        frames_until_quiet(&mut sub, &mut client).await;
+        let snap = r.h.snapshot(&ch).unwrap();
+        assert_eq!(
+            snap.collections["candles"].len(),
+            5,
+            "the last candles stay"
+        );
+        assert_eq!(
+            snap.collections["chart"]["meta"]["freshness"]["stale"],
+            true
+        );
+        assert_eq!(
+            client.collections["chart"]["meta"]["freshness"]["stale"],
+            true
+        );
+        assert_eq!(
+            without_as_of(client.collections.clone()),
+            without_as_of(snap.collections.clone())
+        );
+        // The bot answers again: fresh.
+        r.bots[0].state.lock().unwrap().candles = Some(candles_body(5, 104.0));
+        settle(70).await;
+        frames_until_quiet(&mut sub, &mut client).await;
+        assert_eq!(
+            r.h.snapshot(&ch).unwrap().collections["chart"]["meta"]["freshness"]["stale"],
+            false
+        );
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_bot_that_is_down_is_not_asked_for_candles() {
+    let r = rig(&[spec(9001, "a", true)]).await;
+    r.bots[0].state.lock().unwrap().candles = Some(candles_body(5, 104.0));
+    settle(100).await;
+    r.bots[0].state.lock().unwrap().ping_ok = false;
+    r.bots[0].state.lock().unwrap().mode = Mode::Fail(RestError::Refused);
+    settle(400).await;
+    assert_eq!(r.status_of(9001).await, BotStatus::Offline);
+    let ch = chart_channel(9001, "BTC/USDC:USDC", "15m");
+    let _sub = r.h.subscribe(&[(ch.clone(), None)]).unwrap();
+    let before = candle_reads(&r);
+    settle(300).await;
+    assert_eq!(
+        candle_reads(&r),
+        before,
+        "no budget spent on a bot that is down"
+    );
+    let snap = r.h.snapshot(&ch).unwrap();
+    assert_eq!(
+        snap.collections["chart"]["meta"]["freshness"]["stale"],
+        true
+    );
+}
+
+// ------------------------------------------------------------------ the relay and the budget (B106, B107)
+
+fn fleet_specs(n: u16, first_port: u16) -> Vec<Spec> {
+    (0..n)
+        .map(|i| Spec {
+            port: first_port + i,
+            name: Box::leak(format!("f{first_port}x{i}").into_boxed_str()),
+            live: i % 3 != 0,
+            wallet: (i % 3 != 0).then_some(FAKE_WALLET),
+            capital: Some(100.0),
+        })
+        .collect()
+}
+
+/// Reads of `/status` over `secs` after a warm-up, with `charts` charts of one minute open.
+async fn status_reads_with_charts(first_port: u16, charts: u16) -> (usize, usize, f64) {
+    let specs = fleet_specs(24, first_port);
+    let r = rig(&specs).await;
+    for b in &r.bots {
+        b.state.lock().unwrap().candles = Some(candles_body(5, 104.0));
+    }
+    settle(200).await;
+    let mut subs = Vec::new();
+    for i in 0..charts {
+        let bot = first_port + i % 24;
+        subs.push(
+            r.h.subscribe(&[(chart_channel(bot, &format!("C{i}/USDC:USDC"), "1m"), None)])
+                .unwrap(),
+        );
+    }
+    settle(100).await;
+    let status0: usize = r.bots.iter().map(|b| b.calls_of("status").len()).sum();
+    let pc0 = r
+        .bots
+        .iter()
+        .map(|b| {
+            b.calls
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|(_, w)| w.starts_with("proxy GET /pair_candles"))
+                .count()
+        })
+        .sum::<usize>();
+    let g0 = r.h.budget_stats().granted;
+    let t0 = tokio::time::Instant::now();
+    settle(900).await;
+    let secs = t0.elapsed().as_secs_f64();
+    let status = r
+        .bots
+        .iter()
+        .map(|b| b.calls_of("status").len())
+        .sum::<usize>()
+        - status0;
+    let pc = r
+        .bots
+        .iter()
+        .map(|b| {
+            b.calls
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|(_, w)| w.starts_with("proxy GET /pair_candles"))
+                .count()
+        })
+        .sum::<usize>()
+        - pc0;
+    let granted = (r.h.budget_stats().granted - g0) as f64 / secs;
+    drop(subs);
+    r.engine.shutdown().await;
+    (status, pc, granted)
+}
+
+/// B106: 16 charts of one minute asked for 3.2 req/s from a bucket of 2.8 shared in arrival
+/// order; the polling of the fleet (and the pre-read of a forced exit) waited behind them.
+#[tokio::test(start_paused = true)]
+async fn sixteen_one_minute_charts_cannot_starve_the_fleet_polling() {
+    let (calm, none, _) = status_reads_with_charts(9300, 0).await;
+    assert_eq!(none, 0);
+    let (busy, chart_reads, granted) = status_reads_with_charts(9400, 16).await;
+    assert!(calm > 100, "the fleet is polled: {calm}");
+    assert!(
+        busy as f64 >= calm as f64 * 0.95,
+        "status reads with charts {busy}, without {calm}"
+    );
+    let rate = chart_reads as f64 / 900.0;
+    assert!(
+        rate <= crate::chart::RELAY_RATE_PER_S * 1.05,
+        "the relay stays inside its share: {rate} req/s"
+    );
+    assert!(rate > 0.2, "and it is not starved either: {rate} req/s");
+    assert!(granted <= 2.8 * 1.02, "the global ceiling holds: {granted}");
+}
+
+/// B107: a refused chart and the snapshot of a chart nobody relays left an entry of the view
+/// registry and of the hub for the life of the process.
+#[tokio::test(start_paused = true)]
+async fn refused_charts_and_snapshots_of_unrelayed_charts_leave_no_entry() {
+    let r = rig(&[spec(9001, "a", true)]).await;
+    r.bots[0].state.lock().unwrap().candles = Some(candles_body(5, 104.0));
+    settle(100).await;
+    let mut open = Vec::new();
+    for i in 0..crate::chart::MAX_CHARTS {
+        open.push(
+            r.h.subscribe(&[(chart_channel(9001, &format!("C{i}/USDC:USDC"), "1h"), None)])
+                .unwrap(),
+        );
+    }
+    let (views0, hub0) = r.h.sh_entries();
+    for i in 0..300 {
+        let ch = chart_channel(9001, &format!("X{i}/USDC:USDC"), "1h");
+        assert!(r.h.subscribe(&[(ch.clone(), None)]).is_err());
+        r.h.snapshot(&ch).unwrap();
+        let ch = chart_channel(9001, &format!("Y{i}/USDC:USDC"), "15m");
+        r.h.snapshot(&ch).unwrap();
+    }
+    settle(600).await;
+    assert_eq!(r.h.sh_entries(), (views0, hub0));
+    assert_eq!(r.engine_charts(), crate::chart::MAX_CHARTS);
+    // The snapshot of a chart nobody relays is still empty and well-formed.
+    let snap =
+        r.h.snapshot(&chart_channel(9001, "Z/USDC:USDC", "1h"))
+            .unwrap();
+    assert!(snap.collections.is_empty());
 }

@@ -1,0 +1,60 @@
+# systemd USER unit for frequi-gateway.
+#
+# Install:
+#   install -D -m 0755 frequi-gateway ~/.local/bin/frequi-gateway
+#   install -D -m 0644 frequi-gateway.service ~/.config/systemd/user/frequi-gateway.service
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now frequi-gateway
+#   loginctl enable-linger "$USER"     # keep it running after you log out
+# Logs: journalctl --user -u frequi-gateway -f
+#
+# The configuration is read from ~/.config/frequi-gateway/config.toml (secrets.toml next to it).
+# The gateway must run as the SAME user as the bots: it reads their configs and their databases.
+[Unit]
+Description=FreqUI Ultimate gateway
+Documentation=https://github.com/titouannwtt/frequi-ultimate
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/frequi-gateway run
+Restart=on-failure
+RestartSec=5
+# A clean shutdown closes the WebSockets and flushes the audit log in under 5 s.
+TimeoutStopSec=15
+Environment=FG_STORAGE__DATA_DIR=%h/.local/share/frequi-gateway
+
+# Hardening that applies in a systemd --user unit (systemd 247 measured): seccomp filters and the
+# no_new_privs bit need no privilege.
+NoNewPrivileges=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=yes
+# Deliberately NOT set:
+#  - ProtectSystem, ProtectKernel*, ReadWritePaths, PrivateTmp, ProtectProc...: these need a mount
+#    namespace, which a user manager only gets together with PrivateUsers=yes. Without it systemd
+#    ignores them SILENTLY (measured: ProtectSystem=strict alone leaves the whole file system
+#    writable), so listing them would claim a protection that does not exist (B110).
+#  - PrivateTmp / ProtectProc=invisible / hidepid: the ftcache socket of freqtrade-ultimate lives in
+#    /tmp and the bot discovery scans /proc.
+#  - ProtectHome: the bot configs and databases live under the home directory.
+# The gateway writes only to FG_STORAGE__DATA_DIR and opens the bot databases with SQLite
+# mode=ro; the unit does not enforce it, the code does (and the tests).
+#
+# Optional, for a host that allows unprivileged user namespaces (kernel.unprivileged_userns_clone=1
+# on Debian; the unit fails to start where it does not): a drop-in
+#   systemctl --user edit frequi-gateway
+#     [Service]
+#     PrivateUsers=yes
+#     ProtectSystem=strict
+#     ReadWritePaths=%h/.local/share/frequi-gateway
+#     ReadWritePaths=-%h/freqtrade/user_data
+# makes the file system really read-only. Measured on a copy: the databases of RUNNING bots stay
+# readable (their -wal and -shm files exist), but a WAL database that has no -shm (its bot stopped
+# cleanly) cannot be opened read-only on a read-only file system ("unable to open database file").
+# That is why the bot data directory is listed above: it lets SQLite create -shm next to a
+# database it only reads. `frequi-gateway doctor --deep` was not rerun under this drop-in.
+
+[Install]
+WantedBy=default.target

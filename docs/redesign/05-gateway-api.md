@@ -18,6 +18,16 @@ Sections de la configuration : `general`, `server`, `auth`, `discovery`, `ftcach
 `scheduler`, `market`, `alerts`, `storage`, `log`. Une clé inconnue est refusée. Le hash du mot de
 passe n'est accepté que depuis `secrets.toml` ou l'environnement.
 
+Fils d'exécution : `scheduler.worker_threads` vaut 0 (automatique : le nombre de processeurs, entre 2
+et 3) ou une valeur de 2 à 4 ; la réserve de fils bloquants (lectures SQLite, balayage `/proc`) vaut
+`scheduler.ledger_threads + 2`. Chaque fil qui alloue garde un tas à lui dans l'allocateur : 16 fils
+bloquants au lieu de 4 coûtent environ 14 Mo résidents.
+
+Mémoire : au démarrage de `run`, le binaire se relance sur place (même pid, mêmes descripteurs) avec
+`MIMALLOC_PURGE_DELAY=0`, faute de quoi mimalloc garde engagées les pages libérées par les rafales de
+lecture (30 à 50 Mo résidents de plus mesurés). Une valeur explicite de cette variable est respectée ;
+`FG_NO_REEXEC=1` supprime la relance.
+
 ## 2. Authentification
 
 Deux niveaux distincts : la passerelle parle aux bots avec les identifiants de sa configuration ; le
@@ -79,6 +89,41 @@ Une seule connexion multiplexée. Première trame dans les 5 s : `{"t":"auth","t
   Un canal inconnu répond `err unknown_channel`, une trame illisible `err bad_request` (la socket reste
   ouverte).
 
+Une clé qui disparaît d'un groupe objet (un coin qui sort de `net_exposure`, un groupe de `freshness`)
+ne peut pas se dire par un patch fusionné. Le serveur envoie alors, dans la même transaction, une trame
+qui remet le groupe à `null` puis la trame qui le republie en entier ; le client applique les deux dans
+le même lot. Le hub TypeScript du mode direct fait de même (vecteur partagé `protocol.diff`).
+
+### 5.1 Canal `chart:<clé>:<paire>:<timeframe>`
+
+Bougies d'un graphique ouvert. Une bougie qui forme se corrige à chaque lecture, d'où un canal d'état
+(collections clés/valeurs) comme les autres, et non un flux d'événements.
+
+* **Relais par lecture, pas par WebSocket du bot.** Un bot ne pousse `new_candle` et `analyzed_df` qu'à un
+  client qui s'y abonne, et ces messages portent un dataframe par paire (lourd). Le relais fait ce que la
+  page ferait seule, une fois pour tous : tant qu'au moins un client tient le canal, il lit
+  `GET /pair_candles?pair=&timeframe=&limit=150` du bot par le passthrough, une fois toutes les
+  `timeframe / 12` (entre 5 et 60 s), chaque lecture coûtant un jeton du budget global de requêtes. Un
+  seul lecteur par graphique quel que soit le nombre de clients ; il s'arrête 30 s après le dernier
+  départ. Au plus 16 graphiques distincts à la fois (503 `unavailable` au-delà) et 8 par connexion
+  WebSocket (erreur `bad_request`, « too many charts ») ; un bot hors ligne, arrêté ou à jeton expiré
+  n'est pas interrogé. Le relais a une part réservée de 0,3 req/s pour tous les graphiques ensemble
+  (B106) : ses lectures font la queue entre elles puis se paient sans attendre derrière le polling de la
+  flotte, qui ne peut donc pas être affamé ; au-delà de la part (par exemple 16 graphiques en 1 min), un
+  graphique est lu moins souvent et sa fraîcheur (`meta.freshness.stale`) suit la cadence réelle.
+* **Contenu.** Seules les colonnes OHLCV des 150 dernières bougies voyagent (les colonnes d'indicateurs
+  restent côté bot ; l'historique et les indicateurs viennent de `proxy/pair_candles` et `proxy/pair_history`,
+  mis en cache). Collection `candles`, clé = heure d'ouverture en ms : `{t, o, h, l, c, v}` ; collection
+  `chart`, clé `meta` : `{pair, timeframe, timeframe_ms, candles, freshness}`.
+* **Fraîcheur.** Si le bot ne peut plus être lu, les dernières bougies restent et
+  `meta.freshness.stale` passe à `true` (plus de 3 périodes sans lecture réussie) : un graphique figé
+  n'est jamais présenté comme vivant.
+* **Snapshot.** `GET /snapshot?ch=chart:...` rend l'état du relais, vide tant que personne n'a rejoint le
+  canal (aucune lecture n'est lancée par un GET). Le flux normal est : snapshot HTTP de `proxy/pair_candles`
+  pour l'historique, souscription WS, puis fusion des trames `up` du canal.
+* **Erreurs.** Paire ou timeframe mal formés : `bad_request` ; bot inconnu : `not_found` ; bot hors du
+  périmètre de la session : `forbidden` ; trop de graphiques ouverts : `unavailable`.
+
 Codes de fermeture : 4401 session invalide ou révoquée, 4403 origine refusée, 4429 trop de
 connexions ou client trop lent, 1001 arrêt de la passerelle. Un client qui applique les trames `up`
 (fusion superficielle par groupe de champs) obtient le même état qu'un client qui charge le snapshot,
@@ -132,3 +177,14 @@ sans secret, de forme stable pour fail2ban (`event=auth_failed ip=... path=...`)
 
 `GET /gw/v1/health` : niveau global, bots par état, requêtes accordées/écritures/attente cumulée du
 budget, horodatage de génération. C'est la même vue que le canal `health`.
+
+Raisons possibles (`reasons[].code`) : `daemon_unreachable`, `digest_stale`, `rate_backoff`,
+`rate_budget_low` (moins de 20 % du budget Hyperliquid du démon : constat de la flotte, pas un défaut de
+la passerelle), `all_bots_offline`, `bots_offline`, `rate_limit_events` et `ledger_unreadable`, dont le
+détail donne le nombre de registres et le code d'échec (`11 (timeout 11)`, `db_locked`, `db_corrupt`,
+`db_missing`, `db_error`).
+
+Un registre qui dépasse son budget de requête (200 ms) obtient un budget multiplié par 4 à chaque
+dépassement, jusqu'à 16 fois (3,2 s) ; sans cela une requête trop lente pour l'hôte échouerait à chaque
+passe et laisserait les chiffres du bot inconnus pour de bon (un binaire de débogage, dont SQLite n'est
+pas optimisé, laissait 11 bots sur 24 en `timeout` : santé `degraded`).

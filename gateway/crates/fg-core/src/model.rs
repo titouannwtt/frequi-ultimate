@@ -350,6 +350,30 @@ pub struct Ticker {
     pub freshness: Freshness,
 }
 
+/// One candle of an open chart (collection `candles` of a `chart:` channel, keyed by `t`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+pub struct Candle {
+    /// Open time, milliseconds.
+    pub t: i64,
+    pub o: f64,
+    pub h: f64,
+    pub l: f64,
+    pub c: f64,
+    pub v: f64,
+}
+
+/// What a `chart:` channel is about and how fresh it is (collection `chart`, key `meta`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+pub struct ChartInfo {
+    pub pair: String,
+    pub timeframe: String,
+    pub timeframe_ms: i64,
+    /// Number of candles in the window.
+    pub candles: u32,
+    /// When the bot was last read for these candles. `stale` says the relay lost the bot.
+    pub freshness: Freshness,
+}
+
 /// Per-device alias of a bot (`device_id -> ftbot.N -> bot_key`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 pub struct BotAlias {

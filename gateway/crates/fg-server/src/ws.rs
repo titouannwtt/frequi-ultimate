@@ -33,6 +33,9 @@ use crate::util::now_ms;
 const MAX_CLIENT_FRAME: usize = 64 * 1024;
 /// Channels one socket may hold.
 const MAX_CHANNELS: usize = 32;
+/// Charts one socket may hold: each open chart costs the bot a read every few seconds, and the
+/// relay serves [`fg_engine::chart::MAX_CHARTS`] charts for all the clients together.
+const MAX_CHARTS_PER_SOCKET: usize = 8;
 /// Malformed frames tolerated before the socket is closed.
 const MAX_BAD_FRAMES: u32 = 10;
 /// A client that does not accept a frame within this time is dropped.
@@ -130,6 +133,12 @@ fn pump(mut sub: Subscription, link: &Link) -> JoinHandle<()> {
     })
 }
 
+fn chart_count<'a>(channels: impl Iterator<Item = &'a Channel>) -> usize {
+    channels
+        .filter(|c| matches!(c, Channel::Chart { .. }))
+        .count()
+}
+
 fn forward(
     st: &AppState,
     ch: &Channel,
@@ -225,11 +234,15 @@ async fn serve(
                 match serde_json::from_str::<ClientFrame>(text.as_str()) {
                     Ok(ClientFrame::Sub { ch, resume }) => {
                         let channels = match parse_channels(&st, &session, &ch) {
-                            Ok(c) if forwarders.len() + c.len() <= MAX_CHANNELS => c,
-                            Ok(_) => {
+                            Ok(c) if forwarders.len() + c.len() > MAX_CHANNELS => {
                                 if !send(&mut socket, &err(ErrorCode::BadRequest, "too many channels")).await { break 'run }
                                 continue;
                             }
+                            Ok(c) if chart_count(forwarders.keys().filter(|k| !c.contains(k)).chain(c.iter())) > MAX_CHARTS_PER_SOCKET => {
+                                if !send(&mut socket, &err(ErrorCode::BadRequest, "too many charts")).await { break 'run }
+                                continue;
+                            }
+                            Ok(c) => c,
                             Err(e) => {
                                 if !send(&mut socket, &err(e.error.code, &e.error.message)).await { break 'run }
                                 continue;
