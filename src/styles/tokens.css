@@ -185,7 +185,7 @@
   --pane-h: 44px; /* header of a panel */
   --kpi-pad-y: 12px;
   --kpi-pad-x: 16px;
-  /* Column headers: normal case, medium weight, secondary colour (compact: capitals, bold) */
+  /* Column headers: normal case, medium weight, secondary colour (the same in the compact density) */
   --th-case: none;
   --th-track: 0;
   --th-weight: 500;
@@ -235,10 +235,6 @@
     --pane-h: 38px;
     --kpi-pad-y: 8px;
     --kpi-pad-x: 12px;
-    --th-case: uppercase;
-    --th-track: 0.06em;
-    --th-weight: 600;
-    --th-color: var(--fg-3);
     --row-line: var(--line);
   }
 }

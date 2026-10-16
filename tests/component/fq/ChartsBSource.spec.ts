@@ -251,6 +251,43 @@ describe('PairNavigator', () => {
     expect(w.find(`button[data-key="${item.key}"]`).attributes('aria-current')).toBe('true');
   });
 
+  it('brings the shown position into view when the list holds it (B380)', async () => {
+    const scroll = vi.fn();
+    const proto = Element.prototype as unknown as { scrollIntoView?: unknown };
+    const before = proto.scrollIntoView;
+    proto.scrollIntoView = scroll;
+    try {
+      const probe = mountFq(PairNavigator, { props: { source: sb.source, filter: 'positions' } });
+      const last = probe.findAll('button.it').at(-1)!.attributes('data-key')!;
+      probe.unmount();
+      scroll.mockClear();
+      const w = mountFq(PairNavigator, {
+        props: { source: sb.source, filter: 'positions', selectedKey: last },
+        attachTo: document.body,
+      });
+      await flushPromises();
+      expect(scroll).toHaveBeenCalledTimes(1);
+      expect(scroll.mock.contexts[0]).toBe(w.find('[aria-current]').element);
+      // A refresh of the list that keeps the selection does not move the user's scroll again
+      await w.setProps({ filter: 'positions' });
+      await flushPromises();
+      expect(scroll).toHaveBeenCalledTimes(1);
+      w.unmount();
+    } finally {
+      proto.scrollIntoView = before;
+    }
+  });
+
+  it('the positions tab of the Charts list carries the number of positions (B380)', () => {
+    const w = mount('positions', {
+      positionsLabel: 'Mes positions',
+      positionsFirst: true,
+      fleetPositions: true,
+    });
+    const n = world.fixture.positions.length;
+    expect(w.findAll('[role=tab]')[0]!.text()).toBe(`Mes positions (${n})`);
+  });
+
   it('chips layout is a listbox', async () => {
     const w = mountFq(PairNavigator, {
       props: { source: sb.source, filter: 'positions', layout: 'chips' },

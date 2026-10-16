@@ -61,7 +61,6 @@ export default {
   jr: {
     filters: 'Filtres du journal',
     more: 'Plus d’options',
-    exitUnknown: 'inconnue',
     view: { label: 'Vue du journal', list: 'Liste', analysis: 'Analyse' },
     fs: {
       button: 'Filtres',
@@ -117,7 +116,8 @@ export default {
       net: 'Résultat net',
       netHint:
         'Gains moins pertes, frais compris. Un trade sans résultat est compté mais pas additionné.',
-      netSub: '{n} trades dont {u} sans P&L',
+      netSub: '{n} trade | {n} trades',
+      netSubUnknown: '{n} trade dont {u} sans résultat | {n} trades dont {u} sans résultat',
       winrate: 'Réussite',
       avg: 'Gain moyen / perte moyenne',
       avgShort: 'Gain / perte moy.',
@@ -141,7 +141,9 @@ export default {
       worstDdSub: 'MAE max, en USDC',
       worstDdNoMae: 'pire perte réalisée (MAE indisponible)',
       duration: 'Durée médiane',
-      p90: 'P90 {v}',
+      p90: '9 sur 10 durent moins de {v}',
+      durationHint:
+        'Médiane : la moitié des trades dure moins longtemps. Le chiffre du dessous (P90) : 9 trades sur 10 se terminent avant.',
       perDay: 'Trades par jour',
       overDays: 'sur {n} j',
       partial:
@@ -352,6 +354,7 @@ export default {
   pairnav: {
     title: 'Paires',
     search: 'Paire ou bot',
+    withCount: '{label} ({n})',
     filter: 'Liste',
     f: {
       positions: 'Positions',

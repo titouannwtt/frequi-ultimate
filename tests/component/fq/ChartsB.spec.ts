@@ -1,3 +1,4 @@
+import type { JournalTrade } from '../../../src/components/fq/lib/journal';
 import type * as EchartsCore from 'echarts/core';
 import { flushPromises } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -371,6 +372,24 @@ describe('DistributionChart', () => {
     expect(drawn).toBe(trades().length - 1);
   });
 
+  it('fits the axis to the data and lets the chart fill its panel (B384)', () => {
+    const base = trades()[0]!;
+    const near = [-3.4, -1.2, 0.6, 2.6].map(
+      (pct): JournalTrade => ({
+        ...base,
+        profit_unknown: false,
+        profit_abs: pct,
+        profit_ratio: pct / 100,
+      }),
+    );
+    const w = mountFq(DistributionChart, { props: { trades: near } });
+    const option = charts[0]!.last() as { xAxis: { data: string[] } };
+    // The fixed -14..4 range gave 18 bars of which a third held the data
+    expect(option.xAxis.data.length).toBeLessThan(14);
+    expect(option.xAxis.data.length).toBeGreaterThanOrEqual(8);
+    expect(w.get('.plot').attributes('style')).toContain('min-height: 230px');
+  });
+
   it('is released on unmount', () => {
     const w = mountFq(DistributionChart, { props: { trades: trades() } });
     expect(liveCharts()).toHaveLength(1);
@@ -636,6 +655,17 @@ describe('BotRegistry', () => {
     const w = mountFq(BotRegistry, { props: { ...reg, migration: null, discovered: [] } });
     expect(w.find('[data-testid=registry-no-migration]').exists()).toBe(true);
     expect(w.find('[data-testid=registry-discovered]').exists()).toBe(false);
+  });
+
+  it('a dry bot reads "en ligne depuis le 17/08", never "en lignedepuis" (B386)', () => {
+    setFqLocale('fr');
+    const w = mount();
+    const since = w.findAll('td.c-state .since');
+    expect(since.length).toBeGreaterThan(0);
+    for (const s of since) {
+      expect(s.element.textContent).toMatch(/^ depuis le \d\d\/\d\d$/);
+    }
+    expect(w.text()).not.toMatch(/[a-zé]depuis/);
   });
 
   it('French plural: one entry, one bot', () => {

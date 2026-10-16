@@ -77,13 +77,47 @@ export interface DistributionOptions {
   tailPct?: number;
 }
 
+/** Widest axis the histogram fits to: the edge bins hold what lies beyond. */
+const FIT_LIMIT = { lo: -20, hi: 12 };
+/** Fewest bins of a fitted axis, so that one or two trades do not give a single fat bar. */
+const FIT_MIN_BINS = 8;
+
+/**
+ * Axis of the histogram fitted to the data: from the worst to the best result, one empty bin of
+ * margin on each side (they are the open edge bins), never wider than `FIT_LIMIT`. Without any
+ * known result it keeps the fixed default range.
+ */
+export function fitRange(trades: readonly TradeRow[], w = 1): [number, number] {
+  let min = Infinity;
+  let max = -Infinity;
+  for (const t of trades) {
+    const pct = knownPct(t);
+    if (pct === null) continue;
+    min = Math.min(min, pct);
+    max = Math.max(max, pct);
+  }
+  if (!Number.isFinite(min)) return [-14, 4];
+  let lo = Math.max(FIT_LIMIT.lo, Math.floor(min / w) * w - w);
+  let hi = Math.min(FIT_LIMIT.hi, Math.floor(max / w) * w + 2 * w);
+  // Too narrow: widen evenly, the zero line stays inside
+  while ((hi - lo) / w < FIT_MIN_BINS) {
+    if (lo > FIT_LIMIT.lo && (hi - lo) / w < FIT_MIN_BINS) lo -= w;
+    if (hi < FIT_LIMIT.hi && (hi - lo) / w < FIT_MIN_BINS) hi += w;
+    if (lo <= FIT_LIMIT.lo && hi >= FIT_LIMIT.hi) break;
+  }
+  if (lo > 0) lo = -w;
+  if (hi < 0) hi = w;
+  return [lo, hi];
+}
+
 export function distribution(
   trades: readonly TradeRow[],
   opts: DistributionOptions = {},
 ): Distribution {
   const w = opts.binWidth ?? 1;
-  const lo = opts.lo ?? -14;
-  const hi = opts.hi ?? 4;
+  const [fitLo, fitHi] = fitRange(trades, w);
+  const lo = opts.lo ?? fitLo;
+  const hi = opts.hi ?? fitHi;
   const threshold = opts.tailPct ?? -5;
   const n = Math.max(1, Math.round((hi - lo) / w));
   const bins: DistBin[] = Array.from({ length: n }, (_, i) => ({

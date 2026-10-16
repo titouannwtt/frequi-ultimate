@@ -164,6 +164,47 @@ watch(
   { flush: 'post' },
 );
 
+// The list scrolls too: the shown position is brought into view (centered) when the selection
+// changes or the list first holds it, never on each refresh of the order (it would undo the
+// user's own scrolling)
+const itemsEl = ref<HTMLElement | null>(null);
+function revealSelectedRow() {
+  const row = itemsEl.value?.querySelector<HTMLElement>('[aria-current]');
+  if (!row || typeof row.scrollIntoView !== 'function') return;
+  // Whichever ancestor scrolls (the list or its pane) moves; a row already in view stays put
+  const scroller = (el: HTMLElement | null): HTMLElement | null =>
+    !el
+      ? null
+      : el.scrollHeight > el.clientHeight &&
+          el.clientHeight > 0 &&
+          /auto|scroll/.test(getComputedStyle(el).overflowY)
+        ? el
+        : scroller(el.parentElement);
+  const box = scroller(itemsEl.value)?.getBoundingClientRect();
+  const r = row.getBoundingClientRect();
+  if (box && r.top >= box.top && r.bottom <= box.bottom) return;
+  row.scrollIntoView({ block: 'center' });
+}
+const selectedListed = computed(
+  () => props.selectedKey !== null && shown.value.some((i) => i.key === props.selectedKey),
+);
+watch(
+  () => [props.selectedKey, selectedListed.value, props.filter],
+  () => void nextTick(revealSelectedRow),
+  { flush: 'post', immediate: true },
+);
+
+/** "Mes positions (40)": the count of the positions list, on the tab that carries its own name. */
+const positionCount = computed(
+  () => positionItems(positions.list, props.fleetPositions ? null : props.botKey).length,
+);
+function tabLabel(f: PairFilter): string {
+  if (f === 'positions' && props.positionsLabel) {
+    return t('fq.pairnav.withCount', { label: props.positionsLabel, n: positionCount.value });
+  }
+  return t(`fq.pairnav.f.${f}`);
+}
+
 function leftLabel(i: PairItem): string {
   if (i.lockEndMs !== null) {
     return t('fq.pairnav.lockEnds', { d: fmt.age(Math.max(0, i.lockEndMs - clock.value)) });
@@ -198,7 +239,7 @@ function leftLabel(i: PairItem): string {
           :class="{ on: filter === f }"
           @click="emit('update:filter', f)"
         >
-          {{ f === 'positions' && positionsLabel ? positionsLabel : t(`fq.pairnav.f.${f}`) }}
+          {{ tabLabel(f) }}
         </button>
       </div>
     </template>
@@ -212,7 +253,7 @@ function leftLabel(i: PairItem): string {
 
     <Skeleton v-if="loading" shape="row" :count="5" />
 
-    <ul v-else-if="shown.length > 0 && layout === 'list'" class="items">
+    <ul v-else-if="shown.length > 0 && layout === 'list'" ref="itemsEl" class="items">
       <li v-for="i in shown" :key="i.key">
         <button
           type="button"
@@ -310,6 +351,10 @@ function leftLabel(i: PairItem): string {
   min-height: 0;
   background: var(--bg-1);
 }
+/* The list scrolls inside its panel, under the tabs and the search, which stay in view */
+.pn.list {
+  height: 100%;
+}
 .top {
   padding: 8px;
   border-bottom: 1px solid var(--line);
@@ -328,7 +373,9 @@ function leftLabel(i: PairItem): string {
   border-bottom: 1px solid var(--line);
 }
 .tabs button {
-  flex: 1;
+  flex: 1 1 auto;
+  padding: 0 6px;
+  white-space: nowrap;
   height: 26px;
   background: none;
   border: 1px solid transparent;

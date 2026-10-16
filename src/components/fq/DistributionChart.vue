@@ -120,8 +120,8 @@ const dominates = computed(() => (dist.value.tail.share ?? 0) >= 0.5);
           {{ t('fq.jr.dist.tailNoLoss', { n: dist.tail.count, pct: pctLabel(tailPct) }) }}
         </template>
       </p>
-      <div class="chart" :style="{ height }">
-        <BaseChart :option="option" :label="t('fq.jr.dist.chartLabel')" />
+      <div class="plot" :style="{ minHeight: height }">
+        <BaseChart class="fill" :option="option" :label="t('fq.jr.dist.chartLabel')" />
       </div>
       <p v-if="dist.unknown > 0" class="note" data-testid="dist-unknown">
         {{ t('fq.jr.unknownExcluded', { n: dist.unknown }, dist.unknown) }}
@@ -162,11 +162,18 @@ const dominates = computed(() => (dist.value.tail.share ?? 0) >= 0.5);
 .sent .down {
   color: var(--loss);
 }
-.chart {
+.plot {
+  position: relative;
   min-width: 0;
-  padding: var(--s2) var(--s2) 0;
-  /* The given height is the basis; a taller panel gives the rest to the chart */
-  flex: 1 1 auto;
+  /* The given height is the least; a taller panel gives the rest to the chart */
+  flex: 1 1 0;
+}
+/* The chart fills its box whatever the height chain above it (a percentage would not resolve) */
+.plot :deep(.fill) {
+  position: absolute;
+  inset: var(--s2) var(--s2) 0;
+  width: auto;
+  height: auto !important;
 }
 .note {
   margin: 0;

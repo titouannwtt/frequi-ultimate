@@ -36,7 +36,7 @@ import { dayKey, groupTotal } from './lib/journalPage';
 import { formatDateTime } from './lib/time';
 import {
   compareWorstFirst,
-  durationTone,
+  durationNote,
   lineFromPosition,
   lineFromTrade,
   liqTone,
@@ -122,7 +122,6 @@ const { vs } = useValueSlot();
 /** Slot props of a figure of a line: loaded, so a gap is never "loading". */
 const slotOf = (row: TradeLine, value: number | null | undefined, reason?: SlotReason) =>
   vs(lineSlot(row, value, reason));
-const noExit = computed(() => vs(unavailable('exitReason')));
 const noPercentile = computed(() => vs(unavailable('noPercentile')));
 const fleet = useFqFleetStore();
 const positionsStore = useFqPositionsStore();
@@ -583,7 +582,12 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
       <template #cell-pair="{ row }">
         <span class="pair">
           <b>{{ pairLabel(row.pair) }}</b>
-          <Badge v-if="row.xyz" kind="xyz" />
+          <Badge
+            v-if="row.xyz && isOpenPreset"
+            kind="xyz"
+            :label="t('fq.trade.marketHip3')"
+            class="mkt"
+          />
           <Badge v-if="row.orphan" kind="orphan" />
           <Badge v-if="row.manual" kind="manual" />
         </span>
@@ -647,16 +651,23 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
       <template #cell-duration="{ row }">
         <span class="dur">
           {{ fmt.duration(hoursOf(row)) }}
-          <Badge
-            v-if="row.percentile !== null && durationTone(row.percentile) !== 'ok'"
-            :kind="durationTone(row.percentile) === 'crit' ? 'crit' : 'warn'"
-            :label="`p${Math.round(row.percentile)}`"
-          />
+          <span
+            v-if="durationNote(row.percentile)"
+            class="durnote"
+            :class="durationNote(row.percentile)!.tone"
+            :title="t('fq.trade.durHint', { p: durationNote(row.percentile)!.pct })"
+            >{{ t(durationNote(row.percentile)!.key) }}</span
+          >
         </span>
       </template>
       <template #cell-duration_pct="{ row }">
         <ValueState v-if="row.percentile === null" v-bind="noPercentile" />
-        <template v-else>{{ `p${Math.round(row.percentile)}` }}</template>
+        <span
+          v-else
+          :class="['durnote', durationNote(row.percentile)?.tone]"
+          :title="t('fq.trade.durHint', { p: Math.round(row.percentile) })"
+          >{{ t(durationNote(row.percentile)?.key ?? 'fq.trade.dur.ok') }}</span
+        >
       </template>
       <template #cell-opened="{ row }">{{ dateOf(row.openMs) }}</template>
       <template #cell-exit_price="{ row }">
@@ -670,7 +681,6 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
           :title="row.exitReason.raw ?? ''"
           >{{ t(`fq.exit.${row.exitReason.kind}`) }}</span
         >
-        <span v-else class="dim" :title="noExit.reason">{{ t('fq.jr.exitUnknown') }}</span>
       </template>
       <template #cell-closed_at="{ row }">{{ dateOf(row.closeMs) }}</template>
       <template #cell-mae_mfe="{ row }">
@@ -793,6 +803,23 @@ defineExpose({ sorted: () => sorted.value.map((l) => l.key) });
   align-items: center;
   gap: 6px;
   justify-content: flex-end;
+}
+/* The market badge reads as a word ("Actions, matières"), not as a code */
+.mkt.badge {
+  text-transform: none;
+  letter-spacing: 0;
+}
+/* Plain words under the duration, the percentile only in the tooltip */
+.durnote {
+  font-size: var(--t-xs);
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+.durnote.warn {
+  color: var(--warn);
+}
+.durnote.crit {
+  color: var(--crit);
 }
 .note {
   margin: 0;

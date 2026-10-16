@@ -21,8 +21,8 @@ import type { Position } from '@/gateway/types.gen';
 import BotActionBar from './BotActionBar.vue';
 import type { ActionId } from './lib/actions';
 import { buildAction } from './lib/actions';
-import { durationTone, ladderOf, pairLabel, type TradeLine } from './lib/trades';
-import { lineSlot, unavailable } from './lib/valueState';
+import { durationNote, ladderOf, pairLabel, type TradeLine } from './lib/trades';
+import { lineSlot } from './lib/valueState';
 
 /**
  * A position as a card, for a phone, the ScopePanel and the charts (02 sections 2.5 and 5.2): the
@@ -76,14 +76,12 @@ const busy = computed(() => {
   return a ? lock.isLocked(lockKeyOf(props.line.botKey, a)) : false;
 });
 
-const tone = computed(() => durationTone(props.line.percentile));
 const hours = computed(() => props.line.durationMs / 3_600_000);
 const exitLabel = computed(() =>
   props.line.exitReason && props.line.exitReason.kind !== 'unknown'
     ? t(`fq.exit.${props.line.exitReason.kind}`)
     : '',
 );
-const noExit = computed(() => vs(unavailable('exitReason')));
 const pnlSlot = computed(() =>
   vs(lineSlot(props.line, props.line.pnlAbs, props.line.open ? 'prices' : 'profit')),
 );
@@ -117,7 +115,12 @@ const liqSlot = computed(() =>
     <header class="hd">
       <div class="id">
         <b class="pair">{{ pairLabel(line.pair) }}</b>
-        <Badge v-if="line.xyz" kind="xyz" />
+        <Badge
+          v-if="line.xyz && line.open"
+          kind="xyz"
+          :label="t('fq.trade.marketHip3')"
+          class="mkt"
+        />
         <Badge v-if="line.orphan" kind="orphan" />
         <Badge v-if="line.manual" kind="manual" />
         <DirectionChip :side="line.side" :leverage="line.leverage" />
@@ -174,23 +177,21 @@ const liqSlot = computed(() =>
             ><DcaPips :filled="line.dcaFilled" :max="line.dcaMax ?? line.dcaFilled" show-count
           /></span>
         </template>
-        <template v-else>
+        <template v-else-if="exitLabel">
           <span class="k">{{ t('fq.col.exit_reason') }}</span>
-          <span class="v">
-            <template v-if="exitLabel">{{ exitLabel }}</template>
-            <ValueState v-else v-bind="noExit" />
-          </span>
+          <span class="v">{{ exitLabel }}</span>
         </template>
       </div>
       <div class="m4">
         <span class="k">{{ t('fq.col.duration') }}</span>
         <span class="v num">{{ fmt.duration(hours) }}</span>
-        <span v-if="line.percentile !== null && tone !== 'ok'" class="sub">
-          <Badge
-            :kind="tone === 'crit' ? 'crit' : 'warn'"
-            :label="`p${Math.round(line.percentile)}`"
-          />
-        </span>
+        <span
+          v-if="durationNote(line.percentile)"
+          class="sub dnote"
+          :class="durationNote(line.percentile)!.tone"
+          :title="t('fq.trade.durHint', { p: durationNote(line.percentile)!.pct })"
+          >{{ t(durationNote(line.percentile)!.key) }}</span
+        >
       </div>
     </div>
 
@@ -292,6 +293,16 @@ const liqSlot = computed(() =>
   font-size: var(--t-lg);
 }
 .v.crit {
+  color: var(--crit);
+}
+.mkt.badge {
+  text-transform: none;
+  letter-spacing: 0;
+}
+.dnote.warn {
+  color: var(--warn);
+}
+.dnote.crit {
   color: var(--crit);
 }
 .sub {
