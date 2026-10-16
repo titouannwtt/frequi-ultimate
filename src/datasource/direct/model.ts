@@ -365,10 +365,12 @@ export function buildBotRow(rt: BotRuntime, ctx: RowContext): BotRow {
     first_real_trade_ms: profit?.first_trade_timestamp
       ? normalizeTsMs(profit.first_trade_timestamp)
       : null,
-    started_ms: profit?.bot_start_timestamp
-      ? normalizeTsMs(profit.bot_start_timestamp)
-      : ov?.uptime.process_start
-        ? normalizeTsMs(ov.uptime.process_start)
+    // The process start, like the gateway: `bot_start_timestamp` moves at every reload of the
+    // bot's configuration, so a bot online for a week would read "11 h"
+    started_ms: ov?.uptime.process_start
+      ? normalizeTsMs(ov.uptime.process_start)
+      : profit?.bot_start_timestamp
+        ? normalizeTsMs(profit.bot_start_timestamp)
         : null,
   };
 

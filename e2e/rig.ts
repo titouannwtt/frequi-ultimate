@@ -62,6 +62,17 @@ async function login(b: RigBot): Promise<Tokens | null> {
   }
 }
 
+/** Number of open trades a fake bot reports, read the way the UI does (login, then `/status`). */
+export async function openTradeCount(b: RigBot): Promise<number> {
+  const t = await login(b);
+  if (!t) return 0;
+  const r = await fetch(`${botUrl(b)}/api/v1/status`, {
+    headers: { authorization: `Bearer ${t.access_token}` },
+  });
+  const list = (await r.json()) as unknown;
+  return Array.isArray(list) ? list.length : 0;
+}
+
 export interface SeedOptions {
   /** `auto` (gateway first, direct fallback), or `direct` (never uses the gateway). */
   mode?: 'auto' | 'direct';

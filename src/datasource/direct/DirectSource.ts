@@ -130,8 +130,10 @@ export interface DirectSourceDeps {
   clearTimeout?: (h: unknown) => void;
   /** Period of the internal scheduler. */
   tickMs?: number;
-  /** Requests in flight at the same time, all bots together. */
+  /** Background requests (config, balance, logs, closed history) in flight at the same time. */
   maxConcurrent?: number;
+  /** Position reads (`/status`) in flight at the same time: their own lane, never starved. */
+  maxStatusConcurrent?: number;
 }
 
 const DEFAULT_CADENCES: Cadences = {
@@ -141,6 +143,16 @@ const DEFAULT_CADENCES: Cadences = {
   overviewMs: 60_000,
 };
 const FOCUS_STATUS_MS = 10_000;
+/**
+ * `/status` asks the exchange for the rate of every open position. While the exchange is in a
+ * backoff the shared rate limiter makes a bot take 10 s PER position (measured: 60 s for six
+ * positions, on the real fleet), and a read that gave up before then never got its positions
+ * (B230). The wait costs one lane slot and nothing else: a bot has one `/status` in flight at most.
+ */
+const STATUS_TIMEOUT_MS = 120_000;
+/** Score bonuses of the background queue: the bot on screen, then a bot whose mode is unknown. */
+const FOCUS_BONUS = 1e9;
+const UNKNOWN_MODE_BONUS = 5e8;
 const FOCUS_SLOW_MS = 60_000;
 const LOGS_FOCUS_MS = 30_000;
 const LOGS_BG_MS = 120_000;
@@ -415,6 +427,13 @@ export class DirectSource implements DataSource {
     return this.deps.maxConcurrent ?? 4;
   }
 
+  private get maxStatusConcurrent(): number {
+    return this.deps.maxStatusConcurrent ?? 16;
+  }
+
+  /** Requests of each lane in flight (see `dispatchDue`). */
+  private readonly laneCount = { status: 0, background: 0 };
+
   private track<T>(p: Promise<T>): Promise<T> {
     this.inflight.add(p);
     const done = () => this.inflight.delete(p);
@@ -422,9 +441,19 @@ export class DirectSource implements DataSource {
     return p;
   }
 
+  /**
+   * One pass of the scheduler. Three lanes, so that no kind of request starves another (B230):
+   *
+   * - the fleet digest and overview (one bot answers for the whole fleet), at most one of each;
+   * - the positions (`/status`), their own lane: they are what the pages are about and they must
+   *   not queue behind the slow reads of the other bots;
+   * - everything else (config, profit, balance, logs, closed history), `maxConcurrent` at a time.
+   *
+   * Inside a lane the bot on screen goes first, then the one that has waited longest: a fixed
+   * order would serve the first bots again and again and never reach the last ones.
+   */
   private dispatchDue(): void {
     const now = this.now();
-    // Fleet level requests first: one bot answers for the fleet.
     const anchor = this.anchor();
     if (anchor) {
       this.fleetJob('digest', now, DEFAULT_CADENCES.digestMs, this.digestAvailable, () =>
@@ -438,15 +467,66 @@ export class DirectSource implements DataSource {
       );
     }
     const sorted = [...this.rts.values()].sort((a, b) => a.sortId - b.sortId);
+    const due: Array<{
+      rt: BotRuntime;
+      task: Task;
+      kind: 'status' | 'slow' | 'logs';
+      every: number;
+      score: number;
+    }> = [];
     for (const rt of sorted) {
       const t = this.tasks.get(rt.key);
       if (!t) continue;
       const c = this.cadencesFor(rt);
-      this.botJob(rt, t.status, now, c.statusMs, () => this.pollStatus(rt));
-      this.botJob(rt, t.slow, now, c.slowMs, () => this.pollSlow(rt));
-      this.botJob(rt, t.logs, now, c.logsMs, () => this.pollLogs(rt));
+      const focused = (this.focus.get(rt.key) ?? 0) > 0;
+      const add = (kind: 'status' | 'slow' | 'logs', every: number) => {
+        const task = t[kind];
+        if (!Number.isFinite(every) || task.running || now < task.next) return;
+        let score = now - task.next;
+        if (focused) score += FOCUS_BONUS;
+        // A bot whose mode is not known is hidden from every table: read its config early
+        if (kind === 'slow' && !modeKnown(rt)) score += UNKNOWN_MODE_BONUS;
+        // A bot whose positions were never read goes before the ones that only refresh
+        if (kind === 'status' && !rt.status) score += UNKNOWN_MODE_BONUS;
+        due.push({ rt, task, kind, every, score });
+      };
+      add('status', c.statusMs);
+      add('slow', c.slowMs);
+      add('logs', c.logsMs);
+    }
+    // Stable: equal scores keep the order of the registry
+    due.sort((a, b) => b.score - a.score);
+    for (const d of due) {
+      if (d.kind === 'status') {
+        if (this.laneCount.status >= this.maxStatusConcurrent) continue;
+        this.launch('status', d.task, now, d.every, () => this.pollStatus(d.rt));
+      } else {
+        if (this.laneCount.background >= this.maxConcurrent) continue;
+        this.launch('background', d.task, now, d.every, () =>
+          d.kind === 'slow' ? this.pollSlow(d.rt) : this.pollLogs(d.rt),
+        );
+      }
     }
     this.warmClosed(sorted, now);
+  }
+
+  /** Start a job on a lane; the lane is given back when it ends, whatever the outcome. */
+  private launch(
+    lane: 'status' | 'background',
+    t: Task,
+    now: number,
+    every: number,
+    job: () => Promise<void>,
+  ): void {
+    t.running = true;
+    t.next = now + every;
+    this.laneCount[lane] += 1;
+    void this.track(
+      job().finally(() => {
+        t.running = false;
+        this.laneCount[lane] -= 1;
+      }),
+    );
   }
 
   /**
@@ -456,7 +536,7 @@ export class DirectSource implements DataSource {
    */
   private warmClosed(bots: BotRuntime[], now: number): void {
     const t = this.closedWarm;
-    if (t.running || now < t.next || this.inflight.size >= this.maxConcurrent) return;
+    if (t.running || now < t.next || this.laneCount.background >= this.maxConcurrent) return;
     const rt = bots.find(
       (b) =>
         b.reach === 'online' &&
@@ -465,10 +545,10 @@ export class DirectSource implements DataSource {
         now >= (this.closedRetryAt.get(b.key) ?? 0),
     );
     if (!rt) return;
-    t.running = true;
-    t.next = now + CLOSED_WARM_GAP_MS;
     this.closedRetryAt.set(rt.key, now + CLOSED_RETRY_MS);
-    void this.track(this.ensureClosed(rt).finally(() => (t.running = false)));
+    this.launch('background', t, now, CLOSED_WARM_GAP_MS, async () => {
+      await this.ensureClosed(rt);
+    });
   }
 
   /** The bot that answers for the whole fleet: the first reachable one, the UI's own first. */
@@ -483,6 +563,7 @@ export class DirectSource implements DataSource {
     return self ?? cands[0] ?? null;
   }
 
+  /** Fleet level request: its own lane (never more than one of a kind), so it never waits. */
   private fleetJob(
     name: 'digest' | 'overview' | 'fleetStatus',
     now: number,
@@ -491,21 +572,7 @@ export class DirectSource implements DataSource {
     job: () => Promise<void>,
   ): void {
     const t = this.fleetTask[name];
-    if (!available || t.running || now < t.next || this.inflight.size >= this.maxConcurrent) return;
-    t.running = true;
-    t.next = now + every;
-    void this.track(job().finally(() => (t.running = false)));
-  }
-
-  private botJob(
-    _rt: BotRuntime,
-    t: Task,
-    now: number,
-    every: number,
-    job: () => Promise<void>,
-  ): void {
-    if (!Number.isFinite(every) || t.running || now < t.next) return;
-    if (this.inflight.size >= this.maxConcurrent) return;
+    if (!available || t.running || now < t.next) return;
     t.running = true;
     t.next = now + every;
     void this.track(job().finally(() => (t.running = false)));
@@ -576,9 +643,10 @@ export class DirectSource implements DataSource {
     rt: BotRuntime,
     path: string,
     params?: Record<string, unknown>,
+    timeoutMs?: number,
   ): Promise<{ ok: true; data: T } | { ok: false; status: number | null }> {
     try {
-      const res = await this.client.get<T>(rt.id, path, { params });
+      const res = await this.client.get<T>(rt.id, path, { params, timeoutMs });
       if (res.status === 404) {
         this.markContact(rt);
         return { ok: false, status: 404 };
@@ -596,30 +664,40 @@ export class DirectSource implements DataSource {
   }
 
   private async pollStatus(rt: BotRuntime): Promise<void> {
-    const r = await this.fetchJson<Trade[]>(rt, '/status');
+    // The positions of a bot whose mode is unknown are not published (they would land in the Live
+    // table): its config is read at the same time, not behind the slow cycle of the whole fleet
+    const needConfig = !modeKnown(rt);
+    const [r, cfg] = await Promise.all([
+      this.fetchJson<Trade[]>(rt, '/status', undefined, STATUS_TIMEOUT_MS),
+      needConfig ? this.fetchJson<BotState>(rt, '/show_config') : Promise.resolve(null),
+    ]);
     if (r.ok && Array.isArray(r.data)) {
       rt.status = { data: r.data, atMs: this.now() };
     }
+    if (cfg?.ok) rt.config = { data: cfg.data, atMs: this.now() };
     this.scheduleEmit();
   }
 
   private async pollSlow(rt: BotRuntime): Promise<void> {
     const cfg = await this.fetchJson<BotState>(rt, '/show_config');
     if (cfg.ok) rt.config = { data: cfg.data, atMs: this.now() };
-    if (rt.reach === 'offline' || rt.reach === 'auth_expired') {
+    // Stopped meanwhile: the rest of the cycle is not sent
+    if (!this.running || rt.reach === 'offline' || rt.reach === 'auth_expired') {
       this.scheduleEmit();
       return;
     }
     let profit = await this.fetchJson<{ all?: ProfitStats } & ProfitStats>(rt, '/profit_all');
-    if (!profit.ok && profit.status === 404) {
+    if (this.running && !profit.ok && profit.status === 404) {
       profit = await this.fetchJson<{ all?: ProfitStats } & ProfitStats>(rt, '/profit');
     }
     if (profit.ok) {
       const all = profit.data.all ?? (profit.data as ProfitStats);
       rt.profit = { data: all, atMs: this.now() };
     }
+    if (!this.running) return;
     const bal = await this.fetchJson<BalanceInterface>(rt, '/balance');
     if (bal.ok) rt.balance = { data: bal.data, atMs: this.now() };
+    if (!this.running) return;
     const wl = await this.fetchJson<{ whitelist?: string[] }>(rt, '/whitelist');
     if (wl.ok && Array.isArray(wl.data.whitelist)) {
       rt.whitelist = { data: wl.data.whitelist, atMs: this.now() };
@@ -1598,7 +1676,9 @@ export class DirectSource implements DataSource {
   ): Promise<'ok' | 'mismatch' | 'unverifiable'> {
     const fresh = rt.status && this.now() - rt.status.atMs <= GUARD_MAX_AGE_MS;
     if (!fresh) {
-      const r = await this.fetchJson<Trade[]>(rt, '/status');
+      // As long as the polling waits for it: a bot in an exchange backoff answers in a minute, and
+      // giving up sooner would make every exit "unverifiable"
+      const r = await this.fetchJson<Trade[]>(rt, '/status', undefined, STATUS_TIMEOUT_MS);
       if (!r.ok || !Array.isArray(r.data)) return 'unverifiable';
       rt.status = { data: r.data, atMs: this.now() };
       this.scheduleEmit();

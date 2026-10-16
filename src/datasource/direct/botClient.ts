@@ -13,7 +13,8 @@ import { HttpTransportError, type HttpClient, type HttpMethod, type HttpResponse
 const API = '/api/v1';
 /** A write is not sent with a token that expires in less than this. */
 export const WRITE_MIN_TOKEN_TTL_MS = 60_000;
-export const READ_TIMEOUT_MS = 8_000;
+/** A bot in an exchange backoff takes many seconds to answer a read: do not give up at 8 s. */
+export const READ_TIMEOUT_MS = 15_000;
 export const WRITE_TIMEOUT_MS = 20_000;
 
 export type BotRequestFailure =
