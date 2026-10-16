@@ -1,0 +1,52 @@
+# systemd USER unit for frequi-gateway.
+#
+# Install:
+#   install -D -m 0755 frequi-gateway ~/.local/bin/frequi-gateway
+#   install -D -m 0644 frequi-gateway.service ~/.config/systemd/user/frequi-gateway.service
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now frequi-gateway
+#   loginctl enable-linger "$USER"     # keep it running after you log out
+# Logs: journalctl --user -u frequi-gateway -f
+#
+# The configuration is read from ~/.config/frequi-gateway/config.toml (secrets.toml next to it).
+# The gateway must run as the SAME user as the bots: it reads their configs and their databases.
+[Unit]
+Description=FreqUI Ultimate gateway
+Documentation=https://github.com/titouannwtt/frequi-ultimate
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/frequi-gateway run
+Restart=on-failure
+RestartSec=5
+# A clean shutdown closes the WebSockets and flushes the audit log in under 5 s.
+TimeoutStopSec=15
+Environment=FG_STORAGE__DATA_DIR=%h/.local/share/frequi-gateway
+ReadWritePaths=%h/.local/share/frequi-gateway
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=yes
+# Deliberately NOT set:
+#  - PrivateTmp: the ftcache socket of freqtrade-ultimate lives in /tmp.
+#  - ProtectProc=invisible / hidepid: the bot discovery scans /proc.
+#  - ProtectHome: the bot configs and databases live under the home directory.
+#
+# ProtectSystem=strict makes the file system read-only except ReadWritePaths. That is enough for the
+# bot databases: measured with this unit's sandbox (doctor --deep on 24 live WAL databases, no
+# write path other than the data directory), a read-only open of a WAL database works, with or
+# without a running writer. Only if a database cannot be read in your setup, add its directory
+# with a drop-in (`ReadWritePaths=-` ignores a path that does not exist):
+#   systemctl --user edit frequi-gateway
+#     [Service]
+#     ReadWritePaths=%h/freqtrade/user_data
+
+[Install]
+WantedBy=default.target

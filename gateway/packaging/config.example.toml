@@ -1,0 +1,77 @@
+# frequi-gateway: example configuration.
+#
+# Copy to ~/.config/frequi-gateway/config.toml (or pass --config) and check it with
+#   frequi-gateway check-config --config config.toml
+# Every key is optional; the values below are the defaults, except where a comment says
+# "example". Override any key with an environment variable: FG_SERVER__LISTEN=127.0.0.1:9399.
+#
+# Secrets never go in this file. `auth.password_hash` goes in secrets.toml next to it (mode 600):
+#   frequi-gateway hash-password     # prints the Argon2id hash to paste
+#   see secrets.example.toml; chmod 600 secrets.toml
+#
+# The gateway finds the bots by scanning /proc on the machine it runs on (discovery.proc_scan) and
+# reads their api_server credentials from their config files (whitelisted fields only). Bots on
+# another machine are not discovered: run one gateway per machine.
+
+[general]
+# Time zone that cuts days, weeks and months: "Europe/Paris" or "UTC".
+timezone = "Europe/Paris"
+
+[server]
+listen = "0.0.0.0:9399"
+# Exact origins of the UI that may call the gateway. The UI is served by a bot, so this is the
+# address you type in the browser to open FreqUI. Example:
+cors_origins = ["http://127.0.0.1:8080"]
+# Not supported by this build: the UI stays served by the bot (same origin, same localStorage).
+serve_ui_dir = ""
+# Believe X-Forwarded-For when the peer is the loopback (reverse proxy on the same machine).
+trust_forwarded_for = false
+# Names or addresses that mean "this machine" in a bot URL, besides localhost and the
+# addresses of the network interfaces.
+local_hosts = []
+
+[auth]
+# token_proof: the UI proves it holds a valid access token of a local bot (no user action).
+# bot_credentials: api_server username and password of a local bot, checked on that bot.
+# password: a password of the gateway itself (auth.password_hash in secrets.toml, see hash-password).
+# Example for a gateway reachable from the Internet: ["token_proof", "password"].
+modes = ["token_proof", "bot_credentials"]
+session_ttl_days = 30
+login_rate_per_min = 5
+global_login_rate_per_min = 30
+lockout_after_failures = 10
+lockout_minutes = 15
+actions_per_min = 30
+
+[discovery]
+proc_scan = true
+read_api_credentials_from_config = true
+ignore_db_name_tokens = ["backup", "replay", "tmp"]
+
+[ftcache]
+# Only for freqtrade-ultimate (the shared exchange cache daemon). Stock freqtrade has none: an
+# empty string turns the daemon off.
+# Default: /tmp/ftcache-<uid>.sock
+socket = ""
+
+[hyperliquid]
+# At most one reconciliation sweep per wallet in this many seconds.
+min_sweep_interval_s = 60
+
+[scheduler]
+request_rate_per_s = 2.8
+request_burst = 30
+max_in_flight = 6
+ledger_threads = 4
+
+[market]
+# BTC and ETH ticker from CoinGecko (an external API, never the exchange).
+coingecko = true
+
+[storage]
+data_dir = "~/.local/share/frequi-gateway"
+
+[log]
+level = "info"
+# "json" or "text"
+format = "json"
