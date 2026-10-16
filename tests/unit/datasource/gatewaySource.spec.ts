@@ -464,7 +464,8 @@ describe('GatewaySource shared preferences', () => {
       const h = setup({ prefs: () => status(code, '') });
       expect(await h.src.prefsRemote.get()).toBeNull();
       const call = h.fake.calls.find((c) => new URL(c.url).pathname === '/gw/v1/prefs')!;
-      expect(call.params).toEqual({ scope: '' });
+      // The 204 is opt-in: an SPA that predates it would read a 204 as a document.
+      expect(call.params).toEqual({ scope: '', missing: '204' });
     }
   });
 

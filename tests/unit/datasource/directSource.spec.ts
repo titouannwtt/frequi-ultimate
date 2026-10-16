@@ -566,3 +566,62 @@ describe('DirectSource alerts', () => {
     src.stop();
   });
 });
+
+describe('DirectSource day figure (B177)', () => {
+  // The background read spaces the bots out by a few seconds of the client clock.
+  const settleCycles = async (src: DirectSource, clock: { t: number }, n = 12) => {
+    for (let i = 0; i < n; i++) {
+      clock.t += 4_000;
+      (src as any).tick();
+      await src.settle();
+      src.flush();
+    }
+  };
+
+  it('reads the closed history of every bot without any page asking, dry bots included', async () => {
+    const world = makeWorld();
+    world.closedTrades['dry-bot.test:9056'] = [closed(20, 2, 3)];
+    const clock = { t: NOW };
+    const { src, fleet } = await started(world, clock);
+    // No query.* call: nothing a page does loads the history.
+    await settleCycles(src, clock);
+    const b = botsOf(fleet);
+    expect(b['local:9400'].metrics.realized_1d).toBe(4);
+    expect(b['local:9056'].metrics.realized_1d).toBe(2);
+    src.stop();
+  });
+
+  it('counts a trade closed after the history was read on the next cycle', async () => {
+    const world = makeWorld();
+    const clock = { t: NOW };
+    const { src, fleet } = await started(world, clock);
+    await settleCycles(src, clock);
+    expect(botsOf(fleet)['local:9400'].metrics.realized_1d).toBe(4);
+
+    // Five minutes later (inside the 10 min cache) the open trade closed at +7.
+    clock.t += 5 * 60_000;
+    world.openTrades['live-bot.test:9400'] = [];
+    world.closedTrades['live-bot.test:9400'].push({
+      ...closed(1, 7, 0),
+      close_timestamp: clock.t - 60_000,
+      close_date: new Date(clock.t - 60_000).toISOString(),
+    });
+    await settleCycles(src, clock);
+    expect(botsOf(fleet)['local:9400'].metrics.realized_1d).toBe(11);
+    src.stop();
+  });
+
+  it('does not read the history again while the closed count is unchanged', async () => {
+    const world = makeWorld();
+    const clock = { t: NOW };
+    const { src, fake } = await started(world, clock);
+    await settleCycles(src, clock);
+    const trades = () => fake.calls.filter((c) => c.url.includes('/trades')).length;
+    const before = trades();
+    expect(before).toBeGreaterThan(0);
+    clock.t += 5 * 60_000;
+    await settleCycles(src, clock);
+    expect(trades()).toBe(before);
+    src.stop();
+  });
+});

@@ -42,6 +42,8 @@ export interface ClosedHistory {
   /** Everything the bot has is loaded: totals over `rows` are totals of the bot. */
   complete: boolean;
   atMs: number;
+  /** Closed-trade count the bot reported when the history was read (null: not reported). */
+  countAtLoad: number | null;
 }
 
 export type Reachability = 'unknown' | 'online' | 'starting' | 'offline' | 'auth_expired';
@@ -231,6 +233,17 @@ export function startingCapitalOf(rt: BotRuntime, walletShared: boolean): number
   }).value;
 }
 
+/** Closed-trade count the bot reports (profit first, then the fleet overview), null if unknown. */
+export function closedCountOf(rt: BotRuntime): number | null {
+  return rt.profit?.data.closed_trade_count ?? rt.overview?.data.trades.closed_count ?? null;
+}
+
+/** A trade closed since the history was read: the count the bot reports moved. */
+export function closedHistoryOutdated(rt: BotRuntime): boolean {
+  const count = closedCountOf(rt);
+  return !!rt.closed && count !== null && rt.closed.countAtLoad !== count;
+}
+
 export function buildBotRow(rt: BotRuntime, ctx: RowContext): BotRow {
   const { nowMs } = ctx;
   const mode = modeOf(rt);
@@ -317,7 +330,7 @@ export function buildBotRow(rt: BotRuntime, ctx: RowContext): BotRow {
     drawdown_realized: drawdownRealized,
     drawdown_with_open: drawdownWithOpen,
     last_trade_ms: lastTradeMs,
-    trades_closed: profit?.closed_trade_count ?? ov?.trades.closed_count ?? null,
+    trades_closed: closedCountOf(rt),
     winrate:
       typeof wins === 'number' && typeof losses === 'number' && wins + losses > 0
         ? wins / (wins + losses)

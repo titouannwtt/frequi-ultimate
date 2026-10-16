@@ -152,6 +152,9 @@ pub async fn rules_put(
 pub struct PrefParams {
     /// Empty: the global document; a `bot_key`: that bot's document. Absent: `GET` lists them all.
     scope: Option<String>,
+    /// `204`: answer "no document yet" with a 204 instead of a 404. Opt-in, because a client that
+    /// predates the option reads any 2xx as a document (and then sends `If-Match: "undefined"`).
+    missing: Option<String>,
 }
 
 fn if_match(headers: &HeaderMap) -> Result<Option<u64>, ApiFailure> {
@@ -184,10 +187,15 @@ pub async fn prefs_get(
     match q.scope {
         Some(scope) => {
             pref_scope_guard(&st, &s, &scope)?;
-            // A document that was never written is not an error: 204 keeps a first load (nothing
-            // customised yet) out of the console, where a 404 would show on every page load.
+            // A document that was never written is not an error for a client that says so
+            // (`missing=204`): 204 keeps a first load (nothing customised yet) out of the console,
+            // where a 404 would show on every page load. Any other client keeps the 404.
             let Some(doc) = st.engine.prefs_get(PREFS_USER, &scope).await? else {
-                return Ok(StatusCode::NO_CONTENT.into_response());
+                return if q.missing.as_deref() == Some("204") {
+                    Ok(StatusCode::NO_CONTENT.into_response())
+                } else {
+                    Err(ApiFailure::not_found())
+                };
             };
             let mut resp = Json(&doc).into_response();
             if let Ok(v) = HeaderValue::from_str(&format!("\"{}\"", doc.version)) {
