@@ -124,7 +124,7 @@ export default {
       'Airy (default) is easier to read; compact shows more rows. On a touch screen the density stays airy.',
     airy: 'Airy',
     compact: 'Compact',
-    tz: 'Time zone of the daily P&L',
+    tz: 'Time zone of the daily gain',
     tzHint: 'It cuts days, weeks and months. Shared between your devices through the gateway.',
     paris: 'Europe/Paris',
     cvd: 'Colour-blind palette',

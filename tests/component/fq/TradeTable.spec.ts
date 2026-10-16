@@ -176,8 +176,8 @@ describe('TradeTable: plain words (B381, B382)', () => {
   });
 });
 
-describe('TradeTable: unknown exit reason (B383)', () => {
-  it('shows nothing, not "unknown", and the row stays', () => {
+describe('TradeTable: unknown exit reason (B383, B401)', () => {
+  it('shows a muted dash that says why, not "unknown", and the row stays', () => {
     const trades = closedTrades().map((t) => ({
       ...t,
       exit_reason: { raw: '', kind: 'unknown' as const, class: 'other' as const },
@@ -187,6 +187,24 @@ describe('TradeTable: unknown exit reason (B383)', () => {
     expect(w.text().toLowerCase()).not.toContain('unknown');
     const cards = mountTrades({ preset: 'journal', trades, containerWidth: 400 });
     expect(cards.text().toLowerCase()).not.toContain('unknown');
+    // The empty cell is a dash with its reason in the title, in the table and in the cards (B401)
+    const dash = w.findAll('[data-testid=exit-reason-none]');
+    expect(dash).toHaveLength(4);
+    expect(dash[0]!.text()).toBe('–');
+    expect(dash[0]!.attributes('title')).toBe(
+      'The bot did not record an exit reason for this trade.',
+    );
+    expect(dash[0]!.attributes('aria-label')).toBe(dash[0]!.attributes('title'));
+  });
+  it('a trade still open says it has no reason yet', () => {
+    const trades = closedTrades().map((t) => ({
+      ...t,
+      close_ms: null,
+      exit_reason: { raw: '', kind: 'unknown' as const, class: 'other' as const },
+    }));
+    const w = mountTrades({ preset: 'journal', trades, containerWidth: 1200 });
+    const dash = w.get('[data-testid=exit-reason-none]');
+    expect(dash.attributes('title')).toBe('Position still open: no exit reason yet.');
   });
 });
 

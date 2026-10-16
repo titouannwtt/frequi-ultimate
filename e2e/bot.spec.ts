@@ -96,6 +96,32 @@ test.describe('Bot page on a desktop', () => {
   });
 });
 
+test.describe('Bot page on a laptop (1280 x 720)', () => {
+  test.use({ viewport: { width: 1280, height: 720 } });
+  test.beforeEach(async ({ context }) => {
+    await seed(context);
+  });
+
+  test('the RSI sub-chart stays on the page: the page scrolls rather than dropping it (B397)', async ({
+    page,
+  }) => {
+    test.setTimeout(150_000);
+    const sub = page.getByTestId('bot-page').getByTestId('candle-subhd').first();
+    // The first candle request of a freshly started rig can wait for the gateway's first polls
+    // (it then times out after 20 s): load the page again until the chart is there
+    await expect(async () => {
+      await page.goto(`/bot/${botKey(liveBot())}`);
+      await expect(sub).toHaveCount(1, { timeout: 25_000 });
+    }).toPass({ timeout: 120_000 });
+    await expect(sub).toContainText(/RSI/);
+    // "No room for 1 more": that sentence must not be needed
+    await expect(page.getByTestId('bot-page')).not.toContainText(/No room for/);
+    // The price pane is still a price pane, not a strip
+    const plot = await page.getByTestId('bot-page').locator('.plot').first().boundingBox();
+    expect(plot!.height).toBeGreaterThanOrEqual(298);
+  });
+});
+
 test.describe('Bot page on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   test.skip(({ browserName }) => browserName !== 'chromium', 'isMobile is Chromium only');
@@ -114,6 +140,21 @@ test.describe('Bot page on a phone', () => {
     // "Exit all" stays at the foot of the page and in the More menu, never among the tiles
     await expect(page.locator('.tiles button[data-action="exitAll"]')).toHaveCount(0);
     await expect(page.getByTestId('sensitive-actions')).toBeAttached();
+    expect(await noHorizontalOverflow(page)).toBe(true);
+  });
+
+  test('the card says what the figure under the entry and the "1/1" are (B395)', async ({
+    page,
+  }) => {
+    await page.goto(`/bot/${botKey(liveBot())}`);
+    const card = page.locator('[data-trade-key]').first();
+    await expect(card).toBeVisible();
+    await expect(card.locator('.m2 .sub .sl')).toHaveText('Price');
+    await expect(card.getByTestId('card-orders').locator('.sl')).toHaveText('Orders');
+    await expect(card.getByTestId('card-orders').locator('.pips')).toHaveAttribute(
+      'title',
+      /\d+ of \d+ orders filled/,
+    );
     expect(await noHorizontalOverflow(page)).toBe(true);
   });
 

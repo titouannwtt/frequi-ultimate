@@ -17,6 +17,7 @@ import { useFormat } from '@/components/ds/lib/useFormat';
 import { useDataSource } from '@/composables/useDataSource';
 import { useValueSlot } from '@/composables/useValueSlot';
 import { mapClosedTrade } from '@/datasource/direct/mappers';
+import { useFqConnectionStore } from '@/datasource/stores/connection';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { DataSource } from '@/datasource/types';
@@ -62,6 +63,15 @@ const fmt = useFormat();
 const { vs } = useValueSlot();
 const data = useDataSource();
 const fleet = useFqFleetStore();
+const connection = useFqConnectionStore();
+// The note names the mode really in use: with the gateway the excursions are not "direct mode" ones
+const maeNoteKey = computed(() =>
+  connection.kind === 'direct'
+    ? 'fq.jr.sheet.maeNoteDirect'
+    : connection.kind === 'gateway'
+      ? 'fq.jr.sheet.maeNoteGateway'
+      : 'fq.jr.sheet.maeNote',
+);
 const prefs = useFqPrefsStore();
 
 const fetched = ref<JournalTrade | null>(null);
@@ -264,7 +274,7 @@ const title = computed(() =>
             <span class="num down">MAE {{ fmt.percent(maeVal * 100, 1) }}</span>
             <span class="num up">MFE {{ fmt.percent(mfeVal * 100, 1) }}</span>
           </div>
-          <p v-else class="note">{{ t('fq.jr.sheet.maeNote') }}</p>
+          <p v-else class="note">{{ t(maeNoteKey) }}</p>
         </section>
 
         <section v-if="lines.length > 0" class="ord">

@@ -286,7 +286,7 @@ const noBots = computed(() => fleet.loaded && j.botKeys.value.length === 0);
                 <tr>
                   <th class="l colh">{{ t('fq.jr.an.botCol') }}</th>
                   <th class="colh">{{ t('fq.jr.trades') }}</th>
-                  <th class="colh">P&amp;L</th>
+                  <th class="colh" :title="t('fq.hint.col.pnl_abs')">{{ t('fq.col.pnl_abs') }}</th>
                   <th class="colh barc"></th>
                 </tr>
               </thead>

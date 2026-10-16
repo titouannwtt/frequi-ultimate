@@ -444,7 +444,12 @@ describe('DcaDepthTable and ExitReasonTable', () => {
     const w = mountFq(ExitReasonTable, { props: { trades: trades() } });
     const text = w.text();
     expect(text).toContain('custom_exit_rsi_overbought');
-    expect(text.toLowerCase()).toContain('unknown');
+    // The unknown reason is a sentence, with what it means in the tooltip (B393)
+    expect(text).toContain('Reason not recorded');
+    const chip = w.findAll('.chip').find((c) => c.text() === 'Reason not recorded')!;
+    expect(chip.attributes('title')).toBe(
+      'The bot did not record an exit reason for these trades.',
+    );
     expect(text).toContain('manual');
     expect(w.find('[data-testid=exit-unknown-profit]').exists()).toBe(true);
   });

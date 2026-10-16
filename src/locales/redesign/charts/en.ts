@@ -176,7 +176,7 @@ export default {
     older: 'Older',
     trades: 'Trades',
     winrate: 'Win rate',
-    bar: 'P&L bar',
+    bar: 'Result bar',
     tradesN: '{n} trade | {n} trades',
     empty: 'No closed trade in this selection',
     emptyHint: 'Widen the period or clear a filter.',
@@ -196,17 +196,20 @@ export default {
     },
     depth: {
       filled: 'Orders filled',
-      intro: 'P&L by number of filled orders.',
-      missing: 'The source does not give the number of filled orders (direct mode).',
+      intro: 'Result by number of filled orders.',
+      missing: 'The source does not give the number of filled orders.',
+      missingDirect: 'The source does not give the number of filled orders (direct mode).',
+      missingGateway: 'The gateway does not give the number of filled orders for these trades.',
       unknown: 'Unknown depth',
       sentence:
-        'From {from} filled orders: {n} trades, win rate {deepWin} against {shallowWin} below, P&L',
+        'From {from} filled orders: {n} trades, win rate {deepWin} against {shallowWin} below, result',
     },
     exit: {
-      intro: 'P&L by exit reason. A forced exit groups the manual exits, marked "manual".',
+      intro: 'Result by exit reason. A forced exit groups the manual exits, marked "manual".',
       reason: 'Reason',
       manualN: 'manual {n}',
       noRaw: 'no raw value',
+      unknownTip: 'The bot did not record an exit reason for these trades.',
     },
     sheet: {
       closedAt: 'closed {d}',
@@ -216,7 +219,11 @@ export default {
       exitPrice: 'Exit price',
       excursions: 'Excursions (MAE / MFE)',
       maeNote:
+        'MAE and MFE are computed by the gateway on the candles of the trade; unavailable for this trade.',
+      maeNoteDirect:
         'MAE and MFE are computed by the gateway on the candles of the trade; unavailable in direct mode.',
+      maeNoteGateway:
+        'MAE and MFE are unavailable for this trade: the gateway could not compute them.',
       originHuman: 'a human (audit)',
       originForced: 'forced (author not in the audit)',
       originStrategy: 'the strategy',

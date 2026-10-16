@@ -152,6 +152,36 @@ test.describe('Journal', () => {
     await page.getByTestId('jr-view').getByRole('tab', { name: 'List' }).click();
     await expect(page.getByTestId('group-head').first()).toBeVisible();
   });
+
+  test('the analysis views say result, not P&L, and name the exit reason that was not recorded (B392, B393)', async ({
+    page,
+  }) => {
+    await page.goto('/journal?view=analysis');
+    const an = page.getByTestId('jr-an');
+    for (const [tab, panel] of [
+      ['Top-ups', 'dca-depth'],
+      ['Reasons', 'exit-reasons'],
+      ['By bot', 'by-bot'],
+    ] as const) {
+      await an.getByRole('tab', { name: tab }).click();
+      const body = page.getByTestId(panel);
+      await expect(body).toBeVisible();
+      expect(await body.innerText()).not.toMatch(/P&L/i);
+    }
+    // No row is called "unknown": the reason that was not recorded is a sentence
+    await an.getByRole('tab', { name: 'Reasons' }).click();
+    expect(await page.getByTestId('exit-reasons').innerText()).not.toMatch(
+      /\bunknown\b(?! result)/i,
+    );
+  });
+
+  test('the Top-ups message follows the source: on the gateway it never says "direct mode" (B398)', async ({
+    page,
+  }) => {
+    await page.goto('/journal?view=analysis&an=dca');
+    await expect(page.getByTestId('dca-depth')).toBeVisible();
+    await expect(page.getByTestId('dca-depth')).not.toContainText('direct mode');
+  });
 });
 
 test.describe('Journal on a phone', () => {

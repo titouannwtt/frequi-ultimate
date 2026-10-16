@@ -154,9 +154,10 @@ const liqSlot = computed(() =>
         </span>
       </div>
       <div class="m2">
-        <span class="k">{{ line.open ? t('fq.col.entry') : t('fq.col.exit_price') }}</span>
+        <span class="k">{{ t('fq.col.entry') }}</span>
         <span class="v num">{{ fmt.price(line.entry) }}</span>
-        <span class="sub num">
+        <span class="sub num" :title="line.open ? t('fq.trade.priceNow') : t('fq.trade.priceExit')">
+          <span class="sl">{{ line.open ? t('fq.col.current') : t('fq.col.exit_price') }}</span>
           <ValueState v-bind="priceSlot">{{
             fmt.price((line.open ? line.current : line.exitPrice) as number)
           }}</ValueState>
@@ -173,8 +174,9 @@ const liqSlot = computed(() =>
               fmt.percent(line.liqDistancePct as number, 0, false)
             }}</ValueState>
           </span>
-          <span class="sub"
-            ><DcaPips :filled="line.dcaFilled" :max="line.dcaMax ?? line.dcaFilled" show-count
+          <span class="sub" data-testid="card-orders"
+            ><span class="sl">{{ t('fq.trade.ordersShort') }}</span>
+            <DcaPips :filled="line.dcaFilled" :max="line.dcaMax ?? line.dcaFilled" show-count
           /></span>
         </template>
         <template v-else-if="exitLabel">
@@ -309,5 +311,10 @@ const liqSlot = computed(() =>
   font: 500 var(--t-xs) var(--font-num);
   color: var(--fg-3);
   min-height: 15px;
+}
+/* The word that says what the figure under a value is ("Prix", "Ordres") */
+.sl {
+  margin-right: 4px;
+  font-family: var(--font-ui);
 }
 </style>

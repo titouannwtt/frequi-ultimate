@@ -7,6 +7,7 @@ import { useFormat } from '@/components/ds/lib/useFormat';
 import { unavailable } from './lib/valueState';
 import { useTradeSet } from '@/composables/useTradeSet';
 import { useValueSlot } from '@/composables/useValueSlot';
+import { useFqConnectionStore } from '@/datasource/stores/connection';
 import type { DataSource, TradeQuery } from '@/datasource/types';
 
 import { dcaDepth, DCA_WARN_FROM, type DepthRow, type JournalTrade } from './lib/journal';
@@ -25,6 +26,15 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const fmt = useFormat();
+const connection = useFqConnectionStore();
+// What the message says follows the source really in use: the gateway is not the direct mode
+const missingKey = computed(() =>
+  connection.kind === 'direct'
+    ? 'fq.jr.depth.missingDirect'
+    : connection.kind === 'gateway'
+      ? 'fq.jr.depth.missingGateway'
+      : 'fq.jr.depth.missing',
+);
 
 const loaded = useTradeSet(() => (props.trades ? null : (props.query ?? null)), {
   source: () => props.source,
@@ -76,7 +86,7 @@ const widthOf = (r: DepthRow) =>
         USDC.
       </p>
       <p v-else class="sent">{{ t('fq.jr.depth.intro') }}</p>
-      <p v-if="noDepth" class="note" data-testid="depth-missing">{{ t('fq.jr.depth.missing') }}</p>
+      <p v-if="noDepth" class="note" data-testid="depth-missing">{{ t(missingKey) }}</p>
       <table class="dtab">
         <thead>
           <tr>
