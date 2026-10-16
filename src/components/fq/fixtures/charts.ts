@@ -174,6 +174,7 @@ export function makeDrawdown(closed: readonly ClosedPnl[]): DrawdownResult {
     closed: [...closed],
     open: [],
     histories: [],
+    history_trades: [],
     starting_capital: 9000,
     now_ms: FIXTURE_NOW,
   });

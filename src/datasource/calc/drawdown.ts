@@ -9,12 +9,15 @@
  *   curve, extended by the open positions at the worst point they reached (`min_rate` for longs,
  *   `max_rate` for shorts). The curve is the sampled `profit_history` when available, prepended
  *   with the realized points that predate the first sample, otherwise the realized curve alone.
+ *   The final "now" point continues that curve (see `anchoredClosed`), never restarting from the
+ *   cumulative closed trades, which can sit on another base than `profit_history` (B280).
  *
  * The percentage is a ratio of `starting capital + realized peak` and is null when the starting
  * capital is unknown. The absolute value is always available and is the figure to compare across
  * bots: a percentage confuses risk and profit.
  */
 import type {
+  ClosedPnl,
   DrawdownInput,
   DrawdownResult,
   DrawdownValue,
@@ -119,6 +122,39 @@ export function mergeHistories(series: ReadonlyArray<readonly HistorySample[]>):
 
 /** Compute both drawdown definitions. */
 /** Missing fields mean empty (the Rust input is `#[serde(default)]`). */
+/**
+ * Closed part of the final point, anchored per bot on its last `profit_history` sample: the
+ * sample's `closed` plus the profits of that bot's trades closed strictly after it. A bot without
+ * any sample contributes its cumulative closed trades. Null when the trades cannot be attributed
+ * to the histories (several series and no aligned `history_trades`).
+ */
+export function anchoredClosed(input: Partial<DrawdownInput>): number | null {
+  const histories = input.histories ?? [];
+  const historyTrades = input.history_trades ?? [];
+  let perBot: readonly ClosedPnl[][];
+  if (historyTrades.length === histories.length) {
+    perBot = historyTrades;
+  } else if (historyTrades.length === 0 && histories.length === 1) {
+    perBot = [input.closed ?? []];
+  } else {
+    return null;
+  }
+  let total = 0;
+  histories.forEach((h, i) => {
+    const trades = perBot[i];
+    if (h.length === 0) {
+      total += trades.reduce((acc, t) => acc + t.profit_abs, 0);
+      return;
+    }
+    const last = h.reduce((a, b) => (b.ts_ms > a.ts_ms ? b : a));
+    total += trades.reduce(
+      (acc, t) => (t.ts_ms > last.ts_ms ? acc + t.profit_abs : acc),
+      last.closed,
+    );
+  });
+  return total;
+}
+
 export function computeDrawdown(input: Partial<DrawdownInput>): DrawdownResult {
   const closed = [...(input.closed ?? [])].sort((a, b) => a.ts_ms - b.ts_ms);
   let cum = 0;
@@ -135,13 +171,14 @@ export function computeDrawdown(input: Partial<DrawdownInput>): DrawdownResult {
 
   // Curve of realized + latent, then the open positions projected to their worst point.
   const history = mergeHistories(input.histories ?? []);
-  const curve: CurvePoint[] =
-    history.length >= 2
-      ? [...realizedPoints.filter((p) => p[0] < history[0][0]), ...history]
-      : [...realizedPoints];
+  const fromHistory = history.length >= 2;
+  const curve: CurvePoint[] = fromHistory
+    ? [...realizedPoints.filter((p) => p[0] < history[0][0]), ...history]
+    : [...realizedPoints];
   const observed = walk(curve);
   if (hasOpen) {
-    curve.push([input.now_ms ?? 0, realizedCum + openWorstSum]);
+    const closedNow = fromHistory ? (anchoredClosed(input) ?? realizedCum) : realizedCum;
+    curve.push([input.now_ms ?? 0, closedNow + openWorstSum]);
   }
   const ow = walk(curve);
 

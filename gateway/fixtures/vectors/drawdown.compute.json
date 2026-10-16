@@ -428,6 +428,256 @@
     },
     "has_open": false
    }
+  },
+  {
+   "name": "B280: history closed drifting above the trades, the final point continues the history",
+   "description": "profit_history closed reaches 100 while the trades sum to 8. Old code: final point 8 - 40 = -32, drawdown 122 (113 % of the base). Anchored: 100 + 3 (trade after the last sample) - 40 = 63, drawdown 90 - 63 = 27.",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 10,
+      "profit_abs": 5
+     },
+     {
+      "ts_ms": 250,
+      "profit_abs": 3
+     }
+    ],
+    "open": [
+     {
+      "profit_abs": -10,
+      "amount": 2,
+      "open_rate": 100,
+      "current_rate": 95,
+      "is_short": false,
+      "min_rate": 80,
+      "max_rate": null
+     }
+    ],
+    "histories": [
+     [
+      {
+       "ts_ms": 100,
+       "closed": 50,
+       "open": 0
+      },
+      {
+       "ts_ms": 200,
+       "closed": 100,
+       "open": -10
+      }
+     ]
+    ],
+    "starting_capital": 100,
+    "now_ms": 300
+   },
+   "expected": {
+    "realized": {
+     "abs": 0
+    },
+    "with_open": {
+     "abs": 27,
+     "pct": 0.25,
+     "peak_ms": 200,
+     "trough_ms": 300
+    },
+    "open_worst_sum": -40,
+    "base": 108
+   }
+  },
+  {
+   "name": "B280: consistent history, result unchanged, trade after the last sample counted once",
+   "description": "History closed 20 matches the trades before t=200; the trade at 250 adds 10 once: final 30 - 40 = -10, drawdown 15 - (-10) = 25, as before the fix.",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 150,
+      "profit_abs": 20
+     },
+     {
+      "ts_ms": 250,
+      "profit_abs": 10
+     }
+    ],
+    "open": [
+     {
+      "profit_abs": -10,
+      "amount": 2,
+      "open_rate": 100,
+      "current_rate": 95,
+      "is_short": false,
+      "min_rate": 80,
+      "max_rate": null
+     }
+    ],
+    "histories": [
+     [
+      {
+       "ts_ms": 100,
+       "closed": 0,
+       "open": 0
+      },
+      {
+       "ts_ms": 200,
+       "closed": 20,
+       "open": -5
+      }
+     ]
+    ],
+    "now_ms": 300
+   },
+   "expected": {
+    "with_open": {
+     "abs": 25,
+     "peak_ms": 200,
+     "trough_ms": 300
+    }
+   }
+  },
+  {
+   "name": "B280: anchored per bot, one bot's drift does not leak",
+   "description": "Bot A consistent (10 + 5 after its last sample), bot B history closed 500 for 1 of trades. Merged peak 510; final 15 + 500 - 40 = 475: drawdown 35 (old code: 16 - 40 = -24, drawdown 534).",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 150,
+      "profit_abs": 10
+     },
+     {
+      "ts_ms": 250,
+      "profit_abs": 5
+     },
+     {
+      "ts_ms": 150,
+      "profit_abs": 1
+     }
+    ],
+    "open": [
+     {
+      "profit_abs": -10,
+      "amount": 2,
+      "open_rate": 100,
+      "current_rate": 95,
+      "is_short": false,
+      "min_rate": 80,
+      "max_rate": null
+     }
+    ],
+    "histories": [
+     [
+      {
+       "ts_ms": 100,
+       "closed": 0,
+       "open": 0
+      },
+      {
+       "ts_ms": 200,
+       "closed": 10,
+       "open": 0
+      }
+     ],
+     [
+      {
+       "ts_ms": 100,
+       "closed": 0,
+       "open": 0
+      },
+      {
+       "ts_ms": 200,
+       "closed": 500,
+       "open": 0
+      }
+     ]
+    ],
+    "now_ms": 300,
+    "history_trades": [
+     [
+      {
+       "ts_ms": 150,
+       "profit_abs": 10
+      },
+      {
+       "ts_ms": 250,
+       "profit_abs": 5
+      }
+     ],
+     [
+      {
+       "ts_ms": 150,
+       "profit_abs": 1
+      }
+     ]
+    ]
+   },
+   "expected": {
+    "with_open": {
+     "abs": 35,
+     "peak_ms": 200,
+     "trough_ms": 300
+    }
+   }
+  },
+  {
+   "name": "B280: several histories without aligned trades fall back to the cumulative closed trades",
+   "input": {
+    "closed": [
+     {
+      "ts_ms": 150,
+      "profit_abs": 10
+     },
+     {
+      "ts_ms": 250,
+      "profit_abs": 5
+     },
+     {
+      "ts_ms": 150,
+      "profit_abs": 1
+     }
+    ],
+    "open": [
+     {
+      "profit_abs": -10,
+      "amount": 2,
+      "open_rate": 100,
+      "current_rate": 95,
+      "is_short": false,
+      "min_rate": 80,
+      "max_rate": null
+     }
+    ],
+    "histories": [
+     [
+      {
+       "ts_ms": 100,
+       "closed": 0,
+       "open": 0
+      },
+      {
+       "ts_ms": 200,
+       "closed": 10,
+       "open": 0
+      }
+     ],
+     [
+      {
+       "ts_ms": 100,
+       "closed": 0,
+       "open": 0
+      },
+      {
+       "ts_ms": 200,
+       "closed": 500,
+       "open": 0
+      }
+     ]
+    ],
+    "now_ms": 300
+   },
+   "expected": {
+    "with_open": {
+     "abs": 534
+    }
+   }
   }
  ]
 }

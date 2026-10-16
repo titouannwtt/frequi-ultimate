@@ -247,6 +247,13 @@ amount: number, open_rate: number, current_rate: number | null, is_short: boolea
 export type HistorySample = { ts_ms: number, closed: number, open: number, };
 export type DrawdownInput = { closed: Array<ClosedPnl>, open: Array<OpenRisk>, histories: Array<Array<HistorySample>>, 
 /**
+ * Closed trades of each bot, index-aligned with `histories` (same length), used to anchor
+ * the final point on each bot's last sample. When empty and `histories` holds a single
+ * series, `closed` is that bot's trades. Otherwise the final point falls back to the
+ * cumulative closed trades.
+ */
+history_trades: Array<Array<ClosedPnl>>, 
+/**
  * Starting capital of the scope (sum of the bots' own capitals), when known.
  */
 starting_capital: number | null, now_ms: number, };

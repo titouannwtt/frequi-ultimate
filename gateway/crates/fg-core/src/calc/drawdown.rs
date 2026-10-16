@@ -9,6 +9,11 @@
 //!   (`min_rate` for longs, `max_rate` for shorts). The curve is the sampled `profit_history`
 //!   when available (so past open books that are now closed still count), prepended with the
 //!   realized points that predate the first sample, otherwise the realized curve alone.
+//!   The final "now" point continues that curve: per bot, the closed part is the last sample's
+//!   `closed` plus the trades closed strictly after that sample, and the open part is the open
+//!   positions at their worst point. It never restarts from the cumulative closed trades, which can
+//!   sit on another base than `profit_history` (seeded dry bot, DB reset keeping the history,
+//!   deleted trades): mixing the two fabricated a one-step drop (B280).
 //!
 //! The percentage is a ratio of `starting capital + realized peak` (the account value at the
 //! peak, freqtrade's denominator) and is `None` when the starting capital is unknown. The
@@ -68,6 +73,11 @@ pub struct DrawdownInput {
     pub closed: Vec<ClosedPnl>,
     pub open: Vec<OpenRisk>,
     pub histories: Vec<Vec<HistorySample>>,
+    /// Closed trades of each bot, index-aligned with `histories` (same length), used to anchor
+    /// the final point on each bot's last sample. When empty and `histories` holds a single
+    /// series, `closed` is that bot's trades. Otherwise the final point falls back to the
+    /// cumulative closed trades.
+    pub history_trades: Vec<Vec<ClosedPnl>>,
     /// Starting capital of the scope (sum of the bots' own capitals), when known.
     pub starting_capital: Option<f64>,
     pub now_ms: i64,
@@ -221,6 +231,38 @@ pub fn merge_histories(series: &[Vec<HistorySample>]) -> Vec<(i64, f64)> {
         .collect()
 }
 
+/// Closed part of the final point, anchored per bot on its last `profit_history` sample: the
+/// sample's `closed` plus the profits of that bot's trades closed strictly after it. A bot without
+/// any sample contributes its cumulative closed trades. `None` when the trades cannot be
+/// attributed to the histories (several series and no aligned `history_trades`).
+#[must_use]
+pub fn anchored_closed(input: &DrawdownInput) -> Option<f64> {
+    let per_bot: Vec<&[ClosedPnl]> = if input.history_trades.len() == input.histories.len() {
+        input.history_trades.iter().map(Vec::as_slice).collect()
+    } else if input.history_trades.is_empty() && input.histories.len() == 1 {
+        vec![input.closed.as_slice()]
+    } else {
+        return None;
+    };
+    let total = input
+        .histories
+        .iter()
+        .zip(per_bot)
+        .map(|(h, trades)| match h.iter().max_by_key(|x| x.ts_ms) {
+            Some(last) => {
+                last.closed
+                    + trades
+                        .iter()
+                        .filter(|t| t.ts_ms > last.ts_ms)
+                        .map(|t| t.profit_abs)
+                        .sum::<f64>()
+            }
+            None => trades.iter().map(|t| t.profit_abs).sum(),
+        })
+        .sum();
+    Some(total)
+}
+
 /// Compute both drawdown definitions.
 #[must_use]
 pub fn compute(input: &DrawdownInput) -> DrawdownResult {
@@ -242,7 +284,8 @@ pub fn compute(input: &DrawdownInput) -> DrawdownResult {
 
     // Curve of realized + latent, then the open positions projected to their worst point.
     let history = merge_histories(&input.histories);
-    let mut curve: Vec<(i64, f64)> = if history.len() >= 2 {
+    let from_history = history.len() >= 2;
+    let mut curve: Vec<(i64, f64)> = if from_history {
         let first = history[0].0;
         realized_points
             .iter()
@@ -255,7 +298,12 @@ pub fn compute(input: &DrawdownInput) -> DrawdownResult {
     };
     let observed = walk(&curve);
     if has_open {
-        curve.push((input.now_ms, realized_cum + open_worst_sum));
+        let closed_now = if from_history {
+            anchored_closed(input).unwrap_or(realized_cum)
+        } else {
+            realized_cum
+        };
+        curve.push((input.now_ms, closed_now + open_worst_sum));
     }
     let ow = walk(&curve);
 
