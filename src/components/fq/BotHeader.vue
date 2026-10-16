@@ -189,7 +189,11 @@ const stateSince = computed(
     </div>
 
     <KpiStrip :label="bot.identity.name">
-      <KpiTile :label="t('fq.kpi.pnlOpen')" v-bind="vs(latentSlot, key('latent'))">
+      <KpiTile
+        :label="t('fq.kpi.pnlOpen')"
+        :hint="t('fq.hint.pnlOpen')"
+        v-bind="vs(latentSlot, key('latent'))"
+      >
         <template #value
           ><PnlValue :value="m.open_profit_abs" :muted="stale('positions')" :flash="true"
         /></template>
@@ -198,13 +202,17 @@ const stateSince = computed(
         }}</template>
       </KpiTile>
       <KpiTile
-        :label="t('fq.col.realized_1d')"
+        :label="t('fq.kpi.realizedToday')"
+        :hint="t('fq.hint.realizedToday')"
+        :short-label="t('fq.kpiShort.realizedToday')"
         v-bind="vs(slotOf('metrics', m.realized_1d), key('d1'))"
       >
         <template #value><PnlValue :value="m.realized_1d" :muted="stale('metrics')" /></template>
       </KpiTile>
       <KpiTile
-        :label="t('fq.col.realized_30d')"
+        :label="t('fq.kpi.realized30d')"
+        :hint="t('fq.hint.realized30d')"
+        :short-label="t('fq.kpiShort.realized30d')"
         v-bind="vs(slotOf('metrics', m.realized_30d), key('d30'))"
       >
         <template #value
@@ -245,6 +253,8 @@ const stateSince = computed(
       </KpiTile>
       <KpiTile
         :label="t('fq.kpi.drawdownOpen')"
+        :hint="t('fq.hint.drawdownOpen')"
+        :short-label="t('fq.kpiShort.drawdownOpen')"
         :meter="ddMeter"
         :alert="ddSlot.state === 'ready' && ddPct !== null && ddPct >= ddThreshold"
         v-bind="vs(ddSlot, key('drawdown'))"

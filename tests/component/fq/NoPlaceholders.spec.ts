@@ -214,7 +214,7 @@ describe.each(['en', 'fr'] as const)('composites without a figure (%s)', (lang) 
       attachTo: document.body,
     });
     const heads = w.findAll('thead tr')[0]!.findAll('th');
-    const at = heads.findIndex((h) => /^(open|latent)$/i.test(h.text()));
+    const at = heads.findIndex((h) => /^(open|latent|en cours)$/i.test(h.text()));
     expect(at).toBeGreaterThan(0);
     const cell = w.findAll('tr.sigma th')[at]!;
     expect(cell.find('[data-state="unavailable"]').exists()).toBe(true);
@@ -243,7 +243,9 @@ describe.each(['en', 'fr'] as const)('composites without a figure (%s)', (lang) 
       props: { bot: live(73, 2, null), nowMs: FIXTURE_NOW },
       attachTo: document.body,
     });
-    const latent = blind.findAll('.kpi').find((k) => /P&L|Open/i.test(k.find('.k').text()))!;
+    const latent = blind
+      .findAll('.kpi')
+      .find((k) => /En cours|P&L|Open/i.test(k.find('.k').text()))!;
     expect(latent.find('.v [data-state="unavailable"]').exists()).toBe(true);
     expect(latent.get('.v').text()).toBe('');
   });

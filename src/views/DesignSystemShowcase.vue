@@ -71,11 +71,11 @@ const toaster = useToaster();
 const NOW = Date.now();
 
 // --- controls -------------------------------------------------------------------------------
-const density = ref<Density>('compact');
+const density = ref<Density>('airy');
 function applyDensity(value: Density) {
   density.value = value;
-  if (value === 'comfortable') {
-    document.documentElement.setAttribute('data-density', 'comfortable');
+  if (value === 'compact') {
+    document.documentElement.setAttribute('data-density', 'compact');
   } else {
     document.documentElement.removeAttribute('data-density');
   }
@@ -318,7 +318,6 @@ const tabBarItems = computed(() => [
   { id: 'more', label: 'Plus', icon: 'ellipsis' as const },
 ]);
 const tabBar = ref('fleet');
-const density2 = ref<Density>('compact');
 
 function ageLabel(ms: number) {
   return formatAge(ms, locale.value);
@@ -345,9 +344,9 @@ function ageLabel(ms: number) {
           @update:model-value="(v) => loadLanguage(String(v))"
         />
         <Switch
-          :model-value="density === 'comfortable'"
-          label="Comfortable"
-          @update:model-value="(v) => applyDensity(v ? 'comfortable' : 'compact')"
+          :model-value="density === 'compact'"
+          label="Compact"
+          @update:model-value="(v) => applyDensity(v ? 'compact' : 'airy')"
         />
       </div>
     </header>
@@ -793,9 +792,8 @@ function ageLabel(ms: number) {
         <div class="shell-demo">
           <StatusBar
             :health="'degraded'"
+            health-text="Connexion ralentie : quota d'appels presque épuisé"
             :logs-error-count="4"
-            :density="density2"
-            @update:density="(v) => (density2 = v)"
           />
           <TabBar v-model="tabBar" :items="tabBarItems" label="Pages" />
         </div>

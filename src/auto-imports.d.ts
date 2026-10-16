@@ -16,6 +16,7 @@ declare global {
   const COUNTER_MS: typeof import('./utils/motion').COUNTER_MS
   const CVD_KEY: typeof import('./composables/useDisplayPrefs').CVD_KEY
   const ColorPreferences: typeof import('./stores/colors').ColorPreferences
+  const DENSITY_KEY: typeof import('./composables/useDisplayPrefs').DENSITY_KEY
   const DIGEST_SUBSTITUTION_MAX_AGE_S: typeof import('./stores/fleetDigestPolicy').DIGEST_SUBSTITUTION_MAX_AGE_S
   const DURATIONS: typeof import('./utils/motion').DURATIONS
   const EASINGS: typeof import('./utils/motion').EASINGS
@@ -559,7 +560,7 @@ declare global {
   export type { ConfigPreview } from './composables/useConfigExport'
   import('./composables/useConfigExport')
   // @ts-ignore
-  export type { MotionPref } from './composables/useDisplayPrefs'
+  export type { MotionPref, DensityPref } from './composables/useDisplayPrefs'
   import('./composables/useDisplayPrefs')
   // @ts-ignore
   export type { FreshnessEntry } from './composables/useFreshness'
@@ -647,6 +648,7 @@ declare module 'vue' {
     readonly COUNTER_MS: UnwrapRef<typeof import('./utils/motion')['COUNTER_MS']>
     readonly CVD_KEY: UnwrapRef<typeof import('./composables/useDisplayPrefs')['CVD_KEY']>
     readonly ColorPreferences: UnwrapRef<typeof import('./stores/colors')['ColorPreferences']>
+    readonly DENSITY_KEY: UnwrapRef<typeof import('./composables/useDisplayPrefs')['DENSITY_KEY']>
     readonly DIGEST_SUBSTITUTION_MAX_AGE_S: UnwrapRef<typeof import('./stores/fleetDigestPolicy')['DIGEST_SUBSTITUTION_MAX_AGE_S']>
     readonly DURATIONS: UnwrapRef<typeof import('./utils/motion')['DURATIONS']>
     readonly EASINGS: UnwrapRef<typeof import('./utils/motion')['EASINGS']>

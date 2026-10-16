@@ -39,7 +39,7 @@ test.describe('Bot page on a desktop', () => {
     await expect(drawer.getByTestId('drawer-target')).toContainText(bot.name);
     await expect(drawer.locator('button[data-action="exit"]')).toBeVisible();
     await expect(drawer.locator('button[data-action="add"]')).toBeVisible();
-    await expect(page.getByTestId('trade-drawer-body')).toContainText('DCA ladder');
+    await expect(page.getByTestId('trade-drawer-body')).toContainText('Top-up ladder');
   });
 
   test('the last bot opened is where the Bot tab leads', async ({ page }) => {

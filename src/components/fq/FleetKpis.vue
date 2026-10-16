@@ -121,6 +121,8 @@ const SKELETON = [
       <KpiStrip :label="t('fq.kpi.strip', { mode: t(`fq.scope.${m.mode}`) })">
         <KpiTile
           :label="t('fq.kpi.equityOpen')"
+          :hint="t('fq.hint.equityOpen')"
+          :short-label="t('fq.kpiShort.equityOpen')"
           wide
           data-testid="kpi-equity"
           v-bind="vs(m.slots.equityOpen, `${m.mode}/equityOpen`)"
@@ -137,6 +139,7 @@ const SKELETON = [
         </KpiTile>
         <KpiTile
           :label="t('fq.kpi.pnlOpen')"
+          :hint="t('fq.hint.pnlOpen')"
           :sub="t('fq.kpi.positions', { n: m.openCount }, m.openCount)"
           data-testid="kpi-open"
           v-bind="vs(m.slots.openProfit, `${m.mode}/openProfit`)"
@@ -145,6 +148,8 @@ const SKELETON = [
         </KpiTile>
         <KpiTile
           :label="t('fq.kpi.realizedToday')"
+          :hint="t('fq.hint.realizedToday')"
+          :short-label="t('fq.kpiShort.realizedToday')"
           :sub="t('fq.kpi.sinceMidnight', { tz })"
           data-testid="kpi-day"
           v-bind="vs(m.slots.realized1d, `${m.mode}/realized1d`)"
@@ -153,6 +158,8 @@ const SKELETON = [
         </KpiTile>
         <KpiTile
           :label="t('fq.kpi.realized30d')"
+          :hint="t('fq.hint.realized30d')"
+          :short-label="t('fq.kpiShort.realized30d')"
           :sub="
             m.winrate === null
               ? undefined
@@ -167,6 +174,8 @@ const SKELETON = [
         </KpiTile>
         <KpiTile
           :label="t('fq.kpi.drawdownOpen')"
+          :hint="t('fq.hint.drawdownOpen')"
+          :short-label="t('fq.kpiShort.drawdownOpen')"
           :meter="ddMeter(m)"
           :sub="ddSub(m)"
           data-testid="kpi-dd"
@@ -195,6 +204,7 @@ const SKELETON = [
         </KpiTile>
         <KpiTile
           :label="t('fq.kpi.margin')"
+          :hint="t('fq.hint.margin')"
           :meter="
             m.marginPct === null
               ? undefined

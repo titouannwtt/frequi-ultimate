@@ -108,17 +108,38 @@ describe('design tokens', () => {
     expect(reduced).toContain('--d-flash: 1ms');
   });
 
-  it('applies the comfortable density to fine pointers on wide screens only', () => {
+  it('is airy by default: rows of 38 px, text of 14 px, panels of 10 px', () => {
+    const root = block(':root {\n  --font-ui');
+    expect(root['--row']).toBe('38px');
+    expect(root['--t-md']).toBe('14px');
+    expect(root['--t-cell']).toBe('14px');
+    expect(root['--r-card']).toBe('10px');
+    expect(root['--th-case']).toBe('none');
+  });
+
+  it('applies the compact density to fine pointers on wide screens only', () => {
     // The attribute rule has more specificity than the touch :root rule: it must live in a media
-    // query that excludes the touch cases, or a phone would shrink to 32 px controls.
-    const rule = css.indexOf(":root[data-density='comfortable']");
+    // query that excludes the touch cases, or a phone would shrink to 30 px rows.
+    const rule = css.indexOf(":root[data-density='compact']");
     expect(rule).toBeGreaterThan(-1);
     const media = css.lastIndexOf('@media', rule);
     const header = css.slice(media, css.indexOf('{', media));
     expect(header).toContain('min-width: 600px');
     expect(header).toContain('not (pointer: coarse)');
     // No other, unconditional, copy of the rule
-    expect(css.indexOf(":root[data-density='comfortable']", rule + 1)).toBe(-1);
+    expect(css.indexOf(":root[data-density='compact']", rule + 1)).toBe(-1);
+  });
+
+  it('compact brings back the tight sizes of the first redesign', () => {
+    const compact = block(":root[data-density='compact']");
+    expect(compact['--row']).toBe('30px');
+    expect(compact['--ctl']).toBe('28px');
+    expect(compact['--hdr']).toBe('44px');
+    expect(compact['--t-md']).toBe('13px');
+    expect(compact['--t-cell']).toBe('12px');
+    expect(compact['--r-card']).toBe('5px');
+    expect(compact['--th-case']).toBe('uppercase');
+    expect(compact['--t-xs']).toBe('11px');
   });
 
   it('keeps the hold-to-confirm label above AA contrast over its fill in every palette', () => {

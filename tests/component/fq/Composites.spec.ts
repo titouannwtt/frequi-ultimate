@@ -11,6 +11,8 @@ import { FIXTURE_NOW, scopeDetailOf } from '../../../src/components/fq/fixtures'
 import { useActionDialog } from '../../../src/composables/useActionDialog';
 import { useCommandPalette } from '../../../src/composables/useCommandPalette';
 import { useScope } from '../../../src/composables/useScope';
+import { useFqAlertsStore } from '../../../src/datasource/stores/alerts';
+import { useFqHealthStore } from '../../../src/datasource/stores/health';
 import { useFqPositionsStore } from '../../../src/datasource/stores/positions';
 import type { BotRow } from '../../../src/gateway/types.gen';
 import { mountFq, setFqLocale, setupWorld, teardownWorld, type FqWorld } from './helpers';
@@ -308,13 +310,86 @@ describe('AppShell', () => {
     useCommandPalette().hide();
   });
 
-  it('shows the connection, the alert bell with its count and a health line', () => {
-    const w = mountFq(AppShell, {
+  const setHealth = (patch: Partial<typeof world.fixture.health>) =>
+    useFqHealthStore().apply({
+      kind: 'snapshot',
+      seq: 2,
+      ts: FIXTURE_NOW,
+      replace: ['health'],
+      upsert: { health: { fleet: { ...world.fixture.health, ...patch } } },
+      remove: {},
+    } as never);
+  const shell = () =>
+    mountFq(AppShell, {
       props: { page: 'fleet', source: world.fake.source, inline: true, contained: true },
       attachTo: document.body,
     });
-    expect(w.text()).toMatch(/38\s*ms/);
+
+  it('shows the connection as a dot and a word, the latency in its tooltip', () => {
+    const w = shell();
+    const pill = w.get('.conn');
+    expect(pill.text()).toBe('Up to date');
+    expect(pill.attributes('title')).toContain('38 ms');
     expect(w.text()).toMatch(/Fleet|Flotte/);
+  });
+
+  it('no longer names the product variant, nor offers the theme or the density in the bars', () => {
+    const w = shell();
+    expect(w.get('.logo').text()).toBe('FreqUI');
+    expect(w.text()).not.toContain('Ultimate');
+    expect(w.find('.top [aria-label^="Theme"]').exists()).toBe(false);
+    expect(w.get('.statusbar').text()).not.toMatch(/Compact|Airy|Comfortable/);
+  });
+
+  it('the status bar says how fresh the data is, and goes amber past 30 s', () => {
+    setHealth({ digest_age_s: 3 });
+    const w = shell();
+    const fresh = w.get('[data-testid=sb-fresh]');
+    expect(fresh.text()).toBe('Up to date, 3 s ago');
+    expect(fresh.classes()).not.toContain('lvl-warn');
+  });
+
+  it('a late digest is worded as late, in amber', async () => {
+    setHealth({ digest_age_s: 45 });
+    const fresh = shell().get('[data-testid=sb-fresh]');
+    expect(fresh.text()).toBe('Last updated 45 s ago');
+    expect(fresh.classes()).toContain('lvl-warn');
+  });
+
+  it('says nothing about the health when it is OK', () => {
+    setHealth({ level: 'ok', reasons: [], rate_budget_pct: 20, backoff_active: false });
+    const bar = shell().get('.statusbar');
+    expect(bar.find('[data-testid=sb-health]').exists()).toBe(false);
+    expect(bar.find('[data-testid=sb-budget]').exists()).toBe(false);
+    expect(bar.find('[data-testid=sb-backoff]').exists()).toBe(false);
+    expect(bar.text()).not.toMatch(/Health|OK|Live bots|Snapshot/);
+  });
+
+  it('a degraded health is worded in plain words with its reason', () => {
+    const health = shell().get('[data-testid=sb-health]');
+    expect(health.text()).toBe('Connection slowed: the exchange is limiting calls (backoff)');
+  });
+
+  it('the Hyperliquid quota appears only above 70 %, and the backoff has its own line', () => {
+    const low = shell().get('.statusbar');
+    expect(low.find('[data-testid=sb-budget]').exists()).toBe(false);
+    expect(low.get('[data-testid=sb-backoff]').text()).toBe(
+      'Hyperliquid is limiting calls, resuming automatically',
+    );
+    setHealth({ rate_budget_pct: 82 });
+    const high = shell().get('.statusbar');
+    expect(high.get('[data-testid=sb-budget]').text()).toBe('Hyperliquid calls: 82 % of the quota');
+  });
+
+  it('the error count of the logs appears only when it is above zero', () => {
+    const alerts = useFqAlertsStore();
+    const w = shell();
+    const errors = alerts
+      .view(FIXTURE_NOW, 'active')
+      .filter((a) => a.type_id === 'logErrors' || a.type_id === 'orderFailed').length;
+    const logs = w.find('[data-testid=sb-logs]');
+    expect(logs.exists()).toBe(errors > 0);
+    if (errors > 0) expect(logs.text()).toMatch(/error/);
   });
 
   it('speaks French without leaving English keys on screen', () => {

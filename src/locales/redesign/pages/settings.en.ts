@@ -120,9 +120,10 @@ export default {
     language: 'Language',
     theme: 'Theme',
     density: 'Density',
-    densityHint: 'Compact shows more rows; comfortable has larger touch targets.',
+    densityHint:
+      'Airy (default) is easier to read; compact shows more rows. On a touch screen the density stays airy.',
+    airy: 'Airy',
     compact: 'Compact',
-    comfortable: 'Comfortable',
     tz: 'Time zone of the daily P&L',
     tzHint: 'It cuts days, weeks and months. Shared between your devices through the gateway.',
     paris: 'Europe/Paris',
@@ -161,7 +162,7 @@ export default {
     desc: {
       surveillance: 'The everyday view: figures, fleet and positions.',
       incident: 'Alerts first, the fleet filtered to the bots in alert.',
-      analysis: 'Equity, leaderboard and calendar in front.',
+      analysis: 'Capital, leaderboard and calendar in front.',
     },
     saved: 'Saved layout',
     columns: 'Table columns',
@@ -181,7 +182,7 @@ export default {
     journalViewsHint: '{n} saved',
   },
   ab: {
-    ui: 'Interface',
+    ui: 'FreqUI Ultimate',
     gateway: 'Gateway',
     noGateway: 'not connected',
     keys: 'Keys of this browser',

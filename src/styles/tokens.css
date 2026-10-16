@@ -145,13 +145,17 @@
   --font-num:
     'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* Type scale (desktop); the touch media query below raises it by 1 px */
-  --t-xs: 11px;
-  --t-sm: 12px;
-  --t-md: 13px;
-  --t-lg: 15px;
-  --t-xl: 20px;
-  --t-2xl: 26px;
+  /* Type scale. Default = airy density (docs/redesign/05-friendly-plan.md, L3): 14 px body text.
+     The compact density and the touch media queries below override the values they change. */
+  --t-xs: 12px;
+  --t-sm: 13px;
+  --t-md: 14px;
+  --t-lg: 16px;
+  --t-xl: 22px;
+  --t-2xl: 28px;
+  --t-cell: 14px; /* text of a table cell */
+  --t-label: 13px; /* label of a KPI tile or a form row */
+  --t-title: 15px; /* title of a panel */
 
   /* 4 px scale */
   --s-1: 2px;
@@ -164,17 +168,30 @@
   --s6: 24px;
   --s7: 32px;
 
-  --r-1: 3px; /* chips, badges */
-  --r-2: 5px; /* buttons, fields, panels */
+  --r-1: 4px; /* chips, badges */
+  --r-2: 7px; /* buttons, fields */
   --r-3: 8px; /* dialogs, palette */
   --r-4: 14px; /* top of bottom sheets */
+  --r-card: 10px; /* panels, tiles */
   --r-pill: 999px;
 
-  /* Density: compact by default on desktop */
-  --row: 30px;
-  --ctl: 28px;
-  --hdr: 44px;
-  --gut: 6px;
+  /* Density: airy by default (rows of 38 px); "Compact" in Settings goes back to 30 px */
+  --row: 38px;
+  --ctl: 32px;
+  --hdr: 52px;
+  --gut: 8px;
+  --sbar: 32px; /* status bar */
+  --th-h: 36px; /* header row of a table */
+  --pane-h: 44px; /* header of a panel */
+  --kpi-pad-y: 12px;
+  --kpi-pad-x: 16px;
+  /* Column headers: normal case, medium weight, secondary colour (compact: capitals, bold) */
+  --th-case: none;
+  --th-track: 0;
+  --th-weight: 500;
+  --th-color: var(--fg-3);
+  /* Hairline between two table rows: softer than --line when airy */
+  --row-line: color-mix(in srgb, var(--line) 60%, transparent);
 
   /* Motion (section 9) */
   --d-instant: 80ms;
@@ -192,12 +209,37 @@
   --hold-fill-go: color-mix(in srgb, var(--fg) 28%, var(--bg-2));
 }
 
-/* Comfortable density is a desktop option: it must never shrink the touch sizes below. The media
-   query is the exact complement of the touch one, so the two never compete on specificity. */
+/* Compact density is a desktop option (Settings > Display): it brings back the tight sizes of the
+   first redesign. It must never shrink the touch sizes below. The media query is the exact
+   complement of the touch one, so the two never compete on specificity. */
 @media (min-width: 600px) and (not (pointer: coarse)) {
-  :root[data-density='comfortable'] {
-    --row: 36px;
-    --ctl: 32px;
+  :root[data-density='compact'] {
+    --t-xs: 11px;
+    --t-sm: 12px;
+    --t-md: 13px;
+    --t-lg: 15px;
+    --t-xl: 20px;
+    --t-2xl: 26px;
+    --t-cell: 12px;
+    --t-label: 11px;
+    --t-title: 13px;
+    --r-1: 3px;
+    --r-2: 5px;
+    --r-card: 5px;
+    --row: 30px;
+    --ctl: 28px;
+    --hdr: 44px;
+    --gut: 6px;
+    --sbar: 26px;
+    --th-h: 30px;
+    --pane-h: 38px;
+    --kpi-pad-y: 8px;
+    --kpi-pad-x: 12px;
+    --th-case: uppercase;
+    --th-track: 0.06em;
+    --th-weight: 600;
+    --th-color: var(--fg-3);
+    --row-line: var(--line);
   }
 }
 
@@ -210,6 +252,7 @@
     --t-lg: 16px;
     --t-xl: 22px;
     --t-2xl: 28px;
+    --t-cell: 13px;
     --row: 44px;
     --ctl: 40px;
     --hdr: 52px;

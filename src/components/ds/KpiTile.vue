@@ -8,6 +8,10 @@ defineOptions({ inheritAttrs: false });
 
 defineProps<{
   label: string;
+  /** Plain-words definition of the technical term behind the label, shown as a tooltip. */
+  hint?: string;
+  /** Shorter label shown when the tile is narrow (a phone, a crowded strip). */
+  shortLabel?: string;
   /** Main figure; use the `value` slot for a PnlValue or a unit. */
   value?: string | number;
   /** One line under the figure, cut with an ellipsis, never over the next tile. */
@@ -36,7 +40,11 @@ const interactive = computed(() => typeof attrs.onClick === 'function');
     :class="{ alert, wide }"
     :type="interactive ? 'button' : undefined"
   >
-    <span class="k">{{ label }}</span>
+    <span class="k" :title="hint"
+      ><span :class="{ 'k-full': shortLabel }">{{ label }}</span
+      ><span v-if="shortLabel" class="k-short" aria-hidden="true" :data-short="shortLabel"></span
+      ><span v-if="hint" class="q" aria-hidden="true">?</span></span
+    >
     <span class="v num"
       ><ValueState :state="state" :reason="reason" :pending-key="pendingKey" announce
         ><slot name="value">{{ value }}</slot></ValueState
@@ -59,9 +67,10 @@ const interactive = computed(() => typeof attrs.onClick === 'function');
 
 <style scoped>
 .kpi {
+  container-type: inline-size;
   flex: 1 1 0;
   min-width: 132px;
-  padding: 8px var(--s3) 9px;
+  padding: var(--kpi-pad-y) var(--kpi-pad-x) calc(var(--kpi-pad-y) + 1px);
   border: 0;
   border-right: 1px solid var(--line);
   background: none;
@@ -83,13 +92,41 @@ button.kpi:hover {
   background: var(--bg-2);
 }
 .k {
-  font-size: var(--t-xs);
+  font-size: var(--t-label);
   color: var(--fg-3);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+}
+.k-short {
+  display: none;
+}
+.k-short::before {
+  content: attr(data-short);
+}
+/* A narrow tile swaps its label for the short one rather than cutting it with an ellipsis */
+@container (max-width: 190px) {
+  .k-full {
+    display: none;
+  }
+  .k-short {
+    display: inline;
+  }
+}
+.q {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 5px;
+  border: 1px solid var(--fg-4);
+  border-radius: 50%;
+  font-size: 9.5px;
+  line-height: 1;
+  color: var(--fg-3);
+  vertical-align: 1px;
 }
 .v {
   font: 600 var(--t-xl) / 1.15 var(--font-num);
@@ -98,7 +135,7 @@ button.kpi:hover {
   white-space: nowrap;
 }
 .s {
-  font-size: var(--t-xs);
+  font-size: var(--t-label);
   color: var(--fg-3);
   white-space: nowrap;
   display: block;
@@ -120,9 +157,6 @@ button.kpi:hover {
 /* Phone: two tiles per row, so a long figure ("15 292 / 10 203") shrinks to its tile instead of
    being cut at the screen edge */
 @media (max-width: 599px) {
-  .kpi {
-    container-type: inline-size;
-  }
   .v {
     font-size: clamp(14px, 10.5cqw, var(--t-xl));
   }

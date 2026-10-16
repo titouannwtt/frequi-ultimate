@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { nextTick } from 'vue';
 
 import { applyImportData, collectExportData, FQU2_KEYS } from '@/composables/useConfigExport';
 import { applyDisplayPrefs } from '@/composables/useDisplayPrefs';
@@ -54,7 +55,7 @@ describe('config export v3', () => {
           mode: 'direct',
           session: 'EVIL',
         }),
-        'fqu2.density': '"compact"',
+        'fqu2.density.v2': '"compact"',
         'unrelated.key': 'x',
       },
       s,
@@ -65,7 +66,7 @@ describe('config export v3', () => {
       url: 'https://new.test',
       mode: 'direct',
     });
-    expect(s.map.get('fqu2.density')).toBe('"compact"');
+    expect(s.map.get('fqu2.density.v2')).toBe('"compact"');
     expect(s.map.has('unrelated.key')).toBe(false);
   });
 });
@@ -85,6 +86,38 @@ describe('display options', () => {
     applyDisplayPrefs({ cvd: false, motion: 'system' });
     expect(root.hasAttribute('data-cvd')).toBe(false);
     expect(root.hasAttribute('data-motion')).toBe(false);
+  });
+
+  it('moves an existing user to the airy density and keeps the other options', async () => {
+    // Before the airy density, the stored default was "compact" for everybody: that value says
+    // nothing about a choice, so the old key is dropped and the new one starts airy
+    localStorage.setItem('fqu2.density', '"compact"');
+    localStorage.setItem('fqu2.cvd', 'true');
+    vi.resetModules();
+    const prefs = await import('@/composables/useDisplayPrefs');
+    const { cvd, density } = prefs.useDisplayPrefs();
+    expect(density.value).toBe('airy');
+    expect(cvd.value).toBe(true);
+    expect(localStorage.getItem('fqu2.density')).toBeNull();
+    expect(document.documentElement.hasAttribute('data-density')).toBe(false);
+    density.value = 'compact';
+    expect(document.documentElement.getAttribute('data-density')).toBe('compact');
+    await nextTick();
+    expect(localStorage.getItem('fqu2.density.v2')).toBe('compact');
+    localStorage.removeItem('fqu2.cvd');
+    localStorage.removeItem('fqu2.density.v2');
+    document.documentElement.removeAttribute('data-density');
+    document.documentElement.removeAttribute('data-cvd');
+  });
+
+  it('is airy by default: only the compact density sets an attribute', () => {
+    const root = document.documentElement;
+    applyDisplayPrefs({ cvd: false, motion: 'system', density: 'compact' });
+    expect(root.getAttribute('data-density')).toBe('compact');
+    applyDisplayPrefs({ cvd: false, motion: 'system', density: 'airy' });
+    expect(root.hasAttribute('data-density')).toBe(false);
+    applyDisplayPrefs({ cvd: false, motion: 'system' });
+    expect(root.hasAttribute('data-density')).toBe(false);
   });
 });
 

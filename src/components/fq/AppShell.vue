@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { useLocalStorage } from '@vueuse/core';
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import {
@@ -14,24 +13,24 @@ import {
   StatusBar,
   TabBar,
   Toaster,
-  ValueState,
 } from '@/components/ds';
-import type { Density, MenuItem, TabBarItem } from '@/components/ds';
+import type { MenuItem, TabBarItem } from '@/components/ds';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
 import { useActionDialog } from '@/composables/useActionDialog';
 import { useCommandPalette } from '@/composables/useCommandPalette';
 import { useDataSource } from '@/composables/useDataSource';
+import { useDisplayPrefs } from '@/composables/useDisplayPrefs';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useTheme } from '@/composables/useTheme';
 import { useFqAlertsStore } from '@/datasource/stores/alerts';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
-import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqHealthStore } from '@/datasource/stores/health';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { DataSource } from '@/datasource/types';
 
 import ActionDialogHost from './ActionDialogHost.vue';
 import CommandPalette, { type PalettePage } from './CommandPalette.vue';
+import { isKnownReason, sortReasons } from './lib/risk';
 import { formatClockSeconds } from './lib/time';
 
 export type ShellPage = 'fleet' | 'bot' | 'charts' | 'journal' | 'tools' | 'settings';
@@ -73,7 +72,6 @@ const { t } = useI18n();
 const conn = useFqConnectionStore();
 const alerts = useFqAlertsStore();
 const health = useFqHealthStore();
-const fleetStore = useFqFleetStore();
 const prefs = useFqPrefsStore();
 const theme = useTheme();
 const data = useDataSource();
@@ -158,7 +156,8 @@ const banners = computed<Banners>(() => {
 // ---- bell ----
 const bell = computed(() => alerts.bellCount(now.value));
 
-// ---- status bar and density ----
+// ---- status bar ----
+const { density } = useDisplayPrefs();
 const healthLevel = computed(() => {
   const l = health.health?.level;
   return l === 'critical'
@@ -167,14 +166,16 @@ const healthLevel = computed(() => {
       ? ('degraded' as const)
       : ('ok' as const);
 });
-const liveBots = computed(() => {
-  const live = fleetStore.list.filter((b) => b.identity.mode === 'live');
-  return {
-    online: live.filter((b) => b.state.status === 'online').length,
-    // Bots being read for the first time (direct mode reads them in turn): the count is partial
-    starting: live.filter((b) => b.state.status === 'starting').length,
-    total: live.length,
-  };
+const lowerFirst = (s: string) => (s ? s.charAt(0).toLowerCase() + s.slice(1) : s);
+/** The health in plain words with its first reason, only meaningful when it is not OK. */
+const healthText = computed(() => {
+  if (healthLevel.value === 'ok') return undefined;
+  const head = t(healthLevel.value === 'crit' ? 'fq.shell.sb.problem' : 'fq.shell.sb.slow');
+  const r = sortReasons(health.health?.reasons ?? [])[0];
+  if (!r) return head;
+  // The reason follows a colon: it starts in lower case
+  const why = isKnownReason(r.code) ? lowerFirst(t(`fq.sysh.reason.${r.code}`)) : r.code;
+  return t('fq.shell.sb.withReason', { head, why });
 });
 const logErrors = computed(
   () =>
@@ -182,20 +183,27 @@ const logErrors = computed(
       .view(now.value, 'active')
       .filter((a) => a.type_id === 'logErrors' || a.type_id === 'orderFailed').length,
 );
-const ageLabel = computed(() => {
-  const s = health.health?.digest_age_s;
-  return s == null ? null : s < 120 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`;
+/** Hyperliquid quota: said only above 70 %, absent in direct mode (no budget is read there). */
+const QUOTA_SHOWN_ABOVE = 70;
+const quotaPct = computed(() => {
+  const p = health.health?.rate_budget_pct;
+  return p !== null && p !== undefined && p > QUOTA_SHOWN_ABOVE ? Math.round(p) : null;
 });
-const density = useLocalStorage<Density>('fqu2.density', 'compact');
-watch(
-  density,
-  (d) => {
-    if (typeof document === 'undefined') return;
-    if (d === 'comfortable') document.documentElement.setAttribute('data-density', 'comfortable');
-    else document.documentElement.removeAttribute('data-density');
-  },
-  { immediate: true },
-);
+/** Age of the data in the status bar: amber beyond 30 s. */
+const STALE_AFTER_S = 30;
+const freshAgeS = computed(() => {
+  const digest = health.health?.digest_age_s;
+  if (digest !== null && digest !== undefined) return digest;
+  // Direct mode has no digest: the age of the last read says the same thing
+  return conn.status.lastSyncMs > 0
+    ? Math.max(0, (now.value - conn.status.lastSyncMs) / 1000)
+    : null;
+});
+const freshAge = computed(() => {
+  const s = freshAgeS.value;
+  return s == null ? '' : s < 120 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`;
+});
+const freshStale = computed(() => (freshAgeS.value ?? 0) > STALE_AFTER_S);
 
 // ---- phone: tab bar and "More" ----
 const moreOpen = ref(false);
@@ -260,8 +268,7 @@ function onToastAction(_id: number, actionId: string) {
 }
 
 function onPaletteDisplay(command: 'view' | 'density' | 'language') {
-  if (command === 'density')
-    density.value = density.value === 'compact' ? 'comfortable' : 'compact';
+  if (command === 'density') density.value = density.value === 'compact' ? 'airy' : 'compact';
   else emit('display', command);
 }
 
@@ -279,7 +286,7 @@ function openPalette() {
     <header class="top">
       <button type="button" class="logo" :aria-label="t('fq.shell.home')" @click="go('fleet')">
         <DsIcon name="activity" :size="20" />
-        <b>FreqUI</b><span class="sub">Ultimate</span>
+        <b>FreqUI</b>
       </button>
       <nav class="nav" :aria-label="t('fq.shell.navigation')">
         <button
@@ -341,13 +348,6 @@ function openPalette() {
         <IconBtn icon="bell" :label="t('fq.shell.alerts')" :count="bell" @click="emit('bell')" />
         <IconBtn
           class="no-phone"
-          :icon="themeIcon"
-          :label="t('fq.theme.cycle', { mode: t(`fq.theme.${theme.mode.value}`) })"
-          shortcut="T"
-          @click="theme.cycle()"
-        />
-        <IconBtn
-          class="no-phone"
           icon="settings"
           :label="t('fq.nav.settings')"
           shortcut="G S"
@@ -377,54 +377,36 @@ function openPalette() {
     <div class="statusbar">
       <StatusBar
         :health="healthLevel"
+        :health-text="healthText"
         :logs-error-count="logErrors"
-        :density="density"
         @open-health="emit('openHealth')"
         @open-logs="emit('openLogs')"
-        @update:density="(d) => (density = d)"
       >
-        <span class="si" data-testid="sb-live">
-          {{ t('fq.shell.sb.liveBots') }}
-          <ValueState
-            v-if="
-              !fleetStore.loaded || (liveBots.total === 0 && conn.status.state === 'connecting')
-            "
-            state="pending"
-            pending-key="shell/liveBots"
-          />
-          <b v-else class="num">{{ liveBots.online }}/{{ liveBots.total }}</b>
-          <span v-if="liveBots.starting > 0" class="mut"
-            >· {{ t('fq.shell.sb.liveStarting', { n: liveBots.starting }) }}</span
+        <span v-if="freshAge" class="si" :class="{ 'lvl-warn': freshStale }" data-testid="sb-fresh">
+          <span class="dot" aria-hidden="true"></span>
+          {{ t(freshStale ? 'fq.shell.sb.stale' : 'fq.shell.sb.upToDate', { age: freshAge }) }}
+        </span>
+        <template #end>
+          <button
+            v-if="health.health?.backoff_active"
+            type="button"
+            class="si lvl-warn"
+            data-testid="sb-backoff"
+            @click="emit('openHealth')"
           >
-        </span>
-        <button
-          v-if="
-            health.health?.rate_budget_pct !== null && health.health?.rate_budget_pct !== undefined
-          "
-          type="button"
-          class="si"
-          data-testid="sb-budget"
-          @click="emit('openHealth')"
-        >
-          {{ t('fq.shell.sb.budget') }}
-          <b class="num">{{ Math.round(health.health.rate_budget_pct) }} %</b>
-        </button>
-        <span v-else-if="!health.health && !health.unavailable" class="si" data-testid="sb-budget">
-          {{ t('fq.shell.sb.budget') }}
-          <ValueState state="pending" pending-key="shell/budget" />
-        </span>
-        <button
-          v-if="health.health?.backoff_active"
-          type="button"
-          class="si lvl-warn"
-          data-testid="sb-backoff"
-          @click="emit('openHealth')"
-        >
-          {{ t('fq.shell.sb.backoff') }}
-        </button>
-        <span v-if="ageLabel" class="si" data-testid="sb-snapshot">
-          {{ t('fq.shell.sb.snapshot') }} <b class="num">{{ ageLabel }}</b>
-        </span>
+            {{ t('fq.shell.sb.backoff') }}
+          </button>
+          <button
+            v-if="quotaPct !== null"
+            type="button"
+            class="si"
+            :class="{ 'lvl-warn': quotaPct >= 90 }"
+            data-testid="sb-budget"
+            @click="emit('openHealth')"
+          >
+            {{ t('fq.shell.sb.quota', { pct: quotaPct }) }}
+          </button>
+        </template>
       </StatusBar>
     </div>
     <div class="tabbar">
@@ -498,10 +480,6 @@ function openPalette() {
   color: var(--fg);
   font: inherit;
   cursor: pointer;
-}
-.logo .sub {
-  color: var(--fg-3);
-  font-size: var(--t-xs);
 }
 @media (max-width: 599px), (pointer: coarse) {
   .logo {
@@ -620,6 +598,16 @@ kbd {
 .statusbar .si.lvl-warn {
   color: var(--warn);
 }
+.statusbar .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--profit);
+  flex: none;
+}
+.statusbar .lvl-warn .dot {
+  background: var(--warn);
+}
 .tabbar {
   display: none;
 }
@@ -653,9 +641,6 @@ kbd {
 @media (max-width: 599px) {
   .top {
     height: 52px;
-  }
-  .logo .sub {
-    display: none;
   }
 }
 @media (min-width: 1024px) {

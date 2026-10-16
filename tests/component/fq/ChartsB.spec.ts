@@ -330,7 +330,7 @@ describe('EquityCurve', () => {
     const w = mount();
     const radios = w.findAll('[role=radio]');
     const labels = radios.map((r) => r.text());
-    expect(labels.slice(0, 2)).toEqual(['With open positions', 'Realized']);
+    expect(labels.slice(0, 2)).toEqual(['Open positions included', 'Without open positions']);
     await radios[1]!.trigger('click');
     expect(w.emitted('update:definition')?.[0]).toEqual(['realized']);
     await radios.find((r) => /^30/.test(r.text()))!.trigger('click');
@@ -465,7 +465,7 @@ describe('RiskPanel', () => {
 describe('SystemHealth', () => {
   it('level, reasons, budget and cache in a degraded fixture', () => {
     const w = mountFq(SystemHealth, { props: { detail: true, nowMs: FIXTURE_NOW } });
-    expect(w.find('[data-testid=health-level]').text()).toContain('Degraded');
+    expect(w.find('[data-testid=health-level]').text()).toContain('Slowed');
     expect(w.find('[data-testid=health-budget]').text()).toContain('61%');
     expect(w.find('[data-testid=health-cache]').text()).toContain('97.0%');
     expect(w.find('[data-testid=health-connection]').exists()).toBe(true);

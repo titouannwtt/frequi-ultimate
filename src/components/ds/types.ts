@@ -101,7 +101,7 @@ export type ConnectionKind = 'gateway' | 'direct';
 export type ConnectionState = 'connecting' | 'live' | 'degraded' | 'offline';
 
 export type HealthLevel = 'ok' | 'degraded' | 'crit';
-export type Density = 'compact' | 'comfortable';
+export type Density = 'airy' | 'compact';
 
 export interface TabBarItem {
   id: string;
