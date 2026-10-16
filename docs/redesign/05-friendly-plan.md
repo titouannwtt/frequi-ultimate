@@ -196,6 +196,8 @@ en infobulle) ; densité aérée par défaut, « Compacte » en option dans Rég
 | L1 Libellés | fait | glossaire appliqué dans `src/locales/redesign/**` (FR et EN) ; infobulles `fq.hint.*` sur les tuiles KPI (`KpiTile`, prop `hint`) et sur les en-têtes de colonnes (`fq.hint.col.<id>`) ; « Ultimate » retiré de la barre du haut, nom gardé dans Réglages > À propos |
 | L2 Coquille calme | fait | `StatusBar` : fraîcheur, santé en clair seulement si elle n'est pas OK, quota Hyperliquid au-delà de 70 %, erreurs de logs si > 0 ; pastille de connexion = point + « À jour » (latence en infobulle) ; thème (touche T) et densité dans Réglages |
 | L3 Densité adoucie | fait | jetons de `tokens.css` : airy par défaut (ligne 38 px, texte 14 px, rayon `--r-card` 10 px, en-têtes en casse normale) ; `data-density="compact"` rend les valeurs précédentes (bureau seulement) |
+| L4 Flotte | fait | verdict en une phrase (`FleetVerdict`, `lib/fleetPage.ts`), alertes actives en cartes sous le verdict (`FleetAlerts`, 3 au plus, 2 sur téléphone), rail « À traiter » retiré et son historique (Acquittées, Silencieuses, Événements, « Depuis votre passage ») dans la cloche (`AlertCenter`, `useShellBus().alertsOpen`) ; 4 tuiles (`FleetKpis`) ; tableau des bots à 6 colonnes (Bot, En cours, 30 jours, 24 h, Positions, Dernier trade), 8 bots puis « Voir les N autres », menu « Colonnes » (`FleetTable`), pas de ligne Σ, en-têtes Bot et En cours triables, « figé » pour un bot muet ; capital seul (`EquityCurve simple`), 24 h / 7 j / 30 j ; risque en un mot et 4 lignes (`RiskPanel summary`, `riskLevel`) ; « Positions à surveiller » (`WatchList`, 5 puis « Voir les N positions » = tableau complet) ; Disposition en menu, filtres derrière « Filtrer » (`FleetScope`). Classement et Calendrier ne sont plus sur la Flotte (composants gardés pour le Journal) |
+| L8 Téléphone (cartes de position) | fait | `PositionCard` sans bouton de sortie sous 600 px : toucher la carte ouvre le tiroir ; KPI 2 × 2 ; cartes de position de la Flotte via `TradeTable` ; reste à faire par les autres lots : tuiles d'action et méta du Bot, débordement de Réglages |
 
 Pour les lots suivants :
 
@@ -205,4 +207,9 @@ Pour les lots suivants :
 - Utiliser les jetons plutôt que des tailles fixes : `--row`, `--th-h` (en-tête de tableau), `--pane-h`, `--t-cell`,
   `--t-label`, `--t-title`, `--r-card`, `--sbar`, `--row-line`, `--th-case`, `--th-track`, `--th-weight`, `--th-color`.
   Le tactile (moins de 600 px ou pointeur grossier) ignore la densité et garde ses tailles.
+- Le texte de la Flotte est dans `src/locales/redesign/pages/fleet.{fr,en}.ts` (`fq.pg.fleet.*`).
+  Lacunes de la passerelle : la position ne dit pas le nombre maximal d'entrées du bot, donc
+  « Renforts 2 sur 4 » devient « Renforts 2 » (le « sur N » s'affiche dès qu'un `dcaMax` est
+  fourni) ; la courbe des 7 jours du tableau est la courbe des 24 dernières heures
+  (`spark24h`), nommée « 24 h ».
 - Une colonne ou une tuile qui porte un terme de trading ajoute sa définition courte dans `fq.hint.*` (FR et EN).
