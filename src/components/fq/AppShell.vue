@@ -14,6 +14,7 @@ import {
   StatusBar,
   TabBar,
   Toaster,
+  ValueState,
 } from '@/components/ds';
 import type { Density, MenuItem, TabBarItem } from '@/components/ds';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
@@ -384,7 +385,14 @@ function openPalette() {
       >
         <span class="si" data-testid="sb-live">
           {{ t('fq.shell.sb.liveBots') }}
-          <b class="num">{{ liveBots.online }}/{{ liveBots.total }}</b>
+          <ValueState
+            v-if="
+              !fleetStore.loaded || (liveBots.total === 0 && conn.status.state === 'connecting')
+            "
+            state="pending"
+            pending-key="shell/liveBots"
+          />
+          <b v-else class="num">{{ liveBots.online }}/{{ liveBots.total }}</b>
           <span v-if="liveBots.starting > 0" class="mut"
             >· {{ t('fq.shell.sb.liveStarting', { n: liveBots.starting }) }}</span
           >
@@ -401,6 +409,10 @@ function openPalette() {
           {{ t('fq.shell.sb.budget') }}
           <b class="num">{{ Math.round(health.health.rate_budget_pct) }} %</b>
         </button>
+        <span v-else-if="!health.health && !health.unavailable" class="si" data-testid="sb-budget">
+          {{ t('fq.shell.sb.budget') }}
+          <ValueState state="pending" pending-key="shell/budget" />
+        </span>
         <button
           v-if="health.health?.backoff_active"
           type="button"

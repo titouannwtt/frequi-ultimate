@@ -2,7 +2,16 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { Badge, Btn, DsIcon, EmptyState, IconBtn, ModeMark, StatusDot } from '@/components/ds';
+import {
+  Badge,
+  Btn,
+  DsIcon,
+  EmptyState,
+  IconBtn,
+  ModeMark,
+  StatusDot,
+  ValueState,
+} from '@/components/ds';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
@@ -70,7 +79,7 @@ const STATE_KEYS = {
   stale: 'fq.status.stale',
 } as const;
 function stateText(r: (typeof rows.value)[number]): string {
-  return r.state === null ? t('fq.registry.unknownState') : t(STATE_KEYS[r.state]);
+  return r.state === null ? '' : t(STATE_KEYS[r.state]);
 }
 const dateOf = (ms: number) => formatDateTime(ms, prefs.settings.tz, locale.value);
 </script>
@@ -144,10 +153,15 @@ const dateOf = (ms: number) => formatDateTime(ms, prefs.settings.tz, locale.valu
                 <ModeMark v-if="r.mode" :mode="r.mode" full />
               </span>
             </td>
-            <td class="l num mut c-key">{{ r.alias ?? t('fq.ds.dash') }} · {{ r.botKey }}</td>
+            <td class="l num mut c-key">{{ r.alias ? `${r.alias} · ` : '' }}{{ r.botKey }}</td>
             <td class="l c-grp">{{ r.group ?? t('fq.fleet.ungrouped') }}</td>
             <td class="l c-state">
-              {{ stateText(r) }}
+              <ValueState
+                v-if="r.state === null"
+                state="pending"
+                :pending-key="`registry/${r.botKey}/state`"
+              />
+              <template v-else>{{ stateText(r) }}</template>
               <span v-if="r.sinceMs !== null && r.mode === 'dry'" class="mut">{{
                 t('fq.origin.since', { date: dateOf(r.sinceMs).slice(0, 5) })
               }}</span>

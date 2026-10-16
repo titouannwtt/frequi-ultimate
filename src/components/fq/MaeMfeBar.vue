@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import { ValueState } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 
 /**
@@ -39,7 +40,7 @@ const title = computed(() =>
     ? t('fq.jr.maeTitle', {
         mae: fmt.percent((props.mae as number) * 100, 1),
         mfe: fmt.percent((props.mfe as number) * 100, 1),
-        exit: props.exit == null ? t('fq.ds.dash') : fmt.percent(props.exit * 100, 1),
+        exit: props.exit == null ? '' : fmt.percent(props.exit * 100, 1),
       })
     : t('fq.jr.maeUnavailable'),
 );
@@ -51,7 +52,7 @@ const title = computed(() =>
     <i class="f" :style="{ width: `${right}%` }"></i>
     <i v-if="tick !== null" class="x" :style="{ left: `${tick}%` }"></i>
   </span>
-  <span v-else class="na" :title="title">{{ t('fq.ds.notAvailable') }}</span>
+  <ValueState v-else state="unavailable" :reason="title" />
 </template>
 
 <style scoped>
@@ -102,8 +103,5 @@ const title = computed(() =>
   height: 12px;
   background: var(--fg);
   margin-left: -1px;
-}
-.na {
-  color: var(--fg-3);
 }
 </style>

@@ -2,9 +2,11 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { EmptyState, PnlValue, Skeleton } from '@/components/ds';
+import { EmptyState, PnlValue, Skeleton, ValueState } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
+import { unavailable } from './lib/valueState';
 import { useTradeSet } from '@/composables/useTradeSet';
+import { useValueSlot } from '@/composables/useValueSlot';
 import type { DataSource, TradeQuery } from '@/datasource/types';
 
 import { dcaDepth, DCA_WARN_FROM, type DepthRow, type JournalTrade } from './lib/journal';
@@ -40,7 +42,9 @@ const scale = computed(() =>
 const noDepth = computed(() => summary.value.rows.length === 0 && summary.value.unknownDepth);
 const partial = computed(() => !props.trades && !loaded.complete.value);
 
-const pctOf = (v: number | null) => (v === null ? t('fq.ds.dash') : fmt.percent(v * 100, 0, false));
+const { vs } = useValueSlot();
+const noSample = computed(() => vs(unavailable('noSample')));
+const pctOf = (v: number) => fmt.percent(v * 100, 0, false);
 const widthOf = (r: DepthRow) =>
   scale.value > 0 ? `${(Math.abs(r.pnl) / scale.value) * 100}%` : '0%';
 </script>
@@ -49,7 +53,15 @@ const widthOf = (r: DepthRow) =>
   <div class="dd" data-testid="dca-depth">
     <Skeleton v-if="loading" shape="row" :count="4" />
     <template v-else-if="summary.rows.length > 0 || summary.unknownDepth">
-      <p v-if="summary.deep" class="sent" data-testid="depth-sentence">
+      <p
+        v-if="
+          summary.deep &&
+          summary.deep.deep.winrate !== null &&
+          summary.deep.shallow.winrate !== null
+        "
+        class="sent"
+        data-testid="depth-sentence"
+      >
         {{
           t('fq.jr.depth.sentence', {
             from: summary.deep.from,
@@ -85,7 +97,11 @@ const widthOf = (r: DepthRow) =>
           >
             <td class="l" :class="{ warn: (r.depth ?? 0) >= DCA_WARN_FROM }">{{ r.depth }}</td>
             <td>{{ r.trades }}</td>
-            <td :class="{ warn: r.winrate !== null && r.winrate < 0.6 }">{{ pctOf(r.winrate) }}</td>
+            <td :class="{ warn: r.winrate !== null && r.winrate < 0.6 }">
+              <ValueState v-if="r.winrate === null" v-bind="noSample" /><template v-else>{{
+                pctOf(r.winrate)
+              }}</template>
+            </td>
             <td><PnlValue :value="r.pnl" :decimals="2" /></td>
             <td class="barc">
               <span
@@ -98,7 +114,10 @@ const widthOf = (r: DepthRow) =>
           <tr v-if="summary.unknownDepth" class="unk">
             <td class="l">{{ t('fq.jr.depth.unknown') }}</td>
             <td>{{ summary.unknownDepth.trades }}</td>
-            <td>{{ pctOf(summary.unknownDepth.winrate) }}</td>
+            <td>
+              <ValueState v-if="summary.unknownDepth.winrate === null" v-bind="noSample" />
+              <template v-else>{{ pctOf(summary.unknownDepth.winrate) }}</template>
+            </td>
             <td><PnlValue :value="summary.unknownDepth.pnl" :decimals="2" /></td>
             <td class="barc"></td>
           </tr>

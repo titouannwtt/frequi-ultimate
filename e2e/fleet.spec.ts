@@ -58,6 +58,27 @@ test.describe('Fleet on a desktop', () => {
     expect(await noHorizontalOverflow(page)).toBe(true);
   });
 
+  test('no placeholder word in a value slot, loading or loaded; the figures arrive', async ({
+    page,
+  }) => {
+    const placeholder = /(?<![\w&])(n\/[ad]|unknown|not read yet|--)(?![\w])/i;
+    await page.goto('/dashboard');
+    await expect(page.getByTestId('fleet-kpis')).toBeVisible();
+    // Whatever the moment: a figure, a spinner or an unavailable icon, never a word
+    for (let i = 0; i < 4; i++) {
+      expect(await page.getByTestId('fleet-kpis').locator('.v').allInnerTexts()).not.toContainEqual(
+        expect.stringMatching(placeholder),
+      );
+      expect(await page.locator('tr[data-bot-key]').first().innerText()).not.toMatch(placeholder);
+      await page.waitForTimeout(500);
+    }
+    // Once loaded, the open P&L is a signed figure (the fake bots are priced), not an icon
+    await expect(page.getByTestId('kpi-open').locator('.v')).toHaveText(/[+\u2212-]?\d/, {
+      timeout: 30_000,
+    });
+    await expect(page.getByTestId('kpi-open').locator('[data-state]')).toHaveCount(0);
+  });
+
   test('selecting a row opens the scope panel', async ({ page }) => {
     await page.goto('/dashboard');
     const b = liveBots()[0]!;

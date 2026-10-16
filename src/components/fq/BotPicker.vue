@@ -62,7 +62,7 @@ function toggle(e: MouseEvent) {
       @click="toggle"
     >
       <span class="lab">{{ label ?? t('fq.pg.tools.bot') }}</span>
-      <b>{{ name ?? t('fq.ds.dash') }}</b>
+      <b v-if="name">{{ name }}</b>
     </Btn>
     <Menu
       :open="open"

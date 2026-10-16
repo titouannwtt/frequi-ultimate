@@ -19,6 +19,7 @@ import type { KpiMeter } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { DIGEST_STALE_MS } from '@/datasource/calc/freshness';
 import { ruleMeta } from '@/datasource/calc/alerts/rules';
+import { useValueSlot } from '@/composables/useValueSlot';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { BotRow } from '@/gateway/types.gen';
@@ -27,6 +28,7 @@ import BotActionBar from './BotActionBar.vue';
 import type { ActionId } from './lib/actions';
 import { botState, drawdownPct, isStaleGroup, minutesSince } from './lib/bots';
 import { formatClockSeconds } from './lib/time';
+import { botSlot, READY, type Slot, type SlotReason } from './lib/valueState';
 
 /**
  * Header of the Bot page (02 section 3.2): previous and next bot, the state dot, the name, the
@@ -57,16 +59,33 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const fmt = useFormat();
 const conn = useFqConnectionStore();
+const { vs } = useValueSlot();
 const prefs = useFqPrefsStore();
 
 const now = computed(() => props.nowMs ?? Date.now());
 const skew = computed(() => conn.status.clockSkewMs);
 const state = computed(() => botState(props.bot, now.value, skew.value));
 const m = computed(() => props.bot.metrics);
+// States of the figures: a figure not received yet is pending, one that cannot be known says why
+const slotOf = (
+  group: 'positions' | 'metrics' | 'capital',
+  value: number | null | undefined,
+  o: { prices?: boolean; settled?: SlotReason } = {},
+): Slot => botSlot(props.bot, group, value, { nowMs: now.value, skewMs: skew.value, ...o });
+const latentSlot = computed(() => slotOf('positions', m.value.open_profit_abs, { prices: true }));
 // Both sides null: the positions were not read yet, which is not the same as a flat book
-const exposureKnown = computed(
-  () => m.value.exposure_long !== null || m.value.exposure_short !== null,
+const exposureSlot = computed(() =>
+  slotOf('positions', m.value.exposure_long ?? m.value.exposure_short),
 );
+const exposureKnown = computed(() => exposureSlot.value.state === 'ready');
+const ddSlot = computed<Slot>(() =>
+  latentSlot.value.state !== 'ready'
+    ? latentSlot.value
+    : dd.value
+      ? READY
+      : slotOf('metrics', null),
+);
+const key = (field: string) => `${props.bot.bot_key}/${field}`;
 
 const marketLabel = computed(() => {
   const k = props.bot.identity.market;
@@ -88,7 +107,7 @@ const dd = computed(() => m.value.drawdown_with_open);
 /** Percent of the account, converted from the ratio of the contract. */
 const ddPct = computed(() => drawdownPct(dd.value));
 const ddMeter = computed<KpiMeter | undefined>(() =>
-  ddPct.value === null
+  ddPct.value === null || ddSlot.value.state !== 'ready'
     ? undefined
     : {
         value: ddPct.value,
@@ -170,7 +189,7 @@ const stateSince = computed(
     </div>
 
     <KpiStrip :label="bot.identity.name">
-      <KpiTile :label="t('fq.kpi.pnlOpen')">
+      <KpiTile :label="t('fq.kpi.pnlOpen')" v-bind="vs(latentSlot, key('latent'))">
         <template #value
           ><PnlValue :value="m.open_profit_abs" :muted="stale('positions')" :flash="true"
         /></template>
@@ -178,10 +197,16 @@ const stateSince = computed(
           t('fq.header.openTrades', { n: bot.state.open_trades }, bot.state.open_trades)
         }}</template>
       </KpiTile>
-      <KpiTile :label="t('fq.col.realized_1d')">
+      <KpiTile
+        :label="t('fq.col.realized_1d')"
+        v-bind="vs(slotOf('metrics', m.realized_1d), key('d1'))"
+      >
         <template #value><PnlValue :value="m.realized_1d" :muted="stale('metrics')" /></template>
       </KpiTile>
-      <KpiTile :label="t('fq.col.realized_30d')">
+      <KpiTile
+        :label="t('fq.col.realized_30d')"
+        v-bind="vs(slotOf('metrics', m.realized_30d), key('d30'))"
+      >
         <template #value
           ><PnlValue :value="m.realized_30d" :decimals="0" :muted="stale('metrics')"
         /></template>
@@ -193,10 +218,9 @@ const stateSince = computed(
       </KpiTile>
       <KpiTile
         :label="t('fq.col.capital')"
-        :value="
-          m.starting_capital === null ? t('fq.ds.notAvailable') : fmt.number(m.starting_capital, 0)
-        "
+        :value="fmt.number(m.starting_capital ?? 0, 0)"
         :sub="t('fq.header.capitalNote')"
+        v-bind="vs(slotOf('capital', m.starting_capital, { settled: 'capital' }), key('capital'))"
       />
       <KpiTile
         :label="t('fq.header.exposure')"
@@ -205,14 +229,13 @@ const stateSince = computed(
             ? t('fq.header.net', {
                 n: fmt.signed((m.exposure_long ?? 0) - (m.exposure_short ?? 0), 0),
               })
-            : t('fq.header.exposureUnknown')
+            : undefined
         "
+        v-bind="vs(exposureSlot, key('exposure'))"
       >
         <template #value
-          ><template v-if="exposureKnown"
-            >{{ fmt.number(m.exposure_long ?? 0, 0) }} /
-            {{ fmt.number(m.exposure_short ?? 0, 0) }}</template
-          ><template v-else>{{ t('fq.ds.notAvailable') }}</template></template
+          >{{ fmt.number(m.exposure_long ?? 0, 0) }} /
+          {{ fmt.number(m.exposure_short ?? 0, 0) }}</template
         >
         <SplitBar
           v-if="exposureKnown"
@@ -223,15 +246,13 @@ const stateSince = computed(
       <KpiTile
         :label="t('fq.kpi.drawdownOpen')"
         :meter="ddMeter"
-        :alert="ddPct !== null && ddPct >= ddThreshold"
+        :alert="ddSlot.state === 'ready' && ddPct !== null && ddPct >= ddThreshold"
+        v-bind="vs(ddSlot, key('drawdown'))"
       >
         <template #value>
-          <template v-if="dd"
-            ><PnlValue :value="-dd.abs" :decimals="0" /><small v-if="ddPct !== null"
-              >&nbsp;{{ fmt.percent(-ddPct, 1) }}</small
-            ></template
+          <PnlValue :value="-(dd?.abs ?? 0)" :decimals="0" /><small v-if="ddPct !== null"
+            >&nbsp;{{ fmt.percent(-ddPct, 1) }}</small
           >
-          <template v-else>{{ t('fq.ds.notAvailable') }}</template>
         </template>
         <template #sub>{{
           t('fq.header.threshold', { n: fmt.percent(-ddThreshold, 0) })

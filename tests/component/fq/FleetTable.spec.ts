@@ -269,8 +269,13 @@ describe('FleetTable', () => {
     const w = mountTable([unknown, zero]);
     const u = w.get(`tr[data-bot-key="${unknown.bot_key}"]`).text();
     const z = w.get(`tr[data-bot-key="${zero.bot_key}"]`).text();
-    expect(u).toMatch(/n\/a|n\/d/i);
-    expect(z).not.toMatch(/n\/a|n\/d/i);
+    const row = (b: BotRow) => w.get(`tr[data-bot-key="${b.bot_key}"]`);
+    // Unknown: icons that say why, never a word; zero: real zeros, no icon
+    expect(row(unknown).findAll('[data-state]').length).toBeGreaterThan(2);
+    expect(row(unknown).find('[data-state="unavailable"]').exists()).toBe(true);
+    expect(u).not.toMatch(/n\/a|n\/d|unknown(?!_bot)/i);
+    expect(row(zero).find('[data-state]').exists()).toBe(false);
+    expect(z).toContain('0.00');
   });
 
   it('empty scope: an empty state, not an empty table', () => {

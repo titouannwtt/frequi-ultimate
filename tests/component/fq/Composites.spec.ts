@@ -41,17 +41,22 @@ describe('BotHeader', () => {
     expect(w.get('[data-action=exitAll]').attributes('aria-disabled')).toBeUndefined();
   });
 
-  it('exposure not read yet shows n/a and says why, never a flat "0 / 0" (B198)', () => {
+  it('exposure not read yet shows the loading icon, never a flat "0 / 0" (B198)', () => {
     const bot = bots((b) => b.identity.mode === 'live' && b.state.status === 'online');
     const unread = {
       ...bot,
       metrics: { ...bot.metrics, exposure_long: null, exposure_short: null },
     } as BotRow;
     const w = header(unread);
-    const tile = w.findAll('*').find((e) => e.text().startsWith('Exposure'));
+    const tile = w
+      .get('[data-testid=bot-header]')
+      .findAll('.kpi')
+      .find((e) => e.text().startsWith('Exposure'))!;
     expect(tile).toBeDefined();
-    expect(w.text()).toContain('positions not read yet');
-    expect(w.text()).not.toMatch(/0\s*\/\s*0/);
+    // The figure is a spinner (an unread position book is not a flat one), no word in its place
+    expect(tile.find('.v [data-state="pending"]').exists()).toBe(true);
+    expect(tile.get('.v').text()).toBe('');
+    expect(w.text()).not.toMatch(/not read yet|0\s*\/\s*0/);
   });
 
   it('an offline bot: frozen values, banner telling NOT to restart it, every action disabled with the reason', () => {
@@ -96,7 +101,12 @@ describe('BotHeader', () => {
   it('unknown values stay unknown: no zero is invented for capital or drawdown', () => {
     const bot = bots((b) => b.metrics.starting_capital == null);
     const w = header(bot);
-    expect(w.text()).toMatch(/n\/a|n\/d/i);
+    const capital = w.findAll('.kpi').find((e) => e.text().startsWith('Capital'))!;
+    expect(capital.get('.v').text()).toBe('');
+    expect(capital.get('.v [data-state="unavailable"]').attributes('aria-label')).toBe(
+      'Starting capital unknown',
+    );
+    expect(w.text()).not.toMatch(/n\/a|n\/d/i);
   });
 
   it('opens the destructive confirmation of THIS bot only, never sends from the header', async () => {

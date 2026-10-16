@@ -238,7 +238,7 @@ useShortcuts([
           @click="toggleCtx"
         >
           <span class="lab">{{ t('fq.pg.charts.context') }}</span>
-          <b>{{ botName ?? t('fq.ds.dash') }}</b>
+          <b v-if="botName">{{ botName }}</b>
         </Btn>
         <Menu
           :open="ctxOpen"

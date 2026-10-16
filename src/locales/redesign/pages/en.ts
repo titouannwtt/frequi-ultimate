@@ -43,7 +43,7 @@ export default {
       positions: 'Open positions',
       positionsMeta: '{n} · worst first',
       positionsMetaPartial: '{n} read of {total} · worst first',
-      positionsAwaiting: 'positions not read yet',
+      positionsAwaiting: 'positions being read',
       equity: 'Equity',
       tabs: { equity: 'Equity', leaderboard: 'Leaderboard', calendar: 'Calendar' },
       lbPeriod: { '1d': '1 d', '7d': '7 d', '30d': '30 d', total: 'Total' },

@@ -6,6 +6,7 @@ import { useNumberTween } from '@/composables/useNumberTween';
 import { COUNTER_MS, prefersReducedMotion } from '@/utils/motion';
 import { signClass } from './lib/format';
 import { useFormat } from './lib/useFormat';
+import ValueState from './ValueState.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -18,8 +19,14 @@ const props = withDefaults(
     flash?: boolean;
     /** Stale value: shown in the neutral colour, the sign stays written. */
     muted?: boolean;
-    /** The source says the value is not known (shown as "unknown", never a made up number). */
+    /** The source says the value is not known (an icon, never a made up number). */
     unknown?: boolean;
+    /** `pending`: not received yet (spinner); `unavailable`: no figure (icon + `reason`). */
+    state?: 'ready' | 'pending' | 'unavailable';
+    /** Why the figure is unavailable, already translated (tooltip). */
+    reason?: string;
+    /** Identity of the wait, so the 45 s timeout survives a remount. */
+    pendingKey?: string;
   }>(),
   { decimals: 2, tween: false, flash: false },
 );
@@ -46,6 +53,11 @@ const { displayed, flashClass } = useNumberTween(target, {
 });
 
 const known = computed(() => !props.unknown && Number.isFinite(props.value as number));
+// A figure that is not one is never printed: the slot shows its state instead (never "n/a")
+const slotState = computed(() =>
+  props.state && props.state !== 'ready' ? props.state : known.value ? 'ready' : 'unavailable',
+);
+const slotReason = computed(() => props.reason ?? (props.unknown ? t('fq.value.reason.profit') : undefined));
 const text = computed(() => fmt.signed(displayed.value, props.decimals));
 const tone = computed(() =>
   props.muted || !known.value ? 'muted' : signClass(props.value as number, props.decimals),
@@ -54,8 +66,12 @@ const tone = computed(() =>
 
 <template>
   <span ref="el" class="pnl num" :class="[tone, flashClass]" :data-tone="tone">
-    <template v-if="unknown">{{ t('fq.origin.unknown') }}</template>
-    <template v-else-if="!known">{{ t('fq.ds.notAvailable') }}</template>
+    <ValueState
+      v-if="slotState !== 'ready'"
+      :state="slotState"
+      :reason="slotReason"
+      :pending-key="pendingKey"
+    />
     <template v-else
       >{{ text
       }}<template v-if="unit"

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { Badge, Btn, EmptyState, FormRow, Skeleton } from '@/components/ds';
+import { Badge, Btn, EmptyState, FormRow, Skeleton, ValueState } from '@/components/ds';
 import { useDataSource } from '@/composables/useDataSource';
 import { useFqConnectionStore } from '@/datasource/stores/connection';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
@@ -116,7 +116,14 @@ const gatewayVersion = computed(() =>
             <td class="l num">{{ when(e.ts_ms) }}</td>
             <td class="l">{{ e.bot_name }} <Badge :kind="e.mode === 'live' ? 'live' : 'dry'" /></td>
             <td class="l">{{ e.action }}</td>
-            <td class="num">{{ e.http_status ?? t('fq.ds.dash') }}</td>
+            <td class="num">
+              <ValueState
+                v-if="e.http_status === null"
+                state="unavailable"
+                :reason="t('fq.value.reason.noData')"
+              />
+              <template v-else>{{ e.http_status }}</template>
+            </td>
           </tr>
         </tbody>
       </table>

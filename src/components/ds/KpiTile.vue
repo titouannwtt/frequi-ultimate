@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, useAttrs } from 'vue';
 import Meter from './Meter.vue';
+import ValueState from './ValueState.vue';
 import type { KpiMeter } from './types';
 
 defineOptions({ inheritAttrs: false });
@@ -15,6 +16,11 @@ defineProps<{
   /** Critical state: red underline. */
   alert?: boolean;
   wide?: boolean;
+  /** `pending` (spinner) or `unavailable` (icon + `reason`) replaces the figure; default `ready`. */
+  state?: 'ready' | 'pending' | 'unavailable';
+  /** Why the figure is unavailable, already translated (tooltip). */
+  reason?: string;
+  pendingKey?: string;
 }>();
 
 const attrs = useAttrs();
@@ -32,7 +38,9 @@ const interactive = computed(() => typeof attrs.onClick === 'function');
   >
     <span class="k">{{ label }}</span>
     <span class="v num"
-      ><slot name="value">{{ value }}</slot></span
+      ><ValueState :state="state" :reason="reason" :pending-key="pendingKey" announce
+        ><slot name="value">{{ value }}</slot></ValueState
+      ></span
     >
     <span v-if="sub || $slots.sub" class="s"
       ><slot name="sub">{{ sub }}</slot></span
