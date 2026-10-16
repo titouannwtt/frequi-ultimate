@@ -239,7 +239,7 @@ export interface OverlayLabels {
   dcaTag?: string;
 }
 
-interface LevelLine {
+export interface LevelLine {
   id: string;
   price: number;
   label: string;
@@ -249,8 +249,10 @@ interface LevelLine {
   opacity: number;
   /** Where the label sits on the line. */
   side: 'start' | 'end';
-  /** The line must be inside the price range whatever its distance from the last close. */
+  /** The line is kept in the price range up to PRIORITY_REACH of the last close. */
   priority: boolean;
+  /** The line is kept in the price range whatever its distance (the average entry). */
+  always?: boolean;
 }
 
 /** The horizontal levels to draw, in drawing order. Levels that are not finite are dropped. */
@@ -316,6 +318,7 @@ export function levelLines(
       width: 1.5,
       opacity: 1,
       priority: true,
+      always: true,
     });
   }
   if (on.tp && o.tp != null) {
@@ -380,6 +383,12 @@ export interface CandleOptionInput {
   heightPx?: number;
   /** Draw the sub-charts that fit under the price pane (volume stays). Default true. */
   showSubplots?: boolean;
+  /** The sub-charts to draw, by id (see `subplotCandidates`); all of them when omitted. */
+  subplotIds?: readonly string[] | null;
+  /** Band above each sub-chart for its title, and height of a sub-chart (see `paneLayout`). */
+  subTitleH?: number;
+  subH?: number;
+  mainMinShare?: number;
   /** Levels farther than this share of the last close do not stretch the price axis. */
   axisReach?: number;
 }
@@ -460,6 +469,64 @@ export function priceBounds(
   return [lo - span * pad, hi + span * pad];
 }
 
+/**
+ * The prices that stretch the price axis, on top of the candles. One rule for every level: the
+ * average entry is always in range (it is where the position stands), the orders that wait are
+ * kept in range up to PRIORITY_REACH of the last close, the others (take profit, liquidation,
+ * safety orders) up to `reach`. A level farther than that does not squash the candles: it is
+ * announced at the edge of the chart instead (`offscreenLevels`).
+ */
+export function axisLevels(
+  lines: ReadonlyArray<Pick<LevelLine, 'price' | 'priority' | 'always'>>,
+  lastClose: number | null,
+  reach = 0.25,
+): number[] {
+  return lines
+    .filter((l) => {
+      if (l.always) return true;
+      if (lastClose === null || !(lastClose > 0)) return false;
+      return (
+        Math.abs(l.price - lastClose) / lastClose <=
+        (l.priority ? Math.max(reach, PRIORITY_REACH) : reach)
+      );
+    })
+    .map((l) => l.price);
+}
+
+export interface OffscreenLevel {
+  id: string;
+  label: string;
+  price: number;
+  /** Where it lies: above the top of the chart or under its bottom. */
+  dir: 'up' | 'down';
+  /** Distance from the last close, in percent, signed. Null when there is no close. */
+  pct: number | null;
+}
+
+/**
+ * The levels the price axis leaves out, nearest first: announced at the edge with their distance.
+ * `range` is the price range really on screen (read back from the chart after a pan or a zoom).
+ */
+export function offscreenLevels(
+  lines: ReadonlyArray<Pick<LevelLine, 'id' | 'label' | 'price'>>,
+  range: { lo: number; hi: number },
+  lastClose: number | null,
+): OffscreenLevel[] {
+  const out: OffscreenLevel[] = [];
+  for (const l of lines) {
+    if (!Number.isFinite(l.price) || (l.price >= range.lo && l.price <= range.hi)) continue;
+    out.push({
+      id: l.id,
+      label: l.label,
+      price: l.price,
+      dir: l.price > range.hi ? 'up' : 'down',
+      pct: lastClose !== null && lastClose > 0 ? ((l.price - lastClose) / lastClose) * 100 : null,
+    });
+  }
+  const dist = (o: OffscreenLevel) => (o.dir === 'up' ? o.price - range.hi : range.lo - o.price);
+  return out.sort((a, b) => dist(a) - dist(b));
+}
+
 // ---- pane layout ----
 
 export interface Pane {
@@ -497,23 +564,33 @@ export function paneLayout(o: {
   hasVolume: boolean;
   subCount: number;
   showSubplots: boolean;
+  /** A band above each sub-chart for its title (HTML, drawn over the chart); default none. */
+  subTitleH?: number;
+  /** Height of a sub-chart; default SUB_H. */
+  subH?: number;
+  /** Share of the chart the price pane keeps at least; default MAIN_MIN_SHARE. */
+  mainMinShare?: number;
 }): PaneLayout {
   const height = o.heightPx > 0 ? o.heightPx : HEIGHT_FALLBACK;
+  const titleH = o.subTitleH ?? 0;
+  const subH = o.subH ?? SUB_H;
+  const step = titleH + subH + PANE_GAP;
   const inner = height - PANE_TOP - PANE_BOTTOM;
-  const minMain = Math.max(MAIN_MIN_PX, height * MAIN_MIN_SHARE);
+  const minMain = Math.max(MAIN_MIN_PX, height * (o.mainMinShare ?? MAIN_MIN_SHARE));
   const volumeH = o.hasVolume ? VOLUME_H + PANE_GAP : 0;
   const room = inner - volumeH - minMain;
-  const fit = o.showSubplots ? Math.max(0, Math.floor(room / (SUB_H + PANE_GAP))) : 0;
+  // The epsilon: 800 * 0.55 is 440.00000000000006, which made 4.0 sub-charts fit as 3
+  const fit = o.showSubplots ? Math.max(0, Math.floor(room / step + 1e-9)) : 0;
   const n = Math.min(o.subCount, fit);
-  const mainH = Math.max(MAIN_FLOOR_PX, inner - volumeH - n * (SUB_H + PANE_GAP));
+  const mainH = Math.max(MAIN_FLOOR_PX, inner - volumeH - n * step);
   const main = { top: PANE_TOP, height: mainH };
   let cursor = PANE_TOP + mainH + PANE_GAP;
   const volume = o.hasVolume ? { top: cursor, height: VOLUME_H } : null;
   if (volume) cursor += VOLUME_H + PANE_GAP;
   const subs: Pane[] = [];
   for (let i = 0; i < n; i++) {
-    subs.push({ top: cursor, height: SUB_H });
-    cursor += SUB_H + PANE_GAP;
+    subs.push({ top: cursor + titleH, height: subH });
+    cursor += step;
   }
   return { main, volume, subs };
 }
@@ -531,6 +608,71 @@ export function indicatorNames(plot: PlotConfig, withRsi: boolean, columns: stri
   }
   if (withRsi && columns.includes('rsi') && !names.includes('rsi')) names.push('rsi');
   return names;
+}
+
+/** Id of the sub-chart the app adds for the `rsi` column when the plot config has none. */
+export const BUILTIN_RSI = 'builtin:rsi';
+
+export interface SubplotCandidate {
+  /** Name of the sub-chart in the plot config, or BUILTIN_RSI. */
+  id: string;
+  /** The series drawn in it, by column name. */
+  series: Record<string, PlotConfig['main_plot'][string]>;
+}
+
+/**
+ * The sub-charts a strategy can show: the ones its plot config names, then an RSI of the app when
+ * asked, the column exists and no sub-chart already draws it. Sub-charts whose columns are all
+ * missing from the candles are left out (nothing to draw).
+ */
+export function subplotCandidates(
+  plot: PlotConfig,
+  withRsi: boolean,
+  columns: string[],
+  rsiColor = '#888',
+): SubplotCandidate[] {
+  const out: SubplotCandidate[] = Object.entries(plot.subplots ?? {})
+    .map(([id, series]) => ({ id, series }))
+    .filter((c) => Object.keys(c.series).some((k) => columns.includes(k)));
+  const hasRsi = out.some((s) => 'rsi' in s.series);
+  if (withRsi && columns.includes('rsi') && !hasRsi) {
+    out.push({ id: BUILTIN_RSI, series: { rsi: { color: rsiColor, type: 'line' } as never } });
+  }
+  return out;
+}
+
+/** What a parent needs to know of a sub-chart: to list it, to tick it. */
+export interface SubplotInfo {
+  id: string;
+  /** Plain title, "RSI 14, élan du prix". */
+  label: string;
+  /** One line that says how to read it. */
+  explain: string | null;
+  /** Column names, kept for the tooltip. */
+  raw: string[];
+  shown: boolean;
+}
+
+/**
+ * The sub-charts to draw among the candidates, given what the user kept for this strategy. Nothing
+ * kept yet (or nothing of it exists any more): ONE sub-chart, the RSI when there is one, else the
+ * first. An empty choice is a choice: no sub-chart.
+ */
+export function resolveSubplots(
+  candidates: ReadonlyArray<Pick<SubplotCandidate, 'id' | 'series'>>,
+  stored: readonly string[] | null | undefined,
+): string[] {
+  if (stored && stored.length === 0) return [];
+  const kept = stored ? candidates.filter((c) => stored.includes(c.id)).map((c) => c.id) : [];
+  if (kept.length > 0) return kept;
+  const rsi = candidates.find(
+    (c) =>
+      c.id === BUILTIN_RSI ||
+      /rsi/i.test(c.id) ||
+      Object.keys(c.series).some((k) => /rsi/i.test(k)),
+  );
+  const one = rsi ?? candidates[0];
+  return one ? [one.id] : [];
 }
 
 /** Number of sub-charts the plot config asks for (RSI included when it is added). */
@@ -558,13 +700,13 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
     ? heikinAshiDataset(columns, set.rows as number[][])
     : (set.rows as Array<Array<number | null>>);
 
-  // Sub-charts: the plot config ones, then RSI when asked and not already there
+  // Sub-charts: the plot config ones, then RSI when asked and not already there; the caller may
+  // keep only some of them
+  const wanted = input.subplotIds ? new Set(input.subplotIds) : null;
   const subplots: Array<{ name: string; series: Record<string, PlotConfig['main_plot'][string]> }> =
-    Object.entries(input.plotConfig.subplots ?? {}).map(([name, series]) => ({ name, series }));
-  const hasRsi = subplots.some((s) => 'rsi' in s.series);
-  if (input.rsi && columns.includes('rsi') && !hasRsi) {
-    subplots.push({ name: 'rsi', series: { rsi: { color: c.fg2, type: 'line' } as never } });
-  }
+    subplotCandidates(input.plotConfig, input.rsi, columns, c.fg2)
+      .filter((s) => !wanted || wanted.has(s.id))
+      .map((s) => ({ name: s.id, series: s.series }));
 
   const hasVolume = vi >= 0;
   const layout = paneLayout({
@@ -572,6 +714,9 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
     hasVolume,
     subCount: subplots.length,
     showSubplots: input.showSubplots ?? true,
+    subTitleH: input.subTitleH,
+    subH: input.subH,
+    mainMinShare: input.mainMinShare,
   });
   // Sub-charts that do not fit are left out: the price pane keeps its room
   subplots.splice(layout.subs.length);
@@ -589,14 +734,7 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
     return null;
   })();
   const lines = levelLines(input.overlays, input.toggles, c, input.labels);
-  const reach = input.axisReach ?? 0.25;
-  const within = (p: number, r: number) =>
-    lastClose !== null && Math.abs(p - lastClose) / lastClose <= r;
-  // Lines that stretch the price axis: the average and the orders that wait are always brought in
-  // (a trader looks for them), the others only when they are near the price
-  const near = lines
-    .filter((l) => within(l.price, l.priority ? Math.max(reach, PRIORITY_REACH) : reach))
-    .map((l) => l.price);
+  const near = axisLevels(lines, lastClose, input.axisReach ?? 0.25);
   const gain = input.toggles.gain ? (input.overlays.gain ?? null) : null;
   const gainPrice = gain ? (gain.price ?? lastClose) : null;
   if (gainPrice !== null && Number.isFinite(gainPrice)) near.push(gainPrice);

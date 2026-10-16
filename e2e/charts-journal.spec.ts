@@ -25,10 +25,20 @@ test.describe('Charts', () => {
       timeout: 75_000,
     });
 
-    await page.getByRole('radio', { name: '1h' }).click();
+    // One button for the pair and its bot, four timeframes and "Other", and one Display menu
+    await expect(page.getByTestId('charts-pair')).toContainText(/computed by/);
+    await expect(page.getByRole('radio')).toHaveCount(4);
+    await page.getByRole('radio', { name: '1 h' }).click();
     await expect(page).toHaveURL(/tf=1h/);
-    await page.getByRole('radio', { name: '2 cells' }).click();
+    await page.getByTestId('charts-tf-other').click();
+    await page.getByRole('menuitem', { name: '30 min' }).click();
+    await expect(page).toHaveURL(/tf=30m/);
+    await page.getByRole('radio', { name: '1 h' }).click();
+    await expect(page).toHaveURL(/tf=1h/);
+    await page.getByTestId('charts-display').click();
+    await page.getByRole('switch', { name: 'Two charts side by side' }).click();
     await expect(page).toHaveURL(/cells=2/);
+    await page.keyboard.press('Escape');
     await expect(page.getByTestId('chart-cell')).toHaveCount(2);
     // The state survives a reload
     await page.reload();
