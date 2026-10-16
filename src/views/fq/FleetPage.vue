@@ -26,8 +26,10 @@ import type { FleetSort } from '@/components/fq/lib/bots';
 import { alertsInScope, watchSelection } from '@/components/fq/lib/fleetPage';
 import { lineFromPosition, type QuickFilter } from '@/components/fq/lib/trades';
 import { useActionNav } from '@/composables/useActionNav';
+import { useFleetNotices } from '@/composables/useFleetNotices';
 import { usePositionsAwaiting } from '@/composables/usePositionsAwaiting';
 import { useScope } from '@/composables/useScope';
+import { useScopeDetail } from '@/composables/useScopeDetail';
 import { useShellBus } from '@/composables/useShellBus';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useFqAlertsStore } from '@/datasource/stores/alerts';
@@ -120,6 +122,23 @@ const activeAlerts = computed(() =>
   ),
 );
 
+// ---- what the owner must act on that no alert says (an expired session, a frozen bot, a
+// drawdown above its limit, an orphan position): read from the detail of the fleet, which the four
+// figures share ----
+const { detail: fleetDetail, error: detailError } = useScopeDetail(() => scope.fleetScopeRef.value);
+const fleetNotices = useFleetNotices(
+  fleetDetail,
+  computed(() => detailError.value !== null),
+);
+
+// "See the bots" of a drawdown card: the bots by what they gain or lose, in view
+const tableEl = ref<{ $el?: HTMLElement } | HTMLElement | null>(null);
+function showBots() {
+  sort.value = 'latent';
+  const r = tableEl.value;
+  (r instanceof HTMLElement ? r : r?.$el)?.scrollIntoView?.({ block: 'start' });
+}
+
 // ---- positions to watch ----
 const watchLines = computed(() => {
   const inScope = new Set(scope.botKeys.value);
@@ -209,23 +228,32 @@ const tableMeta = computed(() =>
 <template>
   <div class="fleet" :data-ws="ws" :data-phone="phone || undefined" data-testid="fleet-page">
     <header class="head">
-      <FleetVerdict class="verdict" :alerts="activeAlerts" />
+      <FleetVerdict
+        class="verdict"
+        :alerts="activeAlerts"
+        :notices="fleetNotices.notices.value"
+        :ready="fleetNotices.ready.value"
+      />
       <FleetScope v-if="!phone" class="scope" />
     </header>
 
     <FleetAlerts
       :alerts="activeAlerts"
+      :notices="fleetNotices.notices.value"
       :limit="phone ? 2 : 3"
       @action="nav.alertAction"
       @more="bus.alertsOpen.value = true"
+      @bots="showBots"
+      @later="fleetNotices.later"
     />
 
-    <FleetKpis @open-bot="(k) => nav.openBot(k)" />
+    <FleetKpis :detail="fleetDetail" @open-bot="(k) => nav.openBot(k)" />
     <FleetScope v-if="phone" class="scope" />
 
     <!-- Phone: what needs a decision first, then the bots, then the rest -->
     <div class="mid">
       <Pane
+        ref="tableEl"
         class="area table"
         :title="t('fq.pg.fleet.table')"
         :meta="tableMeta"

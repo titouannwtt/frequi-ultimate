@@ -2,17 +2,22 @@ import { describe, expect, it } from 'vitest';
 
 import { buildEquityOption } from '../../src/components/fq/lib/equity';
 import {
+  alertLimit,
   alertsInScope,
+  fleetNotices,
   isLongerThanUsual,
   liqWord,
+  notSnoozed,
   safetyOrders,
   safetyOrdersMax,
+  type NoticeInput,
   verdictOf,
   watchSelection,
 } from '../../src/components/fq/lib/fleetPage';
+import { makeBot } from '../../src/components/fq/fixtures';
 import { riskLevel } from '../../src/components/fq/lib/risk';
 import type { TradeLine } from '../../src/components/fq/lib/trades';
-import type { Alert } from '../../src/gateway/types.gen';
+import type { Alert, BotRow, BotStatus } from '../../src/gateway/types.gen';
 
 const alert = (severity: Alert['severity'], bot: string | null = 'b1'): Alert =>
   ({ id: `${severity}-${bot}`, severity, bot_key: bot }) as Alert;
@@ -141,5 +146,123 @@ describe('the capital curve of the Fleet', () => {
     const calm = buildEquityOption({ ...input, withDrawdown: false });
     expect(calm.series).toHaveLength(1);
     expect(Array.isArray(calm.grid)).toBe(false);
+  });
+});
+
+describe('what the owner must act on, beyond the alerts', () => {
+  const live = (seq: number, status: BotStatus = 'online') =>
+    makeBot(seq, { name: `bot${seq}`, mode: 'live', status, slots: 2, latent: 0 });
+  const calm = (over: Partial<NoticeInput> = {}): NoticeInput => ({
+    bots: [live(1), live(2)],
+    stateOf: (b) => b.state.status,
+    alerts: [],
+    drawdowns: [{ mode: 'live', pct: 3 }],
+    drawdownLimit: 15,
+    nearest: [{ mode: 'live', botKey: 'local:9401', pair: 'BTC/USDC:USDC', distancePct: 40 }],
+    liquidationLimit: 15,
+    orphans: 0,
+    ...over,
+  });
+  const level = (input: NoticeInput, alerts: Alert[] = []) =>
+    verdictOf([...alerts, ...fleetNotices(input)]);
+
+  it('a calm fleet has nothing to say', () => {
+    expect(fleetNotices(calm())).toEqual([]);
+    expect(level(calm())).toEqual({ level: 'calm', n: 0 });
+  });
+
+  it('a live bot whose session expired is a point to see, with its way back', () => {
+    const bots = [live(1), live(2, 'auth_expired')];
+    const notices = fleetNotices(calm({ bots }));
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toMatchObject({
+      kind: 'authExpired',
+      severity: 'warning',
+      botKey: bots[1]!.bot_key,
+      actions: ['reconnect'],
+    });
+    expect(level(calm({ bots }))).toEqual({ level: 'one', n: 1 });
+  });
+
+  it('an offline bot is critical, unless its offline alert already says it', () => {
+    const bots = [live(1), live(2, 'offline')];
+    expect(fleetNotices(calm({ bots }))[0]).toMatchObject({
+      kind: 'offline',
+      severity: 'critical',
+    });
+    expect(level(calm({ bots }))).toEqual({ level: 'critical', n: 1 });
+    const said = [{ type_id: 'botOffline', bot_key: bots[1]!.bot_key }] as Alert[];
+    expect(fleetNotices(calm({ bots, alerts: said }))).toEqual([]);
+  });
+
+  it('the bots whose figures are frozen are one notice, however many they are', () => {
+    const bots = [live(1), live(2), live(3)];
+    const stateOf = (b: BotRow) => (b.bot_key === bots[0]!.bot_key ? 'online' : 'stale');
+    const notices = fleetNotices(calm({ bots, stateOf }));
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toMatchObject({ kind: 'frozen', n: 2, botKey: null });
+    expect(notices[0]!.botKeys).toEqual([bots[1]!.bot_key, bots[2]!.bot_key].sort());
+  });
+
+  it('a drawdown above its limit is a point to see, at the limit included', () => {
+    expect(fleetNotices(calm({ drawdowns: [{ mode: 'live', pct: 14.9 }] }))).toEqual([]);
+    const over = fleetNotices(calm({ drawdowns: [{ mode: 'live', pct: 15 }] }));
+    expect(over[0]).toMatchObject({ kind: 'drawdown', value: 15, threshold: 15 });
+    // An unknown drawdown says nothing; a drawdown alert already says it
+    expect(fleetNotices(calm({ drawdowns: [{ mode: 'live', pct: null }] }))).toEqual([]);
+    const said = [{ type_id: 'highDrawdown', bot_key: 'local:9401' }] as Alert[];
+    expect(fleetNotices(calm({ drawdowns: [{ mode: 'live', pct: 123 }], alerts: said }))).toEqual(
+      [],
+    );
+  });
+
+  it('a liquidation closer than its limit is critical, unless its alert says it', () => {
+    const near = [
+      { mode: 'live' as const, botKey: 'local:9401', pair: 'ETH/USDC:USDC', distancePct: 9 },
+    ];
+    const notices = fleetNotices(calm({ nearest: near }));
+    expect(notices[0]).toMatchObject({
+      kind: 'liquidation',
+      severity: 'critical',
+      pair: 'ETH/USDC:USDC',
+    });
+    expect(level(calm({ nearest: near }))).toEqual({ level: 'critical', n: 1 });
+    const said = [{ type_id: 'nearLiquidation', bot_key: 'local:9401' }] as Alert[];
+    expect(fleetNotices(calm({ nearest: near, alerts: said }))).toEqual([]);
+  });
+
+  it('orphan positions are a point to see, reconciled from the card', () => {
+    const notices = fleetNotices(calm({ orphans: 2 }));
+    expect(notices[0]).toMatchObject({ kind: 'orphans', n: 2, actions: ['reconcile'] });
+    expect(level(calm({ orphans: 2 }))).toEqual({ level: 'one', n: 1 });
+  });
+
+  it('an active alert still speaks, and several things add up, the critical ones first', () => {
+    expect(level(calm(), [alert('warning')])).toEqual({ level: 'one', n: 1 });
+    const input = calm({
+      bots: [live(1), live(2, 'auth_expired'), live(3, 'offline')],
+      drawdowns: [{ mode: 'live', pct: 40 }],
+      orphans: 1,
+    });
+    const notices = fleetNotices(input);
+    expect(notices.map((n) => n.kind)).toEqual(['offline', 'authExpired', 'drawdown', 'orphans']);
+    expect(level(input, [alert('warning')])).toEqual({ level: 'critical', n: 1 });
+    // Without the critical one: all the warnings count
+    const warn = fleetNotices({ ...input, bots: [live(1), live(2, 'auth_expired')] });
+    expect(verdictOf([...warn, alert('warning')])).toEqual({ level: 'many', n: 4 });
+  });
+
+  it('"Later" hides a notice until its time, and only that one', () => {
+    const notices = fleetNotices(calm({ bots: [live(1, 'auth_expired')], orphans: 1 }));
+    const authId = notices.find((n) => n.kind === 'authExpired')!.id;
+    expect(notSnoozed(notices, { [authId]: 2_000 }, 1_000).map((n) => n.kind)).toEqual(['orphans']);
+    expect(notSnoozed(notices, { [authId]: 2_000 }, 2_000)).toHaveLength(2);
+  });
+
+  it('reads the limit of a rule as the owner set it, else its default', () => {
+    const rules = { global: { highDrawdown: { threshold: -25 } } } as never;
+    expect(alertLimit(rules, 'highDrawdown')).toBe(25);
+    expect(alertLimit({ global: {} } as never, 'highDrawdown')).toBe(15);
+    expect(alertLimit({ global: {} } as never, 'nearLiquidation')).toBe(15);
   });
 });

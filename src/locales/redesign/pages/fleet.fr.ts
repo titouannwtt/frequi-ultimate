@@ -18,8 +18,8 @@ export default {
     stocks: 'actions',
     indices: 'indices',
     commodities: 'matières',
-    mixed: 'crypto + xyz',
-    other: 'xyz',
+    mixed: 'crypto et marchés classiques',
+    other: 'marché classique',
   },
   frozen: 'figé',
   columns: {
@@ -28,6 +28,7 @@ export default {
     reset: 'Rétablir les colonnes par défaut',
   },
   slots: {
+    tileOf: '{open} position sur | {open} positions sur',
     title:
       '{open} position ouverte sur {max} possibles | {open} positions ouvertes sur {max} possibles',
     free: '{open} position ouverte | {open} positions ouvertes',
@@ -54,6 +55,26 @@ export default {
     seenHint: 'Acquitter : la carte disparaît, l’alerte revient si elle s’aggrave',
     more: 'Voir les {n} autres alertes',
     inBell: 'Les alertes acquittées, silencieuses et l’historique sont dans la cloche.',
+  },
+  notice: {
+    silentSince: '{bot} ne répond plus depuis {time}',
+    silent: '{bot} ne répond plus',
+    authExpired: 'Session expirée. Ses chiffres sont figés et ne sont pas comptés dans les totaux.',
+    offline:
+      'Aucune réponse du bot. Ses chiffres sont figés et ne sont pas comptés dans les totaux.',
+    frozenOne: '{bot} ne donne plus de nouvelles',
+    frozenOneMsg: 'Ses chiffres sont figés et ne sont pas comptés dans les totaux.',
+    frozenMany: '{n} bots ne donnent plus de nouvelles',
+    frozenManyMsg: '{bots}. Leurs chiffres sont figés et ne sont pas comptés dans les totaux.',
+    drawdown: 'Le recul dépasse la limite',
+    drawdownMsg:
+      'Le recul depuis le plus haut est de {pct}\u202f%, la limite est fixée à {limit}\u202f%.',
+    liquidation: 'Une liquidation est proche',
+    liquidationMsg: '{pair} est à {v}\u202f% de sa liquidation, la limite est {limit}\u202f%.',
+    orphansOne: 'Une position n’appartient à aucun bot',
+    orphansMany: '{n} positions n’appartiennent à aucun bot',
+    orphansMsg: 'Elles sont sur le wallet mais aucun bot ne les gère. Vérifiez le rapprochement.',
+    bots: 'Voir les bots',
   },
   filter: {
     button: 'Filtrer',
