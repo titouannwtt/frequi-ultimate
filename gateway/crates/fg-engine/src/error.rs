@@ -16,6 +16,8 @@ pub enum EngineError {
     Unsupported(&'static str),
     #[error("state database error")]
     Store(StateDbError),
+    #[error("unavailable: {0}")]
+    Unavailable(&'static str),
     #[error("the engine is shutting down")]
     Closed,
 }
@@ -37,7 +39,7 @@ impl EngineError {
             Self::Store(StateDbError::VersionMismatch { .. }) => ErrorCode::StateMismatch,
             Self::Store(StateDbError::TooLarge | StateDbError::TooMany) => ErrorCode::BadRequest,
             Self::Store(_) => ErrorCode::Internal,
-            Self::Closed => ErrorCode::Unavailable,
+            Self::Closed | Self::Unavailable(_) => ErrorCode::Unavailable,
         }
     }
 }

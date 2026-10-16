@@ -75,7 +75,7 @@ pub struct ActionError {
 }
 
 impl ActionError {
-    fn new(code: ErrorCode, message: impl Into<String>) -> Self {
+    pub(crate) fn new(code: ErrorCode, message: impl Into<String>) -> Self {
         Self {
             code,
             message: message.into(),
@@ -88,14 +88,14 @@ impl ActionError {
 pub struct ActionLocks {
     keys: Mutex<HashSet<String>>,
     trades: Mutex<HashSet<(BotKey, i64)>>,
-    actions: Mutex<HashSet<(BotKey, &'static str)>>,
+    actions: Mutex<HashSet<(BotKey, String)>>,
 }
 
-struct Guard {
+pub(crate) struct Guard {
     locks: Arc<ActionLocks>,
     key: String,
     trade: Option<(BotKey, i64)>,
-    action: Option<(BotKey, &'static str)>,
+    action: Option<(BotKey, String)>,
 }
 
 impl Drop for Guard {
@@ -113,11 +113,11 @@ impl Drop for Guard {
 }
 
 impl ActionLocks {
-    fn take(
+    pub(crate) fn take(
         self: &Arc<Self>,
         key: &str,
         trade: Option<(BotKey, i64)>,
-        action: Option<(BotKey, &'static str)>,
+        action: Option<(BotKey, String)>,
     ) -> Result<Guard, ActionError> {
         let busy = || ActionError::new(ErrorCode::InProgress, "an identical action is in progress");
         {
@@ -227,23 +227,23 @@ fn params_of(a: &WriteAction) -> Map<String, Value> {
     }
 }
 
-fn truncate(s: &str) -> String {
+pub(crate) fn truncate(s: &str) -> String {
     s.chars().take(RESPONSE_MAX_CHARS).collect()
 }
 
-fn valid_key(k: &str) -> bool {
+pub(crate) fn valid_key(k: &str) -> bool {
     !k.is_empty()
         && k.len() <= MAX_KEY_LEN
         && k.bytes()
             .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
 }
 
-struct Target {
-    row: BotRow,
-    link: crate::connector::BotLink,
+pub(crate) struct Target {
+    pub(crate) row: BotRow,
+    pub(crate) link: crate::connector::BotLink,
 }
 
-fn target(sh: &Shared, key: &BotKey) -> Result<Target, ActionError> {
+pub(crate) fn target(sh: &Shared, key: &BotKey) -> Result<Target, ActionError> {
     let published = sh.published.load();
     let row = published
         .bots
@@ -334,21 +334,54 @@ fn audit_entry(
     response: Option<String>,
     latency_ms: Option<u64>,
 ) -> AuditEntry {
+    audit_row(
+        &req.origin,
+        &req.bot_key,
+        row,
+        AuditWhat {
+            action: req.action.name().to_owned(),
+            params: params_of(&req.action),
+            idempotency_key: req.idempotency_key.clone(),
+        },
+        ts_ms,
+        http_status,
+        response,
+        latency_ms,
+    )
+}
+
+/// What an audit row says was asked.
+pub(crate) struct AuditWhat {
+    pub action: String,
+    pub params: Map<String, Value>,
+    pub idempotency_key: String,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn audit_row(
+    origin: &ActionOrigin,
+    bot_key: &BotKey,
+    row: &BotRow,
+    what: AuditWhat,
+    ts_ms: i64,
+    http_status: Option<u16>,
+    response: Option<String>,
+    latency_ms: Option<u64>,
+) -> AuditEntry {
     AuditEntry {
         ts_ms,
-        session_hash: req.origin.session_hash.clone(),
-        ip: req.origin.ip.clone(),
-        user_agent: req
-            .origin
+        session_hash: origin.session_hash.clone(),
+        ip: origin.ip.clone(),
+        user_agent: origin
             .user_agent
             .as_ref()
             .map(|u| u.chars().take(120).collect()),
-        bot_key: req.bot_key.clone(),
+        bot_key: bot_key.clone(),
         bot_name: row.identity.name.clone(),
         mode: row.identity.mode,
-        action: req.action.name().to_owned(),
-        params: params_of(&req.action),
-        idempotency_key: req.idempotency_key.clone(),
+        action: what.action,
+        params: what.params,
+        idempotency_key: what.idempotency_key,
         http_status,
         response,
         latency_ms,
@@ -401,7 +434,7 @@ pub async fn act(
     let _guard = locks.take(
         &req.idempotency_key,
         trade_id.map(|id| (req.bot_key.clone(), id)),
-        exclusive(&req.action).map(|a| (req.bot_key.clone(), a)),
+        exclusive(&req.action).map(|a| (req.bot_key.clone(), a.to_owned())),
     )?;
 
     let now = sh.now_ms();

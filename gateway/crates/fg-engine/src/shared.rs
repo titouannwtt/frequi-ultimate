@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use arc_swap::ArcSwap;
 use fg_core::identity::BotKey;
 use fg_core::model::Event;
+use fg_sources::traits::LedgerReader;
 use tokio::sync::{Notify, mpsc};
 
 use crate::budget::RequestBudget;
@@ -45,6 +46,8 @@ pub struct Shared {
     /// Wakes the actor of a bot (an action was sent: look at its state now).
     pub nudges: RwLock<HashMap<BotKey, mpsc::Sender<()>>>,
     pub core_tx: mpsc::Sender<Msg>,
+    /// The read-only ledger adapter, for the on-demand reads of the API (orders of a trade).
+    pub ledger: Arc<dyn LedgerReader>,
 }
 
 impl Shared {

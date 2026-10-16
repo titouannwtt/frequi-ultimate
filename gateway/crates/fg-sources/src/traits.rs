@@ -12,7 +12,9 @@ use std::pin::Pin;
 use fg_core::model::Ticker;
 use serde_json::Value;
 
-use crate::botrest::{BotFeatures, ReadEndpoint, RestError, WriteAction, WriteOutcome};
+use crate::botrest::{
+    BotFeatures, ProxyRequest, ProxyResponse, ReadEndpoint, RestError, WriteAction, WriteOutcome,
+};
 use crate::botws::{WsHandle, WsTarget, WsTopic};
 use crate::discovery::DiscoveryReport;
 use crate::external::TickerError;
@@ -81,6 +83,12 @@ pub trait BotRest: Send + Sync {
         action: WriteAction,
         idempotency_key: String,
     ) -> BoxFut<'_, Result<WriteOutcome, RestError>>;
+    /// Forward a whitelisted request of the browser to the bot (03 section 8.2). A mutating
+    /// request is sent once and never retried. Clients that cannot proxy answer `NotFound`.
+    fn proxy(&self, req: ProxyRequest) -> BoxFut<'_, Result<ProxyResponse, RestError>> {
+        let _ = req;
+        Box::pin(async { Err(RestError::NotFound) })
+    }
 }
 
 /// WebSocket client of the bots. `connect` starts a supervised connection that reconnects with

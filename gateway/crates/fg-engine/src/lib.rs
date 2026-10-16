@@ -25,6 +25,7 @@ pub mod hub;
 pub mod ledger_data;
 pub mod meta;
 pub mod msg;
+pub mod proxy;
 pub mod published;
 pub mod queries;
 pub mod runtime;
@@ -47,8 +48,9 @@ pub use connector::{BotConnector, BotLink, HttpConnector};
 pub use error::EngineError;
 pub use handle::{AlertFilter, Engine, EngineHandle, EngineSources, EventQuery};
 pub use hub::Subscription;
+pub use proxy::{ProxyError, ProxyWrite};
 pub use published::{ChannelSnapshot, Published};
-pub use queries::{EquityMode, JournalQuery, JournalSort, ScopeRef};
+pub use queries::{EquityMode, JournalQuery, JournalSort, OrderRow, ScopeRef};
 
 #[cfg(test)]
 mod testkit;

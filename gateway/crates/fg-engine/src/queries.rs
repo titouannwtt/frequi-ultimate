@@ -237,6 +237,24 @@ pub fn leaderboard(
     Ok(out)
 }
 
+/// An order of a trade, as shown in the trade drawer (entries, DCA fills, exits).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct OrderRow {
+    pub id: i64,
+    /// `buy`, `sell` or `stoploss`.
+    pub side: String,
+    /// Whether the order opens or adds to the position; `None` when the trade is unknown.
+    pub is_entry: Option<bool>,
+    pub status: Option<String>,
+    pub is_open: bool,
+    pub filled: Option<f64>,
+    pub amount: Option<f64>,
+    pub average: Option<f64>,
+    pub cost: Option<f64>,
+    pub filled_ms: Option<i64>,
+    pub tag: Option<String>,
+}
+
 /// Sort key of the journal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum JournalSort {

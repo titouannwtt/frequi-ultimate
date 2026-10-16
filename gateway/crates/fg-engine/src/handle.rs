@@ -26,7 +26,8 @@ use crate::error::EngineError;
 use crate::hub::{Hub, Subscription};
 use crate::published::{ChannelSnapshot, Published};
 use crate::queries::{
-    self, EquityMode, EquityPoint, JournalPage, JournalQuery, LeaderRow, ScopeError, ScopeRef,
+    self, EquityMode, EquityPoint, JournalPage, JournalQuery, LeaderRow, OrderRow, ScopeError,
+    ScopeRef,
 };
 use crate::shared::Shared;
 use crate::state_db::StateDb;
@@ -106,6 +107,7 @@ impl Engine {
             db,
             clock,
             core_tx,
+            ledger: Arc::clone(&sources.ledger),
             cfg,
         });
 
@@ -622,6 +624,91 @@ impl EngineHandle {
     /// The request was refused before anything was sent.
     pub async fn act(&self, req: ActionRequest) -> Result<ActionResult, ActionError> {
         crate::actions::act(&self.sh, &self.locks, req).await
+    }
+
+    /// The gateway's own database, for the tables of the server layer (sessions, device aliases).
+    /// The engine's tables stay private to it.
+    #[must_use]
+    pub fn state_db(&self) -> StateDb {
+        self.sh.db.clone()
+    }
+
+    /// Forward a read to the Python API of a bot. See [`crate::proxy`].
+    ///
+    /// # Errors
+    /// [`ProxyError`].
+    pub async fn proxy_read(
+        &self,
+        key: &BotKey,
+        req: fg_sources::botrest::ProxyRequest,
+        budgeted: bool,
+    ) -> Result<fg_sources::botrest::ProxyResponse, crate::proxy::ProxyError> {
+        crate::proxy::proxy_read(&self.sh, key, req, budgeted).await
+    }
+
+    /// Forward a mutation to the Python API of a bot: idempotent, audited, sent at most once.
+    ///
+    /// # Errors
+    /// The request was refused before anything was sent.
+    pub async fn proxy_write(
+        &self,
+        w: crate::proxy::ProxyWrite,
+    ) -> Result<ActionResult, ActionError> {
+        crate::proxy::proxy_write(&self.sh, &self.locks, w).await
+    }
+
+    /// The orders of one trade (entries, DCA, exits), read from the bot's ledger on demand.
+    ///
+    /// # Errors
+    /// The bot has no known ledger, or the ledger cannot be read.
+    pub async fn trade_orders(
+        &self,
+        key: &BotKey,
+        trade_id: i64,
+    ) -> Result<Vec<OrderRow>, EngineError> {
+        let path = self
+            .sh
+            .ledger_targets
+            .read()
+            .ok()
+            .and_then(|t| t.iter().find(|t| &t.key == key).map(|t| t.path.clone()))
+            .ok_or(EngineError::NotFound)?;
+        let published = self.published();
+        let is_short = published
+            .positions
+            .get(&crate::ledger_data::trade_key(key, trade_id))
+            .map(|p| p.side == fg_core::model::Side::Short)
+            .or_else(|| {
+                published
+                    .data
+                    .get(key)?
+                    .closed
+                    .iter()
+                    .find(|t| t.trade_id == trade_id)
+                    .map(|t| t.side == fg_core::model::Side::Short)
+            });
+        let ledger = Arc::clone(&self.sh.ledger);
+        let rows = tokio::task::spawn_blocking(move || ledger.orders(&path, &[trade_id]))
+            .await
+            .map_err(|_| EngineError::Unavailable("ledger"))?
+            .map_err(|_| EngineError::Unavailable("ledger"))?;
+        Ok(rows
+            .into_iter()
+            .filter(|o| o.trade_id == trade_id)
+            .map(|o| OrderRow {
+                is_entry: is_short.map(|s| o.is_entry_for(s)),
+                id: o.id,
+                side: o.side,
+                status: o.status,
+                is_open: o.is_open,
+                filled: o.filled,
+                amount: o.amount,
+                average: o.average,
+                cost: o.cost,
+                filled_ms: o.filled_ms,
+                tag: o.tag,
+            })
+            .collect())
     }
 
     /// Wait until `state.db` has written everything queued (tests, shutdown).
