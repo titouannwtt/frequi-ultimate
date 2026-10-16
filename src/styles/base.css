@@ -54,14 +54,15 @@
     color: var(--live);
   }
 
-  /* Spaced capitals are reserved for column headers; KPI labels use sentence case */
+  /* Column headers: normal case by default; spaced capitals with the compact density (the
+     --th-* tokens). KPI labels use sentence case */
   .colh {
     font-family: var(--font-ui);
     font-size: var(--t-xs);
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--fg-3);
+    font-weight: var(--th-weight);
+    letter-spacing: var(--th-track);
+    text-transform: var(--th-case);
+    color: var(--th-color);
   }
   .lab {
     font-size: var(--t-xs);

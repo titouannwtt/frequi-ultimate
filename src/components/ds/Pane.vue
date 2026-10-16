@@ -131,7 +131,7 @@ const errorLine = computed(() =>
 .pane {
   background: var(--bg-1);
   border: 1px solid var(--line);
-  border-radius: var(--r-2);
+  border-radius: var(--r-card);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -143,14 +143,14 @@ const errorLine = computed(() =>
   display: flex;
   align-items: center;
   gap: var(--s2);
-  min-height: 38px;
+  min-height: var(--pane-h);
   padding: 4px var(--s2) 4px var(--s3);
   border-bottom: 1px solid var(--line);
   flex: none;
 }
 h2 {
   margin: 0;
-  font-size: var(--t-md);
+  font-size: var(--t-title);
   font-weight: 600;
   display: flex;
   align-items: center;

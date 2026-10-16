@@ -407,9 +407,9 @@ td {
 }
 th {
   color: var(--fg-3);
-  font: 600 var(--t-xs) var(--font-ui);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font: var(--th-weight) var(--t-xs) var(--font-ui);
+  text-transform: var(--th-case);
+  letter-spacing: var(--th-track);
 }
 th.l,
 td.l {
