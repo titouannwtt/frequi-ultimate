@@ -130,6 +130,44 @@ describe('BotPage', () => {
     w.unmount();
   });
 
+  it('has no second list of the positions: three tabs, a More menu, one header action', async () => {
+    const bot = fixture.bots.find((b) => b.identity.mode === 'live')!;
+    const router = pageRouter(`/bot/${encodeURIComponent(bot.bot_key)}`);
+    await router.isReady();
+    const w = mount(BotPage, {
+      global: { plugins: [i18n, router], stubs },
+      attachTo: document.body,
+    });
+    await flushPromises();
+    // The pair navigator only exists inside the "Pairs and locks" tab, never beside the chart
+    expect(w.find('[data-testid="pair-navigator"]').exists()).toBe(false);
+    expect(w.findAll('[role="tab"]').map((t) => t.text().replace(/\d+$/, '').trim())).toEqual([
+      'Positions',
+      'History',
+      'Performance',
+    ]);
+    expect(w.find('[data-testid="bot-tabs-more"]').exists()).toBe(true);
+    // The header: Pause entries and More, nothing else on the bar
+    expect(
+      w
+        .findAll('[data-testid="bot-header"] .bar [data-action]')
+        .map((b) => b.attributes('data-action')),
+    ).toEqual(['pause', 'more']);
+    w.unmount();
+  });
+
+  it('a tab behind More takes a place in the bar while it is open', async () => {
+    const bot = fixture.bots.find((b) => b.identity.mode === 'live')!;
+    const router = pageRouter(`/bot/${encodeURIComponent(bot.bot_key)}?tab=logs`);
+    await router.isReady();
+    const w = mount(BotPage, { global: { plugins: [i18n, router], stubs } });
+    await flushPromises();
+    const tabs = w.findAll('[role="tab"]').map((t) => t.text().replace(/\d+$/, '').trim());
+    expect(tabs).toEqual(['Positions', 'History', 'Performance', 'Logs']);
+    expect(w.find('[role="tab"][aria-selected="true"]').text()).toContain('Logs');
+    w.unmount();
+  });
+
   it('never falls back on another trade when the chosen one has closed', async () => {
     // A bot with at least two open positions: the chosen one is not the worst
     const byBot = new Map<string, number[]>();
@@ -282,8 +320,12 @@ describe('BotPage', () => {
       await router.isReady();
       const w = mount(BotPage, { global: { plugins: [i18n, router], stubs } });
       await flushPromises();
-      // Four tiles in the header, and no folded section there any more
+      // Two tiles in the header (Pause entries, More), and no folded section there any more
       expect(w.find('.phone .tiles').exists()).toBe(true);
+      expect(w.findAll('.phone .tiles .tile').map((t) => t.attributes('data-action'))).toEqual([
+        'pause',
+        'more',
+      ]);
       expect(w.find('.phone .tiles ~ .sens').exists()).toBe(false);
       // The section is below the tabs, in the foot, with both actions
       const foot = w.find('.foot-sens [data-testid="sensitive-actions"]');

@@ -75,16 +75,12 @@ export function useBotActions(
    * Open the confirmation of a mutation. Returns what `requestAction` decided; a navigation id
    * returns null and the caller handles it.
    */
-  function trigger(
-    id: ActionId,
-    opts: { fraction?: number; pair?: string } = {},
-  ): RequestResult | null {
+  function trigger(id: ActionId, opts: { pair?: string } = {}): RequestResult | null {
     if (!ACTIONS[id].mutation) return null;
     const action = actionOf(id, opts.pair);
     if (!action) return { ok: false, reason: 'missing_state' };
     return requestAction(toValue(botKey), action, {
       position: toValue(position) as Position | null | undefined,
-      initialFraction: opts.fraction,
     });
   }
 

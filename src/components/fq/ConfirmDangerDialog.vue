@@ -41,6 +41,9 @@ import { READY, unavailable } from './lib/valueState';
  * a dry bot, the bot name typed plus a 1 s hold for the destructive live ones, the 1 s hold for
  * the other live ones. "Cancel" has the initial focus; Escape and the scrim cancel.
  *
+ * An exit of one position asks the share to exit (100, 50, 25 % or an amount in USDC) here, with
+ * the amount it represents; the drawer foot no longer pre-selects it.
+ *
  * The request is sent once, never retried: the hold button takes the in-flight lock of the action
  * when it completes, and `useBotAction.submit` refuses a second one.
  */
@@ -430,6 +433,13 @@ watch(
                 :placeholder="`≥ ${MIN_NOTIONAL}`"
               />
             </div>
+            <!-- What the share represents, and the exchange minimum (it used to sit in the drawer) -->
+            <p v-if="plan && plan.notional !== null" class="qty-note" data-testid="dialog-qty-note">
+              <span class="num" :class="{ warn: plan.belowMin }">{{
+                t('fq.dialog.quantityAmount', { v: fmt.number(plan.notional, 2) })
+              }}</span>
+              <span>{{ t('fq.dialog.quantityMin', { min: MIN_NOTIONAL }) }}</span>
+            </p>
           </template>
           <template v-if="action.kind === 'forceentry'">
             <div class="row">
@@ -708,6 +718,26 @@ h2 {
 }
 .amt {
   width: 130px;
+}
+.qty-note {
+  display: grid;
+  gap: 2px;
+  margin: calc(var(--s2) * -1) 0 0 calc(64px + var(--s3));
+  color: var(--fg-3);
+  font-size: var(--t-xs);
+}
+.qty-note .num {
+  color: var(--fg);
+  font-weight: 600;
+  font-size: var(--t-sm);
+}
+.qty-note .num.warn {
+  color: var(--warn);
+}
+@media (max-width: 599px) {
+  .qty-note {
+    margin-left: 0;
+  }
 }
 .hint-side {
   color: var(--fg-3);

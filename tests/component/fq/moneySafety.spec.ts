@@ -364,21 +364,49 @@ describe('what can never be offered or opened', () => {
   });
 });
 
-describe('the drawer share only pre-selects the quantity', () => {
-  it('50 % in the foot opens the dialog on 50 % and sends half the amount, after the hold', async () => {
+describe('the quantity of an exit is chosen in the confirmation, not in the drawer', () => {
+  it('the foot of the drawer offers no share: Exit opens the dialog on 100 %', async () => {
     const w = mountSurfaces(posA, botA);
     await nextTick();
-    const half = w
-      .findAll('[data-testid=trade-drawer] button')
-      .find((b) => b.text().trim() === '50 %')!;
-    await half.trigger('click');
+    expect(
+      w.findAll('[data-testid=trade-drawer] button').some((b) => /^\d+ %$/.test(b.text().trim())),
+    ).toBe(false);
     await w.get('[data-testid=trade-drawer] [data-action=exit]').trigger('click');
     await nextTick();
+    const checked = w.get('[data-testid=confirm-dialog] [role=radio][aria-checked=true]');
+    expect(checked.text()).toBe('100 %');
     expect(world.fake.acts).toHaveLength(0);
-    await holdFor(w.get('.hold-wrap button.hold'), 1000);
-    await vi.advanceTimersByTimeAsync(10);
-    expect(world.fake.acts).toHaveLength(1);
-    const a = world.fake.acts[0]!.action as { amount?: number };
-    expect(a.amount).toBeCloseTo(posA.amount * 0.5, 6);
   });
+
+  it.each([
+    ['100 %', undefined],
+    ['50 %', 0.5],
+    ['25 %', 0.25],
+  ])(
+    '%s in the dialog sends one forceexit with the matching amount, after the hold',
+    async (label, share) => {
+      const w = mountSurfaces(posA, botA);
+      await nextTick();
+      await w.get('[data-testid=trade-drawer] [data-action=exit]').trigger('click');
+      await nextTick();
+      const radio = w
+        .findAll('[data-testid=confirm-dialog] [role=radio]')
+        .find((b) => b.text().trim() === label)!;
+      await radio.trigger('click');
+      await nextTick();
+      // Nothing is sent by choosing a quantity
+      expect(world.fake.acts).toHaveLength(0);
+      // The amount it stands for is said in the dialog
+      expect(w.get('[data-testid=dialog-qty-note]').text()).toContain('USDC');
+      await holdFor(w.get('.hold-wrap button.hold'), 1000);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(world.fake.acts).toHaveLength(1);
+      const sent = world.fake.acts[0]!;
+      expect(sent.botKey).toBe(botA.bot_key);
+      expect(sent.action).toMatchObject({ kind: 'forceexit', tradeId: posA.trade_id });
+      const amount = (sent.action as { amount?: number }).amount;
+      if (share === undefined) expect(amount).toBeUndefined();
+      else expect(amount).toBeCloseTo(posA.amount * share, 6);
+    },
+  );
 });
