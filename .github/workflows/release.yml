@@ -6,8 +6,9 @@ name: Release
 # prereleases, so nobody receives it before it has been checked. Promote it by hand:
 #   gh release edit vX.Y.Z --prerelease=false
 #
-# Asset order matters: `freqtrade install-ui` downloads assets[0], so the UI zip is uploaded
-# first, alone, before the binaries and the checksums.
+# GitHub lists the assets of a release by name, not by upload order. freqtrade-ultimate's
+# `install-ui` picks the `frequi-ultimate-ui-*` archive by name (older versions took assets[0],
+# which may then be a gateway binary: tell those users to pass the archive by hand).
 on:
   push:
     tags: ["v*"]
@@ -157,11 +158,10 @@ jobs:
             "out/SHA256SUMS"; do
             gh release upload "$TAG" "$f" --clobber
           done
-      - name: The UI archive is the first asset
+      - name: The UI archive is attached
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          first=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq '.assets[0].name')
-          echo "assets[0] = $first"
-          [ "$first" = "frequi-ultimate-ui-$TAG.zip" ]
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq '.assets[].name' \
+            | grep -qx "frequi-ultimate-ui-$TAG.zip"
