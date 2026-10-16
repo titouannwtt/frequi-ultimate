@@ -296,7 +296,7 @@ dans les logs, ni dans l'audit, ni dans `state.db` en clair.
 | `stat()` base + `-wal` | détection de changement | 2 s | 1 s | 80 `stat` toutes les 2 s, coût négligeable |
 | SQLite `trades`/`orders` | positions ouvertes, historique, agrégats | sur changement | sur changement | Relecture complète si < 5 000 trades, sinon incrémentale |
 | SQLite `profit_history` | courbes | incrémental par `rowid` sur changement | | Rechargement complet si `max(rowid)` recule |
-| WS bot | `entry*`, `exit*`, `status`, `warning`, `startup`, `protection_trigger*`, `strategy_msg`, `trade_snapshot`, `whitelist` | continu | + `new_candle` (graphique ouvert) | Prix et P&L latent en direct sans polling |
+| WS bot | `entry*`, `exit*`, `status`, `warning`, `startup`, `protection_trigger*`, `strategy_msg`, `trade_snapshot`, `whitelist` | continu | `new_candle` et `analyzed_df` ne sont pas souscrits (voir 05 section 5.1) | Prix et P&L latent en direct sans polling |
 | REST `/status` | stoploss, liquidation, current_rate | 60 s | 10 s | Remplacé de fait par `trade_snapshot` quand présent |
 | REST `/logs?limit=100` | logs (alertes log) | 30 s | 10 s | Dédup par `(ts, logger, message)` |
 | REST `/balance` | wallet-level (1 bot live par wallet), dry : par bot | 120 s | 30 s | Jamais sommé entre bots d'un même wallet |
@@ -429,7 +429,7 @@ Choix comparés :
 - Canaux : `fleet` (lignes de bots + totaux par scope), `positions` (toutes les positions ouvertes, RiskPanel et
   TradeTable `open`), `alerts`, `events`, `health`, `recon` (seulement si abonné, déclenche la cadence 60 s),
   `bot:<key>` (détail : verrous, whitelist, config résumée, logs récents), `logs:<key|errors>` (LogStream),
-  `chart:<key>:<pair>:<tf>` (relais `new_candle`).
+  `chart:<key>:<pair>:<tf>` (relais des bougies d'un graphique ouvert : lecture `pair_candles` du bot, voir 05 section 5.1).
 
 ### 6.3 Endpoints REST (`/gw/v1`)
 
