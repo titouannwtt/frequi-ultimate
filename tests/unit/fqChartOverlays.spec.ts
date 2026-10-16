@@ -5,6 +5,7 @@ import { FIXTURE_NOW } from '@/components/fq/fixtures';
 import {
   ALL_OVERLAYS,
   buildCandleOption,
+  fillPlan,
   levelLines,
   overlaysFromPosition,
   priceBounds,
@@ -530,5 +531,61 @@ describe('closed trades off the price scale', () => {
     const off: ClosedMark = { ...base, id: 'b/2', openPrice: 390, closePrice: 380 };
     const o = build({ overlays: { closed: [base, off] } });
     expect(serie(o, 'closed')!.markLine.data).toHaveLength(1);
+  });
+});
+
+type FillData = { tip: string; label: { formatter: string; show: boolean; offset: number[] } };
+
+describe('merged execution markers keep every top-up on hover (B394)', () => {
+  const fill = (n: number, candlesAgo: number, price: number): FillMark => ({
+    ts: ts(candlesAgo),
+    price,
+    kind: 'dca',
+    side: 'long',
+    label: `SO${n}`,
+    n,
+    amount: n,
+    cost: 10 * n,
+  });
+  it('the first marker writes "R1-2" and its tooltip lists both; the second writes nothing', () => {
+    const fills = [fill(1, 20, 100), fill(2, 12, 103)];
+    const px = [
+      { x: 900, y: 300 },
+      { x: 906, y: 296 },
+    ];
+    const plan = fillPlan(fills, 'R', TF, 4, px);
+    const o = build({ overlays: { fills }, fillPlan: plan });
+    const data = serie(o, 'fills')!.data as FillData[];
+    expect(data[0]!.label.formatter).toBe('R1-2');
+    expect(data[1]!.label.show).toBe(false);
+    // Each top-up is still readable: both ranks and both prices are in the first marker's tooltip
+    expect(data[0]!.tip).toContain('R1');
+    expect(data[0]!.tip).toContain('R2');
+    expect(data[0]!.tip).toContain('100.000');
+    expect(data[0]!.tip).toContain('103.000');
+    // The marker that wrote nothing keeps its own tooltip
+    expect(data[1]!.tip).toContain('R2');
+  });
+  it('a top-up merged by time and price also writes nothing on its own (no fallback to its tag)', () => {
+    const fills = [fill(1, 20, 100), fill(2, 20, 100)];
+    const data = serie(build({ overlays: { fills } }), 'fills')!.data as FillData[];
+    expect(data[0]!.label.formatter).toBe('R1-2');
+    expect(data[1]!.label.show).toBe(false);
+  });
+  it('an entry hidden under a top-up is named in its tooltip and its tag is pushed away', () => {
+    const fills: FillMark[] = [
+      { ts: ts(20), price: 100, kind: 'entry', side: 'long', label: 'E', amount: 1, cost: 10 },
+      fill(1, 20, 100),
+    ];
+    const px = [
+      { x: 900, y: 300 },
+      { x: 900, y: 300 },
+    ];
+    const o = build({ overlays: { fills }, fillPlan: fillPlan(fills, 'R', TF, 4, px) });
+    const data = serie(o, 'fills')!.data as FillData[];
+    expect(data[0]!.tip).toContain('R1');
+    expect(data[1]!.tip).toContain('E');
+    expect(data[0]!.label.offset).toEqual([0, 0]);
+    expect(data[1]!.label.offset).toEqual([0, 12]);
   });
 });

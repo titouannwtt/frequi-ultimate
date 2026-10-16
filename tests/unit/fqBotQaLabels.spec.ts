@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ALL_OVERLAYS,
+  fillPlan,
   fillTags,
   levelLines,
   planLevelLabels,
@@ -131,6 +132,46 @@ describe('execution tags', () => {
   });
   it('top-ups far apart in time keep their own tag', () => {
     expect(fillTags([f(1, 0, 5), f(2, 10_000_000, 5)], 'R', 900_000)).toEqual(['R1', 'R2']);
+  });
+  it('top-ups that land on the same pixels merge whatever their time and price (B394)', () => {
+    // 10 candles and 3 % apart: no merge from the time and the price alone
+    const fills = [f(1, 0, 100), f(2, 9_000_000, 103), f(3, 18_000_000, 106)];
+    expect(fillTags(fills, 'R', 900_000)).toEqual(['R1', 'R2', 'R3']);
+    // On a 1920 px chart the first two are 9 px apart and 4 px high: one tag; the third is clear
+    const px = [
+      { x: 1100, y: 500 },
+      { x: 1109, y: 504 },
+      { x: 1300, y: 480 },
+    ];
+    const plan = fillPlan(fills, 'R', 900_000, 4, px);
+    expect(plan.tags).toEqual(['R1-2', null, 'R3']);
+    expect(plan.groups).toEqual({ 0: [0, 1] });
+  });
+  it('top-ups far apart in pixels keep their tag, a missing pixel falls back to time and price', () => {
+    const fills = [f(1, 0, 100), f(2, 9_000_000, 103)];
+    const far = [
+      { x: 100, y: 500 },
+      { x: 400, y: 500 },
+    ];
+    expect(fillTags(fills, 'R', 900_000, 4, far)).toEqual(['R1', 'R2']);
+    expect(fillTags(fills, 'R', 900_000, 4, [null, null])).toEqual(['R1', 'R2']);
+  });
+  it('an entry and a top-up on the same pixels are stacked and each names the other (B394)', () => {
+    const fills = [
+      { ts: 0, price: 100, kind: 'entry' as const, label: 'E', side: 'long' as const },
+      { ...f(1, 0, 100), side: 'long' as const },
+    ];
+    const px = [
+      { x: 1100, y: 500 },
+      { x: 1100, y: 500 },
+    ];
+    const plan = fillPlan(fills, 'R', 900_000, 4, px);
+    expect(plan.tags).toEqual(['E', 'R1']);
+    // The second tag is pushed one line down (a buy writes under its marker)
+    expect(plan.offsets).toEqual({ 1: 12 });
+    expect(plan.members).toEqual({ 0: [0, 1], 1: [0, 1] });
+    // Nothing to stack without pixels
+    expect(fillPlan(fills, 'R', 900_000).offsets).toEqual({});
   });
   it('the entry and the exits keep E and S', () => {
     const tags = fillTags(
