@@ -168,7 +168,7 @@ const combinedProfitOption = computed<EChartsOption>(() => {
         markArea,
       },
     ],
-  };
+  } as EChartsOption;
 });
 
 const profitPerPairOption = computed<EChartsOption>(() => {

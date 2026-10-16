@@ -172,7 +172,7 @@ export const useStrategyDevStore = defineStore('strategyDev', () => {
     loadingTypes.value = new Set(['backtest', 'wfa', 'hyperopt']);
 
     const api = getApi();
-    let firstError: { status: number; detail: string } | null = null;
+    let firstError = null as { status: number; detail: string } | null;
 
     function captureError(e: unknown) {
       const axiosErr = e as { response?: { status?: number; data?: { detail?: string } } };

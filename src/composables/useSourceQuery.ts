@@ -1,4 +1,4 @@
-import { onBeforeUnmount, ref, shallowRef, watch } from 'vue';
+import { onBeforeUnmount, ref, shallowRef, watch, type Ref, type ShallowRef } from 'vue';
 
 import type { DataSource } from '@/datasource/types';
 
@@ -12,6 +12,13 @@ export interface SourceQueryOptions {
   source?: () => DataSource | null | undefined;
 }
 
+export interface SourceQuery<T> {
+  data: ShallowRef<T | null>;
+  loading: Ref<boolean>;
+  error: Ref<string | null>;
+  reload: () => Promise<void>;
+}
+
 /**
  * One read of the active data source, re-run when its key changes, when the source changes and on
  * a visible-tab timer. The last answer is kept when a refresh fails (`error` is then set and the
@@ -22,7 +29,7 @@ export function useSourceQuery<T>(
   run: (source: DataSource) => Promise<T> | null,
   key: () => string,
   opts: SourceQueryOptions = {},
-) {
+): SourceQuery<T> {
   const data = useDataSource();
   const result = shallowRef<T | null>(null);
   const loading = ref(false);

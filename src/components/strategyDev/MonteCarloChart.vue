@@ -349,7 +349,7 @@ const chartOptions = computed<EChartsOption>(() => {
         z: 20,
       },
     ],
-  };
+  } as EChartsOption;
 });
 
 const hasClamped = computed(() => {

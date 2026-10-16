@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import type { HistogramData } from '@/types/strategyDev';
 
 const { t } = useI18n();
 const store = useStrategyDevStore();
@@ -261,12 +262,12 @@ const paramTabIndex = ref(0);
             chart-id="loss-histogram"
           >
             <LossHistogramChart
-              :histogram="analysis.loss_histogram as Record<string, unknown>"
+              :histogram="analysis.loss_histogram as HistogramData"
               :title="t('strategyDev.chartLossDistribution')"
             />
             <template #fullscreen>
               <LossHistogramChart
-                :histogram="analysis.loss_histogram as Record<string, unknown>"
+                :histogram="analysis.loss_histogram as HistogramData"
                 :title="t('strategyDev.chartLossDistribution')"
               />
             </template>

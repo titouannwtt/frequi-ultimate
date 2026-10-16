@@ -11,6 +11,7 @@ import {
   profitBgClass,
   exitReasonColor,
 } from '@/composables/tradeColumns';
+import type { DataTableSortEvent } from 'primevue/datatable';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import Popover from 'primevue/popover';
@@ -101,9 +102,9 @@ function formatPriceWithDecimals(price: number) {
   return formatPrice(price, botStore.activeBot?.stakeCurrencyDecimals);
 }
 
-function onSort(event: { sortField: string; sortOrder: number }) {
-  sortField.value = event.sortField;
-  sortOrder.value = event.sortOrder;
+function onSort(event: DataTableSortEvent) {
+  sortField.value = event.sortField as string;
+  sortOrder.value = event.sortOrder ?? 1;
 }
 
 const onRowClicked = ({ data: item }: { data: Trade }) => {
@@ -393,7 +394,7 @@ watch(
     <!-- Unified Popover Host -->
     <TradePopoverHost
       :active="activePopover"
-      :trade="activeTrade"
+      :trade="activeTrade as Trade | null"
       :bot-id="activeBotId"
       :style-obj="popoverStyle"
       :arrow-style="arrowStyle"

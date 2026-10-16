@@ -4,6 +4,8 @@
  * Separated from the store so it can be tested in isolation and reused.
  * All outputs are computed refs that react to filter changes.
  */
+import type { Ref } from 'vue';
+
 import type { AggregatedLogEntry } from '@/stores/logConsole';
 
 // ── Filter state types ──

@@ -215,7 +215,7 @@ async function fetchAllSlots() {
   await Promise.allSettled([0, 1, 2].map(fetchSlotData));
 }
 
-function toggleSection(key: keyof Omit<OverviewSettings, 'defaultTimeframe'>) {
+function toggleSection(key: Exclude<keyof OverviewSettings, 'defaultTimeframe' | 'slots'>) {
   settings.value[key] = !settings.value[key];
   saveSettings(settings.value);
 }

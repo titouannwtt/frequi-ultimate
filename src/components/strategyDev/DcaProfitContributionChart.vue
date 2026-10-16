@@ -128,7 +128,7 @@ const chartOptions = computed<EChartsOption>(() => {
         },
       },
     ],
-  };
+  } as EChartsOption;
 });
 </script>
 

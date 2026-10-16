@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { GridItemData } from '@/types';
 import { useI18n } from 'vue-i18n';
+import BotComparisonList from '@/components/ftbot/BotComparisonList.vue';
+import ClosedTradesEnhanced from '@/components/ftbot/ClosedTradesEnhanced.vue';
+import OpenTradesEnhanced from '@/components/ftbot/OpenTradesEnhanced.vue';
 
 const { t } = useI18n();
 const botStore = useBotStore();

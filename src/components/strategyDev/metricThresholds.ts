@@ -126,7 +126,7 @@ export interface ChecklistItem {
     metrics: Record<string, number>,
     run: Record<string, unknown>,
   ) => 'pass' | 'warn' | 'fail' | 'skip';
-  reason: (metrics: Record<string, number>) => string;
+  reason: (metrics: Record<string, number>, run: Record<string, unknown>) => string;
 }
 
 export const validationChecklist: ChecklistItem[] = [

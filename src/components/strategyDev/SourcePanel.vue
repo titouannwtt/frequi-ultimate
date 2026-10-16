@@ -34,7 +34,8 @@ async function loadCurrentStrategy() {
   try {
     const activeBot = botStore.activeBot;
     if (activeBot?.isBotOnline) {
-      const resp = await activeBot.api.get(`/api/v1/strategy/${run.value.strategy}`);
+      const { api } = useApi(useLoginInfo(botStore.selectedBot), botStore.selectedBot);
+      const resp = await api.get(`/strategy/${run.value.strategy}`);
       if (resp.data?.code) {
         currentSource.value = resp.data.code;
       }

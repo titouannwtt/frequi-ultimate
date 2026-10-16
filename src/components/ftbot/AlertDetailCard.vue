@@ -38,7 +38,6 @@ const botName = computed(() => {
 
 const openTrades = computed(() => botStore.allOpenTrades[props.botId] || []);
 const profit = computed(() => botStore.allProfit[props.botId]);
-const state = computed(() => botStore.allBotState[props.botId]);
 const store = computed(() => botStore.botStores[props.botId]);
 const balance = computed(() => botStore.allBalance[props.botId]);
 
@@ -174,7 +173,7 @@ function getNearLiquidationDetail(alert: DetectedAlert) {
 }
 
 function getAllFundsExposedDetail() {
-  const bal = state.value?.balance ?? 0;
+  const bal = balance.value?.total_bot ?? balance.value?.total ?? 0;
   const totalStake = openTrades.value.reduce((sum, t) => sum + (t.stake_amount ?? 0), 0);
   const free = Math.max(0, bal - totalStake);
   const pct = bal > 0 ? (totalStake / bal) * 100 : 0;

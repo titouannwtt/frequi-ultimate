@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import type { VolumeBucketSize } from '@/types';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
 import { use } from 'echarts/core';
@@ -88,7 +89,7 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   }),
   (d) => {
     if (d.selectedDays !== undefined) selectedDays.value = d.selectedDays as number;
-    if (d.selectedBucket !== undefined) selectedBucket.value = d.selectedBucket as string;
+    if (d.selectedBucket !== undefined) selectedBucket.value = d.selectedBucket as VolumeBucketSize;
     if (d.showTradeCount !== undefined) showTradeCount.value = d.showTradeCount as boolean;
     if (d.showProfit !== undefined) showProfit.value = d.showProfit as boolean;
     if (d.showAnomalies !== undefined) showAnomalies.value = d.showAnomalies as boolean;

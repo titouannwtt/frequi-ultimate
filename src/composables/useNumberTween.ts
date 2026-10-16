@@ -1,3 +1,5 @@
+import type { MaybeRefOrGetter } from 'vue';
+
 import { COUNTER_MS, DURATIONS, prefersReducedMotion, runTween } from '@/utils/motion';
 
 export type FlashDirection = 'up' | 'dn' | null;

@@ -41,7 +41,7 @@ const chartOptions = computed<EChartsOption>(() => {
 
   const firstYear = parseInt(firstDate.split('-')[0]);
   const lastYear = parseInt(lastDate.split('-')[0]);
-  const years = [];
+  const years: number[] = [];
   for (let y = firstYear; y <= lastYear; y++) years.push(y);
 
   const maxDd = Math.max(...props.data.map((d) => d.dd_pct), 1);
@@ -109,7 +109,7 @@ const chartOptions = computed<EChartsOption>(() => {
     },
     calendar: calendars,
     series,
-  };
+  } as EChartsOption;
 });
 
 const chartHeight = computed(() => {

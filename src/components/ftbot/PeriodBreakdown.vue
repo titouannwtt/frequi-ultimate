@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
 import { DashboardLayout } from '@/stores/layout';
 import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
-import type { TimeSummaryReturnValue, TimeSummaryRecord } from '@/types';
+import type { TimeSummaryReturnValue, TimeSummaryRecord , TimeSummaryCols} from '@/types';
 
 const { t } = useI18n();
 const botStore = useBotStore();
@@ -49,9 +49,9 @@ const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults
   }),
   (d) => {
     if (d.timeProfitPeriod !== undefined)
-      settingsStore.timeProfitPeriod = d.timeProfitPeriod as string;
+      settingsStore.timeProfitPeriod = d.timeProfitPeriod as TimeSummaryOptions;
     if (d.timeProfitPreference !== undefined)
-      settingsStore.timeProfitPreference = d.timeProfitPreference as string;
+      settingsStore.timeProfitPreference = d.timeProfitPreference as TimeSummaryCols;
     if (d.tradingMode !== undefined) tradingMode.value = d.tradingMode as typeof tradingMode.value;
   },
   HARDCODED_DEFAULTS_PB,

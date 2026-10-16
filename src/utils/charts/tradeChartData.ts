@@ -22,7 +22,7 @@ const SYM_CIRCLE = 'circle';
 const SYM_TRIANGLE = 'path://M0,-8 L7,6 L-7,6 Z';
 const SYM_SQUARE = 'rect';
 
-function markerSymbol(isShort: boolean, kind: MarkerKind): string {
+function markerSymbol(isShort: boolean | undefined, kind: MarkerKind): string {
   if (kind === 'dca') return SYM_SQUARE;
   return isShort ? SYM_TRIANGLE : SYM_CIRCLE;
 }
@@ -56,7 +56,8 @@ function fmtDuration(openTs: number, closeTs: number): string {
   return `${d}d ${h % 24}h`;
 }
 
-function fmtTs(ts: number): string {
+function fmtTs(ts: number | undefined): string {
+  if (ts === undefined) return 'N/A';
   const d = new Date(ts);
   return d.toISOString().replace('T', ' ').substring(0, 16) + ' UTC';
 }
@@ -305,7 +306,6 @@ export function generateTradeSeries(
     tooltip: {
       show: true,
       trigger: 'item',
-      renderMode: 'html',
       formatter: (params: any) => params.data?.[6] ?? '',
       extraCssText: 'max-width: 300px; line-height: 1.6; font-size: 12px; padding: 8px 12px;',
       backgroundColor: theme === 'dark' ? 'rgba(15, 15, 25, 0.95)' : 'rgba(255, 255, 255, 0.97)',
