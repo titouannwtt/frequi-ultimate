@@ -494,6 +494,7 @@ pub fn assemble(rt: &mut BotRuntime, ctx: &AssembleCtx<'_>) -> Assembled {
                 closed: derived.pnl.clone(),
                 open,
                 histories: vec![rt.ledger.profit.as_ref().clone()],
+                history_trades: Vec::new(),
                 starting_capital: capital.value,
                 now_ms: now,
             });

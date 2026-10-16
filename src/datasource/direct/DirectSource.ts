@@ -839,6 +839,7 @@ export class DirectSource implements DataSource {
               .map((r) => ({ ts_ms: r.close_ms as number, profit_abs: r.profit_abs as number })),
             open: rt.status.data.map(toOpenRisk),
             histories: [],
+            history_trades: [],
             starting_capital: capital,
             now_ms: nowMs,
           })
@@ -1476,15 +1477,19 @@ export class DirectSource implements DataSource {
         (rt) => buildBotRow(rt, this.rowContext(rt, nowMs, undefined)).metrics.starting_capital,
       );
       const cap = sumStartingCapital(capitals);
+      const perBot = bots.map((rt) =>
+        (rt.closed?.rows ?? [])
+          .filter((r) => r.close_ms !== null && r.profit_abs !== null)
+          .map((r) => ({ ts_ms: r.close_ms as number, profit_abs: r.profit_abs as number })),
+      );
+      const histories = (await this.loadHistories(bots)) ?? [];
       return computeDrawdown({
-        closed: bots.flatMap((rt) =>
-          (rt.closed?.rows ?? [])
-            .filter((r) => r.close_ms !== null && r.profit_abs !== null)
-            .map((r) => ({ ts_ms: r.close_ms as number, profit_abs: r.profit_abs as number })),
-        ),
+        closed: perBot.flat(),
         open: bots.flatMap((rt) => (rt.status?.data ?? []).map(toOpenRisk)),
         // The sampled curve when every bot has one, the projected curve otherwise.
-        histories: (await this.loadHistories(bots)) ?? [],
+        histories,
+        // Index-aligned with `histories` (one entry per bot) when the histories are loaded.
+        history_trades: histories.length > 0 ? perBot : [],
         starting_capital: cap.unknown === 0 && cap.known > 0 ? cap.total : null,
         now_ms: nowMs,
       });

@@ -174,12 +174,13 @@ pub fn scope_drawdown(
     }
     let mut closed = Vec::new();
     let mut histories = Vec::new();
+    let mut history_trades = Vec::new();
     let mut open = Vec::new();
     for (rt, a) in members {
         closed.extend(rt.ledger.derived.pnl.iter().copied());
-        if !rt.ledger.profit.is_empty() {
-            histories.push(rt.ledger.profit.as_ref().clone());
-        }
+        // Index-aligned with `history_trades`: an empty series is ignored by the merge.
+        histories.push(rt.ledger.profit.as_ref().clone());
+        history_trades.push(rt.ledger.derived.pnl.clone());
         open.extend(a.positions.iter().filter_map(|p| {
             Some(OpenRisk {
                 profit_abs: p.profit_abs?,
@@ -196,6 +197,7 @@ pub fn scope_drawdown(
         closed,
         open,
         histories,
+        history_trades,
         starting_capital: capital,
         now_ms,
     }))

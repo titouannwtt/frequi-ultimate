@@ -122,6 +122,7 @@ pub fn drawdown(
             .collect(),
         open,
         histories: data.iter().map(|d| d.profit.as_ref().clone()).collect(),
+        history_trades: data.iter().map(|d| d.derived.pnl.clone()).collect(),
         starting_capital: (cap.known > 0).then_some(cap.total),
         now_ms,
     }))
