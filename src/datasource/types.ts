@@ -141,6 +141,23 @@ export interface TradePage extends Page<TradeRow> {
   totals: TradeTotals;
 }
 
+/** One order of a trade (entry, DCA, exit), as the gateway reads it from the bot's ledger. */
+export interface OrderRow {
+  id: number;
+  /** `buy`, `sell` or `stoploss`. */
+  side: string;
+  /** Whether the order opens or adds to the position; null when the trade is unknown. */
+  is_entry: boolean | null;
+  status: string | null;
+  is_open: boolean;
+  filled: number | null;
+  amount: number | null;
+  average: number | null;
+  cost: number | null;
+  filled_ms: number | null;
+  tag: string | null;
+}
+
 export interface PeriodQuery {
   unit: PeriodUnit;
   scope: ScopeRef;
@@ -211,6 +228,8 @@ export interface ScopeTotals {
   netted: boolean;
   /** Bots left out of the sums because their figures are stale or missing. */
   excluded: BotKey[];
+  /** Drawdown of the bots of this mode; undefined when the source gives one for the scope only. */
+  drawdown?: DrawdownResult | null;
 }
 
 export interface ScopeDetail {
@@ -361,6 +380,11 @@ export interface DataSource {
     logs(q: LogQuery): Promise<Page<GwLogLine>>;
     events(q: EventQuery): Promise<Page<Event>>;
     scope(s: ScopeRef): Promise<ScopeDetail>;
+    /**
+     * Orders of one trade, for the DCA ladder and the fills on the chart. `null`: the orders could
+     * not be read (the ladder then says so instead of inventing levels).
+     */
+    tradeOrders?(botKey: BotKey, tradeId: number): Promise<OrderRow[] | null>;
   };
   /** One request, never retried. The idempotency key makes a duplicate return the first result. */
   act(botKey: BotKey, action: BotAction, idempotencyKey: string): Promise<ActionResult>;

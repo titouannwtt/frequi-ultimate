@@ -30,6 +30,8 @@ interface Net {
   /** Answer for GET /snapshot (the handler can change it between calls). */
   snapshot: () => { body: unknown; seq: string };
   action?: FakeHandler;
+  /** Answer for GET /trades (the open positions of the bot). */
+  trades?: () => unknown;
   snapshots: number;
 }
 
@@ -55,6 +57,7 @@ function setup(net: Partial<Net> = {}) {
     }
     if (path === '/hello')
       return ok({ version: 'test', protocol: GATEWAY_PROTOCOL_VERSION, auth_modes: ['session'] });
+    if (path === '/trades' && net.trades) return ok(net.trades());
     if (path.includes('/actions/'))
       return net.action ? net.action(req, n) : ok({ status: 'accepted' });
     return status(404);
@@ -350,9 +353,55 @@ describe('GatewaySource actions', () => {
     expect(h.fake.calls).toEqual([]);
   });
 
-  it('carries the typed name of a destructive action to the server, which checks it', async () => {
-    const h = setup();
-    await h.src.act('local:1', { kind: 'forceexit', tradeId: 'all', confirm: 'hippo' }, 'k6');
-    expect(h.fake.writes()[0]!.body).toMatchObject({ trade_id: 'all', confirm: 'hippo' });
+  it('expands an exit of everything into one forceexit per open position, each with its own key', async () => {
+    const h = setup({
+      trades: () => ({
+        open: [
+          { bot_key: 'local:1', trade_id: 4, pair: 'BTC/USDC:USDC', side: 'long', orphan: false },
+          { bot_key: 'local:1', trade_id: 9, pair: 'ETH/USDC:USDC', side: 'short', orphan: false },
+          { bot_key: 'local:1', trade_id: 11, pair: 'XRP/USDC:USDC', side: 'long', orphan: true },
+        ],
+        matched: 3,
+      }),
+    });
+    const r = await h.src.act(
+      'local:1',
+      { kind: 'forceexit', tradeId: 'all', confirm: 'hippo' },
+      'k6',
+    );
+    expect(r.status).toBe('accepted');
+    const writes = h.fake.writes();
+    // The gateway has no "all": 2 owned positions, the orphan is left to the reconciliation.
+    expect(writes).toHaveLength(2);
+    expect(writes.map((w) => w.headers?.['Idempotency-Key'])).toEqual(['k6:4', 'k6:9']);
+    expect(writes[0]!.body).toEqual({
+      trade_id: 4,
+      expected: { pair: 'BTC/USDC:USDC', is_short: false },
+      confirm: 'hippo',
+    });
+    expect(writes[1]!.body).toMatchObject({ trade_id: 9, expected: { is_short: true } });
+  });
+
+  it('reports `unknown` when only some of the exits of a bot were accepted', async () => {
+    let n = 0;
+    const h = setup({
+      trades: () => ({
+        open: [
+          { bot_key: 'local:1', trade_id: 4, pair: 'A', side: 'long', orphan: false },
+          { bot_key: 'local:1', trade_id: 9, pair: 'B', side: 'long', orphan: false },
+        ],
+      }),
+      action: () => (++n === 1 ? ok({ status: 'accepted' }) : status(422, { code: 'bad_request' })),
+    });
+    const r = await h.src.act('local:1', { kind: 'forceexit', tradeId: 'all' }, 'k7');
+    expect(r.status).toBe('unknown');
+    expect(r.botResponse).toBe('1/2');
+  });
+
+  it('sends nothing for an exit of everything when there is nothing open', async () => {
+    const h = setup({ trades: () => ({ open: [] }) });
+    const r = await h.src.act('local:1', { kind: 'forceexit', tradeId: 'all' }, 'k8');
+    expect(r.status).toBe('state_mismatch');
+    expect(h.fake.writes()).toEqual([]);
   });
 });

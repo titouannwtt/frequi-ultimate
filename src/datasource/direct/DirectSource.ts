@@ -55,9 +55,10 @@ import { walletTotals, sumStartingCapital } from '../calc/capital';
 import { computeDrawdown, mergeHistories } from '../calc/drawdown';
 import { medianDurationMs, durationMs, parseAvgDurationMs, MIN_SAMPLES } from '../calc/duration';
 import { exposure } from '../calc/exposure';
-import { sumFresh, computeFreshness } from '../calc/freshness';
+import { computeFreshness } from '../calc/freshness';
 import { pnlPeriods } from '../calc/periods';
-import { tradeTotals } from '../calc/stats';
+import { scopeTotalsByMode } from '../calc/scopeTotals';
+import { pageTradeRows } from '../calc/tradePage';
 import { normalizeTsMs } from '../calc/time';
 import { botKeyFromApiUrl, parseOrigin } from '../protocol/identity';
 import { StateHub } from '../hub';
@@ -74,6 +75,7 @@ import type {
   EquitySeries,
   EventQuery,
   LogQuery,
+  OrderRow,
   Page,
   PeriodQuery,
   PeriodRow,
@@ -81,7 +83,6 @@ import type {
   RegistryApi,
   ScopeDetail,
   ScopeRef,
-  ScopeTotals,
   SourceStatus,
   TradePage,
   TradeQuery,
@@ -199,6 +200,21 @@ function describe(data: unknown): string {
 
 function eventKey(e: Event): string {
   return `${e.kind}|${e.bot_key}|${e.trade_id}|${e.ts_ms}`;
+}
+
+/** Order of a trade as freqtrade's REST API writes it (`GET /trades/{id}`). */
+interface RestOrder {
+  ft_order_side?: string;
+  ft_is_entry?: boolean;
+  ft_order_tag?: string | null;
+  status?: string;
+  is_open?: boolean;
+  filled?: number;
+  amount?: number;
+  safe_price?: number;
+  price?: number;
+  cost?: number;
+  order_filled_timestamp?: number | null;
 }
 
 export class DirectSource implements DataSource {
@@ -907,7 +923,9 @@ export class DirectSource implements DataSource {
       rate_budget_pct: budget,
       backoff_active: backoff,
       hit_rate: null,
-      bots_process: fs ? fs.bots.filter((b) => b.state === 'running').length : null,
+      bots_process: Array.isArray(fs?.bots)
+        ? fs.bots.filter((b) => b.state === 'running').length
+        : null,
       digest_age_s: ages.length > 0 ? Math.max(...ages) : null,
       freshness: computeFreshness('rest', this.fleetStatus?.atMs ?? nowMs, nowMs, FLEET_STATUS_MS),
     };
@@ -1232,6 +1250,27 @@ export class DirectSource implements DataSource {
   }
 
   readonly query = {
+    tradeOrders: async (botKey: BotKey, tradeId: number): Promise<OrderRow[] | null> => {
+      // The bot's own REST answer: `GET /trades/{id}` carries the orders of the trade
+      try {
+        const t = await this.proxy<{ orders?: RestOrder[] }>(botKey, 'GET', `/trades/${tradeId}`);
+        return (t.orders ?? []).map((o, i) => ({
+          id: i,
+          side: o.ft_order_side ?? '',
+          is_entry: o.ft_is_entry ?? null,
+          status: o.status ?? null,
+          is_open: o.is_open ?? false,
+          filled: o.filled ?? null,
+          amount: o.amount ?? null,
+          average: o.safe_price ?? o.price ?? null,
+          cost: o.cost ?? null,
+          filled_ms: o.order_filled_timestamp ? normalizeTsMs(o.order_filled_timestamp) : null,
+          tag: o.ft_order_tag ?? null,
+        }));
+      } catch {
+        return null;
+      }
+    },
     trades: async (q: TradeQuery): Promise<TradePage> => {
       let bots = [...this.rts.values()].sort((a, b) => a.sortId - b.sortId);
       if (q.bots) bots = bots.filter((rt) => q.bots?.includes(rt.key));
@@ -1248,41 +1287,7 @@ export class DirectSource implements DataSource {
         rows = bots.flatMap((rt) => rt.closed?.rows ?? []);
         complete = bots.every((rt) => rt.closed?.complete === true);
       }
-      rows = rows.filter(
-        (r) =>
-          (!q.pair || r.pair === q.pair) &&
-          (!q.side || r.side === q.side) &&
-          (!q.exitReason ||
-            r.exit_reason.kind === q.exitReason ||
-            r.exit_reason.raw === q.exitReason) &&
-          (q.fromMs === undefined || (r.close_ms ?? r.open_ms) >= q.fromMs) &&
-          (q.toMs === undefined || (r.close_ms ?? r.open_ms) <= q.toMs),
-      );
-      const sort = q.sort ?? (q.status === 'open' ? 'open_ms' : 'close_ms');
-      const dir = q.order === 'asc' ? 1 : -1;
-      const val = (r: TradeRow): number | string =>
-        sort === 'pair'
-          ? r.pair
-          : sort === 'profit_abs'
-            ? (r.profit_abs ?? Number.NEGATIVE_INFINITY)
-            : sort === 'open_ms'
-              ? r.open_ms
-              : (r.close_ms ?? 0);
-      rows.sort((a, b) => {
-        const va = val(a);
-        const vb = val(b);
-        const c = va < vb ? -1 : va > vb ? 1 : 0;
-        return c * dir || a.bot_key.localeCompare(b.bot_key) || a.trade_id - b.trade_id;
-      });
-      const limit = q.limit ?? 50;
-      const start = q.cursor ? Number(q.cursor) || 0 : 0;
-      const items = rows.slice(start, start + limit);
-      return {
-        items,
-        nextCursor: start + limit < rows.length ? String(start + limit) : null,
-        complete,
-        totals: tradeTotals(rows.map((r) => (r.profit_unknown ? null : r.profit_abs))),
-      };
+      return pageTradeRows(rows, q, complete);
     },
 
     periods: async (q: PeriodQuery): Promise<PeriodRow[]> => {
@@ -1406,63 +1411,7 @@ export class DirectSource implements DataSource {
         buildBotRow(rt, this.rowContext(rt, nowMs, wallets.get(rt.key))),
       );
       const positions = bots.flatMap((rt) => this.positionsOf(rt, nowMs));
-      const totals: ScopeTotals[] = [];
-      for (const mode of ['live', 'dry', 'replay'] as const) {
-        const mrows = rows.filter((r) => r.identity.mode === mode);
-        if (mrows.length === 0) continue;
-        const sumOf = (
-          pick: (r: BotRow) => number | null | undefined,
-          group: 'metrics' | 'positions',
-        ) => {
-          const fr = sumFresh(
-            mrows.map((r) => ({
-              key: r.bot_key,
-              value: pick(r),
-              fresh: r.freshness[group] ?? { stale: true },
-            })),
-          );
-          return fr;
-        };
-        const r1 = sumOf((r) => r.metrics.realized_1d, 'metrics');
-        const r7 = sumOf((r) => r.metrics.realized_7d, 'metrics');
-        const r30 = sumOf((r) => r.metrics.realized_30d, 'metrics');
-        const rt = sumOf((r) => r.metrics.realized_total, 'metrics');
-        const op = sumOf((r) => r.metrics.open_profit_abs, 'positions');
-        const known = (fr: ReturnType<typeof sumOf>) => (fr.included > 0 ? fr.total : null);
-        const mpos = positions.filter((p) => mrows.some((r) => r.bot_key === p.bot_key));
-        const ex = exposure(
-          mpos.map((p) => ({
-            coin: `${wallets.get(p.bot_key)?.walletId ?? ''}|${p.coin}`,
-            side: p.side,
-            notional: p.notional,
-          })),
-        );
-        totals.push({
-          mode,
-          bots: mrows.length,
-          open_trades: mrows.reduce((a, r) => a + r.state.open_trades, 0),
-          max_open_trades: mrows.every((r) => r.state.max_open_trades !== null)
-            ? mrows.reduce((a, r) => a + (r.state.max_open_trades as number), 0)
-            : null,
-          realized_1d: known(r1),
-          realized_7d: known(r7),
-          realized_30d: known(r30),
-          realized_total: known(rt),
-          open_profit_abs: known(op),
-          starting_capital: sumStartingCapital(mrows.map((r) => r.metrics.starting_capital)),
-          exposure: ex,
-          netted: true,
-          excluded: [
-            ...new Set([
-              ...r1.excluded,
-              ...r7.excluded,
-              ...r30.excluded,
-              ...rt.excluded,
-              ...op.excluded,
-            ]),
-          ],
-        });
-      }
+      const totals = scopeTotalsByMode(rows, positions, (k) => wallets.get(k)?.walletId ?? '');
       return { scope: s, bots: rows, positions, totals, drawdown: null, asOfMs: nowMs };
     },
   };
