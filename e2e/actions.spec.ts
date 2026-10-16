@@ -82,6 +82,39 @@ test('a completed hold sends exactly one forceexit, to the named bot and trade',
   expect(Number(writes[0]!.write.body.tradeid)).toBe(tradeId);
 });
 
+test('the share to exit is chosen in the confirmation: 50 % sends one forceexit with half the amount', async ({
+  page,
+}) => {
+  const bot = live();
+  const t0 = Date.now() - 50;
+  const dialog = await openExit(page, bot);
+  // The drawer foot offers no share; the dialog opens on 100 %
+  await expect(page.getByTestId('trade-drawer').getByRole('radio')).toHaveCount(0);
+  await expect(dialog.getByRole('radio', { name: '100 %' })).toBeChecked();
+  const tradeId = Number(
+    /trade #(\d+)/.exec(await dialog.getByTestId('dialog-target').innerText())?.[1],
+  );
+  await dialog.getByRole('radio', { name: '50 %' }).click();
+  await expect(dialog.getByTestId('dialog-qty-note')).toContainText('USDC');
+  // Choosing a share sends nothing
+  await page.waitForTimeout(500);
+  expect(await recordedWrites(t0)).toHaveLength(0);
+  const hold = dialog.getByRole('button', { name: /Hold to exit/ });
+  await hold.hover();
+  await page.mouse.down();
+  await page.waitForTimeout(1250);
+  await page.mouse.up();
+  await expect(page.getByTestId('confirm-dialog')).toHaveCount(0);
+  await page.waitForTimeout(2500);
+  const writes = await recordedWrites(t0);
+  expect(writes).toHaveLength(1);
+  expect(writes[0]!.bot).toBe(bot.index);
+  expect(writes[0]!.write.path).toBe('/forceexit');
+  expect(Number(writes[0]!.write.body.tradeid)).toBe(tradeId);
+  // A partial exit carries an amount (the fake bots keep the body as the client sent it)
+  expect(Number(writes[0]!.write.body.amount)).toBeGreaterThan(0);
+});
+
 test('a dry exit asks for a plain confirmation and sends once', async ({ page }) => {
   const bot = dry();
   const t0 = Date.now() - 50;
@@ -108,7 +141,9 @@ test('"Exit all" on a live bot needs its name typed before the hold can start', 
   const bot = live();
   const t0 = Date.now() - 50;
   await page.goto(`/bot/${botKey(bot)}`);
-  await page.getByTestId('bot-header').locator('button[data-action="exitAll"]').click();
+  // "Exit all" lives under "Sensitive actions" in the More menu, with the same confirmation
+  await page.getByTestId('bot-header').locator('button[data-action="more"]').click();
+  await page.getByRole('menuitem', { name: 'Exit all…' }).click();
   const dialog = page.getByTestId('confirm-dialog');
   await expect(dialog).toBeVisible();
   const hold = dialog.getByRole('button', { name: /Hold to/ });

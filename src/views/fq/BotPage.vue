@@ -7,13 +7,14 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   Btn,
   EmptyState,
+  Menu,
   Pane,
   SegmentedControl,
   Skeleton,
   Tabs,
   ValueState,
 } from '@/components/ds';
-import type { TabItem } from '@/components/ds';
+import type { MenuItem, TabItem } from '@/components/ds';
 import {
   AlertRail,
   BotActionBar,
@@ -29,7 +30,7 @@ import {
 } from '@/components/fq';
 import { buildAction } from '@/components/fq/lib/actions';
 import { overlaysFromPosition } from '@/components/fq/lib/candles';
-import { effectiveTf, timeframeOptions } from '@/components/fq/lib/chartsPage';
+import { effectiveTf } from '@/components/fq/lib/chartsPage';
 import type { EquityDefinition, EquityPeriod } from '@/components/fq/lib/equity';
 import { knownProfit } from '@/components/fq/lib/journal';
 import type { LeaderboardItem } from '@/components/fq/lib/leaderboard';
@@ -53,9 +54,12 @@ import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { TradeRow } from '@/gateway/types.gen';
 
 /**
- * The Bot page (docs/redesign/02-design.md, section 3.2): the header with the bot's figures and its
- * actions, the pair navigator, the chart with the levels of the selected position, the tabs
- * (Positions, History, Performance, Pairs and locks, Logs, Config) and the docked trade drawer.
+ * The Bot page (docs/redesign/02-design.md, section 3.2, 05 section 2.4): the header with the bot's
+ * four figures and its actions (Pause entries and "More"), the chart with the levels of the
+ * selected position, the tabs (Positions, History, Performance, and under "More" Pairs and locks,
+ * Logs, Config) and the docked trade drawer. The positions are listed by the Positions tab only: a
+ * second list of the same positions (the old pair navigator) is gone, the signals and the locks
+ * live in the "Pairs and locks" tab.
  * Every mutation goes through the confirmation of THIS bot (BotActionBar, the drawer, the palette
  * or the `P` key), never through a "current bot" global.
  */
@@ -117,6 +121,9 @@ function goBot(key: string | null) {
 // ---- tabs, kept in the URL ----
 type TabId = 'positions' | 'history' | 'performance' | 'pairs' | 'logs' | 'config';
 const TAB_IDS: TabId[] = ['positions', 'history', 'performance', 'pairs', 'logs', 'config'];
+/** Three tabs in the bar; the others open from "More" and take a place in the bar while open. */
+const MAIN_TABS: TabId[] = ['positions', 'history', 'performance'];
+const MORE_TABS: TabId[] = ['pairs', 'logs', 'config'];
 const tab = computed<TabId>({
   get: () => {
     const q = String(route.query.tab ?? '');
@@ -127,11 +134,20 @@ const tab = computed<TabId>({
 
 const myPositions = computed(() => positionsStore.byBot(botKey.value));
 const tabs = computed<TabItem[]>(() =>
-  TAB_IDS.map((id) => ({
+  [...MAIN_TABS, ...MORE_TABS.filter((id) => id === tab.value)].map((id) => ({
     id,
     label: t(`fq.pg.bot.tabs.${id}`),
     count: id === 'positions' ? myPositions.value.length : undefined,
   })),
+);
+const moreOpen = ref(false);
+const moreAnchor = ref<HTMLElement | null>(null);
+function toggleMore(e: MouseEvent) {
+  moreAnchor.value = e.currentTarget as HTMLElement;
+  moreOpen.value = !moreOpen.value;
+}
+const moreItems = computed<MenuItem[]>(() =>
+  MORE_TABS.map((id) => ({ id, label: t(`fq.pg.bot.tabs.${id}`) })),
 );
 
 // ---- selection: trade, pair ----
@@ -203,7 +219,9 @@ watch(
 watch(tradeGone, (gone) => gone && (sheetOpen.value = false));
 
 // ---- pairs ----
-const pairFilter = ref<PairFilter>('positions');
+// The "Pairs and locks" tab: locks first, then the signals and the whitelist of the bot
+const pairFilter = ref<PairFilter>('locks');
+const pairTabs: PairFilter[] = ['locks', 'signals', 'all'];
 const selectedPairKey = computed(() =>
   position.value && pickedPair.value === null
     ? `${position.value.bot_key}/${position.value.trade_id}`
@@ -232,8 +250,14 @@ const tf = computed({
   get: () => effectiveTf(tfPick.value, ownTf.value),
   set: (v: string) => (tfPick.value = v),
 });
+// Four timeframes (all of them are in Charts); the strategy's own one is added when it is another
+const BOT_TFS = ['5m', '15m', '1h', '4h'];
+const tfMinutes = (v: string) =>
+  Number(v.slice(0, -1)) * ({ m: 1, h: 60, d: 1440, w: 10080 }[v.slice(-1)] ?? 1);
 const tfOptions = computed(() =>
-  timeframeOptions(ownTf.value).map((v) => ({ value: v, label: v })),
+  [...new Set([...BOT_TFS, ...(ownTf.value ? [ownTf.value] : [])])]
+    .sort((a, b) => tfMinutes(a) - tfMinutes(b))
+    .map((v) => ({ value: v, label: v })),
 );
 const orders = useTradeOrders(botKey, tradeId, () => position.value?.side ?? 'long');
 const overlays = computed(() =>
@@ -377,17 +401,6 @@ const configRows = computed(() => {
       />
 
       <div class="grid">
-        <Pane class="pairs" :title="t('fq.pg.bot.pairs')" icon="layers">
-          <PairNavigator
-            v-model:filter="pairFilter"
-            :bot-key="botKey"
-            :selected-key="selectedPairKey"
-            :layout="desktop ? 'list' : 'chips'"
-            @select="onPairSelect"
-            @lift-lock="liftLock"
-          />
-        </Pane>
-
         <Pane
           class="chart"
           :title="pair ? pairLabel(pair) : t('fq.pg.bot.chart')"
@@ -425,7 +438,28 @@ const configRows = computed(() => {
         </Pane>
 
         <section class="tabsec">
-          <Tabs v-model="tab" :tabs="tabs" :label="t('fq.nav.bot')" />
+          <div class="tabhead">
+            <Tabs v-model="tab" :tabs="tabs" :label="t('fq.nav.bot')" />
+            <Btn
+              size="sm"
+              variant="ghost"
+              icon="chevron-down"
+              aria-haspopup="menu"
+              :aria-expanded="moreOpen"
+              data-testid="bot-tabs-more"
+              @click="toggleMore"
+            >
+              {{ t('fq.pg.bot.tabs.more') }}
+            </Btn>
+            <Menu
+              :open="moreOpen"
+              :anchor="moreAnchor"
+              :items="moreItems"
+              :label="t('fq.pg.bot.tabs.more')"
+              @select="(id) => (tab = id as TabId)"
+              @close="moreOpen = false"
+            />
+          </div>
           <div class="tabbody">
             <template v-if="tab === 'positions'">
               <TradeTable
@@ -485,8 +519,9 @@ const configRows = computed(() => {
             </template>
             <template v-else-if="tab === 'pairs'">
               <PairNavigator
+                v-model:filter="pairFilter"
                 :bot-key="botKey"
-                filter="locks"
+                :tabs="pairTabs"
                 :selected-key="selectedPairKey"
                 @select="onPairSelect"
                 @lift-lock="liftLock"
@@ -614,6 +649,13 @@ const configRows = computed(() => {
   border-radius: var(--r-2);
   overflow: hidden;
 }
+.tabhead {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding-right: var(--s2);
+  min-width: 0;
+}
 .tabbody {
   flex: 1;
   min-height: 0;
@@ -654,7 +696,7 @@ const configRows = computed(() => {
   padding: 0 var(--gut, 6px) var(--s4);
 }
 
-/* Phone and tablet: one column, the tabs first, then the chart and the pairs */
+/* Phone and tablet: one column, the tabs first, then the chart */
 .chart {
   min-height: 320px;
   order: 2;
@@ -663,41 +705,31 @@ const configRows = computed(() => {
   order: 1;
   max-height: 70vh;
 }
-.pairs {
-  order: 3;
-  max-height: 260px;
-}
 .drawer {
-  order: 4;
+  order: 3;
 }
 @media (min-width: 1024px) {
   .botpage {
     height: 100%;
   }
   .grid {
-    grid-template-columns: 236px minmax(0, 1fr) clamp(340px, 26vw, 420px);
+    grid-template-columns: minmax(0, 1fr) clamp(340px, 26vw, 420px);
     grid-template-rows: minmax(320px, 1.6fr) minmax(0, 1fr);
     overflow: hidden;
   }
-  .pairs {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-    max-height: none;
-    order: 0;
-  }
   .chart {
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 1;
     order: 0;
   }
   .tabsec {
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 2;
     max-height: none;
     order: 0;
   }
   .drawer {
-    grid-column: 3;
+    grid-column: 2;
     grid-row: 1 / span 2;
     order: 0;
   }

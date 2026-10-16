@@ -36,7 +36,12 @@ const ordered = computed<MenuItem[]>(() => {
 });
 
 function choose(item: MenuItem) {
-  if (item.disabled || item.kind === 'separator' || item.kind === 'heading') {
+  if (
+    item.disabled ||
+    item.kind === 'separator' ||
+    item.kind === 'heading' ||
+    item.kind === 'text'
+  ) {
     return;
   }
   emit('select', item.id);
@@ -95,6 +100,7 @@ watch(
       <template v-for="item in ordered" :key="item.id">
         <hr v-if="item.kind === 'separator'" />
         <h4 v-else-if="item.kind === 'heading'">{{ item.label }}</h4>
+        <p v-else-if="item.kind === 'text'" class="txt">{{ item.label }}</p>
         <button
           v-else
           type="button"
@@ -120,6 +126,13 @@ h4 {
   font-size: var(--t-xs);
   color: var(--fg-3);
   font-weight: 600;
+}
+.txt {
+  margin: 0 12px 6px;
+  max-width: 280px;
+  font-size: var(--t-xs);
+  color: var(--fg-2);
+  overflow-wrap: anywhere;
 }
 .mi {
   display: flex;

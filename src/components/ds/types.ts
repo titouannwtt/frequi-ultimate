@@ -69,8 +69,8 @@ export type PaneState = 'ready' | 'loading' | 'empty' | 'error' | 'stale' | 'una
 
 export interface MenuItem {
   id: string;
-  /** `item` by default; `separator` and `heading` are not selectable. */
-  kind?: 'item' | 'separator' | 'heading';
+  /** `item` by default; `separator`, `heading` and `text` (a plain line) are not selectable. */
+  kind?: 'item' | 'separator' | 'heading' | 'text';
   label?: string;
   icon?: DsIconRef;
   shortcut?: string;

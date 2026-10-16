@@ -78,10 +78,21 @@ export function drawerActionIds(orphan: boolean): ActionId[] {
   return ['exit', 'add', 'pause', 'chart'];
 }
 
-/** Header of the Bot page: visible actions first, then the `...` menu, then "Exit all". */
-export const HEADER_VISIBLE: readonly ActionId[] = ['pause', 'reload', 'config'];
-export const HEADER_MORE: readonly ActionId[] = ['resume', 'forceEntry', 'replay', 'stop'];
+/**
+ * Header of the Bot page: ONE visible action (the most frequent one), everything else in the
+ * "More" menu, the destructive ones ("Exit all", "Stop") apart under "Sensitive actions".
+ */
+export const HEADER_VISIBLE: readonly ActionId[] = ['pause'];
+export const HEADER_MORE: readonly ActionId[] = [
+  'resume',
+  'reload',
+  'config',
+  'forceEntry',
+  'replay',
+];
 export const HEADER_DANGER: ActionId = 'exitAll';
+/** Under "Sensitive actions" in the menu, in this order. */
+export const HEADER_SENSITIVE: readonly ActionId[] = ['exitAll', 'stop'];
 
 export type DisabledReason =
   | 'offline'

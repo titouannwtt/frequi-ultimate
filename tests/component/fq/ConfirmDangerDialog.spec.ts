@@ -48,6 +48,94 @@ function mountDialog(bot: BotRow, action: BotAction, position: Position | null =
   });
 }
 
+describe('ConfirmDangerDialog: the quantity is chosen here', () => {
+  const choose = async (w: ReturnType<typeof mountDialog>, label: string) => {
+    const radio = w.findAll('[role=radio]').find((b) => b.text().trim() === label)!;
+    await radio.trigger('click');
+    await nextTick();
+  };
+  // A position big enough for a quarter to stay over the 10 USDC minimum
+  const big = (): Position => ({ ...livePos, notional: 400, stake_amount: 200 });
+
+  it('opens on 100 %, which sends no amount (the bot closes everything it holds)', async () => {
+    const pos = big();
+    const w = mountDialog(liveBot, exitOf(pos), pos);
+    await nextTick();
+    expect(w.get('[role=radio][aria-checked=true]').text()).toBe('100 %');
+    await holdFor(w.get('.hold-wrap button.hold'), 1000);
+    expect(world.fake.acts).toHaveLength(1);
+    expect((world.fake.acts[0]!.action as { amount?: number }).amount).toBeUndefined();
+  });
+
+  it.each([
+    ['50 %', 0.5, 200],
+    ['25 %', 0.25, 100],
+    ['100 %', 1, 400],
+  ])(
+    '%s: one forceexit for the named bot and trade, with the matching amount',
+    async (label, share, usdc) => {
+      const pos = big();
+      const w = mountDialog(liveBot, exitOf(pos), pos);
+      await nextTick();
+      // Start from another share so that choosing "100 %" is a real change too
+      await choose(w, label === '100 %' ? '25 %' : '100 %');
+      await choose(w, label);
+      expect(w.get('[role=radio][aria-checked=true]').text()).toBe(label);
+      // The note says the amount in USDC and the exchange minimum
+      const note = w.get('[data-testid=dialog-qty-note]').text();
+      expect(note).toContain(usdc.toFixed(2));
+      expect(note).toContain('10');
+      expect(world.fake.acts).toHaveLength(0);
+      await holdFor(w.get('.hold-wrap button.hold'), 1000);
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(world.fake.acts).toHaveLength(1);
+      const sent = world.fake.acts[0]!;
+      expect(sent.botKey).toBe(liveBot.bot_key);
+      expect(sent.action).toMatchObject({ kind: 'forceexit', tradeId: pos.trade_id });
+      const amount = (sent.action as { amount?: number }).amount;
+      if (share === 1) expect(amount).toBeUndefined();
+      else {
+        expect(amount).toBeCloseTo(pos.amount * share, 6);
+        expect(amount!).toBeLessThan(pos.amount);
+      }
+    },
+  );
+
+  it('an amount in USDC is turned into the matching share', async () => {
+    const pos = big();
+    const w = mountDialog(liveBot, exitOf(pos), pos);
+    await nextTick();
+    await choose(w, 'Other');
+    await w.get('input[type=number]').setValue('100');
+    await nextTick();
+    await holdFor(w.get('.hold-wrap button.hold'), 1000);
+    expect(world.fake.acts).toHaveLength(1);
+    expect((world.fake.acts[0]!.action as { amount?: number }).amount).toBeCloseTo(
+      pos.amount * 0.25,
+      6,
+    );
+  });
+
+  it('a share under the minimum is flagged in the dialog and cannot be confirmed', async () => {
+    const tiny = { ...livePos, notional: 30, stake_amount: 15 };
+    const w = mountDialog(liveBot, exitOf(tiny), tiny);
+    await nextTick();
+    await choose(w, '25 %');
+    expect(w.get('[data-testid=dialog-qty-note] .num').classes()).toContain('warn');
+    const go = w.get('.hold-wrap button.hold');
+    expect(go.attributes('aria-disabled')).toBe('true');
+    await holdFor(go, 1500);
+    expect(world.fake.acts).toHaveLength(0);
+  });
+
+  it('the quantity is not offered for Exit all: nothing partial there', async () => {
+    const w = mountDialog(liveBot, { kind: 'forceexit', tradeId: 'all' }, null);
+    await nextTick();
+    expect(w.find('[role=radio]').exists()).toBe(false);
+    expect(w.find('[data-testid=dialog-qty-note]').exists()).toBe(false);
+  });
+});
+
 describe('ConfirmDangerDialog: live exits', () => {
   it('names the target bot, its key and the trade before anything else', async () => {
     const w = mountDialog(liveBot, exitOf(livePos), livePos);
