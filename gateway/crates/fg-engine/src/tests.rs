@@ -643,13 +643,18 @@ async fn a_ledger_that_cannot_be_read_makes_the_metrics_stale() {
     let row = &p.bots[&key(9001)];
     assert!(row.freshness[&FreshnessGroup::Metrics].stale);
     assert_eq!(row.metrics.realized_1d, None);
-    assert!(
-        p.health
-            .reasons
-            .iter()
-            .any(|x| x.code == "ledger_unreadable")
-            || r.h.health().level != fg_core::model::HealthLevel::Critical
+    let reason = p
+        .health
+        .reasons
+        .iter()
+        .find(|x| x.code == "ledger_unreadable")
+        .expect("the unreadable ledger is a health reason");
+    assert_eq!(
+        reason.detail.as_deref(),
+        Some("1 (db_locked 1)"),
+        "the reason says how many ledgers and why"
     );
+    assert_eq!(p.health.level, fg_core::model::HealthLevel::Degraded);
     // Recovery.
     r.ledger.with(&db_path("a"), |db| db.fail = None);
     settle(10).await;

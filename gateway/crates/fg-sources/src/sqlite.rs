@@ -325,7 +325,17 @@ struct Handle {
     schema: LedgerSchema,
     /// Armed by the progress handler when the query overran its budget.
     deadline: Arc<Deadline>,
+    /// Multiplier of the query budget of this connection: raised after every overrun (see
+    /// [`BUDGET_STEP`]), never lowered. A query that cannot finish within the base budget on this
+    /// host (a loaded machine, a large ledger, an unoptimised build) would otherwise fail on every
+    /// pass and leave the bot's metrics unknown for good.
+    budget_mult: u32,
 }
+
+/// Factor applied to the budget of a connection after a query overran it.
+const BUDGET_STEP: u32 = 4;
+/// Highest multiplier: 16 times the base budget (3.2 s by default), still a bounded read.
+const BUDGET_MULT_MAX: u32 = 16;
 
 /// Deadline shared with the SQLite progress handler.
 struct Deadline {
@@ -426,6 +436,7 @@ impl SqliteLedger {
             schema_version: None,
             schema: LedgerSchema::default(),
             deadline,
+            budget_mult: 1,
         })
     }
 
@@ -465,7 +476,9 @@ impl SqliteLedger {
             .lock()
             .map_err(|_| LedgerError(LedgerErrorCode::DbError))?;
 
-        handle.deadline.arm(self.opts.query_budget);
+        handle
+            .deadline
+            .arm(self.opts.query_budget * handle.budget_mult);
         let result = (|| {
             let version: i64 = handle
                 .conn
@@ -478,6 +491,9 @@ impl SqliteLedger {
         })();
         handle.deadline.disarm();
         let expired = handle.deadline.expired.load(Ordering::Relaxed);
+        if expired {
+            handle.budget_mult = (handle.budget_mult * BUDGET_STEP).min(BUDGET_MULT_MAX);
+        }
         // The slot guard must be gone before `conns` is taken (see the lock order on the type).
         drop(handle);
         result.map_err(|e| {
@@ -1560,6 +1576,40 @@ mod tests {
             })
             .unwrap_err();
         assert_eq!(err.code(), LedgerErrorCode::Timeout);
+    }
+
+    #[test]
+    fn a_query_that_overran_gets_a_larger_budget_next_time_up_to_a_cap() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = make_db(dir.path(), "bot.sqlite", false);
+        let ledger = SqliteLedger::new(LedgerOptions {
+            query_budget: Duration::from_nanos(1),
+            ..LedgerOptions::default()
+        });
+        let slow = |ledger: &SqliteLedger| {
+            ledger.with(&db, |conn, _| {
+                conn.query_row(
+                    "WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 50000000)
+                     SELECT COUNT(*) FROM c",
+                    [],
+                    |r| r.get::<_, i64>(0),
+                )
+            })
+        };
+        let mult = |ledger: &SqliteLedger| {
+            let conns = ledger.conns.lock().unwrap();
+            let h = conns[&db].handle.lock().unwrap();
+            h.budget_mult
+        };
+        assert_eq!(slow(&ledger).unwrap_err().code(), LedgerErrorCode::Timeout);
+        assert_eq!(mult(&ledger), 4);
+        assert_eq!(slow(&ledger).unwrap_err().code(), LedgerErrorCode::Timeout);
+        assert_eq!(mult(&ledger), 16);
+        assert_eq!(slow(&ledger).unwrap_err().code(), LedgerErrorCode::Timeout);
+        assert_eq!(mult(&ledger), 16, "capped");
+        // A quick query on the same connection keeps the larger budget: no thrashing.
+        assert_eq!(ledger.summary(&db).unwrap().open_count, 0);
+        assert_eq!(mult(&ledger), 16);
     }
 
     #[test]
