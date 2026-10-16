@@ -8,7 +8,7 @@
  * mode and stop or start the gateway. Nothing here touches a real bot: the namespace only contains
  * the processes started below.
  */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import { join } from 'node:path';
@@ -30,6 +30,8 @@ const ctrlPort = Number(args['control-port']);
 const uiOrigins = (args['ui-origins'] ?? '').split(',').filter(Boolean);
 const password = args.password;
 const closed = Number(args.closed ?? 400);
+// True inside the private PID + mount namespace of rig.mjs (see the stand-in processes below)
+const isolated = args.isolated === '1';
 
 const children = new Set();
 
@@ -134,12 +136,32 @@ for (const b of manifest.bots) {
   };
   const file = join(dir, 'cfg', `${b.name}.json`);
   writeFileSync(file, JSON.stringify(cfg, null, 2));
-  // `trade` and an argument containing `freqtrade` is what the discovery looks for in the argv
-  const stand = spawn(
-    process.execPath,
-    ['-e', 'setInterval(() => {}, 1 << 30)', 'trade', 'freqtrade', '--config', file],
-    { stdio: 'ignore', cwd: dir },
-  );
+  // The discovery of a gateway looks for `trade` and an argument containing `freqtrade` in the
+  // argv of a process. A PID namespace does not hide a process from the /proc of the host, so
+  // the production gateway used to find these stand-ins too and listed fake bots and positions
+  // among the real ones (B210). In the namespace the real argv is therefore harmless
+  // (`rig-standin`), and the discovery-shaped one is bind-mounted over /proc/<pid>/cmdline
+  // of the namespace's own procfs: only the rig's gateway sees it.
+  const discoveryArgv = [process.execPath, 'trade', 'freqtrade', '--config', file];
+  const stand = isolated
+    ? spawn(process.execPath, ['-e', 'setInterval(() => {}, 1 << 30)', 'rig-standin', b.name], {
+        stdio: 'ignore',
+        cwd: dir,
+      })
+    : spawn(process.execPath, ['-e', 'setInterval(() => {}, 1 << 30)', ...discoveryArgv.slice(1)], {
+        stdio: 'ignore',
+        cwd: dir,
+      });
+  if (isolated) {
+    const cmdlineFile = join(dir, 'cfg', `${b.name}.cmdline`);
+    writeFileSync(cmdlineFile, `${discoveryArgv.join('\0')}\0`);
+    const r = spawnSync('mount', ['--bind', cmdlineFile, `/proc/${stand.pid}/cmdline`], {
+      encoding: 'utf8',
+    });
+    if (r.status !== 0) {
+      throw new Error(`cannot mask the stand-in argv of ${b.name}: ${r.stderr || r.error}`);
+    }
+  }
   children.add(stand);
 }
 
