@@ -253,6 +253,8 @@ pub struct OrderRow {
     pub cost: Option<f64>,
     pub filled_ms: Option<i64>,
     pub tag: Option<String>,
+    /// What a waiting order waits for: the trigger of a stop, the limit of anything else.
+    pub price: Option<f64>,
 }
 
 /// Sort key of the journal.

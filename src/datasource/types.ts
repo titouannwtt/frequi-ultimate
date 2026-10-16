@@ -157,6 +157,12 @@ export interface OrderRow {
   cost: number | null;
   filled_ms: number | null;
   tag: string | null;
+  /**
+   * What a waiting order waits for: the limit price, or the trigger of a stop. The bot's REST answer
+   * (direct mode) and the gateway ledger (`price`, `stop_price` columns) both carry it; an older
+   * ledger without those columns leaves it null.
+   */
+  price?: number | null;
 }
 
 export interface PeriodQuery {
