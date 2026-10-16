@@ -528,6 +528,8 @@ fn filled_order(id: i64, trade_id: i64, side: &str) -> fg_sources::sqlite::Ledge
         cost: Some(100.0),
         filled_ms: Some(T0 - HOUR),
         tag: None,
+        price: Some(100.0),
+        stop_price: None,
     }
 }
 
