@@ -129,6 +129,7 @@ export function makeBot(seq: number, spec: FixtureBotSpec): BotRow {
       market: spec.market ?? 'crypto',
       stake_currency: 'USDC',
       port: 9400 + seq,
+      timeframe: '15m',
       ui_ids: [`ftbot.${seq}`],
       incarnation: `inc-${seq}`,
     },

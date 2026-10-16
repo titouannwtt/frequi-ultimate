@@ -599,6 +599,7 @@ pub fn assemble(rt: &mut BotRuntime, ctx: &AssembleCtx<'_>) -> Assembled {
             market,
             stake_currency: rt.meta.stake_currency.clone(),
             port: rt.meta.port,
+            timeframe: rt.features.as_ref().and_then(|f| f.timeframe.clone()),
             ui_ids: Vec::new(),
             incarnation: rt.meta.incarnation.clone(),
         },

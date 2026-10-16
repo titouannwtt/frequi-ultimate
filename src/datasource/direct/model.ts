@@ -251,6 +251,7 @@ export function buildBotRow(rt: BotRuntime, ctx: RowContext): BotRow {
     market: wl.length > 0 ? (whitelistMarket(wl) ?? 'crypto') : 'crypto',
     stake_currency: cfg?.stake_currency ?? dg?.stake_currency ?? 'USDC',
     port: rt.port,
+    timeframe: cfg?.timeframe || null,
     ui_ids: [rt.id],
     incarnation: `${nameOf(rt)}|${cfg?.strategy ?? ''}`,
   };

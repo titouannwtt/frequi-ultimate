@@ -360,6 +360,9 @@ pub struct BotFeatures {
     pub trading_mode: Option<String>,
     pub bot_name: Option<String>,
     pub strategy: Option<String>,
+    /// Candle timeframe of the strategy (`/show_config`.`timeframe`): a bot only serves candles
+    /// for this one.
+    pub timeframe: Option<String>,
     pub max_open_trades: Option<i64>,
     /// The `/fleet/*` endpoints of this fork exist (`false` = upstream freqtrade).
     pub fleet_endpoints: bool,
@@ -758,6 +761,11 @@ impl HttpBot {
                 .get("strategy")
                 .and_then(Value::as_str)
                 .map(str::to_owned),
+            timeframe: cfg
+                .get("timeframe")
+                .and_then(Value::as_str)
+                .filter(|t| !t.is_empty())
+                .map(str::to_owned),
             max_open_trades: cfg.get("max_open_trades").and_then(Value::as_i64),
             fleet_endpoints: false,
         };
@@ -1052,7 +1060,7 @@ mod tests {
             ("GET", "/api/v1/show_config") => FakeResponse::json(
                 200,
                 r#"{"version":"2026.9","api_version":2.45,"dry_run":false,"trading_mode":"futures",
-                    "state":"running","runmode":"live","bot_name":"hippo","strategy":"S","max_open_trades":3}"#,
+                    "state":"running","runmode":"live","bot_name":"hippo","strategy":"S","timeframe":"30m","max_open_trades":3}"#,
             ),
             ("GET", "/api/v1/fleet/status") => FakeResponse::json(200, "{}"),
             ("GET", "/api/v1/status") => FakeResponse::json(200, r#"[{"trade_id":1}]"#),
@@ -1262,6 +1270,7 @@ mod tests {
         assert_eq!(f.api_version, Some(2.45));
         assert_eq!(f.trading_mode.as_deref(), Some("futures"));
         assert_eq!(f.max_open_trades, Some(3));
+        assert_eq!(f.timeframe.as_deref(), Some("30m"));
         assert!(f.fleet_endpoints);
 
         let upstream = FakeHttp::start(|req| {

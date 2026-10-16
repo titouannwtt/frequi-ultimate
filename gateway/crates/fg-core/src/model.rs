@@ -102,6 +102,9 @@ pub struct BotIdentity {
     pub market: Market,
     pub stake_currency: String,
     pub port: Option<u16>,
+    /// Candle timeframe of the strategy, once the bot has been probed: a bot only serves candles
+    /// for this timeframe.
+    pub timeframe: Option<String>,
     /// `ftbot.N` aliases of this bot on the requesting device.
     pub ui_ids: Vec<String>,
     /// See [`crate::identity::incarnation`].
