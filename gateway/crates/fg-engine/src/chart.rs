@@ -15,6 +15,12 @@
 //!   window that is still moving;
 //! * at most [`MAX_CHARTS`] distinct charts are relayed at once; a read every
 //!   `timeframe / 12` (between 5 and 60 s) is the whole cost of a chart;
+//! * the relay owns a bounded share of the request budget ([`RELAY_RATE_PER_S`], all charts
+//!   together): its reads are paced by their own queue and then paid with `debit`, which never
+//!   waits behind the pollers of the fleet. 16 charts of 1 minute would otherwise ask for 3.2
+//!   req/s, more than the whole bucket, and the FIFO bucket would starve the `/status` polling
+//!   and the pre-read of a forced exit (B106). Past the share, charts are read less often and
+//!   their freshness says so;
 //! * one poller per chart, however many clients watch it; it stops 30 s after the last one left;
 //! * a bot that cannot be read leaves the last candles in place and turns `meta.freshness.stale`
 //!   on: a frozen chart is never presented as live.
@@ -32,6 +38,7 @@ use fg_sources::botrest::{ProxyMethod, ProxyRequest};
 use serde_json::Value;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
+use tokio::time::Instant;
 
 use crate::error::EngineError;
 use crate::proxy::proxy_read;
@@ -45,6 +52,10 @@ pub const MAX_CHARTS: usize = 16;
 pub const WINDOW: usize = 150;
 /// Longest answer of `pair_candles` that is parsed (every indicator column comes with it).
 const MAX_BODY: usize = 8 * 1024 * 1024;
+/// Requests per second the relay may spend, all charts together: about a tenth of the budget,
+/// which leaves the fleet polling of a 24-bot host (2.4 req/s measured) inside the 2.8 req/s
+/// bucket.
+pub const RELAY_RATE_PER_S: f64 = 0.3;
 const MIN_PERIOD: Duration = Duration::from_secs(5);
 const MAX_PERIOD: Duration = Duration::from_secs(60);
 const READ_TIMEOUT: Duration = Duration::from_secs(20);
@@ -206,6 +217,8 @@ struct Slot {
 #[derive(Default)]
 pub(crate) struct Charts {
     map: Mutex<HashMap<ChartKey, Slot>>,
+    /// Instant of the next free reading slot of the relay.
+    next_slot: Mutex<Option<Instant>>,
 }
 
 impl Charts {
@@ -220,6 +233,21 @@ impl Charts {
         self.lock().get(key).map(|s| Arc::clone(&s.state))
     }
 
+    /// Wait for a reading slot: one every `slot` for all the charts together, in arrival order.
+    async fn wait_slot(&self, slot: Duration) {
+        let at = {
+            let mut next = self
+                .next_slot
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let now = Instant::now();
+            let at = next.map_or(now, |t| t.max(now));
+            *next = Some(at + slot);
+            at
+        };
+        tokio::time::sleep_until(at).await;
+    }
+
     /// Stop every poller (the engine is going away).
     pub(crate) fn abort_all(&self) {
         for (_, slot) in self.lock().drain() {
@@ -228,7 +256,6 @@ impl Charts {
     }
 
     /// Number of charts being relayed.
-    #[cfg(test)]
     pub(crate) fn len(&self) -> usize {
         self.lock().len()
     }
@@ -251,17 +278,19 @@ pub(crate) fn open(sh: &Arc<Shared>, key: ChartKey) -> Result<ViewGuard, EngineE
     let Ok(runtime) = tokio::runtime::Handle::try_current() else {
         return Err(EngineError::Closed);
     };
-    // The flag goes up before the map is looked at: a poller that is retiring either sees it
-    // or has already left the map.
-    let guard = sh.views.acquire(ViewKey::Chart(key.clone()));
+    // The cap is checked before the view exists: a refused chart must leave nothing behind (a
+    // view entry has no poller to forget it). The flag goes up under the map lock, so that a
+    // poller that is retiring either sees it or has already left the map. Lock order: map, then
+    // views (nothing takes them the other way round).
     let mut map = sh.charts.lock();
-    if !map.contains_key(&key) {
-        if map.len() >= MAX_CHARTS {
-            return Err(EngineError::Unavailable("too many charts are open"));
-        }
+    if !map.contains_key(&key) && map.len() >= MAX_CHARTS {
+        return Err(EngineError::Unavailable("too many charts are open"));
+    }
+    let guard = sh.views.acquire(ViewKey::Chart(key.clone()));
+    if let std::collections::hash_map::Entry::Vacant(vacant) = map.entry(key.clone()) {
         let state = Arc::new(Mutex::new(Collections::new()));
-        let task = runtime.spawn(run(Arc::clone(sh), key.clone(), Arc::clone(&state)));
-        map.insert(key, Slot { state, task });
+        let task = runtime.spawn(run(Arc::clone(sh), key, Arc::clone(&state)));
+        vacant.insert(Slot { state, task });
     }
     Ok(guard)
 }
@@ -308,7 +337,10 @@ async fn read(sh: &Arc<Shared>, key: &ChartKey) -> Option<Vec<Candle>> {
         content_type: None,
         timeout: READ_TIMEOUT,
     };
-    let resp = proxy_read(sh, &key.bot, req, true).await.ok()?;
+    // The slot was waited for by the caller; the token is paid at once, never queued behind the
+    // pollers (the bucket goes into bounded debt, so the sustained rate of the process holds).
+    sh.budget.debit(1).await;
+    let resp = proxy_read(sh, &key.bot, req, false).await.ok()?;
     if resp.status != 200 || resp.body.len() > MAX_BODY {
         return None;
     }
@@ -320,17 +352,27 @@ async fn run(sh: Arc<Shared>, key: ChartKey, state: Arc<Mutex<Collections>>) {
     let channel = key.channel();
     let tf_ms = timeframe_ms(&key.timeframe).unwrap_or(60_000);
     let period = period_of(tf_ms, sh.cfg.cadences.time_scale);
-    let period_ms = i64::try_from(period.as_millis()).unwrap_or(i64::MAX);
+    let slot = Duration::from_secs_f64(1.0 / RELAY_RATE_PER_S)
+        .div_f64(sh.cfg.cadences.time_scale.max(1e-3));
     let mut rx = sh.views.watch(&ViewKey::Chart(key.clone()));
     let mut differ = Differ::new();
     let mut window: BTreeMap<i64, Candle> = BTreeMap::new();
     let mut last_ok: Option<i64> = None;
     loop {
         if *rx.borrow() {
-            if let Some(candles) = read(&sh, &key).await {
+            sh.charts.wait_slot(slot).await;
+            // Somebody may have left while the slot was awaited.
+            if *rx.borrow()
+                && let Some(candles) = read(&sh, &key).await
+            {
                 last_ok = Some(sh.now_ms());
                 window = candles.into_iter().map(|c| (c.t, c)).collect();
             }
+            // What a chart can expect: its own period, or the turn it waits for when the charts
+            // together ask for more than the share of the relay.
+            let open = u32::try_from(sh.charts.len()).unwrap_or(u32::MAX).max(1);
+            let period_ms = i64::try_from(period.max(slot.saturating_mul(open)).as_millis())
+                .unwrap_or(i64::MAX);
             publish(
                 &sh,
                 &channel,

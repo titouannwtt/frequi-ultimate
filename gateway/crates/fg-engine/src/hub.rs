@@ -115,6 +115,17 @@ impl Hub {
         self.with(ch, |c| (c.buf.head(), f()))
     }
 
+    /// Like [`Self::at_head`] but never creates the channel: one nobody published on is at the
+    /// base of the process. For a channel a client names freely (a chart nobody relays), whose
+    /// entry nothing would ever forget.
+    pub fn peek_head<T>(&self, ch: &Channel, f: impl FnOnce() -> T) -> (u64, T) {
+        let map = self
+            .chans
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        (map.get(ch).map_or(self.base, |c| c.buf.head()), f())
+    }
+
     /// Publish several frames, then run `after` (the swap of the published state), all under one
     /// lock: a reader of [`Self::at_head`] sees either everything or nothing of the batch.
     pub fn transaction<T>(&self, f: impl FnOnce(&mut HubTx<'_>) -> T) -> T {
@@ -146,6 +157,15 @@ impl Hub {
     #[must_use]
     pub fn head(&self, ch: &Channel) -> u64 {
         self.with(ch, |c| c.buf.head())
+    }
+
+    /// Number of channels held (tests: nothing a client names may stay forever).
+    #[cfg(test)]
+    pub(crate) fn len(&self) -> usize {
+        self.chans
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
     }
 
     /// Number of live subscribers of a channel (0 for a channel nobody joined).

@@ -300,6 +300,12 @@ impl EngineHandle {
         self.sh.charts.len()
     }
 
+    /// Entries of the view registry and channels of the hub (tests).
+    #[cfg(test)]
+    pub(crate) fn sh_entries(&self) -> (usize, usize) {
+        (self.sh.views.len(), self.sh.hub.len())
+    }
+
     /// The state of a channel with the sequence number it corresponds to (`X-Gw-Seq`).
     ///
     /// The snapshot of a `chart:` channel is what its relay holds now: empty when nobody has
@@ -313,15 +319,22 @@ impl EngineHandle {
             if !self.published().bots.contains_key(&key.bot) {
                 return Err(EngineError::NotFound);
             }
-            let state = self.sh.charts.state_of(&key);
+            // A chart nobody relays has no channel to create: the name is the client's choice
+            // and nothing would ever forget the entry.
+            let Some(state) = self.sh.charts.state_of(&key) else {
+                let (seq, collections) = self.sh.hub.peek_head(ch, Default::default);
+                return Ok(ChannelSnapshot {
+                    channel: ch.clone(),
+                    seq,
+                    collections,
+                    events: Vec::new(),
+                });
+            };
             let (seq, collections) = self.sh.hub.at_head(ch, || {
                 state
-                    .map(|s| {
-                        s.lock()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner)
-                            .clone()
-                    })
-                    .unwrap_or_default()
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .clone()
             });
             return Ok(ChannelSnapshot {
                 channel: ch.clone(),

@@ -94,6 +94,12 @@ impl Views {
         }
     }
 
+    /// Number of entries (tests: nothing a client names may stay forever).
+    #[cfg(test)]
+    pub(crate) fn len(&self) -> usize {
+        self.lock().len()
+    }
+
     /// Any bot is being looked at.
     #[must_use]
     pub fn any_bot_viewed(&self) -> bool {
