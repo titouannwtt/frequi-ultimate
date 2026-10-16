@@ -88,7 +88,10 @@ test('the old keys are kept, read and migrated, never rewritten', async ({ page 
   });
   await page.evaluate((v) => localStorage.setItem('ftAuthLoginInfo', v), legacy);
   await page.reload();
-  await expect(page.getByTestId('bot-registry')).toContainText('OldBot');
+  // The old key is read: its bot is in the registry under its alias. The name shown is the one the
+  // bot reports once its config is read (the mock says TestBot123), the label of the old key only
+  // until then: the test must not depend on which of the two it catches
+  await expect(page.getByTestId('bot-registry')).toContainText('ftbot.0 · local:9');
   const after = await page.evaluate(() => ({
     old: localStorage.getItem('ftAuthLoginInfo'),
     keys: Object.keys(localStorage).filter((k) => k.startsWith('fqu2.')),

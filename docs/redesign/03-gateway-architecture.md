@@ -615,6 +615,10 @@ interface DataSource {
   mobile, `/fleet/snapshot` d'un bot + bot affiché seulement) et calcule les agrégats avec des fonctions TS pures validées
   sur les mêmes vecteurs `gateway/fixtures/vectors` que `fg-core`. En direct : pas d'alertes 24/7, journal calculé
   client, bandeau « mode direct ».
+  Ordonnancement du `DirectSource` (B230) : trois voies (digest et vue d'ensemble de la flotte ; `/status` sur 16 créneaux ;
+  config, profit, balance, logs et historique clos sur 4), le bot affiché d'abord puis celui qui attend depuis le plus longtemps,
+  une requête `/status` en vol par bot au plus, attendue 120 s (10 s par position tant que l'exchange est en backoff 429),
+  lecture ordinaire 15 s ; `/show_config` est lu avec `/status` tant que le mode du bot est inconnu.
 - Les composants ne parlent qu'aux stores normalisés (`fleet`, `positions`, `alerts`, `events`, `health`) alimentés par la
   source ; aucun appel axios dans un composant. `useBotAction(botKey)` fournit verrou en vol, clé d'idempotence et
   confirmation pour les deux sources (en direct : envoi unique, pas de rejeu après 401, comme exigé par le doc 01).
