@@ -202,17 +202,11 @@ const chartLabel = computed(() =>
     <template v-else-if="points.length > 1">
       <div class="head">
         <div class="fig">
-          <span class="lab"
-            >{{ t('fq.eq.variation', { p: t(`fq.eq.period.${period}`) }) }}
-            <span class="mut">({{ t(`fq.eq.def.${definition}`) }})</span></span
-          >
+          <span class="lab">{{ t('fq.eq.variation', { p: t(`fq.eq.period.${period}`) }) }}</span>
           <span class="big"><PnlValue :value="change" unit="USDC" :decimals="2" /></span>
         </div>
         <div class="fig" data-testid="eq-drawdown">
-          <span class="lab"
-            >{{ t('fq.eq.drawdownMax') }}
-            <span class="mut">({{ t(`fq.eq.def.${definition}`) }})</span></span
-          >
+          <span class="lab">{{ t('fq.eq.drawdownMax') }}</span>
           <span class="big">
             <template v-if="ddAbs !== null">
               <PnlValue :value="-ddAbs" unit="USDC" :decimals="0" />
@@ -269,9 +263,11 @@ const chartLabel = computed(() =>
 .note.warn {
   color: var(--warn);
 }
+/* The definition is the toggle right above: not repeated in each label, so that the two figures
+   share one line in a narrow pane and leave the height to the curve */
 .head {
   display: flex;
-  gap: var(--s5);
+  gap: var(--s2) var(--s5);
   flex-wrap: wrap;
 }
 .fig {
@@ -304,7 +300,7 @@ const chartLabel = computed(() =>
   min-width: 0;
 }
 .chart.fill {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 130px;
 }
 </style>
