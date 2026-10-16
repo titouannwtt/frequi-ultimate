@@ -667,7 +667,7 @@ dependencies = [
 
 [[package]]
 name = "fakebot"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "axum",
  "chrono",
@@ -709,7 +709,7 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "fg-core"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "blake3",
  "chrono",
@@ -722,7 +722,7 @@ dependencies = [
 
 [[package]]
 name = "fg-engine"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "arc-swap",
  "blake3",
@@ -741,7 +741,7 @@ dependencies = [
 
 [[package]]
 name = "fg-server"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "argon2",
  "axum",
@@ -769,7 +769,7 @@ dependencies = [
 
 [[package]]
 name = "fg-sources"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "blake3",
  "chrono",
@@ -835,7 +835,7 @@ dependencies = [
 
 [[package]]
 name = "frequi-gateway"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "anyhow",
  "clap",

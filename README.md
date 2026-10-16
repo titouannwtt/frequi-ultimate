@@ -6,37 +6,41 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-blue" alt="License: GPLv3"></a>
   <a href="https://github.com/titouannwtt/frequi-ultimate/stargazers"><img src="https://img.shields.io/github/stars/titouannwtt/frequi-ultimate?style=social" alt="GitHub stars"></a>
   <img src="https://img.shields.io/badge/vue-3.5-brightgreen" alt="Vue 3.5">
-  <img src="https://img.shields.io/badge/i18n-6%20languages-blue" alt="6 languages">
+  <img src="https://img.shields.io/badge/i18n-FR%20%2B%20EN-blue" alt="French and English">
   <a href="https://buymeacoffee.com/freqtrade_france"><img src="https://img.shields.io/badge/community-Freqtrade%20France-orange" alt="Freqtrade France community"></a>
 </p>
 
 <p align="center">
   <a href="#install"><b>Install</b></a> ·
+  <a href="#the-gateway-optional"><b>Gateway</b></a> ·
   <a href="#how-it-works"><b>How it works</b></a> ·
   <a href="#highlights"><b>Highlights</b></a> ·
-  <a href="#screenshots"><b>Screenshots</b></a>
+  <a href="docs/UPGRADE.en.md"><b>Upgrade guide</b></a>
 </p>
 
 ## What is FreqUI Ultimate?
 
-A fork of [FreqUI](https://github.com/freqtrade/frequi), the Freqtrade web dashboard, redesigned to run a whole fleet of Freqtrade bots from one screen. It is the companion of [freqtrade-ultimate](https://github.com/titouannwtt/freqtrade-ultimate), but it is compatible with any standard Freqtrade instance.
+A fork of [FreqUI](https://github.com/freqtrade/frequi), the Freqtrade web dashboard, rebuilt to run a whole fleet of Freqtrade bots from one screen, on a desktop or a phone. It is the companion of [freqtrade-ultimate](https://github.com/titouannwtt/freqtrade-ultimate), and it keeps working against any standard Freqtrade instance.
 
-It is rebuilt around two needs upstream doesn't address:
+Version 2.0 is a full redesign: four first-class pages (Fleet, Bot, Charts, Journal), one data layer shared by every page, and an optional Rust service, the **gateway**, that reads your bots once for all your tabs and devices. Maintained by [Freqtrade France](https://buymeacoffee.com/freqtrade_france).
 
-1. **Monitoring multiple Freqtrade bots simultaneously:** compare them side-by-side, alert on cross-bot anomalies, manage them as a fleet.
-2. **Understanding the market context around your bots:** volume context, regime indicators, stress tests, alert detection.
-
-148 files modified, +38 413 lines added, 50+ enhanced components, 6 languages out of the box. Maintained by [Freqtrade France](https://buymeacoffee.com/freqtrade_france).
+Coming from an earlier version? Read the [upgrade guide](docs/UPGRADE.en.md) ([français](docs/UPGRADE.fr.md)). Nothing to re-register: your bot list stays in your browser.
 
 ## Install
 
 ### Option A: through freqtrade-ultimate (recommended)
 
 ```bash
-freqtrade install-ui --ui-version github://titouannwtt/frequi-ultimate
+freqtrade install-ui --ui-version v2.0.0
 ```
 
-### Option B: local development
+`--ui-version` takes the name of a [release](https://github.com/titouannwtt/frequi-ultimate/releases) (a tag such as `v2.0.0`), not a URL. Without it, the latest release that is not a prerelease is installed.
+
+### Option B: any Freqtrade, by hand
+
+Stock `freqtrade install-ui` downloads the upstream FreqUI. Download `frequi-ultimate-ui-<tag>.zip` from the releases page and unzip it into `freqtrade/rpc/api_server/ui/installed/`.
+
+### Option C: local development
 
 ```bash
 git clone https://github.com/titouannwtt/frequi-ultimate.git
@@ -47,95 +51,41 @@ pnpm dev
 
 Then point it at any Freqtrade or [freqtrade-ultimate](https://github.com/titouannwtt/freqtrade-ultimate) instance via the standard FreqUI login flow.
 
+## The gateway (optional)
+
+`frequi-gateway` is a single static binary (Linux x86_64 and aarch64, no dependency) that runs next to your bots. It discovers them, reads their trades once, computes the fleet figures and alerts, and serves them over HTTP and WebSocket to every browser. Without it, the UI polls each bot itself (direct mode) and works as before; with it, ten tabs cost the same as one, and your preferences follow you from your computer to your phone.
+
+```bash
+sha256sum -c --ignore-missing SHA256SUMS
+install -D -m 0755 frequi-gateway-x86_64-unknown-linux-musl ~/.local/bin/frequi-gateway
+frequi-gateway print-default-config > ~/.config/frequi-gateway/config.toml   # set server.cors_origins
+frequi-gateway check-config
+frequi-gateway run
+```
+
+Authentication is mandatory, the port is `9399`, and the UI finds the gateway by itself and falls back to direct mode if it goes away. A systemd user unit, a screen launcher, a Docker image and an example configuration are in [`gateway/packaging`](gateway/packaging); the details, the security notes and the rollback are in the [upgrade guide](docs/UPGRADE.en.md). The design is in [`docs/redesign`](docs/redesign).
+
 ## How it works
 
-<p align="center"><img src=".readme_illustrations/readme-architecture.svg" alt="The browser runs FreqUI Ultimate; Pinia stores poll the REST API of every bot and merge the results client-side; fleet-wide widgets call endpoints that only exist on freqtrade-ultimate" width="100%"></p>
+<p align="center"><img src=".readme_illustrations/readme-architecture.svg" alt="Direct mode: the browser runs FreqUI Ultimate and polls the REST API of every bot, merging the results client-side" width="100%"></p>
 
-- **Fan-out polling.** Each bot is a separate Freqtrade REST API instance with its own auth. Pinia stores poll every bot independently and merge the results client-side into the fleet dashboard.
-- **Fork-only widgets.** Fleet-wide panels call extra endpoints (`/fleet/*`, `/fleetview/*`, `/stratdev/*`, `/volume_history`, `/signal_summary`) served by freqtrade-ultimate.
-- **Interactive diagram.** [`docs/diagrams/frequi-architecture.html`](docs/diagrams/frequi-architecture.html) shows how the fleet dashboard polls every bot's REST API and where the fork-only widgets plug in.
+- **The UI is still served by your bot**, from the same origin as before, so your saved bots and tokens keep working. Nothing is deployed in front of it.
+- **Two data sources, one interface.** *Gateway mode* reads a pre-computed, de-duplicated state from the gateway. *Direct mode* (no gateway, or gateway down) polls the bots from the browser with ports of the same calculations, checked against shared test vectors (`gateway/fixtures/vectors`) run by both the Rust and the TypeScript side.
+- **Freshness is always visible.** Every figure says how old it is; a stale or missing figure is shown as such, never as zero.
+- **Fork-only panels.** Some fleet widgets call extra endpoints (`/fleet/*`, `/fleetview/*`, `/stratdev/*`, `/volume_history`, `/signal_summary`) served by freqtrade-ultimate; against a stock bot they stay empty.
 
-> [!NOTE]
-> The advanced widgets (Market Pulse, Risk Overview, fleet status, volume/signal context, the in-browser strategy editor) are powered by REST endpoints that only exist in **[freqtrade-ultimate](https://github.com/titouannwtt/freqtrade-ultimate)**. Point this UI at a stock freqtrade bot and those panels stay empty: pair it with the fork for the full experience.
-
-**Stack:** Vue 3.5 · Pinia · PrimeVue · ECharts · TailwindCSS 4 · vue-i18n · Monaco Editor · Vite 8 · pnpm.
+**Stack:** Vue 3.5 · Pinia · PrimeVue (unstyled) · ECharts · TailwindCSS 4 · vue-i18n · Vite 8 · pnpm. Gateway: Rust, tokio, axum, SQLite (read-only).
 
 ## Highlights
 
-<p align="center"><img src=".readme_illustrations/readme-highlights.svg" alt="Five areas: dashboard redesign, fleet management with 13 cross-bot alerts, strategy development UI, 6 languages, settings and UX" width="100%"></p>
+- **Fleet** (`/dashboard`): live equity with unrealised P&L, realised profit by period, drawdown, exposure, every position, alerts and the health of the data sources.
+- **Bot, Charts, Journal:** one bot in depth, candles with trades, and the full trade log with filters and export.
+- **Safe actions.** Long and short are green and red with an arrow and an L/S letter; exiting a live position needs a one-second press-and-hold; a double click sends one request.
+- **Time zone:** days, weeks and months are cut in Europe/Paris by default (UTC is one setting away).
+- **Tools menu:** StrategyDev, Backtest, Download data and Pairlist stay available for open-source users, out of the way.
+- **French and English.**
 
-### Dashboard redesign
-
-- **DashboardViewCustom:** glassmorphism redesign with persistent layouts (Pinia store).
-- **Enhanced widgets:** MarketPulse, ActivityTimeline, RiskOverview, StressTestCard, LogViewerEnhanced.
-- **Enhanced charts:** ProfitBenchmarkChart, ProfitDistributionEnhanced, CumulativeProfitEnhanced, OpenTradesEnhanced, ClosedTradesEnhanced.
-- **BotProfitComparisonChart:** per-bot realized P&L as a bar chart to compare bots head-to-head over a chosen window. Period selector (24h, today, 48h, 7d, 14d, 1/2/3/6 months, 1 year, All), live/all/dry filter, value in the summary currency or in % of allocated capital, sortable, with the fleet total. Honors the bots selected in *Bot comparison* intersected with its own live/dry filter. Profit is summed from each bot's cached closed trades (no extra API calls) and currencies are normalized via the dashboard's exchange rates.
-
-### Multi-bot fleet management
-
-- **BotComparisonList:** custom columns, tags, filters, sorting, groups, **13 alert types**, drag-drop reordering, CSV export, keyboard shortcuts (+4 530 lines over upstream).
-- **Cross-bot popovers:** glassmorphism context cards: PeriodProfitCard, OpenProfitCard, ClosedProfitCard, BotInfoCard, ExchangeInfoCard.
-- **Browser notifications:** trade events, alerts, fleet status changes.
-
-### Strategy development UI
-
-- **StrategyDev:** embedded Monaco editor for live strategy editing, job launcher (backtest / hyperopt from the UI), 15+ analysis cards. Hooks into the strategy-dev backend shipped in [freqtrade-ultimate](https://github.com/titouannwtt/freqtrade-ultimate).
-
-### Internationalization
-
-- **6 languages out of the box:** English, French, German, Spanish, Italian, Portuguese (1 200+ translation keys each).
-
-### Settings and UX
-
-- **SettingsViewCustom:** section cards, glassmorphism, notification settings, configuration export.
-- **NavBar:** tab icons, PDF export, full i18n, glassmorphism.
-
-## Screenshots
-
-### Multi-bot dashboard
-
-One glassmorphism screen for the whole fleet: live log console, cumulative profit vs BTC benchmark, per-bot comparison, and every open position with duration-health bars.
-
-![Multi-bot dashboard](.readme_illustrations/dashboard-overview.png)
-
-### Fleet comparison and alerts
-
-Compare bots head-to-head with custom columns, tags, filters, groups, drag-drop ordering, and 13 cross-bot alert types.
-
-<p align="center">
-  <img src=".readme_illustrations/bot-comparison-alerts.png" width="49%" alt="Bot comparison: alerts">
-  <img src=".readme_illustrations/bot-comparison-groups.png" width="49%" alt="Bot comparison: groups">
-</p>
-
-### Market context and portfolio risk
-
-Widgets stock FreqUI doesn't have: Market Pulse (BTC dominance, Fear & Greed, fleet vs BTC/ETH) and a portfolio-wide Risk Overview (net/gross exposure, leverage, worst drawdown, correlation warnings).
-
-<p align="center">
-  <img src=".readme_illustrations/widget-market-pulse.png" width="49%" alt="Market Pulse widget">
-  <img src=".readme_illustrations/widget-risk-overview.png" width="49%" alt="Risk Overview widget">
-</p>
-
-### Analytics widgets
-
-Per-bot profit benchmarks, profit distribution, activity timeline, and a Monte-Carlo stress test.
-
-<p align="center">
-  <img src=".readme_illustrations/widget-profit-benchmarks-combined.png" width="49%" alt="Profit and benchmarks widget">
-</p>
-<p align="center">
-  <img src=".readme_illustrations/widget-stress-test.png" width="49%" alt="Stress test widget">
-  <img src=".readme_illustrations/widget-activity-timeline.png" width="49%" alt="Activity timeline widget">
-</p>
-
-### Rich context popovers
-
-Hover any metric for a glassmorphism context card: open/closed profit, win/loss, DCA escalations, exit reasons, price levels, and more.
-
-<p align="center">
-  <img src=".readme_illustrations/popover-open-positions.png" width="49%" alt="Open positions popover">
-  <img src=".readme_illustrations/popover-dca-escalations.png" width="49%" alt="DCA escalations popover">
-</p>
+<!-- Screenshots of the 2.0 interface are added with the release. -->
 
 ## Learn algorithmic trading
 

@@ -193,16 +193,18 @@ format = "json"
   (pas de Docker requis), publiées en assets de release avec `SHA256SUMS`. Taille visée < 15 Mo.
 - L'hôte n'a ni `cargo` ni `docker` : installation par téléchargement de l'artefact CI vers `~/.local/bin/frequi-gateway`
   (ou `rustup` en espace utilisateur pour le développement, sans root).
-- Ce serveur (GNU screen) : `packaging/run-in-screen.sh` lance la passerelle dans une boucle de relance
-  (`until frequi-gateway run; do sleep 5; done`) ; démarrage `screen -dmS frequi-gateway packaging/run-in-screen.sh`,
-  arrêt `screen -x frequi-gateway` puis Ctrl+C (même discipline que pour les bots, jamais `kill` de l'extérieur).
+- Ce serveur (GNU screen) : `packaging/run-in-screen.sh` crée la session détachée `frequi-gateway` (idempotent : rien si elle
+  existe ; refus avec le code 4 si le port d'écoute est déjà pris ; refus avec le code 3 si `check-config` échoue) et y lance
+  la passerelle dans une boucle de relance (5 s après un plantage, pas après une erreur de configuration ni un arrêt propre,
+  abandon après 10 échecs rapides) ; arrêt `screen -x frequi-gateway` puis Ctrl+C (même discipline que pour les bots, jamais
+  `kill` de l'extérieur).
   Arrêt propre sur SIGINT/SIGTERM : fermeture WS avec code 1001, vidage de l'audit, en moins de 5 s.
 - Open-source : unité systemd **utilisateur** `frequi-gateway.service` (`Restart=on-failure`, `NoNewPrivileges=yes`,
-  `ProtectSystem=strict`, `ReadWritePaths=%h/.local/share/frequi-gateway`). Piège documenté : **pas de `PrivateTmp`**
+  `ProtectSystem=strict`, `ReadWritePaths=%h/.local/share/frequi-gateway`, suffisant : mesuré, une base WAL se lit sans chemin
+  inscriptible, B105). Piège documenté : **pas de `PrivateTmp`**
   (le socket ftcache est dans `/tmp`) et pas de `ProtectProc=invisible` (scan `/proc`).
 - Docker : image `scratch` + binaire statique. Limites documentées : pas de scan `/proc` sans `--pid=host`, montages
-  requis (répertoire des bases en lecture-écriture car un lecteur WAL doit pouvoir ouvrir `-shm`, ouverture en `ro` côté
-  passerelle ; socket ftcache ; même UID que les bots) ; en pratique le mode Docker = registre + REST.
+  requis (répertoire des bases, la lecture seule suffit, B105 ; socket ftcache ; même UID que les bots) ; en pratique le mode Docker = registre + REST.
 
 ## 3. Authentification
 
@@ -662,12 +664,16 @@ des formats v1/v2 et ajoute un format v3 qui inclut `fqu2.*`.
   mock rejouant des fixtures) ; projets desktop et mobile ; scénarios : bootstrap silencieux, reconnexion et `resync`,
   bascule en direct quand la passerelle tombe, double clic sur forceexit = une seule requête, `409 state_mismatch`
   affiché, migration du `localStorage` depuis un jeu de clés réelles anonymisées.
-- **CI GitHub Actions** (à créer, aucun workflow aujourd'hui) :
+- **CI GitHub Actions** (créés dans `.github/workflows`, lot B5 ; `actionlint` propre) :
   - `rust.yml` : `fmt --check`, `clippy -D warnings`, `test`, `cargo-deny`, build musl x86_64 + aarch64 (cargo-zigbuild),
     artefacts.
   - `frontend.yml` : `pnpm install --frozen-lockfile`, `lint-ci`, `typecheck`, `test:unit`, `build`, Playwright chromium +
     mobile contre la passerelle de démonstration.
-  - `contract.yml` : régénère `src/gateway/types.gen.ts` via ts-rs et échoue sur diff.
+  - `contract.yml` : régénère `src/gateway/types.gen.ts` via ts-rs et échoue sur diff ; vecteurs partagés des deux côtés.
+  - `packaging.yml` : shellcheck, répétition de `deploy-ui.sh` et du retour arrière, unité systemd, exemple de configuration,
+    construction de l'image Docker.
+  - Pas de zéro erreur exigé sur l'ancien code : `frontend.yml` bloque tout lint sur les couches de la refonte, et un
+    cliquet `scripts/typecheck-budget.txt` (84 erreurs `vue-tsc` héritées, zéro dans les couches neuves) qui ne peut que baisser.
   - `release.yml` (tag) : archive dist de l'UI en **premier** asset (contrainte `install-ui`, `assets[0]`), binaires
     passerelle + `SHA256SUMS` ensuite, publication d'abord en prerelease.
 
@@ -679,7 +685,7 @@ des formats v1/v2 et ajoute un format v3 qui inclut `fqu2.*`.
    `~/.config/frequi-gateway/`, `frequi-gateway doctor` : port 9399 libre, socket ftcache joignable (op `ping`), bases
    lisibles en `ro`, chaque bot répond en 127.0.0.1, identifiants valides, CORS cohérent, aucun secret en clair dans les
    logs de test.
-2. **Ombre (24-48 h)** : `screen -dmS frequi-gateway ~/.local/share/frequi-gateway/run-in-screen.sh`. L'ancienne UI reste
+2. **Ombre (24-48 h)** : `gateway/packaging/run-in-screen.sh` (copié à côté du binaire). L'ancienne UI reste
    en place. Suivi : CPU du démon ftcache, latence `/status` des bots, taille des `-wal`, 429 dans `fleet_events`.
    Tests d'équivalence. Vérifier l'accès au port 9399 depuis le téléphone.
 3. **Déploiement de l'UI** (le bot :9400 relit `ui/installed` à chaque requête) :
