@@ -11,8 +11,13 @@
  *
  * Safety: the fake bots, their stand-in `freqtrade trade` processes and the gateway run in a new
  * PID namespace (`unshare -Urpf --mount-proc`), so the gateway's /proc discovery can only see the
- * rig and never a real bot of the host. Where unshare is not available the rig refuses to start,
- * unless FQ_RIG_ALLOW_HOST_PROCS=1 says that no real freqtrade runs on this machine.
+ * rig and never a real bot of the host. The opposite direction needs care too: a child PID
+ * namespace stays visible in the /proc of the host, so the stand-ins carry a harmless argv there
+ * (`rig-standin`) and the one the discovery looks for is bind-mounted over their cmdline inside
+ * the namespace only (inner.mjs); a gateway of the host cannot mistake them for bots.
+ * Where unshare is not available the rig refuses to start, unless FQ_RIG_ALLOW_HOST_PROCS=1 says
+ * that no real freqtrade runs on this machine, and even then it refuses while something listens
+ * on 9399 (production gateway) or 9400 (bot with the SPA).
  *
  * Ports: UI 3021..3029, control 3030..3039, gateway 3040..3049 (never 9399 or 9400).
  * Binaries: gateway/target/release (built with cargo when missing); FQ_RIG_BIN_DIR overrides.
@@ -70,6 +75,18 @@ function binDir() {
 function namespaceAvailable() {
   const r = spawnSync('unshare', ['-Urpf', '--mount-proc', 'true'], { stdio: 'ignore' });
   return r.status === 0;
+}
+
+/** True when something accepts a connection on this loopback port. */
+function listening(port) {
+  return new Promise((res) => {
+    const sock = net.connect({ port, host: '127.0.0.1' });
+    sock.once('connect', () => {
+      sock.destroy();
+      res(true);
+    });
+    sock.once('error', () => res(false));
+  });
 }
 
 const children = [];
@@ -132,6 +149,18 @@ async function main() {
         'Set FQ_RIG_ALLOW_HOST_PROCS=1 only on a machine that runs none.',
     );
   }
+  if (!hasNs) {
+    // Without the namespace the stand-ins are plain host processes: a gateway of the host would
+    // list them among its real bots
+    for (const port of [9399, 9400]) {
+      if (await listening(port)) {
+        throw new Error(
+          `something listens on 127.0.0.1:${port}: without a PID namespace the rig's stand-in ` +
+            'processes would be discovered by it as bots. Not starting.',
+        );
+      }
+    }
+  }
   const uiPort = await freePort(3021, 3029);
   const ctrlPort = await freePort(3030, 3039);
   const gwPort = await freePort(3040, 3049);
@@ -153,6 +182,7 @@ async function main() {
     `--control-port=${ctrlPort}`,
     `--ui-origins=${uiOrigins.join(',')}`,
     `--password=${password}`,
+    `--isolated=${hasNs ? 1 : 0}`,
   ];
   const inner = hasNs
     ? spawn('unshare', ['-Urpf', '--mount-proc', process.execPath, ...innerArgs], {

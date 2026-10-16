@@ -339,6 +339,9 @@ export function createBotSubStore(botId: string, botName: string) {
         }
         // Refresh data that's needed in near realtime
         await this.getOpenTrades();
+        // The wait above can outlast the legacy page: a pass already in flight when the user
+        // left must not send its second request to the bot (B209).
+        if (!legacyPollingAllowed()) return;
         // Lock state is read by TradingView and PairLockList only, both through
         // `activeBot`. Polling it for the whole fleet was a quarter of the dashboard's API
         // calls for pixels that never existed. See stores/perBotFetchPolicy.

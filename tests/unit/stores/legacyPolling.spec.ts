@@ -146,6 +146,26 @@ describe('legacy polling follows the legacy pages', () => {
     vi.unstubAllGlobals();
   });
 
+  it('sends no lock request from a refresh pass that outlived the legacy page (B209)', async () => {
+    slow = { delayMs: 4_000, answer: (url) => (url === '/status' ? [] : { status: 'pong' }) };
+    const { initBots, suspendBots, useBotStore } = await import('@/stores/ftbotwrapper');
+    const { locksDemand } = await import('@/stores/perBotFetchPolicy');
+    initBots();
+    // Locks are wanted for every bot, as when the whole fleet is on screen
+    locksDemand.value = 1;
+    const store = useBotStore().botStores['ftbot.0'];
+    expect(store).toBeDefined();
+    // The pass waits for `/status`, slow to answer, and the user leaves meanwhile
+    const pass = store.refreshFrequent();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(requests).toContain('/status');
+    suspendBots();
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    await pass;
+    expect(requests, 'no /locks after the user left').not.toContain('/locks');
+    locksDemand.value = 0;
+  });
+
   it('is a no-op when the legacy stores never started', async () => {
     const { suspendBots, useBotStore } = await import('@/stores/ftbotwrapper');
     expect(() => suspendBots()).not.toThrow();
