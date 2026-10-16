@@ -97,7 +97,8 @@ export const COLUMN_REGISTRY: readonly ColumnSpec[] = [
   c('opened', 'right', true, 880, TRADES, []),
   c('actions', 'center', false, 0, OPEN, ['open', 'bot'], { required: true }),
   // ---- closed trades and journal only ----
-  c('exit_price', 'right', false, 760, CLOSED, ['closed', 'journal']),
+  // The Journal leaves the exit price to the trade sheet (05-friendly-plan.md, section 2.6)
+  c('exit_price', 'right', false, 760, CLOSED, ['closed']),
   c('exit_reason', 'left', true, 560, CLOSED, ['closed', 'journal']),
   c('closed_at', 'right', true, 640, CLOSED, ['closed', 'journal']),
   c('closed_ago', 'right', true, 900, CLOSED, []),
