@@ -43,3 +43,21 @@ describe('uptime of a bot read directly (B231)', () => {
     expect(buildBotRow(rt, ctx).state.started_ms).toBe(NOW - 11 * 3_600_000);
   });
 });
+
+describe('latent profit of a bot whose prices are unknown (B234)', () => {
+  const trade = (profit: unknown) => ({ trade_id: 1, pair: 'BTC/USDC:USDC', profit_abs: profit });
+
+  it('is unknown, not 0, when no open position has a profit', () => {
+    const rt = runtime();
+    rt.status = { data: [trade(null), trade(undefined)] as any, atMs: NOW };
+    expect(buildBotRow(rt, ctx).metrics.open_profit_abs).toBeNull();
+  });
+
+  it('is the sum of the known ones, and 0 for a flat book', () => {
+    const rt = runtime();
+    rt.status = { data: [trade(2), trade(null), trade(-0.5)] as any, atMs: NOW };
+    expect(buildBotRow(rt, ctx).metrics.open_profit_abs).toBe(1.5);
+    rt.status = { data: [], atMs: NOW };
+    expect(buildBotRow(rt, ctx).metrics.open_profit_abs).toBe(0);
+  });
+});
