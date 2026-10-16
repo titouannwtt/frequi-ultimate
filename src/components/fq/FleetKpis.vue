@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { ExcludedCount, KpiStrip, KpiTile, ModeMark, PnlValue, SplitBar } from '@/components/ds';
+import { ExcludedCount, KpiTile, ModeMark, PnlValue } from '@/components/ds';
 import type { BotRef, KpiMeter } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
@@ -17,12 +18,16 @@ import type { ScopeDetail } from '@/datasource/types';
 import type { BotKey } from '@/gateway/types.gen';
 
 import { fleetKpiModel, type FleetKpiModel } from './lib/kpis';
+import { riskModel } from './lib/risk';
 
 /**
- * The KPI strip of the Fleet page (02 section 3.1): equity with the open profit, latent P&L, day,
- * 30 days, drawdown (USDC first), wallet exposure, margin, bots online. Live by default; in the
- * "All" scope the live and the dry figures are shown one under the other and say they are not
- * added. A bot whose figures are stale is left out of the sums: "N excluded" lists them.
+ * The four figures of the Fleet page (docs/redesign/05-friendly-plan.md, L4): total capital with
+ * the open profit in its sub-line, what was won over 30 days (today and the win rate in its
+ * sub-line), the fall from the highest point (USDC first, then the percentage and the limit) and
+ * the margin used (the closest liquidation in its sub-line). The other figures went to sub-lines
+ * or to the wallet risk card. Live by default; in the "All" scope the live and the dry figures are
+ * shown one under the other and say they are not added. A bot whose figures are stale is left out
+ * of the sums: "N excluded" lists them.
  */
 const props = defineProps<{
   /** Preloaded detail (previews, tests); otherwise read from the active source. */
@@ -39,6 +44,8 @@ const conn = useFqConnectionStore();
 const prefs = useFqPrefsStore();
 const clock = useNowMs();
 const { vs } = useValueSlot();
+// On a phone the sub-lines are short: a half-width tile has room for a few words
+const phone = useMediaQuery('(max-width: 599px)');
 
 const loaded = useScopeDetail(() => scope.fleetScopeRef.value);
 const data = computed<ScopeDetail | null>(() => props.detail ?? loaded.detail.value);
@@ -59,7 +66,10 @@ const models = computed<FleetKpiModel[]>(() => {
 
 function ddSub(m: FleetKpiModel): string | undefined {
   if (m.drawdown?.pct == null) return undefined;
-  return `${fmt.percent(-m.drawdown.pct, 1)} · ${t('fq.kpi.threshold', { v: fmt.number(ddThreshold.value, 0) })}`;
+  return t(`fq.pg.fleet.kpi.${phone.value ? 'ddLimitPhone' : 'ddLimit'}`, {
+    pct: fmt.percent(m.drawdown.pct, 1, false),
+    limit: fmt.number(ddThreshold.value, 0),
+  });
 }
 
 const ddThreshold = computed(() => {
@@ -78,9 +88,27 @@ function ddMeter(m: FleetKpiModel): KpiMeter | undefined {
   };
 }
 
-function exposureSub(m: FleetKpiModel): string | undefined {
-  if (m.slots.exposure.state !== 'ready') return undefined;
-  return `${t('fq.header.net', { n: fmt.signed(m.exposure.net, 0) })}${m.netted ? '' : ` · ${t('fq.fleet.notNetted')}`}`;
+/** The closest liquidation of the positions of this mode, in percent of the price. */
+function nearestLiquidation(m: FleetKpiModel): number | null {
+  const d = data.value;
+  const block = d?.totals.find((b) => b.mode === m.mode);
+  if (!d || !block || m.slots.margin.state !== 'ready') return null;
+  const risk = riskModel({
+    positions: d.positions,
+    totals: block,
+    mode: m.mode,
+    modeOf: (k) => fleet.bots[k]?.identity.mode ?? null,
+    walletOf: (k) => fleet.bots[k]?.state.wallet_id ?? null,
+  });
+  return risk.nearest?.distancePct ?? null;
+}
+function marginSub(m: FleetKpiModel): string | undefined {
+  const pct = nearestLiquidation(m);
+  return pct === null
+    ? undefined
+    : t(`fq.pg.fleet.kpi.${phone.value ? 'liqNearestPhone' : 'liqNearest'}`, {
+        v: fmt.number(pct, 0),
+      });
 }
 
 function excludedRefs(m: FleetKpiModel): BotRef[] {
@@ -90,25 +118,7 @@ function excludedRefs(m: FleetKpiModel): BotRef[] {
   }));
 }
 
-function statesText(m: FleetKpiModel): string {
-  const parts = (['offline', 'stale', 'starting', 'auth_expired', 'stopped'] as const)
-    .filter((s) => (m.states[s] ?? 0) > 0)
-    .map((s) => `${m.states[s]} ${t(`fq.kpi.state.${s}`)}`);
-  return parts.join(' · ');
-}
-
-const tz = computed(() => prefs.settings.tz);
-
-const SKELETON = [
-  'equityOpen',
-  'pnlOpen',
-  'realizedToday',
-  'realized30d',
-  'drawdownOpen',
-  'exposure',
-  'margin',
-  'botsOnline',
-] as const;
+const SKELETON = ['equityOpen', 'realized30d', 'drawdownOpen', 'margin'] as const;
 </script>
 
 <template>
@@ -118,12 +128,15 @@ const SKELETON = [
         <ModeMark :mode="m.mode" full />
         <span>{{ t('fq.kpi.notSummed') }}</span>
       </div>
-      <KpiStrip :label="t('fq.kpi.strip', { mode: t(`fq.scope.${m.mode}`) })">
+      <div
+        class="kpis"
+        role="group"
+        :aria-label="t('fq.kpi.strip', { mode: t(`fq.scope.${m.mode}`) })"
+      >
         <KpiTile
           :label="t('fq.kpi.equityOpen')"
           :hint="t('fq.hint.equityOpen')"
           :short-label="t('fq.kpiShort.equityOpen')"
-          wide
           data-testid="kpi-equity"
           v-bind="vs(m.slots.equityOpen, `${m.mode}/equityOpen`)"
         >
@@ -131,45 +144,39 @@ const SKELETON = [
             {{ fmt.number(m.equityOpen as number, 2) }}<small> USDC</small>
           </template>
           <template #sub>
-            <template v-if="m.equityRealized !== null">
-              {{ t('fq.kpi.realizedEquity', { v: fmt.number(m.equityRealized, 2) }) }}
-            </template>
+            <span data-testid="kpi-open">
+              {{ t(phone ? 'fq.pg.fleet.kpi.inProgressPhone' : 'fq.pg.fleet.kpi.inProgressPre') }}
+              <PnlValue
+                :value="m.openProfit"
+                v-bind="vs(m.slots.openProfit, `${m.mode}/openProfit`)"
+              />
+              <span v-if="!phone" class="post">{{ t('fq.pg.fleet.kpi.inProgressPost') }}</span>
+            </span>
             <ExcludedCount :bots="excludedRefs(m)" @select="(b) => emit('openBot', b.key)" />
           </template>
-        </KpiTile>
-        <KpiTile
-          :label="t('fq.kpi.pnlOpen')"
-          :hint="t('fq.hint.pnlOpen')"
-          :sub="t('fq.kpi.positions', { n: m.openCount }, m.openCount)"
-          data-testid="kpi-open"
-          v-bind="vs(m.slots.openProfit, `${m.mode}/openProfit`)"
-        >
-          <template #value><PnlValue :value="m.openProfit" /></template>
-        </KpiTile>
-        <KpiTile
-          :label="t('fq.kpi.realizedToday')"
-          :hint="t('fq.hint.realizedToday')"
-          :short-label="t('fq.kpiShort.realizedToday')"
-          :sub="t('fq.kpi.sinceMidnight', { tz })"
-          data-testid="kpi-day"
-          v-bind="vs(m.slots.realized1d, `${m.mode}/realized1d`)"
-        >
-          <template #value><PnlValue :value="m.realized1d" /></template>
         </KpiTile>
         <KpiTile
           :label="t('fq.kpi.realized30d')"
           :hint="t('fq.hint.realized30d')"
           :short-label="t('fq.kpiShort.realized30d')"
-          :sub="
-            m.winrate === null
-              ? undefined
-              : t('fq.kpi.winrate', { v: fmt.percent(m.winrate * 100, 1, false) })
-          "
           data-testid="kpi-30d"
           v-bind="vs(m.slots.realized30d, `${m.mode}/realized30d`)"
         >
           <template #value>
             <PnlValue :value="m.realized30d" :decimals="2" />
+          </template>
+          <template #sub>
+            <span data-testid="kpi-day">
+              {{ t('fq.pg.fleet.kpi.todayPre') }}
+              <PnlValue
+                :value="m.realized1d"
+                v-bind="vs(m.slots.realized1d, `${m.mode}/realized1d`)"
+              />
+            </span>
+            <template v-if="m.winrate !== null && !phone">
+              ·
+              {{ t('fq.pg.fleet.kpi.winrate', { v: fmt.percent(m.winrate * 100, 0, false) }) }}
+            </template>
           </template>
         </KpiTile>
         <KpiTile
@@ -186,23 +193,6 @@ const SKELETON = [
           </template>
         </KpiTile>
         <KpiTile
-          :label="t('fq.kpi.exposure')"
-          :sub="exposureSub(m)"
-          wide
-          data-testid="kpi-exposure"
-          v-bind="vs(m.slots.exposure, `${m.mode}/exposure`)"
-        >
-          <template #value>
-            <span class="long">{{ fmt.number(m.exposure.long, 0) }}</span> /
-            <span class="short">{{ fmt.number(m.exposure.short, 0) }}</span>
-          </template>
-          <SplitBar
-            v-if="m.slots.exposure.state === 'ready'"
-            :long="m.exposure.long"
-            :short="m.exposure.short"
-          />
-        </KpiTile>
-        <KpiTile
           :label="t('fq.kpi.margin')"
           :hint="t('fq.hint.margin')"
           :meter="
@@ -210,24 +200,16 @@ const SKELETON = [
               ? undefined
               : { value: m.marginPct, max: 100, tone: m.marginPct >= 85 ? 'warn' : 'neutral' }
           "
+          :sub="marginSub(m)"
           data-testid="kpi-margin"
           v-bind="vs(m.slots.margin, `${m.mode}/margin`)"
         >
           <template #value> {{ fmt.number(m.marginPct as number, 1) }}<small> %</small> </template>
         </KpiTile>
-        <KpiTile
-          :label="t('fq.kpi.botsOnline')"
-          :sub="statesText(m) || undefined"
-          data-testid="kpi-online"
-        >
-          <template #value>
-            {{ m.online }}<small> / {{ m.total }}</small>
-          </template>
-        </KpiTile>
-      </KpiStrip>
+      </div>
     </div>
     <div v-if="models.length === 0" class="row" data-testid="kpi-loading">
-      <KpiStrip :label="t('fq.kpi.strip', { mode: '' })">
+      <div class="kpis" role="group" :aria-label="t('fq.kpi.strip', { mode: '' })">
         <KpiTile
           v-for="k in SKELETON"
           :key="k"
@@ -235,7 +217,7 @@ const SKELETON = [
           state="pending"
           :pending-key="`fleet/${k}`"
         />
-      </KpiStrip>
+      </div>
     </div>
   </div>
 </template>
@@ -243,28 +225,76 @@ const SKELETON = [
 <style scoped>
 .fk {
   display: grid;
+  gap: var(--s3);
 }
 .row {
   display: grid;
+  gap: var(--s1);
 }
 .tag {
   display: flex;
   align-items: center;
   gap: var(--s2);
-  padding: 4px var(--s3) 0;
   font-size: var(--t-xs);
   color: var(--fg-3);
+}
+/* Four cards, not a strip: each figure stands on its own */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s3);
+}
+.kpis > :deep(.kpi) {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
   background: var(--bg-1);
+  padding: var(--s3) var(--s4);
+  gap: 3px;
+}
+.kpis > :deep(.kpi:last-child) {
+  border-right: 1px solid var(--line);
+}
+.kpis > :deep(.kpi .k) {
+  font-size: var(--t-sm);
+  color: var(--fg-2);
+}
+.kpis > :deep(.kpi .v) {
+  font-size: var(--t-xl);
+  margin: 2px 0;
+}
+.kpis > :deep(.kpi .s) {
+  font-size: var(--t-sm);
+  /* A sub-line wraps rather than being cut: "N excluded" must stay readable */
+  white-space: normal;
+  overflow: visible;
+}
+.kpis > :deep(.kpi .s .excl-wrap) {
+  margin-left: var(--s2);
+}
+.post {
+  margin-left: 0.3em;
+}
+@media (max-width: 1023px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 599px) {
+  .kpis {
+    gap: var(--s2);
+  }
+  .kpis > :deep(.kpi) {
+    padding: var(--s3);
+  }
+  .kpis > :deep(.kpi .k),
+  .kpis > :deep(.kpi .s) {
+    font-size: 12.5px;
+  }
 }
 small {
   font-size: var(--t-sm);
   color: var(--fg-3);
   font-weight: 500;
-}
-.long {
-  color: var(--profit);
-}
-.short {
-  color: var(--loss);
 }
 </style>

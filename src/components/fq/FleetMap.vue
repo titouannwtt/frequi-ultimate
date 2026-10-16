@@ -34,6 +34,8 @@ const props = withDefaults(
     freezeOnHover?: boolean;
     selectedKey?: string | null;
     nowMs?: number;
+    /** Tiles shown before "See the N others"; absent: every bot. Groups always show all. */
+    limit?: number;
   }>(),
   { groups: () => [], sort: 'attention', freezeOnHover: true, selectedKey: null },
 );
@@ -70,11 +72,31 @@ const byKey = computed(() => new Map(props.rows.map((b) => [b.bot_key, b])));
 const ordered = computed(() =>
   order.value.keys.map((k) => byKey.value.get(k)).filter((b): b is BotRow => !!b),
 );
+const expanded = ref(false);
+const shownBots = computed(() =>
+  props.limit && !expanded.value && props.groups.length === 0
+    ? ordered.value.slice(0, props.limit)
+    : ordered.value,
+);
+const hiddenBots = computed(() => ordered.value.length - shownBots.value.length);
 const sections = computed(() =>
   props.groups.length === 0
-    ? [{ id: UNGROUPED_ID, name: '', bots: ordered.value }]
+    ? [{ id: UNGROUPED_ID, name: '', bots: shownBots.value }]
     : groupBots(ordered.value, props.groups, t('fq.fleet.ungrouped')),
 );
+
+/** The market in plain words and grey, as in the table (cyan is for information). */
+function marketLabel(b: BotRow): string {
+  const m = b.identity.market;
+  if (m === 'crypto') return '';
+  const key = {
+    xyz_stocks: 'stocks',
+    xyz_indices: 'indices',
+    xyz_commodities: 'commodities',
+    mixed: 'mixed',
+  }[m as string];
+  return t(`fq.pg.fleet.market.${key ?? 'other'}`);
+}
 
 type Tone = 'calm' | 'warn' | 'crit' | 'stale' | 'offline';
 function toneOf(b: BotRow): Tone {
@@ -104,14 +126,24 @@ function reason(b: BotRow): string {
   }
 }
 
-const legend = computed(() => [
-  { tone: 'warn', label: t('fq.map.legend.warn') },
-  { tone: 'crit', label: t('fq.map.legend.crit') },
-  { tone: 'stale', label: t('fq.map.legend.stale') },
-  { tone: 'offline', label: t('fq.map.legend.offline') },
-  { tone: 'dry', label: t('fq.map.legend.dry') },
-  { tone: 'live', label: t('fq.map.legend.live') },
-]);
+// The legend explains what is on screen and nothing else: a calm, all-live fleet has none
+const legend = computed(() => {
+  const tones = new Set(props.rows.map(toneOf));
+  const modes = new Set(props.rows.map((b) => b.identity.mode));
+  const both = modes.has('live') && modes.has('dry');
+  return [
+    { tone: 'warn', label: t('fq.map.legend.warn') },
+    { tone: 'crit', label: t('fq.map.legend.crit') },
+    { tone: 'stale', label: t('fq.map.legend.stale') },
+    { tone: 'offline', label: t('fq.map.legend.offline') },
+    ...(both
+      ? [
+          { tone: 'dry', label: t('fq.map.legend.dry') },
+          { tone: 'live', label: t('fq.map.legend.live') },
+        ]
+      : []),
+  ].filter((l) => l.tone === 'dry' || l.tone === 'live' || tones.has(l.tone as Tone));
+});
 </script>
 
 <template>
@@ -149,7 +181,7 @@ const legend = computed(() => [
             ></span>
             <StatusDot :state="botState(b, now, skew)" />
             <Badge v-if="b.identity.mode !== 'live'" :kind="b.identity.mode" />
-            <Badge v-if="b.identity.market !== 'crypto'" kind="xyz" />
+            <Badge v-if="marketLabel(b)" kind="neutral" :label="marketLabel(b)" class="mk" />
             <DsIcon
               v-if="b.alerts.count > 0"
               :name="b.alerts.max_severity === 'critical' ? 'octagon-alert' : 'triangle-alert'"
@@ -183,7 +215,16 @@ const legend = computed(() => [
       :title="t('fq.fleet.empty')"
       :hint="t('fq.fleet.emptyHint')"
     />
-    <ul class="legend" :aria-label="t('fq.map.legend.title')">
+    <button
+      v-if="hiddenBots > 0"
+      type="button"
+      class="more"
+      data-testid="fleet-more-bots"
+      @click="expanded = true"
+    >
+      {{ t('fq.pg.fleet.seeMoreBots', { n: hiddenBots }, hiddenBots) }}
+    </button>
+    <ul v-if="legend.length > 0" class="legend" :aria-label="t('fq.map.legend.title')">
       <li v-for="l in legend" :key="l.tone"><i :class="l.tone"></i>{{ l.label }}</li>
     </ul>
   </div>
@@ -295,6 +336,26 @@ const legend = computed(() => [
   font-size: var(--t-xs);
   color: var(--fg-3);
   margin-top: auto;
+}
+.more {
+  justify-self: center;
+  padding: var(--s2) var(--s3);
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--t-sm);
+  cursor: pointer;
+}
+@media (max-width: 599px), (pointer: coarse) {
+  .more {
+    min-height: 44px;
+  }
+}
+.mk {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
 }
 .legend {
   display: flex;

@@ -279,7 +279,9 @@ describe('ScopePanel and FleetScope', () => {
     await live.trigger('click');
     expect(scope.mode.value).toBe('live');
     expect(scope.bots.value.every((b) => b.identity.mode === 'live')).toBe(true);
-    const dry = w.findAll('[role=radio], button').find((b) => b.text().trim() === 'Dry')!;
+    // The dry segment carries the number of dry bots: nothing is hidden silently
+    const dry = w.findAll('[role=radio], button').find((b) => /^Dry\s*\d*$/.test(b.text().trim()))!;
+    expect(dry.text()).toMatch(/\d+/);
     await dry.trigger('click');
     expect(scope.mode.value).toBe('dry');
     expect(scope.bots.value.every((b) => b.identity.mode === 'dry')).toBe(true);

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -28,7 +29,9 @@ import { lineSlot, unavailable } from './lib/valueState';
  * four figures m1 to m4 (P&L, entry and price, liquidation, duration) and the horizontal DCA
  * ladder, normalised so the liquidation is always on the left and the take profit on the right.
  * A closed trade keeps the same frame without the ladder. A tap opens the TradeDrawer; the
- * actions are the same as in the table row (same confirmation, same lock).
+ * actions are the same as in the table row (same confirmation, same lock). On a phone the card has
+ * no exit button of its own (seven red-zone buttons while scrolling): a tap opens the drawer, which
+ * holds "Exit..." with its confirmation.
  */
 const props = withDefaults(
   defineProps<{
@@ -51,6 +54,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const fmt = useFormat();
+const phone = useMediaQuery('(max-width: 599px)');
 const lock = useInflightLock();
 const { vs } = useValueSlot();
 
@@ -126,7 +130,7 @@ const liqSlot = computed(() =>
         </button>
       </div>
       <BotActionBar
-        v-if="line.open"
+        v-if="line.open && !phone"
         class="acts"
         context="row"
         :bot-key="line.botKey"

@@ -8,14 +8,14 @@ import {
   DirectionChip,
   DsIcon,
   EmptyState,
-  ExcludedCount,
   Meter,
   PnlValue,
+  Popover,
   Sparkline,
   StatusDot,
   ValueState,
 } from '@/components/ds';
-import type { BotRef, MeterTone } from '@/components/ds';
+import type { MeterTone } from '@/components/ds';
 import { formatAge } from '@/components/ds/lib/format';
 import { useFormat } from '@/components/ds/lib/useFormat';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
@@ -38,7 +38,6 @@ import {
   groupBots,
   isStaleGroup,
   minutesSince,
-  slotsRatio,
   drawdownPct,
   stableOrder,
   sumBots,
@@ -56,8 +55,10 @@ import {
 } from './lib/valueState';
 
 /**
- * The fleet as a table (02 section 3.1): a sticky "Σ" row that says how many bots it excludes, the
- * user's groups with their aggregates and a "N to see" badge, one row per bot. The order is the
+ * The fleet as a table (docs/redesign/05-friendly-plan.md, L4): the user's groups with their
+ * aggregates and a "N to see" badge, one row per bot, six columns by default and a "Columns" menu
+ * for the others. A bot that is silent shows "frozen" instead of a number that looks alive. The
+ * order is the
  * "attention first" one (critical, warning, info, then worst latent) and it only changes when an
  * alert appears or resolves: never at a tick, and not at all while the pointer or the focus is in
  * the table. Columns drop by the width of THIS panel (container width), not of the window.
@@ -74,9 +75,9 @@ const props = withDefaults(
     nowMs?: number;
     /** Container width override in px (previews, tests); otherwise measured. */
     containerWidth?: number;
-    /** Label of the Σ row: "Σ Live fleet" by default. */
-    scopeLabel?: string;
     maxHeight?: string;
+    /** Bots shown before "See the N others"; absent: every bot. Groups always show all. */
+    limit?: number;
   }>(),
   {
     groups: () => [],
@@ -91,6 +92,7 @@ const emit = defineEmits<{
   selectBot: [botKey: string];
   selectScope: [scope: ScopeRef];
   toggleGroup: [id: string, collapsed: boolean];
+  'update:sort': [sort: FleetSort];
 }>();
 
 const { t, te, locale } = useI18n();
@@ -167,9 +169,25 @@ type Item =
   | { type: 'group'; key: string; group: ReturnType<typeof groupBots>[number]; collapsed: boolean }
   | { type: 'bot'; key: string; bot: BotRow };
 
+// The list stops at `limit` bots until the reader asks for the others; groups always show theirs
+const expanded = ref(false);
+const shownBots = computed(() =>
+  props.limit && !expanded.value ? ordered.value.slice(0, props.limit) : ordered.value,
+);
+const hiddenBots = computed(() =>
+  groups.value.length > 0 ? 0 : ordered.value.length - shownBots.value.length,
+);
+const canShorten = computed(
+  () =>
+    !!props.limit &&
+    expanded.value &&
+    groups.value.length === 0 &&
+    ordered.value.length > props.limit,
+);
+
 const items = computed<Item[]>(() => {
   if (groups.value.length === 0) {
-    return ordered.value.map((bot) => ({ type: 'bot' as const, key: bot.bot_key, bot }));
+    return shownBots.value.map((bot) => ({ type: 'bot' as const, key: bot.bot_key, bot }));
   }
   const out: Item[] = [];
   for (const g of groups.value) {
@@ -227,47 +245,6 @@ function sumsOf(bots: BotRow[]) {
   return { ...sums, slot };
 }
 
-/**
- * Live and dry are never added together: a mixed scope shows one Σ row per mode (replay is a
- * simulation and has no Σ), a single-mode scope shows one.
- */
-const sigmaRows = computed(() => {
-  const modes = new Set(props.rows.map((b) => b.identity.mode));
-  if (modes.size <= 1 || props.scopeLabel) {
-    return [{ id: 'all', label: sigmaLabel.value, sums: sumsOf(props.rows) }];
-  }
-  const out: { id: string; label: string; sums: ReturnType<typeof sumsOf> }[] = [];
-  if (modes.has('live')) {
-    out.push({
-      id: 'live',
-      label: t('fq.fleet.sigmaLive'),
-      sums: sumsOf(props.rows.filter((b) => b.identity.mode === 'live')),
-    });
-  }
-  if (modes.has('dry')) {
-    out.push({
-      id: 'dry',
-      label: t('fq.fleet.sigmaDry'),
-      sums: sumsOf(props.rows.filter((b) => b.identity.mode === 'dry')),
-    });
-  }
-  return out;
-});
-
-function excludedRefsOf(sums: ReturnType<typeof sumsOf>): BotRef[] {
-  const keys = new Set([...sums.latent.excluded, ...sums.d1.excluded]);
-  return props.rows
-    .filter((b) => keys.has(b.bot_key))
-    .map((b) => ({ key: b.bot_key, name: b.identity.name, reason: stateReason(b) }));
-}
-
-const sigmaLabel = computed(() => {
-  if (props.scopeLabel) return props.scopeLabel;
-  const modes = new Set(props.rows.map((b) => b.identity.mode));
-  if (modes.size === 1 && modes.has('dry')) return t('fq.fleet.sigmaDry');
-  if (modes.size > 1) return t('fq.fleet.sigmaAll');
-  return t('fq.fleet.sigmaLive');
-});
 /** A group is summed only when all its bots share one mode (live and dry are never added). */
 function groupMode(bots: BotRow[]): boolean {
   return new Set(bots.map((b) => b.identity.mode)).size === 1;
@@ -388,6 +365,64 @@ const headerLabel = (id: string) => t(`fq.col.${id}`);
 const headerHint = (id: string) => (te(`fq.hint.col.${id}`) ? t(`fq.hint.col.${id}`) : undefined);
 const hasSpark = (b: BotRow) => b.metrics.spark24h.length > 1;
 
+// ---- sorting by the header: the name and what is open are the two sorts, a third click restores
+// the attention order ----
+const SORT_OF: Record<string, FleetSort> = { bot: 'name', latent: 'latent' };
+const sortedBy = (id: string) => (SORT_OF[id] && props.sort === SORT_OF[id] ? SORT_OF[id] : null);
+function sortBy(id: string) {
+  const mine = SORT_OF[id];
+  if (!mine) return;
+  emit('update:sort', props.sort === mine ? 'attention' : mine);
+}
+
+// ---- open positions of a bot as small bars, one per slot the bot has (a count beyond 12) ----
+const MAX_PIPS = 12;
+function slotPips(b: BotRow): boolean[] | null {
+  const max = b.state.max_open_trades;
+  if (max == null || max <= 0 || max > MAX_PIPS) return null;
+  return Array.from({ length: max }, (_, i) => i < b.state.open_trades);
+}
+function slotsTitle(b: BotRow): string {
+  const max = b.state.max_open_trades;
+  return max == null || max <= 0
+    ? t('fq.pg.fleet.slots.free', { open: b.state.open_trades }, b.state.open_trades)
+    : t('fq.pg.fleet.slots.title', { open: b.state.open_trades, max }, b.state.open_trades);
+}
+
+// ---- the market of a bot, in plain words and in grey (cyan is for information) ----
+function marketLabel(b: BotRow): string {
+  const m = b.identity.market;
+  if (m === 'crypto') return '';
+  const key = {
+    xyz_stocks: 'stocks',
+    xyz_indices: 'indices',
+    xyz_commodities: 'commodities',
+    mixed: 'mixed',
+  }[m as string];
+  return t(`fq.pg.fleet.market.${key ?? 'other'}`);
+}
+
+// ---- a bot that is silent has a frozen number: the cell says so instead of looking alive ----
+const isFrozen = (b: BotRow) => {
+  const st = botState(b, now.value, skew.value);
+  return st === 'stale' || st === 'offline' || st === 'auth_expired';
+};
+
+// ---- "Columns" menu: every column of the table, the choice is kept in the preferences ----
+const colAnchor = ref<HTMLElement | null>(null);
+const colOpen = ref(false);
+const pickable = computed(() =>
+  columnState.allColumns.value.filter((c) => !c.required && !c.unavailable),
+);
+const chosen = columnState.wanted;
+function toggleCol(id: string, on: boolean) {
+  columnState.setVisible(id, on);
+}
+function openCols(e: MouseEvent) {
+  colAnchor.value = e.currentTarget as HTMLElement;
+  colOpen.value = !colOpen.value;
+}
+
 defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
 </script>
 
@@ -412,64 +447,18 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
             v-for="c in cols"
             :key="c.id"
             class="colh"
-            :class="{ l: c.align === 'left', c: c.align === 'center' }"
+            :class="{ l: c.align === 'left', c: c.align === 'center', sortable: !!SORT_OF[c.id] }"
             :style="c.id === 'bot' ? { minWidth: '196px' } : undefined"
             :title="headerHint(c.id)"
+            :aria-sort="
+              sortedBy(c.id) ? (sortedBy(c.id) === 'name' ? 'ascending' : 'ascending') : undefined
+            "
           >
-            {{ headerLabel(c.id) }}
-          </th>
-        </tr>
-        <tr
-          v-for="sr in sigmaRows"
-          :key="sr.id"
-          class="sigma"
-          :data-sigma="sr.id"
-          @click="emit('selectScope', { kind: 'fleet' })"
-        >
-          <th v-for="(c, i) in cols" :key="c.id" :class="{ l: i === 0 }">
-            <template v-if="c.id === 'bot'">
-              <span class="sig-l">{{ sr.label }}</span>
-              <ExcludedCount
-                :bots="excludedRefsOf(sr.sums)"
-                @select="(b) => emit('selectBot', b.key)"
-              />
-            </template>
-            <template v-else-if="c.id === 'latent'">
-              <PnlValue
-                :value="sr.sums.latent.total"
-                v-bind="vs(sr.sums.slot.latent, `${sr.id}/Σ/latent`)"
-              />
-            </template>
-            <template v-else-if="c.id === 'realized_1d'">
-              <PnlValue :value="sr.sums.d1.total" v-bind="vs(sr.sums.slot.d1, `${sr.id}/Σ/d1`)" />
-            </template>
-            <template v-else-if="c.id === 'realized_30d'">
-              <PnlValue
-                :value="sr.sums.d30.total"
-                :decimals="0"
-                v-bind="vs(sr.sums.slot.d30, `${sr.id}/Σ/d30`)"
-              />
-            </template>
-            <template v-else-if="c.id === 'realized_total'">
-              <PnlValue
-                :value="sr.sums.total.total"
-                :decimals="0"
-                v-bind="vs(sr.sums.slot.total, `${sr.id}/Σ/total`)"
-              />
-            </template>
-            <template v-else-if="c.id === 'exposure'">
-              <ValueState v-bind="vs(sr.sums.slot.exposure, `${sr.id}/Σ/exposure`)">
-                <span
-                  :title="sr.sums.exposure.netted ? t('fq.fleet.netted') : t('fq.fleet.notNetted')"
-                  >{{ fmt.number(sr.sums.exposure.total, 0) }}</span
-                >
-              </ValueState>
-            </template>
-            <template v-else-if="c.id === 'trades'">
-              <ValueState v-bind="vs(sr.sums.slot.trades, `${sr.id}/Σ/trades`)">{{
-                sr.sums.slots
-              }}</ValueState>
-            </template>
+            <button v-if="SORT_OF[c.id]" type="button" class="hbtn" @click="sortBy(c.id)">
+              {{ headerLabel(c.id) }}
+              <DsIcon v-if="sortedBy(c.id)" name="arrow-up" :size="13" />
+            </button>
+            <template v-else>{{ headerLabel(c.id) }}</template>
           </th>
         </tr>
       </thead>
@@ -558,7 +547,12 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
                   }}</span>
                   <Badge v-if="item.bot.identity.mode === 'dry'" kind="dry" />
                   <Badge v-else-if="item.bot.identity.mode === 'replay'" kind="replay" />
-                  <Badge v-if="item.bot.identity.market !== 'crypto'" kind="xyz" />
+                  <Badge
+                    v-if="marketLabel(item.bot)"
+                    kind="neutral"
+                    :label="marketLabel(item.bot)"
+                    class="mk"
+                  />
                   <span
                     v-if="item.bot.alerts.count > 0"
                     class="al"
@@ -603,7 +597,11 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
                 />
               </template>
               <template v-else-if="c.id === 'latent'">
+                <span v-if="isFrozen(item.bot)" class="frozen" data-testid="frozen">{{
+                  t('fq.pg.fleet.frozen')
+                }}</span>
                 <PnlValue
+                  v-else
                   :value="item.bot.metrics.open_profit_abs"
                   :muted="numStale(item.bot, 'positions')"
                   :flash="true"
@@ -677,23 +675,23 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
                   v-if="item.bot.state.status === 'starting' && !item.bot.freshness.state"
                   v-bind="vs(PENDING, `${item.bot.bot_key}/slots`)"
                 />
-                <div v-else class="slots">
-                  <span class="num"
-                    >{{ item.bot.state.open_trades }}/<ValueState
-                      v-bind="
-                        cell(item.bot, 'max', 'capital', item.bot.state.max_open_trades, {
-                          settled: 'noData',
-                        })
-                      "
-                      >{{ item.bot.state.max_open_trades }}</ValueState
-                    ></span
-                  >
-                  <Meter
-                    v-if="slotsRatio(item.bot) !== null"
-                    :value="slotsRatio(item.bot)! * 100"
-                    :tone="slotsRatio(item.bot)! >= 1 ? 'warn' : 'neutral'"
-                    :label="t('fq.col.trades')"
-                  />
+                <div
+                  v-else
+                  class="slots"
+                  data-testid="slots"
+                  role="img"
+                  :aria-label="slotsTitle(item.bot)"
+                  :title="slotsTitle(item.bot)"
+                >
+                  <template v-if="slotPips(item.bot)">
+                    <i
+                      v-for="(on, k) in slotPips(item.bot)"
+                      :key="k"
+                      class="pip"
+                      :class="{ on }"
+                    ></i>
+                  </template>
+                  <span v-else class="num">{{ item.bot.state.open_trades }}</span>
                 </div>
               </template>
               <template v-else-if="c.id === 'drawdown'">
@@ -782,6 +780,53 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
         </tr>
       </tbody>
     </table>
+    <div v-if="limit || pickable.length > 0" class="foot">
+      <button
+        v-if="hiddenBots > 0"
+        type="button"
+        class="link"
+        data-testid="fleet-more-bots"
+        @click="expanded = true"
+      >
+        {{ t('fq.pg.fleet.seeMoreBots', { n: hiddenBots }, hiddenBots) }}
+      </button>
+      <button v-else-if="canShorten" type="button" class="link" @click="expanded = false">
+        {{ t('fq.pg.fleet.fewerBots') }}
+      </button>
+      <span class="sp"></span>
+      <button
+        v-if="pickable.length > 0"
+        type="button"
+        class="link"
+        data-testid="fleet-columns"
+        :aria-expanded="colOpen"
+        @click="openCols"
+      >
+        <DsIcon name="columns-2" :size="13" />
+        {{ t('fq.pg.fleet.columns.button') }}
+      </button>
+      <Popover
+        :open="colOpen"
+        :anchor="colAnchor"
+        placement="top-end"
+        :label="t('fq.pg.fleet.columns.title')"
+        @close="colOpen = false"
+      >
+        <div class="colmenu">
+          <label v-for="c in pickable" :key="c.id" class="colrow">
+            <input
+              type="checkbox"
+              :checked="chosen.has(c.id)"
+              @change="toggleCol(c.id, ($event.target as HTMLInputElement).checked)"
+            />
+            <span>{{ headerLabel(c.id) }}</span>
+          </label>
+          <button type="button" class="link reset" @click="columnState.reset()">
+            {{ t('fq.pg.fleet.columns.reset') }}
+          </button>
+        </div>
+      </Popover>
+    </div>
     <p v-if="unavailableCols.length > 0" class="note">
       {{ t('fq.connection.unavailableDirect') }}:
       {{ unavailableCols.map((c) => headerLabel(c.id)).join(', ') }}
@@ -824,25 +869,6 @@ td.l {
 th.c,
 td.c {
   text-align: center;
-}
-tr.sigma th {
-  top: var(--th-h);
-  z-index: 2;
-  height: var(--row);
-  background: var(--bg-2);
-  color: var(--fg);
-  font: 600 var(--t-sm) var(--font-num);
-  font-variant-numeric: tabular-nums slashed-zero;
-  text-transform: none;
-  letter-spacing: 0;
-  cursor: pointer;
-}
-tr.sigma + tr.sigma th {
-  top: calc(var(--th-h) + var(--row));
-}
-tr.sigma .sig-l {
-  font-family: var(--font-ui);
-  margin-right: 8px;
 }
 td {
   height: var(--row);
@@ -959,9 +985,100 @@ tr.grp td {
   gap: 6px;
   justify-content: flex-end;
 }
-.slots :deep(.meter),
 .dd :deep(.meter) {
   width: 44px;
+}
+.pip {
+  width: 7px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--bg-3);
+}
+.pip.on {
+  background: var(--fg-3);
+}
+.slots {
+  gap: 3px;
+}
+.hbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.hbtn:hover {
+  color: var(--fg);
+}
+.frozen {
+  color: var(--fg-3);
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+}
+.mk {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) var(--s3);
+  font-size: var(--t-sm);
+}
+.foot .sp {
+  flex: 1;
+}
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+.colmenu {
+  display: grid;
+  gap: 2px;
+  padding: var(--s2);
+  min-width: 190px;
+  font-size: var(--t-sm);
+}
+.colrow {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 4px 6px;
+  border-radius: var(--r-1);
+  cursor: pointer;
+}
+.colrow:hover {
+  background: var(--bg-2);
+}
+.reset {
+  margin-top: 4px;
+  padding: 4px 6px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+  color: var(--fg-3);
+}
+@media (max-width: 599px), (pointer: coarse) {
+  .colrow {
+    min-height: 44px;
+  }
+  .foot .link {
+    min-height: 44px;
+  }
 }
 .pct,
 .dim {
@@ -981,12 +1098,6 @@ tr.grp td {
 @media (max-width: 599px), (pointer: coarse) {
   th {
     height: 36px;
-  }
-  tr.sigma th {
-    top: 36px;
-  }
-  tr.sigma + tr.sigma th {
-    top: calc(36px + var(--row));
   }
 }
 </style>

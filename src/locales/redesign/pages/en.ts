@@ -6,6 +6,7 @@ import charts from './charts.en';
 import tools from './tools.en';
 import settings from './settings.en';
 import legacy from './legacy.en';
+import fleet from './fleet.en';
 
 export default {
   pg: {
@@ -30,26 +31,7 @@ export default {
       replay: 'Replay the live loop in dry (per bot).',
       volume: 'Compare volumes between pairs.',
     },
-    fleet: {
-      table: 'Fleet',
-      tableMeta: '{n} bot · {online} online | {n} bots · {online} online',
-      view: { label: 'View', table: 'Table', map: 'Map' },
-      sort: {
-        label: 'Sort',
-        attention: 'Attention first',
-        latent: 'Open P&L',
-        name: 'Name',
-      },
-      positions: 'Open positions',
-      positionsMeta: '{n} · worst first',
-      positionsMetaPartial: '{n} read of {total} · worst first',
-      positionsAwaiting: 'positions being read',
-      equity: 'Capital',
-      tabs: { equity: 'Capital', leaderboard: 'Leaderboard', calendar: 'Calendar' },
-      lbPeriod: { '1d': '1 d', '7d': '7 d', '30d': '30 d', total: 'Total' },
-      risk: 'Wallet risk',
-      riskMeta: 'computed at the shared wallet level',
-    },
+    fleet,
     bot: {
       pairs: 'Pairs',
       chart: 'Chart',

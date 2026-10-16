@@ -143,6 +143,27 @@ export function liquidationTone(pct: number | null): 'crit' | 'warn' | 'neutral'
   return 'neutral';
 }
 
+export type RiskLevel = 'flat' | 'moderate' | 'high' | 'critical';
+
+/**
+ * The wallet risk in one word: critical when a liquidation is under 15 % away (rule
+ * `nearLiquidation`), high when one is under 25 % away, when an orphan position sits on the
+ * wallet or when 85 % of the capital is engaged as margin, moderate otherwise. Flat without any
+ * exposure. Only thresholds the app already has: nothing here is a new rule.
+ */
+export function riskLevel(
+  m: Pick<RiskModel, 'nearest' | 'orphans' | 'exposure'>,
+  marginPct: number | null,
+): RiskLevel {
+  if (m.exposure.long + m.exposure.short <= 0 && m.orphans.length === 0) return 'flat';
+  const tone = liquidationTone(m.nearest?.distancePct ?? null);
+  if (tone === 'crit') return 'critical';
+  if (tone === 'warn' || m.orphans.length > 0 || (marginPct !== null && marginPct >= 85)) {
+    return 'high';
+  }
+  return 'moderate';
+}
+
 // ---- system health ----
 
 export type BudgetTone = 'ok' | 'warn' | 'crit';

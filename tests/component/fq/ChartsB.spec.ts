@@ -17,6 +17,7 @@ import {
   SystemHealth,
 } from '../../../src/components/fq';
 import BotHeader from '../../../src/components/fq/BotHeader.vue';
+import { useFqPrefsStore } from '../../../src/datasource/stores/prefs';
 import FleetTable from '../../../src/components/fq/FleetTable.vue';
 import ScopePanel from '../../../src/components/fq/ScopePanel.vue';
 import { FIXTURE_NOW, scopeDetailOf } from '../../../src/components/fq/fixtures';
@@ -83,7 +84,8 @@ describe('B73: drawdown ratio shown as a percentage', () => {
     expect(w.text()).not.toMatch(/-0\.0%|−0\.0%/);
   });
 
-  it('FleetTable shows the same figure', () => {
+  it('FleetTable shows the same figure (in the "Drawdown" column, offered by "Columns")', () => {
+    useFqPrefsStore().update('columns', { fleet: { visible: ['bot', 'drawdown'], order: [] } });
     const bot = withDrawdown(0.184);
     const w = mountFq(FleetTable, {
       props: { rows: [bot], nowMs: FIXTURE_NOW, containerWidth: 1400 },

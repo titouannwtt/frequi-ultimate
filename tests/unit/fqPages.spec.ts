@@ -51,7 +51,7 @@ afterEach(() => {
 });
 
 describe('FleetPage', () => {
-  it('shows the fleet, the open positions and the "needs attention" rail from the stores', async () => {
+  it('shows the verdict, the four figures, the fleet and the positions to watch from the stores', async () => {
     const router = pageRouter('/dashboard');
     await router.isReady();
     const w = mount(FleetPage, {
@@ -60,7 +60,10 @@ describe('FleetPage', () => {
     });
     await flushPromises();
     expect(w.find('[data-testid="fleet-page"]').exists()).toBe(true);
-    expect(w.find('[data-testid="alert-rail"]').exists()).toBe(true);
+    expect(w.find('[data-testid="fleet-verdict"]').text()).not.toBe('');
+    expect(w.find('[data-testid="watch-list"]').exists()).toBe(true);
+    // The rail of four tabs is gone: its history is behind the bell
+    expect(w.find('[data-testid="alert-rail"]').exists()).toBe(false);
     // One row per bot of the scope (live by default), named like in the fleet store.
     const live = fixture.bots.filter((b) => b.identity.mode === 'live');
     expect(live.length).toBeGreaterThan(0);
@@ -83,9 +86,25 @@ describe('FleetPage', () => {
     const expected = fixture.positions.filter((p) => p.orphan || live.has(p.bot_key)).length;
     expect(expected).toBeLessThan(fixture.positions.length);
     const metas = w.findAll('.meta').map((m) => m.text());
-    // The positions pane says "<n> · worst first": n is the scoped count, not every mode
-    expect(metas).toContain(`${expected} · worst first`);
-    expect(metas).not.toContain(`${fixture.positions.length} · worst first`);
+    // The positions pane says "the 5 ..., of <n>": n is the scoped count, not every mode
+    expect(metas.some((m) => m.endsWith(`of ${expected}`))).toBe(true);
+    expect(metas.some((m) => m.endsWith(`of ${fixture.positions.length}`))).toBe(false);
+    expect(w.get('[data-testid="positions-toggle"]').text()).toContain(String(expected));
+    w.unmount();
+  });
+
+  it('"See the N positions" swaps the five to watch for the full table, and back', async () => {
+    const router = pageRouter('/dashboard');
+    await router.isReady();
+    const w = mount(FleetPage, { global: { plugins: [i18n, router], stubs } });
+    await flushPromises();
+    expect(w.find('[data-testid="watch-list"]').exists()).toBe(true);
+    expect(w.findAll('[data-testid="watch-list"] li').length).toBeLessThanOrEqual(5);
+    await w.get('[data-testid="positions-toggle"]').trigger('click');
+    expect(w.find('[data-testid="watch-list"]').exists()).toBe(false);
+    expect(w.find('.tt').exists()).toBe(true);
+    await w.get('[data-testid="positions-toggle"]').trigger('click');
+    expect(w.find('[data-testid="watch-list"]').exists()).toBe(true);
     w.unmount();
   });
 

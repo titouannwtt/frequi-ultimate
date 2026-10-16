@@ -144,10 +144,10 @@ describe.each(['en', 'fr'] as const)('composites without a figure (%s)', (lang) 
     teardownWorld();
   });
 
-  it('KPI strip not loaded yet: eight spinners, no word, one live region each', () => {
+  it('KPI strip not loaded yet: four spinners, no word, one live region each', () => {
     const w = mountFq(FleetKpis, { props: { nowMs: FIXTURE_NOW }, attachTo: document.body });
     const tiles = w.get('[data-testid=kpi-loading]').findAll('.kpi');
-    expect(tiles).toHaveLength(8);
+    expect(tiles).toHaveLength(4);
     for (const tile of tiles) {
       expect(tile.find('.v [data-state="pending"]').exists()).toBe(true);
       expect(tile.get('.v').text()).toBe('');
@@ -155,20 +155,22 @@ describe.each(['en', 'fr'] as const)('composites without a figure (%s)', (lang) 
     }
   });
 
-  it('KPI strip with every position unpriced: P&L latent, equity and drawdown are icons, not 0.00', () => {
+  it('KPI strip with every position unpriced: the open P&L, the capital and the drawdown are icons, not 0.00', () => {
     const d = detailOf([live(60, 4, null), live(61, 3, null), live(62, 0, 0)], true);
     const w = mountFq(FleetKpis, {
       props: { detail: d, nowMs: FIXTURE_NOW },
       attachTo: document.body,
     });
-    for (const id of ['kpi-open', 'kpi-equity', 'kpi-dd']) {
+    for (const id of ['kpi-equity', 'kpi-dd']) {
       const tile = w.get(`[data-testid=${id}]`);
       expect(tile.get('.v').text(), id).toBe('');
       const icon = tile.get('.v [data-state="unavailable"]');
       expect(icon.attributes('aria-label')).toMatch(/7/);
     }
+    // The open P&L, in the sub-line of the capital, is an icon too
+    expect(w.get('[data-testid=kpi-open] [data-state="unavailable"]').exists()).toBe(true);
     // The figures that need no price are still there
-    expect(w.get('[data-testid=kpi-day]').get('.v').text()).toMatch(/\d/);
+    expect(w.get('[data-testid=kpi-30d]').get('.v').text()).toMatch(/\d/);
     expect(w.text()).not.toMatch(/0[.,]00/);
     expect(valueTexts(w).join(' ')).not.toMatch(PLACEHOLDER);
   });
@@ -184,7 +186,7 @@ describe.each(['en', 'fr'] as const)('composites without a figure (%s)', (lang) 
       props: { detail: d, nowMs: FIXTURE_NOW },
       attachTo: document.body,
     });
-    expect(w.get('[data-testid=kpi-open]').get('.v').text()).toMatch(/8/);
+    expect(w.get('[data-testid=kpi-open]').text()).toMatch(/8/);
     expect(w.get('[data-testid=kpi-open]').find('[data-state]').exists()).toBe(false);
     expect(w.find('.excl').exists()).toBe(true);
   });
@@ -196,29 +198,12 @@ describe.each(['en', 'fr'] as const)('composites without a figure (%s)', (lang) 
       attachTo: document.body,
     });
     const unread = w.get(`tr[data-bot-key="${rows[0]!.bot_key}"]`);
-    expect(unread.findAll('[data-state="pending"]').length).toBeGreaterThan(4);
+    expect(unread.findAll('[data-state="pending"]').length).toBeGreaterThanOrEqual(4);
     const blind = w.get(`tr[data-bot-key="${rows[1]!.bot_key}"]`);
     expect(blind.findAll('[data-state="unavailable"]').length).toBeGreaterThan(0);
     for (const row of w.findAll('tr.bot')) {
       expect(row.text()).not.toMatch(PLACEHOLDER);
     }
-    // The Σ row never shows a made up total for sums with nothing in them
-    const sigma = w.get('tr.sigma');
-    expect(sigma.text()).not.toMatch(PLACEHOLDER);
-  });
-
-  it('fleet table: the Σ row of a fleet whose every position is unpriced says so, not +0.00', () => {
-    const rows = [live(68, 4, null), live(69, 0, 0)];
-    const w = mountFq(FleetTable, {
-      props: { rows, nowMs: FIXTURE_NOW, containerWidth: 1300 },
-      attachTo: document.body,
-    });
-    const heads = w.findAll('thead tr')[0]!.findAll('th');
-    const at = heads.findIndex((h) => /^(open|latent|en cours)$/i.test(h.text()));
-    expect(at).toBeGreaterThan(0);
-    const cell = w.findAll('tr.sigma th')[at]!;
-    expect(cell.find('[data-state="unavailable"]').exists()).toBe(true);
-    expect(cell.text()).toBe('');
   });
 
   it('fleet map: a tile without a figure shows the icon', () => {
