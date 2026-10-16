@@ -1,14 +1,16 @@
 import type { Page } from '@playwright/test';
 
+/** The bot of the mocked specs is the app's own origin, as for a bot that serves the UI itself. */
 export async function setLoginInfo(page: Page) {
   await page.goto('/');
-  await page.evaluate(() => {
+  const apiUrl = new URL(page.url()).origin;
+  await page.evaluate((apiUrl) => {
     localStorage.setItem(
       'ftAuthLoginInfo',
       JSON.stringify({
         'ftbot.0': {
           botName: 'TestBot',
-          apiUrl: 'http://localhost:3000',
+          apiUrl,
           accessToken: 'access_token_tesst',
           refreshToken: 'refresh_test',
           autoRefresh: true,
@@ -16,7 +18,7 @@ export async function setLoginInfo(page: Page) {
       }),
     );
     localStorage.setItem('ftSelectedBot', 'ftbot.0');
-  });
+  }, apiUrl);
 }
 
 interface MockArray {

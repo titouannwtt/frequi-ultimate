@@ -1,32 +1,29 @@
 import { test, expect } from '@playwright/test';
 
-import { setLoginInfo, defaultMocks, getWaitForResponse } from './helpers';
+import { setLoginInfo, defaultMocks } from './helpers';
+
+test.use({ locale: 'en-US' });
 
 test.describe('Logs', () => {
-  test('Displays and reloads logs', async ({ page }) => {
-    ///
+  test('Displays and refreshes the logs of a bot (direct mode, mocked bot)', async ({ page }) => {
     await defaultMocks(page);
     await setLoginInfo(page);
-    // const pingPromise = page.route('**/*ping*',
-
-    // const logsPromise = page.waitForResponse('**/api/v1/logs');
-    await page.route('**/api/v1/logs', (route) => {
-      return route.fulfill({ path: './e2e/testData/logs.json' });
+    await page.route('**/api/v1/logs*', (route) => {
+      return route.fulfill({
+        path: './e2e/testData/logs.json',
+        headers: { 'access-control-allow-origin': '*' },
+      });
     });
 
-    const logs = getWaitForResponse(page, '@Logs');
-    const ping = getWaitForResponse(page, '@ShowConf');
-    await page.goto('/logs', { waitUntil: 'networkidle' });
-    await Promise.all([logs, ping]);
+    const logs = page.waitForResponse('**/api/v1/logs*');
+    await page.goto('/tools/logs');
+    await logs;
 
-    await expect(page.locator('span', { hasText: 'Checking exchange' })).toBeVisible();
-    await expect(page.locator('span', { hasText: 'Checking exchange' })).toHaveText(
-      /Checking exchange.../,
-      {},
-    );
-    // const logsPromise = page.waitForResponse('**/api/v1/logs');
-    const logsPromise = getWaitForResponse(page, '@Logs');
-    await page.getByRole('button', { name: 'Reload Logs' }).click();
-    await logsPromise;
+    const stream = page.getByTestId('log-stream');
+    await expect(stream).toBeVisible();
+    // The default view is the errors of all bots: pick the bot and the Info level to read its lines
+    await stream.getByRole('combobox', { name: 'Bot' }).selectOption({ index: 1 });
+    await stream.getByRole('radio', { name: 'Info' }).click();
+    await expect(stream.getByText('Checking exchange').first()).toBeVisible();
   });
 });

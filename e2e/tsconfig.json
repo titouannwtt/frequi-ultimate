@@ -2,6 +2,7 @@
   "extends": "../tsconfig.app.json",
   "compilerOptions": {
     "sourceMap": false,
+    "types": ["node", "vite/client"],
   },
   "include": [
     "*.ts",
