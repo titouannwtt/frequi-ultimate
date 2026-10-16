@@ -199,9 +199,22 @@ pub struct LedgerOrder {
     pub cost: Option<f64>,
     pub filled_ms: Option<i64>,
     pub tag: Option<String>,
+    /// Limit price (`price`) and trigger of a stop (`stop_price`): what a waiting order waits for.
+    pub price: Option<f64>,
+    pub stop_price: Option<f64>,
 }
 
 impl LedgerOrder {
+    /// The price an open order waits for: the trigger of a stop, the limit of anything else.
+    #[must_use]
+    pub fn wait_price(&self) -> Option<f64> {
+        if self.side == "stoploss" {
+            self.stop_price.or(self.price)
+        } else {
+            self.price.or(self.stop_price)
+        }
+    }
+
     /// Entry orders are `sell` for a short and `buy` for a long (`ft_order_side`).
     #[must_use]
     pub fn is_entry_for(&self, is_short: bool) -> bool {
@@ -852,6 +865,8 @@ impl LedgerReader for SqliteLedger {
                 "cost",
                 "order_filled_date",
                 "ft_order_tag",
+                "price",
+                "stop_price",
             ]
             .map(|c| col(schema, "orders", c));
             let mut out = Vec::new();
@@ -876,6 +891,8 @@ impl LedgerReader for SqliteLedger {
                         cost: opt_f64(r, 8),
                         filled_ms: opt_date_ms(r, 9),
                         tag: opt_text(r, 10).filter(|s| !s.trim().is_empty()),
+                        price: opt_f64(r, 11),
+                        stop_price: opt_f64(r, 12),
                     })
                 })?;
                 out.extend(rows.collect::<Result<Vec<_>, _>>()?);
@@ -1266,6 +1283,47 @@ mod tests {
             "the same rows read as a long differ"
         );
         assert!(reader().orders(&db, &[]).unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_waiting_order_carries_its_limit_or_its_stop_trigger() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = make_db(dir.path(), "bot.sqlite", false);
+        insert_trade(&db, 7, "BTC/USDC:USDC", true, Some(false), None, None, None);
+        let conn = Connection::open(&db).unwrap();
+        conn.execute_batch(
+            "INSERT INTO orders (id, ft_trade_id, ft_order_side, status, ft_is_open) VALUES
+               (1, 7, 'buy', 'open', 1);",
+        )
+        .unwrap();
+        // An older ledger without the columns: no price, and no error.
+        let old = reader().orders(&db, &[7]).unwrap();
+        assert_eq!(old[0].wait_price(), None);
+        conn.execute_batch(
+            "ALTER TABLE orders ADD COLUMN price FLOAT;
+             ALTER TABLE orders ADD COLUMN stop_price FLOAT;
+             UPDATE orders SET price = 95.5 WHERE id = 1;
+             INSERT INTO orders (id, ft_trade_id, ft_order_side, status, ft_is_open, price, stop_price)
+               VALUES (2, 7, 'stoploss', 'open', 1, 88.0, 90.0),
+                      (3, 7, 'stoploss', 'open', 1, 88.0, NULL);",
+        )
+        .unwrap();
+        let orders = reader().orders(&db, &[7]).unwrap();
+        assert_eq!(
+            orders[0].wait_price(),
+            Some(95.5),
+            "a limit order waits for its price"
+        );
+        assert_eq!(
+            orders[1].wait_price(),
+            Some(90.0),
+            "a stop waits for its trigger"
+        );
+        assert_eq!(
+            orders[2].wait_price(),
+            Some(88.0),
+            "a stop without trigger falls back"
+        );
     }
 
     #[test]

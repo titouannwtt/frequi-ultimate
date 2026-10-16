@@ -59,6 +59,9 @@ const props = withDefaults(
     fleetPositions?: boolean;
     /** The filters offered; by default every filter that makes sense for the bot. */
     tabs?: PairFilter[];
+    /** The list (tabs) comes first and the search field under it, with its own name for "Positions". */
+    positionsFirst?: boolean;
+    positionsLabel?: string;
     /** A source to use instead of the active one (previews, tests). */
     source?: DataSource | null;
     timeoutMs?: number;
@@ -172,7 +175,7 @@ function leftLabel(i: PairItem): string {
 <template>
   <section
     class="pn"
-    :class="layout"
+    :class="[layout, { first: positionsFirst }]"
     data-testid="pair-navigator"
     :aria-label="t('fq.pairnav.title')"
   >
@@ -195,7 +198,7 @@ function leftLabel(i: PairItem): string {
           :class="{ on: filter === f }"
           @click="emit('update:filter', f)"
         >
-          {{ t(`fq.pairnav.f.${f}`) }}
+          {{ f === 'positions' && positionsLabel ? positionsLabel : t(`fq.pairnav.f.${f}`) }}
         </button>
       </div>
     </template>
@@ -310,6 +313,13 @@ function leftLabel(i: PairItem): string {
 .top {
   padding: 8px;
   border-bottom: 1px solid var(--line);
+}
+/* "My positions" first, then the search: the tabs sit above the field */
+.first .tabs {
+  order: -2;
+}
+.first .top {
+  order: -1;
 }
 .tabs {
   display: flex;

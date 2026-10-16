@@ -189,3 +189,27 @@ export async function startGateway(): Promise<void> {
 export async function noHorizontalOverflow(page: Page): Promise<boolean> {
   return page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 }
+
+export interface RigOpenTrade {
+  trade_id: number;
+  pair: string;
+  is_short: boolean;
+  open_rate: number;
+  current_rate: number;
+  open_timestamp: number;
+  amount: number;
+  stake_amount: number;
+  profit_abs: number;
+  profit_ratio: number;
+}
+
+/** The open trades a fake bot reports (login, then `/status`), as the bot itself writes them. */
+export async function openTrades(b: RigBot): Promise<RigOpenTrade[]> {
+  const t = await login(b);
+  if (!t) return [];
+  const r = await fetch(`${botUrl(b)}/api/v1/status`, {
+    headers: { authorization: `Bearer ${t.access_token}` },
+  });
+  const list = (await r.json()) as unknown;
+  return Array.isArray(list) ? (list as RigOpenTrade[]) : [];
+}
