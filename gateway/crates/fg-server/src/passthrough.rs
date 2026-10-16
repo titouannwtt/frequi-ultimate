@@ -13,6 +13,8 @@ use std::time::{Duration, Instant};
 use fg_sources::botrest::{ProxyMethod, ProxyResponse};
 use tokio::sync::Mutex as AsyncMutex;
 
+use crate::error::ApiFailure;
+
 /// What kind of call a path is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Class {
@@ -41,9 +43,17 @@ pub struct Rule {
     /// The answer is a property of the whole fleet, not of the bot asked (reconciliation): one
     /// cache entry for everybody, and the client's query string is not forwarded.
     pub wallet_level: bool,
+    /// The read waits for a token of the request budget and holds an in-flight slot while it runs.
+    /// Not for a sweep that reaches the exchange and lasts tens of seconds: it would pin slots the
+    /// pollers need.
+    pub budgeted: bool,
 }
 
 const SHORT: Duration = Duration::from_secs(20);
+/// The sweep of the wallets asks the exchange, with retries of its own on the Python side. Past
+/// this it is told as a failure (and rests, see [`ProxyCache::get_or_fetch_resting`]) instead of
+/// being waited for during the five minutes of a long job.
+const RECON_TIMEOUT: Duration = Duration::from_secs(40);
 const LONG: Duration = Duration::from_secs(300);
 const BODY_DEFAULT: usize = 64 * 1024;
 const BODY_STRATDEV: usize = 2 * 1024 * 1024;
@@ -67,6 +77,7 @@ pub fn classify(method: ProxyMethod, path: &str) -> Option<Rule> {
         max_body,
         label: format!("proxy:{} {path}", method.as_str()),
         wallet_level,
+        budgeted: class == Class::CachedRead && !wallet_level,
     };
     let body = if is_or_under(path, "stratdev") {
         BODY_STRATDEV
@@ -101,7 +112,7 @@ pub fn classify(method: ProxyMethod, path: &str) -> Option<Rule> {
         // live wallet on each call, so the cache is fleet-wide: at most one sweep per
         // `min_sweep_interval_s`, whoever asks and through whichever bot.
         if path == "fleetview/reconciliation" {
-            return Some(mk(Class::CachedRead, LONG, 60, false, body, true));
+            return Some(mk(Class::CachedRead, RECON_TIMEOUT, 60, false, body, true));
         }
         // Python tooling: (root, the bare root is a route too).
         for (root, bare) in [
@@ -231,6 +242,21 @@ struct Entry {
     response: Arc<ProxyResponse>,
 }
 
+/// A failed sweep, and whether the wallet must rest after it (the exchange is the likely cause)
+/// or not (this bot is the problem: another may serve the same answer).
+#[derive(Debug, Clone)]
+pub struct SweepFailure {
+    pub failure: ApiFailure,
+    pub rest: bool,
+}
+
+/// A failure kept for a while.
+struct Failed {
+    at: Instant,
+    hold: Duration,
+    failure: ApiFailure,
+}
+
 const MAX_ENTRIES: usize = 256;
 const MAX_BYTES: usize = 32 * 1024 * 1024;
 const MAX_ENTRY_BYTES: usize = 2 * 1024 * 1024;
@@ -239,6 +265,8 @@ const MAX_ENTRY_BYTES: usize = 2 * 1024 * 1024;
 pub struct ProxyCache {
     entries: std::sync::Mutex<HashMap<CacheKey, Entry>>,
     flights: AsyncMutex<HashMap<CacheKey, Arc<AsyncMutex<()>>>>,
+    /// Failures that must not be retried at once, see [`Self::get_or_fetch_resting`].
+    failures: std::sync::Mutex<HashMap<CacheKey, Failed>>,
     /// Lifetime of wallet-level answers (`hyperliquid.min_sweep_interval_s`).
     pub wallet_ttl: Duration,
 }
@@ -249,6 +277,7 @@ impl ProxyCache {
         Self {
             entries: std::sync::Mutex::new(HashMap::new()),
             flights: AsyncMutex::new(HashMap::new()),
+            failures: std::sync::Mutex::new(HashMap::new()),
             wallet_ttl,
         }
     }
@@ -320,6 +349,88 @@ impl ProxyCache {
         Ok((response, false))
     }
 
+    /// The recent failure of `key`, with the time left to wait told as `retry_after_ms`.
+    fn resting(&self, key: &CacheKey) -> Option<ApiFailure> {
+        let mut g = self
+            .failures
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        g.retain(|_, f| f.at.elapsed() < f.hold);
+        g.get(key).map(|f| {
+            let left = f.hold.saturating_sub(f.at.elapsed());
+            let mut failure = f.failure.clone();
+            failure.error.retry_after_ms =
+                Some(u64::try_from(left.as_millis()).unwrap_or(u64::MAX));
+            failure
+        })
+    }
+
+    /// Like [`Self::get_or_fetch`], for a read that reaches the exchange: a failed fetch is kept
+    /// for `rest`, and every call in that time gets the same failure (with `retry_after_ms`)
+    /// without a new fetch. A retry button, a second tab or a second bot of the fleet cannot start
+    /// another sweep while the first one failed, so a struggling exchange is asked at most once
+    /// per `rest`, whoever insists.
+    ///
+    /// # Errors
+    /// The failure of the fetch, or the one kept from the last attempt.
+    pub async fn get_or_fetch_resting<F, Fut>(
+        &self,
+        key: CacheKey,
+        ttl: Duration,
+        rest: Duration,
+        fetch: F,
+    ) -> Result<(Arc<ProxyResponse>, bool), ApiFailure>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<ProxyResponse, SweepFailure>>,
+    {
+        if let Some(hit) = self.fresh(&key) {
+            return Ok((hit, true));
+        }
+        if let Some(f) = self.resting(&key) {
+            return Err(f);
+        }
+        let gate = {
+            let mut f = self.flights.lock().await;
+            f.retain(|_, g| Arc::strong_count(g) > 1);
+            Arc::clone(f.entry(key.clone()).or_default())
+        };
+        let _turn = gate.lock().await;
+        if let Some(hit) = self.fresh(&key) {
+            return Ok((hit, true));
+        }
+        // Whoever waited on the gate sees the failure of the one that held it.
+        if let Some(f) = self.resting(&key) {
+            return Err(f);
+        }
+        match fetch().await {
+            Ok(response) => {
+                let response = Arc::new(response);
+                self.store(key, ttl, Arc::clone(&response));
+                Ok((response, false))
+            }
+            Err(SweepFailure {
+                failure,
+                rest: tired,
+            }) => {
+                if tired && !rest.is_zero() {
+                    self.failures
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .insert(
+                            key,
+                            Failed {
+                                at: Instant::now(),
+                                hold: rest,
+                                failure: failure.clone(),
+                            },
+                        );
+                }
+                Err(failure)
+            }
+        }
+    }
+
     /// Drop every answer filed under `scope` (a write just made them untrue).
     pub fn forget_scope(&self, scope: &str) {
         self.entries
@@ -385,6 +496,23 @@ mod tests {
         }
         let recon = rule(ProxyMethod::Get, "fleetview/reconciliation").unwrap();
         assert!(recon.wallet_level && recon.class == Class::CachedRead);
+    }
+
+    #[test]
+    fn the_reconciliation_sweep_has_a_deadline_and_never_pins_a_slot_of_the_pollers() {
+        let recon = rule(ProxyMethod::Get, "fleetview/reconciliation").unwrap();
+        assert_eq!(recon.timeout, RECON_TIMEOUT);
+        assert!(
+            recon.timeout < Duration::from_secs(60),
+            "shorter than the 60 s a client waits, so the client reads our error"
+        );
+        assert!(
+            !recon.budgeted,
+            "a sweep of tens of seconds holds no budget slot"
+        );
+        for p in ["pair_candles", "plot_config", "strategies"] {
+            assert!(rule(ProxyMethod::Get, p).unwrap().budgeted, "{p}");
+        }
     }
 
     #[test]
@@ -575,5 +703,109 @@ mod tests {
                 .unwrap();
         }
         assert!(cache.len() <= MAX_ENTRIES);
+    }
+
+    fn sweep_failure(rest: bool) -> SweepFailure {
+        SweepFailure {
+            failure: ApiFailure::new(
+                fg_core::protocol::ErrorCode::BotUnreachable,
+                "the bot did not answer in time",
+            ),
+            rest,
+        }
+    }
+
+    #[tokio::test]
+    async fn a_failed_sweep_rests_the_fleet_and_tells_how_long() {
+        let cache = Arc::new(ProxyCache::new(Duration::from_secs(60)));
+        let fetches = Arc::new(AtomicUsize::new(0));
+        let ask = |rest_for: Duration| {
+            let (c, f) = (Arc::clone(&cache), Arc::clone(&fetches));
+            async move {
+                c.get_or_fetch_resting(key("recon"), Duration::from_secs(60), rest_for, || async {
+                    f.fetch_add(1, Ordering::SeqCst);
+                    tokio::time::sleep(Duration::from_millis(30)).await;
+                    Err(sweep_failure(true))
+                })
+                .await
+            }
+        };
+        // Eight callers at once (tabs, retries, other bots): a single sweep, one failure for all.
+        let results = futures_join_all((0..8).map(|_| ask(Duration::from_millis(400)))).await;
+        assert_eq!(fetches.load(Ordering::SeqCst), 1);
+        assert!(results.iter().all(Result::is_err));
+        // Later callers get the kept failure at once, with the time left.
+        let again = ask(Duration::from_millis(400)).await.unwrap_err();
+        assert_eq!(
+            fetches.load(Ordering::SeqCst),
+            1,
+            "no new sweep while it rests"
+        );
+        let left = again.error.retry_after_ms.expect("the time left is told");
+        assert!(left > 0 && left <= 400, "{left}");
+        // Once the rest is over the exchange is asked again.
+        tokio::time::sleep(Duration::from_millis(450)).await;
+        let _ = ask(Duration::from_millis(400)).await;
+        assert_eq!(fetches.load(Ordering::SeqCst), 2);
+    }
+
+    async fn futures_join_all<T>(
+        it: impl Iterator<Item = impl Future<Output = T> + Send + 'static>,
+    ) -> Vec<T>
+    where
+        T: Send + 'static,
+    {
+        let tasks: Vec<_> = it.map(tokio::spawn).collect();
+        let mut out = Vec::new();
+        for t in tasks {
+            out.push(t.await.unwrap());
+        }
+        out
+    }
+
+    #[tokio::test]
+    async fn a_failure_that_is_the_bots_own_does_not_rest_the_fleet() {
+        let cache = ProxyCache::new(Duration::from_secs(60));
+        let fetches = AtomicUsize::new(0);
+        for _ in 0..3 {
+            let r = cache
+                .get_or_fetch_resting(
+                    key("recon"),
+                    Duration::from_secs(60),
+                    Duration::from_secs(60),
+                    || async {
+                        fetches.fetch_add(1, Ordering::SeqCst);
+                        Err(sweep_failure(false))
+                    },
+                )
+                .await;
+            assert!(r.is_err());
+        }
+        assert_eq!(
+            fetches.load(Ordering::SeqCst),
+            3,
+            "another bot may still serve the sweep"
+        );
+        // A success is kept like any answer and ends the story.
+        let ok = cache
+            .get_or_fetch_resting(
+                key("recon"),
+                Duration::from_secs(60),
+                Duration::from_secs(60),
+                || async { Ok(resp("{}")) },
+            )
+            .await
+            .unwrap();
+        assert!(!ok.1);
+        let hit = cache
+            .get_or_fetch_resting(
+                key("recon"),
+                Duration::from_secs(60),
+                Duration::from_secs(60),
+                || async { Err(sweep_failure(true)) },
+            )
+            .await
+            .unwrap();
+        assert!(hit.1);
     }
 }
