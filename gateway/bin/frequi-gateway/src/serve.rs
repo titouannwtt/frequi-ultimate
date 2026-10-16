@@ -54,10 +54,7 @@ pub fn load_config(
     Some(loaded.config)
 }
 
-pub async fn run(config_path: Option<PathBuf>, secrets: Option<PathBuf>) -> ExitCode {
-    let Some(cfg) = load_config(config_path.as_ref(), secrets.as_ref()) else {
-        return ExitCode::from(2);
-    };
+pub async fn run(cfg: GatewayConfig) -> ExitCode {
     fg_server::logging::init(&cfg.log);
 
     let (discovery, uid): (Arc<dyn Discovery>, u32) = if cfg.discovery.proc_scan {

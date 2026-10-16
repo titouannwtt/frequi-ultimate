@@ -63,10 +63,11 @@ enum Command {
     Version,
 }
 
-fn runtime() -> std::io::Result<tokio::runtime::Runtime> {
-    // A few worker threads are plenty for 40 bots and a handful of clients; the shared host has
-    // other tenants.
-    let workers = std::thread::available_parallelism().map_or(2, |n| n.get().clamp(2, 4));
+/// The async runtime. A few worker threads are plenty for 40 bots and a handful of clients, and
+/// the host has other tenants: 2 to 4 (`scheduler.worker_threads`, automatic by default).
+fn runtime(workers: Option<usize>) -> std::io::Result<tokio::runtime::Runtime> {
+    let cpus = std::thread::available_parallelism().map_or(2, std::num::NonZero::get);
+    let workers = workers.unwrap_or_else(|| cpus.clamp(2, 4));
     tokio::runtime::Builder::new_multi_thread()
         .worker_threads(workers)
         .max_blocking_threads(16)
@@ -89,14 +90,21 @@ fn main() -> ExitCode {
         Command::PrintDefaultConfig => tools::print_default_config(),
         Command::CheckConfig { config, secrets } => tools::check_config(config, secrets),
         Command::HashPassword => tools::hash_password_cmd(),
-        Command::Doctor { deep, socket } => match runtime() {
+        Command::Doctor { deep, socket } => match runtime(None) {
             Ok(rt) => rt.block_on(doctor::run(deep, socket)),
             Err(e) => fail(&e),
         },
-        Command::Run { config, secrets } => match runtime() {
-            Ok(rt) => rt.block_on(serve::run(config, secrets)),
-            Err(e) => fail(&e),
-        },
+        Command::Run { config, secrets } => {
+            // The configuration is read first: it sizes the runtime.
+            let Some(cfg) = serve::load_config(config.as_ref(), secrets.as_ref()) else {
+                return ExitCode::from(2);
+            };
+            let cpus = std::thread::available_parallelism().map_or(2, std::num::NonZero::get);
+            match runtime(Some(cfg.scheduler.workers(cpus))) {
+                Ok(rt) => rt.block_on(serve::run(cfg)),
+                Err(e) => fail(&e),
+            }
+        }
     }
 }
 
