@@ -155,6 +155,20 @@ pub fn peak_rss_mb() -> f64 {
     status_kb("VmHWM:") as f64 / 1024.0
 }
 
+/// Number of threads of this process.
+pub fn thread_count() -> u64 {
+    status_kb("Threads:")
+}
+
+/// Anonymous (heap, stacks) and file-backed (executable, shared libraries) parts of the resident
+/// size, in megabytes.
+pub fn rss_split_mb() -> (f64, f64) {
+    (
+        status_kb("RssAnon:") as f64 / 1024.0,
+        status_kb("RssFile:") as f64 / 1024.0,
+    )
+}
+
 pub fn rss_mb() -> f64 {
     status_kb("VmRSS:") as f64 / 1024.0
 }

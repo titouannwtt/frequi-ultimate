@@ -1,0 +1,5 @@
+# The service sets this itself at start (see `reexec_with_allocator_settings` in
+# bin/frequi-gateway/src/main.rs); the tests that measure its memory must run with the same
+# setting. An explicit value in the environment wins.
+[env]
+MIMALLOC_PURGE_DELAY = { value = "0", force = false }

@@ -10,7 +10,7 @@ export const HEARTBEAT_TIMEOUT_S = 35;
 export const AUTH_TIMEOUT_S = 5;
 export const DELTA_BUFFER_SIZE = 512;
 export const RECONNECT_BACKOFF_S = [1, 2, 5, 10, 30];
-export const COLLECTIONS = ['bots', 'wallets', 'positions', 'alerts', 'events', 'health', 'scopes', 'details'] as const;
+export const COLLECTIONS = ['bots', 'wallets', 'positions', 'alerts', 'events', 'health', 'scopes', 'details', 'candles', 'chart'] as const;
 
 // ---- identity ----
 export type BotKey = string;
@@ -177,6 +177,20 @@ export type PrefsDoc = { scope: string,
  * Starts at 1 and increases at every write: the value of `If-Match`.
  */
 version: number, updated_ms: number, data: unknown, };
+export type Candle = { 
+/**
+ * Open time, milliseconds.
+ */
+t: number, o: number, h: number, l: number, c: number, v: number, };
+export type ChartInfo = { pair: string, timeframe: string, timeframe_ms: number, 
+/**
+ * Number of candles in the window.
+ */
+candles: number, 
+/**
+ * When the bot was last read for these candles. `stale` says the relay lost the bot.
+ */
+freshness: Freshness, };
 
 // ---- calculations ----
 export type Market = "crypto" | "xyz_stocks" | "xyz_indices" | "xyz_commodities" | "hip3_other" | "mixed";
@@ -433,4 +447,6 @@ export type Upsert = {
   health?: Record<string, PatchOf<Health>>;
   scopes?: Record<string, PatchOf<ScopeTotals>>;
   details?: Record<string, PatchOf<BotDetail>>;
+  candles?: Record<string, PatchOf<Candle>>;
+  chart?: Record<string, PatchOf<ChartInfo>>;
 };

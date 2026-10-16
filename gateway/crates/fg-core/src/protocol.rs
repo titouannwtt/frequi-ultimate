@@ -22,6 +22,8 @@ use ts_rs::TS;
 use crate::identity::BotKey;
 use crate::model::Event;
 
+pub mod differ;
+
 /// Protocol version announced by `GET /gw/v1/hello` and by the `authed` frame.
 pub const PROTOCOL_VERSION: u32 = 1;
 /// Server heartbeat period.
@@ -277,7 +279,7 @@ pub type Upsert = BTreeMap<String, BTreeMap<String, Value>>;
 pub type Remove = BTreeMap<String, Vec<String>>;
 
 /// Names of the collections carried by upserts. The TypeScript `Upsert` type lists the same.
-pub const COLLECTIONS: [&str; 8] = [
+pub const COLLECTIONS: [&str; 10] = [
     "bots",
     "wallets",
     "positions",
@@ -286,6 +288,8 @@ pub const COLLECTIONS: [&str; 8] = [
     "health",
     "scopes",
     "details",
+    "candles",
+    "chart",
 ];
 
 /// Frames sent by the client.

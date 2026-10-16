@@ -1,0 +1,83 @@
+name: Contract (gateway <-> UI)
+
+# The Rust types are the source of truth of the wire format: src/gateway/types.gen.ts is generated
+# from them, and the shared vectors in gateway/fixtures/vectors are run by both sides.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "gateway/crates/fg-core/**"
+      - "gateway/fixtures/**"
+      - "src/gateway/**"
+      - "src/datasource/**"
+      - "tests/unit/datasource/**"
+      - ".github/workflows/contract.yml"
+  pull_request:
+    paths:
+      - "gateway/crates/fg-core/**"
+      - "gateway/fixtures/**"
+      - "src/gateway/**"
+      - "src/datasource/**"
+      - "tests/unit/datasource/**"
+      - ".github/workflows/contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contract-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  types:
+    name: generated TypeScript types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-rust
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: gateway
+      # The test compares the committed file with what ts-rs generates and fails on any difference.
+      - name: Types are up to date
+        working-directory: gateway
+        run: cargo test --locked -p fg-core --test ts_types
+      # Same check from git's point of view, with the diff in the log.
+      - name: Regenerate and diff
+        working-directory: gateway
+        run: |
+          FG_UPDATE_TYPES=1 cargo test --locked -p fg-core --test ts_types
+          git diff --exit-code -- ../src/gateway/types.gen.ts
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: The UI still compiles against the types
+        run: scripts/check-typecheck.sh
+
+  vectors:
+    name: shared vectors, both sides
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-rust
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: gateway
+      - name: Rust side
+        working-directory: gateway
+        run: cargo test --locked -p fg-core --test vectors
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: TypeScript side (direct mode ports)
+        run: pnpm exec vitest run tests/unit/datasource

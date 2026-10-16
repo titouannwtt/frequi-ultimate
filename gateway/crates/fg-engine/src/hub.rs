@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use fg_core::model::Event;
+use fg_core::protocol::differ::{CollectionDiff, frame_bodies};
 use fg_core::protocol::{
     CLIENT_QUEUE_SIZE, Channel, DELTA_BUFFER_SIZE, DeltaBuffer, Remove, Resume, ResyncReason,
     ServerFrame, Upsert,
@@ -66,6 +67,19 @@ impl HubTx<'_> {
         let _ = c.tx.send(frame);
     }
 
+    /// Publish the diffs of several collections of one channel: the reset frame first when a field
+    /// group dropped a key, then the upserts and removals (see [`frame_bodies`]).
+    pub fn up_diffs<'a>(
+        &mut self,
+        ch: &Channel,
+        ts: i64,
+        parts: impl IntoIterator<Item = (&'a str, CollectionDiff)>,
+    ) {
+        for (upsert, remove) in frame_bodies(parts) {
+            self.up(ch, ts, upsert, remove);
+        }
+    }
+
     pub fn ev(&mut self, ch: &Channel, ev: Event) {
         let c = self.chan(ch);
         let frame = c.buf.push_ev(ev);
@@ -101,6 +115,17 @@ impl Hub {
         self.with(ch, |c| (c.buf.head(), f()))
     }
 
+    /// Like [`Self::at_head`] but never creates the channel: one nobody published on is at the
+    /// base of the process. For a channel a client names freely (a chart nobody relays), whose
+    /// entry nothing would ever forget.
+    pub fn peek_head<T>(&self, ch: &Channel, f: impl FnOnce() -> T) -> (u64, T) {
+        let map = self
+            .chans
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        (map.get(ch).map_or(self.base, |c| c.buf.head()), f())
+    }
+
     /// Publish several frames, then run `after` (the swap of the published state), all under one
     /// lock: a reader of [`Self::at_head`] sees either everything or nothing of the batch.
     pub fn transaction<T>(&self, f: impl FnOnce(&mut HubTx<'_>) -> T) -> T {
@@ -115,10 +140,32 @@ impl Hub {
         f(&mut tx)
     }
 
+    /// Drop the buffer of a channel nobody is subscribed to (an open chart that closed). A
+    /// later subscriber starts again from the base of the process, and a client resuming from
+    /// the old numbers is told to reload.
+    pub fn forget(&self, ch: &Channel) {
+        let mut map = self
+            .chans
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if map.get(ch).is_some_and(|c| c.tx.receiver_count() == 0) {
+            map.remove(ch);
+        }
+    }
+
     /// Current sequence number of a channel.
     #[must_use]
     pub fn head(&self, ch: &Channel) -> u64 {
         self.with(ch, |c| c.buf.head())
+    }
+
+    /// Number of channels held (tests: nothing a client names may stay forever).
+    #[cfg(test)]
+    pub(crate) fn len(&self) -> usize {
+        self.chans
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
     }
 
     /// Number of live subscribers of a channel (0 for a channel nobody joined).

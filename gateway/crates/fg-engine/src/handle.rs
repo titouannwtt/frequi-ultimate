@@ -19,6 +19,7 @@ use tokio::task::JoinHandle;
 
 use crate::actions::{ActionError, ActionLocks, ActionRequest};
 use crate::budget::{BudgetStats, RequestBudget};
+use crate::chart::ChartKey;
 use crate::clock::Clock;
 use crate::config::EngineConfig;
 use crate::connector::BotConnector;
@@ -57,6 +58,7 @@ impl Drop for Engine {
         for t in &self.tasks {
             t.abort();
         }
+        self.handle.sh.charts.abort_all();
     }
 }
 
@@ -109,6 +111,7 @@ impl Engine {
             clock,
             core_tx,
             ledger: Arc::clone(&sources.ledger),
+            charts: crate::chart::Charts::default(),
             cfg,
         });
 
@@ -264,20 +267,15 @@ impl EngineHandle {
 
     /// Join channels. `resume` maps a channel to the last sequence the client applied; a resume
     /// the buffer cannot honour (or one from before a restart of the gateway) is answered with a
-    /// `resync` frame on the stream.
+    /// `resync` frame on the stream. Joining a `chart:` channel starts its relay (see
+    /// [`crate::chart`]).
     ///
     /// # Errors
-    /// The chart relay is not provided.
+    /// A malformed chart, an unknown bot, or too many charts open.
     pub fn subscribe(
         &self,
         channels: &[(Channel, Option<u64>)],
     ) -> Result<Subscription, EngineError> {
-        if channels
-            .iter()
-            .any(|(c, _)| matches!(c, Channel::Chart { .. }))
-        {
-            return Err(EngineError::Unsupported("chart relay"));
-        }
         let mut guards = Vec::new();
         for (ch, _) in channels {
             match ch {
@@ -285,17 +283,66 @@ impl EngineHandle {
                     guards.push(self.sh.views.acquire(ViewKey::Bot(k.clone())));
                 }
                 Channel::Health => guards.push(self.sh.views.acquire(ViewKey::Health)),
+                Channel::Chart { .. } => {
+                    if let Some(key) = ChartKey::of(ch) {
+                        guards.push(crate::chart::open(&self.sh, key)?);
+                    }
+                }
                 _ => {}
             }
         }
         Ok(Subscription::new(&self.sh.hub, channels).with_views(guards))
     }
 
+    /// Number of charts being relayed (tests).
+    #[cfg(test)]
+    pub(crate) fn sh_charts_len(&self) -> usize {
+        self.sh.charts.len()
+    }
+
+    /// Entries of the view registry and channels of the hub (tests).
+    #[cfg(test)]
+    pub(crate) fn sh_entries(&self) -> (usize, usize) {
+        (self.sh.views.len(), self.sh.hub.len())
+    }
+
     /// The state of a channel with the sequence number it corresponds to (`X-Gw-Seq`).
     ///
+    /// The snapshot of a `chart:` channel is what its relay holds now: empty when nobody has
+    /// joined the channel (the history of a chart is the proxied `pair_candles`).
+    ///
     /// # Errors
-    /// The chart relay is not provided.
+    /// A malformed chart or an unknown bot.
     pub fn snapshot(&self, ch: &Channel) -> Result<ChannelSnapshot, EngineError> {
+        if let Some(key) = ChartKey::of(ch) {
+            key.validate()?;
+            if !self.published().bots.contains_key(&key.bot) {
+                return Err(EngineError::NotFound);
+            }
+            // A chart nobody relays has no channel to create: the name is the client's choice
+            // and nothing would ever forget the entry.
+            let Some(state) = self.sh.charts.state_of(&key) else {
+                let (seq, collections) = self.sh.hub.peek_head(ch, Default::default);
+                return Ok(ChannelSnapshot {
+                    channel: ch.clone(),
+                    seq,
+                    collections,
+                    events: Vec::new(),
+                });
+            };
+            let (seq, collections) = self.sh.hub.at_head(ch, || {
+                state
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .clone()
+            });
+            return Ok(ChannelSnapshot {
+                channel: ch.clone(),
+                seq,
+                collections,
+                events: Vec::new(),
+            });
+        }
         let (seq, published) = self.sh.hub.at_head(ch, || self.sh.published.load_full());
         let collections = published.collections_for(ch)?;
         let events = match ch {

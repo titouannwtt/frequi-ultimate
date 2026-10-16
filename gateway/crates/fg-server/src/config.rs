@@ -150,6 +150,10 @@ pub struct SchedulerSection {
     pub request_burst: u32,
     pub max_in_flight: usize,
     pub ledger_threads: usize,
+    /// Worker threads of the async runtime: 0 = automatic (the number of CPUs, between 2 and 3),
+    /// otherwise 2 to 4. The host is shared; a gateway has no use for more, and each thread that
+    /// allocates keeps a heap of its own (about 4 MB resident per extra worker, measured).
+    pub worker_threads: usize,
 }
 
 impl Default for SchedulerSection {
@@ -160,6 +164,7 @@ impl Default for SchedulerSection {
             request_burst: b.burst,
             max_in_flight: b.max_in_flight,
             ledger_threads: 4,
+            worker_threads: 0,
         }
     }
 }
@@ -440,6 +445,9 @@ impl GatewayConfig {
                     .to_owned(),
             );
         }
+        if self.scheduler.worker_threads != 0 && !(2..=4).contains(&self.scheduler.worker_threads) {
+            p.push("scheduler.worker_threads must be 0 (automatic) or between 2 and 4".to_owned());
+        }
         if self.tz().is_none() {
             p.push("general.timezone must be Europe/Paris or UTC".to_owned());
         }
@@ -520,6 +528,18 @@ impl GatewayConfig {
     }
 }
 
+impl SchedulerSection {
+    /// Worker threads of the async runtime for a host with `cpus` processors.
+    #[must_use]
+    pub fn workers(&self, cpus: usize) -> usize {
+        if self.worker_threads == 0 {
+            cpus.clamp(2, 3)
+        } else {
+            self.worker_threads.clamp(2, 4)
+        }
+    }
+}
+
 /// The default configuration as a commented TOML file (`print-default-config`).
 pub const DEFAULT_CONFIG_TOML: &str = r#"# frequi-gateway configuration (docs/redesign/03-gateway-architecture.md, section 2.3).
 # Every key is optional; the values below are the defaults. Override any of them with an
@@ -572,6 +592,8 @@ request_rate_per_s = 2.8
 request_burst = 30
 max_in_flight = 6
 ledger_threads = 4
+# Async worker threads: 0 = automatic (number of CPUs, between 2 and 3), or 2 to 4.
+worker_threads = 0
 
 [market]
 # BTC and ETH ticker from CoinGecko (an external API, never the exchange).
@@ -606,6 +628,36 @@ mod tests {
         let loaded = load(Some(&f), Some(&dir.path().join("none.toml"))).unwrap();
         assert_eq!(loaded.config, GatewayConfig::default());
         assert_eq!(loaded.config.problems(), Vec::<String>::new());
+    }
+
+    #[test]
+    fn the_runtime_has_two_to_four_workers_whatever_the_host_or_the_configuration() {
+        let mut cfg = GatewayConfig::default();
+        // Automatic: the number of CPUs, clamped.
+        for (cpus, want) in [(1, 2), (2, 2), (3, 3), (4, 3), (32, 3), (128, 3)] {
+            assert_eq!(cfg.scheduler.workers(cpus), want, "{cpus} cpus");
+        }
+        // Configured: honoured within the range, regardless of the host.
+        cfg.scheduler.worker_threads = 3;
+        assert_eq!(cfg.scheduler.workers(32), 3);
+        assert_eq!(cfg.problems(), Vec::<String>::new());
+        for bad in [1, 5, 64] {
+            cfg.scheduler.worker_threads = bad;
+            assert!(
+                cfg.problems().iter().any(|p| p.contains("worker_threads")),
+                "{bad} is refused"
+            );
+        }
+        // And from the file.
+        let dir = tempfile::tempdir().unwrap();
+        let f = write(
+            dir.path(),
+            "c.toml",
+            "[scheduler]\nworker_threads = 2\n",
+            0o644,
+        );
+        let loaded = load(Some(&f), None).unwrap();
+        assert_eq!(loaded.config.scheduler.workers(32), 2);
     }
 
     #[test]

@@ -23,11 +23,18 @@ allow = [
     "MPL-2.0",
     "0BSD",
     "BSL-1.0",
+    "CDLA-Permissive-2.0",
 ]
+
+# The workspace crates themselves (publish = false, GPL-3.0-or-later) are not third-party code.
+[licenses.private]
+ignore = true
 
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
+# Workspace members depend on each other by path, without a version.
+allow-wildcard-paths = true
 # OpenSSL would break the static musl build (03 section 2.2).
 deny = [{ crate = "openssl" }, { crate = "openssl-sys" }, { crate = "native-tls" }]
 

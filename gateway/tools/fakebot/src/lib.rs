@@ -13,6 +13,6 @@ pub mod fleet;
 pub mod ledger;
 pub mod rng;
 
-pub use api::{Bot, BotInfo, Mode, WriteRecord};
+pub use api::{Bot, BotInfo, Mode, OddBody, WriteRecord};
 pub use fleet::{Fleet, FleetSpec, FleetStats, Manifest};
 pub use ledger::{SeedSpec, Writer, WriterConfig};

@@ -1,0 +1,83 @@
+name: Gateway (Rust)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "gateway/**"
+      - ".github/workflows/rust.yml"
+      - ".github/actions/build-gateway/**"
+  pull_request:
+    paths:
+      - "gateway/**"
+      - ".github/workflows/rust.yml"
+      - ".github/actions/build-gateway/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: fmt, clippy, test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-rust
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: gateway
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Tests
+        run: cargo test --workspace --locked
+
+  deny:
+    name: cargo-deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+      - name: Bans, licenses, sources
+        run: cargo deny --manifest-path gateway/Cargo.toml check bans licenses sources
+      # A new advisory against a dependency must be seen, but must not block an unrelated change.
+      - name: Advisories
+        continue-on-error: true
+        run: cargo deny --manifest-path gateway/Cargo.toml check advisories
+
+  musl:
+    name: static build ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-unknown-linux-musl, aarch64-unknown-linux-musl]
+    steps:
+      - uses: actions/checkout@v4
+      - id: build
+        uses: ./.github/actions/build-gateway
+        with:
+          target: ${{ matrix.target }}
+          name: frequi-gateway-${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frequi-gateway-${{ matrix.target }}
+          path: ${{ steps.build.outputs.path }}
+          retention-days: 14

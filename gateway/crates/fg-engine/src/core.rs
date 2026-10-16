@@ -890,33 +890,17 @@ impl Core {
         let snapshot = Arc::new(self.cur.clone());
         let sh = Arc::clone(&self.sh);
         sh.hub.transaction(|tx| {
-            if !(bot_diff.is_empty() && wallet_diff.is_empty() && scope_diff.is_empty()) {
-                let mut up = BTreeMap::new();
-                let mut rm = BTreeMap::new();
-                for (name, d) in [
+            tx.up_diffs(
+                &Channel::Fleet,
+                now,
+                [
                     ("bots", bot_diff),
                     ("wallets", wallet_diff),
                     ("scopes", scope_diff),
-                ] {
-                    if !d.upsert.is_empty() {
-                        up.insert(name.to_owned(), d.upsert);
-                    }
-                    if !d.remove.is_empty() {
-                        rm.insert(name.to_owned(), d.remove);
-                    }
-                }
-                tx.up(&Channel::Fleet, now, up, rm);
-            }
+                ],
+            );
             for (ch, d) in detail_frames {
-                let mut up = BTreeMap::new();
-                let mut rm = BTreeMap::new();
-                if !d.upsert.is_empty() {
-                    up.insert("details".to_owned(), d.upsert);
-                }
-                if !d.remove.is_empty() {
-                    rm.insert("details".to_owned(), d.remove);
-                }
-                tx.up(&ch, now, up, rm);
+                tx.up_diffs(&ch, now, [("details", d)]);
             }
             sh.published.store(snapshot);
         });
@@ -1071,17 +1055,7 @@ impl Core {
         let snapshot = Arc::new(self.cur.clone());
         let sh = Arc::clone(&self.sh);
         sh.hub.transaction(|tx| {
-            if !diff.is_empty() {
-                let mut up = BTreeMap::new();
-                let mut rm = BTreeMap::new();
-                if !diff.upsert.is_empty() {
-                    up.insert("positions".to_owned(), diff.upsert);
-                }
-                if !diff.remove.is_empty() {
-                    rm.insert("positions".to_owned(), diff.remove);
-                }
-                tx.up(&Channel::Positions, now, up, rm);
-            }
+            tx.up_diffs(&Channel::Positions, now, [("positions", diff)]);
             sh.published.store(snapshot);
         });
     }
@@ -1099,11 +1073,7 @@ impl Core {
         let snapshot = Arc::new(self.cur.clone());
         let sh = Arc::clone(&self.sh);
         sh.hub.transaction(|tx| {
-            if !diff.is_empty() {
-                let mut up = BTreeMap::new();
-                up.insert("health".to_owned(), diff.upsert);
-                tx.up(&Channel::Health, now, up, BTreeMap::new());
-            }
+            tx.up_diffs(&Channel::Health, now, [("health", diff)]);
             sh.published.store(snapshot);
         });
     }
@@ -1171,16 +1141,24 @@ impl Core {
                 Some(format!("{offline}/{total}")),
             );
         }
-        let unreadable = self
-            .bots
-            .values()
-            .filter(|rt| rt.meta.read_ledger && rt.ledger.error.is_some())
-            .count();
-        if unreadable > 0 {
+        // How many ledgers cannot be read and why (`11 (timeout 9, db_locked 2)`): the code is
+        // the only thing that tells a host problem from a gateway one.
+        let mut unreadable: BTreeMap<&'static str, usize> = BTreeMap::new();
+        for rt in self.bots.values().filter(|rt| rt.meta.read_ledger) {
+            if let Some(code) = rt.ledger.error {
+                *unreadable.entry(code.as_str()).or_default() += 1;
+            }
+        }
+        if !unreadable.is_empty() {
+            let total: usize = unreadable.values().sum();
+            let by_code: Vec<String> = unreadable
+                .iter()
+                .map(|(code, n)| format!("{code} {n}"))
+                .collect();
             reason(
                 "ledger_unreadable",
                 Severity::Warning,
-                Some(unreadable.to_string()),
+                Some(format!("{total} ({})", by_code.join(", "))),
             );
         }
         let rate_limited = self
@@ -1390,17 +1368,7 @@ impl Core {
         let snapshot = Arc::new(self.cur.clone());
         let sh = Arc::clone(&self.sh);
         sh.hub.transaction(|tx| {
-            if !diff.is_empty() {
-                let mut up = BTreeMap::new();
-                let mut rm = BTreeMap::new();
-                if !diff.upsert.is_empty() {
-                    up.insert("alerts".to_owned(), diff.upsert);
-                }
-                if !diff.remove.is_empty() {
-                    rm.insert("alerts".to_owned(), diff.remove);
-                }
-                tx.up(&Channel::Alerts, now, up, rm);
-            }
+            tx.up_diffs(&Channel::Alerts, now, [("alerts", diff)]);
             sh.published.store(snapshot);
         });
     }

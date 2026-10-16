@@ -6,7 +6,7 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use fakebot::{Fleet, FleetSpec, WriterConfig};
+use fakebot::{Fleet, FleetSpec, Mode, WriterConfig};
 use fg_engine::budget::BudgetConfig;
 use fg_engine::{Cadences, Engine, EngineSources, HttpConnector, SystemClock};
 use fg_server::config::{AuthMode, GatewayConfig};
@@ -42,6 +42,10 @@ pub struct Opts {
     /// Bot `i` is in trust group `i % groups`.
     pub groups: usize,
     pub writer: bool,
+    /// How often a fake bot pushes its `trade_snapshot` over the WebSocket.
+    pub snapshot_every: Duration,
+    /// Fake bots whose `/status` answers 200 with a body that is not a list of trades.
+    pub odd_status: Vec<(usize, fakebot::OddBody)>,
 }
 
 impl Default for Opts {
@@ -58,6 +62,8 @@ impl Default for Opts {
             actions_per_min: 1000,
             groups: 1,
             writer: false,
+            snapshot_every: Duration::from_millis(300),
+            odd_status: Vec::new(),
         }
     }
 }
@@ -85,9 +91,12 @@ impl Gw {
         let dir = tempfile::tempdir().expect("tempdir");
         let mut spec = FleetSpec::new(o.bots, dir.path().join("fb"));
         spec.closed_trades = o.closed;
-        spec.snapshot_every = Duration::from_millis(300);
+        spec.snapshot_every = o.snapshot_every;
         spec.writer = o.writer.then(WriterConfig::default);
         let fleet = Fleet::start(spec).await.expect("fleet");
+        for (i, odd) in &o.odd_status {
+            fleet.bot(*i).expect("bot").set_mode(Mode::OddStatus(*odd));
+        }
         let found: Vec<_> = fleet.manifest.bots.iter().map(discovered).collect();
         let state_dir = dir.path().join("gw");
         std::fs::create_dir_all(&state_dir).expect("state dir");
