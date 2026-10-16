@@ -1343,6 +1343,169 @@ async fn idempotency_keys_must_be_well_formed() {
     }
 }
 
+#[tokio::test(start_paused = true)]
+async fn a_client_that_leaves_mid_write_does_not_cut_the_action_short() {
+    // B52: the run belongs to a task of its own; dropping the caller changes nothing.
+    let r = trading_rig().await;
+    r.bots[0].state.lock().unwrap().write_delay = Duration::from_secs(5);
+    let gone = tokio::time::timeout(
+        Duration::from_secs(1),
+        r.h.act(exit_req(9001, "k-gone", "BTC/USDC:USDC", false)),
+    )
+    .await;
+    assert!(
+        gone.is_err(),
+        "the caller gave up while the write was running"
+    );
+    settle(10).await;
+    // The outcome is on record, the feed has it, and the key is final: no "interrupted".
+    let audit = r.h.audit(0, None, 10).await.unwrap();
+    assert_eq!(audit.len(), 2, "intent and outcome");
+    assert_eq!(audit[1].http_status, Some(200));
+    assert!(
+        r.h.events(Default::default())
+            .await
+            .iter()
+            .any(|e| e.kind == EventKind::Action)
+    );
+    let replay =
+        r.h.act(exit_req(9001, "k-gone", "BTC/USDC:USDC", false))
+            .await
+            .unwrap();
+    assert_eq!(replay.status, ActionStatus::Accepted);
+    assert_eq!(writes(&r, 9001).len(), 1);
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_write_that_outlasts_the_deadline_is_told_unknown_while_it_carries_on() {
+    let r = trading_rig().await;
+    r.bots[0].state.lock().unwrap().write_delay = Duration::from_secs(120);
+    let res =
+        r.h.act(exit_req(9001, "k-slow", "BTC/USDC:USDC", false))
+            .await
+            .unwrap();
+    assert_eq!(res.status, ActionStatus::Unknown);
+    assert_eq!(res.reason.as_deref(), Some("timeout"));
+    assert!(res.verify.is_some());
+    // Meanwhile the same key is still running: not a second send.
+    let busy =
+        r.h.act(exit_req(9001, "k-slow", "BTC/USDC:USDC", false))
+            .await
+            .unwrap_err();
+    assert_eq!(busy.code, fg_core::protocol::ErrorCode::InProgress);
+    settle(200).await;
+    let audit = r.h.audit(0, None, 10).await.unwrap();
+    assert_eq!(audit.len(), 2);
+    let done =
+        r.h.act(exit_req(9001, "k-slow", "BTC/USDC:USDC", false))
+            .await
+            .unwrap();
+    assert_eq!(done.status, ActionStatus::Accepted);
+    assert_eq!(writes(&r, 9001).len(), 1);
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_key_stands_for_one_bot_one_action_and_one_set_of_parameters() {
+    // B53
+    let r = trading_rig().await;
+    let first =
+        r.h.act(exit_req(9001, "k-same", "BTC/USDC:USDC", false))
+            .await
+            .unwrap();
+    assert_eq!(first.status, ActionStatus::Accepted);
+    let reused = fg_core::protocol::ErrorCode::IdempotencyKeyReused;
+    // Another bot.
+    let other_bot =
+        r.h.act(exit_req(9002, "k-same", "ETH/USDC:USDC", true))
+            .await
+            .unwrap_err();
+    assert_eq!(other_bot.code, reused);
+    // Another action on the same bot.
+    let mut pause = exit_req(9001, "k-same", "x", false);
+    pause.action = WriteAction::Pause;
+    pause.expected = None;
+    assert_eq!(r.h.act(pause).await.unwrap_err().code, reused);
+    // Another trade on the same bot and action.
+    let mut other_trade = exit_req(9001, "k-same", "BTC/USDC:USDC", false);
+    other_trade.action = WriteAction::ForceExit {
+        trade_id: 2,
+        ordertype: None,
+        amount: None,
+    };
+    assert_eq!(r.h.act(other_trade).await.unwrap_err().code, reused);
+    // The genuine replay still gets the stored result, and nothing else left for a bot.
+    let again =
+        r.h.act(exit_req(9001, "k-same", "BTC/USDC:USDC", false))
+            .await
+            .unwrap();
+    assert_eq!(again, first);
+    assert_eq!(writes(&r, 9001).len(), 1);
+    assert!(writes(&r, 9002).is_empty());
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_replay_is_answered_from_the_table_even_when_the_state_it_changed_is_gone() {
+    // B54: the exit closed the trade and the bot went away; the lost reply is asked again.
+    let r = trading_rig().await;
+    let first =
+        r.h.act(exit_req(9001, "k-rep", "BTC/USDC:USDC", false))
+            .await
+            .unwrap();
+    assert_eq!(first.status, ActionStatus::Accepted);
+    r.bots[0].state.lock().unwrap().status = json!([]);
+    r.bots[0].set_mode(Mode::Fail(RestError::Refused));
+    r.bots[0].state.lock().unwrap().ping_ok = false;
+    settle(400).await;
+    r.h.publish_now().await.unwrap();
+    assert_eq!(r.status_of(9001).await, BotStatus::Offline);
+    let again =
+        r.h.act(exit_req(9001, "k-rep", "BTC/USDC:USDC", false))
+            .await
+            .unwrap();
+    assert_eq!(again, first, "the stored result, not bot_unreachable");
+    assert_eq!(writes(&r, 9001).len(), 1);
+}
+
+#[tokio::test(start_paused = true)]
+async fn the_guard_of_an_action_uses_the_exact_age_of_the_position() {
+    // B55: the published instant is rounded down to 30 s for the clients; the guard must not
+    // read that rounding as age. A model refreshed a moment ago is trusted without a Status read.
+    let r = trading_rig().await;
+    // Move to a moment where the rounding alone would make the position look older than 10 s.
+    while r.h.now_ms() % 30_000 < 16_000 {
+        settle(1).await;
+    }
+    r.net
+        .push(
+            9001,
+            snapshot(
+                json!([{"trade_id": 1, "pair": "BTC/USDC:USDC", "current_rate": 102.0,
+                             "profit_abs": 2.0, "profit_ratio": 0.02}]),
+            ),
+        )
+        .await;
+    settle(1).await;
+    r.h.publish_now().await.unwrap();
+    let p = r.h.published();
+    let key_ = crate::ledger_data::trade_key(&key(9001), 1);
+    let shown = p.positions[&key_].freshness.as_of_ms;
+    let seen = p.positions_seen_ms[&key_];
+    assert_eq!(shown % 30_000, 0, "clients get the rounded instant");
+    assert!(
+        seen > shown && r.h.now_ms() - seen <= 3_000,
+        "{seen} {shown}"
+    );
+    // The bot no longer lists the trade, yet the exit is judged on the fresh model: no read.
+    r.bots[0].state.lock().unwrap().status = json!([]);
+    let before = r.bots[0].calls_of("status").len();
+    let res =
+        r.h.act(exit_req(9001, "k-fresh", "BTC/USDC:USDC", false))
+            .await
+            .unwrap();
+    assert_eq!(res.status, ActionStatus::Accepted);
+    assert_eq!(r.bots[0].calls_of("status").len(), before, "no Status read");
+}
+
 // ====================================================================== preferences
 
 #[tokio::test(start_paused = true)]

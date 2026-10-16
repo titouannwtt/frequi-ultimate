@@ -773,7 +773,12 @@ impl HttpBot {
         let result = self.send_write_once(&action).await;
         let mut map = self.idem.lock().map_err(|_| RestError::NotSent)?;
         match &result {
-            // Delivered (whatever the bot answered): remember it, never send it again.
+            // A 401 proves nothing was executed (and `send_write_once` dropped the token): the
+            // same key may be tried again, it is not a final result.
+            Ok(outcome) if outcome.status == 401 => {
+                map.remove(&key);
+            }
+            // Delivered (whatever else the bot answered): remember it, never send it again.
             Ok(outcome) => {
                 map.insert(key, Idem::Done(Instant::now(), outcome.clone()));
             }
@@ -1337,6 +1342,35 @@ mod tests {
             .unwrap();
         assert_eq!(del.body["result"], "deleted");
         assert_eq!(fake.count("DELETE", "/api/v1/trades/7"), 1);
+    }
+
+    #[tokio::test]
+    async fn a_write_refused_with_a_401_is_not_remembered_and_the_key_can_be_tried_again() {
+        // Nothing ran on the bot: the caller's retry with the same key must reach it (B56).
+        let calls = Arc::new(AtomicUsize::new(0));
+        let c = Arc::clone(&calls);
+        let fake = FakeHttp::start(move |req| {
+            if req.path() == "/api/v1/forceexit" && c.fetch_add(1, Ordering::SeqCst) == 0 {
+                return FakeResponse::json(401, r#"{"detail":"expired"}"#);
+            }
+            freqtrade_like(req)
+        })
+        .await;
+        let b = bot(&fake, RestOptions::default());
+        let action = WriteAction::ForceExit {
+            trade_id: 7,
+            ordertype: None,
+            amount: None,
+        };
+        let first = b.write(action.clone(), "key-401".into()).await.unwrap();
+        assert_eq!(first.status, 401);
+        let second = b.write(action.clone(), "key-401".into()).await.unwrap();
+        assert!(second.is_success(), "the retry went through: {second:?}");
+        assert_eq!(fake.count("POST", "/api/v1/forceexit"), 2);
+        // Once it succeeded the key is final again.
+        let third = b.write(action, "key-401".into()).await.unwrap();
+        assert_eq!(third, second);
+        assert_eq!(fake.count("POST", "/api/v1/forceexit"), 2);
     }
 
     #[tokio::test]

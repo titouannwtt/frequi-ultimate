@@ -38,7 +38,8 @@ pub struct Rule {
     pub max_body: usize,
     /// Name in the audit trail.
     pub label: String,
-    /// The answer is a property of the wallet, not of the bot (reconciliation).
+    /// The answer is a property of the whole fleet, not of the bot asked (reconciliation): one
+    /// cache entry for everybody, and the client's query string is not forwarded.
     pub wallet_level: bool,
 }
 
@@ -91,8 +92,14 @@ pub fn classify(method: ProxyMethod, path: &str) -> Option<Rule> {
         if is_or_under(path, "strategy") && path != "strategy" {
             return Some(mk(Class::CachedRead, SHORT, 60, false, body, false));
         }
-        // The one call that reaches the exchange (through the bot): at most one per wallet per
-        // `min_sweep_interval_s`, whoever asks.
+        // `GET /backtest/abort` stops a running backtest: a mutation that freqtrade serves as a
+        // GET. It has no idempotency key and no audit row here, so it is not forwarded at all.
+        if path == "backtest/abort" {
+            return None;
+        }
+        // The one call that reaches the exchange (through the bot). The Python side sweeps every
+        // live wallet on each call, so the cache is fleet-wide: at most one sweep per
+        // `min_sweep_interval_s`, whoever asks and through whichever bot.
         if path == "fleetview/reconciliation" {
             return Some(mk(Class::CachedRead, LONG, 60, false, body, true));
         }
@@ -207,7 +214,10 @@ pub fn clamp_candle_limit(query: &str) -> String {
         .join("&")
 }
 
-/// Where a cached answer is filed: the scope is the bot, or the wallet for wallet-level reads.
+/// Scope of the fleet-wide answers (reconciliation).
+pub const FLEET_SCOPE: &str = "fleet";
+
+/// Where a cached answer is filed: the scope is the bot, or [`FLEET_SCOPE`] for fleet-wide reads.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CacheKey {
     pub scope: String,
@@ -308,6 +318,14 @@ impl ProxyCache {
         let response = Arc::new(fetch().await?);
         self.store(key, ttl, Arc::clone(&response));
         Ok((response, false))
+    }
+
+    /// Drop every answer filed under `scope` (a write just made them untrue).
+    pub fn forget_scope(&self, scope: &str) {
+        self.entries
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .retain(|k, _| k.scope != scope);
     }
 
     /// Number of live entries (tests).
@@ -418,6 +436,7 @@ mod tests {
             (ProxyMethod::Get, "strategy"),
             (ProxyMethod::Get, "stratdevil/x"),
             (ProxyMethod::Get, "replayer"),
+            (ProxyMethod::Get, "backtest/abort"),
             (ProxyMethod::Put, "blacklist"),
             (ProxyMethod::Delete, "fleetview/reconciliation/resolve"),
             (ProxyMethod::Post, "fleetview/overview"),

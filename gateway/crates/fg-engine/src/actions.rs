@@ -2,6 +2,9 @@
 //!
 //! The order of what happens is the safety argument:
 //!
+//! 0. a key already seen is answered from the idempotency table before anything else, whatever
+//!    the bot looks like now (the action itself may have changed it); a key reused for another
+//!    bot, action or parameters is refused (`idempotency_key_reused`);
 //! 1. the target is the bot named in the request, checked against the live model: the trade must
 //!    exist, be open, and match the `expected` pair and side, otherwise `state_mismatch` and
 //!    nothing is sent (the fix for "the exit went to the active bot instead of the trade's bot");
@@ -13,6 +16,10 @@
 //!    request and never after a failure of it;
 //! 6. a request that may have reached the bot (timeout, reset) is reported `unknown`: the key
 //!    stays locked and nothing resends it.
+//!
+//! The whole run is detached from the caller (see [`crate::EngineHandle::act`]): a client that
+//! leaves, or a timeout above it, never cuts a request in flight, so the outcome is always
+//! recorded, audited and announced.
 
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -113,6 +120,11 @@ impl Drop for Guard {
 }
 
 impl ActionLocks {
+    /// An action with this idempotency key is running in this process.
+    pub(crate) fn key_held(&self, key: &str) -> bool {
+        self.keys.lock().map_or(true, |k| k.contains(key))
+    }
+
     pub(crate) fn take(
         self: &Arc<Self>,
         key: &str,
@@ -180,7 +192,7 @@ pub fn requires_confirm(a: &WriteAction, mode: BotMode) -> bool {
     }
 }
 
-fn expected_state(a: &WriteAction) -> &'static str {
+pub(crate) fn expected_state(a: &WriteAction) -> &'static str {
     match a {
         WriteAction::ForceExit { .. } => "exit_fill",
         WriteAction::ForceEnter { .. } => "entry_fill",
@@ -227,6 +239,51 @@ fn params_of(a: &WriteAction) -> Map<String, Value> {
     }
 }
 
+/// What an idempotency key stands for: the action and its parameters, as a short digest. The same
+/// key with anything else is a client bug that would otherwise be answered with the result of a
+/// different action (`accepted`, nothing sent).
+pub(crate) fn fingerprint(name: &str, params: &Map<String, Value>) -> String {
+    let canonical = Value::Object(params.clone()).to_string();
+    let digest = blake3::hash(format!("{name}|{canonical}").as_bytes());
+    format!("{name}:{}", &digest.to_hex()[..16])
+}
+
+pub(crate) fn key_reused() -> ActionError {
+    ActionError::new(
+        ErrorCode::IdempotencyKeyReused,
+        "this idempotency key was used for another bot, action or parameters",
+    )
+}
+
+/// The answer to a key whose earlier attempt never recorded an end.
+pub(crate) fn interrupted(
+    locks: &ActionLocks,
+    key: &str,
+    now_ms: i64,
+    expected_state: &str,
+) -> Result<ActionResult, ActionError> {
+    if locks.key_held(key) {
+        // Still running in this very process: the caller waits for it, it does not get a verdict.
+        return Err(ActionError::new(
+            ErrorCode::InProgress,
+            "an identical action is in progress",
+        ));
+    }
+    // The gateway stopped in between: the request may have reached the bot. Say so, never resend.
+    Ok(ActionResult {
+        status: ActionStatus::Unknown,
+        http_status: None,
+        reason: Some("interrupted".into()),
+        bot_response: None,
+        verify: Some(ActionVerify {
+            expected_state: expected_state.into(),
+            check_after_ms: 0,
+        }),
+        idempotency_key: key.to_owned(),
+        ts_ms: now_ms,
+    })
+}
+
 pub(crate) fn truncate(s: &str) -> String {
     s.chars().take(RESPONSE_MAX_CHARS).collect()
 }
@@ -268,7 +325,13 @@ async fn check_trade(
 ) -> Result<(), ActionError> {
     let mismatch = |m: &str| ActionError::new(ErrorCode::StateMismatch, m);
     let key = crate::ledger_data::trade_key(&req.bot_key, trade_id);
-    let pos = sh.published.load().positions.get(&key).cloned();
+    let (pos, seen_ms) = {
+        let published = sh.published.load();
+        (
+            published.positions.get(&key).cloned(),
+            published.positions_seen_ms.get(&key).copied(),
+        )
+    };
     let needs_open = matches!(
         req.action,
         WriteAction::ForceExit { .. } | WriteAction::CancelOpenOrder { .. }
@@ -282,9 +345,10 @@ async fn check_trade(
         ));
     }
     let now = sh.now_ms();
-    let fresh = pos
-        .as_ref()
-        .is_some_and(|p| now - p.freshness.as_of_ms <= POSITION_MAX_AGE_MS && !p.freshness.stale);
+    // The published `as_of_ms` is rounded down for the clients: the exact instant is kept apart.
+    let fresh = pos.as_ref().is_some_and(|p| {
+        seen_ms.is_some_and(|at| now - at <= POSITION_MAX_AGE_MS) && !p.freshness.stale
+    });
     let (pair, is_short) = if let (true, Some(p)) = (fresh, pos.as_ref()) {
         (
             Some(p.pair.clone()),
@@ -403,6 +467,29 @@ pub async fn act(
             "idempotency key must be 1-128 characters of [A-Za-z0-9_-]",
         ));
     }
+    // A replay is answered before anything else: the state it would be judged against may be the
+    // very effect of the first attempt (trade closed, bot stopped).
+    let bot_key_s = req.bot_key.to_string();
+    let print = fingerprint(req.action.name(), &params_of(&req.action));
+    let store_err = |_| ActionError::new(ErrorCode::Internal, "state database unavailable");
+    match sh
+        .db
+        .idem_lookup(&req.idempotency_key, &bot_key_s, &print)
+        .await
+        .map_err(store_err)?
+    {
+        IdemState::Done(r) => return Ok(*r),
+        IdemState::Reused => return Err(key_reused()),
+        IdemState::InFlight => {
+            return interrupted(
+                locks,
+                &req.idempotency_key,
+                sh.now_ms(),
+                expected_state(&req.action),
+            );
+        }
+        IdemState::Fresh => {}
+    }
     let t = target(sh, &req.bot_key)?;
     if matches!(
         t.row.state.status,
@@ -438,34 +525,21 @@ pub async fn act(
     )?;
 
     let now = sh.now_ms();
-    let store_err = |_| ActionError::new(ErrorCode::Internal, "state database unavailable");
     match sh
         .db
-        .idem_begin(
-            &req.idempotency_key,
-            &req.bot_key.to_string(),
-            req.action.name(),
-            now,
-        )
+        .idem_begin(&req.idempotency_key, &bot_key_s, &print, now)
         .await
         .map_err(store_err)?
     {
         IdemState::Done(r) => return Ok(*r),
+        IdemState::Reused => return Err(key_reused()),
         IdemState::InFlight => {
-            // A previous attempt started and never recorded an end (the gateway stopped in
-            // between). It may have reached the bot: say so, never resend.
-            return Ok(ActionResult {
-                status: ActionStatus::Unknown,
-                http_status: None,
-                reason: Some("interrupted".into()),
-                bot_response: None,
-                verify: Some(ActionVerify {
-                    expected_state: expected_state(&req.action).into(),
-                    check_after_ms: 0,
-                }),
-                idempotency_key: req.idempotency_key,
-                ts_ms: now,
-            });
+            return interrupted(
+                locks,
+                &req.idempotency_key,
+                now,
+                expected_state(&req.action),
+            );
         }
         IdemState::Fresh => {}
     }

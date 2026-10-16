@@ -546,12 +546,16 @@ règle « Telegram court, pas de spam »).
   confirm?}`. La passerelle vérifie dans son modèle (et, si plus vieux que 10 s, par `GET /status/{trade_id}` sur le bot)
   que le trade existe, est ouvert, et correspond à `expected` ; sinon `409 state_mismatch`. C'est le correctif serveur du
   bug « mauvais bot » (`ForceExitForm` sur `activeBot`) : le bot est dans l'URL, le trade est vérifié.
-- `Idempotency-Key` obligatoire (UUID v4 généré au clic). Même clé déjà vue : renvoie le résultat stocké, ou `409
-  in_progress`. Verrou en vol par `(bot_key, trade_id)` et par `(bot_key, action)` pour `stop`/`reload_config`.
+- `Idempotency-Key` obligatoire (UUID v4 généré au clic). Même clé déjà vue : renvoie le résultat stocké (avant toute
+  précondition : le rejeu d'une sortie réussie ne dépend pas de l'état que l'action a changé), ou `409 in_progress`. Une clé
+  réutilisée pour un autre bot, une autre action ou d'autres paramètres : `422 idempotency_key_reused`. Verrou en vol par `(bot_key, trade_id)` et par `(bot_key, action)` pour `stop`/`reload_config`.
 - **Aucun retry.** Le token d'accès est rafraîchi **avant** l'envoi s'il expire dans moins de 60 s. Une réponse 401
   prouve que l'action n'a pas été exécutée : renvoyée telle quelle (non mémorisée comme résultat final), l'UI propose de
   réessayer. Timeout après 20 s : résultat `unknown` (« vérifier sur le bot »), jamais présenté comme un échec ni comme
   un succès ; la passerelle sonde ensuite l'état du trade et pousse la vérité dans le fil.
+  L'exécution est détachée de la requête HTTP : un client qui part ne coupe jamais l'écriture en vol, le résultat est
+  toujours enregistré, audité et annoncé ; l'appelant attend au plus 75 s, puis reçoit `unknown` (`reason: timeout`) pendant
+  que la tâche continue.
 - Réponse : `{status: accepted|rejected|unknown, bot_response (tronquée), verify: {expected_state, check_after_ms}}`.
   Le succès HTTP signifie « ordre transmis », pas « position fermée » ; la confirmation vient de l'événement
   `exit_fill` ou de la relecture SQLite, et l'UI affiche les deux étapes.

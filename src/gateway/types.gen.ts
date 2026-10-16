@@ -410,7 +410,7 @@ export type AlertTransition = { kind: TransitionKind, alert: Alert, };
 
 // ---- protocol ----
 export type Channel = string;
-export type ErrorCode = "bad_request" | "unauthorized" | "forbidden" | "origin_not_allowed" | "not_found" | "rate_limited" | "state_mismatch" | "in_progress" | "unknown_channel" | "too_many_connections" | "bot_unreachable" | "unavailable" | "internal";
+export type ErrorCode = "bad_request" | "unauthorized" | "forbidden" | "origin_not_allowed" | "not_found" | "rate_limited" | "state_mismatch" | "in_progress" | "idempotency_key_reused" | "unknown_channel" | "too_many_connections" | "bot_unreachable" | "unavailable" | "internal";
 export type ApiError = { code: ErrorCode, message: string, retry_after_ms: number | null, };
 export type ResyncReason = "gap" | "overflow" | "stale_resume";
 export type SeqCheck = { "verdict": "in_order" } | { "verdict": "duplicate" } | { "verdict": "gap", expected: number, got: number, };

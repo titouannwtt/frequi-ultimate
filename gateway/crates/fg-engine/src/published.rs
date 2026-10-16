@@ -36,6 +36,9 @@ pub struct Published {
     pub bots: Arc<BTreeMap<BotKey, BotRow>>,
     /// Keyed `bot_key/trade_id`.
     pub positions: Arc<BTreeMap<String, Position>>,
+    /// Exact instant (ms) each position was last refreshed, same keys as `positions`. Clients see
+    /// `freshness.as_of_ms` rounded down to 30 s; the guard of an action needs the real age.
+    pub positions_seen_ms: Arc<BTreeMap<String, i64>>,
     pub wallets: Arc<BTreeMap<String, WalletRow>>,
     /// Keyed `live`, `dry`, `replay`.
     pub scopes: Arc<BTreeMap<String, ScopeTotals>>,
@@ -54,6 +57,7 @@ impl Published {
         Self {
             bots: Arc::default(),
             positions: Arc::default(),
+            positions_seen_ms: Arc::default(),
             wallets: Arc::default(),
             scopes: Arc::default(),
             alerts: Arc::default(),

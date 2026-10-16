@@ -468,7 +468,27 @@ impl StateDb {
 
     // ---- idempotency
 
+    /// What the table knows about a key, without registering anything. A replay is answered from
+    /// here before the state of the bot is looked at: the action itself may have changed it.
+    pub async fn idem_lookup(
+        &self,
+        key: &str,
+        bot_key: &str,
+        action: &str,
+    ) -> Result<IdemState, StateDbError> {
+        let (key, bot_key, action) = (key.to_owned(), bot_key.to_owned(), action.to_owned());
+        self.call(move |c| {
+            Ok(match read_idem(c, &key)? {
+                None => IdemState::Fresh,
+                Some(row) => row.state_for(&bot_key, &action)?,
+            })
+        })
+        .await
+    }
+
     /// Register the intent to send an action. Returns what the table already knew about the key.
+    /// `action` is the fingerprint of what is asked (name and parameters): a key only ever stands
+    /// for one bot and one request.
     pub async fn idem_begin(
         &self,
         key: &str,
@@ -479,14 +499,7 @@ impl StateDb {
         let (key, bot_key, action) = (key.to_owned(), bot_key.to_owned(), action.to_owned());
         self.call(move |c| {
             let tx = c.transaction()?;
-            let existing: Option<(String, Option<String>)> = tx
-                .query_row(
-                    "SELECT state, result FROM idempotency WHERE key = ?1",
-                    [&key],
-                    |r| Ok((r.get(0)?, r.get(1)?)),
-                )
-                .optional()?;
-            let out = match existing {
+            let out = match read_idem(&tx, &key)? {
                 None => {
                     tx.execute(
                         "INSERT INTO idempotency (key, bot_key, action, state, created_ms, updated_ms)
@@ -495,13 +508,7 @@ impl StateDb {
                     )?;
                     IdemState::Fresh
                 }
-                Some((state, result)) if state == "done" => {
-                    let parsed = result
-                        .and_then(|j| serde_json::from_str::<ActionResult>(&j).ok())
-                        .ok_or(StateDbError::Malformed)?;
-                    IdemState::Done(Box::new(parsed))
-                }
-                Some(_) => IdemState::InFlight,
+                Some(row) => row.state_for(&bot_key, &action)?,
             };
             tx.commit()?;
             Ok(out)
@@ -562,6 +569,47 @@ pub enum IdemState {
     Done(Box<ActionResult>),
     /// A previous request with this key started and never recorded an end.
     InFlight,
+    /// The key was used for another bot, another action or other parameters.
+    Reused,
+}
+
+/// A row of the idempotency table.
+struct IdemRow {
+    bot_key: String,
+    action: String,
+    done: bool,
+    result: Option<String>,
+}
+
+impl IdemRow {
+    fn state_for(self, bot_key: &str, action: &str) -> Result<IdemState, StateDbError> {
+        if self.bot_key != bot_key || self.action != action {
+            return Ok(IdemState::Reused);
+        }
+        if !self.done {
+            return Ok(IdemState::InFlight);
+        }
+        self.result
+            .and_then(|j| serde_json::from_str::<ActionResult>(&j).ok())
+            .map(|r| IdemState::Done(Box::new(r)))
+            .ok_or(StateDbError::Malformed)
+    }
+}
+
+fn read_idem(c: &Connection, key: &str) -> Result<Option<IdemRow>, StateDbError> {
+    Ok(c.query_row(
+        "SELECT bot_key, action, state, result FROM idempotency WHERE key = ?1",
+        [key],
+        |r| {
+            Ok(IdemRow {
+                bot_key: r.get(0)?,
+                action: r.get(1)?,
+                done: r.get::<_, String>(2)? == "done",
+                result: r.get(3)?,
+            })
+        },
+    )
+    .optional()?)
 }
 
 fn read_prefs(c: &Connection, user: &str, scope: &str) -> Result<Option<PrefsDoc>, StateDbError> {
@@ -742,8 +790,31 @@ mod tests {
         db.idem_finish("k", &res, 3).await.unwrap();
         assert_eq!(
             db.idem_begin("k", "local:1", "stop", 4).await.unwrap(),
-            IdemState::Done(Box::new(res))
+            IdemState::Done(Box::new(res.clone()))
         );
+        // Looking does not register anything, and a key is only for the request it began with.
+        assert_eq!(
+            db.idem_lookup("k", "local:1", "stop").await.unwrap(),
+            IdemState::Done(Box::new(res.clone()))
+        );
+        assert_eq!(
+            db.idem_lookup("never", "local:1", "stop").await.unwrap(),
+            IdemState::Fresh
+        );
+        assert_eq!(
+            db.idem_begin("never", "local:1", "stop", 4).await.unwrap(),
+            IdemState::Fresh
+        );
+        for (bot, action) in [("local:2", "stop"), ("local:1", "start")] {
+            assert_eq!(
+                db.idem_lookup("k", bot, action).await.unwrap(),
+                IdemState::Reused
+            );
+            assert_eq!(
+                db.idem_begin("k", bot, action, 4).await.unwrap(),
+                IdemState::Reused
+            );
+        }
         // A key that never left the machine can be forgotten and reused.
         assert_eq!(
             db.idem_begin("n", "local:1", "stop", 5).await.unwrap(),

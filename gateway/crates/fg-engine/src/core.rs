@@ -1048,6 +1048,10 @@ impl Core {
             }
         }
         self.slow_pos_at.retain(|k, _| positions.contains_key(k));
+        let seen: BTreeMap<String, i64> = positions
+            .iter()
+            .map(|(k, p)| (k.clone(), p.freshness.as_of_ms))
+            .collect();
         for p in positions.values_mut() {
             coarse(&mut p.freshness);
         }
@@ -1062,6 +1066,7 @@ impl Core {
             &["as_of_ms"],
         );
         self.cur.positions = Arc::new(positions);
+        self.cur.positions_seen_ms = Arc::new(seen);
         self.cur.generated_ms = now;
         let snapshot = Arc::new(self.cur.clone());
         let sh = Arc::clone(&self.sh);

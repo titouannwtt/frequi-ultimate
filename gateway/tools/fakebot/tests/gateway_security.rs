@@ -14,6 +14,7 @@ mod gw_rig;
 use std::collections::BTreeSet;
 use std::time::Duration;
 
+use fakebot::Mode;
 use fg_server::config::AuthMode;
 use gw_rig::{Got, Gw, Opts, UI_ORIGIN, Ws};
 use reqwest::Method;
@@ -933,6 +934,8 @@ async fn the_passthrough_forwards_only_what_is_whitelisted() {
         (Method::GET, "stratdev\\runs".into()),
         (Method::GET, "stratdevil/x".into()),
         (Method::GET, "replayer".into()),
+        // A mutation that freqtrade serves as a GET: no key, no audit row, not forwarded (B59).
+        (Method::GET, "backtest/abort".into()),
         (Method::PUT, "blacklist".into()),
         (Method::POST, "fleetview/overview".into()),
         (Method::GET, "pair_candles/../status".into()),
@@ -1324,5 +1327,277 @@ async fn request_bodies_are_bounded() {
         .await
         .unwrap();
     assert_eq!(r.status(), 413);
+    gw.stop().await;
+}
+
+async fn until(what: &str, limit: Duration, mut ok: impl FnMut() -> bool) {
+    let started = std::time::Instant::now();
+    while !ok() {
+        assert!(started.elapsed() < limit, "timed out waiting for: {what}");
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_client_that_leaves_mid_write_does_not_cut_the_action_short() {
+    // B52: the order reached the bot, the client went away, the gateway must still record the
+    // outcome, audit it and remember the key as done.
+    let gw = Gw::start(Opts {
+        bots: 2,
+        ..Opts::default()
+    })
+    .await;
+    gw.wait_online(2, Duration::from_secs(60)).await;
+    let token = gw.session("d1").await;
+    let (i, trade, pair, short) = some_position(&gw, &token).await;
+    let bot = gw.fleet.bot(i).unwrap();
+    let url = format!("/bots/{}/actions/forceexit", gw.key(i));
+    gw.fleet.set_mode(i, Mode::Slow(1500));
+    let gone = gw
+        .req(Method::POST, &url, Some(&token))
+        .header("Idempotency-Key", "gone-1")
+        .json(&forceexit(trade, &pair, short))
+        .timeout(Duration::from_millis(300))
+        .send()
+        .await;
+    assert!(gone.is_err(), "the client gave up");
+    until("the write reached the bot", Duration::from_secs(20), || {
+        !bot.writes().is_empty()
+    })
+    .await;
+    gw.fleet.set_mode(i, Mode::Up);
+    // The final audit row appears although nobody is waiting for the answer.
+    let mut final_row = false;
+    for _ in 0..100 {
+        gw.engine.handle().flush().await;
+        let audit = gw
+            .get_json(&format!("/audit?bot={}", gw.key(i)), &token)
+            .await;
+        let rows: Vec<&Value> = audit["entries"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|e| e["idempotency_key"] == "gone-1")
+            .collect();
+        if rows.iter().any(|e| e["http_status"] == 200) {
+            assert_eq!(rows.len(), 2, "intent and outcome");
+            final_row = true;
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    assert!(final_row, "no outcome in the audit trail");
+    // The key is final: the retry gets the stored result, not "interrupted", and sends nothing.
+    let again: Value = gw
+        .req(Method::POST, &url, Some(&token))
+        .header("Idempotency-Key", "gone-1")
+        .json(&forceexit(trade, &pair, short))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(again["status"], "accepted", "{again}");
+    assert_eq!(bot.writes().len(), 1);
+    gw.stop().await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_key_reused_for_another_request_is_refused_and_a_replay_survives_the_bot_going_away() {
+    // B53 and B54.
+    let gw = Gw::start(Opts {
+        bots: 2,
+        ..Opts::default()
+    })
+    .await;
+    gw.wait_online(2, Duration::from_secs(60)).await;
+    let token = gw.session("d1").await;
+    let (i, trade, pair, short) = some_position(&gw, &token).await;
+    let other = 1 - i;
+    let post = |path: String, key: &'static str, body: Value| {
+        gw.req(Method::POST, &path, Some(&token))
+            .header("Idempotency-Key", key)
+            .json(&body)
+            .send()
+    };
+    let exit = format!("/bots/{}/actions/forceexit", gw.key(i));
+    let first: Value = post(exit.clone(), "reuse-1", forceexit(trade, &pair, short))
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(first["status"], "accepted");
+
+    // The same key for another bot, another action: 422, nothing reaches any bot.
+    for path in [
+        format!("/bots/{}/actions/pause", gw.key(other)),
+        format!("/bots/{}/actions/pause", gw.key(i)),
+    ] {
+        let r = post(path, "reuse-1", json!({})).await.unwrap();
+        assert_eq!(r.status(), 422);
+        assert_eq!(
+            r.json::<Value>().await.unwrap()["code"],
+            "idempotency_key_reused"
+        );
+    }
+    assert!(gw.fleet.bot(other).unwrap().writes().is_empty());
+    assert_eq!(gw.fleet.bot(i).unwrap().writes().len(), 1);
+
+    // The bot goes away; the client never saw the answer and asks again with the same key.
+    gw.fleet.set_mode(i, Mode::Down);
+    let key = fg_core::identity::BotKey::Local(gw.port(i));
+    until("the bot is offline", Duration::from_secs(60), || {
+        gw.engine.handle().published().bots[&key].state.status == fg_core::model::BotStatus::Offline
+    })
+    .await;
+    let again = post(exit, "reuse-1", forceexit(trade, &pair, short))
+        .await
+        .unwrap();
+    assert_eq!(
+        again.status(),
+        200,
+        "the stored result, not bot_unreachable"
+    );
+    assert_eq!(again.json::<Value>().await.unwrap(), first);
+    assert_eq!(gw.fleet.bot(i).unwrap().writes().len(), 1);
+    gw.stop().await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_write_refused_with_a_401_may_be_tried_again_with_the_same_key() {
+    // B56: nothing ran on the bot, so the key must not be locked into the refusal.
+    let gw = Gw::start(Opts {
+        bots: 1,
+        ..Opts::default()
+    })
+    .await;
+    gw.wait_online(1, Duration::from_secs(60)).await;
+    let token = gw.session("d1").await;
+    let bot = gw.fleet.bot(0).unwrap();
+    let url = format!("/bots/{}/actions/pause", gw.key(0));
+    let mut proven = false;
+    // The pollers may renew the token first: try until the write itself meets the 401.
+    for n in 0..30 {
+        let key = format!("retry-{n}");
+        bot.expire_tokens();
+        let first: Value = gw
+            .req(Method::POST, &url, Some(&token))
+            .header("Idempotency-Key", &key)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        if first["http_status"] != 401 {
+            continue;
+        }
+        let before = bot.writes().len();
+        let second: Value = gw
+            .req(Method::POST, &url, Some(&token))
+            .header("Idempotency-Key", &key)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        assert_eq!(second["status"], "accepted", "{second}");
+        assert_eq!(bot.writes().len(), before + 1, "the retry reached the bot");
+        proven = true;
+        break;
+    }
+    assert!(proven, "the write never met an expired token");
+    gw.stop().await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn the_reconciliation_is_one_sweep_per_interval_for_the_whole_fleet() {
+    // B57: the Python side sweeps every live wallet on each call; the cache must be fleet-wide
+    // and a client's `refresh=true` must not get through.
+    let gw = Gw::start(Opts {
+        bots: 4,
+        ..Opts::default()
+    })
+    .await;
+    gw.wait_online(4, Duration::from_secs(60)).await;
+    let token = gw.session("d1").await;
+    let sweeps = || -> u64 {
+        (0..4)
+            .map(|i| {
+                gw.fleet
+                    .bot(i)
+                    .unwrap()
+                    .route_counts()
+                    .get("GET /fleetview/reconciliation")
+                    .copied()
+                    .unwrap_or(0)
+            })
+            .sum()
+    };
+    for i in 0..4 {
+        for q in ["", "?refresh=true"] {
+            let r = gw
+                .req(
+                    Method::GET,
+                    &format!("/bots/{}/proxy/fleetview/reconciliation{q}", gw.key(i)),
+                    Some(&token),
+                )
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(r.status(), 200);
+            let v: Value = r.json().await.unwrap();
+            assert!(v["query"].is_null(), "the query was forwarded: {v}");
+        }
+    }
+    assert_eq!(sweeps(), 1, "eight calls through four bots, one sweep");
+    gw.stop().await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_bootstrap_asks_the_bots_for_a_few_proofs_at_most() {
+    // B58: a stranger sets the number of requests a bootstrap sends to the bots.
+    let gw = Gw::start(Opts {
+        bots: 6,
+        groups: 6,
+        ..Opts::default()
+    })
+    .await;
+    let versions = || -> u64 {
+        (0..6)
+            .map(|i| {
+                gw.fleet
+                    .bot(i)
+                    .unwrap()
+                    .route_counts()
+                    .get("GET /version")
+                    .copied()
+                    .unwrap_or(0)
+            })
+            .sum()
+    };
+    let before = versions();
+    let all: Vec<usize> = (0..6).collect();
+    let body = gw.bootstrap_body(&all, "phone").await;
+    let r = gw
+        .http
+        .post(gw.url("/session/bootstrap"))
+        .json(&body)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(r.status(), 200);
+    let v: Value = r.json().await.unwrap();
+    let granted = v["bots"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|b| b["scope"] == "granted")
+        .count();
+    assert_eq!(granted, 4, "four groups were proven, the rest left out");
+    assert_eq!(versions() - before, 4);
     gw.stop().await;
 }

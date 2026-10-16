@@ -2,6 +2,7 @@
 //! server layer holds (subscribe, snapshot, queries, alerts, preferences, actions).
 
 use std::sync::{Arc, Mutex, RwLock};
+use std::time::Duration;
 
 use arc_swap::ArcSwap;
 use fg_core::alerts::{Alert, AlertRulesConfig, AlertTypeId, AlertView};
@@ -177,6 +178,41 @@ pub struct EventQuery {
     pub bot: Option<BotKey>,
     /// 0 means 200.
     pub limit: usize,
+}
+
+/// How long a caller waits for the outcome of a write before it is told `unknown`. Above the sum
+/// of the timeouts inside a write (wait for a budget slot, a status read, two token refreshes,
+/// the write itself).
+pub const ACTION_DEADLINE: Duration = Duration::from_secs(75);
+
+fn deadline_answer(key: &str, expected_state: &str, now_ms: i64) -> ActionResult {
+    ActionResult {
+        status: fg_core::model::ActionStatus::Unknown,
+        http_status: None,
+        reason: Some("timeout".into()),
+        bot_response: None,
+        verify: Some(fg_core::model::ActionVerify {
+            expected_state: expected_state.into(),
+            check_after_ms: 2_000,
+        }),
+        idempotency_key: key.to_owned(),
+        ts_ms: now_ms,
+    }
+}
+
+/// Wait for a detached write. Dropping this future leaves the task running.
+async fn detached(
+    task: tokio::task::JoinHandle<Result<ActionResult, ActionError>>,
+    on_deadline: ActionResult,
+) -> Result<ActionResult, ActionError> {
+    match tokio::time::timeout(ACTION_DEADLINE, task).await {
+        Ok(Ok(r)) => r,
+        Ok(Err(_)) => Err(ActionError::new(
+            fg_core::protocol::ErrorCode::Internal,
+            "the action stopped unexpectedly",
+        )),
+        Err(_) => Ok(on_deadline),
+    }
 }
 
 /// What a server layer holds. Cheap to clone.
@@ -622,8 +658,23 @@ impl EngineHandle {
     ///
     /// # Errors
     /// The request was refused before anything was sent.
+    ///
+    /// The run is detached: it belongs to a task of its own that always goes to the end (outcome
+    /// recorded, audited, announced), even when the caller is dropped (client gone, timeout
+    /// above). If the answer takes longer than [`ACTION_DEADLINE`] the caller gets `unknown`
+    /// with a `verify` hint while the task carries on.
     pub async fn act(&self, req: ActionRequest) -> Result<ActionResult, ActionError> {
-        crate::actions::act(&self.sh, &self.locks, req).await
+        let unknown = deadline_answer(
+            &req.idempotency_key,
+            crate::actions::expected_state(&req.action),
+            self.sh.now_ms(),
+        );
+        let (sh, locks) = (Arc::clone(&self.sh), Arc::clone(&self.locks));
+        detached(
+            tokio::spawn(async move { crate::actions::act(&sh, &locks, req).await }),
+            unknown,
+        )
+        .await
     }
 
     /// The gateway's own database, for the tables of the server layer (sessions, device aliases).
@@ -654,7 +705,13 @@ impl EngineHandle {
         &self,
         w: crate::proxy::ProxyWrite,
     ) -> Result<ActionResult, ActionError> {
-        crate::proxy::proxy_write(&self.sh, &self.locks, w).await
+        let unknown = deadline_answer(&w.idempotency_key, "check_on_bot", self.sh.now_ms());
+        let (sh, locks) = (Arc::clone(&self.sh), Arc::clone(&self.locks));
+        detached(
+            tokio::spawn(async move { crate::proxy::proxy_write(&sh, &locks, w).await }),
+            unknown,
+        )
+        .await
     }
 
     /// The orders of one trade (entries, DCA, exits), read from the bot's ledger on demand.

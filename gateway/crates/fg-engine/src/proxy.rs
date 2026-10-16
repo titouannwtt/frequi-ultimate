@@ -22,7 +22,8 @@ use serde_json::{Map, Value};
 use thiserror::Error;
 
 use crate::actions::{
-    ActionError, ActionLocks, ActionOrigin, AuditWhat, audit_row, target, truncate, valid_key,
+    ActionError, ActionLocks, ActionOrigin, AuditWhat, audit_row, fingerprint, interrupted,
+    key_reused, target, truncate, valid_key,
 };
 use crate::msg::Msg;
 use crate::shared::Shared;
@@ -103,6 +104,23 @@ pub async fn proxy_write(
             "not a mutating request",
         ));
     }
+    // A replay is answered before the state of the bot is looked at (see `actions::act`).
+    let bot_key_s = w.bot_key.to_string();
+    let print = fingerprint(&w.label, &w.params);
+    let store_err = |_| ActionError::new(ErrorCode::Internal, "state database unavailable");
+    match sh
+        .db
+        .idem_lookup(&w.idempotency_key, &bot_key_s, &print)
+        .await
+        .map_err(store_err)?
+    {
+        IdemState::Done(r) => return Ok(*r),
+        IdemState::Reused => return Err(key_reused()),
+        IdemState::InFlight => {
+            return interrupted(locks, &w.idempotency_key, sh.now_ms(), "check_on_bot");
+        }
+        IdemState::Fresh => {}
+    }
     let t = target(sh, &w.bot_key)?;
     if matches!(
         t.row.state.status,
@@ -126,27 +144,16 @@ pub async fn proxy_write(
     )?;
 
     let now = sh.now_ms();
-    let store_err = |_| ActionError::new(ErrorCode::Internal, "state database unavailable");
     match sh
         .db
-        .idem_begin(&w.idempotency_key, &w.bot_key.to_string(), &w.label, now)
+        .idem_begin(&w.idempotency_key, &bot_key_s, &print, now)
         .await
         .map_err(store_err)?
     {
         IdemState::Done(r) => return Ok(*r),
+        IdemState::Reused => return Err(key_reused()),
         IdemState::InFlight => {
-            return Ok(ActionResult {
-                status: ActionStatus::Unknown,
-                http_status: None,
-                reason: Some("interrupted".into()),
-                bot_response: None,
-                verify: Some(ActionVerify {
-                    expected_state: "check_on_bot".into(),
-                    check_after_ms: 0,
-                }),
-                idempotency_key: w.idempotency_key,
-                ts_ms: now,
-            });
+            return interrupted(locks, &w.idempotency_key, now, "check_on_bot");
         }
         IdemState::Fresh => {}
     }

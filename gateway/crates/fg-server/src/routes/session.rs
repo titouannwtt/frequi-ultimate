@@ -24,10 +24,18 @@ use crate::util::now_ms;
 
 /// Most bots a bootstrap may list.
 const MAX_BOOT_BOTS: usize = 64;
-/// Proofs a single bootstrap may ask of the bots.
-const MAX_PROOFS: usize = 8;
+/// Proofs a single bootstrap may ask of the bots. A stranger can trigger them, so they are few
+/// and paid for out of the request budget (see [`pay_for_a_probe`]).
+const MAX_PROOFS: usize = 4;
 /// Attempts per trust group within one bootstrap (a stale token must not hide a good one).
 const MAX_PROOFS_PER_GROUP: usize = 2;
+
+/// A request to a bot made on behalf of someone who is not authenticated yet counts in the
+/// request budget like any other: the guarantee on the rate towards the bots holds whatever the
+/// callers do. It does not queue behind the pollers (a login would wait seconds).
+async fn pay_for_a_probe(st: &AppState) {
+    st.engine.budget().debit(1).await;
+}
 
 pub async fn hello(State(st): State<AppState>) -> Json<Value> {
     Json(json!({
@@ -153,6 +161,7 @@ pub async fn bootstrap(
         }
         proofs += 1;
         *attempts.entry(bot.group.clone()).or_default() += 1;
+        pay_for_a_probe(&st).await;
         if st.probe.prove(&bot.host, bot.port, token).await == ProbeVerdict::Accepted {
             proven.insert(bot.group.clone());
         }
@@ -276,6 +285,7 @@ pub async fn login(
                 .collect();
             let mut groups = BTreeSet::new();
             for bot in &candidates {
+                pay_for_a_probe(&st).await;
                 if st
                     .probe
                     .login(&bot.host, bot.port, user, &body.password)
