@@ -23,8 +23,10 @@ import type { BotKey } from '@/gateway/types.gen';
 import type { PairHistory, PlotConfig } from '@/types';
 
 import { useChartTokens } from './lib/chartTokens';
+import { entryEdge, frameCandles, recentreOn } from './lib/chartTrades';
 import {
   ALL_OVERLAYS,
+  DATE_COL,
   buildCandleOption,
   indexAt,
   indicatorNames,
@@ -33,6 +35,7 @@ import {
   paneLayout,
   subplotCount,
   toCandleSet,
+  zoomStartPct,
   type CandleSet,
   type OverlayToggles,
   type Overlays,
@@ -239,9 +242,52 @@ const visibleCount = computed(
   () => props.visibleCandles ?? prefs.settings.ui.chartDefaultCandleCount,
 );
 
-// The zoom window is only imposed on the first render of a pair and timeframe
-const zoomKey = computed(() => `${props.botKey}|${props.pair}|${props.tf}`);
+// The open position is framed: the window shows its open date unless that is too far back
+const lastTs = computed(() => {
+  const set_ = set.value;
+  const di = set_ ? set_.columns.indexOf(DATE_COL) : -1;
+  return set_ && di >= 0 && set_.rows.length > 0
+    ? (set_.rows[set_.rows.length - 1]![di] as number)
+    : null;
+});
+const firstTs = computed(() => {
+  const set_ = set.value;
+  const di = set_ ? set_.columns.indexOf(DATE_COL) : -1;
+  return set_ && di >= 0 && set_.rows.length > 0 ? (set_.rows[0]![di] as number) : null;
+});
+const frame = computed(() =>
+  frameCandles({
+    openTs: props.overlays.openTs,
+    lastTs: lastTs.value,
+    timeframeMs: set.value?.timeframeMs ?? 0,
+    base: visibleCount.value,
+  }),
+);
+
+// The zoom window is only imposed on the first render of a pair and timeframe (and again when the
+// position it frames changes)
+const zoomKey = computed(
+  () => `${props.botKey}|${props.pair}|${props.tf}|${props.overlays.openTs ?? ''}`,
+);
 const zoomApplied = ref<string | null>(null);
+
+const timeFmt = computed(
+  () =>
+    new Intl.DateTimeFormat(fmt.lang() === 'fr' ? 'fr-FR' : 'en-GB', {
+      timeZone: prefs.settings.tz,
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+);
+const chartFmt = {
+  number: (v: number, d?: number) => fmt.number(v, d),
+  signed: (v: number, d?: number) => fmt.signed(v, d),
+  percent: (v: number) => fmt.percent(v, 2),
+  time: (ts: number) => timeFmt.value.format(ts),
+  duration: (ms: number) => fmt.duration(ms / 3_600_000),
+};
 
 const option = computed(() => {
   if (!set.value || set.value.rows.length === 0) return null;
@@ -262,9 +308,30 @@ const option = computed(() => {
       entry: t('fq.candle.entry'),
       dca: t('fq.candle.dca'),
       exit: t('fq.candle.exit'),
+      dcaTag: t('fq.candle.dcaTag'),
+      closedTrade: t('fq.candle.closedTrade'),
+      pending: {
+        entry: t('fq.candle.pending.entry'),
+        dca: t('fq.candle.pending.dca'),
+        tp: t('fq.candle.pending.tp'),
+        exit: t('fq.candle.pending.exit'),
+        stop: t('fq.candle.pending.stop'),
+      },
+      tip: {
+        amount: t('fq.candle.tip.amount'),
+        price: t('fq.candle.tip.price'),
+        cost: t('fq.candle.tip.cost'),
+        time: t('fq.candle.tip.time'),
+        duration: t('fq.candle.tip.duration'),
+        reason: t('fq.candle.tip.reason'),
+        result: t('fq.candle.tip.result'),
+        opened: t('fq.candle.tip.opened'),
+        closed: t('fq.candle.tip.closed'),
+      },
     },
     fmtPrice: (v) => fmt.price(v),
-    visibleCandles: visibleCount.value,
+    fmt: chartFmt,
+    visibleCandles: frame.value.visible,
     initialZoom: zoomApplied.value !== zoomKey.value,
     labelSide: prefs.settings.ui.chartLabelSide,
     heightPx: plotHeight.value,
@@ -272,13 +339,44 @@ const option = computed(() => {
   });
 });
 
+// The window on screen, in percent of the loaded candles: the first render sets it, a zoom or a
+// pan (the `datazoom` event) moves it
+const win = ref<{ start: number; end: number }>({ start: 0, end: 100 });
 watch(
   option,
   (o) => {
-    if (o) zoomApplied.value = zoomKey.value;
+    if (!o) return;
+    if (zoomApplied.value !== zoomKey.value) {
+      win.value = {
+        start: zoomStartPct(set.value?.rows.length ?? 0, frame.value.visible),
+        end: 100,
+      };
+    }
+    zoomApplied.value = zoomKey.value;
   },
   { flush: 'post' },
 );
+
+// "entered 5 h ago": the open date is left of the window, the click brings it back
+const edge = computed(() => {
+  const a = firstTs.value;
+  const b = lastTs.value;
+  if (a === null || b === null || props.overlays.openTs == null) return null;
+  return entryEdge(props.overlays.openTs, a + ((b - a) * win.value.start) / 100, Date.now());
+});
+function recentre() {
+  const a = firstTs.value;
+  const b = lastTs.value;
+  const open = props.overlays.openTs;
+  if (!chartRef || a === null || b === null || open == null) return;
+  const w = recentreOn({
+    openTs: open,
+    firstTs: a,
+    lastTs: b,
+    spanMs: ((b - a) * (win.value.end - win.value.start)) / 100,
+  });
+  chartRef.dispatchAction({ type: 'dataZoom', startValue: w.startTs, endValue: w.endTs });
+}
 
 const names = computed(() =>
   set.value ? indicatorNames(plot.value, props.rsi, set.value.columns) : [],
@@ -304,8 +402,28 @@ function onReady(chart: ECharts) {
     hover.value = null;
   });
   // A measurement is drawn in pixels: a zoom or a pan would leave it on the wrong candles
-  chart.on('datazoom', () => {
+  chart.on('datazoom', (ev: unknown) => {
     drag.value = null;
+    type Z = { start?: number; end?: number; startValue?: number; endValue?: number };
+    const e = ev as Z & { batch?: Z[] };
+    const w = e.batch?.[0] ?? e;
+    const a = firstTs.value;
+    const b = lastTs.value;
+    if (typeof w.start === 'number' && typeof w.end === 'number') {
+      win.value = { start: w.start, end: w.end };
+    } else if (
+      a !== null &&
+      b !== null &&
+      b > a &&
+      typeof w.startValue === 'number' &&
+      typeof w.endValue === 'number'
+    ) {
+      // A window given in time (the edge marker) comes back without percentages
+      win.value = {
+        start: Math.max(0, ((w.startValue - a) / (b - a)) * 100),
+        end: Math.min(100, ((w.endValue - a) / (b - a)) * 100),
+      };
+    }
   });
   emit('ready', chart);
 }
@@ -452,7 +570,10 @@ const toggleKeys: Array<keyof OverlayToggles> = [
   'average',
   'tp',
   'safetyOrders',
+  'pending',
   'fills',
+  'gain',
+  'closed',
   'liquidation',
 ];
 const hasOverlay = (k: keyof OverlayToggles) => {
@@ -468,12 +589,27 @@ const hasOverlay = (k: keyof OverlayToggles) => {
       return (o.fills?.length ?? 0) > 0;
     case 'liquidation':
       return o.liquidation != null;
+    case 'pending':
+      return (o.pending?.length ?? 0) > 0;
+    case 'gain':
+      return o.gain != null;
+    case 'closed':
+      return (o.closed?.length ?? 0) > 0;
   }
 };
 </script>
 
 <template>
-  <div class="cc" data-testid="candle-chart" :aria-busy="loading || undefined">
+  <div
+    class="cc"
+    data-testid="candle-chart"
+    :aria-busy="loading || undefined"
+    :data-fills="overlays.fills?.length ?? 0"
+    :data-pending="overlays.pending?.length ?? 0"
+    :data-closed="overlays.closed?.length ?? 0"
+    :data-gain="overlays.gain ? 1 : 0"
+    :data-framed="frame.framed ? 1 : 0"
+  >
     <div v-if="legend" class="legrow">
       <div class="legend" data-testid="candle-legend">
         <span class="ohlc num">
@@ -556,6 +692,16 @@ const hasOverlay = (k: keyof OverlayToggles) => {
         "
         data-testid="candle-empty"
       />
+      <button
+        v-if="edge && option"
+        type="button"
+        class="edge num"
+        data-testid="candle-entry-edge"
+        :title="t('fq.candle.entryEdgeTip')"
+        @click="recentre"
+      >
+        {{ t('fq.candle.entryAgo', { age: fmt.age(edge.ageMs) }) }}
+      </button>
       <div
         v-if="drag && move"
         class="measure"
@@ -645,6 +791,23 @@ const hasOverlay = (k: keyof OverlayToggles) => {
 }
 .plot.armed {
   cursor: crosshair;
+}
+.edge {
+  position: absolute;
+  z-index: 3;
+  /* At the left edge, mid height: the top of the plot carries the labels of the lines */
+  left: 56px;
+  top: 40%;
+  padding: 2px 8px;
+  border-radius: var(--r-1);
+  background: var(--bg-3);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: var(--t-xs);
+  cursor: pointer;
+}
+.edge:hover {
+  background: var(--bg-2);
 }
 .measure {
   position: absolute;

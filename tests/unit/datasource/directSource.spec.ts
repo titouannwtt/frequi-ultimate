@@ -127,6 +127,24 @@ function bot(host: string, world: World): FakeHandler {
               cost: 5000,
               order_filled_timestamp: NOW - 3_600_000,
             },
+            {
+              ft_order_side: 'buy',
+              ft_is_entry: true,
+              status: 'open',
+              is_open: true,
+              filled: 0,
+              amount: 0.1,
+              price: 47_500,
+            },
+            {
+              ft_order_side: 'stoploss',
+              ft_is_entry: false,
+              status: 'open',
+              is_open: true,
+              amount: 0.2,
+              stop_price: 40_000,
+              price: 39_900,
+            },
           ],
         });
       case '/status':
@@ -240,8 +258,11 @@ describe('DirectSource polling', () => {
   it('reads the orders of a trade at /trade/{id}, the route freqtrade serves (B190)', async () => {
     const { src, fake } = await started();
     const orders = await src.query.tradeOrders!('local:9400', 1);
-    expect(orders).toHaveLength(1);
+    expect(orders).toHaveLength(3);
     expect(orders![0]).toMatchObject({ side: 'buy', is_entry: true, average: 50_000, cost: 5000 });
+    // The price of an order that waits is the bot's own: the limit, or the trigger of a stop
+    expect(orders![1]).toMatchObject({ is_open: true, price: 47_500 });
+    expect(orders![2]).toMatchObject({ side: 'stoploss', price: 40_000 });
     const paths = fake.calls.map((c) => new URL(c.url).pathname);
     expect(paths).toContain('/api/v1/trade/1');
     expect(paths).not.toContain('/api/v1/trades/1');

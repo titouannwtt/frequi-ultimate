@@ -16,6 +16,8 @@ import type { PairHistory, PlotConfig } from '@/types';
 import { generateCandleSeries } from '@/utils/charts/candleChartSeries';
 import { heikinAshiDataset } from '@/utils/charts/heikinAshiDataset';
 
+import { markWin, visibleClosed } from './chartTrades';
+
 export const DATE_COL = '__date_ts';
 
 /** Columns and rows of a candle response, with a numeric timestamp column guaranteed. */
@@ -147,6 +149,49 @@ export interface FillMark {
   win?: boolean;
   side: Side;
   label: string;
+  /** Rank of the safety order (1 for the first one), for the "R1" tag. */
+  n?: number;
+  amount?: number | null;
+  cost?: number | null;
+}
+
+export type PendingKind = 'entry' | 'dca' | 'tp' | 'exit' | 'stop';
+
+/** An order that waits on the exchange, drawn as a line. */
+export interface PendingOrder {
+  id: string;
+  price: number;
+  kind: PendingKind;
+  /** Rank of a safety order (R1, R2...). */
+  n?: number;
+  amount?: number | null;
+}
+
+/** Gain of the open position at the current price (band and label). Null fields are not drawn. */
+export interface GainMark {
+  /** Current price; the last close when null. */
+  price: number | null;
+  /** Average entry, the other end of the band. */
+  entry: number | null;
+  /** The band starts at the open date of the position. */
+  sinceTs: number | null;
+  profitAbs: number | null;
+  /** In percent, signed. */
+  profitPct: number | null;
+}
+
+/** A closed trade of the pair: entry and exit joined by a segment. */
+export interface ClosedMark {
+  id: string;
+  side: Side;
+  openTs: number;
+  openPrice: number;
+  closeTs: number;
+  closePrice: number;
+  profitAbs: number | null;
+  profitPct: number | null;
+  /** Already translated; empty when the bot gave none. */
+  exitReason: string;
 }
 
 export interface Overlays {
@@ -155,6 +200,11 @@ export interface Overlays {
   liquidation?: number | null;
   safetyOrders?: SafetyLevel[];
   fills?: FillMark[];
+  pending?: PendingOrder[];
+  gain?: GainMark | null;
+  closed?: ClosedMark[];
+  /** Open date of the position: the chart frames it. */
+  openTs?: number | null;
 }
 
 export interface OverlayToggles {
@@ -163,6 +213,9 @@ export interface OverlayToggles {
   safetyOrders: boolean;
   fills: boolean;
   liquidation: boolean;
+  pending: boolean;
+  gain: boolean;
+  closed: boolean;
 }
 
 export const ALL_OVERLAYS: OverlayToggles = {
@@ -171,12 +224,19 @@ export const ALL_OVERLAYS: OverlayToggles = {
   safetyOrders: true,
   fills: true,
   liquidation: true,
+  pending: true,
+  gain: true,
+  closed: true,
 };
 
 export interface OverlayLabels {
   average: string;
   tp: string;
   liquidation: string;
+  /** Names of the orders that wait; the kind itself when omitted. */
+  pending?: Partial<Record<PendingKind, string>>;
+  /** Tag of a safety order: `R` gives R1, R2... */
+  dcaTag?: string;
 }
 
 interface LevelLine {
@@ -187,6 +247,10 @@ interface LevelLine {
   dash: 'solid' | 'dashed' | 'dotted';
   width: number;
   opacity: number;
+  /** Where the label sits on the line. */
+  side: 'start' | 'end';
+  /** The line must be inside the price range whatever its distance from the last close. */
+  priority: boolean;
 }
 
 /** The horizontal levels to draw, in drawing order. Levels that are not finite are dropped. */
@@ -197,8 +261,10 @@ export function levelLines(
   labels: OverlayLabels,
 ): LevelLine[] {
   const out: LevelLine[] = [];
-  const add = (l: LevelLine) => {
-    if (Number.isFinite(l.price) && l.price > 0) out.push(l);
+  const add = (l: Omit<LevelLine, 'side' | 'priority'> & Partial<LevelLine>) => {
+    if (Number.isFinite(l.price) && l.price > 0) {
+      out.push({ side: 'end', priority: false, ...l });
+    }
   };
   if (on.safetyOrders) {
     for (const so of o.safetyOrders ?? []) {
@@ -210,6 +276,33 @@ export function levelLines(
         dash: so.state === 'filled' ? 'solid' : so.state === 'next' ? 'dashed' : 'dotted',
         width: so.state === 'next' ? 1.4 : 1,
         opacity: so.state === 'filled' ? 0.55 : 0.9,
+        // The ladder sits on the left, the position's own levels on the right: two labels at
+        // nearly the same price do not write over each other
+        side: 'start',
+      });
+    }
+  }
+  if (on.pending) {
+    const tag = labels.dcaTag ?? 'R';
+    const colorOf: Record<PendingKind, string> = {
+      entry: tokens.accent,
+      dca: tokens.warn,
+      tp: tokens.profit,
+      exit: tokens.fg2,
+      stop: tokens.crit,
+    };
+    for (const p of o.pending ?? []) {
+      const name = labels.pending?.[p.kind] ?? p.kind;
+      add({
+        id: `pend:${p.id}`,
+        price: p.price,
+        label: p.kind === 'dca' && p.n ? `${name} ${tag}${p.n}` : name,
+        color: colorOf[p.kind],
+        dash: 'dashed',
+        width: 1.3,
+        opacity: 1,
+        side: 'start',
+        priority: true,
       });
     }
   }
@@ -222,6 +315,7 @@ export function levelLines(
       dash: 'solid',
       width: 1.5,
       opacity: 1,
+      priority: true,
     });
   }
   if (on.tp && o.tp != null) {
@@ -266,8 +360,14 @@ export interface CandleOptionInput {
     entry: string;
     dca: string;
     exit: string;
+    /** Words of the tooltips of the fills and of the closed trades; English when omitted. */
+    tip?: Partial<TipLabels>;
+    /** Title of the tooltip of a closed trade. */
+    closedTrade?: string;
   };
   fmtPrice: (v: number) => string;
+  /** Number, signed number, percent, time and duration formatters of the active language. */
+  fmt?: Partial<ChartFmt>;
   /** Candles shown at first (the end of the zoom window). */
   visibleCandles: number;
   /**
@@ -282,6 +382,82 @@ export interface CandleOptionInput {
   showSubplots?: boolean;
   /** Levels farther than this share of the last close do not stretch the price axis. */
   axisReach?: number;
+}
+
+export interface TipLabels {
+  amount: string;
+  price: string;
+  cost: string;
+  time: string;
+  duration: string;
+  reason: string;
+  result: string;
+  opened: string;
+  closed: string;
+  unit: string;
+}
+
+export interface ChartFmt {
+  number: (v: number, decimals?: number) => string;
+  signed: (v: number, decimals?: number) => string;
+  /** A percentage that is already in percent, with its sign. */
+  percent: (v: number) => string;
+  time: (ts: number) => string;
+  duration: (ms: number) => string;
+}
+
+const TIP_EN: TipLabels = {
+  amount: 'Amount',
+  price: 'Price',
+  cost: 'Cost',
+  time: 'Time',
+  duration: 'Duration',
+  reason: 'Exit',
+  result: 'Result',
+  opened: 'Opened',
+  closed: 'Closed',
+  unit: 'USDC',
+};
+
+const FMT_DEFAULT: ChartFmt = {
+  number: (v, d = 2) => v.toFixed(d),
+  signed: (v, d = 2) => `${v > 0 ? '+' : ''}${v.toFixed(d)}`,
+  percent: (v) => `${v > 0 ? '+' : ''}${v.toFixed(2)}%`,
+  time: (ts) => new Date(ts).toISOString().slice(0, 16).replace('T', ' '),
+  duration: (ms) => `${Math.round(ms / 60_000)} min`,
+};
+
+const esc = (v: string): string => v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+/** The HTML of a marker tooltip: a title and `label value` rows. Values are escaped. */
+export function tipHtml(title: string, rows: Array<[string, string]>): string {
+  const body = rows
+    .filter(([, v]) => v !== '')
+    .map(([k, v]) => `<div><span style="opacity:.7">${esc(k)}</span> ${esc(v)}</div>`)
+    .join('');
+  return `<div><b>${esc(title)}</b></div>${body}`;
+}
+
+/** Share of the price range kept free above and below the lines, so that a label never clips. */
+const Y_PAD_MIN = 0.06;
+const Y_PAD_PX = 30;
+/** Lines that matter (average, orders that wait) are kept in range up to this distance. */
+const PRIORITY_REACH = 0.4;
+
+/**
+ * Bounds of the price axis: the visible candles plus the lines that count, with a margin. Pure:
+ * the same function serves the axis (min and max callbacks) and the tests.
+ */
+export function priceBounds(
+  extent: { min: number; max: number },
+  include: readonly number[],
+  mainHeightPx: number,
+): [number, number] {
+  const lo = Math.min(extent.min, ...include);
+  const hi = Math.max(extent.max, ...include);
+  const span = hi - lo > 0 ? hi - lo : Math.abs(hi) * 0.02 || 1;
+  const pad = Math.max(Y_PAD_MIN, mainHeightPx > 0 ? Y_PAD_PX / mainHeightPx : 0);
+  return [lo - span * pad, hi + span * pad];
 }
 
 // ---- pane layout ----
@@ -342,7 +518,9 @@ export function paneLayout(o: {
   return { main, volume, subs };
 }
 
-const SYM_TRIANGLE = 'path://M0,-8 L7,6 L-7,6 Z';
+/** Triangles for the orders: apex up for a buy, apex down for a sell. */
+const SYM_UP = 'path://M0,-8 L7,6 L-7,6 Z';
+const SYM_DOWN = 'path://M0,8 L7,-6 L-7,-6 Z';
 
 /** Names of the plotted indicator columns, main plot first then sub-charts. */
 export function indicatorNames(plot: PlotConfig, withRsi: boolean, columns: string[]): string[] {
@@ -360,6 +538,11 @@ export function subplotCount(plot: PlotConfig, withRsi: boolean, columns: string
   const subs = Object.values(plot.subplots ?? {});
   const hasRsi = subs.some((s) => 'rsi' in s);
   return subs.length + (withRsi && columns.includes('rsi') && !hasRsi ? 1 : 0);
+}
+
+/** Start of the zoom window, in percent of the loaded candles, to show the last `visible`. */
+export function zoomStartPct(total: number, visible: number): number {
+  return total > 0 ? Math.max(0, (1 - Math.min(total, visible) / total) * 100) : 0;
 }
 
 export function buildCandleOption(input: CandleOptionInput): EChartsOption {
@@ -407,9 +590,21 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
   })();
   const lines = levelLines(input.overlays, input.toggles, c, input.labels);
   const reach = input.axisReach ?? 0.25;
+  const within = (p: number, r: number) =>
+    lastClose !== null && Math.abs(p - lastClose) / lastClose <= r;
+  // Lines that stretch the price axis: the average and the orders that wait are always brought in
+  // (a trader looks for them), the others only when they are near the price
   const near = lines
-    .map((l) => l.price)
-    .filter((p) => lastClose !== null && Math.abs(p - lastClose) / lastClose <= reach);
+    .filter((l) => within(l.price, l.priority ? Math.max(reach, PRIORITY_REACH) : reach))
+    .map((l) => l.price);
+  const gain = input.toggles.gain ? (input.overlays.gain ?? null) : null;
+  const gainPrice = gain ? (gain.price ?? lastClose) : null;
+  if (gainPrice !== null && Number.isFinite(gainPrice)) near.push(gainPrice);
+  const fmt: ChartFmt = { ...FMT_DEFAULT, ...(input.fmt ?? {}) };
+  const tip: TipLabels = { ...TIP_EN, ...(input.labels.tip ?? {}) };
+  const dcaTag = input.labels.dcaTag ?? 'R';
+  const firstTs = set.rows.length > 0 ? (set.rows[0]![di] as number) : null;
+  const lastTs = set.rows.length > 0 ? (set.rows[set.rows.length - 1]![di] as number) : null;
 
   const nGrid = grids.length;
   const xAxes: unknown[] = [];
@@ -435,8 +630,8 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
             axisLine: { show: false },
             axisLabel: { color: c.fg3, fontSize: 11, formatter: (v: number) => input.fmtPrice(v) },
             splitLine: { lineStyle: { color: c.line, type: 'dashed' } },
-            min: (v: { min: number }) => Math.min(v.min, ...near),
-            max: (v: { max: number }) => Math.max(v.max, ...near),
+            min: (v: { min: number; max: number }) => priceBounds(v, near, layout.main.height)[0],
+            max: (v: { min: number; max: number }) => priceBounds(v, near, layout.main.height)[1],
           }
         : {
             scale: true,
@@ -451,6 +646,30 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
     );
   }
 
+  // The gain: a light band from the average entry to the price now, and its figure at the last price
+  let gainBand: { from: number; to: number; entry: number; price: number; color: string } | null =
+    null;
+  let gainLabel: { ts: number; price: number; text: string; color: string } | null = null;
+  if (gain && gainPrice !== null && Number.isFinite(gainPrice) && lastTs !== null) {
+    const up = gain.profitAbs !== null ? gain.profitAbs >= 0 : (gain.profitPct ?? 0) >= 0;
+    const color = up ? c.profit : c.loss;
+    const parts: string[] = [];
+    if (gain.profitAbs !== null) parts.push(`${fmt.signed(gain.profitAbs, 2)} ${tip.unit}`);
+    if (gain.profitPct !== null) parts.push(fmt.percent(gain.profitPct));
+    if (parts.length > 0) {
+      gainLabel = { ts: lastTs, price: gainPrice, text: parts.join(' · '), color };
+    }
+    if (gain.entry !== null && gain.entry > 0 && firstTs !== null) {
+      gainBand = {
+        from: Math.max(firstTs, gain.sinceTs ?? firstTs),
+        to: lastTs,
+        entry: gain.entry,
+        price: gainPrice,
+        color,
+      };
+    }
+  }
+
   const series: SeriesOption[] = [
     {
       id: 'candles',
@@ -458,6 +677,8 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
       type: 'candlestick',
       xAxisIndex: 0,
       yAxisIndex: 0,
+      // Silent: the candles show their figures in the legend, not in a tooltip over the markers
+      silent: true,
       barMaxWidth: 18,
       itemStyle: { color: c.profit, color0: c.loss, borderColor: c.profit, borderColor0: c.loss },
       encode: { x: di, y: [oi, ci, li, hi] },
@@ -472,12 +693,54 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
               lineStyle: { color: l.color, type: l.dash, width: l.width, opacity: l.opacity },
               label: {
                 show: true,
-                position: 'insideEndTop',
+                position: l.side === 'start' ? 'insideStartTop' : 'insideEndTop',
                 color: l.color,
                 fontSize: 11,
                 formatter: `${l.label} ${input.fmtPrice(l.price)}`,
               },
             })),
+          }
+        : undefined,
+      markArea: gainBand
+        ? {
+            silent: true,
+            animation: false,
+            data: [
+              [
+                {
+                  xAxis: gainBand.from,
+                  yAxis: gainBand.entry,
+                  itemStyle: { color: gainBand.color, opacity: 0.12 },
+                },
+                { xAxis: gainBand.to, yAxis: gainBand.price },
+              ],
+            ],
+          }
+        : undefined,
+      markPoint: gainLabel
+        ? {
+            silent: true,
+            animation: false,
+            symbol: 'circle',
+            symbolSize: 8,
+            data: [
+              {
+                coord: [gainLabel.ts, gainLabel.price],
+                itemStyle: { color: gainLabel.color, borderColor: c.bg1, borderWidth: 1 },
+                label: {
+                  show: true,
+                  position: 'left',
+                  distance: 8,
+                  formatter: gainLabel.text,
+                  color: c.bg1,
+                  backgroundColor: gainLabel.color,
+                  borderRadius: 3,
+                  padding: [3, 6],
+                  fontSize: 11,
+                  fontWeight: 600,
+                },
+              },
+            ],
           }
         : undefined,
     } as SeriesOption,
@@ -490,6 +753,7 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
       type: 'bar',
       xAxisIndex: 1,
       yAxisIndex: 1,
+      silent: true,
       large: true,
       itemStyle: {
         opacity: 0.35,
@@ -517,6 +781,7 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
         { ...cfg, color: cfg.color ?? c.accent },
         0,
       ) as object),
+      silent: true,
     } as SeriesOption);
   }
   // Sub-charts
@@ -534,11 +799,12 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
           { ...cfg, color: cfg.color ?? c.fg2 },
           gi,
         ) as object),
+        silent: true,
       } as SeriesOption);
     }
   });
 
-  // Fills
+  // Fills: a triangle up for a buy, down for a sell, so a short is mirrored by its own orders
   if (input.toggles.fills && (input.overlays.fills?.length ?? 0) > 0) {
     series.push({
       id: 'fills',
@@ -548,33 +814,150 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
       yAxisIndex: 0,
       z: 5,
       animation: false,
-      data: (input.overlays.fills ?? []).map((f) => ({
-        value: [f.ts, f.price],
-        name: f.label,
-        symbol: f.kind === 'dca' ? 'rect' : f.side === 'short' ? SYM_TRIANGLE : 'circle',
-        symbolSize: 10,
-        // E, SO1... under the marker (above for a short, whose entries sit on the high side)
-        label: {
-          show: true,
-          formatter: f.label,
-          position: f.side === 'short' ? 'top' : 'bottom',
-          color: c.fg3,
-          fontSize: 10,
-        },
-        itemStyle: {
-          color:
-            f.kind === 'exit' ? (f.win ? c.profit : c.loss) : f.kind === 'dca' ? c.warn : c.accent,
-          borderColor: c.bg1,
-          borderWidth: 1,
-        },
-      })),
-      tooltip: { formatter: (p: { name?: string }) => p.name ?? '' },
+      data: (input.overlays.fills ?? []).map((f) => {
+        const buy = f.kind === 'exit' ? f.side === 'short' : f.side !== 'short';
+        const tag =
+          f.kind === 'entry' ? 'E' : f.kind === 'dca' ? (f.n ? `${dcaTag}${f.n}` : f.label) : 'S';
+        const kindName =
+          f.kind === 'entry'
+            ? input.labels.entry
+            : f.kind === 'dca'
+              ? input.labels.dca
+              : input.labels.exit;
+        return {
+          value: [f.ts, f.price],
+          name: tag,
+          symbol: buy ? SYM_UP : SYM_DOWN,
+          symbolSize: f.kind === 'entry' ? 13 : 11,
+          // E, R1... under a buy (above a sell)
+          label: {
+            show: true,
+            formatter: tag,
+            position: buy ? 'bottom' : 'top',
+            color: c.fg2,
+            fontSize: 10,
+          },
+          itemStyle: {
+            color:
+              f.kind === 'exit'
+                ? f.win === undefined
+                  ? c.fg2
+                  : f.win
+                    ? c.profit
+                    : c.loss
+                : f.kind === 'dca'
+                  ? c.warn
+                  : c.accent,
+            borderColor: c.bg1,
+            borderWidth: 1,
+          },
+          tip: tipHtml(`${tag} · ${kindName}`, [
+            [tip.amount, f.amount != null ? fmt.number(f.amount, 4) : ''],
+            [tip.price, input.fmtPrice(f.price)],
+            [tip.cost, f.cost != null ? `${fmt.number(f.cost, 2)} ${tip.unit}` : ''],
+            [tip.time, fmt.time(f.ts)],
+          ]),
+        };
+      }),
+      tooltip: { formatter: (p: { data?: { tip?: string } }) => p.data?.tip ?? '' },
+    } as SeriesOption);
+  }
+
+  // Closed trades of the pair: entry and exit joined by a dashed segment, coloured by result
+  // A closed trade priced outside every loaded candle is not of this chart (another price scale,
+  // a renamed market): it would stretch the price axis for nothing, so it is left out
+  let dataLow = Infinity;
+  let dataHigh = -Infinity;
+  for (const r of set.rows) {
+    const lo = r[li];
+    const hiV = r[hi];
+    if (lo != null && lo < dataLow) dataLow = lo;
+    if (hiV != null && hiV > dataHigh) dataHigh = hiV;
+  }
+  const onScale = (p: number) => p >= dataLow * 0.9 && p <= dataHigh * 1.1;
+  const closedMarks = input.toggles.closed
+    ? (input.overlays.closed ?? []).filter((m) => onScale(m.openPrice) && onScale(m.closePrice))
+    : [];
+  if (closedMarks.length > 0 && firstTs !== null && lastTs !== null) {
+    const dots: unknown[] = [];
+    const segments: unknown[] = [];
+    for (const m of closedMarks) {
+      const seen = visibleClosed(m, firstTs, lastTs);
+      if (!seen) continue;
+      const win = markWin(m);
+      const color = win === null ? c.fg3 : win ? c.profit : c.loss;
+      const long = m.side !== 'short';
+      const gainWord =
+        m.profitAbs === null
+          ? ''
+          : `${fmt.signed(m.profitAbs, 2)} ${tip.unit}${
+              m.profitPct !== null ? ` (${fmt.percent(m.profitPct)})` : ''
+            }`;
+      const title = `${input.labels.closedTrade ?? 'Closed trade'} #${m.id.split('/').pop()}`;
+      const rows: Array<[string, string]> = [
+        [tip.result, gainWord],
+        [tip.reason, m.exitReason],
+        [tip.duration, fmt.duration(m.closeTs - m.openTs)],
+        [tip.opened, `${fmt.time(m.openTs)} · ${input.fmtPrice(m.openPrice)}`],
+        [tip.closed, `${fmt.time(m.closeTs)} · ${input.fmtPrice(m.closePrice)}`],
+      ];
+      const html = tipHtml(title, rows);
+      if (seen.showOpen) {
+        dots.push({
+          value: [m.openTs, m.openPrice],
+          symbol: long ? SYM_UP : SYM_DOWN,
+          symbolSize: 8,
+          itemStyle: { color: c.bg1, borderColor: color, borderWidth: 1.5 },
+          tip: html,
+        });
+      }
+      if (seen.showClose) {
+        dots.push({
+          value: [m.closeTs, m.closePrice],
+          symbol: long ? SYM_DOWN : SYM_UP,
+          symbolSize: 9,
+          itemStyle: { color, borderColor: c.bg1, borderWidth: 1 },
+          label:
+            m.profitAbs === null
+              ? { show: false }
+              : {
+                  show: true,
+                  formatter: fmt.signed(m.profitAbs, 2),
+                  position: m.closePrice >= m.openPrice ? 'top' : 'bottom',
+                  color,
+                  fontSize: 10,
+                },
+          tip: html,
+        });
+      }
+      const style = { color, type: 'dashed', width: 1, opacity: 0.75 };
+      segments.push([
+        { coord: seen.a, lineStyle: style },
+        { coord: seen.b, lineStyle: style },
+      ]);
+    }
+    series.push({
+      id: 'closed',
+      name: 'closed',
+      type: 'scatter',
+      xAxisIndex: 0,
+      yAxisIndex: 0,
+      z: 4,
+      animation: false,
+      data: dots,
+      markLine: {
+        silent: true,
+        symbol: 'none',
+        animation: false,
+        label: { show: false },
+        data: segments,
+      },
+      tooltip: { formatter: (p: { data?: { tip?: string } }) => p.data?.tip ?? '' },
     } as SeriesOption);
   }
 
   const total = source.length;
-  const startPct =
-    total > 0 ? Math.max(0, (1 - Math.min(total, input.visibleCandles) / total) * 100) : 0;
+  const startPct = zoomStartPct(total, input.visibleCandles);
   const xIdx = Array.from({ length: nGrid }, (_, i) => i);
 
   return {
@@ -583,7 +966,8 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
     xAxis: xAxes as never,
     yAxis: yAxes as never,
     series,
-    tooltip: { show: false },
+    // Only the markers (fills, closed trades) carry a tooltip; the candles have their legend
+    tooltip: { show: true, trigger: 'item', confine: true },
     axisPointer: { link: [{ xAxisIndex: 'all' }], snap: true },
     dataZoom: [
       {
@@ -604,27 +988,55 @@ export interface OverlayExtras {
   orders?: LadderOrder[];
   /** Executions with their time, when the bot gave them. */
   fills?: FillMark[];
+  /**
+   * The orders that wait, with their price. `null` while they are not known: the ladder levels that
+   * are not filled then stay drawn as they were; once known they replace them (same orders).
+   */
+  pending?: PendingOrder[] | null;
+  gain?: GainMark | null;
+  /** Closed trades of this bot and pair: drawn with or without an open position. */
+  closed?: ClosedMark[];
 }
 
 /**
  * Overlays of the open position on a pair: its average entry, its liquidation, the ladder levels
- * that are not yet filled (filled ones are drawn as fills) and the executions. A position that is
- * not on this pair gives nothing: an overlay must never be drawn on the wrong chart.
+ * that are not yet filled (filled ones are drawn as fills), the executions, the orders that wait
+ * and the gain. A position that is not on this pair gives nothing but the closed trades: an overlay
+ * of a position must never be drawn on the wrong chart.
  */
 export function overlaysFromPosition(
-  position: Pick<Position, 'pair' | 'open_rate' | 'liquidation_price'> | null | undefined,
+  position:
+    | Pick<Position, 'pair' | 'open_rate' | 'liquidation_price'>
+    | (Pick<Position, 'pair' | 'open_rate' | 'liquidation_price'> &
+        Partial<Pick<Position, 'side' | 'open_ms'>>)
+    | null
+    | undefined,
   pair: string,
   extras: OverlayExtras = {},
 ): Overlays {
-  if (!position || position.pair !== pair) return {};
+  const closed = extras.closed ?? [];
+  if (!position || position.pair !== pair) return closed.length > 0 ? { closed } : {};
+  const side = (position as { side?: Side }).side;
+  const openMs = (position as { open_ms?: number }).open_ms;
+  const average = position.open_rate;
+  const ladder = (extras.orders ?? []).slice(1);
   return {
-    average: position.open_rate,
+    average,
     tp: extras.tp ?? null,
     liquidation: position.liquidation_price,
     // The first order is the entry: it is the average line, not a safety level
-    safetyOrders: (extras.orders ?? [])
-      .slice(1)
-      .map((o) => ({ price: o.price, state: o.state, label: o.label })),
-    fills: extras.fills ?? [],
+    safetyOrders: (extras.pending ? ladder.filter((o) => o.state === 'filled') : ladder).map(
+      (o) => ({ price: o.price, state: o.state, label: o.label }),
+    ),
+    // A partial exit past the average entry made money, short or long
+    fills: (extras.fills ?? []).map((f) =>
+      f.kind === 'exit' && f.win === undefined && average > 0
+        ? { ...f, win: (side ?? f.side) === 'short' ? f.price < average : f.price > average }
+        : f,
+    ),
+    pending: extras.pending ?? [],
+    gain: extras.gain ?? null,
+    closed,
+    openTs: openMs != null && Number.isFinite(openMs) && openMs > 0 ? openMs : null,
   };
 }
