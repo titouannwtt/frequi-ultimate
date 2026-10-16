@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreqUI, version plus calme : proposition v1</title>
+<style>
+/* Tokens repris de src/styles/tokens.css (thème sombre), adoucis : rayons plus grands, lignes plus hautes,
+   moins de filets, libellés en casse normale. Aucune police externe : la maquette s'ouvre hors ligne. */
+:root{
+  --bg:#0a0c0f;--bg-1:#0f1216;--bg-2:#151a1f;--bg-3:#1c2228;--line:#1f262d;--line-2:#2a333c;
+  --fg:#e3e8ee;--fg-2:#a3adb9;--fg-3:#8590a0;--fg-4:#5b6571;
+  --accent:#5b95ff;--profit:#2fca88;--loss:#ff6b80;--crit:#ff6a3d;--warn:#f2b33d;--info:#4cbbe9;--live:#b98aff;--dry:#8e9aa8;
+  --accent-w:rgba(91,149,255,.14);--profit-w:rgba(47,202,136,.13);--loss-w:rgba(255,107,128,.13);--warn-w:rgba(242,179,61,.13);--live-w:rgba(185,138,255,.14);
+  --font-ui:'Inter Variable','Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-num:'JetBrains Mono Variable','JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  /* adoucissement proposé */
+  --r-card:10px;--r-ctl:7px;--row:38px;--t-body:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:#06080a;color:var(--fg);font:var(--t-body)/1.45 var(--font-ui)}
+body{overflow-x:hidden}
+a{color:var(--accent)}
+.num{font-family:var(--font-num);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.pos{color:var(--profit)}.neg{color:var(--loss)}.mut{color:var(--fg-3)}.mut2{color:var(--fg-2)}
+.warn{color:var(--warn)}
+
+/* ---------- document ---------- */
+.doc{max-width:1500px;margin:0 auto;padding:28px 20px 80px}
+.doc h1{font-size:26px;margin:0 0 6px;font-weight:650}
+.doc .lead{color:var(--fg-2);max-width:900px;margin:0 0 18px}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px}
+.toc a{padding:6px 12px;border:1px solid var(--line-2);border-radius:999px;color:var(--fg-2);text-decoration:none;font-size:13px}
+.toc a:hover{color:var(--fg);border-color:var(--fg-3)}
+section.page{margin:0 0 56px}
+section.page>h2{font-size:20px;margin:0 0 4px;font-weight:650}
+section.page>.q{color:var(--fg-2);margin:0 0 16px}
+.frame-label{font-size:12px;color:var(--fg-3);text-transform:none;margin:18px 0 8px;letter-spacing:.02em}
+.duo{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:24px;align-items:start}
+@media (max-width:1100px){.duo{grid-template-columns:minmax(0,1fr)}}
+.notes{background:var(--bg-1);border:1px solid var(--line);border-radius:var(--r-card);padding:14px 16px;font-size:13px;color:var(--fg-2)}
+.notes h3{margin:0 0 8px;font-size:13px;color:var(--fg);font-weight:600}
+.notes ol{margin:0;padding-left:20px}.notes li{margin:0 0 6px}
+.notes b{color:var(--fg)}
+.pin{font-style:normal;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#06080a;font:700 11px/1 var(--font-ui);vertical-align:1px;margin-right:4px;flex:none}
+
+/* ---------- desktop frame ---------- */
+.desk{border:1px solid var(--line-2);border-radius:14px;overflow:hidden;background:var(--bg);container-type:inline-size;container-name:app}
+.chrome{height:30px;background:#121519;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 12px}
+.chrome i{width:10px;height:10px;border-radius:50%;background:#2a333c;display:block}
+.chrome span{margin-left:10px;font-size:11px;color:var(--fg-4)}
+.top{display:flex;align-items:center;gap:14px;height:52px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--bg-1)}
+.logo{display:flex;align-items:center;gap:8px;font-weight:650;font-size:15px}
+.logo svg{color:var(--accent)}
+.nav{display:flex;gap:2px}
+.nav a{padding:7px 12px;border-radius:var(--r-ctl);color:var(--fg-2);text-decoration:none;font-size:14px}
+.nav a.on{color:var(--fg);background:var(--bg-3)}
+.search{flex:1;max-width:360px;margin-left:auto;display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:var(--r-ctl);background:var(--bg-2);color:var(--fg-3);font-size:13px}
+.search .ph{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.search kbd{margin-left:auto;white-space:nowrap;font:11px var(--font-num);color:var(--fg-4)}
+.topr{display:flex;align-items:center;gap:10px}
+.fresh{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--fg-2);padding:5px 10px;border-radius:999px;background:var(--bg-2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--profit);display:inline-block;flex:none}
+.dot.w{background:var(--warn)}.dot.off{background:var(--fg-4)}.dot.live{background:var(--live)}
+.ib{width:34px;height:34px;display:grid;place-items:center;border-radius:var(--r-ctl);color:var(--fg-2);position:relative}
+.ib .c{position:absolute;top:3px;right:2px;min-width:16px;height:16px;border-radius:8px;background:var(--warn);color:#111;font:700 10px/16px var(--font-ui);text-align:center}
+@container app (max-width:980px){.nav a span,.search .ph,.search kbd{display:none}.search{max-width:42px;flex:none}.fresh .t{display:none}}
+@container app (max-width:640px){.nav{display:none}.search{margin-left:auto}}
+
+.body{padding:22px 22px 26px;display:flex;flex-direction:column;gap:18px}
+.card{background:var(--bg-1);border:1px solid var(--line);border-radius:var(--r-card);container-type:inline-size;min-width:0}
+.card>.hd{display:flex;align-items:center;gap:10px;padding:14px 16px 6px;flex-wrap:wrap}
+.card>.hd h3{margin:0;font-size:15px;font-weight:600}
+.card>.hd .sp{flex:1}
+.card>.bd{padding:6px 16px 14px}
+.link{color:var(--accent);font-size:13px;text-decoration:none;cursor:pointer;background:none;border:0;padding:0;font-family:inherit}
+.seg{display:inline-flex;background:var(--bg-2);border-radius:var(--r-ctl);padding:2px}
+.seg b,.seg span{padding:4px 11px;border-radius:5px;font-size:13px;font-weight:500;color:var(--fg-3)}
+.seg b{background:var(--bg-3);color:var(--fg)}
+.btn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:var(--r-ctl);border:1px solid var(--line-2);background:var(--bg-2);color:var(--fg);font:500 13px var(--font-ui);white-space:nowrap}
+.btn.ghost{background:none}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#06101f}
+.btn.danger{border-color:rgba(255,107,128,.55);color:var(--loss);background:none}
+.btn.sm{height:28px;padding:0 10px;font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:5px;font-size:11px;font-weight:600;letter-spacing:.02em}
+.badge.live{background:var(--live-w);color:var(--live)}
+.badge.grey{background:var(--bg-3);color:var(--fg-2);font-weight:500}
+.side{font:600 12px var(--font-num)}
+.side.l{color:var(--profit)}.side.s{color:var(--loss)}
+
+/* verdict */
+.verdict{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.verdict .big{font-size:22px;font-weight:650;letter-spacing:-.01em}
+.verdict .sub{color:var(--fg-2);font-size:14px}
+.verdict .grow{flex:1;min-width:240px}
+.alert{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:var(--r-card);background:var(--warn-w);border:1px solid rgba(242,179,61,.35);flex-wrap:wrap}
+.alert .tx{flex:1;min-width:220px}
+.alert .tx b{display:block;font-size:14px}
+.alert .tx span{color:var(--fg-2);font-size:13px}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@container app (max-width:860px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{padding:14px 16px}
+.kpi .l{font-size:13px;color:var(--fg-2);display:flex;align-items:center;gap:6px}
+.kpi .v{font:600 24px/1.25 var(--font-num);margin:4px 0 2px;letter-spacing:-.02em}
+.kpi .v small{font-size:13px;color:var(--fg-3);font-weight:500;margin-left:4px}
+.kpi .s{font-size:13px;color:var(--fg-3)}
+.gauge{height:6px;border-radius:3px;background:var(--bg-3);margin-top:9px;position:relative;overflow:visible}
+.gauge i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--fg-3)}
+.gauge u{position:absolute;top:-3px;width:2px;height:12px;background:var(--fg-2);border-radius:1px}
+.q-i{width:15px;height:15px;border-radius:50%;border:1px solid var(--fg-4);display:inline-grid;place-items:center;font-size:10px;color:var(--fg-3)}
+
+/* grids */
+.g-fleet{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:18px}
+@container app (max-width:980px){.g-fleet{grid-template-columns:minmax(0,1fr)}}
+
+/* table */
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+.t th{font-weight:500;color:var(--fg-3);text-align:left;font-size:12.5px;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.t td{padding:0 10px;height:var(--row);border-bottom:1px solid rgba(31,38,45,.6);white-space:nowrap}
+.t tr:last-child td{border-bottom:0}
+.t .r{text-align:right}
+.t tr.sel td{background:var(--accent-w)}
+.t tr.dim td{color:var(--fg-3)}
+.t .name{display:flex;align-items:center;gap:8px;min-width:0}
+.t .name span{overflow:hidden;text-overflow:ellipsis}
+.slots{display:inline-flex;gap:3px;vertical-align:middle}
+.slots i{width:7px;height:12px;border-radius:2px;background:var(--fg-3)}
+.slots i.e{background:var(--bg-3)}
+@container (max-width:540px){.t .hide-s{display:none}}
+@container (max-width:400px){.t .hide-xs{display:none}}
+.tag{font-size:12px;margin-left:2px}
+
+/* positions to watch */
+.watch{display:flex;flex-direction:column}
+.wrow{display:grid;grid-template-columns:minmax(150px,1fr) 96px minmax(0,3fr) auto;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(31,38,45,.6)}
+.wrow:last-child{border-bottom:0}
+.wrow .p b{font-size:15px}
+.wrow .p div{font-size:12.5px;color:var(--fg-3)}
+.wrow .pl{font:600 15px var(--font-num)}
+.wrow .pl small{display:block;font-size:12px;font-weight:500}
+.facts{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--fg-2)}
+.facts span b{color:var(--fg);font-weight:500}
+.more{width:30px;height:30px;border-radius:var(--r-ctl);display:grid;place-items:center;color:var(--fg-3)}
+@container (max-width:640px){.wrow{grid-template-columns:1fr auto}.wrow .facts{grid-column:1/-1}.wrow .more{display:none}}
+
+.risk{display:grid;gap:8px;font-size:13.5px}
+.risk div{display:flex;justify-content:space-between;gap:12px;color:var(--fg-2)}
+.risk div b{color:var(--fg);font-weight:500}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}
+.pill.ok{background:var(--profit-w);color:var(--profit)}
+.pill.w{background:var(--warn-w);color:var(--warn)}
+
+.statusline{display:flex;align-items:center;gap:16px;padding:9px 22px;border-top:1px solid var(--line);font-size:12.5px;color:var(--fg-3);background:var(--bg-1);flex-wrap:wrap}
+.statusline .sp{flex:1}
+
+/* bot page */
+.bothd{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bothd h2{margin:0;font-size:22px;font-weight:650}
+.bothd .meta{color:var(--fg-3);font-size:13.5px}
+.bothd .sp{flex:1}
+.g-bot{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px}
+@container app (max-width:980px){.g-bot{grid-template-columns:minmax(0,1fr)}}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 12px;overflow-x:auto}
+.tabs span{padding:10px 10px;font-size:14px;color:var(--fg-3);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs span.on{color:var(--fg);border-bottom-color:var(--accent)}
+.tabs span small{color:var(--fg-3);margin-left:4px;font-size:12px}
+.trade .pl{font:600 30px/1.1 var(--font-num);letter-spacing:-.02em}
+.trade .pl small{font-size:15px;margin-left:6px;font-weight:500}
+.plain{display:grid;gap:12px;margin-top:14px}
+.plain .f{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;font-size:13.5px;color:var(--fg-2)}
+.plain .f b{color:var(--fg);font-weight:500}
+.plain .ic{width:22px;height:22px;border-radius:6px;background:var(--bg-2);display:grid;place-items:center;font-size:12px}
+.ladder{margin-top:14px}
+.ladder .rail{display:flex;gap:4px}
+.ladder .rail i{flex:1;height:8px;border-radius:3px;background:var(--bg-3)}
+.ladder .rail i.f{background:var(--accent)}
+.ladder .cap{display:flex;justify-content:space-between;font-size:12px;color:var(--fg-3);margin-top:6px}
+.fold{border-top:1px solid var(--line);padding:11px 0;font-size:13.5px;color:var(--fg-2);display:flex;justify-content:space-between}
+.foot{display:flex;gap:10px;padding:14px 16px;border-top:1px solid var(--line)}
+.foot .btn{flex:1;justify-content:center;height:40px}
+.menu{position:absolute;right:0;top:40px;width:250px;background:var(--bg-2);border:1px solid var(--line-2);border-radius:var(--r-card);box-shadow:0 12px 32px rgba(0,0,0,.55);padding:6px;z-index:2;font-size:13.5px}
+.menu div{padding:8px 10px;border-radius:6px;color:var(--fg)}
+.menu div small{display:block;color:var(--fg-3);font-size:12px}
+.menu hr{border:0;border-top:1px dashed var(--line-2);margin:6px 4px}
+.menu .h{font-size:11.5px;color:var(--fg-3);padding:6px 10px 2px}
+.menu .d{color:var(--loss)}
+.menu .ck{display:flex;justify-content:space-between;align-items:center}
+.tg{width:30px;height:17px;border-radius:9px;background:var(--bg-3);position:relative;flex:none}
+.tg:after{content:"";position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:var(--fg-3)}
+.tg.on{background:var(--accent)}.tg.on:after{left:15px;background:#fff}
+
+/* charts page */
+.g-charts{display:grid;grid-template-columns:240px minmax(0,1fr);gap:18px}
+@container app (max-width:860px){.g-charts{grid-template-columns:minmax(0,1fr)}.g-charts .plist{display:none}}
+.plist .it{display:flex;justify-content:space-between;gap:8px;padding:9px 14px;border-bottom:1px solid rgba(31,38,45,.6);font-size:13.5px}
+.plist .it.on{background:var(--accent-w)}
+.plist .it div small{display:block;color:var(--fg-3);font-size:12px}
+.plist .grp{padding:12px 14px 4px;font-size:12px;color:var(--fg-3)}
+.ctool{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.legend{font:12.5px var(--font-num);color:var(--fg-3);padding:0 16px}
+.legend b{color:var(--fg-2);font-weight:500}
+.chartbox{position:relative;padding:4px 8px 0 16px}
+.chartbox svg{display:block;width:100%;height:auto}
+.subhd{display:flex;align-items:baseline;gap:10px;padding:8px 16px 0;font-size:13px;flex-wrap:wrap}
+.subhd b{font-weight:600}
+.subhd span{color:var(--fg-3);font-size:12.5px}
+.addsub{margin:4px 16px 14px;padding:9px 12px;border:1px dashed var(--line-2);border-radius:var(--r-ctl);color:var(--fg-3);font-size:13px}
+
+/* phone frame */
+.phone{width:min(390px,100%);border:1px solid var(--line-2);border-radius:30px;overflow:hidden;background:var(--bg);font-size:15px;justify-self:center}
+.phone .notch{height:30px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font:600 12px var(--font-ui);color:var(--fg-2)}
+.ptop{display:flex;align-items:center;gap:10px;height:50px;padding:0 14px;border-bottom:1px solid var(--line)}
+.ptop .sp{flex:1}
+.pbody{padding:14px;display:flex;flex-direction:column;gap:12px}
+.pk{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pk .kpi{padding:12px}
+.pk .kpi .v{font-size:20px}
+.pk .kpi .l,.pk .kpi .s{font-size:12.5px}
+.pcard{padding:12px 14px}
+.pcard .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pcard .row+.row{margin-top:6px}
+.tabbar{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--bg-1);padding:6px 0 14px}
+.tabbar span{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--fg-3)}
+.tabbar span.on{color:var(--fg)}
+.tabbar svg{width:20px;height:20px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.chips span{flex:none;padding:6px 12px;border-radius:999px;background:var(--bg-2);font-size:13px;color:var(--fg-2)}
+.chips span.on{background:var(--accent-w);color:var(--fg);box-shadow:inset 0 0 0 1px var(--accent)}
+.bt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:58px;border-radius:var(--r-card);background:var(--bg-1);border:1px solid var(--line);font-size:12.5px;color:var(--fg)}
+
+/* principles + glossary */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px}
+.gl{width:100%;border-collapse:collapse;font-size:13.5px}
+.gl td,.gl th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.gl th{color:var(--fg-3);font-weight:500;font-size:12.5px}
+.gl td:first-child{color:var(--fg-3);font-family:var(--font-num);font-size:12.5px}
+@media (max-width:500px){.doc{padding:18px 10px 60px}.gl td,.gl th{padding:7px 6px}}
+</style>
+</head>
+<body>
+<div class="doc">
+  <h1>FreqUI, version plus calme</h1>
+  <p class="lead">Proposition v1 à valider avant toute modification du code. Même langage visuel « Terminal » (sombre, chiffres en monospace, couleur seulement quand elle a un sens), mais chaque page répond d'abord à une seule question, en français courant, et le détail se range derrière « Plus ». Données fictives. Les pastilles numérotées renvoient aux notes sous chaque maquette.</p>
+  <nav class="toc">
+    <a href="#flotte">Flotte</a><a href="#bot">Bot</a><a href="#graphiques">Graphiques</a><a href="#principes">Principes et glossaire</a>
+  </nav>
+
+  <!-- ===================================================== FLOTTE -->
+  <section class="page" id="flotte">
+    <h2>Flotte</h2>
+    <p class="q">Question unique : « Est-ce que tout va bien, et sinon, qu'est-ce qui demande mon attention ? »</p>
+    <div class="duo">
+      <div>
+        <div class="frame-label">Bureau, 1440 px</div>
+        <div class="desk">
+          <div class="chrome"><i></i><i></i><i></i><span>frequi.local/dashboard</span></div>
+          <header class="top">
+            <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>FreqUI</div>
+            <nav class="nav"><a class="on" href="#flotte"><span>Flotte</span></a><a href="#bot"><span>Bot</span></a><a href="#graphiques"><span>Graphiques</span></a><a><span>Journal</span></a><a><span>Outils</span></a></nav>
+            <div class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="ph">Chercher bot, paire, action</span><kbd>Ctrl K</kbd></div>
+            <div class="topr">
+              <span class="fresh" title="Passerelle connectée, 8 ms. Dernière mise à jour il y a 3 s."><span class="dot"></span><span class="t">À jour</span></span>
+              <span class="ib" title="Alertes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg><span class="c">1</span></span>
+              <span class="ib" title="Réglages"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg></span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="verdict">
+              <div class="grow">
+                <div class="big"><em class="pin">1</em>Un point à voir, le reste est calme.</div>
+                <div class="sub">9 bots live sur 10 tournent · 40 positions ouvertes · aucune perte inhabituelle</div>
+              </div>
+              <div class="seg" role="radiogroup" aria-label="Argent"><b>Live</b><span>Dry 30</span><span>Tout</span></div>
+              <span class="btn ghost sm" title="Disposition : Surveillance, Incident, Analyse">Disposition</span>
+            </div>
+            <div class="alert">
+              <span class="dot w"></span>
+              <div class="tx"><b>btclongs_regime ne répond plus depuis 15:37</b><span>Session expirée. Ses chiffres sont figés et ne sont pas comptés dans les totaux ci-dessous.</span></div>
+              <span class="btn sm pri">Se reconnecter</span><span class="btn sm ghost">Plus tard</span>
+            </div>
+            <div class="kpis">
+              <div class="card kpi"><div class="l"><em class="pin">2</em>Capital total</div><div class="v num">10 350<small>USDC</small></div><div class="s">dont <span class="pos num">+20,13</span> en cours sur les positions</div></div>
+              <div class="card kpi"><div class="l">Gagné sur 30 jours</div><div class="v num pos">+107,94</div><div class="s">aujourd'hui <span class="num pos">+0,02</span> · 52 % de trades gagnants</div></div>
+              <div class="card kpi"><div class="l">Recul depuis le plus haut <span class="q-i" title="Drawdown avec latent : écart entre le capital actuel (positions comprises) et son plus haut des 30 derniers jours.">?</span></div><div class="v num">−312<small>USDC</small></div><div class="s">2,9 % · limite fixée à 15 %</div><div class="gauge"><i style="width:19%"></i><u style="left:100%"></u></div></div>
+              <div class="card kpi"><div class="l">Marge utilisée</div><div class="v num">30<small>%</small></div><div class="s">liquidation la plus proche à 47 % du prix</div><div class="gauge"><i style="width:30%"></i></div></div>
+            </div>
+            <div class="g-fleet">
+              <div class="card">
+                <div class="hd"><h3><em class="pin">3</em>Bots</h3><span class="mut" style="font-size:13px">10 live, triés par attention</span><span class="sp"></span><span class="seg"><b>Liste</b><span>Carte</span></span></div>
+                <table class="t">
+                  <thead><tr><th>Bot</th><th class="r">En cours</th><th class="r hide-xs">30 jours</th><th class="hide-s">7 jours</th><th class="hide-xs">Positions</th></tr></thead>
+                  <tbody>
+                    <tr class="dim"><td><div class="name"><span class="dot off"></span><span>btclongs_regime</span><span class="tag warn">session expirée</span></div></td><td class="r num">figé</td><td class="r num hide-xs">+3,01</td><td class="hide-s"><svg class="spark" data-seed="3" data-flat="1" width="96" height="22"></svg></td><td class="hide-xs"><span class="slots"><i></i><i></i><i class="e"></i><i class="e"></i></span></td></tr>
+                    <tr><td><div class="name"><span class="dot"></span><span>hippo_original_multi</span></div></td><td class="r num neg">−5,73</td><td class="r num pos hide-xs">+36</td><td class="hide-s"><svg class="spark" data-seed="7" width="96" height="22"></svg></td><td class="hide-xs"><span class="slots"><i></i><i></i><i></i><i></i></span></td></tr>
+                    <tr><td><div class="name"><span class="dot"></span><span>dynv1_short</span></div></td><td class="r num neg">−0,80</td><td class="r num neg hide-xs">−15</td><td class="hide-s"><svg class="spark" data-seed="11" data-down="1" width="96" height="22"></svg></td><td class="hide-xs"><span class="slots"><i></i><i></i><i></i><i class="e"></i></span></td></tr>
+                    <tr><td><div class="name"><span class="dot"></span><span>kelt_dpo_xyz</span></div></td><td class="r num pos">+1,98</td><td class="r num pos hide-xs">+8</td><td class="hide-s"><svg class="spark" data-seed="5" width="96" height="22"></svg></td><td class="hide-xs"><span class="slots"><i></i><i></i><i class="e"></i><i class="e"></i></span></td></tr>
+                    <tr><td><div class="name"><span class="dot"></span><span>cci_ao</span></div></td><td class="r num pos">+1,49</td><td class="r num pos hide-xs">+30</td><td class="hide-s"><svg class="spark" data-seed="9" width="96" height="22"></svg></td><td class="hide-xs"><span class="slots"><i></i><i></i><i></i><i></i></span></td></tr>
+                    <tr><td><div class="name"><span class="dot"></span><span>hippo_ladder_out</span></div></td><td class="r num pos">+2,28</td><td class="r num neg hide-xs">−4,59</td><td class="hide-s"><svg class="spark" data-seed="13" width="96" height="22"></svg></td><td class="hide-xs"><span class="slots"><i></i><i class="e"></i><i class="e"></i><i class="e"></i></span></td></tr>
+                    <tr><td><div class="name"><span class="dot"></span><span>ethlongs_ensemble</span></div></td><td class="r num pos">+3,49</td><td class="r num pos hide-xs">+16</td><td class="hide-s"><svg class="spark" data-seed="17" width="96" height="22"></svg></td><td class="hide-xs"><span class="slots"><i></i><i></i><i class="e"></i><i class="e"></i></span></td></tr>
+                    <tr><td><div class="name"><span class="dot"></span><span>miracle_mot2</span><span class="tag mut">entrées en pause</span></div></td><td class="r num pos">+3,65</td><td class="r num pos hide-xs">+15</td><td class="hide-s"><svg class="spark" data-seed="19" width="96" height="22"></svg></td><td class="hide-xs"><span class="slots"><i></i><i class="e"></i><i class="e"></i><i class="e"></i></span></td></tr>
+                  </tbody>
+                </table>
+                <div class="bd" style="display:flex;justify-content:space-between;font-size:13px"><span class="link">Voir les 2 autres bots</span><span class="link" title="Ajouter les colonnes Sens, Exposition, Recul, Âge des données">Colonnes</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:18px">
+                <div class="card">
+                  <div class="hd"><h3><em class="pin">4</em>Capital</h3><span class="sp"></span><span class="seg"><span>24 h</span><b>7 j</b><span>30 j</span></span></div>
+                  <div class="bd"><div class="num pos" style="font-size:15px;font-weight:600">+212,36 USDC <span class="mut" style="font-weight:400;font-family:var(--font-ui);font-size:13px">sur 7 jours</span></div><svg id="eq" viewBox="0 0 400 150" width="100%"></svg></div>
+                </div>
+                <div class="card">
+                  <div class="hd"><h3><em class="pin">5</em>Risque du wallet</h3><span class="pill ok">Modéré</span><span class="sp"></span><span class="link">Détails</span></div>
+                  <div class="bd risk">
+                    <div><span>Liquidation la plus proche</span><b class="num">47 % · OP</b></div>
+                    <div><span>Levier réel</span><b class="num">0,38×</b></div>
+                    <div><span>Long / short</span><b class="num">3 744 / 3 106</b></div>
+                    <div><span>Coins tenus par plusieurs bots</span><b class="num">6</b></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="hd"><h3><em class="pin">6</em>Positions à surveiller</h3><span class="mut" style="font-size:13px">les 5 qui perdent le plus, sur 40</span><span class="sp"></span><span class="link">Voir les 40 positions</span></div>
+              <div class="bd watch">
+                <div class="wrow"><div class="p"><b>NVDA</b> <span class="side l">↗ L ×2</span><div>hippo_original_multi · actions</div></div><div class="pl num neg">−4,36<small>−3,98 %</small></div><div class="facts"><span>Renforts <b>2 sur 4</b></span><span>Liquidation <b>loin (49 %)</b></span><span>Ouverte depuis <b>7 h 36</b></span></div><span class="more">⋯</span></div>
+                <div class="wrow"><div class="p"><b>GOLD</b> <span class="side l">↗ L ×2</span><div>kelt_dpo_xyz · matières</div></div><div class="pl num neg">−4,29<small>−3,98 %</small></div><div class="facts"><span>Renforts <b>3 sur 4</b></span><span>Liquidation <b>loin (49 %)</b></span><span>Ouverte depuis <b>6 h 11</b></span></div><span class="more">⋯</span></div>
+                <div class="wrow"><div class="p"><b>OP</b> <span class="side s">↘ S ×2</span><div>dynv1_short</div></div><div class="pl num neg">−3,87<small>−4,00 %</small></div><div class="facts"><span>Renforts <b>1 sur 4</b></span><span>Liquidation <b>loin (47 %)</b></span><span>Ouverte depuis <b>55 min</b></span></div><span class="more">⋯</span></div>
+                <div class="wrow"><div class="p"><b>OP</b> <span class="side s">↘ S ×2</span><div>cci_ao</div></div><div class="pl num neg">−2,28<small>−2,04 %</small></div><div class="facts"><span>Renforts <b>1 sur 4</b></span><span>Liquidation <b>loin (49 %)</b></span><span>Ouverte depuis <b class="warn">11 h 15, plus long que d'habitude</b></span></div><span class="more">⋯</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="statusline"><em class="pin">7</em><span><span class="dot"></span> Tout est à jour, il y a 3 s</span><span class="sp"></span><span title="Part du quota d'appels Hyperliquid consommée. Affiché seulement au-delà de 70 %.">Appels Hyperliquid : 82 % du quota</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="frame-label">Téléphone, 390 px</div>
+        <div class="phone">
+          <div class="notch"><span>15:42</span><span>5G</span></div>
+          <div class="ptop"><div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>FreqUI</div><span class="sp"></span><span class="dot" title="À jour"></span><span class="ib"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span><span class="ib"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg><span class="c">1</span></span></div>
+          <div class="pbody">
+            <div><div style="font-size:19px;font-weight:650">Un point à voir.</div><div class="mut2" style="font-size:13.5px">9 bots live sur 10 · 40 positions</div></div>
+            <div class="alert" style="padding:12px"><div class="tx"><b>btclongs_regime ne répond plus</b><span>Session expirée depuis 15:37.</span></div><span class="btn sm pri">Se reconnecter</span></div>
+            <div class="pk">
+              <div class="card kpi"><div class="l">Capital total</div><div class="v num">10 350</div><div class="s">en cours <span class="pos num">+20,13</span></div></div>
+              <div class="card kpi"><div class="l">Gagné 30 j</div><div class="v num pos">+107,94</div><div class="s">aujourd'hui <span class="num pos">+0,02</span></div></div>
+              <div class="card kpi"><div class="l">Recul</div><div class="v num">−312</div><div class="s">2,9 % · limite 15 %</div></div>
+              <div class="card kpi"><div class="l">Marge utilisée</div><div class="v num">30 %</div><div class="s">liq. la plus proche 47 %</div></div>
+            </div>
+            <div class="seg" style="align-self:flex-start"><b>Live</b><span>Dry 30</span><span>Tout</span></div>
+            <div style="font-weight:600;font-size:15px;margin-top:4px">Positions à surveiller</div>
+            <div class="card pcard"><div class="row"><span><b>NVDA</b> <span class="side l">↗ L ×2</span></span><b class="num neg">−4,36</b></div><div class="row mut" style="font-size:13px"><span>hippo_original_multi</span><span class="num">−3,98 %</span></div><div class="row mut2" style="font-size:13px"><span>Renforts 2 sur 4 · liq. loin</span><span>7 h 36</span></div></div>
+            <div class="card pcard"><div class="row"><span><b>GOLD</b> <span class="side l">↗ L ×2</span></span><b class="num neg">−4,29</b></div><div class="row mut" style="font-size:13px"><span>kelt_dpo_xyz</span><span class="num">−3,98 %</span></div><div class="row mut2" style="font-size:13px"><span>Renforts 3 sur 4 · liq. loin</span><span>6 h 11</span></div></div>
+            <div class="card pcard"><div class="row"><span><b>OP</b> <span class="side s">↘ S ×2</span></span><b class="num neg">−3,87</b></div><div class="row mut" style="font-size:13px"><span>dynv1_short</span><span class="num">−4,00 %</span></div><div class="row mut2" style="font-size:13px"><span>Renforts 1 sur 4 · liq. loin</span><span>55 min</span></div></div>
+            <span class="link" style="text-align:center">Voir les 40 positions</span>
+            <div style="font-weight:600;font-size:15px;margin-top:4px">Bots</div>
+            <div class="card pcard"><div class="row"><span><span class="dot"></span> hippo_original_multi</span><b class="num neg">−5,73</b></div><div class="row mut" style="font-size:13px"><span>4 positions sur 4</span><span>30 j <span class="num pos">+36</span></span></div></div>
+            <div class="card pcard"><div class="row"><span><span class="dot"></span> dynv1_short</span><b class="num neg">−0,80</b></div><div class="row mut" style="font-size:13px"><span>3 positions sur 4</span><span>30 j <span class="num neg">−15</span></span></div></div>
+            <span class="link" style="text-align:center">Voir les 10 bots</span>
+            <div class="card pcard"><div class="row"><b>Risque du wallet</b><span class="pill ok">Modéré</span></div><div class="row mut" style="font-size:13px"><span>Liquidation la plus proche</span><span class="num">47 %</span></div></div>
+          </div>
+          <div class="tabbar">
+            <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Flotte</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 4v4M9 13h.01M15 13h.01"/></svg>Bot</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4v16M17 4v16"/><rect x="5" y="8" width="4" height="7"/><rect x="15" y="6" width="4" height="9"/></svg>Graphiques</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h7a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2zM20 5h-5a2 2 0 0 0-2 2v12h7z"/></svg>Journal</span>
+            <span><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>Plus</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="notes" style="margin-top:16px">
+      <h3>Ce qui change sur la Flotte</h3>
+      <ol>
+        <li><b>Phrase-verdict</b> en tête : l'état de la flotte en une ligne. Les alertes apparaissent juste dessous, une carte par alerte, avec leur action. Plus de rail « À traiter » à 4 onglets vide au repos : Acquittées, Silencieuses et Événements passent dans la cloche.</li>
+        <li><b>4 chiffres au lieu de 8</b>, en mots simples. « Bots en ligne » passe dans le verdict, « Exposition » et « Réalisé jour » dans la carte Risque et la sous-ligne de « Gagné ». La définition exacte reste en infobulle (?).</li>
+        <li><b>Tableau des bots : 6 colonnes au lieu de 12.</b> Sens, Jour, Exposition, Slots chiffrés, Recul, Âge passent dans « Colonnes » (et l'âge reste visible quand il est anormal : « figé »). Ligne Σ supprimée : le total est déjà dans les 4 chiffres.</li>
+        <li><b>Une seule courbe</b> : le capital sur 7 jours. Le sous-graphe drawdown, le Classement et le Calendrier partent dans le Journal (Analyse).</li>
+        <li><b>Risque résumé</b> en un mot (Modéré, Élevé, Critique) et 4 lignes ; le tableau par coin est derrière « Détails ».</li>
+        <li><b>5 positions à surveiller</b> avec des faits lisibles (« Renforts 2 sur 4 », « liquidation loin ») au lieu de 40 lignes et 11 colonnes. Pas de bouton de sortie sur la ligne : le menu ⋯ ou un clic ouvre le trade.</li>
+        <li><b>Barre d'état réduite</b> à « À jour, il y a 3 s ». Le quota Hyperliquid n'apparaît qu'au-delà de 70 %, en clair. « Santé Dégradée », « Bots live », « Snapshot », « Logs 0 » et « Compacte » disparaissent de la barre (voir inventaire).</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===================================================== BOT -->
+  <section class="page" id="bot">
+    <h2>Bot</h2>
+    <p class="q">Question unique : « Que fait ce bot en ce moment, et dois-je intervenir sur une position ? »</p>
+    <div class="duo">
+      <div>
+        <div class="frame-label">Bureau, 1440 px</div>
+        <div class="desk">
+          <div class="chrome"><i></i><i></i><i></i><span>frequi.local/bot/dynv1_short</span></div>
+          <header class="top">
+            <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>FreqUI</div>
+            <nav class="nav"><a href="#flotte"><span>Flotte</span></a><a class="on" href="#bot"><span>Bot</span></a><a href="#graphiques"><span>Graphiques</span></a><a><span>Journal</span></a><a><span>Outils</span></a></nav>
+            <div class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="ph">Chercher bot, paire, action</span><kbd>Ctrl K</kbd></div>
+            <div class="topr"><span class="fresh"><span class="dot"></span><span class="t">À jour</span></span><span class="ib"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></svg></span></div>
+          </header>
+          <div class="body">
+            <div class="bothd">
+              <span class="ib" title="Bot précédent">‹</span><span class="ib" title="Bot suivant">›</span>
+              <h2><em class="pin">1</em>dynv1_short</h2><span class="badge live">● LIVE</span>
+              <span class="meta">HippoDynV1 · 15 min · depuis 2 j 4 h</span>
+              <span class="sp"></span>
+              <span class="btn">Pause des entrées</span>
+              <span class="btn ghost">⋯ Plus</span>
+            </div>
+            <div class="kpis">
+              <div class="card kpi"><div class="l"><em class="pin">2</em>En cours</div><div class="v num pos">+4,16</div><div class="s">sur 4 positions</div></div>
+              <div class="card kpi"><div class="l">Gagné sur 30 jours</div><div class="v num pos">+16,00</div><div class="s">aujourd'hui <span class="num pos">+1,58</span> · 51 % gagnants</div></div>
+              <div class="card kpi"><div class="l">Capital du bot</div><div class="v num">1 000<small>USDC</small></div><div class="s">exposé 812 (long 203, short 609)</div></div>
+              <div class="card kpi"><div class="l">Recul depuis le plus haut</div><div class="v num">−38<small>USDC</small></div><div class="s">3,8 % · limite 15 %</div><div class="gauge"><i style="width:25%"></i><u style="left:100%"></u></div></div>
+            </div>
+            <div class="g-bot">
+              <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+                <div class="card">
+                  <div class="hd"><h3><em class="pin">3</em>OP</h3><span class="side s">↘ Short ×2</span><span class="sp"></span><span class="seg"><span>5 min</span><b>15 min</b><span>1 h</span><span>4 h</span></span><span class="link">Ouvrir en grand</span></div>
+                  <div class="chartbox"><svg class="candles" data-seed="21" data-levels="bot" viewBox="0 0 760 280"></svg></div>
+                </div>
+                <div class="card">
+                  <div class="tabs"><span class="on"><em class="pin">4</em>Positions<small>4</small></span><span>Historique</span><span>Performance</span><span>Plus ▾</span></div>
+                  <table class="t">
+                    <thead><tr><th>Paire</th><th>Sens</th><th class="hide-xs">Renforts</th><th class="r">Résultat</th><th class="r hide-s">Liquidation</th><th class="r hide-xs">Ouverte depuis</th></tr></thead>
+                    <tbody>
+                      <tr class="sel"><td><b>OP</b></td><td><span class="side s">↘ S ×2</span></td><td class="hide-xs"><span class="slots"><i></i><i class="e"></i><i class="e"></i><i class="e"></i></span></td><td class="r num neg">−3,86 <span class="mut">−3,99 %</span></td><td class="r hide-s mut2">loin (47 %)</td><td class="r num hide-xs">55 min</td></tr>
+                      <tr><td><b>AVAX</b></td><td><span class="side s">↘ S ×2</span></td><td class="hide-xs"><span class="slots"><i></i><i></i><i class="e"></i><i class="e"></i></span></td><td class="r num pos">+1,50 <span class="mut">+1,47 %</span></td><td class="r hide-s mut2">loin (51 %)</td><td class="r num hide-xs">7 h 46</td></tr>
+                      <tr><td><b>INJ</b></td><td><span class="side l">↗ L ×2</span></td><td class="hide-xs"><span class="slots"><i></i><i></i><i></i><i class="e"></i></span></td><td class="r num pos">+2,35 <span class="mut">+2,34 %</span></td><td class="r hide-s mut2">loin (51 %)</td><td class="r num hide-xs warn" title="Plus long que 98 % des trades de ce bot">10 h 57, long</td></tr>
+                      <tr><td><b>ARB</b></td><td><span class="side s">↘ S ×2</span></td><td class="hide-xs"><span class="slots"><i></i><i></i><i class="e"></i><i class="e"></i></span></td><td class="r num pos">+4,17 <span class="mut">+3,92 %</span></td><td class="r hide-s mut2">loin (53 %)</td><td class="r num hide-xs">3 h 20</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="card trade" style="display:flex;flex-direction:column">
+                <div class="hd"><h3><em class="pin">5</em>OP</h3><span class="side s">↘ Short ×2</span><span class="sp"></span><span class="mut" style="font-size:12.5px">trade n° 404</span></div>
+                <div class="bd">
+                  <div class="pl num neg">−3,86<small>USDC · −3,99 %</small></div>
+                  <div class="mut" style="font-size:13px;margin-top:4px">ouverte il y a 55 min sur dynv1_short</div>
+                  <div class="plain">
+                    <div class="f"><span class="ic">↓</span><div><b>Sortie visée à 381,10</b><br>le prix doit baisser de 2,7 %</div></div>
+                    <div class="f"><span class="ic">+</span><div><b>Prochain renfort à 399,30</b><br>si le prix monte encore de 2,0 %</div></div>
+                    <div class="f"><span class="ic">!</span><div><b>Liquidation loin</b><br>à 575,97, soit 47 % au-dessus du prix</div></div>
+                  </div>
+                  <div class="ladder"><div class="mut2" style="font-size:13px;margin-bottom:6px">Renforts utilisés : 1 sur 4</div><div class="rail"><i class="f"></i><i></i><i></i><i></i></div><div class="cap num"><span>96,73 engagés</span><span>jusqu'à 1 160 si tout se remplit</span></div></div>
+                  <div style="margin-top:14px">
+                    <div class="fold"><span>Détails (montant, mise, ordres)</span><span>▸</span></div>
+                    <div class="fold"><span>Maintenance de ce trade</span><span>▸</span></div>
+                  </div>
+                </div>
+                <div style="flex:1"></div>
+                <div class="foot"><span class="btn danger">Sortir…</span><span class="btn">Renforcer…</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="statusline"><span><span class="dot"></span> Tout est à jour, il y a 2 s</span></div>
+        </div>
+        <div class="notes" style="margin-top:12px;max-width:520px">
+          <h3>Menu « ⋯ Plus » de l'en-tête (ouvert)</h3>
+          <div class="menu" style="position:static;width:auto;box-shadow:none">
+            <div>Reprendre les entrées</div>
+            <div>Recharger la config<small>relit le fichier sans redémarrer</small></div>
+            <div>Voir la config</div>
+            <div>Entrée forcée…</div>
+            <div>Replay dry…</div>
+            <div class="h">Informations</div>
+            <div class="mut2">Port 33867 · hyperliquid · données à jour il y a 2 s</div>
+            <hr>
+            <div class="h">Actions sensibles</div>
+            <div class="d">Tout sortir…<small>ferme les 4 positions au marché</small></div>
+            <div class="d">Arrêter le bot…</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="frame-label">Téléphone, 390 px</div>
+        <div class="phone">
+          <div class="notch"><span>15:42</span><span>5G</span></div>
+          <div class="ptop"><span class="ib">‹</span><b style="font-size:16px">dynv1_short</b><span class="badge live">LIVE</span><span class="sp"></span><span class="ib">›</span></div>
+          <div class="pbody">
+            <div class="mut" style="font-size:13px;margin-top:-4px">HippoDynV1 · 15 min · tourne depuis 2 j</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><span class="bt">⏸ Pause des entrées</span><span class="bt">⋯ Plus</span></div>
+            <div class="pk">
+              <div class="card kpi"><div class="l">En cours</div><div class="v num pos">+4,16</div><div class="s">4 positions</div></div>
+              <div class="card kpi"><div class="l">Gagné 30 j</div><div class="v num pos">+16,00</div><div class="s">aujourd'hui +1,58</div></div>
+            </div>
+            <div style="font-weight:600;font-size:15px">Positions</div>
+            <div class="card pcard" style="box-shadow:inset 0 0 0 1px var(--accent)"><div class="row"><span><b>OP</b> <span class="side s">↘ S ×2</span></span><b class="num neg">−3,86</b></div><div class="row mut2" style="font-size:13px"><span>Renforts 1 sur 4 · liq. loin</span><span>55 min</span></div></div>
+            <div class="card pcard"><div class="row"><span><b>AVAX</b> <span class="side s">↘ S ×2</span></span><b class="num pos">+1,50</b></div><div class="row mut2" style="font-size:13px"><span>Renforts 2 sur 4 · liq. loin</span><span>7 h 46</span></div></div>
+            <div class="card pcard"><div class="row"><span><b>INJ</b> <span class="side l">↗ L ×2</span></span><b class="num pos">+2,35</b></div><div class="row mut2" style="font-size:13px"><span>Renforts 3 sur 4 · liq. loin</span><span class="warn">10 h 57, long</span></div></div>
+            <div class="card pcard"><div class="row"><span><b>ARB</b> <span class="side s">↘ S ×2</span></span><b class="num pos">+4,17</b></div><div class="row mut2" style="font-size:13px"><span>Renforts 2 sur 4 · liq. loin</span><span>3 h 20</span></div></div>
+            <div class="mut" style="font-size:12.5px;text-align:center">Toucher une position ouvre son détail, avec Sortir et Renforcer.</div>
+            <div class="card"><div class="hd"><h3>OP · 15 min</h3></div><div class="chartbox" style="padding-left:8px"><svg class="candles" data-seed="21" data-levels="bot" data-compact="1" viewBox="0 0 360 230"></svg></div></div>
+            <div class="tabs" style="padding:0"><span class="on">Historique</span><span>Performance</span><span>Plus ▾</span></div>
+          </div>
+          <div class="tabbar">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Flotte</span>
+            <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 4v4M9 13h.01M15 13h.01"/></svg>Bot</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4v16M17 4v16"/><rect x="5" y="8" width="4" height="7"/><rect x="15" y="6" width="4" height="9"/></svg>Graphiques</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h7a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2zM20 5h-5a2 2 0 0 0-2 2v12h7z"/></svg>Journal</span>
+            <span><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>Plus</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="notes" style="margin-top:16px">
+      <h3>Ce qui change sur la page Bot</h3>
+      <ol>
+        <li><b>En-tête : une action visible</b> (Pause des entrées) et un menu « Plus ». Recharger, Config, Entrée forcée et Replay y vont ; « Tout sortir… » et « Arrêter… » sont regroupés sous « Actions sensibles », comme déjà sur téléphone. Port et exchange passent dans le menu (Informations).</li>
+        <li><b>4 chiffres</b> au lieu de 6 : l'exposition long/short devient la sous-ligne du capital.</li>
+        <li><b>Le navigateur de paires de gauche disparaît</b> : il listait les mêmes positions que l'onglet Positions. Signaux, verrous et whitelist restent dans l'onglet « Paires et verrous » (sous « Plus »). Le graphique prend la place, avec 4 unités de temps au lieu de 8, et des niveaux nommés directement sur l'axe (plus de puces à cocher).</li>
+        <li><b>Onglets : 3 visibles + Plus</b> (Paires et verrous, Logs, Config). Colonnes en mots : Renforts, Résultat, Liquidation « loin / proche », durée signalée « long » au lieu de « P98 ».</li>
+        <li><b>Panneau de la position en phrases</b> : sortie visée, prochain renfort, liquidation, chacun avec la distance en %. Notionnel, mise et ordres sont repliés sous « Détails ». Le choix 25 / 50 / 100 % passe dans la fenêtre de confirmation de « Sortir… », qui le demande déjà.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===================================================== GRAPHIQUES -->
+  <section class="page" id="graphiques">
+    <h2>Graphiques</h2>
+    <p class="q">Question unique : « Que fait le prix autour de mes positions ? »</p>
+    <div class="duo">
+      <div>
+        <div class="frame-label">Bureau, 1440 px</div>
+        <div class="desk">
+          <div class="chrome"><i></i><i></i><i></i><span>frequi.local/charts</span></div>
+          <header class="top">
+            <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>FreqUI</div>
+            <nav class="nav"><a href="#flotte"><span>Flotte</span></a><a href="#bot"><span>Bot</span></a><a class="on" href="#graphiques"><span>Graphiques</span></a><a><span>Journal</span></a><a><span>Outils</span></a></nav>
+            <div class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="ph">Chercher bot, paire, action</span><kbd>Ctrl K</kbd></div>
+            <div class="topr"><span class="fresh"><span class="dot"></span><span class="t">À jour</span></span></div>
+          </header>
+          <div class="body">
+            <div class="ctool">
+              <span class="btn"><em class="pin">1</em><b>OP</b><span class="mut" style="font-weight:400">· calculé par dynv1_short</span> ▾</span>
+              <span class="seg"><span>5 min</span><b>15 min</b><span>1 h</span><span>4 h</span><span>Autre ▾</span></span>
+              <span style="flex:1"></span>
+              <span style="position:relative"><span class="btn"><em class="pin">2</em>Affichage ▾</span>
+                <div class="menu" style="width:280px">
+                  <div class="ck">Niveaux de la position<span class="tg on"></span></div>
+                  <div class="ck">Entrées et renforts sur les bougies<span class="tg on"></span></div>
+                  <div class="ck">Bougies lissées (Heikin-Ashi)<span class="tg"></span></div>
+                  <div class="ck">Deux graphiques côte à côte<span class="tg"></span></div>
+                  <hr>
+                  <div>Indicateurs de la stratégie…<small>3 disponibles, 1 affiché</small></div>
+                  <div>Mesurer un écart<small>Maj + glisser sur le graphique</small></div>
+                </div>
+              </span>
+            </div>
+            <div class="g-charts">
+              <div class="card plist">
+                <div class="grp">Mes positions (40)</div>
+                <div class="it on"><div><b>OP</b> <span class="side s">↘ S</span><small>dynv1_short</small></div><b class="num neg">−3,86</b></div>
+                <div class="it"><div><b>NVDA</b> <span class="side l">↗ L</span><small>hippo_original_multi</small></div><b class="num neg">−4,36</b></div>
+                <div class="it"><div><b>GOLD</b> <span class="side l">↗ L</span><small>kelt_dpo_xyz</small></div><b class="num neg">−4,29</b></div>
+                <div class="it"><div><b>BTC</b> <span class="side s">↘ S</span><small>dynv1_short</small></div><b class="num neg">−2,79</b></div>
+                <div class="it"><div><b>AVAX</b> <span class="side s">↘ S</span><small>dynv1_short</small></div><b class="num pos">+1,50</b></div>
+                <div class="it"><div><b>INJ</b> <span class="side l">↗ L</span><small>dynv1_short</small></div><b class="num pos">+2,35</b></div>
+                <div class="grp">Autres paires</div>
+                <div class="it"><div>Chercher une paire…</div></div>
+              </div>
+              <div class="card" style="min-width:0">
+                <div class="hd"><h3>OP · 15 min</h3><span class="side s">↘ Short ×2 sur dynv1_short</span><span class="sp"></span><span class="link">Page du bot</span></div>
+                <div class="legend">O <b>391,20</b> H <b>392,04</b> B <b>389,80</b> C <b>391,65</b></div>
+                <div class="chartbox"><svg class="candles" data-seed="21" data-levels="bot" viewBox="0 0 900 400"></svg></div>
+                <div class="subhd"><em class="pin">3</em><b>RSI 14</b><span>élan du prix : au-dessus de 70, montée tendue ; sous 30, baisse tendue</span><span style="flex:1"></span><span class="link">Masquer</span></div>
+                <div class="chartbox"><svg id="rsi" viewBox="0 0 900 90"></svg></div>
+                <div class="addsub"><em class="pin">4</em>+ Ajouter un indicateur de la stratégie : <b class="mut2">VWAP bas</b>, <b class="mut2">RSI 84 (long)</b></div>
+              </div>
+            </div>
+          </div>
+          <div class="statusline"><span><span class="dot"></span> Tout est à jour, il y a 1 s</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="frame-label">Téléphone, 390 px</div>
+        <div class="phone">
+          <div class="notch"><span>15:42</span><span>5G</span></div>
+          <div class="ptop"><b style="font-size:16px">OP</b><span class="side s">↘ S ×2</span><span class="mut" style="font-size:12.5px">dynv1_short</span><span class="sp"></span><span class="ib" title="Affichage">⚙</span></div>
+          <div class="pbody">
+            <div class="chips"><span class="on">OP −3,86</span><span>NVDA −4,36</span><span>GOLD −4,29</span><span>BTC −2,79</span><span>AVAX +1,50</span></div>
+            <div class="seg" style="align-self:flex-start"><span>5 min</span><b>15 min</b><span>1 h</span><span>4 h</span></div>
+            <div class="chartbox" style="padding:0"><svg class="candles" data-seed="21" data-levels="bot" data-compact="1" viewBox="0 0 360 300"></svg></div>
+            <div class="subhd" style="padding:0"><b>RSI 14</b><span>élan du prix</span></div>
+            <div class="chartbox" style="padding:0"><svg class="rsi-m" viewBox="0 0 360 70"></svg></div>
+            <div class="card pcard"><div class="row"><span>Position</span><b class="num neg">−3,86 USDC</b></div><div class="row mut2" style="font-size:13px"><span>Sortie visée 381,10 (−2,7 %)</span></div><div class="row mut2" style="font-size:13px"><span>Prochain renfort 399,30 (+2,0 %)</span></div><div class="row" style="margin-top:10px"><span class="link">Ouvrir la position</span></div></div>
+          </div>
+          <div class="tabbar">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Flotte</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 4v4M9 13h.01M15 13h.01"/></svg>Bot</span>
+            <span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4v16M17 4v16"/><rect x="5" y="8" width="4" height="7"/><rect x="15" y="6" width="4" height="9"/></svg>Graphiques</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h7a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2zM20 5h-5a2 2 0 0 0-2 2v12h7z"/></svg>Journal</span>
+            <span><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>Plus</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="notes" style="margin-top:16px">
+      <h3>Ce qui change sur les Graphiques</h3>
+      <ol>
+        <li><b>Paire et bot dans un seul bouton</b> (« OP · calculé par dynv1_short ») ; 4 unités de temps courantes, les autres sous « Autre ».</li>
+        <li><b>Un menu « Affichage »</b> remplace HA, Mesurer, 1 / 2 cellules, Indicateurs, Sous-graphiques N/M et les 4 puces de niveaux. Tout reste disponible, en phrases.</li>
+        <li><b>Un seul sous-graphique par défaut</b>, toujours titré en clair avec une ligne d'explication. Les noms bruts de la stratégie (rsi_84, I-vwap_low, C-rsi) sont traduits quand on les reconnaît, et gardés tels quels en infobulle.</li>
+        <li><b>Les autres indicateurs s'ajoutent à la demande</b>, un clic, et le choix est mémorisé par stratégie.</li>
+        <li><b>Échelle des prix centrée sur les bougies</b> : un niveau lointain (liquidation, renfort éloigné) est annoncé au bord avec sa distance au lieu d'étirer l'axe. Sur les captures actuelles, l'axe va jusqu'au niveau le plus lointain et les bougies sont écrasées dans une bande.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===================================================== PRINCIPES -->
+  <section class="page" id="principes">
+    <h2>Principes et glossaire</h2>
+    <div class="cols">
+      <div class="notes">
+        <h3>Principes</h3>
+        <ol>
+          <li><b>Une question par page</b>, et la réponse en une phrase en haut (verdict).</li>
+          <li><b>Quatre chiffres, pas huit.</b> Le reste s'ouvre d'un clic, jamais supprimé quand il sert une décision.</li>
+          <li><b>Le calme se tait</b> : un panneau sans contenu disparaît (alertes à zéro, compteurs à zéro, filtres vides).</li>
+          <li><b>Des mots de trader, pas des noms de variables</b> : « Renforts 2 sur 4 », « liquidation loin », « plus long que d'habitude ». Le terme technique reste en infobulle.</li>
+          <li><b>Un graphique par question.</b> Pas de sous-graphique sans titre ni explication.</li>
+          <li><b>Une action principale visible, le reste dans « Plus »</b> ; les actions qui touchent l'argent ne sont jamais au premier plan sans contexte.</li>
+          <li><b>Des réglages par défaut qui suffisent</b> : 15 min, 7 jours, Live, tri par attention. Le choix de l'utilisateur est mémorisé.</li>
+          <li><b>Terminal adouci</b> : mêmes couleurs, mêmes chiffres monospace ; lignes de 38 px au lieu de 30, texte 14 px, cartes arrondies, en-têtes de colonnes en casse normale.</li>
+        </ol>
+      </div>
+      <div class="notes">
+        <h3>Glossaire : libellé actuel → libellé proposé</h3>
+        <table class="gl">
+          <thead><tr><th>Actuel</th><th>Proposé</th></tr></thead>
+          <tbody>
+            <tr><td>Équité avec latent</td><td>Capital total (positions comprises)</td></tr>
+            <tr><td>P&amp;L latent</td><td>En cours</td></tr>
+            <tr><td>Réalisé jour / 30 j</td><td>Gagné aujourd'hui / sur 30 jours</td></tr>
+            <tr><td>Drawdown avec latent</td><td>Recul depuis le plus haut</td></tr>
+            <tr><td>Slots 4/4</td><td>Positions 4 sur 4 (« Plein »)</td></tr>
+            <tr><td>DCA 2 · pips</td><td>Renforts 2 sur 4</td></tr>
+            <tr><td>Dist. liq. 49 %</td><td>Liquidation loin (49 %) ; « proche » sous 15 %</td></tr>
+            <tr><td>P98, P100</td><td>« long », « plus long que d'habitude »</td></tr>
+            <tr><td>Santé Dégradée</td><td>Connexion ralentie (avec la raison)</td></tr>
+            <tr><td>Budget HL 82 %</td><td>Appels Hyperliquid : 82 % du quota</td></tr>
+            <tr><td>Snapshot 3 s</td><td>À jour, il y a 3 s</td></tr>
+            <tr><td>Passerelle 8 ms</td><td>Point vert « À jour » (détail en infobulle)</td></tr>
+            <tr><td>HA</td><td>Bougies lissées (Heikin-Ashi)</td></tr>
+            <tr><td>Sous-graphiques 3/4</td><td>Indicateurs de la stratégie (1 affiché)</td></tr>
+            <tr><td>rsi_84, C-rsi, I-vwap_low</td><td>RSI 84, RSI (C), VWAP bas</td></tr>
+            <tr><td>HIP-3 (cyan)</td><td>actions / matières (gris)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+// Données fictives et déterministes : tout est dessiné localement en SVG.
+function rng(seed){let s=seed*9301+49297;return()=>{s=(s*9301+49297)%233280;return s/233280}}
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);parent&&parent.appendChild(e);return e}
+
+document.querySelectorAll('svg.spark').forEach(s=>{
+  const r=rng(+s.dataset.seed),w=96,h=22,n=28;let v=0,pts=[];
+  for(let i=0;i<n;i++){v+=(r()-(s.dataset.down?0.56:0.44))*2;pts.push(v)}
+  if(s.dataset.flat)pts=pts.map((p,i)=>i>18?pts[18]:p);
+  const mn=Math.min(...pts),mx=Math.max(...pts);
+  const d=pts.map((p,i)=>(i?'L':'M')+(i*(w-2)/(n-1)+1).toFixed(1)+' '+(h-2-(p-mn)/(mx-mn||1)*(h-4)).toFixed(1)).join(' ');
+  s.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  el('path',{d,fill:'none',stroke:s.dataset.flat?css('--fg-4'):css('--fg-2'),'stroke-width':1.4},s);
+});
+
+(function eq(){const s=document.getElementById('eq');const r=rng(4),w=400,h=150,n=80;let v=0,pts=[];
+  for(let i=0;i<n;i++){v+=(r()-0.42);pts.push(v)}
+  const mn=Math.min(...pts),mx=Math.max(...pts),y=p=>12+(1-(p-mn)/(mx-mn))*(h-34),x=i=>44+i*(w-48)/(n-1);
+  const line=pts.map((p,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(p).toFixed(1)).join(' ');
+  [0,0.5,1].forEach((f,k)=>{const yy=12+f*(h-34);el('line',{x1:44,x2:w,y1:yy,y2:yy,stroke:css('--line'),'stroke-width':1},s);
+    const t=el('text',{x:0,y:yy+4,fill:css('--fg-3'),'font-size':12,'font-family':css('--font-num')},s);t.textContent=['10 360','10 250','10 140'][k]});
+  el('path',{d:line+` L${x(n-1)} ${h-22} L44 ${h-22} Z`,fill:'rgba(91,149,255,.10)'},s);
+  el('path',{d:line,fill:'none',stroke:css('--accent'),'stroke-width':1.8},s);
+  ['10/10','12/10','14/10','16/10'].forEach((d,i)=>{const t=el('text',{x:36+i*(w-70)/3,y:h-6,fill:css('--fg-3'),'font-size':12,'font-family':css('--font-num')},s);t.textContent=d});
+})();
+
+document.querySelectorAll('svg.candles').forEach(s=>{
+  const vb=s.viewBox.baseVal,W=vb.width,H=vb.height,compact=!!s.dataset.compact;
+  const r=rng(+s.dataset.seed),n=compact?48:Math.round(W/8.5);
+  const axisW=compact?54:78,plotW=W-axisW,volH=compact?22:34,plotH=H-volH-20,top=compact?22:26;
+  let p=383.5,c=[];
+  for(let i=0;i<n;i++){const o=p;p+= (r()-0.47)*1.6 + (i>n*0.55? 0.35:0);const hi=Math.max(o,p)+r()*1.1,lo=Math.min(o,p)-r()*1.1;c.push({o,c:p,h:hi,l:lo,v:0.3+r()})}
+  const lv={avg:383.98,tp:381.10,so:399.30};
+  const prices=c.flatMap(k=>[k.h,k.l]).concat([lv.avg,lv.tp,lv.so]);
+  let mn=Math.min(...prices)-1,mx=Math.max(...prices)+1;
+  const y=v=>top+(1-(v-mn)/(mx-mn))*(plotH-top),cw=plotW/n;
+  for(let g=0;g<5;g++){const v=mn+(mx-mn)*g/4,yy=y(v);el('line',{x1:0,x2:plotW,y1:yy,y2:yy,stroke:css('--line'),'stroke-width':1},s);
+    const t=el('text',{x:plotW+6,y:yy+4,fill:css('--fg-3'),'font-size':compact?10:12.5,'font-family':css('--font-num')},s);t.textContent=v.toFixed(1).replace('.',',')}
+  c.forEach((k,i)=>{const x=i*cw+cw/2,up=k.c>=k.o,col=up?css('--profit'):css('--loss');
+    el('line',{x1:x,x2:x,y1:y(k.h),y2:y(k.l),stroke:col,'stroke-width':1},s);
+    el('rect',{x:x-cw*0.32,y:y(Math.max(k.o,k.c)),width:cw*0.64,height:Math.max(1,Math.abs(y(k.o)-y(k.c))),fill:col,opacity:.9},s);
+    el('rect',{x:x-cw*0.32,y:H-20-k.v*volH,width:cw*0.64,height:k.v*volH,fill:col,opacity:.22},s)});
+  const lab=(v,txt,col,dash)=>{const yy=y(v);el('line',{x1:0,x2:plotW,y1:yy,y2:yy,stroke:col,'stroke-width':1.2,'stroke-dasharray':dash||''},s);
+    const tw=compact?66:150;el('rect',{x:plotW-tw-2,y:yy-10,width:tw,height:19,rx:4,fill:css('--bg-1'),stroke:col,'stroke-width':1},s);
+    const t=el('text',{x:plotW-tw+4,y:yy+4,fill:col,'font-size':compact?10:12.5,'font-family':css('--font-ui'),'font-weight':600},s);t.textContent=txt};
+  lab(lv.avg,compact?'Entrée moy.':'Entrée moy. 383,98',css('--accent'));
+  lab(lv.tp,compact?'Sortie visée':'Sortie visée 381,10',css('--profit'),'5 4');
+  lab(lv.so,compact?'Renfort':'Prochain renfort 399,30',css('--warn'),'5 4');
+  const ent=Math.round(n*0.6),xe=ent*cw+cw/2;
+  el('circle',{cx:xe,cy:y(c[ent].c)-10,r:compact?6:8,fill:css('--accent')},s);
+  const te=el('text',{x:xe,y:y(c[ent].c)-6.5,'text-anchor':'middle',fill:'#06101f','font-size':compact?8:10,'font-weight':700,'font-family':css('--font-ui')},s);te.textContent='E';
+  const tl=el('text',{x:compact?4:8,y:14,fill:css('--fg-2'),'font-size':compact?10:12.5,'font-family':css('--font-ui')},s);tl.textContent='↑ Liquidation à 575,97 (+47 %), hors écran';
+  const hrs=compact?['12:00','15:00']:['09:00','11:00','13:00','15:00'];
+  hrs.forEach((h,i)=>{const t=el('text',{x:(i+0.6)*plotW/hrs.length,y:H-4,fill:css('--fg-3'),'font-size':compact?10:12,'font-family':css('--font-num')},s);t.textContent=h});
+});
+
+function rsi(s,W,H,compact){const r=rng(31),n=compact?48:100;let v=50,pts=[];for(let i=0;i<n;i++){v+=(r()-0.5)*9;v=Math.max(18,Math.min(82,v));pts.push(v)}
+  const axisW=compact?54:78,plotW=W-axisW,y=q=>4+(1-q/100)*(H-8);
+  el('rect',{x:0,y:y(70),width:plotW,height:y(30)-y(70),fill:'rgba(91,149,255,.06)'},s);
+  [30,70].forEach(q=>{el('line',{x1:0,x2:plotW,y1:y(q),y2:y(q),stroke:css('--line-2'),'stroke-dasharray':'3 3'},s);const t=el('text',{x:plotW+6,y:y(q)+4,fill:css('--fg-3'),'font-size':compact?10:12,'font-family':css('--font-num')},s);t.textContent=q});
+  el('path',{d:pts.map((p,i)=>(i?'L':'M')+(i*plotW/(n-1)).toFixed(1)+' '+y(p).toFixed(1)).join(' '),fill:'none',stroke:css('--info'),'stroke-width':1.4},s)}
+rsi(document.getElementById('rsi'),900,90,false);
+document.querySelectorAll('svg.rsi-m').forEach(s=>rsi(s,360,70,true));
+</script>
+</body>
+</html>
