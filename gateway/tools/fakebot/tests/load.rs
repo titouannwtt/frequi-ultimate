@@ -25,7 +25,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use common::{
-    Harness, ManifestDiscovery, cpu_seconds, discovered, peak_rss_mb, rss_mb, thread_cpu,
+    Harness, ManifestDiscovery, cpu_seconds, discovered, peak_rss_mb, rss_mb, rss_split_mb,
+    thread_count, thread_cpu,
 };
 use fg_core::model::BotStatus;
 use fg_core::protocol::{Channel, ServerFrame};
@@ -163,6 +164,7 @@ async fn run_load(p: Params) {
     .map(|s| (*s).to_owned())
     .collect();
     let mut fb = Harness::spawn(&args).await;
+    println!("rss after the fake fleet started {:.0} MB", rss_mb());
     let manifest = fb.manifest.clone();
     let bots: Vec<_> = manifest.bots.iter().map(discovered).collect();
 
@@ -170,6 +172,7 @@ async fn run_load(p: Params) {
     std::fs::create_dir_all(&state_dir).unwrap();
     let mut cfg = EngineConfig::new(&state_dir);
     cfg.cadences = Cadences::default().scaled(p.scale);
+    cfg.ledger_threads = ledger_threads();
     cfg.budget = BudgetConfig {
         rate_per_s: 2.8 * p.scale,
         burst: 30,
@@ -187,6 +190,7 @@ async fn run_load(p: Params) {
         .await
         .unwrap();
     let h = engine.handle();
+    println!("rss after the engine started {:.0} MB", rss_mb());
 
     // Wait for the whole fleet to be online with its positions loaded.
     let started = Instant::now();
@@ -208,8 +212,36 @@ async fn run_load(p: Params) {
         );
         tokio::time::sleep(Duration::from_millis(250)).await;
     }
+    if std::env::var_os("FG_LOAD_SMAPS").is_some() {
+        let smaps = std::fs::read_to_string("/proc/self/smaps").unwrap_or_default();
+        let mut regions: Vec<(u64, String)> = Vec::new();
+        let mut head = String::new();
+        for l in smaps.lines() {
+            if l.contains('-')
+                && l.chars().next().is_some_and(|c| c.is_ascii_hexdigit())
+                && l.contains(' ')
+                && !l.starts_with("Rss")
+            {
+                head = l.to_owned();
+            } else if let Some(v) = l.strip_prefix("Rss:") {
+                let kb: u64 = v.trim().trim_end_matches(" kB").trim().parse().unwrap_or(0);
+                regions.push((kb, head.clone()));
+            }
+        }
+        regions.sort_by_key(|r| std::cmp::Reverse(r.0));
+        for (kb, h) in regions.iter().take(12) {
+            println!("smaps {kb:>7} kB  {h}");
+        }
+        let small: u64 = regions.iter().filter(|r| r.0 < 2048).map(|r| r.0).sum();
+        println!(
+            "smaps regions under 2 MB: {} regions, {small} kB",
+            regions.iter().filter(|r| r.0 < 2048).count()
+        );
+    }
+    let (anon, file) = rss_split_mb();
     println!(
-        "converged in {:.1} s (scale {}), rss {:.0} MB (peak {:.0} MB)",
+        "converged in {:.1} s (scale {}), rss {:.0} MB (peak {:.0} MB; heap and stacks {anon:.0} MB, \
+         executable {file:.0} MB)",
         started.elapsed().as_secs_f64(),
         p.scale,
         rss_mb(),
@@ -313,7 +345,7 @@ async fn run_load(p: Params) {
         "window {dt:.0} s: {rate:.2} req/s (normalised {:.2}), busiest bot {per_bot_max:.3} req/s \
          (normalised {:.3}), ftcache {daemon_rate:.2} req/s (normalised {:.2}), {per_client_bps:.0} B/s per client, \
          {} frames, cpu {cpu_pct:.2} % (normalised {:.2} %), rss {rss_end:.0} MB, peak {:.0} MB, \
-         fill latency max {max_latency:?} over {} fills, budget granted {} waited {} ms",
+         fill latency max {max_latency:?} over {} fills, budget granted {} waited {} ms, {} threads",
         rate / p.scale,
         per_bot_max / p.scale,
         daemon_rate / p.scale,
@@ -322,7 +354,8 @@ async fn run_load(p: Params) {
         peak_rss_mb(),
         latencies.len(),
         budget.granted,
-        budget.waited_ms
+        budget.waited_ms,
+        thread_count()
     );
 
     let channel_bps = |names: &[&str]| -> f64 {
@@ -430,15 +463,17 @@ async fn run_load(p: Params) {
             println!("NOTE: cpu {cpu:.2} % of a core is above the 2 % budget of section 12");
         }
         assert!(cpu < 5.0, "cpu {cpu:.2} % of a core, normalised");
-        // The budget of 03 section 12 is 120 MB with 200 000 trades and 50 clients. The engine
-        // keeps every closed trade as a full journal row (about 0.5 KB each with its strings and
-        // derived arrays); this guard fails on a regression, and the shortfall against the budget
-        // is reported, not hidden (see the report of the lot).
+        // The budget of 03 section 12 is 120 MB with 200 000 trades and 50 clients. Measured
+        // here, with the runtime of the binary and `MIMALLOC_PURGE_DELAY=0` (set by
+        // `gateway/.cargo/config.toml` for the tests, by the binary itself in service): 100 to
+        // 104 MB resident, a peak of 111 to 125 MB while the 40 ledgers are read the first time.
+        // The peak is reported, not hidden; this guard fails on a regression (without the purge
+        // setting or with a larger blocking pool the peak is 163 to 179 MB).
         let peak = peak_rss_mb();
         if peak >= 120.0 {
             println!("NOTE: peak rss {peak:.0} MB is above the 120 MB budget of section 12");
         }
-        assert!(peak < 260.0, "peak rss {peak:.0} MB");
+        assert!(peak < 150.0, "peak rss {peak:.0} MB");
     }
 
     for c in clients {
@@ -448,23 +483,44 @@ async fn run_load(p: Params) {
     fb.quit().await;
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn forty_bots_and_fifty_clients_stay_inside_the_budgets() {
-    run_load(Params {
+/// Threads reading ledgers (`scheduler.ledger_threads`, 4 by default).
+fn ledger_threads() -> usize {
+    env_f64("FG_LOAD_LEDGER_THREADS", 4.0) as usize
+}
+
+/// The runtime of the real binary (same builder, same number of workers), so that the resident
+/// size measured here is the one of the service.
+fn gateway_runtime() -> tokio::runtime::Runtime {
+    let cpus = std::thread::available_parallelism().map_or(2, std::num::NonZero::get);
+    let mut cfg = fg_server::config::GatewayConfig::default();
+    cfg.scheduler.worker_threads = env_f64("FG_LOAD_WORKERS", 0.0) as usize;
+    let workers = cfg.scheduler.workers(cpus);
+    let blocking = env_f64("FG_LOAD_BLOCKING", 0.0) as usize;
+    let blocking = if blocking == 0 {
+        fg_server::runtime::blocking_threads(
+            EngineConfig::new(std::path::Path::new("/")).ledger_threads,
+        )
+    } else {
+        blocking
+    };
+    fg_server::runtime::build(workers, blocking).expect("runtime")
+}
+
+#[test]
+fn forty_bots_and_fifty_clients_stay_inside_the_budgets() {
+    gateway_runtime().block_on(run_load(Params {
         bots: env_f64("FG_LOAD_BOTS", 40.0) as usize,
         scale: env_f64("FG_LOAD_SCALE", 6.0),
         measure: Duration::from_secs_f64(env_f64("FG_LOAD_SECS", 30.0)),
-    })
-    .await;
+    }));
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[test]
 #[ignore = "30 minutes at full fidelity: run by hand with --release"]
-async fn forty_bots_and_fifty_clients_for_thirty_minutes_at_full_fidelity() {
-    run_load(Params {
+fn forty_bots_and_fifty_clients_for_thirty_minutes_at_full_fidelity() {
+    gateway_runtime().block_on(run_load(Params {
         bots: 40,
         scale: 1.0,
         measure: Duration::from_secs_f64(env_f64("FG_LOAD_SECS", 1800.0)),
-    })
-    .await;
+    }));
 }
