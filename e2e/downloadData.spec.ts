@@ -55,10 +55,7 @@ test.describe('Download Data View', () => {
   test('Download Data page ', async ({ page }) => {
     const downloadDataPromise = page.waitForRequest('**/api/v1/download_data');
 
-    page.goto('/');
-
-    const downloadData = page.locator('a', { hasText: 'Download Data' });
-    await Promise.all([downloadData.click(), page.waitForResponse('**/exchanges')]);
+    await Promise.all([page.goto('/tools/download-data'), page.waitForResponse('**/exchanges')]);
 
     await page.getByRole('button', { name: 'All USDT Pairs' }).click();
 
@@ -93,10 +90,7 @@ test.describe('Download Data View', () => {
   test('Download Data page with advanced settings', async ({ page }) => {
     const downloadDataPromise = page.waitForRequest('**/api/v1/download_data');
 
-    page.goto('/');
-
-    const downloadData = page.locator('a', { hasText: 'Download Data' });
-    await Promise.all([downloadData.click(), page.waitForResponse('**/exchanges')]);
+    await Promise.all([page.goto('/tools/download-data'), page.waitForResponse('**/exchanges')]);
 
     await page.getByRole('button', { name: 'All USDT Pairs' }).click();
     const daysInput = page.getByLabel('Days to download');
