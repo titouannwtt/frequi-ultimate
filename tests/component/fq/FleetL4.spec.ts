@@ -10,7 +10,7 @@ import PositionCard from '../../../src/components/fq/PositionCard.vue';
 import RiskPanel from '../../../src/components/fq/RiskPanel.vue';
 import WatchList from '../../../src/components/fq/WatchList.vue';
 import { FIXTURE_NOW, makeBot, scopeDetailOf } from '../../../src/components/fq/fixtures';
-import { lineFromPosition } from '../../../src/components/fq/lib/trades';
+import { lineFromPosition, pairLabel } from '../../../src/components/fq/lib/trades';
 import { useActionDialog } from '../../../src/composables/useActionDialog';
 import { useFqAlertsStore } from '../../../src/datasource/stores/alerts';
 import type { DataSource } from '../../../src/datasource/types';
@@ -250,6 +250,23 @@ describe('FleetAlerts (cards under the verdict)', () => {
     await card.get('[data-alert-action="pause"]').trigger('click');
     expect(useActionDialog().current.value).toMatchObject({ action: { kind: 'stopbuy' } });
     expect(world.fake.acts).toHaveLength(0);
+  });
+
+  it('two alerts of one bot name their position, so the cards do not read the same', () => {
+    const [p1, p2] = world.fixture.positions.filter((x) => !x.orphan);
+    const base = useFqAlertsStore().view(FIXTURE_NOW, 'active')[0]!;
+    const alerts = [p1!, p2!].map((p, i) => ({
+      ...base,
+      id: `liq${i}`,
+      type_id: 'liquidationBeforeStoploss' as const,
+      bot_key: p.bot_key,
+      subject: String(p.trade_id),
+    }));
+    const w = mountCards({ alerts });
+    const who = w.findAll('article.card .who').map((x) => x.text());
+    expect(who[0]).toContain(pairLabel(p1!.pair));
+    expect(who[1]).toContain(pairLabel(p2!.pair));
+    expect(who[0]).not.toBe(who[1]);
   });
 
   it('the other actions are only reported to the page', async () => {

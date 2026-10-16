@@ -6,10 +6,12 @@ import { Btn, DsIcon, ModeMark } from '@/components/ds';
 import { useAlertControls } from '@/composables/useAlertControls';
 import { SEVERITY_RANK } from '@/datasource/calc/alerts/rules';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
+import { useFqPositionsStore } from '@/datasource/stores/positions';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { Alert, BotMode, Severity } from '@/gateway/types.gen';
 
 import {
+  alertTag,
   alertWording,
   ALERT_ACTIONS,
   detailKind,
@@ -56,6 +58,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const fmt = useFormat();
 const fleet = useFqFleetStore();
+const positions = useFqPositionsStore();
 const prefs = useFqPrefsStore();
 const { ack, silence, onAction } = useAlertControls((id, a) => emit('action', id, a));
 
@@ -80,11 +83,20 @@ interface Card {
 function botName(key: string | null): string {
   return (key ? fleet.bots[key]?.identity.name : undefined) ?? key ?? '';
 }
+/** Pair of the position a per-position alert is about (its subject is the trade id), if open. */
+function alertPair(a: Alert): string | null {
+  if (!a.bot_key || !a.subject || !/^\d+$/.test(a.subject)) return null;
+  return positions.get(a.bot_key, Number(a.subject))?.pair ?? null;
+}
+/** Bot, then what the alert is about: several alerts of one bot must not read the same. */
 function alertWho(a: Alert): string {
-  return isWalletAlert(a) ? t('fq.alert.wallet') : botName(a.bot_key);
+  if (isWalletAlert(a)) return t('fq.alert.wallet');
+  const pair = alertPair(a);
+  const target = pair ? pairLabel(pair) : alertTag(a);
+  return target ? `${botName(a.bot_key)} · ${target}` : botName(a.bot_key);
 }
 function alertMessage(a: Alert): string {
-  const w = alertWording(a, (n) => fmt.number(n, 1));
+  const w = alertWording({ ...a, pair: alertPair(a) }, (n) => fmt.number(n, 1));
   const kind = detailKind(a.detail);
   const summary = kind
     ? t(`fq.alert.detail.${kind}`)
