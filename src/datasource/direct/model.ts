@@ -215,10 +215,15 @@ function closedPnl(h: ClosedHistory): ClosedPnl[] {
 function latentOf(rt: BotRuntime): number | null {
   if (!rt.status) return null;
   let sum = 0;
+  let known = 0;
   for (const t of rt.status.data) {
-    if (typeof t.profit_abs === 'number' && Number.isFinite(t.profit_abs)) sum += t.profit_abs;
+    if (typeof t.profit_abs === 'number' && Number.isFinite(t.profit_abs)) {
+      sum += t.profit_abs;
+      known += 1;
+    }
   }
-  return sum;
+  // Positions whose prices the bot does not know (exchange backoff) have no profit: unknown, not 0
+  return rt.status.data.length > 0 && known === 0 ? null : sum;
 }
 
 export function startingCapitalOf(rt: BotRuntime, walletShared: boolean): number | null {
