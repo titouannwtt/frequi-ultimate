@@ -260,6 +260,26 @@ describe('DirectSource polling', () => {
     src.stop();
   });
 
+  it('cuts the day figure at the Paris midnight, not 24 hours back', async () => {
+    // NOW is 09:00 in Paris: closed 5 h ago is today, closed 12 h ago (21:00) and 30 h ago are not
+    const world = makeWorld();
+    world.closedTrades['live-bot.test:9400'] = [
+      closed(10, 4, 5),
+      closed(12, -1.5, 12),
+      closed(11, -2, 30),
+    ];
+    const { src, fleet } = await started(world);
+    await src.query.trades({ status: 'closed', mode: ['live'] });
+    for (let i = 0; i < 3; i++) {
+      src.flush();
+      await src.settle();
+    }
+    const m = botsOf(fleet)['local:9400'].metrics;
+    expect(m.realized_1d).toBeCloseTo(4, 9);
+    expect(m.realized_7d).toBeCloseTo(0.5, 9);
+    src.stop();
+  });
+
   it('draws no with-open equity curve without the sampled ledgers', async () => {
     const { src } = await started();
     const eq = await src.query.equity({ scope: { kind: 'fleet' }, mode: 'with_open' });

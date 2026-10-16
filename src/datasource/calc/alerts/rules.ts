@@ -313,10 +313,12 @@ export function evaluateBot(
     value: number | null,
     threshold: number | null,
     detail: string | null = null,
+    pair: string | null = null,
   ) => {
     conditions.push({
       type_id: t,
       subject,
+      pair,
       severity,
       value,
       threshold,
@@ -352,7 +354,7 @@ export function evaluateBot(
           const pct = p.profit_ratio * 100;
           if (pct < thrPct) {
             const sev: Severity = pct < thrPct * 2 ? 'critical' : 'warning';
-            push(cfg, t, String(p.trade_id), sev, pct, thrPct);
+            push(cfg, t, String(p.trade_id), sev, pct, thrPct, null, p.pair);
           }
         }
         break;
@@ -370,7 +372,7 @@ export function evaluateBot(
           const held = ctx.now_ms - p.open_ms;
           const ratio = held / median;
           if (ratio > mult) {
-            push(cfg, t, String(p.trade_id), 'warning', ratio, mult);
+            push(cfg, t, String(p.trade_id), 'warning', ratio, mult, null, p.pair);
           }
         }
         break;
@@ -386,7 +388,7 @@ export function evaluateBot(
             if (rate === null || liq === null) continue;
             const dist = Math.max(adversePct(p.side, rate, liq), 0);
             if (dist < thrPct) {
-              push(cfg, t, String(p.trade_id), 'critical', dist, thrPct);
+              push(cfg, t, String(p.trade_id), 'critical', dist, thrPct, null, p.pair);
             }
           }
         }
@@ -404,7 +406,7 @@ export function evaluateBot(
             const liqD = adversePct(p.side, rate, liq);
             const slD = adversePct(p.side, rate, sl);
             if (liqD < slD) {
-              push(cfg, t, String(p.trade_id), 'critical', liqD, slD);
+              push(cfg, t, String(p.trade_id), 'critical', liqD, slD, null, p.pair);
             }
           }
         }

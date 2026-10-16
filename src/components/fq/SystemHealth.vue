@@ -8,7 +8,7 @@ import { useFqConnectionStore } from '@/datasource/stores/connection';
 import { useFqHealthStore } from '@/datasource/stores/health';
 import type { Health, HealthReason } from '@/gateway/types.gen';
 
-import { budgetTone, hitRateTone, isKnownReason, sortReasons } from './lib/risk';
+import { budgetTone, hasFigureDetail, hitRateTone, isKnownReason, sortReasons } from './lib/risk';
 
 /**
  * System health (02 section 4.1 C6): the level and its reasons in words, the request budget, the
@@ -39,6 +39,13 @@ const level = computed(() => h.value?.level ?? 'degraded');
 
 function reasonText(r: HealthReason): string {
   return isKnownReason(r.code) ? t(`fq.sysh.reason.${r.code}`) : r.code;
+}
+/** The detail is a bare figure for some codes (`rate_budget_low`: the percentage left): worded here. */
+function reasonDetail(r: HealthReason): string | null {
+  if (!r.detail) return null;
+  if (!hasFigureDetail(r.code)) return r.detail;
+  const n = Number(r.detail);
+  return Number.isFinite(n) ? t(`fq.sysh.detail.${r.code}`, { n }, n) : r.detail;
 }
 const budget = computed(() => h.value?.rate_budget_pct ?? null);
 const hit = computed(() => h.value?.hit_rate ?? null);
@@ -75,7 +82,7 @@ const connState = computed(() => conn.status);
             />
             <span class="rt">
               <b>{{ reasonText(r) }}</b>
-              <span v-if="r.detail" class="mut"> · {{ r.detail }}</span>
+              <span v-if="reasonDetail(r)" class="mut"> · {{ reasonDetail(r) }}</span>
             </span>
             <Btn
               v-if="r.alert_id"

@@ -907,7 +907,7 @@ export class DirectSource implements DataSource {
         backoff = backoff || lim.backoff_active;
       }
       if (backoff) {
-        reasons.push({ code: 'daemon_backoff', severity: 'warning', detail: null, alert_id: null });
+        reasons.push({ code: 'rate_backoff', severity: 'warning', detail: null, alert_id: null });
       }
     }
     const ages = [...this.rts.values()]

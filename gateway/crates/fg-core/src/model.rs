@@ -126,6 +126,8 @@ pub struct BotStateInfo {
 /// Figures of a bot. Realised profits are in stake currency.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, TS)]
 pub struct BotMetrics {
+    /// Realized profit of the calendar day of the configured zone (since its local midnight),
+    /// never the last 24 hours.
     pub realized_1d: Option<f64>,
     pub realized_7d: Option<f64>,
     pub realized_30d: Option<f64>,
@@ -185,6 +187,8 @@ pub struct Position {
     pub liquidation_price: Option<f64>,
     /// Distance from the current rate to the liquidation price, in percent of the rate.
     pub liq_distance_pct: Option<f64>,
+    /// Filled entry orders of the position, the first entry included (freqtrade's
+    /// `nr_of_successful_entries`): 3 means the entry plus two safety orders.
     pub dca_entries: u32,
     pub open_ms: i64,
     pub duration_ms: i64,
@@ -265,9 +269,71 @@ pub enum HealthLevel {
     Critical,
 }
 
+/// The stable machine codes of [`HealthReason::code`]. A client translates them; the text of a
+/// reason is never part of the contract. `detail` carries only language-free values: a percentage
+/// without its unit or sentence (`rate_budget_low`: the share still available, `20`), a count
+/// (`rate_limit_events`: bots concerned), a ratio (`3/24`), names or codes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[serde(rename_all = "snake_case")]
+pub enum HealthReasonCode {
+    /// The daemon (ftcache) did not answer three times in a row.
+    DaemonUnreachable,
+    /// The digest of the daemon is older than its limit.
+    DigestStale,
+    /// A rate limiter of the daemon is in backoff after a 429.
+    RateBackoff,
+    /// Less than 20 % of the request budget of the exchange is left. `detail`: the percentage left.
+    RateBudgetLow,
+    /// Every bot is offline. `detail`: `offline/total`.
+    AllBotsOffline,
+    /// Some bots are offline. `detail`: `offline/total` (the direct mode lists their names).
+    BotsOffline,
+    /// Some ledgers cannot be read. `detail`: `n (code n, ...)`.
+    LedgerUnreadable,
+    /// Bots met 429 recently. `detail`: how many bots.
+    RateLimitEvents,
+    /// Direct mode only: sessions expired. `detail`: the names of the bots.
+    AuthExpired,
+    /// Direct mode only: data older than its limit. `detail`: the names of the bots.
+    DataStale,
+}
+
+impl HealthReasonCode {
+    pub const ALL: [Self; 10] = [
+        Self::DaemonUnreachable,
+        Self::DigestStale,
+        Self::RateBackoff,
+        Self::RateBudgetLow,
+        Self::AllBotsOffline,
+        Self::BotsOffline,
+        Self::LedgerUnreadable,
+        Self::RateLimitEvents,
+        Self::AuthExpired,
+        Self::DataStale,
+    ];
+
+    /// The wire form.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::DaemonUnreachable => "daemon_unreachable",
+            Self::DigestStale => "digest_stale",
+            Self::RateBackoff => "rate_backoff",
+            Self::RateBudgetLow => "rate_budget_low",
+            Self::AllBotsOffline => "all_bots_offline",
+            Self::BotsOffline => "bots_offline",
+            Self::LedgerUnreadable => "ledger_unreadable",
+            Self::RateLimitEvents => "rate_limit_events",
+            Self::AuthExpired => "auth_expired",
+            Self::DataStale => "data_stale",
+        }
+    }
+}
+
 /// Why the health level is what it is.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 pub struct HealthReason {
+    /// One of [`HealthReasonCode`] (a string on the wire: a client shows an unknown code as is).
     pub code: String,
     pub severity: Severity,
     pub detail: Option<String>,
@@ -279,6 +345,8 @@ pub struct HealthReason {
 pub struct Health {
     pub level: HealthLevel,
     pub reasons: Vec<HealthReason>,
+    /// Share of the request budget of the exchange that is used (0 to 100), the most used limiter
+    /// of the daemon. High is bad: `100 - rate_budget_pct` is what is left.
     pub rate_budget_pct: Option<f64>,
     pub backoff_active: bool,
     pub hit_rate: Option<f64>,
@@ -396,6 +464,7 @@ pub struct ScopeTotals {
     /// Sum of the bots' own `max_open_trades` that are known.
     pub max_open_trades: Option<u32>,
     pub realized_today: Option<f64>,
+    /// Sum of the bots' `realized_1d`: the calendar day, like `realized_today`.
     pub realized_1d: Option<f64>,
     pub realized_7d: Option<f64>,
     pub realized_30d: Option<f64>,

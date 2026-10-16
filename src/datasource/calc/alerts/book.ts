@@ -158,7 +158,10 @@ export class AlertBook {
   static fromState(state: BookState): AlertBook {
     const b = new AlertBook();
     for (const t of state.tracked) {
-      b.tracked.set(keyId(t.alert), structuredClone(t));
+      const copy = structuredClone(t);
+      // A state saved before the pair existed has no such key
+      copy.alert.pair ??= null;
+      b.tracked.set(keyId(t.alert), copy);
     }
     b.silences = structuredClone(state.silences);
     b.nextSilence = state.next_silence;
@@ -244,6 +247,7 @@ export class AlertBook {
           type_id: key.type_id,
           bot_key: key.bot_key,
           subject: key.subject,
+          pair: c.pair ?? null,
           severity: c.severity,
           value: c.value,
           threshold: c.threshold,
@@ -268,6 +272,7 @@ export class AlertBook {
     entry.alert.value = c.value;
     entry.alert.threshold = c.threshold;
     entry.alert.detail = c.detail;
+    entry.alert.pair = c.pair ?? null;
     entry.alert.last_seen_ms = nowMs;
 
     let kind: TransitionKind | null = null;

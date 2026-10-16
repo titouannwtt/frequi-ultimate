@@ -17,7 +17,7 @@ use fg_core::alerts::{
 use fg_core::identity::BotKey;
 use fg_core::model::{
     BotConfigSummary, BotDetail, BotMode, BotStatus, Event, EventKind, Freshness, FreshnessSource,
-    Health, HealthLevel, HealthReason, ReconSummary, Severity,
+    Health, HealthLevel, HealthReason, HealthReasonCode, ReconSummary, Severity,
 };
 use fg_core::protocol::{Channel, LogScope};
 use fg_core::time::normalize_ts_ms;
@@ -40,6 +40,8 @@ const INCIDENT_THROTTLE_MS: i64 = 60_000;
 const RATE_LIMIT_WINDOW_MS: i64 = 15 * MINUTE_MS;
 /// Drawdown of a mode is recomputed at most this often.
 const SCOPE_DD_REFRESH_MS: i64 = 30_000;
+/// Below this share of the exchange's request budget left, the health says so.
+const RATE_BUDGET_LOW_PCT: f64 = 20.0;
 /// The alert book is saved at least this often even without a transition.
 const BOOK_SAVE_EVERY_MS: i64 = 60_000;
 
@@ -1080,9 +1082,9 @@ impl Core {
 
     fn build_health(&self, now: i64) -> Health {
         let mut reasons = Vec::new();
-        let mut reason = |code: &str, severity: Severity, detail: Option<String>| {
+        let mut reason = |code: HealthReasonCode, severity: Severity, detail: Option<String>| {
             reasons.push(HealthReason {
-                code: code.to_owned(),
+                code: code.as_str().to_owned(),
                 severity,
                 detail,
                 alert_id: None,
@@ -1094,31 +1096,33 @@ impl Core {
             .digest_ok_ms
             .map(|t| (now - t).max(0) as f64 / 1000.0);
         if self.daemon.digest_failures >= 3 {
-            reason("daemon_unreachable", Severity::Warning, None);
+            reason(HealthReasonCode::DaemonUnreachable, Severity::Warning, None);
         } else if digest_age_s
             .is_some_and(|a| a * 1000.0 > fg_core::calc::freshness::DIGEST_STALE_MS as f64)
         {
-            reason("digest_stale", Severity::Warning, None);
+            reason(HealthReasonCode::DigestStale, Severity::Warning, None);
         }
-        // Rate budgets and backoff of the daemon.
-        let mut budget_pct: Option<f64> = None;
+        // Rate budgets and backoff of the daemon: the figure published is the share used, the
+        // most used limiter (high is bad, like the direct mode and the gauge that shows it).
+        let mut left_pct: Option<f64> = None;
         let mut backoff = false;
         if let Some((st, _)) = &self.daemon.status {
             for b in st.rate_limiters.values() {
                 if let Some(p) = b.available_pct() {
-                    budget_pct = Some(budget_pct.map_or(p, |m: f64| m.min(p)));
+                    left_pct = Some(left_pct.map_or(p, |m: f64| m.min(p)));
                 }
                 backoff |= b.backoff_active.unwrap_or(false);
             }
         }
+        let budget_pct = left_pct.map(|p| 100.0 - p);
         if backoff {
-            reason("rate_backoff", Severity::Warning, None);
+            reason(HealthReasonCode::RateBackoff, Severity::Warning, None);
         }
-        if budget_pct.is_some_and(|p| p < 20.0) {
+        if left_pct.is_some_and(|p| p < RATE_BUDGET_LOW_PCT) {
             reason(
-                "rate_budget_low",
+                HealthReasonCode::RateBudgetLow,
                 Severity::Warning,
-                budget_pct.map(|p| format!("{p:.0}% left")),
+                left_pct.map(|p| format!("{p:.0}")),
             );
         }
         // Bots.
@@ -1130,13 +1134,13 @@ impl Core {
             .count();
         if total > 0 && offline == total {
             reason(
-                "all_bots_offline",
+                HealthReasonCode::AllBotsOffline,
                 Severity::Critical,
                 Some(format!("{offline}/{total}")),
             );
         } else if offline > 0 {
             reason(
-                "bots_offline",
+                HealthReasonCode::BotsOffline,
                 Severity::Warning,
                 Some(format!("{offline}/{total}")),
             );
@@ -1156,7 +1160,7 @@ impl Core {
                 .map(|(code, n)| format!("{code} {n}"))
                 .collect();
             reason(
-                "ledger_unreadable",
+                HealthReasonCode::LedgerUnreadable,
                 Severity::Warning,
                 Some(format!("{total} ({})", by_code.join(", "))),
             );
@@ -1172,7 +1176,7 @@ impl Core {
             .count();
         if rate_limited > 0 {
             reason(
-                "rate_limit_events",
+                HealthReasonCode::RateLimitEvents,
                 Severity::Warning,
                 Some(rate_limited.to_string()),
             );
@@ -1342,7 +1346,7 @@ impl Core {
             ts_ms: now,
             bot_key: a.bot_key.as_deref().and_then(|b| b.parse().ok()),
             trade_id: None,
-            pair: None,
+            pair: a.pair.clone(),
             profit_abs: None,
             severity: Some(a.severity),
             detail: Some(detail),

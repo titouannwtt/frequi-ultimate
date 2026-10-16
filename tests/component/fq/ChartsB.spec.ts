@@ -31,7 +31,11 @@ import {
 } from '../../../src/components/fq/fixtures/charts';
 import { itemsFromBots } from '../../../src/components/fq/lib/leaderboard';
 import { pnlPeriods } from '../../../src/datasource/calc/periods';
-import type { BotRow, DrawdownResult } from '../../../src/gateway/types.gen';
+import {
+  HEALTH_REASON_CODES,
+  type BotRow,
+  type DrawdownResult,
+} from '../../../src/gateway/types.gen';
 import { charts, liveCharts, resetCharts } from './chartMock';
 import { mountFq, setFqLocale, setupWorld, teardownWorld, type FqWorld } from './helpers';
 
@@ -475,6 +479,35 @@ describe('SystemHealth', () => {
     const w = mountFq(SystemHealth, { props: { health, nowMs: FIXTURE_NOW } });
     expect(w.text()).toContain('quantum_flux');
     expect(w.find('[data-testid=health-no-reason]').exists()).toBe(false);
+  });
+
+  it('words every reason code of the gateway in both languages (QA 2026-10-15: raw `rate_budget_low`)', () => {
+    for (const lang of ['en', 'fr'] as const) {
+      setFqLocale(lang);
+      for (const code of HEALTH_REASON_CODES) {
+        const health = structuredClone(world.fixture.health);
+        health.reasons = [{ code, severity: 'warning', detail: null, alert_id: null }];
+        const w = mountFq(SystemHealth, { props: { health, nowMs: FIXTURE_NOW } });
+        const text = w.find('.reasons b').text();
+        expect(text, `${lang} ${code}`).not.toBe(code);
+        expect(text, `${lang} ${code}`).not.toContain('fq.sysh');
+        w.unmount();
+      }
+    }
+  });
+
+  it('words the figure of a detail and leaves the others as they are', () => {
+    const health = structuredClone(world.fixture.health);
+    health.reasons = [
+      { code: 'rate_budget_low', severity: 'warning', detail: '20', alert_id: null },
+      { code: 'bots_offline', severity: 'warning', detail: '3/24', alert_id: null },
+      { code: 'rate_limit_events', severity: 'warning', detail: '1', alert_id: null },
+    ];
+    const text = mountFq(SystemHealth, { props: { health, nowMs: FIXTURE_NOW } }).text();
+    expect(text).toContain('20 % left');
+    expect(text).toContain('3/24');
+    expect(text).toContain('1 bot');
+    expect(text).not.toContain('20% left');
   });
 
   it('no reason: says so', () => {
