@@ -48,6 +48,8 @@ pub struct Opts {
     pub odd_status: Vec<(usize, fakebot::OddBody)>,
     /// `hyperliquid.sweep_timeout_s` of the gateway (default 40).
     pub sweep_timeout_s: Option<u32>,
+    /// `[candles]` of the gateway (default: the directories of this host).
+    pub candles: Option<fg_server::config::CandlesSection>,
 }
 
 impl Default for Opts {
@@ -67,6 +69,7 @@ impl Default for Opts {
             snapshot_every: Duration::from_millis(300),
             odd_status: Vec::new(),
             sweep_timeout_s: None,
+            candles: None,
         }
     }
 }
@@ -116,6 +119,9 @@ impl Gw {
         cfg.auth.actions_per_min = o.actions_per_min;
         if let Some(t) = o.sweep_timeout_s {
             cfg.hyperliquid.sweep_timeout_s = t;
+        }
+        if let Some(c) = o.candles {
+            cfg.candles = c;
         }
         cfg.storage.data_dir = state_dir.to_string_lossy().into_owned();
 

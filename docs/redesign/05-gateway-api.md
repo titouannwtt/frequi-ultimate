@@ -78,9 +78,58 @@ Toutes sous `/gw/v1`, sauf mention, avec session.
 | `GET /trades/export.csv` | Export CSV ; les cellules texte commençant par `=`, `+`, `-`, `@`, tabulation ou retour chariot sont préfixées d'une apostrophe. |
 | `GET /pnl/periods`, `/equity`, `/drawdown`, `/leaderboard`, `/risk` | Calendrier (fuseau Europe/Paris), courbes, drawdown réalisé et avec latent, classement, exposition. `scope=` ou `bots=` (liste de clés séparées par des virgules, tous du même mode). `/equity` prend aussi `mode=realized\|with_open`, `points=` (2 à 2000), `from=` et `to=` (ms, bornes incluses, `to` doit être supérieur ou égal à `from`) : la plage est découpée d'abord, la décimation s'applique ensuite à ce qui reste. Réponse `{points: [{ts_ms, value}], base}` où `base` est la valeur de la courbe juste avant `from` (`null` si la courbe commence dans la plage), pour lire la courbe comme le profit depuis le début de la période. |
 | `GET /health`, `/health/rate`, `/logs`, `/events`, `/pairs/{clé}`, `/market`, `/audit` | Santé, débit vers un bot, journaux, événements, paires d'un bot, marché, journal d'audit des écritures. `/pairs`, `/logs?bot=` et `/scope/bot:...` fonctionnent aussi pour un bot dont personne n'observe le canal (le détail est construit à la demande). |
+| `GET /candles?pair=&tf=&end=&limit=` | Bougies OHLCV historiques d'une paire, lues dans des fichiers feather de l'hôte, **sans aucun appel à l'exchange** (voir ci-dessous). |
 | `GET/PUT/DELETE /prefs?scope=` | Préférences synchronisées entre appareils (256 Ko au plus), version par `ETag` et `If-Match` (409 `state_mismatch` en cas de conflit). `scope=` (vide) est le document global, `scope=<bot_key>` celui d'un bot, sans `scope` le `GET` liste tous les documents. Un document jamais écrit répond `204` si la requête porte `missing=204` (le `404` s'afficherait en erreur à chaque chargement) et `404` sinon : un client qui ignore l'option prendrait le `204` pour un document. Le premier bootstrap peut les amorcer ; les suivants ne les écrasent jamais. |
 | `GET /alerts`, `POST /alerts/{id}/ack`, `POST /alerts/silence`, `DELETE /alerts/silence/{id}`, `GET/PUT /alerts/rules` | Alertes actives, acquittement, silences (une fin est obligatoire), règles. |
 | `POST /bots`, `PATCH /bots/{clé}`, `DELETE /bots/{clé}`, `POST /bots/{clé}/credentials` | Le registre est la découverte de l'hôte : répondent 501. |
+
+### 4.1 `GET /candles`
+
+Sert au graphique d'une paire : remonter avant la fenêtre que le bot garde en mémoire (`/pair_candles`) et
+afficher un timeframe que la stratégie du bot ne tourne pas. Lecture seule, session requise comme les autres
+routes ; les bougies sont des données de marché, pas des données d'un bot : aucune portée de session ne s'y applique.
+
+Paramètres : `pair` (obligatoire, `BTC/USDC:USDC`, uniquement `[A-Za-z0-9_/:.-]`, 64 caractères au plus, ni `..`
+ni début par `.` ou `/`), `tf` (obligatoire : `1m 3m 5m 15m 30m 1h 2h 4h 6h 8h 12h 1d 3d 1w`), `end` (optionnel,
+horodatage en ms, **exclusif** : seules les bougies qui ouvrent avant ; absent = les plus récentes), `limit`
+(défaut 1000, ramené dans [1, 5000]). Un paramètre absent ou illisible répond 400 `bad_request`.
+
+```json
+{ "pair": "BTC/USDC:USDC", "tf": "15m",
+  "candles": [[ts_ms, open, high, low, close, volume], ...],
+  "has_more": true, "first_available_ms": 1738946700000, "resampled_from": null }
+```
+
+`candles` est trié par ouverture croissante, au plus `limit` éléments, les plus proches de `end`. `has_more` dit
+qu'il existe des bougies plus anciennes que la première renvoyée : la page suivante se demande avec
+`end = candles[0][0]`. `first_available_ms` est l'ouverture de la plus ancienne bougie connue (`null` sans
+donnée). Une paire ou un timeframe sans donnée répond 200 avec `candles` vide.
+
+Sources (répertoires configurables, `[candles]` de la config, motif de nom par répertoire ; par défaut les deux
+ci-dessous, la config de production n'a rien à changer) :
+
+1. le cache du démon ftcache, `~/.freqtrade/ftcache/hyperliquid/futures/{paire}-{tf}.feather` : les 5000 bougies
+   les plus récentes, à jour ;
+2. l'historique long de freqtrade, `~/freqtrade/user_data/data/hyperliquid/futures/{paire}-{tf}-futures.feather`,
+   rafraîchi de temps en temps.
+
+`{paire}` est la paire avec `/` et `:` remplacés par `_`. Les deux sources sont fusionnées par horodatage ; en
+cas de doublon, la première (ftcache) l'emporte. Les lignes sans date, datées hors de 2000-2100 (les fichiers
+hebdomadaires de ftcache en contiennent : lignes à 0 et 1, dates divisées par un million) ou dont un prix n'est pas
+un nombre sont écartées.
+
+Un timeframe sans fichier est reconstruit depuis le plus fin des timeframes disponibles qui le divise exactement
+(`6h` depuis `1h` ou `2h`, `1w` depuis `1d`), sauf si un timeframe plus gros remonte plus loin d'au moins une tranche
+dans le passé (les fichiers des timeframes fins sont souvent les plus courts : l'historique prime). `resampled_from`
+nomme la base ; sinon `null`. Les tranches sont
+alignées sur l'époque UTC (la semaine s'ouvre donc le jeudi, comme celle de l'exchange). La plus ancienne tranche
+est omise quand les données commencent en son milieu (elle serait partielle) ; la plus récente, encore en
+formation, est gardée comme une bougie native. `1m` et `3m` n'ont pas de timeframe plus fin : vides sans fichier.
+
+Mémoire : les fichiers décodés sont gardés dans un cache LRU borné (`cache_series`, 24 par défaut, et
+`cache_max_rows`, 400 000 bougies soit environ 19 Mo), clé = chemin, date de modification et taille, relu dès que
+le fichier change. Un seul décodage à la fois, hors des threads async. Un fichier illisible (tronqué, autre schéma)
+est ignoré et journalisé.
 
 ## 5. WebSocket `/gw/v1/ws`
 
