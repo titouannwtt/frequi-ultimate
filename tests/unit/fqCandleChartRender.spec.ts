@@ -119,6 +119,44 @@ describe('CandleChart option rendered by ECharts', () => {
   });
 });
 
+describe('level lines of a coin under 1 (B601)', () => {
+  it('two top-ups of a coin under 1 are drawn at their own price, not rounded to the same one', () => {
+    const w = mount(BaseChart, {
+      props: { option: {}, renderer: 'svg', height: '400px' },
+      attachTo: document.body,
+    });
+    wrappers.push(w);
+    const chart = (w.vm as unknown as { chart: ECharts }).chart;
+    chart.resize({ width: 900, height: 400 });
+    const option = buildCandleOption(
+      input({
+        set: toCandleSet(makeCandles(300, 0.085)),
+        // SKY: renforts at 0,0941 and 0,0884
+        overlays: {
+          average: 0.0884,
+          safetyOrders: [
+            { price: 0.0941, state: 'filled', label: 'SO1' },
+            { price: 0.0884, state: 'filled', label: 'SO2' },
+          ],
+        },
+        fmtPrice: (v) => v.toFixed(4),
+        heightPx: 400,
+        rsi: false,
+      }),
+    );
+    chart.setOption({ ...option, animation: false }, { notMerge: true, lazyUpdate: false });
+    const y = (text: string): number => {
+      const m = new RegExp(`translate\\([\\d.-]+ ([\\d.-]+)\\)[^>]*>${text} [^<]*<`).exec(
+        w.element.innerHTML,
+      );
+      expect(m, text).not.toBeNull();
+      return Number(m![1]);
+    };
+    // Rounded to 2 decimals both were drawn at 0,09: the same y
+    expect(Math.abs(y('SO1') - y('SO2'))).toBeGreaterThan(14);
+  });
+});
+
 describe('pane layout of the candle chart (B193)', () => {
   const four = {
     main_plot: {},

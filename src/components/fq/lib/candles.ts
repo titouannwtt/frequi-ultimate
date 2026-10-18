@@ -1084,6 +1084,9 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
             silent: true,
             symbol: 'none',
             animation: false,
+            // ECharts rounds a marker line to 2 decimals by default: two top-ups of a coin at
+            // 0,09 (0,0941 and 0,0884) were both drawn at 0,09, on the same pixel (B601)
+            precision: 20,
             data: lines.map((l) => {
               const lp = input.labelPlan?.[l.id];
               return {
