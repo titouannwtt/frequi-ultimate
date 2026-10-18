@@ -5,12 +5,15 @@ import { useI18n } from 'vue-i18n';
 import { AdaptiveSheet, EmptyState } from '@/components/ds';
 import type { LadderOrder } from '@/components/ds';
 import { useTradeOrders } from '@/composables/useTradeOrders';
+import { positionToTradeRow } from '@/datasource/direct/mappers';
+import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPositionsStore } from '@/datasource/stores/positions';
 import type { BotKey } from '@/gateway/types.gen';
 
 import type { ActionId } from './lib/actions';
 import { waitingLevels } from './lib/chartTrades';
 import { pairLabel } from './lib/trades';
+import TradeChartFold from './TradeChartFold.vue';
 import TradeDrawerBody from './TradeDrawerBody.vue';
 import TradeDrawerFoot from './TradeDrawerFoot.vue';
 
@@ -32,8 +35,10 @@ const props = withDefaults(
     dcaMax?: number | null;
     orders?: LadderOrder[];
     inline?: boolean;
+    /** "Show the chart" of the trade, folded until asked for. Off where the page has its own chart. */
+    chart?: boolean;
   }>(),
-  { docked: false, open: true, tp: null, nextSo: null, dcaMax: null },
+  { docked: false, open: true, tp: null, nextSo: null, dcaMax: null, chart: true },
 );
 
 const emit = defineEmits<{ close: []; navigate: [id: ActionId] }>();
@@ -41,6 +46,12 @@ const emit = defineEmits<{ close: []; navigate: [id: ActionId] }>();
 const { t } = useI18n();
 const positions = useFqPositionsStore();
 const position = computed(() => positions.get(props.botKey, props.tradeId) ?? null);
+const fleet = useFqFleetStore();
+const chartTrade = computed(() =>
+  position.value
+    ? positionToTradeRow(position.value, fleet.bots[props.botKey]?.identity.mode ?? 'live')
+    : null,
+);
 // The drawer reads the orders of its own trade when the page did not hand them over: a drawer
 // opened from the fleet table or the journal has no other way to know its ladder
 const own = useTradeOrders(
@@ -88,6 +99,12 @@ const title = computed(() =>
         :title="t('fq.drawer.gone')"
         :hint="t('fq.drawer.goneHint')"
       />
+      <TradeChartFold
+        v-if="chart && chartTrade"
+        :key="`${botKey}/${tradeId}`"
+        :trade="chartTrade"
+        :position="position"
+      />
     </div>
     <footer v-if="position" class="sticky">
       <TradeDrawerFoot :position="position" @navigate="(id) => emit('navigate', id)" />
@@ -110,6 +127,12 @@ const title = computed(() =>
         icon="layers"
         :title="t('fq.drawer.gone')"
         :hint="t('fq.drawer.goneHint')"
+      />
+      <TradeChartFold
+        v-if="chart && chartTrade"
+        :key="`${botKey}/${tradeId}`"
+        :trade="chartTrade"
+        :position="position"
       />
     </div>
     <template v-if="position" #footer>

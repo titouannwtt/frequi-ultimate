@@ -8,7 +8,14 @@
 import type { OrderRow } from '@/datasource/types';
 import type { Position, Side, TradeRow } from '@/gateway/types.gen';
 
-import type { ClosedMark, GainMark, PendingKind, PendingOrder } from './candles';
+import type {
+  ClosedMark,
+  FillMark,
+  GainMark,
+  Overlays,
+  PendingKind,
+  PendingOrder,
+} from './candles';
 
 // ---- framing ----
 
@@ -206,6 +213,23 @@ export function gainFromPosition(
 
 // ---- closed trades ----
 
+/** What the chart needs of a trade (a position is turned into one with `positionToTradeRow`). */
+export type ChartTrade = Pick<
+  TradeRow,
+  | 'bot_key'
+  | 'trade_id'
+  | 'pair'
+  | 'side'
+  | 'open_ms'
+  | 'close_ms'
+  | 'open_rate'
+  | 'close_rate'
+  | 'profit_abs'
+  | 'profit_ratio'
+  | 'profit_unknown'
+  | 'exit_reason'
+>;
+
 /** Exit reason of a closed trade as text: the strategy's own words for a custom one. */
 export type ReasonText = (r: TradeRow['exit_reason']) => string;
 
@@ -214,7 +238,7 @@ export type ReasonText = (r: TradeRow['exit_reason']) => string;
  * profit is unknown is kept, without a result colour. Open trades (no close) are not closed trades.
  */
 export function closedMarks(
-  trades: readonly TradeRow[],
+  trades: readonly ChartTrade[],
   pair: string,
   reasonText: ReasonText,
 ): ClosedMark[] {
@@ -271,3 +295,25 @@ export function visibleClosed(
 /** A closed trade made money: null when its result is unknown. */
 export const markWin = (m: Pick<ClosedMark, 'profitAbs'>): boolean | null =>
   m.profitAbs === null ? null : m.profitAbs > 0;
+
+/**
+ * What the chart draws about a closed trade: its executions (entry, top-ups, exits) when the orders
+ * were read, and the entry-to-exit segment with the result, always. An exit that made money is
+ * green, short or long. Without orders only the segment remains: nothing is invented.
+ */
+export function closedTradeOverlays(
+  trade: ChartTrade,
+  fills: readonly FillMark[],
+  reasonText: ReasonText,
+): Overlays {
+  const open = trade.open_rate;
+  return {
+    fills: fills.map((f) =>
+      f.kind === 'exit' && f.win === undefined && open > 0
+        ? { ...f, win: trade.side === 'short' ? f.price < open : f.price > open }
+        : f,
+    ),
+    closed: closedMarks([trade], trade.pair, reasonText),
+    openTs: trade.open_ms > 0 ? trade.open_ms : null,
+  };
+}
