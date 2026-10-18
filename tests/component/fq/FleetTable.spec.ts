@@ -158,11 +158,21 @@ describe('FleetTable', () => {
     expect(w.find('thead').findAll('tr')).toHaveLength(1);
   });
 
-  it('shows six columns by default and keeps the others behind "Columns"', () => {
+  it('shows the profit of each bot by default and keeps the others behind "Columns"', () => {
     const w = mountTable(world.fixture.bots, { containerWidth: 1300 });
     const ids = (w.vm as unknown as { visibleColumnIds: () => string[] }).visibleColumnIds();
-    expect(ids).toEqual(['bot', 'latent', 'realized_30d', 'spark24h', 'trades', 'last_trade']);
-    for (const hidden of ['side', 'realized_1d', 'exposure', 'drawdown', 'age']) {
+    expect(ids).toEqual([
+      'bot',
+      'latent',
+      'realized_1d',
+      'realized_7d',
+      'realized_30d',
+      'realized_total',
+      'spark24h',
+      'trades',
+      'last_trade',
+    ]);
+    for (const hidden of ['side', 'exposure', 'drawdown', 'age']) {
       expect(ids).not.toContain(hidden);
     }
   });

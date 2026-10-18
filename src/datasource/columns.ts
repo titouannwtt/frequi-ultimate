@@ -57,14 +57,16 @@ export const COLUMN_REGISTRY: readonly ColumnSpec[] = [
   c('state', 'center', true, 0, ['fleet'], []),
   c('mode', 'center', true, 520, ['fleet'], []),
   c('market', 'left', true, 760, ['fleet'], []),
-  // The fleet table shows six columns (bot, open, 30 days, 24 h curve, positions, last trade);
-  // the side, the day, the exposure, the drawdown and the age are one click away ("Columns")
+  // The fleet table answers "which bot is profitable now, and over the last days": nine columns
+  // (bot, open, today, 7 days, 30 days, in total, 24 h curve, positions, last trade); the side, the
+  // exposure, the drawdown and the age are one click away ("Columns"). Before revision 1 of the
+  // defaults it showed six (`LEGACY_FLEET_DEFAULT`): a choice equal to that follows the new set.
   c('side', 'center', true, 600, ['fleet', ...TRADES], ['open', 'bot', 'closed', 'journal']),
   c('latent', 'right', true, 0, ['fleet'], ['fleet']),
-  c('realized_1d', 'right', true, 520, ['fleet'], []),
-  c('realized_7d', 'right', true, 600, ['fleet'], []),
+  c('realized_1d', 'right', true, 520, ['fleet'], ['fleet']),
+  c('realized_7d', 'right', true, 600, ['fleet'], ['fleet']),
   c('realized_30d', 'right', true, 360, ['fleet'], ['fleet']),
-  c('realized_total', 'right', true, 700, ['fleet'], []),
+  c('realized_total', 'right', true, 700, ['fleet'], ['fleet']),
   c('spark24h', 'center', false, 540, ['fleet'], ['fleet'], { gatewayOnly: true }),
   c('exposure', 'right', true, 600, ['fleet'], []),
   // Open slots, drawn as small bars
@@ -105,6 +107,16 @@ export const COLUMN_REGISTRY: readonly ColumnSpec[] = [
   c('closed_ago', 'right', true, 900, CLOSED, []),
   c('fee', 'right', true, 1000, CLOSED, []),
   c('mae_mfe', 'right', false, 860, CLOSED, ['journal'], { gatewayOnly: true }),
+];
+
+/** The columns the fleet table showed by default before the profit columns were added. */
+export const LEGACY_FLEET_DEFAULT: readonly string[] = [
+  'bot',
+  'latent',
+  'realized_30d',
+  'spark24h',
+  'trades',
+  'last_trade',
 ];
 
 const BY_ID = new Map(COLUMN_REGISTRY.map((col) => [col.id, col]));
