@@ -42,7 +42,8 @@ export function useJournal() {
   const prefs = useFqPrefsStore();
   const positions = useFqPositionsStore();
   const events = useFqEventsStore();
-  const scope = useScope();
+  // The Journal has its own bot filter: the bots unticked on the Fleet do not narrow it silently
+  const scope = useScope({ selection: false });
 
   // The instant the relative periods are cut from. It moves when the filters change or when the
   // user refreshes, never by itself: a list that reloaded every minute would lose its place.

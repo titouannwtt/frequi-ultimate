@@ -12,9 +12,9 @@ const REFRESH_MS = 5_000;
  * Detail of a scope (a bot, a group or the fleet) from the active source (`GET /scope/{scope}`
  * on the gateway, computed from the bots in direct mode). Keeps the last detail when a refresh
  * fails, flagged `error`, so a panel never goes blank. An answer that arrives after the scope
- * changed is dropped.
+ * changed is dropped. A scope of `null` reads nothing (the page already holds that detail).
  */
-export function useScopeDetail(scope: MaybeRefOrGetter<ScopeRef>) {
+export function useScopeDetail(scope: MaybeRefOrGetter<ScopeRef | null>) {
   const data = useDataSource();
   const fleet = useFqFleetStore();
 
@@ -30,6 +30,11 @@ export function useScopeDetail(scope: MaybeRefOrGetter<ScopeRef>) {
     if (!source) return;
     const mine = ++token;
     const ref_ = toValue(scope);
+    if (!ref_) {
+      detail.value = null;
+      error.value = null;
+      return;
+    }
     loading.value = true;
     try {
       const d = await source.query.scope(ref_);
@@ -55,7 +60,10 @@ export function useScopeDetail(scope: MaybeRefOrGetter<ScopeRef>) {
   }
 
   watch(
-    () => scopeKey(toValue(scope)),
+    () => {
+      const s = toValue(scope);
+      return s ? scopeKey(s) : '';
+    },
     () => {
       detail.value = null;
       void load();

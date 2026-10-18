@@ -11,13 +11,16 @@ import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { ScopeMode, Workspace } from '@/migration/schema';
 
+import FleetBotSelect from './FleetBotSelect.vue';
+
 /**
  * The scope controls of the Fleet (docs/redesign/05-friendly-plan.md, L4): Live / Dry / All (the
  * dry segment carries the number of dry bots, so nothing is hidden silently), a "Filter" button
  * that opens the search, the group and tag chips and, only when a bot is in alert, the "In alert"
  * chip, and the page layout (Monitoring, Incident, Analysis) in a menu. The state lives in
  * `useScope()`, not here, so the selection survives a change of page. An active filter is always
- * visible: the row stays open and the button counts it.
+ * visible: the row stays open and the button counts it. The "Bots N/M" button beside the mode opens
+ * the list of bots to tick (FleetBotSelect); it too stands out as soon as a bot is unticked.
  */
 const { t } = useI18n();
 const scope = useScope();
@@ -130,6 +133,7 @@ defineExpose({ focusSearch });
         :label="t('fq.scope.modeLabel')"
         @update:model-value="scope.mode.value = $event"
       />
+      <FleetBotSelect />
       <Btn
         class="fbtn"
         variant="ghost"

@@ -627,6 +627,8 @@ export class GatewaySource implements DataSource {
         const keys = this.d.getGroups?.().find((g) => g.id === s.id)?.botKeys ?? [];
         return keys.length > 0 ? { bots: keys.join(',') } : null;
       }
+      case 'bots':
+        return s.botKeys.length > 0 ? { bots: s.botKeys.join(',') } : null;
     }
   }
 
@@ -742,15 +744,20 @@ export class GatewaySource implements DataSource {
     equity: async (q: EquityQuery): Promise<EquitySeries> => {
       const sp = this.scopeParams(q.scope, q.tradingMode);
       if (!sp) return { mode: q.mode, points: [], unavailable: 'empty_scope', asOfMs: this.now() };
-      const r = await this.getJson<{ points: Array<{ ts_ms: number; value: number }> }>('/equity', {
+      const r = await this.getJson<{
+        points: Array<{ ts_ms: number; value: number }>;
+        base?: number | null;
+      }>('/equity', {
         ...sp,
         from: q.fromMs,
+        to: q.toMs,
         points: q.points,
         mode: q.mode,
       });
       return {
         mode: q.mode,
         points: r.points.map((p) => [p.ts_ms, p.value] as [number, number]),
+        base: r.base ?? null,
         unavailable: null,
         asOfMs: this.now() + this.status.value.clockSkewMs,
       };
@@ -802,8 +809,13 @@ export class GatewaySource implements DataSource {
       }
       const fleet = await this.fleetDetail();
       if (s.kind === 'fleet') return fleet;
-      // A group is the fleet restricted to its bots (a group may mix modes: one block per mode).
-      const members = new Set(this.d.getGroups?.().find((g) => g.id === s.id)?.botKeys ?? []);
+      // A group, or the bots ticked, is the fleet restricted to those bots (they may mix modes:
+      // one block per mode).
+      const members = new Set(
+        s.kind === 'bots'
+          ? s.botKeys
+          : (this.d.getGroups?.().find((g) => g.id === s.id)?.botKeys ?? []),
+      );
       const bots = fleet.bots.filter((b) => members.has(b.bot_key));
       const positions = fleet.positions.filter((p) => members.has(p.bot_key));
       let drawdown: DrawdownResult | null = null;

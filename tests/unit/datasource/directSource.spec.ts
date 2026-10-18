@@ -338,6 +338,89 @@ describe('DirectSource polling', () => {
     src.stop();
   });
 
+  it('cuts the realized curve to a range before thinning it, and gives the value before it', async () => {
+    const world = makeWorld();
+    // Closed 40, 30, 20, 10 and 5 hours ago: +1, +2, +4, +8, +16
+    world.closedTrades['live-bot.test:9400'] = [
+      closed(1, 1, 40),
+      closed(2, 2, 30),
+      closed(3, 4, 20),
+      closed(4, 8, 10),
+      closed(5, 16, 5),
+    ];
+    const { src } = await started(world);
+    const hour = 3_600_000;
+    const live = { kind: 'bots' as const, botKeys: ['local:9400'] };
+    const all = await src.query.equity({ scope: live, mode: 'realized' });
+    expect(all.points.map((p) => p[1])).toEqual([1, 3, 7, 15, 31]);
+    expect(all.base).toBeNull();
+    // From 25 h ago: the two oldest trades are before the range, their sum is the base
+    const range = await src.query.equity({
+      scope: live,
+      mode: 'realized',
+      fromMs: NOW - 25 * hour,
+    });
+    expect(range.points.map((p) => p[1])).toEqual([7, 15, 31]);
+    expect(range.base).toBe(3);
+    // To 8 h ago: the last trade is left out, the first is still before the range
+    const upTo = await src.query.equity({
+      scope: live,
+      mode: 'realized',
+      fromMs: NOW - 25 * hour,
+      toMs: NOW - 8 * hour,
+    });
+    expect(upTo.points.map((p) => p[1])).toEqual([7, 15]);
+    // Thinning comes after the cut: a short range keeps its own first and last points
+    const thin = await src.query.equity({
+      scope: live,
+      mode: 'realized',
+      fromMs: NOW - 25 * hour,
+      points: 2,
+    });
+    expect(thin.points.map((p) => p[1])).toEqual([7, 31]);
+    src.stop();
+  });
+
+  it('cuts the curve with the open positions to a range too', async () => {
+    const world = makeWorld();
+    world.history = {
+      bots: [
+        {
+          bot_name: 'hippo_live',
+          data: [
+            [NOW - 3 * 3_600_000, 0, 0, 0],
+            [NOW - 2 * 3_600_000, 5, 3, 1],
+            [NOW - 1 * 3_600_000, 5, -2, 1],
+          ],
+        },
+      ],
+    };
+    const { src } = await started(world);
+    const eq = await src.query.equity({
+      scope: { kind: 'fleet' },
+      mode: 'with_open',
+      fromMs: NOW - 2.5 * 3_600_000,
+      toMs: NOW - 1.5 * 3_600_000,
+    });
+    expect(eq.points.map((p) => p[1])).toEqual([8]);
+    expect(eq.base).toBe(0);
+    src.stop();
+  });
+
+  it('restricts a scope to the bots ticked', async () => {
+    const { src } = await started();
+    const none = await src.query.scope({ kind: 'bots', botKeys: ['local:9056'] });
+    expect(none.bots.map((b) => b.bot_key)).toEqual(['local:9056']);
+    const rows = await src.query.periods({
+      unit: 'day',
+      scope: { kind: 'bots', botKeys: ['local:9056'] },
+      tz: 'UTC',
+      n: 3,
+    });
+    expect(rows.reduce((a, r) => a + r.profit_abs, 0)).toBe(0);
+    src.stop();
+  });
+
   it('draws no with-open equity curve without the sampled ledgers', async () => {
     const { src } = await started();
     const eq = await src.query.equity({ scope: { kind: 'fleet' }, mode: 'with_open' });

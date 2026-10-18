@@ -1,10 +1,16 @@
 import { computed, reactive } from 'vue';
 
-import type { BotKey, BotRow } from '@/gateway/types.gen';
+import type { BotKey, BotMode, BotRow } from '@/gateway/types.gen';
 import type { ScopeMode, Workspace } from '@/migration/schema';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
 import type { ScopeRef } from '@/datasource/types';
+import {
+  figuresScope,
+  selectedAmong,
+  withBotToggled,
+  withSelection,
+} from '@/components/fq/lib/botSelection';
 
 /**
  * The FleetScope shared by every page (02 section 3.1): trading mode, search, groups, tags,
@@ -40,7 +46,16 @@ export function modeAllows(bot: BotRow, mode: ScopeMode): boolean {
   return m === mode;
 }
 
-export function useScope() {
+export interface UseScopeOptions {
+  /**
+   * Apply the bots ticked in the "Bots N/M" list (default). The Journal turns it off: it has its
+   * own bot filter, and a hidden selection would narrow it without saying so.
+   */
+  selection?: boolean;
+}
+
+export function useScope(options: UseScopeOptions = {}) {
+  const applySelection = options.selection !== false;
   const prefs = useFqPrefsStore();
   const fleet = useFqFleetStore();
 
@@ -62,10 +77,38 @@ export function useScope() {
     return keys;
   });
 
+  // ---- the bots ticked ("Bots N/M"): the exceptions are stored, see botSelection.ts ----
+  const excluded = computed(() => new Set<BotKey>(prefs.settings.scope.excluded ?? []));
+  /** The bots the list offers: those of the trading mode. */
+  const pickable = computed<BotRow[]>(() => fleet.list.filter((b) => modeAllows(b, mode.value)));
+  const pickableKeys = computed<BotKey[]>(() => pickable.value.map((b) => b.bot_key));
+  const selectedKeys = computed<BotKey[]>(() => selectedAmong(pickableKeys.value, excluded.value));
+  /** Some bot of the mode is unticked. */
+  const narrowed = computed(
+    () => applySelection && selectedKeys.value.length < pickable.value.length,
+  );
+
+  function saveExcluded(next: BotKey[]): void {
+    prefs.update('scope', { ...prefs.settings.scope, excluded: next });
+  }
+  /** Tick exactly `keys` among the bots of the mode. */
+  function setSelected(keys: Iterable<BotKey>): void {
+    const known = fleet.loaded ? new Set(fleet.list.map((b) => b.bot_key)) : undefined;
+    saveExcluded(
+      withSelection(prefs.settings.scope.excluded ?? [], pickableKeys.value, new Set(keys), known),
+    );
+  }
+  function toggleBot(botKey: BotKey, on: boolean): void {
+    saveExcluded(withBotToggled(prefs.settings.scope.excluded ?? [], botKey, on));
+  }
+  const selectAll = () => setSelected(pickableKeys.value);
+  const selectNone = () => setSelected([]);
+
   const bots = computed<BotRow[]>(() => {
     const botTags = prefs.settings.fleet.botCustomTags;
     return fleet.list.filter((b) => {
       if (!modeAllows(b, mode.value)) return false;
+      if (applySelection && excluded.value.has(b.bot_key)) return false;
       if (!matchesQuery(b, filters.query)) return false;
       if (groupKeys.value && !groupKeys.value.has(b.bot_key)) return false;
       if (filters.tags.length > 0) {
@@ -88,12 +131,32 @@ export function useScope() {
   });
 
   /**
-   * Scope of the fleet views (KPI strip, equity, risk): a single group when exactly one is
-   * filtered, the whole fleet otherwise. Unlike `scopeRef` it ignores the last selected bot.
+   * Scope of the fleet views (KPI strip, curve, risk): the bots ticked and, when groups are
+   * filtered, those of the group. A single group alone is that group, the whole fleet when nothing
+   * narrows it, an explicit list otherwise. Unlike `scopeRef` it ignores the last selected bot.
    */
-  const fleetScopeRef = computed<ScopeRef>(() =>
-    filters.groups.length === 1 ? { kind: 'group', id: filters.groups[0]! } : { kind: 'fleet' },
-  );
+  const fleetScopeRef = computed<ScopeRef>(() => {
+    if (narrowed.value) {
+      const keys = selectedKeys.value.filter((k) => !groupKeys.value || groupKeys.value.has(k));
+      return { kind: 'bots', botKeys: keys };
+    }
+    return filters.groups.length === 1
+      ? { kind: 'group', id: filters.groups[0]! }
+      : { kind: 'fleet' };
+  });
+
+  /**
+   * The same scope for the figures of one trading mode (a curve or a drawdown never mixes live and
+   * dry): the whole mode when every bot of it is ticked, the ticked ones of that mode otherwise.
+   */
+  function figuresScopeRef(figuresMode: BotMode): ScopeRef {
+    return figuresScope(
+      fleetScopeRef.value,
+      figuresMode,
+      (k) => fleet.bots[k]?.identity.mode ?? null,
+      fleet.list.filter((b) => b.identity.mode === figuresMode).map((b) => b.bot_key),
+    );
+  }
 
   function selectBot(botKey: BotKey | null): void {
     prefs.update('selectedBot', botKey);
@@ -106,5 +169,23 @@ export function useScope() {
     filters.attentionOnly = false;
   }
 
-  return { mode, workspace, filters, bots, botKeys, scopeRef, fleetScopeRef, selectBot, reset };
+  return {
+    mode,
+    workspace,
+    filters,
+    bots,
+    botKeys,
+    scopeRef,
+    fleetScopeRef,
+    figuresScopeRef,
+    pickable,
+    selectedKeys,
+    narrowed,
+    setSelected,
+    toggleBot,
+    selectAll,
+    selectNone,
+    selectBot,
+    reset,
+  };
 }

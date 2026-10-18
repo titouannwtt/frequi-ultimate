@@ -9,7 +9,7 @@ import { periodCutoffMs } from '@/datasource/calc/periods';
 import type { PeriodKey, Tz } from '@/gateway/types.gen';
 import type { ChartTokens } from '@/components/ds/lib/chartTheme';
 
-export type EquityPeriod = '24h' | '7d' | '30d' | 'all';
+export type EquityPeriod = '24h' | '7d' | '30d' | '90d' | '1y' | 'all';
 export type EquityDefinition = 'realized' | 'with_open';
 
 export const EQUITY_PERIODS: EquityPeriod[] = ['24h', '7d', '30d', 'all'];
@@ -17,6 +17,8 @@ export const EQUITY_PERIODS: EquityPeriod[] = ['24h', '7d', '30d', 'all'];
 /** Start of a period, or undefined for the whole history. */
 export function periodStartMs(period: EquityPeriod, nowMs: number, tz: Tz): number | undefined {
   if (period === 'all') return undefined;
+  // "90 days" counts 90 days of 24 h (the calendar keys only know months)
+  if (period === '90d') return nowMs - 90 * 86_400_000;
   return periodCutoffMs(period as PeriodKey, nowMs, tz);
 }
 

@@ -52,6 +52,10 @@ const scopedBots = computed(() => {
     const keys = new Set(prefs.settings.fleet.groups.find((g) => g.id === s.id)?.botKeys ?? []);
     return fleet.list.filter((b) => keys.has(b.bot_key));
   }
+  if (s.kind === 'bots') {
+    const keys = new Set(s.botKeys);
+    return fleet.list.filter((b) => keys.has(b.bot_key));
+  }
   return fleet.list;
 });
 

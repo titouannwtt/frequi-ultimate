@@ -16,3 +16,4 @@ export * from './periods';
 export * from './alerts';
 export * from './scopeTotals';
 export * from './tradePage';
+export * from './equityCurve';

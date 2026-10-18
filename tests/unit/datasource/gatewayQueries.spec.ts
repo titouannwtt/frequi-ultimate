@@ -261,6 +261,54 @@ describe('GatewaySource curves, journal, logs, events, registry', () => {
     expect(h.fake.calls[0]!.params).toMatchObject({ scope: 'live', mode: 'with_open', points: 50 });
   });
 
+  it('asks the bots ticked as a `bots=` list, the range with `from` and `to`, and reads the base', async () => {
+    const h = setup({
+      'GET /equity': () => ({ points: [{ ts_ms: 5, value: 7 }], base: 3 }),
+    });
+    const r = await h.src.query.equity({
+      scope: { kind: 'bots', botKeys: ['local:1', 'local:3'] },
+      mode: 'realized',
+      fromMs: 1_000,
+      toMs: 9_000,
+      points: 600,
+    });
+    expect(h.fake.calls[0]!.params).toEqual({
+      bots: 'local:1,local:3',
+      from: 1_000,
+      to: 9_000,
+      points: 600,
+      mode: 'realized',
+    });
+    expect(r.base).toBe(3);
+    expect(r.points).toEqual([[5, 7]]);
+    // A gateway that sends no base (older) is read as "starts inside the range"
+    const old = setup({ 'GET /equity': () => ({ points: [] }) });
+    const o = await old.src.query.equity({ scope: { kind: 'fleet' }, mode: 'realized' });
+    expect(o.base).toBeNull();
+    expect(old.fake.calls[0]!.params).not.toHaveProperty('to');
+    // No bot ticked: nothing is asked, and the fleet is not asked instead
+    const none = await h.src.query.equity({
+      scope: { kind: 'bots', botKeys: [] },
+      mode: 'realized',
+    });
+    expect(none.points).toEqual([]);
+    expect(h.fake.calls).toHaveLength(1);
+  });
+
+  it('computes the detail of the bots ticked from the fleet rows, drawdown by `bots=`', async () => {
+    const h = setup(scopeRoutes);
+    const d = await h.src.query.scope({ kind: 'bots', botKeys: ['local:2'] });
+    expect(d.bots.map((b) => b.bot_key)).toEqual(['local:2']);
+    expect(d.totals).toHaveLength(1);
+    expect(d.totals[0]).toMatchObject({ mode: 'live', bots: 1 });
+    expect(h.fake.where((r) => r.url.includes('/drawdown'))[0]!.params).toEqual({
+      bots: 'local:2',
+    });
+    const empty = await h.src.query.scope({ kind: 'bots', botKeys: [] });
+    expect(empty.bots).toEqual([]);
+    expect(h.fake.where((r) => r.url.includes('/drawdown'))).toHaveLength(1);
+  });
+
   it('asks a group of its bots and answers nothing for an empty one', async () => {
     const h = setup({ 'GET /equity': () => ({ points: [] }) });
     await h.src.query.equity({ scope: { kind: 'group', id: 'g' }, mode: 'realized' });

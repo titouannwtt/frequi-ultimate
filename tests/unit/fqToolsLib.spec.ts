@@ -328,6 +328,10 @@ describe('workspace resets', () => {
     expect(withoutColumns(cols, 'all')).toEqual({});
     expect(customizedColumns(cols)).toEqual(['fleet', 'open']);
     expect(COLUMN_PRESETS).toContain('journal');
-    expect(defaultScopeBlock()).toEqual({ mode: 'live', workspace: 'surveillance' });
+    expect(defaultScopeBlock()).toEqual({
+      mode: 'live',
+      workspace: 'surveillance',
+      excluded: [],
+    });
   });
 });

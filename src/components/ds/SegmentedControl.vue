@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends string | number">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import DsIcon from './DsIcon.vue';
 import { useEdgeFade } from './lib/useEdgeFade';
 import type { SegmentOption } from './types';
@@ -16,6 +16,14 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{ 'update:modelValue': [value: T] }>();
+
+// The one tab stop of the group: the selected option, or the first when none is (a value that is
+// not among the options, e.g. a custom range chosen elsewhere)
+const stopValue = computed(() =>
+  props.options.some((o) => o.value === props.modelValue)
+    ? props.modelValue
+    : props.options.find((o) => !o.disabled)?.value,
+);
 
 const root = ref<HTMLElement | null>(null);
 useEdgeFade(root);
@@ -66,7 +74,7 @@ function onKeydown(event: KeyboardEvent) {
       role="radio"
       :aria-checked="opt.value === modelValue"
       :aria-disabled="opt.disabled || undefined"
-      :tabindex="opt.value === modelValue ? 0 : -1"
+      :tabindex="opt.value === stopValue ? 0 : -1"
       @click="select(opt)"
     >
       <DsIcon v-if="opt.icon" :name="opt.icon" :size="13" />
