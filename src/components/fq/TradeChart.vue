@@ -101,7 +101,14 @@ const noOrders = computed(() => orders.loading.value === false && orders.rows.va
         variant="ghost"
         icon="chart-candlestick"
         data-testid="trade-chart-expand"
-        @click="nav.navigateAction('openTrade', { botKey: trade.bot_key, tradeId: trade.trade_id })"
+        @click="
+          nav.navigateAction('openTrade', {
+            botKey: trade.bot_key,
+            tradeId: trade.trade_id,
+            pair: trade.pair,
+            tf,
+          })
+        "
       >
         {{ t('fq.tradeChart.expand') }}
       </Btn>

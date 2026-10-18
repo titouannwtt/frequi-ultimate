@@ -40,7 +40,7 @@ import {
   tailLimit,
   tradeStartTs,
 } from './lib/candlesHistory';
-import { entryEdge, frameCandles, recentreOn } from './lib/chartTrades';
+import { closeOf, entryEdge, focusWindow, frameCandles, recentreOn } from './lib/chartTrades';
 import {
   ALL_OVERLAYS,
   BUILTIN_RSI,
@@ -717,17 +717,17 @@ async function loadOlder(): Promise<void> {
     if (gen === olderGen) older.value = { ...older.value, running: false };
   }
   if (gen !== olderGen || mine !== token) return;
-  // The trade is in reach: frame it. A trade too far for the first window is brought back by hand
+  // The trade is in reach: frame it, from its open (with a margin) to its end or to now. The window
+  // is given in moments: every index moved when the older candles were put in front, a time did
+  // not. A trade too far for a reasonable width is brought back like the edge marker does.
   const s = set.value;
   const tf = s?.timeframeMs ?? 0;
   if (s && tradeStart.value !== null && isCovered(firstTs.value, tradeStart.value, tf)) {
-    if (frame.value.framed) {
-      zoomWin.value = null;
-      zoomApplied.value = null;
-    } else {
-      await nextTick();
-      requestAnimationFrame(() => recentre());
-    }
+    zoomWin.value = null;
+    // The chart is drawn with the new set and the window of the first render before ours: a time
+    // window placed on a chart that is not drawn yet would be lost
+    await nextTick();
+    requestAnimationFrame(() => focusTrade());
   }
   scheduleLocalTail();
 }
@@ -920,6 +920,22 @@ const edge = computed(() => {
   if (a === null || b === null || props.overlays.openTs == null) return null;
   return entryEdge(props.overlays.openTs, a + ((b - a) * win.value.start) / 100, Date.now());
 });
+/** Bring the window onto the trade (its open less a margin, up to its end or now). */
+function focusTrade() {
+  const w = focusWindow({
+    openTs: props.overlays.openTs,
+    closeTs: closeOf(props.overlays.closed, props.overlays.openTs),
+    firstTs: firstTs.value,
+    lastTs: lastTs.value,
+    timeframeMs: set.value?.timeframeMs ?? 0,
+    max: props.frameMax,
+  });
+  if (!chartRef || !w) {
+    recentre();
+    return;
+  }
+  chartRef.dispatchAction({ type: 'dataZoom', startValue: w.startTs, endValue: w.endTs });
+}
 function recentre() {
   const a = firstTs.value;
   const b = lastTs.value;
@@ -1273,7 +1289,10 @@ const hasOverlay = (k: keyof OverlayToggles) => {
           ? t('fq.candle.localNoteResampled', { from: resampledFrom })
           : t('fq.candle.localNote')
       }}
-      <span v-if="staleText" data-testid="candle-local-stale">{{ staleText }}</span>
+      <template v-if="staleText"
+        ><span aria-hidden="true"> · </span
+        ><span data-testid="candle-local-stale">{{ staleText }}</span></template
+      >
     </p>
     <div
       v-if="controls && toggleKeys.some(hasOverlay)"
@@ -1389,7 +1408,7 @@ const hasOverlay = (k: keyof OverlayToggles) => {
           data-testid="candle-older-progress"
         >
           <span class="spin vs-spin" aria-hidden="true"></span>
-          {{ t('fq.candle.olderProgress', { n: older.candles }) }}
+          {{ t('fq.candle.olderProgress', { n: older.candles }, older.candles) }}
           <button
             type="button"
             class="cancel"
@@ -1440,8 +1459,10 @@ const hasOverlay = (k: keyof OverlayToggles) => {
           role="status"
           data-testid="candle-loading"
         >
-          <span class="spin vs-spin" aria-hidden="true"></span>
-          <span>{{ t('fq.candle.loading', { tf }) }}</span>
+          <span class="pill">
+            <span class="spin vs-spin" aria-hidden="true"></span>
+            <span>{{ t('fq.candle.loading', { tf }) }}</span>
+          </span>
         </div>
       </Transition>
       <div
@@ -1719,13 +1740,25 @@ const hasOverlay = (k: keyof OverlayToggles) => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
-  color: var(--fg-2);
+  background: color-mix(in srgb, var(--bg) 62%, transparent);
+  color: var(--fg);
   font-size: var(--t-sm);
   cursor: progress;
 }
 .veil.bare {
   background: none;
+}
+/* The words sit on a card of their own: over the candles they were hard to read */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 24px);
+  padding: 6px 12px;
+  border-radius: var(--r-2);
+  background: color-mix(in srgb, var(--bg-1) 94%, transparent);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--bg) 40%, transparent);
 }
 .spin {
   flex: none;

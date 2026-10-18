@@ -279,8 +279,14 @@ function liftLock(item: PairItem) {
 
 // ---- chart ----
 // A bot only serves the candles of its strategy timeframe: that is the default until one is picked
+// The timeframe of a link (`?tf=`, from a chart that was open on another one) is the first pick
+const queryTf = computed(() => {
+  const v = String(route.query.tf ?? '');
+  return /^\d+[mhdw]$/.test(v) ? v : null;
+});
 const tfPick = ref<string | null>(null);
-watch(botKey, () => (tfPick.value = null));
+watch(queryTf, (v) => v && (tfPick.value = v), { immediate: true });
+watch(botKey, () => (tfPick.value = queryTf.value));
 const ownTf = computed(() => bot.value?.identity.timeframe ?? null);
 const tf = computed({
   get: () => effectiveTf(tfPick.value, ownTf.value),
@@ -844,6 +850,18 @@ const configRows = computed(() => {
 }
 .drawer {
   order: 3;
+}
+/* A narrow chart pane: the tools (timeframes, display, open) take their own row and wrap, rather
+   than run off the pane */
+@container (max-width: 560px) {
+  .chart :deep(.ph) {
+    flex-wrap: wrap;
+  }
+  .chart :deep(.tools) {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    margin-left: 0;
+  }
 }
 @media (min-width: 1024px) {
   .botpage {

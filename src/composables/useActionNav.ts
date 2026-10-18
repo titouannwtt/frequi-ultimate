@@ -14,6 +14,8 @@ export interface ActionNavContext {
   botKey: BotKey;
   pair?: string | null;
   tradeId?: number | null;
+  /** Timeframe of the chart the user was looking at, when the link should keep it. */
+  tf?: string | null;
 }
 
 /**
@@ -50,7 +52,13 @@ export function useActionNav() {
     }
     switch (id) {
       case 'openTrade':
-        openBot(ctx.botKey, ctx.tradeId != null ? { trade: String(ctx.tradeId) } : {});
+        // The pair (and the timeframe) travel with the trade: the Bot page can draw the chart
+        // before the trade itself has come in, which it may have to fetch (a closed one)
+        openBot(ctx.botKey, {
+          ...(ctx.tradeId != null ? { trade: String(ctx.tradeId) } : {}),
+          ...(ctx.pair ? { pair: ctx.pair } : {}),
+          ...(ctx.tf ? { tf: ctx.tf } : {}),
+        });
         break;
       case 'config':
         openBot(ctx.botKey, { tab: 'config' });
