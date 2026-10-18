@@ -453,6 +453,8 @@ export default {
     localNote: 'Historique local, sans indicateurs de la stratégie',
     localNoteResampled:
       'Historique local reconstruit depuis {from}, sans indicateurs de la stratégie',
+    localStale: 'Dernière bougie locale il y a {age}',
+    age: { min: '{n} min', h: '{n} h', d: '{n} j' },
     loadOlder: 'Charger les bougies précédentes',
     loadOlderTip: "Lit l'historique local pour voir l'ouverture du trade",
     olderProgress: "Chargement de l'historique… {n} bougies ajoutées",

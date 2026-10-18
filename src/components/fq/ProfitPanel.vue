@@ -119,23 +119,27 @@ function applyRange() {
   period.value = 'custom';
   rangeOpen.value = false;
 }
-// Two days picked: that is a range, no need for another click
-watch(picked, (v) => {
-  if (v?.[0] && v[1]) applyRange();
-});
+// Two days picked by the user: that is a range, no need for another click. Only a real choice
+// applies: reopening the panel on the saved range must not close it again.
+function onPick(v: Date | Date[] | (Date | null)[] | null | undefined) {
+  picked.value = Array.isArray(v) ? (v.filter(Boolean) as Date[]) : v ? [v] : null;
+  if (picked.value?.[0] && picked.value[1]) applyRange();
+}
 const today = computed(() => new Date(props.nowMs ?? clock.value));
 
 // ---- what is asked ----
-// The clock ticks every second: the start of the period is cut to the minute so the key (and the
-// query) only changes when the question does
+// The clock ticks every second: the start of the period is cut to the minute. The key does not
+// carry it (a sliding start is the same question): the last answer stays on screen while the next
+// refresh, which reads the range when it runs, comes in.
 const minute = computed(() => Math.floor((props.nowMs ?? clock.value) / 60_000));
 const nowMin = computed(() => minute.value * 60_000);
 const range = computed(() =>
   profitRange(period.value, storedRange.value, nowMin.value, zone.value),
 );
-const rangeKey = computed(
-  () =>
-    `${period.value}|${range.value.fromMs ?? 0}|${range.value.toMs ?? 0}|${period.value === 'all' || period.value === 'custom' ? 0 : minute.value}`,
+const rangeKey = computed(() =>
+  period.value === 'custom'
+    ? `custom|${range.value.fromMs ?? 0}|${range.value.toMs ?? 0}`
+    : period.value,
 );
 const empty = computed(() => props.scope.kind === 'bots' && props.scope.botKeys.length === 0);
 
@@ -264,11 +268,12 @@ const trackedText = computed(() =>
     >
       <div class="range" data-testid="profit-range">
         <DatePicker
-          v-model="picked"
+          :model-value="picked"
           inline
           selection-mode="range"
           :max-date="today"
           :manual-input="false"
+          @update:model-value="onPick"
         />
         <div class="act">
           <Btn size="sm" variant="ghost" @click="rangeOpen = false">{{

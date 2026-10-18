@@ -114,3 +114,35 @@ export function nextTailDelay(nowMs: number, timeframeMs: number, lagMs = 5_000)
   const boundary = (Math.floor(nowMs / timeframeMs) + 1) * timeframeMs;
   return boundary - nowMs + lagMs;
 }
+
+/** The tail update asks for a few candles, not a page: a candle closes at a time. */
+export const TAIL_LIMIT = 50;
+
+/** Candles to ask for to catch up with `lastTs`: the few missing ones, never a whole page. */
+export function tailLimit(lastTs: number, nowMs: number, timeframeMs: number): number {
+  const missing = Math.ceil((nowMs - lastTs) / timeframeMs) + 2;
+  return Math.min(TAIL_LIMIT, Math.max(4, missing));
+}
+
+/**
+ * Whether the few candles asked leave a hole after the last one held (the tab slept longer than
+ * they cover): the chart then reloads instead of gluing a tail with a gap.
+ */
+export function tailHasGap(lastTs: number, firstTailTs: number | null, timeframeMs: number): boolean {
+  return firstTailTs !== null && firstTailTs - lastTs > timeframeMs;
+}
+
+/** Age of the last local candle when it is more than two candles old, else null. */
+export function staleAgeMs(lastTs: number | null, nowMs: number, timeframeMs: number): number | null {
+  if (lastTs === null || !(timeframeMs > 0)) return null;
+  const age = nowMs - lastTs;
+  return age > 2 * timeframeMs ? age : null;
+}
+
+/** An age as a count and a unit ('min' | 'h' | 'd'), rounded down, at least one minute. */
+export function ageParts(ageMs: number): { n: number; unit: 'min' | 'h' | 'd' } {
+  const min = Math.max(1, Math.floor(ageMs / 60_000));
+  if (min < 60) return { n: min, unit: 'min' };
+  const h = Math.floor(min / 60);
+  return h < 48 ? { n: h, unit: 'h' } : { n: Math.floor(h / 24), unit: 'd' };
+}
