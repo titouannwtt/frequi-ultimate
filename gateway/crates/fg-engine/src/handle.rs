@@ -28,7 +28,7 @@ use crate::error::EngineError;
 use crate::hub::{Hub, Subscription};
 use crate::published::{ChannelSnapshot, Published};
 use crate::queries::{
-    self, EquityMode, EquityPoint, JournalPage, JournalQuery, LeaderRow, OrderRow, ScopeError,
+    self, EquityCurve, EquityMode, JournalPage, JournalQuery, LeaderRow, OrderRow, ScopeError,
     ScopeRef,
 };
 use crate::shared::Shared;
@@ -601,7 +601,7 @@ impl EngineHandle {
         queries::drawdown(&self.published(), scope, self.now_ms()).map_err(Self::scope_err)
     }
 
-    /// An equity curve decimated to `points`.
+    /// An equity curve over `[from_ms, to_ms]` decimated to `points`.
     ///
     /// # Errors
     /// See [`ScopeError`].
@@ -609,10 +609,12 @@ impl EngineHandle {
         &self,
         scope: &ScopeRef,
         from_ms: i64,
+        to_ms: i64,
         points: usize,
         mode: EquityMode,
-    ) -> Result<Vec<EquityPoint>, EngineError> {
-        queries::equity(&self.published(), scope, from_ms, points, mode).map_err(Self::scope_err)
+    ) -> Result<EquityCurve, EngineError> {
+        queries::equity(&self.published(), scope, from_ms, to_ms, points, mode)
+            .map_err(Self::scope_err)
     }
 
     /// Bots of a mode ranked by realized profit over a period.

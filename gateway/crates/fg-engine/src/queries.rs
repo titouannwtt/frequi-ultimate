@@ -144,7 +144,34 @@ pub struct EquityPoint {
     pub value: f64,
 }
 
-/// An equity curve decimated to at most `points` points (the last point is always kept).
+/// An equity curve over a range, with the value it had just before the range starts.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EquityCurve {
+    /// Value of the last sample before `from_ms`, `None` when the series starts inside the range
+    /// (or after it). Lets the caller read the curve as the profit gained since the range began.
+    pub base: Option<f64>,
+    /// The samples of `[from_ms, to_ms]`, decimated.
+    pub points: Vec<EquityPoint>,
+}
+
+/// Cut a raw, time-ordered series to `[from_ms, to_ms]` (both included), then decimate what is left
+/// to at most `points` points. The cut comes first: decimating the whole history and cutting
+/// afterwards would leave a short range with a handful of points.
+#[must_use]
+pub fn cut_curve(raw: &[(i64, f64)], from_ms: i64, to_ms: i64, points: usize) -> EquityCurve {
+    let before = raw.partition_point(|(t, _)| *t < from_ms);
+    let upto = raw.partition_point(|(t, _)| *t <= to_ms).max(before);
+    EquityCurve {
+        base: before.checked_sub(1).map(|i| raw[i].1),
+        points: decimate(&raw[before..upto], points)
+            .into_iter()
+            .map(|(ts_ms, value)| EquityPoint { ts_ms, value })
+            .collect(),
+    }
+}
+
+/// An equity curve over `[from_ms, to_ms]` decimated to at most `points` points (the last point of
+/// the range is always kept).
 ///
 /// # Errors
 /// See [`scope_bots`].
@@ -152,9 +179,10 @@ pub fn equity(
     p: &Published,
     scope: &ScopeRef,
     from_ms: i64,
+    to_ms: i64,
     points: usize,
     mode: EquityMode,
-) -> Result<Vec<EquityPoint>, ScopeError> {
+) -> Result<EquityCurve, ScopeError> {
     let rows = scope_bots(p, scope)?;
     let data = data_of(p, &rows);
     let raw: Vec<(i64, f64)> = match mode {
@@ -178,11 +206,7 @@ pub fn equity(
             fg_core::calc::drawdown::merge_histories(&series)
         }
     };
-    let visible: Vec<(i64, f64)> = raw.into_iter().filter(|(t, _)| *t >= from_ms).collect();
-    Ok(decimate(&visible, points)
-        .into_iter()
-        .map(|(ts_ms, value)| EquityPoint { ts_ms, value })
-        .collect())
+    Ok(cut_curve(&raw, from_ms, to_ms, points))
 }
 
 /// Keep at most `n` points evenly spread, always including the first and the last.
@@ -422,4 +446,69 @@ pub fn journal(p: &Published, q: &JournalQuery) -> JournalPage {
 #[must_use]
 pub fn drawdown_abs(r: &DrawdownResult, def: DrawdownDef) -> f64 {
     r.get(def).abs
+}
+
+#[cfg(test)]
+mod curve_tests {
+    use super::*;
+
+    fn series(n: i64) -> Vec<(i64, f64)> {
+        (0..n).map(|i| (i * 1_000, i as f64)).collect()
+    }
+
+    #[test]
+    fn the_range_is_cut_before_the_decimation() {
+        let raw = series(1_000);
+        let c = cut_curve(&raw, 100_000, 199_000, 10);
+        assert!(c.points.len() <= 10);
+        assert_eq!(
+            c.points.first().unwrap().ts_ms,
+            100_000,
+            "first of the range"
+        );
+        assert_eq!(c.points.last().unwrap().ts_ms, 199_000, "last of the range");
+        // Decimated after the cut, the points spread over the range only.
+        assert!(
+            c.points
+                .iter()
+                .all(|p| (100_000..=199_000).contains(&p.ts_ms))
+        );
+        assert!(c.points.len() >= 9, "{}", c.points.len());
+    }
+
+    #[test]
+    fn both_ends_of_the_range_are_included() {
+        let raw = series(10);
+        let c = cut_curve(&raw, 2_000, 5_000, 100);
+        let ts: Vec<i64> = c.points.iter().map(|p| p.ts_ms).collect();
+        assert_eq!(ts, [2_000, 3_000, 4_000, 5_000]);
+    }
+
+    #[test]
+    fn the_base_is_the_last_value_before_the_range() {
+        let raw = series(10);
+        let c = cut_curve(&raw, 3_500, 100_000, 100);
+        assert_eq!(c.base, Some(3.0));
+        assert_eq!(c.points.first().unwrap().ts_ms, 4_000);
+        // The upper bound does not move the base.
+        assert_eq!(cut_curve(&raw, 3_500, 4_000, 100).base, Some(3.0));
+    }
+
+    #[test]
+    fn a_series_that_starts_inside_the_range_has_no_base() {
+        let raw = series(10);
+        assert_eq!(cut_curve(&raw, 0, i64::MAX, 100).base, None);
+        assert_eq!(cut_curve(&raw, -5_000, i64::MAX, 100).points.len(), 10);
+    }
+
+    #[test]
+    fn a_range_without_samples_is_empty_not_an_error() {
+        let raw = series(10);
+        assert!(cut_curve(&raw, 20_000, 30_000, 100).points.is_empty());
+        // `to` before `from`: nothing, and no panic.
+        let c = cut_curve(&raw, 5_000, 2_000, 100);
+        assert!(c.points.is_empty());
+        assert_eq!(c.base, Some(4.0));
+        assert!(cut_curve(&[], 0, i64::MAX, 10).points.is_empty());
+    }
 }

@@ -51,7 +51,7 @@ pub use handle::{AlertFilter, Engine, EngineHandle, EngineSources, EventQuery};
 pub use hub::Subscription;
 pub use proxy::{ProxyError, ProxyWrite};
 pub use published::{ChannelSnapshot, Published};
-pub use queries::{EquityMode, JournalQuery, JournalSort, OrderRow, ScopeRef};
+pub use queries::{EquityCurve, EquityMode, JournalQuery, JournalSort, OrderRow, ScopeRef};
 
 #[cfg(test)]
 mod testkit;
