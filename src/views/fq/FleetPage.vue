@@ -7,7 +7,6 @@ import { useRoute } from 'vue-router';
 import { ExcludedCount, Pane, SegmentedControl } from '@/components/ds';
 import { useNowMs } from '@/components/ds/lib/useNowMs';
 import {
-  EquityCurve,
   FleetAlerts,
   FleetKpis,
   FleetMap,
@@ -15,15 +14,16 @@ import {
   FleetTable,
   FleetVerdict,
   LogStream,
+  ProfitPanel,
   RiskPanel,
   ScopePanel,
   TradeDrawer,
   TradeTable,
   WatchList,
 } from '@/components/fq';
-import type { EquityPeriod } from '@/components/fq/lib/equity';
 import type { FleetSort } from '@/components/fq/lib/bots';
 import { alertsInScope, watchSelection } from '@/components/fq/lib/fleetPage';
+import { fleetKpiModel } from '@/components/fq/lib/kpis';
 import { lineFromPosition, type QuickFilter } from '@/components/fq/lib/trades';
 import { useActionNav } from '@/composables/useActionNav';
 import { useFleetNotices } from '@/composables/useFleetNotices';
@@ -33,6 +33,7 @@ import { useScopeDetail } from '@/composables/useScopeDetail';
 import { useShellBus } from '@/composables/useShellBus';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useFqAlertsStore } from '@/datasource/stores/alerts';
+import { useFqConnectionStore } from '@/datasource/stores/connection';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPositionsStore } from '@/datasource/stores/positions';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
@@ -43,14 +44,19 @@ import type { Workspace } from '@/migration/schema';
 /**
  * The Fleet page, calmer (docs/redesign/05-friendly-plan.md, L4). One question, "is everything
  * fine?", answered by a sentence; the active alerts as cards right under it; four figures; the
- * bots, the capital curve and the wallet risk summarised; and the five positions to watch, with
- * "See all the positions" for the full table. The workspaces (Monitoring, Incident, Analysis) are
- * a layout menu. The alert history (acknowledged, silenced, events) is behind the bell.
+ * Profit block (what the bots earned over a period, full width); the bots, each with what it
+ * earned today, over 7 and 30 days and in total, and the wallet risk summarised; and the five
+ * positions to watch, with "See all the positions" for the full table. The bots ticked in the
+ * "Bots N/M" list of the scope count in all of it, except the alerts and the verdict, which always
+ * watch the whole mode: an alert is never hidden by an unticked box. The workspaces (Monitoring,
+ * Incident, Analysis) are a layout menu. The alert history (acknowledged, silenced, events) is
+ * behind the bell.
  */
 const { t } = useI18n();
 const route = useRoute();
 const scope = useScope();
 const fleet = useFqFleetStore();
+const conn = useFqConnectionStore();
 const alerts = useFqAlertsStore();
 const positions = useFqPositionsStore();
 const prefs = useFqPrefsStore();
@@ -59,10 +65,11 @@ const nav = useActionNav();
 const clock = useNowMs();
 
 const phone = useMediaQuery('(max-width: 599px)');
-const desktop = useMediaQuery('(min-width: 1024px)');
 
 // ---- bots: a list or tiles (tiles are the default on a phone) ----
-const BOTS_SHOWN = 8;
+// Every ticked bot is in the table; on a phone the list stops there until the reader asks for more
+const BOTS_SHOWN_PHONE = 8;
+const botsShown = computed(() => (phone.value ? BOTS_SHOWN_PHONE : undefined));
 const storedView = useLocalStorage<'table' | 'map' | null>('fqu2.fleetView', null);
 const view = computed<'table' | 'map'>({
   get: () => storedView.value ?? (phone.value ? 'map' : 'table'),
@@ -91,17 +98,18 @@ const posFilter = ref<QuickFilter>('all');
 // The selected row of the full table: J and K move it, X asks to exit it
 const posSelected = ref<string | null>(null);
 
-// ---- capital curve ----
-const eqPeriod = ref<EquityPeriod>('7d');
-const EQ_PERIODS: EquityPeriod[] = ['24h', '7d', '30d'];
-
+// ---- profit and risk: the ticked bots of one mode ----
 /** Capital and risk never mix modes: "All" shows the live ones. */
 const figuresMode = computed<BotMode>(() => (scope.mode.value === 'dry' ? 'dry' : 'live'));
-// The curve is drawn as capital from the same starting capital as the "Capital total" tile; when
-// that capital is not known, it stays the cumulated gain and says so in its title
-const capitalBase = computed<number | null>(() => {
-  const block = fleetDetail.value?.totals.find((b) => b.mode === figuresMode.value);
-  return block && block.starting_capital.known > 0 ? block.starting_capital.total : null;
+const figuresScope = computed(() => scope.figuresScopeRef(figuresMode.value));
+// The latent profit now, from the same detail as the four figures so that both agree
+const latent = computed(() => {
+  const d = fleetDetail.value;
+  if (!d) return { value: null, state: 'pending' as const };
+  const block = d.totals.find((b) => b.mode === figuresMode.value);
+  if (!block) return { value: 0, state: 'ready' as const };
+  const m = fleetKpiModel(block, d, tick.value, conn.status.clockSkewMs, false);
+  return { value: m.openProfit, state: m.slots.openProfit.state };
 });
 
 // ---- workspaces ----
@@ -129,12 +137,18 @@ const activeAlerts = computed(() =>
 );
 
 // ---- what the owner must act on that no alert says (an expired session, a frozen bot, a
-// drawdown above its limit, an orphan position): read from the detail of the fleet, which the four
-// figures share ----
+// drawdown above its limit, an orphan position): read from the detail of the WHOLE fleet, not of the
+// ticked bots, so that unticking a bot never hides a problem. The four figures read the detail of
+// the ticked bots; when nothing is unticked both are the same request ----
 const { detail: fleetDetail, error: detailError } = useScopeDetail(() => scope.fleetScopeRef.value);
+const narrowed = computed(() => scope.fleetScopeRef.value.kind !== 'fleet');
+const { detail: wholeDetail, error: wholeError } = useScopeDetail(() =>
+  narrowed.value ? { kind: 'fleet' } : null,
+);
+const noticeDetail = computed(() => (narrowed.value ? wholeDetail.value : fleetDetail.value));
 const fleetNotices = useFleetNotices(
-  fleetDetail,
-  computed(() => detailError.value !== null),
+  noticeDetail,
+  computed(() => (narrowed.value ? wholeError.value : detailError.value) !== null),
 );
 
 // "See the bots" of a drawdown card: the bots by what they gain or lose, in view
@@ -218,7 +232,7 @@ useShortcuts([
 ]);
 
 const groups = computed(() => prefs.settings.fleet.groups);
-const showEquity = computed(() => ws.value !== 'incident');
+const showProfit = computed(() => ws.value !== 'incident');
 const showRisk = computed(() => ws.value !== 'incident');
 const showLogs = computed(() => ws.value === 'incident');
 const showPositions = computed(() => ws.value !== 'analysis');
@@ -257,6 +271,16 @@ const tableMeta = computed(() =>
     <FleetScope v-if="phone" class="scope" />
 
     <!-- Phone: what needs a decision first, then the bots, then the rest -->
+    <Pane v-if="showProfit" class="area profit" :title="t('fq.pg.fleet.profit.title')">
+      <ProfitPanel
+        :scope="figuresScope"
+        :mode="figuresMode"
+        :latent="latent.value"
+        :latent-state="latent.state"
+        :height="phone ? '240px' : ws === 'analysis' ? '460px' : '340px'"
+      />
+    </Pane>
+
     <div class="mid">
       <Pane
         ref="tableEl"
@@ -279,7 +303,7 @@ const tableMeta = computed(() =>
           v-model:sort="sort"
           :rows="scope.bots.value"
           :groups="groups"
-          :limit="BOTS_SHOWN"
+          :limit="botsShown"
           :selected-key="selectedBot"
           max-height="none"
           @select-bot="(k) => (panel = { kind: 'bot', botKey: k })"
@@ -290,7 +314,7 @@ const tableMeta = computed(() =>
           :rows="scope.bots.value"
           :groups="groups"
           :sort="sort"
-          :limit="BOTS_SHOWN"
+          :limit="botsShown"
           :selected-key="selectedBot"
           @select-bot="(k) => (panel = { kind: 'bot', botKey: k })"
         />
@@ -301,29 +325,10 @@ const tableMeta = computed(() =>
           <LogStream mode="compact" :limit="30" @open-bot="(k) => nav.openBot(k)" />
         </Pane>
 
-        <Pane
-          v-if="showEquity"
-          class="area equity"
-          :title="capitalBase !== null ? t('fq.pg.fleet.equity') : t('fq.pg.fleet.equityGain')"
-        >
-          <div class="eqwrap">
-            <EquityCurve
-              v-model:period="eqPeriod"
-              simple
-              :periods="EQ_PERIODS"
-              definition="with_open"
-              :baseline="capitalBase"
-              :scope="scope.fleetScopeRef.value"
-              :mode="figuresMode"
-              :height="desktop ? 'fill' : '240px'"
-            />
-          </div>
-        </Pane>
-
         <Pane v-if="showRisk" class="area risk" :title="t('fq.pg.fleet.risk.title')">
           <RiskPanel
             summary
-            :scope="scope.fleetScopeRef.value"
+            :scope="figuresScope"
             :mode="figuresMode"
             @open-bot="(k) => nav.openBot(k)"
             @open-reconciliation="nav.navigateAction('reconcile', { botKey: '' })"
@@ -437,9 +442,7 @@ const tableMeta = computed(() =>
   min-height: 0;
 }
 
-/* The bots, and beside them the curve and the risk. The curve takes the height the table leaves
-   it: a definite height down to the chart (a min-height alone leaves the percentage of the chart
-   unresolved, and the curve fell back to its 130 px floor under an empty pane). */
+/* The profit takes the whole width; under it the bots, and beside them the risk. */
 .mid {
   display: grid;
   gap: 18px;
@@ -451,19 +454,6 @@ const tableMeta = computed(() =>
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   align-content: start;
-}
-.eqwrap {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-.eqwrap > :deep(.eq) {
-  flex: 1 1 0;
-  min-height: 0;
-}
-.equity {
-  min-height: 300px;
 }
 .logs {
   max-height: 560px;
@@ -485,44 +475,22 @@ const tableMeta = computed(() =>
   }
 }
 
-/* Tablet: the curve and the risk side by side under the bots */
+/* Tablet: the logs of the Incident layout take the whole row */
 @media (min-width: 600px) and (max-width: 1023px) {
-  .side {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .side .logs {
     grid-column: 1 / -1;
   }
 }
 
-/* Desktop: the bots on the left, the curve and the risk stacked on the right */
+/* Desktop: the bots on the left, the risk on the right. Every ticked bot has its line, so the
+   table can be taller than the risk: the columns start at the top, no stretched empty card. */
 @media (min-width: 1024px) {
   .mid {
     grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
-    align-items: stretch;
-  }
-  .side {
-    grid-template-rows: minmax(0, 1fr) auto;
-    align-content: stretch;
-  }
-  .side .equity {
-    min-height: 300px;
+    align-items: start;
   }
   .side .logs {
     max-height: none;
-    grid-row: 1 / -1;
-  }
-  /* Analysis: the curve takes the whole width, taller */
-  .fleet[data-ws='analysis'] .mid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .fleet[data-ws='analysis'] .side {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-    grid-template-rows: auto;
-    order: -1;
-  }
-  .fleet[data-ws='analysis'] .side .equity {
-    min-height: 420px;
   }
 }
 

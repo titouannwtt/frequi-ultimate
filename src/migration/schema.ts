@@ -12,6 +12,8 @@ export const SETTINGS_KEY = 'fqu2.settings';
 export const GATEWAY_KEY = 'fqu2.gateway';
 export const MIGRATION_KEY = 'fqu2.migration';
 export const SETTINGS_VERSION = 1;
+/** Revision of the default columns of the tables (see `FqSettings.columnDefaultsRev`). */
+export const COLUMN_DEFAULTS_REV = 1;
 export const MIGRATION_VERSION = 1;
 
 export type Locale = 'fr' | 'en';
@@ -95,7 +97,17 @@ export interface FqSettings {
   scope: {
     mode: ScopeMode;
     workspace: Workspace;
+    /**
+     * Bots unticked in the "Bots N/M" list of the Fleet. Kept as the exceptions, not as the ticked
+     * ones, so that a bot that appears later is ticked.
+     */
+    excluded: BotKey[];
   };
+  /**
+   * Revision of the default columns the stored column choices were last compared with: a choice
+   * equal to an older default follows the new one (`upgradeSettings`), a different one is kept.
+   */
+  columnDefaultsRev: number;
   /**
    * Sections the user edited in the new UI. A later migration replay (because an old key changed)
    * never overwrites them.
@@ -190,7 +202,8 @@ export function defaultSettings(): FqSettings {
       notifications: { browser: false, types: {} },
     },
     plot: null,
-    scope: { mode: 'live', workspace: 'surveillance' },
+    scope: { mode: 'live', workspace: 'surveillance', excluded: [] },
+    columnDefaultsRev: COLUMN_DEFAULTS_REV,
     touched: [],
   };
 }

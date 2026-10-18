@@ -157,20 +157,43 @@ test.describe('Fleet on a desktop', () => {
     await expect(list).toHaveCount(0);
   });
 
-  test('the capital curve fills its panel, and the risk is one word and four lines', async ({
+  test('the profit block takes the whole width under the figures, and the risk is one word and four lines', async ({
     page,
   }) => {
     await page.goto('/dashboard');
-    const chart = page.locator('.equity [data-testid=equity-curve] > .chart.fill');
-    await expect(chart).toBeVisible({ timeout: 30_000 });
-    const body = await page.locator('.equity .pb').boundingBox();
-    const box = await chart.boundingBox();
-    expect(body && box).toBeTruthy();
-    // The chart takes the room under the figures: its bottom meets the bottom of the panel
-    expect(box!.height).toBeGreaterThan(150);
-    expect(body!.y + body!.height - (box!.y + box!.height)).toBeLessThan(24);
+    const panel = page.getByTestId('profit-panel');
+    await expect(panel.locator('.chart')).toBeVisible({ timeout: 30_000 });
+    const page_ = await page.getByTestId('fleet-page').boundingBox();
+    const block = await page.locator('.profit').boundingBox();
+    expect(page_ && block).toBeTruthy();
+    // Full width: it reaches both sides of the page, minus its padding
+    expect(block!.width).toBeGreaterThan(page_!.width - 80);
+    await expect(page.getByTestId('profit-figures')).toBeVisible();
     await expect(page.getByTestId('risk-level')).toBeVisible();
     await expect(page.locator('.risk dl.sum dt')).toHaveCount(4);
+  });
+
+  test('the bots ticked count in the figures and the table', async ({ page }) => {
+    await page.goto('/dashboard');
+    const toggle = page.getByTestId('fleet-bots-toggle');
+    await expect(toggle).toBeVisible({ timeout: 30_000 });
+    const live = liveBots();
+    await expect(page.getByTestId('fleet-bots-count')).toHaveText(`${live.length}/${live.length}`);
+    await toggle.click();
+    await expect(page.getByTestId('fleet-bots-list')).toBeVisible();
+    await page
+      .getByTestId(`fleet-bot-row-${botKey(live[0]!)}`)
+      .getByRole('checkbox')
+      .uncheck();
+    await expect(page.getByTestId('fleet-bots-count')).toHaveText(
+      `${live.length - 1}/${live.length}`,
+    );
+    await page.keyboard.press('Escape');
+    await expect(page.locator(`tr[data-bot-key="${botKey(live[0]!)}"]`)).toHaveCount(0);
+    // Back to everything
+    await toggle.click();
+    await page.getByTestId('fleet-bots-all').click();
+    await expect(page.getByTestId('fleet-bots-count')).toHaveText(`${live.length}/${live.length}`);
   });
 
   test('the bell opens the alert centre', async ({ page }) => {

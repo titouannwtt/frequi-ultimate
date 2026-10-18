@@ -53,6 +53,7 @@ import { AlertBook } from '../calc/alerts/book';
 import { defaultAlertRulesConfig, effectiveRulesFor, evaluateBot } from '../calc/alerts/rules';
 import { walletTotals, sumStartingCapital } from '../calc/capital';
 import { computeDrawdown, mergeHistories } from '../calc/drawdown';
+import { cutCurve } from '../calc/equityCurve';
 import { medianDurationMs, durationMs, parseAvgDurationMs, MIN_SAMPLES } from '../calc/duration';
 import { exposure } from '../calc/exposure';
 import { computeFreshness } from '../calc/freshness';
@@ -185,16 +186,6 @@ interface StoredAction {
   /** Settled result, or null while the request is in flight. */
   result: ActionResult | null;
   lockKey: string;
-}
-
-/** At most `n` evenly spaced points, first one kept. */
-function thin<T>(points: T[], n: number | undefined): T[] {
-  if (!n || points.length <= n) return points;
-  const step = points.length / n;
-  return Array.from(
-    { length: n },
-    (_, i) => points[Math.min(points.length - 1, Math.floor(i * step))]!,
-  );
 }
 
 const truncate = (s: string, n = 300): string => (s.length > n ? `${s.slice(0, n)}...` : s);
@@ -1259,6 +1250,10 @@ export class DirectSource implements DataSource {
         const g = this.deps.getGroups?.().find((x) => x.id === s.id);
         return g ? all.filter((rt) => g.botKeys.includes(rt.key)) : [];
       }
+      case 'bots': {
+        const keys = new Set(s.botKeys);
+        return all.filter((rt) => keys.has(rt.key));
+      }
     }
   }
 
@@ -1437,12 +1432,11 @@ export class DirectSource implements DataSource {
         if (!histories) {
           return { mode: q.mode, points: [], unavailable: 'no_history', asOfMs: this.now() };
         }
-        const merged = mergeHistories(histories).filter(
-          (p) => q.fromMs === undefined || p[0] >= q.fromMs,
-        );
+        const cut = cutCurve(mergeHistories(histories), q.fromMs, q.toMs, q.points);
         return {
           mode: q.mode,
-          points: thin(merged, q.points),
+          points: cut.points,
+          base: cut.base,
           unavailable: null,
           asOfMs: this.now(),
         };
@@ -1453,17 +1447,16 @@ export class DirectSource implements DataSource {
         .filter((r) => r.close_ms !== null && r.profit_abs !== null)
         .sort((a, b) => (a.close_ms as number) - (b.close_ms as number));
       let cum = 0;
-      let points: Array<[number, number]> = closed
-        .filter((r) => q.fromMs === undefined || (r.close_ms as number) >= q.fromMs)
-        .map((r) => {
-          cum += r.profit_abs as number;
-          return [r.close_ms as number, cum] as [number, number];
-        });
-      points = thin(points, q.points);
+      const all = closed.map((r) => {
+        cum += r.profit_abs as number;
+        return [r.close_ms as number, cum] as [number, number];
+      });
+      const cut = cutCurve(all, q.fromMs, q.toMs, q.points);
       const complete = bots.every((rt) => rt.closed?.complete === true);
       return {
         mode: q.mode,
-        points,
+        points: cut.points,
+        base: cut.base,
         unavailable: complete ? null : 'partial_history',
         asOfMs: this.now(),
       };

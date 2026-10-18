@@ -30,3 +30,13 @@ export function tomorrowAtMs(nowMs: number, tz: Tz, hour = 8): number {
   const target = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, hour, 0, 0);
   return fromLocal(tz, target);
 }
+
+/** `DD/MM` (FR) or `MM/DD` (EN), with the year (two digits) when the range is long. */
+export function formatDay(ms: number, tz: Tz, lang: string, withYear = false): string {
+  const d = new Date(toLocal(tz, ms));
+  const day = pad(d.getUTCDate());
+  const month = pad(d.getUTCMonth() + 1);
+  const year = pad(d.getUTCFullYear() % 100);
+  const base = lang === 'fr' ? `${day}/${month}` : `${month}/${day}`;
+  return withYear ? `${base}/${year}` : base;
+}

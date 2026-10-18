@@ -31,7 +31,7 @@ export function customizedColumns(columns: FqSettings['columns']): ColumnPreset[
   return COLUMN_PRESETS.filter((p) => columns[p] !== undefined);
 }
 
-/** The scope block back to its defaults: live, Surveillance. */
+/** The scope block back to its defaults: live, Surveillance, every bot ticked. */
 export function defaultScopeBlock(): FqSettings['scope'] {
-  return { mode: 'live', workspace: 'surveillance' };
+  return { mode: 'live', workspace: 'surveillance', excluded: [] };
 }

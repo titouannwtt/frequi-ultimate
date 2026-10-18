@@ -121,7 +121,7 @@ describe('useScope', () => {
     const s = scope.run(() => useScope())!;
     s.mode.value = 'dry';
     s.workspace.value = 'incident';
-    expect(prefs.settings.scope).toEqual({ mode: 'dry', workspace: 'incident' });
+    expect(prefs.settings.scope).toEqual({ mode: 'dry', workspace: 'incident', excluded: [] });
     expect(prefs.settings.touched).toContain('scope');
     scope.stop();
   });

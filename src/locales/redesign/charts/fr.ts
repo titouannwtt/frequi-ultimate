@@ -31,6 +31,8 @@ export default {
       '24h': '24 h',
       '7d': '7 j',
       '30d': '30 j',
+      '90d': '90 j',
+      '1y': '1 an',
       all: 'Tout',
     },
     variation: 'Variation sur {p}',

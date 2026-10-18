@@ -31,6 +31,8 @@ export default {
       '24h': '24 h',
       '7d': '7 d',
       '30d': '30 d',
+      '90d': '90 d',
+      '1y': '1 y',
       all: 'All',
     },
     variation: 'Change over {p}',

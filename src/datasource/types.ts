@@ -109,7 +109,9 @@ export interface ChannelUpdate {
 export type ScopeRef =
   | { kind: 'fleet' }
   | { kind: 'group'; id: string }
-  | { kind: 'bot'; botKey: BotKey };
+  | { kind: 'bot'; botKey: BotKey }
+  /** The bots ticked in the Fleet scope (an explicit list, all of the same mode for the curves). */
+  | { kind: 'bots'; botKeys: BotKey[] };
 
 export interface Page<T> {
   items: T[];
@@ -179,6 +181,8 @@ export type PeriodRow = PnlBucket;
 export interface EquityQuery {
   scope: ScopeRef;
   fromMs?: number;
+  /** Upper bound of the range (ms, included); the end of the history when absent. */
+  toMs?: number;
   points?: number;
   /** The named definition of the curve. */
   mode: 'realized' | 'with_open';
@@ -189,6 +193,11 @@ export interface EquitySeries {
   mode: 'realized' | 'with_open';
   /** `[ts_ms, cumulative profit]`, oldest first. */
   points: Array<[number, number]>;
+  /**
+   * Value of the curve just before `fromMs`; null when it starts inside the range. A curve read
+   * as "profit since the start of the period" is shifted by it.
+   */
+  base?: number | null;
   /** Why the series is missing or partial (direct mode), null when complete. */
   unavailable: string | null;
   asOfMs: number;
@@ -429,5 +438,7 @@ export function scopeKey(s: ScopeRef): string {
       return `group:${s.id}`;
     case 'bot':
       return `bot:${s.botKey}`;
+    case 'bots':
+      return `bots:${[...s.botKeys].sort().join(',')}`;
   }
 }
