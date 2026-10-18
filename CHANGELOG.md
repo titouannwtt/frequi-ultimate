@@ -4,12 +4,15 @@ All notable fork-specific changes are documented here. Upstream FreqUI changes a
 
 This fork is also documented in detail in [`CHANGELOG_FORK.md`](CHANGELOG_FORK.md).
 
-## [Unreleased]
+## [2.1.0] - 2026-10-18
 
 ### Added
 - Fleet page: a **Profit** block, full width under the four figures. It shows the profit of the ticked bots over 24 h, 7 d, 30 d, 90 d, 1 year, the whole history or a range of days, as two curves that start at zero where the period starts (the closed trades, and the closed trades with the open positions), with the realised and the open profit above them.
 - Fleet page: a **Bots N/M** button opens the list of bots to tick (search, All / None, a quick pick by group). The bots ticked count in the four figures, the Profit block, the table of bots, the positions to watch and the risk; live and dry keep their own figures. The alerts and the verdict still watch the whole mode. The choice is kept in the preferences, and a bot that appears later is ticked.
 - Gateway: `GET /equity` takes `to` (ms) beside `from`, cuts the range first and decimates after, and answers `base`, the value of the curve just before `from`.
+- Charts: the chart of any trade, open or closed, with its entry, top-ups and exit (Bot page, Journal sheet, trade drawer). A closed trade that ended beyond what the bot holds is read from the local history of the gateway.
+- Charts: "Load previous candles" reads the local history back to the open of the trade (gateway only; direct mode says the history needs the gateway). A timeframe change now loads that timeframe, with a loading veil over the previous chart. Needs the gateway route `GET /candles`.
+- Gateway: `GET /candles` serves OHLCV history read from the local candle files (ftcache cache and `user_data/data`), resampled when a timeframe has no file; no call to the exchange.
 
 ### Changed
 - Fleet page: the table of bots shows today, 7 days, 30 days and the total of each bot by default, and every ticked bot on a computer (a phone keeps its eight). A table saved with exactly the former six columns follows the new default; any other choice is kept.
@@ -35,10 +38,6 @@ Full redesign of the interface, plus an optional Rust gateway. Upgrade guide: [`
 - README: `--ui-version github://...` was never supported by `install-ui`; it takes a release name such as `v2.0.0`.
 
 ## [Unreleased]
-
-### Added
-- Charts: the chart of any trade, open or closed, with its entry, top-ups and exit (Bot page, Journal sheet, trade drawer). A closed trade that ended beyond what the bot holds is read from the local history of the gateway.
-- Charts: "Load previous candles" reads the local history back to the open of the trade (gateway only; direct mode says the history needs the gateway). A timeframe change now loads that timeframe, with a loading veil over the previous chart. Needs the gateway route `GET /candles`.
 
 ### Branding & documentation
 - Renamed repository from `frequi-fork` to `frequi-ultimate`.
