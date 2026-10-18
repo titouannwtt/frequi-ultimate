@@ -549,10 +549,12 @@ defineExpose({ visibleColumnIds: () => cols.value.map((c) => c.id) });
             >
               <template v-if="c.id === 'bot'">
                 <div class="name-cell">
-                  <StatusDot :state="botState(item.bot, now, skew)" />
-                  <span class="name" :title="nameTitle(item.bot)">{{
-                    item.bot.identity.name
-                  }}</span>
+                  <span class="nm">
+                    <span class="dotw"><StatusDot :state="botState(item.bot, now, skew)" /></span>
+                    <span class="name" :title="nameTitle(item.bot)">{{
+                      item.bot.identity.name
+                    }}</span>
+                  </span>
                   <Badge v-if="item.bot.identity.mode === 'dry'" kind="dry" />
                   <Badge v-else-if="item.bot.identity.mode === 'replay'" kind="replay" />
                   <span
@@ -962,13 +964,34 @@ tr.grp td {
   gap: 2px 6px;
   min-width: 196px;
 }
+.nm {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+/* The status dot sits on the first line of the name, whatever the number of lines */
+.dotw {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: 1.15em;
+}
 .name {
-  /* The name is never cut: bots with long names wrap to a second line instead */
+  /* Two lines at most, then an ellipsis (the full name is the tooltip): a very long name must not
+     push the dot and the badges around */
   min-width: min(100%, 11ch);
+  max-width: 28ch;
   font-weight: 500;
+  overflow: hidden;
   overflow-wrap: anywhere;
   white-space: normal;
   line-height: 1.15;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 .st-text {
   color: var(--fg-3);

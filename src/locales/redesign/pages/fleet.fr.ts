@@ -165,6 +165,8 @@ export default {
     realizedHint: 'Réalisé\u00a0: le profit des trades déjà fermés.',
     latentHint:
       'Latent\u00a0: le gain ou la perte des positions encore ouvertes, au prix du moment. Il n’est encaissé qu’à la fermeture.',
+    liveOnly: 'Live uniquement',
+    liveOnlyHint: 'Ce bloc ne compte que les bots live, le mode Dry n’y est pas mélangé.',
     dates: 'Dates…',
     datesHint: 'Choisir un jour ou une plage de jours',
     apply: 'Appliquer',

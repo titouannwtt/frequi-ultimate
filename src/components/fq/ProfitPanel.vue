@@ -50,6 +50,8 @@ const props = withDefaults(
     /** Bots of the figures (the ticked ones of `mode`). */
     scope: ScopeRef;
     mode?: BotMode;
+    /** The page shows every mode but this block only counts the live bots: say so in words. */
+    liveOnly?: boolean;
     /** Latent profit of the open positions of the scope, now; null when not known. */
     latent?: number | null;
     latentState?: 'ready' | 'pending' | 'unavailable';
@@ -59,7 +61,7 @@ const props = withDefaults(
     source?: DataSource | null;
     nowMs?: number;
   }>(),
-  { mode: 'live', latent: null, latentState: 'ready', height: '320px' },
+  { mode: 'live', liveOnly: false, latent: null, latentState: 'ready', height: '320px' },
 );
 
 const { t, locale } = useI18n();
@@ -257,7 +259,12 @@ const trackedText = computed(() =>
       >
         {{ period === 'custom' ? rangeLabel : t('fq.pg.fleet.profit.dates') }}
       </Btn>
-      <ModeMark :mode="mode" class="mm" />
+      <span class="mm" :title="liveOnly ? t('fq.pg.fleet.profit.liveOnlyHint') : undefined">
+        <span v-if="liveOnly" class="only" data-testid="profit-live-only">{{
+          t('fq.pg.fleet.profit.liveOnly')
+        }}</span>
+        <ModeMark :mode="mode" />
+      </span>
     </div>
 
     <Popover
@@ -383,6 +390,13 @@ const trackedText = computed(() =>
 }
 .mm {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.only {
+  font-size: var(--t-xs);
+  color: var(--fg-3);
 }
 .figs {
   display: flex;
@@ -432,7 +446,7 @@ const trackedText = computed(() =>
   background: var(--accent);
 }
 .dot.o {
-  background: var(--info);
+  background: var(--warn);
 }
 .note {
   margin: 0;
