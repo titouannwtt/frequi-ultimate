@@ -46,7 +46,7 @@ export function isChartTf(v: unknown): v is ChartTf {
   return typeof v === 'string' && TF_RE.test(v);
 }
 
-const tfMs = (tf: string): number =>
+export const tfMs = (tf: string): number =>
   Number(tf.slice(0, -1)) * TF_UNIT_MS[tf.slice(-1) as keyof typeof TF_UNIT_MS];
 
 /** The timeframe shown: the one asked for, else the bot's own, else the default. */

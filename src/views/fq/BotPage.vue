@@ -20,6 +20,8 @@ import {
   BotActionBar,
   BotHeader,
   CandleChart,
+  ClosedTradePanel,
+  ClosedTradeSheet,
   EquityCurve,
   IndicatorsSheet,
   Leaderboard,
@@ -32,6 +34,7 @@ import {
 import ChartDisplayMenu from '@/components/fq/ChartDisplayMenu.vue';
 import { buildAction } from '@/components/fq/lib/actions';
 import { overlaysFromPosition, type SubplotInfo } from '@/components/fq/lib/candles';
+import { closedTradeOverlays } from '@/components/fq/lib/chartTrades';
 import { effectiveTf, plotProps, resolvePlotChoice } from '@/components/fq/lib/chartsPage';
 import type { EquityDefinition, EquityPeriod } from '@/components/fq/lib/equity';
 import { knownProfit } from '@/components/fq/lib/journal';
@@ -41,6 +44,7 @@ import { pairLabel } from '@/components/fq/lib/trades';
 import { requestAction, toastRefusal } from '@/composables/useActionDialog';
 import { useActionNav } from '@/composables/useActionNav';
 import { useChartDisplay, useSubplotChoice } from '@/composables/useChartDisplay';
+import { useClosedTrade } from '@/composables/useClosedTrade';
 import { useBotConfigEditorStore } from '@/stores/botConfigEditorStore';
 import { useCommandPalette } from '@/composables/useCommandPalette';
 import { useShortcuts } from '@/composables/useShortcuts';
@@ -179,8 +183,25 @@ const position = computed(() => {
   if (id === null) return worst.value;
   return positionsStore.get(botKey.value, id) ?? null;
 });
-const tradeGone = computed(() => selectedTradeId.value !== null && position.value === null);
-const tradeId = computed(() => position.value?.trade_id ?? null);
+// A chosen trade that is not an open position may be a closed one (the History tab, the Journal,
+// a link): it is read from the rows the tab holds, else from the bot, and drawn on the chart
+const closed = ref<TradeRow[]>([]);
+const closedCursor = ref<string | null>(null);
+const closedLoading = ref(false);
+const closedLookup = useClosedTrade(
+  () => botKey.value,
+  () => (position.value === null ? selectedTradeId.value : null),
+  () => closed.value,
+);
+const closedTrade = computed(() => (position.value ? null : closedLookup.trade.value));
+const tradeGone = computed(
+  () =>
+    selectedTradeId.value !== null &&
+    position.value === null &&
+    closedTrade.value === null &&
+    !closedLookup.loading.value,
+);
+const tradeId = computed(() => position.value?.trade_id ?? closedTrade.value?.trade_id ?? null);
 
 const queryPair = computed(() => (route.query.pair ? String(route.query.pair) : null));
 const pickedPair = ref<string | null>(null);
@@ -195,7 +216,11 @@ watch(
 );
 watch(botKey, () => (lastPair.value = null));
 const pair = computed(
-  () => pickedPair.value ?? position.value?.pair ?? (tradeGone.value ? lastPair.value : null),
+  () =>
+    pickedPair.value ??
+    position.value?.pair ??
+    closedTrade.value?.pair ??
+    (tradeGone.value || closedLookup.loading.value ? lastPair.value : null),
 );
 
 const sheetOpen = ref(false);
@@ -213,6 +238,14 @@ function selectTrade(_k: string, id: number) {
   pickedPair.value = null;
   if (!desktop.value) sheetOpen.value = true;
 }
+// A row of the History tab: its trade is drawn on the chart; on a phone its sheet opens
+const closedSheet = ref(false);
+function selectClosed(_k: string, id: number) {
+  selectedTradeId.value = id;
+  pickedPair.value = null;
+  if (!desktop.value) closedSheet.value = true;
+}
+watch(closedTrade, (v) => !v && (closedSheet.value = false));
 watch(
   () => route.query.trade,
   (v) => v && !desktop.value && (sheetOpen.value = true),
@@ -262,12 +295,20 @@ const tfOptions = computed(() =>
     .sort((a, b) => tfMinutes(a) - tfMinutes(b))
     .map((v) => ({ value: v, label: v })),
 );
-const orders = useTradeOrders(botKey, tradeId, () => position.value?.side ?? 'long');
+const orders = useTradeOrders(
+  botKey,
+  tradeId,
+  () => position.value?.side ?? closedTrade.value?.side ?? 'long',
+);
 const overlays = computed(() =>
-  overlaysFromPosition(position.value, pair.value ?? '', {
-    orders: orders.model.value?.ladder ?? [],
-    fills: orders.model.value?.fills ?? [],
-  }),
+  closedTrade.value
+    ? closedTradeOverlays(closedTrade.value, orders.model.value?.fills ?? [], (r) =>
+        r.kind === 'custom' ? r.raw : t(`fq.exit.${r.kind}`),
+      )
+    : overlaysFromPosition(position.value, pair.value ?? '', {
+        orders: orders.model.value?.ladder ?? [],
+        fills: orders.model.value?.fills ?? [],
+      }),
 );
 const ladderOrders = computed(() => orders.model.value?.ladder);
 const dcaMax = computed(() => null as number | null);
@@ -308,9 +349,6 @@ const plot = computed(() =>
 );
 
 // ---- history, performance ----
-const closed = ref<TradeRow[]>([]);
-const closedCursor = ref<string | null>(null);
-const closedLoading = ref(false);
 async function loadClosed(more = false) {
   const source = data.source.value;
   if (!source || closedLoading.value) return;
@@ -489,11 +527,13 @@ const configRows = computed(() => {
           </template>
           <CandleChart
             v-if="pair"
-            :key="`${botKey}/${pair}/${tf}`"
+            :key="`${botKey}/${pair}`"
             :bot-key="botKey"
             :pair="pair"
             :tf="tf"
             :overlays="overlays"
+            :anchor-end-ms="closedTrade?.close_ms ?? null"
+            :frame-max="closedTrade ? 3000 : undefined"
             :toggles="chartDisplay.toggles.value"
             :heikin-ashi="heikinAshi"
             :measure-armed="measureArmed"
@@ -557,6 +597,10 @@ const configRows = computed(() => {
                 :bot-key="botKey"
                 :trades="closed"
                 :cursor="closedCursor"
+                :selected-key="
+                  closedTrade ? `${closedTrade.bot_key}/${closedTrade.trade_id}` : null
+                "
+                @open="selectClosed"
                 @load-more="loadClosed(true)"
               />
               <p class="more">
@@ -625,6 +669,7 @@ const configRows = computed(() => {
           <TradeDrawer
             v-if="position && desktop"
             docked
+            :chart="false"
             :bot-key="botKey"
             :trade-id="position.trade_id"
             :orders="ladderOrders"
@@ -637,6 +682,11 @@ const configRows = computed(() => {
                   tradeId: position?.trade_id,
                 })
             "
+          />
+          <ClosedTradePanel
+            v-else-if="closedTrade && desktop"
+            :trade="closedTrade"
+            @details="closedSheet = true"
           />
           <Pane v-else-if="desktop" :title="t('fq.pg.bot.drawer')" icon="layers">
             <EmptyState
@@ -657,6 +707,7 @@ const configRows = computed(() => {
 
       <TradeDrawer
         v-if="position && !desktop"
+        :chart="false"
         :bot-key="botKey"
         :trade-id="position.trade_id"
         :open="sheetOpen"
@@ -667,6 +718,15 @@ const configRows = computed(() => {
           (id) =>
             nav.navigateAction(id, { botKey, pair: position?.pair, tradeId: position?.trade_id })
         "
+      />
+      <ClosedTradeSheet
+        v-if="closedTrade"
+        :bot-key="botKey"
+        :trade-id="closedTrade.trade_id"
+        :trade="closedTrade"
+        :open="closedSheet"
+        :chart="false"
+        @close="closedSheet = false"
       />
       <IndicatorsSheet
         :open="indicatorsOpen"

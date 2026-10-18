@@ -144,6 +144,32 @@ export interface TradePage extends Page<TradeRow> {
   totals: TradeTotals;
 }
 
+/**
+ * Local candle history of a pair (`GET /candles` of the gateway): OHLCV only, read from the files
+ * of the gateway host, never from the exchange. Written by hand, not generated.
+ */
+export interface CandlesQuery {
+  pair: string;
+  timeframe: string;
+  /** Candles strictly before this time (ms); without it, the latest ones. */
+  endMs?: number | null;
+  /** 1 to 5000, 1000 by default. */
+  limit?: number;
+}
+
+export interface CandlesPage {
+  pair: string;
+  timeframe: string;
+  /** `[ts_ms, open, high, low, close, volume]`, oldest first, all before `endMs`. */
+  candles: Array<[number, number, number, number, number, number]>;
+  /** Older candles exist locally. */
+  hasMore: boolean;
+  /** Time of the oldest candle held locally. */
+  firstAvailableMs: number | null;
+  /** The timeframe the candles were built from, when this one is not stored as such. */
+  resampledFrom: string | null;
+}
+
 /** One order of a trade (entry, DCA, exit), as the gateway reads it from the bot's ledger. */
 export interface OrderRow {
   id: number;
@@ -406,6 +432,12 @@ export interface DataSource {
      * not be read (the ladder then says so instead of inventing levels).
      */
     tradeOrders?(botKey: BotKey, tradeId: number): Promise<OrderRow[] | null>;
+    /**
+     * Local candle history of a pair, OHLCV only and any timeframe (`GET /candles`). Absent in
+     * direct mode: a bot serves only the candles of its strategy timeframe, and nothing older than
+     * the window it holds.
+     */
+    candles?(q: CandlesQuery): Promise<CandlesPage>;
     /**
      * CSV of the whole filtered set, produced by the gateway (`GET /trades/export.csv`). Absent in
      * direct mode, where the Journal can only export the rows it holds.

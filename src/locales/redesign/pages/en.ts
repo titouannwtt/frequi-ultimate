@@ -44,6 +44,8 @@ export default {
       drawer: 'Position',
       noPosition: 'No open position. The bot is waiting for a signal.',
       tradeClosed: 'This trade is closed.',
+      closedTrade: 'closed trade',
+      closedDetails: 'Trade details',
       notFound: 'Bot not found: {key}',
       notFoundHint: 'This bot is not (or no longer) in the fleet of this device.',
       tabs: {

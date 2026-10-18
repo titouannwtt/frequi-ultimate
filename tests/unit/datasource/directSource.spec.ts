@@ -255,6 +255,12 @@ describe('DirectSource polling', () => {
     src.stop();
   });
 
+  it('has no local candle history: the other timeframes and the older candles need the gateway', async () => {
+    const { src } = await started();
+    expect(src.query.candles).toBeUndefined();
+    src.stop();
+  });
+
   it('reads the orders of a trade at /trade/{id}, the route freqtrade serves (B190)', async () => {
     const { src, fake } = await started();
     const orders = await src.query.tradeOrders!('local:9400', 1);

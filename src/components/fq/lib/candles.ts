@@ -612,6 +612,8 @@ export interface CandleOptionInput {
    * zoom survives a new candle (the update merges the zoom component instead of replacing it).
    */
   initialZoom: boolean;
+  /** A window, in percent of the candles, to show now (older candles were put in front). */
+  zoomWin?: { start: number; end: number } | null;
   labelSide: 'left' | 'right';
   /** Height of the chart in pixels, to size the panes; unknown (0) gives a default. */
   heightPx?: number;
@@ -1397,7 +1399,13 @@ export function buildCandleOption(input: CandleOptionInput): EChartsOption {
         type: 'inside',
         xAxisIndex: xIdx,
         filterMode: 'weakFilter',
-        ...(input.initialZoom ? { start: startPct, end: 100 } : {}),
+        // A window chosen after older candles were put in front (the same moment stays on screen)
+        // wins over the first-render one
+        ...(input.zoomWin
+          ? { start: input.zoomWin.start, end: input.zoomWin.end }
+          : input.initialZoom
+            ? { start: startPct, end: 100 }
+            : {}),
       },
     ],
   };

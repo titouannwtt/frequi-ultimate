@@ -36,6 +36,10 @@ Full redesign of the interface, plus an optional Rust gateway. Upgrade guide: [`
 
 ## [Unreleased]
 
+### Added
+- Charts: the chart of any trade, open or closed, with its entry, top-ups and exit (Bot page, Journal sheet, trade drawer). A closed trade that ended beyond what the bot holds is read from the local history of the gateway.
+- Charts: "Load previous candles" reads the local history back to the open of the trade (gateway only; direct mode says the history needs the gateway). A timeframe change now loads that timeframe, with a loading veil over the previous chart. Needs the gateway route `GET /candles`.
+
 ### Branding & documentation
 - Renamed repository from `frequi-fork` to `frequi-ultimate`.
 - Full English-only README rewrite, emphasizing Freqtrade France brand and the multi-bot dashboard angle.
