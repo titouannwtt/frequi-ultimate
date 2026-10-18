@@ -261,6 +261,66 @@ describe('GatewaySource curves, journal, logs, events, registry', () => {
     expect(h.fake.calls[0]!.params).toMatchObject({ scope: 'live', mode: 'with_open', points: 50 });
   });
 
+  it('reads the local candle history at /candles with the pair, the timeframe, the end and the limit', async () => {
+    const h = setup({
+      'GET /candles': () => ({
+        pair: 'BTC/USDC:USDC',
+        tf: '1h',
+        candles: [
+          [1000, 1, 2, 0.5, 1.5, 10],
+          [2000, 1.5, 2.5, 1, 2, 12],
+        ],
+        has_more: true,
+        first_available_ms: 500,
+        resampled_from: '5m',
+      }),
+    });
+    const r = await h.src.query.candles!({
+      pair: 'BTC/USDC:USDC',
+      timeframe: '1h',
+      endMs: 3000,
+      limit: 2,
+    });
+    expect(h.fake.calls[0]!.params).toEqual({
+      pair: 'BTC/USDC:USDC',
+      tf: '1h',
+      end: 3000,
+      limit: 2,
+    });
+    expect(r).toEqual({
+      pair: 'BTC/USDC:USDC',
+      timeframe: '1h',
+      candles: [
+        [1000, 1, 2, 0.5, 1.5, 10],
+        [2000, 1.5, 2.5, 1, 2, 12],
+      ],
+      hasMore: true,
+      firstAvailableMs: 500,
+      resampledFrom: '5m',
+    });
+  });
+
+  it('asks the latest candles without an end, and reads empty data as no candle and no more', async () => {
+    const h = setup({
+      'GET /candles': () => ({
+        pair: 'X/USDC:USDC',
+        tf: '15m',
+        candles: [],
+        has_more: false,
+        first_available_ms: null,
+        resampled_from: null,
+      }),
+    });
+    const r = await h.src.query.candles!({ pair: 'X/USDC:USDC', timeframe: '15m' });
+    expect(h.fake.calls[0]!.params).toEqual({ pair: 'X/USDC:USDC', tf: '15m' });
+    expect(r).toMatchObject({
+      candles: [],
+      hasMore: false,
+      firstAvailableMs: null,
+      resampledFrom: null,
+    });
+  });
+
   it('asks a group of its bots and answers nothing for an empty one', async () => {
     const h = setup({ 'GET /equity': () => ({ points: [] }) });
     await h.src.query.equity({ scope: { kind: 'group', id: 'g' }, mode: 'realized' });

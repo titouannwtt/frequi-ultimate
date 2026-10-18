@@ -41,6 +41,8 @@ import type {
   ActionResult,
   AlertsApi,
   BotAction,
+  CandlesPage,
+  CandlesQuery,
   Channel,
   ChannelParams,
   ChannelUpdate,
@@ -643,6 +645,25 @@ export class GatewaySource implements DataSource {
         `/trades/${encodeURIComponent(botKey)}/${tradeId}`,
       );
       return r.orders_error || !r.orders ? null : r.orders;
+    },
+
+    candles: async (q: CandlesQuery): Promise<CandlesPage> => {
+      const r = await this.getJson<{
+        pair?: string;
+        tf?: string;
+        candles?: CandlesPage['candles'];
+        has_more?: boolean;
+        first_available_ms?: number | null;
+        resampled_from?: string | null;
+      }>('/candles', { pair: q.pair, tf: q.timeframe, end: q.endMs, limit: q.limit });
+      return {
+        pair: r.pair ?? q.pair,
+        timeframe: r.tf ?? q.timeframe,
+        candles: Array.isArray(r.candles) ? r.candles : [],
+        hasMore: r.has_more === true,
+        firstAvailableMs: r.first_available_ms ?? null,
+        resampledFrom: r.resampled_from ?? null,
+      };
     },
 
     audit: async (q: { limit?: number; botKey?: BotKey } = {}): Promise<AuditEntry[]> => {
