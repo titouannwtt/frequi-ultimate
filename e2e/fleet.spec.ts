@@ -162,7 +162,7 @@ test.describe('Fleet on a desktop', () => {
   }) => {
     await page.goto('/dashboard');
     const panel = page.getByTestId('profit-panel');
-    await expect(panel.locator('.chart')).toBeVisible({ timeout: 30_000 });
+    await expect(panel.locator('.chart[role="img"]')).toBeVisible({ timeout: 30_000 });
     const page_ = await page.getByTestId('fleet-page').boundingBox();
     const block = await page.locator('.profit').boundingBox();
     expect(page_ && block).toBeTruthy();
