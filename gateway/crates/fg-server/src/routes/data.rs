@@ -643,6 +643,7 @@ pub struct ScopeParams {
     tz: Option<String>,
     n: Option<usize>,
     from: Option<i64>,
+    to: Option<i64>,
     points: Option<usize>,
     mode: Option<String>,
     def: Option<String>,
@@ -679,6 +680,16 @@ pub async fn pnl_periods(
     ))
 }
 
+/// Bounds `[from, to]` (ms, both included) of an equity curve; open-ended when not given.
+fn equity_bounds(from: Option<i64>, to: Option<i64>) -> Result<(i64, i64), ApiFailure> {
+    let from = from.unwrap_or(0);
+    let to = to.unwrap_or(i64::MAX);
+    if to < from {
+        return Err(ApiFailure::bad_request("to is before from"));
+    }
+    Ok((from, to))
+}
+
 pub async fn equity(
     State(st): State<AppState>,
     Extension(s): Extension<Session>,
@@ -690,16 +701,18 @@ pub async fn equity(
         Some(_) => return Err(ApiFailure::bad_request("mode is realized or with_open")),
     };
     let scope = resolve_scope(&st, &s, q.scope.as_deref(), q.bots.as_deref()).await?;
-    let points = st
+    let (from, to) = equity_bounds(q.from, q.to)?;
+    let curve = st
         .engine
         .equity(
             &scope,
-            q.from.unwrap_or(0),
+            from,
+            to,
             q.points.unwrap_or(300).clamp(2, 2_000),
             mode,
         )
         .map_err(scope_failure)?;
-    let body = serde_json::to_vec(&json!({"points": points}))
+    let body = serde_json::to_vec(&json!({"points": curve.points, "base": curve.base}))
         .map_err(|_| ApiFailure::new(ErrorCode::Internal, "cannot encode the curve"))?;
     let etag = format!("\"{}\"", &blake3::hash(&body).to_hex()[..16]);
     Ok((
@@ -1006,6 +1019,16 @@ pub async fn audit(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_equity_range_is_open_ended_by_default_and_never_reversed() {
+        assert_eq!(equity_bounds(None, None).unwrap(), (0, i64::MAX));
+        assert_eq!(equity_bounds(Some(5), None).unwrap(), (5, i64::MAX));
+        assert_eq!(equity_bounds(Some(5), Some(9)).unwrap(), (5, 9));
+        assert_eq!(equity_bounds(Some(5), Some(5)).unwrap(), (5, 5));
+        assert!(equity_bounds(Some(9), Some(5)).is_err(), "to before from");
+        assert_eq!(equity_bounds(None, Some(5)).unwrap(), (0, 5));
+    }
 
     #[test]
     fn csv_cells_stay_text_and_numbers_stay_numbers() {

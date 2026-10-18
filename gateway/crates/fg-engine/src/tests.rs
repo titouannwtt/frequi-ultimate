@@ -1861,15 +1861,46 @@ async fn queries_read_the_published_history() {
         .leaderboard(BotMode::Dry, fg_core::calc::periods::PeriodKey::D7)
         .unwrap();
     assert_eq!(board[0].profit_abs, 100.0);
+    let live_scope = crate::queries::ScopeRef::Mode(BotMode::Live);
     let eq = h
         .equity(
-            &crate::queries::ScopeRef::Mode(BotMode::Live),
+            &live_scope,
             0,
+            i64::MAX,
             10,
             crate::queries::EquityMode::Realized,
         )
         .unwrap();
-    assert!(eq.len() <= 10 && eq.last().unwrap().value == 15.5);
+    assert!(eq.points.len() <= 10 && eq.points.last().unwrap().value == 15.5);
+    assert_eq!(eq.base, None, "the series starts inside an open range");
+    // The upper bound cuts the curve; the range is decimated after the cut.
+    let first = eq.points[0].ts_ms;
+    let last = eq.points.last().unwrap().ts_ms;
+    assert!(last > first);
+    let head = h
+        .equity(
+            &live_scope,
+            0,
+            first,
+            10,
+            crate::queries::EquityMode::Realized,
+        )
+        .unwrap();
+    assert_eq!(head.points.len(), 1);
+    assert_eq!(head.points[0].ts_ms, first);
+    // The lower bound leaves the value reached before it as the base of the range.
+    let tail = h
+        .equity(
+            &live_scope,
+            first + 1,
+            i64::MAX,
+            10,
+            crate::queries::EquityMode::Realized,
+        )
+        .unwrap();
+    assert_eq!(tail.base, Some(eq.points[0].value));
+    assert!(tail.points.iter().all(|p| p.ts_ms > first));
+    assert_eq!(tail.points.last().unwrap().value, 15.5);
 }
 
 struct ScopeRefExt;
