@@ -26,6 +26,7 @@ import type { ClosedTrade, Order } from '@/types';
 
 import { isHip3Market } from '@/datasource/calc/hip3';
 import MaeMfeBar from './MaeMfeBar.vue';
+import TradeChartFold from './TradeChartFold.vue';
 import type { JournalTrade } from './lib/journal';
 import { withTimeout } from './lib/logs';
 import { formatDateTime } from './lib/time';
@@ -49,11 +50,13 @@ const props = withDefaults(
     /** Orders of the trade, when known. */
     orders?: Order[] | null;
     inline?: boolean;
+    /** "Show the chart" of the trade, folded until asked for. Off where the page has a chart. */
+    chart?: boolean;
     /** A source to use instead of the active one (previews, tests). */
     source?: DataSource | null;
     timeoutMs?: number;
   }>(),
-  { open: true, trade: null, orders: null, timeoutMs: 10_000 },
+  { open: true, trade: null, orders: null, chart: true, timeoutMs: 10_000 },
 );
 
 const emit = defineEmits<{ close: []; openBot: [botKey: BotKey] }>();
@@ -229,6 +232,13 @@ const title = computed(() =>
             <template v-if="durationH !== null"> · {{ fmt.duration(durationH) }}</template>
           </span>
         </section>
+
+        <TradeChartFold
+          v-if="chart && row.close_ms !== null"
+          :key="`${row.bot_key}/${row.trade_id}`"
+          :trade="row"
+          :source="activeSource"
+        />
 
         <section class="facts" :aria-label="t('fq.drawer.facts')">
           <div class="fact">

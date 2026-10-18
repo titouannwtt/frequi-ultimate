@@ -132,7 +132,7 @@ const subs = useSubplotChoice(() => bot.value?.identity.strategy ?? props.botKey
       }}</Btn>
     </template>
     <CandleChart
-      :key="`${botKey}/${pair}/${tf}`"
+      :key="`${botKey}/${pair}`"
       :bot-key="botKey"
       :pair="pair"
       :tf="tf"
