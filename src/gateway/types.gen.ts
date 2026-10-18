@@ -244,7 +244,12 @@ export type OpenRisk = { profit_abs: number,
  * Contract amount (already includes leverage).
  */
 amount: number, open_rate: number, current_rate: number | null, is_short: boolean, min_rate: number | null, max_rate: number | null, };
-export type HistorySample = { ts_ms: number, closed: number, open: number, };
+export type HistorySample = { ts_ms: number, closed: number, open: number, 
+/**
+ * Open positions the bot counted when it wrote the sample (`None`: the source does not say).
+ * Lets `merge_histories` spot a sample written while some prices were missing (B600).
+ */
+open_trades?: number, };
 export type DrawdownInput = { closed: Array<ClosedPnl>, open: Array<OpenRisk>, histories: Array<Array<HistorySample>>, 
 /**
  * Closed trades of each bot, index-aligned with `histories` (same length), used to anchor

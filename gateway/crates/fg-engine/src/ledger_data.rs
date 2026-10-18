@@ -228,6 +228,7 @@ fn sample_of(s: &ProfitSample) -> HistorySample {
         ts_ms: s.ts_ms,
         closed: s.closed_abs,
         open: s.open_abs,
+        open_trades: u32::try_from(s.open_trades).ok(),
     }
 }
 
@@ -532,6 +533,7 @@ mod tests {
                 ts_ms: now - 10 * DAY_MS + i * 5 * MINUTE_MS,
                 closed: i as f64,
                 open: 0.0,
+                open_trades: None,
             })
             .collect();
         let last = v.last().copied();
@@ -548,7 +550,8 @@ mod tests {
             HistorySample {
                 ts_ms: now - 200 * DAY_MS,
                 closed: 1.0,
-                open: 0.0
+                open: 0.0,
+                open_trades: None,
             };
             700
         ];
@@ -564,6 +567,7 @@ mod tests {
                 ts_ms: now - (30 - h) * HOUR_MS + 1,
                 closed: 0.0,
                 open: h as f64,
+                open_trades: None,
             })
             .collect();
         let s = spark24h(&samples, now);

@@ -1333,10 +1333,11 @@ export class DirectSource implements DataSource {
               if (b.data.length === 0) continue;
               byName.set(
                 b.bot_name,
-                b.data.map(([ts, closed, open]) => ({
+                b.data.map(([ts, closed, open, openTrades]) => ({
                   ts_ms: normalizeTsMs(ts) ?? ts,
                   closed,
                   open,
+                  open_trades: openTrades,
                 })),
               );
             }

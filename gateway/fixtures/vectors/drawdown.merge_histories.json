@@ -94,6 +94,171 @@
      2
     ]
    ]
+  },
+  {
+   "name": "a sample written without prices is dropped (hippo, 2026-10-16 13:26)",
+   "input": [
+    [
+     {
+      "ts_ms": 1,
+      "closed": 1224.05,
+      "open": -545.91,
+      "open_trades": 2
+     },
+     {
+      "ts_ms": 2,
+      "closed": 1224.05,
+      "open": -545.91,
+      "open_trades": 2
+     },
+     {
+      "ts_ms": 3,
+      "closed": 1224.05,
+      "open": 0,
+      "open_trades": 0
+     },
+     {
+      "ts_ms": 4,
+      "closed": 1224.05,
+      "open": -549.42,
+      "open_trades": 2
+     },
+     {
+      "ts_ms": 5,
+      "closed": 1224.05,
+      "open": -553.4,
+      "open_trades": 2
+     }
+    ],
+    [
+     {
+      "ts_ms": 1,
+      "closed": 100,
+      "open": -400,
+      "open_trades": 1
+     },
+     {
+      "ts_ms": 2,
+      "closed": 100,
+      "open": -400,
+      "open_trades": 1
+     },
+     {
+      "ts_ms": 3,
+      "closed": 100,
+      "open": -400,
+      "open_trades": 1
+     },
+     {
+      "ts_ms": 4,
+      "closed": 100,
+      "open": -400,
+      "open_trades": 1
+     },
+     {
+      "ts_ms": 5,
+      "closed": 100,
+      "open": -400,
+      "open_trades": 1
+     }
+    ]
+   ],
+   "expected": [
+    [
+     1,
+     378.14
+    ],
+    [
+     2,
+     378.14
+    ],
+    [
+     3,
+     378.14
+    ],
+    [
+     4,
+     374.63
+    ],
+    [
+     5,
+     370.65
+    ]
+   ]
+  },
+  {
+   "name": "a sample missing one of two positions is dropped (2026-10-18 12:05)",
+   "input": [
+    [
+     {
+      "ts_ms": 1,
+      "closed": 1224.05,
+      "open": -615.09,
+      "open_trades": 2
+     },
+     {
+      "ts_ms": 2,
+      "closed": 1224.05,
+      "open": -21.31,
+      "open_trades": 1
+     },
+     {
+      "ts_ms": 3,
+      "closed": 1224.05,
+      "open": -610.94,
+      "open_trades": 2
+     }
+    ]
+   ],
+   "expected": [
+    [
+     1,
+     608.9599999999999
+    ],
+    [
+     3,
+     613.11
+    ]
+   ]
+  },
+  {
+   "name": "a real close and reopen is kept",
+   "input": [
+    [
+     {
+      "ts_ms": 1,
+      "closed": 5,
+      "open": -10,
+      "open_trades": 2
+     },
+     {
+      "ts_ms": 2,
+      "closed": 7,
+      "open": 0,
+      "open_trades": 0
+     },
+     {
+      "ts_ms": 3,
+      "closed": 7,
+      "open": -3,
+      "open_trades": 2
+     }
+    ]
+   ],
+   "expected": [
+    [
+     1,
+     -5
+    ],
+    [
+     2,
+     7
+    ],
+    [
+     3,
+     4
+    ]
+   ]
   }
  ]
 }
