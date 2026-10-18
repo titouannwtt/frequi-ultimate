@@ -10,7 +10,7 @@ use([DatasetComponent]);
 <script setup lang="ts">
 import type { ECharts } from 'echarts/core';
 import { useElementSize, useMediaQuery } from '@vueuse/core';
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { BaseChart, EmptyState, FilterChip, Skeleton, ValueState } from '@/components/ds';
@@ -18,12 +18,23 @@ import { useFormat } from '@/components/ds/lib/useFormat';
 import { useDataSource } from '@/composables/useDataSource';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
-import type { DataSource } from '@/datasource/types';
+import type { CandlesPage, DataSource } from '@/datasource/types';
 import type { BotKey } from '@/gateway/types.gen';
 import type { PairHistory, PlotConfig } from '@/types';
 import { indicatorLabel, subplotLabel } from '@/utils/indicatorLabel';
 
 import { useChartTokens } from './lib/chartTokens';
+import {
+  COVER_MARGIN,
+  MAX_CANDLES,
+  OLDER_PAGE,
+  isCovered,
+  nextTailDelay,
+  olderState,
+  prependOlder,
+  setFromPage,
+  tradeStartTs,
+} from './lib/candlesHistory';
 import { entryEdge, frameCandles, recentreOn } from './lib/chartTrades';
 import {
   ALL_OVERLAYS,
@@ -55,7 +66,7 @@ import {
 } from './lib/candles';
 import { withTimeout } from './lib/logs';
 import { measure as measureMove, type MeasurePoint } from './lib/measure';
-import { mergePlot } from './lib/chartsPage';
+import { mergePlot, tfMs } from './lib/chartsPage';
 
 /**
  * Candle chart of one pair of one bot (02 sections 3.3 and 5.2). Candles, volume, the indicators
@@ -64,6 +75,13 @@ import { mergePlot } from './lib/chartsPage';
  * read through the bot proxy (GET only); a new candle (channel `chart:<key>:<pair>:<tf>`) asks for
  * the last few candles and merges them by time, so the chart is extended without a reload and
  * without animation. One chart instance; the legend follows the pointer in `requestAnimationFrame`.
+ *
+ * A bot only serves the candles of its own strategy timeframe and nothing older than its window.
+ * When the active source can read the local history (`query.candles`, gateway), a timeframe the
+ * bot does not serve is drawn from it (OHLCV only, said under the legend), and the button "Load
+ * previous candles" puts older pages in front of the set until the open of the trade is covered.
+ * Every load, a timeframe change included, dims the chart and says it is loading; the previous
+ * chart stays under the veil instead of vanishing.
  */
 const props = withDefaults(
   defineProps<{
@@ -93,6 +111,13 @@ const props = withDefaults(
     subChoice?: readonly string[] | null;
     /** Say at the edge of the chart which levels lie outside the price range. */
     announce?: boolean;
+    /**
+     * A closed trade: when it ended long ago the chart opens on the local history around this
+     * time (ms) instead of the latest candles, and reads back until the open is covered.
+     */
+    anchorEndMs?: number | null;
+    /** Most candles the first window may widen to in order to show the whole trade. */
+    frameMax?: number;
     height?: string;
     /** A source to use instead of the active one (previews, tests). */
     source?: DataSource | null;
@@ -138,8 +163,11 @@ let tailing = false;
 let tailAgain = false;
 let rafId = 0;
 let chartRef: ECharts | null = null;
+let tailTimer: ReturnType<typeof setTimeout> | undefined;
 
 const HISTORY = 1000;
+/** Candles of the first page of a closed trade that ended long ago: it lies beyond a bot's window. */
+const ANCHOR_AFTER_CANDLES = 800;
 const path = (limit: number) =>
   `/pair_candles?pair=${encodeURIComponent(props.pair)}&timeframe=${encodeURIComponent(props.tf)}&limit=${limit}`;
 
@@ -152,28 +180,144 @@ function proxy<T>(p: string): Promise<T> {
   );
 }
 
+// ---- where the candles come from ----
+// `bot`: the bot's own answer (its strategy timeframe, with the indicators). `local`: the local
+// history of the gateway (any timeframe, OHLCV only).
+const via = ref<'bot' | 'local'>('bot');
+const resampledFrom = ref<string | null>(null);
+/** Older candles exist locally; null while it is not known (the candles came from a bot). */
+const hasMore = ref<boolean | null>(null);
+const firstAvailable = ref<number | null>(null);
+const localApi = computed(() => activeSource.value?.query.candles ?? null);
+// What the held set is a set of: a change of timeframe keeps the chart under the veil until the
+// new set is there, and the first window is framed again only for the new set
+const heldPair = ref('');
+const heldTf = ref(props.tf);
+const pairKey = () => `${props.botKey}|${props.pair}`;
+let anchoredLoad = false;
+
+interface Loaded {
+  set: CandleSet;
+  via: 'bot' | 'local';
+  hasMore: boolean | null;
+  first: number | null;
+  resampledFrom: string | null;
+  plot?: Partial<PlotConfig> | null;
+}
+
+async function readLocal(endMs: number | null, limit: number): Promise<Loaded> {
+  const api = localApi.value;
+  if (!api) throw new Error('no local history');
+  const page: CandlesPage = await withTimeout(
+    api({ pair: props.pair, timeframe: props.tf, endMs, limit }),
+    props.timeoutMs,
+  );
+  return {
+    set: setFromPage(page, tfMs(props.tf) || 0),
+    via: 'local',
+    hasMore: page.hasMore,
+    first: page.firstAvailableMs,
+    resampledFrom: page.resampledFrom,
+  };
+}
+
+async function readBot(): Promise<Loaded> {
+  const [history, cfg] = await Promise.all([
+    proxy<PairHistory>(path(HISTORY)),
+    props.plotConfig !== undefined
+      ? Promise.resolve(props.plotConfig)
+      : proxy<Partial<PlotConfig>>('/plot_config').catch(() => null),
+  ]);
+  return {
+    set: toCandleSet(history),
+    via: 'bot',
+    hasMore: null,
+    first: null,
+    resampledFrom: null,
+    plot: cfg ?? {},
+  };
+}
+
+function hold(l: Loaded) {
+  set.value = l.set;
+  heldPair.value = pairKey();
+  heldTf.value = props.tf;
+  via.value = l.via;
+  hasMore.value = l.hasMore;
+  firstAvailable.value = l.first;
+  resampledFrom.value = l.resampledFrom;
+  if (l.plot !== undefined) {
+    basePlot.value = { main_plot: {}, subplots: {}, ...(l.plot ?? {}) } as PlotConfig;
+  }
+}
+
 async function loadAll(): Promise<void> {
   const mine = ++token;
+  cancelOlder();
+  clearTimeout(tailTimer);
   if (props.candles) {
     set.value = toCandleSet(props.candles);
+    heldPair.value = pairKey();
+    heldTf.value = props.tf;
     return;
   }
   if (!activeSource.value) return;
   loading.value = true;
   try {
-    const [history, cfg] = await Promise.all([
-      proxy<PairHistory>(path(HISTORY)),
-      props.plotConfig !== undefined
-        ? Promise.resolve(props.plotConfig)
-        : proxy<Partial<PlotConfig>>('/plot_config').catch(() => null),
-    ]);
-    if (mine !== token) return;
-    set.value = toCandleSet(history);
-    basePlot.value = { main_plot: {}, subplots: {}, ...(cfg ?? {}) } as PlotConfig;
+    const own = ownTf.value;
+    const ms = tfMs(props.tf) || 0;
+    // A closed trade that ended beyond what a bot holds: the history around its end
+    const anchor = props.anchorEndMs ?? null;
+    const anchored =
+      !!localApi.value &&
+      anchor !== null &&
+      ms > 0 &&
+      Date.now() - anchor > ANCHOR_AFTER_CANDLES * ms;
+    // A timeframe other than the strategy's: the bot answers with nothing, ask the history first
+    const preferLocal = !!localApi.value && (anchored || (own !== null && own !== props.tf));
+    let loaded: Loaded | null = null;
+    let failure: unknown = null;
+    if (preferLocal) {
+      try {
+        const r = await readLocal(anchored ? anchor! + COVER_MARGIN * ms : null, HISTORY);
+        if (r.set.rows.length > 0) loaded = r;
+      } catch (e) {
+        failure = e;
+      }
+      if (mine !== token) return;
+    }
+    if (!loaded) {
+      try {
+        const b = await readBot();
+        if (mine !== token) return;
+        loaded = b;
+        // The bot has nothing for this timeframe: the local history, when there is one
+        if (b.set.rows.length === 0 && !preferLocal && localApi.value) {
+          try {
+            const r = await readLocal(null, HISTORY);
+            if (r.set.rows.length > 0) loaded = r;
+          } catch (e) {
+            failure = e;
+          }
+          if (mine !== token) return;
+        }
+      } catch (e) {
+        if (mine !== token) return;
+        failure = failure ?? e;
+      }
+    }
+    if (!loaded) throw failure ?? new Error('no candles');
+    anchoredLoad = anchored && loaded.via === 'local';
+    hold(loaded);
     error.value = null;
+    if (loaded.via === 'local') {
+      if (anchoredLoad && !isCovered(firstTs.value, tradeStart.value, ms)) void loadOlder();
+      else scheduleLocalTail();
+    }
   } catch (e) {
     if (mine !== token) return;
-    // The chart keeps what it had; only the note says the refresh failed
+    // The chart keeps what it had, unless that is another timeframe: it must not pass for this one
+    if (heldPair.value !== pairKey() || heldTf.value !== props.tf) set.value = null;
     error.value = e instanceof Error ? e.message : String(e);
   } finally {
     if (mine === token) loading.value = false;
@@ -205,6 +349,43 @@ async function refreshTail(): Promise<void> {
   }
 }
 
+/** The local history has no channel: the newest candles are asked once per candle. */
+function scheduleLocalTail() {
+  clearTimeout(tailTimer);
+  const ms = tfMs(props.tf);
+  if (via.value !== 'local' || anchoredLoad || props.candles || !localApi.value || !(ms > 0)) {
+    return;
+  }
+  const mine = token;
+  tailTimer = setTimeout(
+    async () => {
+      if (mine !== token) return;
+      if (typeof document === 'undefined' || !document.hidden) await refreshLocalTail(mine);
+      if (mine === token) scheduleLocalTail();
+    },
+    nextTailDelay(Date.now(), ms),
+  );
+}
+async function refreshLocalTail(mine: number): Promise<void> {
+  const api = localApi.value;
+  const cur = set.value;
+  const ms = tfMs(props.tf);
+  if (!api || !cur || !(ms > 0) || lastTs.value === null) return;
+  // A tab that was hidden missed some candles: ask for them all, so that no gap is left
+  const limit = Math.min(OLDER_PAGE, Math.max(4, Math.ceil((Date.now() - lastTs.value) / ms) + 2));
+  try {
+    const page = await withTimeout(
+      api({ pair: props.pair, timeframe: props.tf, limit }),
+      props.timeoutMs,
+    );
+    if (mine !== token || !set.value) return;
+    const merged = mergeTail(set.value, setFromPage(page, set.value.timeframeMs));
+    if (merged) set.value = merged;
+  } catch (e) {
+    if (mine === token) error.value = e instanceof Error ? e.message : String(e);
+  }
+}
+
 function resubscribe() {
   unsubscribe?.();
   unsubscribe = null;
@@ -214,21 +395,11 @@ function resubscribe() {
     'chart',
     { botKey: props.botKey, pair: props.pair, timeframe: props.tf },
     (u) => {
-      if (u.kind === 'item') void refreshTail();
+      if (u.kind === 'item' && via.value === 'bot') void refreshTail();
     },
   );
 }
 
-watch(
-  () => [activeSource.value, props.botKey, props.pair, props.tf, props.candles] as const,
-  () => {
-    set.value = props.candles ? toCandleSet(props.candles) : null;
-    hover.value = null;
-    void loadAll();
-    resubscribe();
-  },
-  { immediate: true },
-);
 watch(
   () => props.plotConfig,
   (p) => {
@@ -382,15 +553,167 @@ const frame = computed(() =>
     lastTs: lastTs.value,
     timeframeMs: set.value?.timeframeMs ?? 0,
     base: visibleCount.value,
+    max: props.frameMax,
   }),
 );
 
 // The zoom window is only imposed on the first render of a pair and timeframe (and again when the
 // position it frames changes)
 const zoomKey = computed(
-  () => `${props.botKey}|${props.pair}|${props.tf}|${props.overlays.openTs ?? ''}`,
+  () => `${props.botKey}|${props.pair}|${heldTf.value}|${props.overlays.openTs ?? ''}`,
 );
 const zoomApplied = ref<string | null>(null);
+// A window in percent to show now: older candles were put in front and the moment on screen stays
+const zoomWin = ref<{ start: number; end: number } | null>(null);
+
+// ---- older candles ("Load previous candles") ----
+const tradeStart = computed(() => tradeStartTs(props.overlays));
+const older = ref({ running: false, pages: 0, candles: 0 });
+const olderError = ref<string | null>(null);
+let olderGen = 0;
+
+function cancelOlder() {
+  olderGen += 1;
+  older.value = { running: false, pages: 0, candles: 0 };
+}
+
+const olderUi = computed(() =>
+  olderState({
+    hasApi: !!localApi.value,
+    firstTs: firstTs.value,
+    tradeStart: tradeStart.value,
+    hasMore: hasMore.value,
+    atEdge: win.value.start <= 0.5,
+    count: set.value?.rows.length ?? 0,
+  }),
+);
+const noMoreText = computed(() =>
+  firstAvailable.value !== null
+    ? t('fq.candle.olderNoMoreSince', { date: timeFmt.value.format(firstAvailable.value) })
+    : t('fq.candle.olderNoMore'),
+);
+
+/** The window on screen as moments, from its percentages and the candles it is a window of. */
+function windowTs(s: CandleSet): { from: number; to: number } | null {
+  const di = s.columns.indexOf(DATE_COL);
+  if (di < 0 || s.rows.length === 0) return null;
+  const a = s.rows[0]![di] as number;
+  const b = s.rows[s.rows.length - 1]![di] as number;
+  return { from: a + ((b - a) * win.value.start) / 100, to: a + ((b - a) * win.value.end) / 100 };
+}
+const pctIn = (s: CandleSet, ts: number): number => {
+  const di = s.columns.indexOf(DATE_COL);
+  const a = s.rows[0]![di] as number;
+  const b = s.rows[s.rows.length - 1]![di] as number;
+  return b > a ? Math.min(100, Math.max(0, ((ts - a) / (b - a)) * 100)) : 0;
+};
+
+/**
+ * Put older pages in front of the candles, one after the other, until the open of the trade is
+ * covered (with a margin) or, with no trade to reach, after one page. It stops when the history
+ * ends, at the memory ceiling, on a failure or when the user cancels. The moment that was on
+ * screen stays on screen; at the end the window is framed on the trade.
+ */
+async function loadOlder(): Promise<void> {
+  const api = localApi.value;
+  if (!api || older.value.running || !set.value || props.candles) return;
+  const gen = ++olderGen;
+  const mine = token;
+  const target = tradeStart.value;
+  older.value = { running: true, pages: 0, candles: 0 };
+  olderError.value = null;
+  try {
+    for (;;) {
+      const cur = set.value;
+      if (!cur || mine !== token || gen !== olderGen) return;
+      const first =
+        cur.rows.length > 0 ? (cur.rows[0]![cur.columns.indexOf(DATE_COL)] as number) : null;
+      if (first === null || cur.rows.length >= MAX_CANDLES) break;
+      const page = await withTimeout(
+        api({ pair: props.pair, timeframe: props.tf, endMs: first, limit: OLDER_PAGE }),
+        props.timeoutMs,
+      );
+      const now = set.value;
+      if (!now || mine !== token || gen !== olderGen) return;
+      const merged = prependOlder(now, setFromPage(page, now.timeframeMs));
+      const added = merged.rows.length - now.rows.length;
+      hasMore.value = page.hasMore;
+      firstAvailable.value = page.firstAvailableMs;
+      older.value = {
+        running: true,
+        pages: older.value.pages + 1,
+        candles: older.value.candles + added,
+      };
+      // The same moment stays on screen while pages come in
+      const w = windowTs(now);
+      if (w && added > 0) {
+        zoomWin.value = { start: pctIn(merged, w.from), end: pctIn(merged, w.to) };
+      }
+      set.value = merged;
+      const newFirst = merged.rows[0]![merged.columns.indexOf(DATE_COL)] as number;
+      const finished =
+        !page.hasMore ||
+        added === 0 ||
+        target === null ||
+        merged.rows.length >= MAX_CANDLES ||
+        isCovered(newFirst, target, now.timeframeMs);
+      if (finished) {
+        if (target === null && w && added > 0) {
+          // No trade to reach: show what was just added, the old edge a fifth into the window
+          const span = w.to - w.from;
+          zoomWin.value = {
+            start: pctIn(merged, Math.max(newFirst, first - span * 0.8)),
+            end: pctIn(merged, first + span * 0.2),
+          };
+        }
+        break;
+      }
+    }
+  } catch (e) {
+    if (mine === token && gen === olderGen) {
+      olderError.value = e instanceof Error ? e.message : String(e);
+    }
+  } finally {
+    if (gen === olderGen) older.value = { ...older.value, running: false };
+  }
+  if (gen !== olderGen || mine !== token) return;
+  // The trade is in reach: frame it. A trade too far for the first window is brought back by hand
+  const s = set.value;
+  const tf = s?.timeframeMs ?? 0;
+  if (s && tradeStart.value !== null && isCovered(firstTs.value, tradeStart.value, tf)) {
+    if (frame.value.framed) {
+      zoomWin.value = null;
+      zoomApplied.value = null;
+    } else {
+      await nextTick();
+      requestAnimationFrame(() => recentre());
+    }
+  }
+  scheduleLocalTail();
+}
+
+watch(
+  () =>
+    [
+      activeSource.value,
+      props.botKey,
+      props.pair,
+      props.tf,
+      props.candles,
+      props.anchorEndMs ?? null,
+    ] as const,
+  () => {
+    // Another pair or bot: the held chart is no use. The same pair in another timeframe stays
+    // under the veil until the candles of the new one are there.
+    if (props.candles) set.value = toCandleSet(props.candles);
+    else if (heldPair.value !== pairKey()) set.value = null;
+    hover.value = null;
+    olderError.value = null;
+    void loadAll();
+    resubscribe();
+  },
+  { immediate: true },
+);
 
 const timeFmt = computed(
   () =>
@@ -503,6 +826,7 @@ const option = computed(() => {
     fmt: chartFmt,
     visibleCandles: frame.value.visible,
     initialZoom: zoomApplied.value !== zoomKey.value,
+    zoomWin: zoomWin.value,
     labelSide: prefs.settings.ui.chartLabelSide,
     heightPx: plotHeight.value,
     showSubplots: showSubs.value,
@@ -523,7 +847,10 @@ watch(
   option,
   (o) => {
     if (!o) return;
-    if (zoomApplied.value !== zoomKey.value) {
+    if (zoomWin.value) {
+      win.value = { ...zoomWin.value };
+      zoomWin.value = null;
+    } else if (zoomApplied.value !== zoomKey.value) {
       win.value = {
         start: zoomStartPct(set.value?.rows.length ?? 0, frame.value.visible),
         end: 100,
@@ -808,6 +1135,8 @@ function setToggle(k: keyof OverlayToggles) {
 
 onBeforeUnmount(() => {
   token += 1;
+  olderGen += 1;
+  clearTimeout(tailTimer);
   cancelAnimationFrame(rafId);
   clearTimeout(pressTimer);
   removeWindowListeners();
@@ -894,6 +1223,13 @@ const hasOverlay = (k: keyof OverlayToggles) => {
         @toggle="showSubs = !showSubs"
       />
     </div>
+    <p v-if="option && via === 'local'" class="lnote" data-testid="candle-local-note">
+      {{
+        resampledFrom
+          ? t('fq.candle.localNoteResampled', { from: resampledFrom })
+          : t('fq.candle.localNote')
+      }}
+    </p>
     <div
       v-if="controls && toggleKeys.some(hasOverlay)"
       class="ov"
@@ -960,7 +1296,9 @@ const hasOverlay = (k: keyof OverlayToggles) => {
           error
             ? t('fq.candle.emptyError')
             : wrongTf
-              ? t('fq.candle.onlyTf', { tf: ownTf })
+              ? localApi
+                ? t('fq.candle.emptyLocal')
+                : `${t('fq.candle.onlyTf', { tf: ownTf })} ${t('fq.candle.needGatewayTf')}`
               : t('fq.candle.emptyHint')
         "
         data-testid="candle-empty"
@@ -985,16 +1323,82 @@ const hasOverlay = (k: keyof OverlayToggles) => {
           {{ t('fq.pg.charts.sub.hide') }}
         </button>
       </div>
-      <button
-        v-if="edge && option"
-        type="button"
-        class="edge num"
-        data-testid="candle-entry-edge"
-        :title="t('fq.candle.entryEdgeTip')"
-        @click="recentre"
+      <div
+        v-if="option && (edge || older.running || olderUi !== 'hidden' || olderError)"
+        class="edges"
       >
-        {{ t('fq.candle.entryAgo', { age: fmt.age(edge.ageMs) }) }}
-      </button>
+        <button
+          v-if="edge"
+          type="button"
+          class="edge num"
+          data-testid="candle-entry-edge"
+          :title="t('fq.candle.entryEdgeTip')"
+          @click="recentre"
+        >
+          {{ t('fq.candle.entryAgo', { age: fmt.age(edge.ageMs) }) }}
+        </button>
+        <span
+          v-if="older.running"
+          class="edge prog"
+          role="status"
+          data-testid="candle-older-progress"
+        >
+          <span class="spin vs-spin" aria-hidden="true"></span>
+          {{ t('fq.candle.olderProgress', { n: older.candles }) }}
+          <button
+            type="button"
+            class="cancel"
+            data-testid="candle-older-cancel"
+            @click="cancelOlder"
+          >
+            {{ t('fq.candle.olderCancel') }}
+          </button>
+        </span>
+        <button
+          v-else-if="olderUi === 'show'"
+          type="button"
+          class="edge older"
+          data-testid="candle-load-older"
+          :title="t('fq.candle.loadOlderTip')"
+          @click="loadOlder()"
+        >
+          {{ t('fq.candle.loadOlder') }}
+        </button>
+        <span
+          v-else-if="olderUi === 'needGateway'"
+          class="hintline"
+          data-testid="candle-need-gateway"
+        >
+          {{ t('fq.candle.olderNeedGateway') }}
+        </span>
+        <span v-else-if="olderUi === 'noMore'" class="hintline" data-testid="candle-no-more">
+          {{ noMoreText }}
+        </span>
+        <span v-else-if="olderUi === 'capped'" class="hintline" data-testid="candle-capped">
+          {{ t('fq.candle.olderCapped', { n: MAX_CANDLES }) }}
+        </span>
+        <span
+          v-if="olderError"
+          class="hintline warn"
+          role="status"
+          data-testid="candle-older-error"
+        >
+          {{ t('fq.candle.olderError') }} · {{ olderError }}
+        </span>
+      </div>
+      <!-- Every load says so: the chart stays under a veil (a first load shows the skeleton) -->
+      <Transition name="cc-veil">
+        <div
+          v-if="loading"
+          class="veil"
+          :class="{ bare: !option }"
+          role="status"
+          data-testid="candle-loading"
+        >
+          <span class="spin vs-spin" aria-hidden="true"></span>
+          <span>{{ t('fq.candle.loading', { tf }) }}</span>
+        </div>
+      </Transition>
       <div
         v-if="drag && move"
         class="measure"
@@ -1199,12 +1603,22 @@ const hasOverlay = (k: keyof OverlayToggles) => {
     margin: 2px var(--s3) var(--s2);
   }
 }
-.edge {
+.edges {
   position: absolute;
   z-index: 3;
   /* At the left edge, mid height: the top of the plot carries the labels of the lines */
   left: 56px;
   top: 40%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: calc(100% - 120px);
+}
+.edge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 2px 8px;
   border-radius: var(--r-1);
   background: var(--bg-3);
@@ -1215,6 +1629,75 @@ const hasOverlay = (k: keyof OverlayToggles) => {
 }
 .edge:hover {
   background: var(--bg-2);
+}
+.edge.prog {
+  cursor: default;
+  color: var(--fg-2);
+  border-color: var(--line-2);
+}
+.edge.prog:hover {
+  background: var(--bg-3);
+}
+.cancel {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.cancel:hover {
+  text-decoration: underline;
+}
+.hintline {
+  padding: 2px 8px;
+  border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--bg-1) 88%, transparent);
+  border: 1px solid var(--line-2);
+  color: var(--fg-3);
+  font-size: var(--t-xs);
+}
+.hintline.warn {
+  color: var(--warn);
+}
+.lnote {
+  margin: 0;
+  padding: 2px var(--s3);
+  color: var(--fg-3);
+  font-size: var(--t-xs);
+}
+.veil {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  color: var(--fg-2);
+  font-size: var(--t-sm);
+  cursor: progress;
+}
+.veil.bare {
+  background: none;
+}
+.spin {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--fg-2);
+  border-right-color: transparent;
+  animation: fq-spin 700ms linear infinite;
+}
+.cc-veil-enter-active,
+.cc-veil-leave-active {
+  transition: opacity var(--d-base) var(--e-out);
+}
+.cc-veil-enter-from,
+.cc-veil-leave-to {
+  opacity: 0;
 }
 .measure {
   position: absolute;

@@ -422,6 +422,7 @@ useShortcuts([
     />
     <TradeDrawer
       v-if="sheet"
+      :chart="false"
       :bot-key="sheet.botKey"
       :trade-id="sheet.tradeId"
       :open="true"
