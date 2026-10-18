@@ -457,7 +457,8 @@ export default {
     age: { min: '{n} min', h: '{n} h', d: '{n} j' },
     loadOlder: 'Charger les bougies précédentes',
     loadOlderTip: "Lit l'historique local pour voir l'ouverture du trade",
-    olderProgress: "Chargement de l'historique… {n} bougies ajoutées",
+    olderProgress:
+      "Chargement de l'historique… {n} bougie ajoutée | Chargement de l'historique… {n} bougies ajoutées",
     olderCancel: 'Annuler',
     olderNeedGateway: "L'historique plus ancien demande la gateway.",
     olderNoMore: "Pas d'historique plus ancien en local.",

@@ -61,6 +61,60 @@ export function frameCandles(o: {
   return { visible: Math.max(base, needed), framed: true };
 }
 
+/** Candles shown before the open of the trade when the window is brought onto it. */
+export const FOCUS_MARGIN_CANDLES = 30;
+
+/**
+ * The window that frames a trade once older candles are in: from its open minus a margin of
+ * candles to its close (plus a few candles) or, for an open position, to the last candle. In
+ * moments, not in positions: candles put in front of the set change every index, a time does not
+ * move. Clamped to the loaded candles. Null when the trade or the candle size is unknown, or when
+ * the window would hold more than `max` candles (the caller falls back to the edge-marker
+ * behaviour, which keeps the width the user has).
+ */
+export function focusWindow(o: {
+  openTs: number | null | undefined;
+  /** Close of the trade; null or absent while the position is open. */
+  closeTs?: number | null;
+  firstTs: number | null | undefined;
+  lastTs: number | null | undefined;
+  timeframeMs: number;
+  margin?: number;
+  max?: number;
+}): { startTs: number; endTs: number } | null {
+  const { openTs, closeTs, firstTs, lastTs, timeframeMs } = o;
+  if (
+    openTs == null ||
+    firstTs == null ||
+    lastTs == null ||
+    !Number.isFinite(openTs) ||
+    !Number.isFinite(firstTs) ||
+    !Number.isFinite(lastTs) ||
+    openTs <= 0 ||
+    !(timeframeMs > 0)
+  ) {
+    return null;
+  }
+  const margin = o.margin ?? FOCUS_MARGIN_CANDLES;
+  const startTs = Math.max(firstTs, openTs - margin * timeframeMs);
+  const endTs =
+    closeTs != null && Number.isFinite(closeTs) && closeTs >= openTs
+      ? Math.min(lastTs, closeTs + FRAME_MIN_MARGIN * timeframeMs)
+      : lastTs;
+  if (!(endTs > startTs)) return null;
+  if ((endTs - startTs) / timeframeMs > (o.max ?? FRAME_MAX_CANDLES)) return null;
+  return { startTs, endTs };
+}
+
+/** Close of the trade that opened at `openTs`, from the closed marks; null while it is open. */
+export function closeOf(
+  closed: readonly Pick<ClosedMark, 'openTs' | 'closeTs'>[] | undefined,
+  openTs: number | null | undefined,
+): number | null {
+  if (openTs == null) return null;
+  return closed?.find((c) => c.openTs === openTs)?.closeTs ?? null;
+}
+
 export interface EntryEdge {
   /** How long ago the position was opened, in ms. */
   ageMs: number;

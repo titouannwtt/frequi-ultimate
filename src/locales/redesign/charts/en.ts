@@ -453,7 +453,7 @@ export default {
     age: { min: '{n} min', h: '{n} h', d: '{n} d' },
     loadOlder: 'Load previous candles',
     loadOlderTip: 'Reads the local history to show where the trade opened',
-    olderProgress: 'Loading history… {n} candles added',
+    olderProgress: 'Loading history… {n} candle added | Loading history… {n} candles added',
     olderCancel: 'Cancel',
     olderNeedGateway: 'Older history needs the gateway.',
     olderNoMore: 'No older local history.',
