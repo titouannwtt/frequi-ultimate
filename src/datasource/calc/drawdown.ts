@@ -86,8 +86,57 @@ export function walk(points: readonly CurvePoint[]): Walk {
   };
 }
 
+/** Longest run of consecutive samples treated as one incomplete reading (about 15 minutes). */
+const MAX_PARTIAL_RUN = 3;
+
+const sameClosed = (a: number, b: number): boolean => Math.abs(a - b) < 1e-6;
+
+/**
+ * Drop the samples a bot wrote while it could not price some of its open positions (B600).
+ *
+ * The bot sums the latent profit of the positions it manages to price and leaves out the others
+ * (restart, exchange hiccup): the sample then holds fewer open positions than its neighbours and
+ * a latent profit missing their share, down to exactly 0. Summed across a fleet it draws a
+ * vertical spike for one sample. A run of at most MAX_PARTIAL_RUN samples is dropped when the
+ * counts before and after it are equal and higher than inside it, and the closed profit did not
+ * move. Samples without a count are never touched. Input sorted by time.
+ */
+export function dropPartialSamples(sorted: readonly HistorySample[]): HistorySample[] {
+  const drop = new Array<boolean>(sorted.length).fill(false);
+  let i = 1;
+  while (i < sorted.length) {
+    const before = sorted[i - 1];
+    const count = before.open_trades;
+    if (count === undefined || count === null) {
+      i += 1;
+      continue;
+    }
+    const lower = (s: HistorySample): boolean =>
+      s.open_trades !== undefined &&
+      s.open_trades !== null &&
+      s.open_trades < count &&
+      sameClosed(s.closed, before.closed);
+    let j = i;
+    while (j < sorted.length && j - i < MAX_PARTIAL_RUN && lower(sorted[j])) j += 1;
+    const back =
+      j < sorted.length &&
+      j > i &&
+      sorted[j].open_trades === count &&
+      sameClosed(sorted[j].closed, before.closed);
+    if (back) {
+      drop.fill(true, i, j);
+      i = j + 1;
+    } else {
+      i += 1;
+    }
+  }
+  return sorted.filter((_, k) => !drop[k]);
+}
+
 /**
  * Merge the sampled histories of several bots into one `closed + open` curve.
+ *
+ * Samples written with some positions unpriced are dropped first, see dropPartialSamples.
  *
  * Merging starts at the first timestamp every bot has a sample for: before that, the forward
  * filled sum silently misses whole bots and fabricates an artificially low start. Each bot's last
@@ -96,7 +145,7 @@ export function walk(points: readonly CurvePoint[]): Walk {
 export function mergeHistories(series: ReadonlyArray<readonly HistorySample[]>): CurvePoint[] {
   const sorted = series
     .filter((s) => s.length > 0)
-    .map((s) => [...s].sort((a, b) => a.ts_ms - b.ts_ms));
+    .map((s) => dropPartialSamples([...s].sort((a, b) => a.ts_ms - b.ts_ms)));
   if (sorted.length === 0) {
     return [];
   }

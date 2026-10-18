@@ -64,6 +64,11 @@ pub struct HistorySample {
     pub ts_ms: i64,
     pub closed: f64,
     pub open: f64,
+    /// Open positions the bot counted when it wrote the sample (`None`: the source does not say).
+    /// Lets [`merge_histories`] spot a sample written while some prices were missing (B600).
+    #[serde(default)]
+    #[ts(optional)]
+    pub open_trades: Option<u32>,
 }
 
 /// Inputs of [`compute`]. `histories` holds one series per bot (several for a group or the fleet).
@@ -180,7 +185,63 @@ pub fn walk(points: &[(i64, f64)]) -> Walk {
     }
 }
 
+/// Longest run of consecutive samples treated as one incomplete reading (about a quarter of an
+/// hour at the bot's 5 minute sampling).
+const MAX_PARTIAL_RUN: usize = 3;
+
+fn same_closed(a: f64, b: f64) -> bool {
+    (a - b).abs() < 1e-6
+}
+
+/// Drop the samples a bot wrote while it could not price some of its open positions.
+///
+/// The bot sums the latent profit of the positions it manages to price and silently leaves out
+/// the others (restart, exchange hiccup): the sample then holds fewer open positions than the
+/// samples around it and a latent profit that is missing their share, down to exactly 0 when no
+/// price was known (B600). Summed across a fleet it draws a vertical spike of the size of that
+/// bot's book for a single sample. A run of at most [`MAX_PARTIAL_RUN`] samples is dropped when
+/// the counts before and after the run are equal and higher than inside it, and the closed profit
+/// did not move (a real close and reopen changes it). The merge then carries the last good value
+/// forward. Samples without a count are never touched.
+#[must_use]
+pub fn drop_partial_samples(sorted: Vec<HistorySample>) -> Vec<HistorySample> {
+    let n = sorted.len();
+    let mut drop = vec![false; n];
+    let mut i = 1;
+    while i < n {
+        let before = sorted[i - 1];
+        let Some(count) = before.open_trades else {
+            i += 1;
+            continue;
+        };
+        let lower = |s: &HistorySample| {
+            s.open_trades.is_some_and(|k| k < count) && same_closed(s.closed, before.closed)
+        };
+        let mut j = i;
+        while j < n && j - i < MAX_PARTIAL_RUN && lower(&sorted[j]) {
+            j += 1;
+        }
+        let back = j < n
+            && j > i
+            && sorted[j].open_trades == Some(count)
+            && same_closed(sorted[j].closed, before.closed);
+        if back {
+            drop[i..j].fill(true);
+            i = j + 1;
+        } else {
+            i += 1;
+        }
+    }
+    sorted
+        .into_iter()
+        .zip(drop)
+        .filter_map(|(s, d)| (!d).then_some(s))
+        .collect()
+}
+
 /// Merge the sampled histories of several bots into one `closed + open` curve.
+///
+/// Samples written with some positions unpriced are dropped first, see [`drop_partial_samples`].
 ///
 /// Merging starts at the first timestamp every bot has a sample for: before that, the forward
 /// filled sum silently misses whole bots and fabricates an artificially low start. Each bot's
@@ -193,7 +254,7 @@ pub fn merge_histories(series: &[Vec<HistorySample>]) -> Vec<(i64, f64)> {
         .map(|s| {
             let mut v = s.clone();
             v.sort_by_key(|x| x.ts_ms);
-            v
+            drop_partial_samples(v)
         })
         .collect();
     match sorted.len() {
@@ -468,16 +529,19 @@ mod tests {
                 ts_ms: 10,
                 closed: 0.0,
                 open: 0.0,
+                open_trades: None,
             },
             HistorySample {
                 ts_ms: 20,
                 closed: 0.0,
                 open: -30.0,
+                open_trades: None,
             },
             HistorySample {
                 ts_ms: 30,
                 closed: 8.0,
                 open: 0.0,
+                open_trades: None,
             },
         ]];
         let r = compute(&DrawdownInput {
@@ -501,11 +565,13 @@ mod tests {
                 ts_ms: 100,
                 closed: 0.0,
                 open: 0.0,
+                open_trades: None,
             },
             HistorySample {
                 ts_ms: 200,
                 closed: 0.0,
                 open: 1.0,
+                open_trades: None,
             },
         ]];
         let r = compute(&DrawdownInput {
@@ -525,11 +591,13 @@ mod tests {
                 ts_ms: 10,
                 closed: 1.0,
                 open: 0.0,
+                open_trades: None,
             },
             HistorySample {
                 ts_ms: 30,
                 closed: 3.0,
                 open: 0.0,
+                open_trades: None,
             },
         ];
         let b = vec![
@@ -537,15 +605,129 @@ mod tests {
                 ts_ms: 20,
                 closed: 10.0,
                 open: 0.0,
+                open_trades: None,
             },
             HistorySample {
                 ts_ms: 30,
                 closed: 0.0,
                 open: 5.0,
+                open_trades: None,
             },
         ];
         // Common start is 20: a is forward filled with its t=10 sample (1.0).
         assert_eq!(merge_histories(&[a, b]), vec![(20, 11.0), (30, 8.0)]);
+    }
+
+    fn counted(ts_ms: i64, closed: f64, open: f64, n: u32) -> HistorySample {
+        HistorySample {
+            ts_ms,
+            closed,
+            open,
+            open_trades: Some(n),
+        }
+    }
+
+    /// Samples of `hyperliquid_hippo_original_multi` on 2026-10-16 (closed 1224.05, two open
+    /// positions) around the 13:26 sample written with no price known.
+    fn hippo_16_oct() -> Vec<HistorySample> {
+        vec![
+            counted(1, 1224.05, -545.91, 2),
+            counted(2, 1224.05, -545.91, 2),
+            counted(3, 1224.05, 0.0, 0),
+            counted(4, 1224.05, -549.42, 2),
+            counted(5, 1224.05, -553.40, 2),
+        ]
+    }
+
+    #[test]
+    fn a_sample_written_without_prices_does_not_spike_the_fleet_curve() {
+        // The second bot is steady at -400 latent; the first one is the real hippo book.
+        let steady: Vec<HistorySample> = (1..=5).map(|t| counted(t, 100.0, -400.0, 1)).collect();
+        let merged = merge_histories(&[hippo_16_oct(), steady]);
+        assert_eq!(merged.len(), 5);
+        let at3 = merged.iter().find(|p| p.0 == 3).unwrap().1;
+        // Before the fix: 1224.05 + 0 + 100 - 400 = 924.05 against about 278 around it.
+        assert!(
+            (at3 - (1224.05 - 545.91 + 100.0 - 400.0)).abs() < 1e-9,
+            "{at3}"
+        );
+        let lo = merged.iter().map(|p| p.1).fold(f64::MAX, f64::min);
+        let hi = merged.iter().map(|p| p.1).fold(f64::MIN, f64::max);
+        assert!(hi - lo < 10.0, "{lo} {hi}");
+    }
+
+    #[test]
+    fn a_single_bot_curve_is_cleaned_too() {
+        let merged = merge_histories(&[hippo_16_oct()]);
+        assert_eq!(merged.len(), 4);
+        assert!(merged.iter().all(|p| p.1 < 700.0));
+    }
+
+    #[test]
+    fn a_sample_missing_one_of_two_positions_is_dropped() {
+        // 2026-10-18 12:05: one position priced out of two, latent -21 instead of -611.
+        let h = vec![
+            counted(1, 1224.05, -615.09, 2),
+            counted(2, 1224.05, -21.31, 1),
+            counted(3, 1224.05, -610.94, 2),
+        ];
+        let kept = drop_partial_samples(h);
+        assert_eq!(kept.iter().map(|s| s.ts_ms).collect::<Vec<_>>(), vec![1, 3]);
+    }
+
+    #[test]
+    fn a_short_run_of_partial_samples_is_dropped_but_a_long_one_is_a_real_change() {
+        let run = |len: usize| {
+            let mut h = vec![counted(0, 5.0, -10.0, 2)];
+            h.extend((1..=len).map(|i| counted(i as i64, 5.0, 0.0, 0)));
+            h.push(counted(len as i64 + 1, 5.0, -11.0, 2));
+            drop_partial_samples(h).len()
+        };
+        assert_eq!(run(3), 2);
+        assert_eq!(run(4), 6);
+    }
+
+    #[test]
+    fn a_real_close_and_reopen_is_kept() {
+        // The closed profit moved: positions really closed, then others opened.
+        let h = vec![
+            counted(1, 5.0, -10.0, 2),
+            counted(2, 7.0, 0.0, 0),
+            counted(3, 7.0, -3.0, 2),
+        ];
+        assert_eq!(drop_partial_samples(h.clone()), h);
+        // A permanent decrease of the count is never touched.
+        let h = vec![
+            counted(1, 5.0, -10.0, 2),
+            counted(2, 5.0, -4.0, 1),
+            counted(3, 5.0, -4.0, 1),
+        ];
+        assert_eq!(drop_partial_samples(h.clone()), h);
+    }
+
+    #[test]
+    fn samples_without_a_count_are_never_dropped() {
+        let h: Vec<HistorySample> = vec![
+            HistorySample {
+                ts_ms: 1,
+                closed: 1.0,
+                open: -5.0,
+                open_trades: None,
+            },
+            HistorySample {
+                ts_ms: 2,
+                closed: 1.0,
+                open: 0.0,
+                open_trades: None,
+            },
+            HistorySample {
+                ts_ms: 3,
+                closed: 1.0,
+                open: -5.0,
+                open_trades: None,
+            },
+        ];
+        assert_eq!(drop_partial_samples(h.clone()), h);
     }
 
     #[test]
@@ -554,6 +736,7 @@ mod tests {
             ts_ms: 10,
             closed: 1.0,
             open: 2.0,
+            open_trades: None,
         }];
         assert_eq!(merge_histories(&[vec![], a]), vec![(10, 3.0)]);
         assert!(merge_histories(&[vec![], vec![]]).is_empty());
