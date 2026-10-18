@@ -449,6 +449,8 @@ export default {
     loading: 'Loading {tf} candles…',
     localNote: "Local history, without the strategy's indicators",
     localNoteResampled: "Local history rebuilt from {from}, without the strategy's indicators",
+    localStale: 'Last local candle {age} ago',
+    age: { min: '{n} min', h: '{n} h', d: '{n} d' },
     loadOlder: 'Load previous candles',
     loadOlderTip: 'Reads the local history to show where the trade opened',
     olderProgress: 'Loading history… {n} candles added',

@@ -1,5 +1,6 @@
 import type * as EchartsCore from 'echarts/core';
 import { flushPromises } from '@vue/test-utils';
+import PrimeVue from 'primevue/config';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import FleetBotSelect from '../../../src/components/fq/FleetBotSelect.vue';
@@ -133,6 +134,40 @@ describe('ProfitPanel', () => {
     for (const q of asked) expect([q.fromMs, q.toMs]).toEqual([fromMs, toMs]);
     expect(w.findAll('[role=radio][aria-checked=true]')).toHaveLength(0);
     expect(w.get('[data-testid=profit-dates]').text()).toMatch(/\d\d\/\d\d - \d\d\/\d\d/);
+  });
+
+  it('reopens on the saved range without closing again, and applies only a real choice', async () => {
+    const fromMs = FIXTURE_NOW - 20 * D;
+    const toMs = FIXTURE_NOW - 10 * D;
+    localStorage.setItem('fqu2.profitPeriod', 'custom');
+    localStorage.setItem('fqu2.profitRange', JSON.stringify({ fromMs, toMs }));
+    const { source } = curveSource();
+    const w = mountFq(ProfitPanel, {
+      props: { scope: { kind: 'fleet' }, source, nowMs: FIXTURE_NOW },
+      global: { plugins: [PrimeVue] },
+      attachTo: document.body,
+    });
+    await flushPromises();
+    await w.get('[data-testid=profit-dates]').trigger('click');
+    await flushPromises();
+    expect(w.get('[data-testid=profit-dates]').attributes('aria-expanded')).toBe('true');
+    expect(document.body.querySelector('[data-testid=profit-range]')).not.toBeNull();
+  });
+
+  it('keeps the curves on screen while the start of the period slides with the clock', async () => {
+    const { source, asked } = curveSource();
+    const w = mountFq(ProfitPanel, {
+      props: { scope: { kind: 'fleet' }, source, nowMs: FIXTURE_NOW },
+    });
+    await flushPromises();
+    expect(asked).toHaveLength(2);
+    expect(w.attributes('aria-busy')).toBeUndefined();
+    await w.setProps({ nowMs: FIXTURE_NOW + 3 * 60_000 });
+    await flushPromises();
+    // Same question: nothing is asked again, nothing goes back to waiting
+    expect(asked).toHaveLength(2);
+    expect(w.attributes('aria-busy')).toBeUndefined();
+    expect(charts.length).toBeGreaterThan(0);
   });
 
   it('says since when the open positions are tracked when that is after the start', async () => {

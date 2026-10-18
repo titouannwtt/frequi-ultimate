@@ -15,6 +15,7 @@ import { useI18n } from 'vue-i18n';
 
 import { BaseChart, EmptyState, FilterChip, Skeleton, ValueState } from '@/components/ds';
 import { useFormat } from '@/components/ds/lib/useFormat';
+import { useNowMs } from '@/components/ds/lib/useNowMs';
 import { useDataSource } from '@/composables/useDataSource';
 import { useFqFleetStore } from '@/datasource/stores/fleet';
 import { useFqPrefsStore } from '@/datasource/stores/prefs';
@@ -28,11 +29,15 @@ import {
   COVER_MARGIN,
   MAX_CANDLES,
   OLDER_PAGE,
+  ageParts,
   isCovered,
   nextTailDelay,
   olderState,
   prependOlder,
   setFromPage,
+  staleAgeMs,
+  tailHasGap,
+  tailLimit,
   tradeStartTs,
 } from './lib/candlesHistory';
 import { entryEdge, frameCandles, recentreOn } from './lib/chartTrades';
@@ -259,9 +264,13 @@ async function loadAll(): Promise<void> {
     set.value = toCandleSet(props.candles);
     heldPair.value = pairKey();
     heldTf.value = props.tf;
+    loading.value = false;
     return;
   }
-  if (!activeSource.value) return;
+  if (!activeSource.value) {
+    loading.value = false;
+    return;
+  }
   loading.value = true;
   try {
     const own = ownTf.value;
@@ -371,20 +380,41 @@ async function refreshLocalTail(mine: number): Promise<void> {
   const cur = set.value;
   const ms = tfMs(props.tf);
   if (!api || !cur || !(ms > 0) || lastTs.value === null) return;
-  // A tab that was hidden missed some candles: ask for them all, so that no gap is left
-  const limit = Math.min(OLDER_PAGE, Math.max(4, Math.ceil((Date.now() - lastTs.value) / ms) + 2));
+  // Only the few newest candles: a stale history must not cost a page at every candle
+  const limit = tailLimit(lastTs.value, Date.now(), ms);
   try {
     const page = await withTimeout(
       api({ pair: props.pair, timeframe: props.tf, limit }),
       props.timeoutMs,
     );
     if (mine !== token || !set.value) return;
-    const merged = mergeTail(set.value, setFromPage(page, set.value.timeframeMs));
-    if (merged) set.value = merged;
+    const tail = setFromPage(page, set.value.timeframeMs);
+    const di = tail.columns.indexOf(DATE_COL);
+    const first = di >= 0 && tail.rows.length > 0 ? (tail.rows[0]![di] as number | null) : null;
+    // The tab slept longer than the few candles cover: reload rather than leave a hole
+    if (tailHasGap(lastTs.value, first, ms)) {
+      void loadAll();
+      return;
+    }
+    const merged = mergeTail(set.value, tail);
+    if (merged) {
+      set.value = merged;
+      error.value = null;
+    }
   } catch (e) {
     if (mine === token) error.value = e instanceof Error ? e.message : String(e);
   }
 }
+
+// A tab that was hidden skipped the tail updates and nothing wakes them before the next candle
+// boundary: when it is shown again, catch up at once
+function onVisible() {
+  if (typeof document === 'undefined' || document.hidden) return;
+  if (via.value === 'local' && !anchoredLoad && !props.candles && localApi.value) {
+    void refreshLocalTail(token);
+  }
+}
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible);
 
 function resubscribe() {
   unsubscribe?.();
@@ -395,7 +425,10 @@ function resubscribe() {
     'chart',
     { botKey: props.botKey, pair: props.pair, timeframe: props.tf },
     (u) => {
-      if (u.kind === 'item' && via.value === 'bot') void refreshTail();
+      if (u.kind !== 'item') return;
+      if (via.value === 'bot') void refreshTail();
+      // The bot answers again on its own timeframe after a restart: leave the local fallback, once
+      else if (via.value === 'local' && !anchoredLoad && ownTf.value === props.tf) void loadAll();
     },
   );
 }
@@ -541,6 +574,13 @@ const lastTs = computed(() => {
   return set_ && di >= 0 && set_.rows.length > 0
     ? (set_.rows[set_.rows.length - 1]![di] as number)
     : null;
+});
+const clock = useNowMs();
+const staleText = computed(() => {
+  const age = staleAgeMs(lastTs.value, clock.value, tfMs(props.tf));
+  if (age === null) return '';
+  const { n, unit } = ageParts(age);
+  return t('fq.candle.localStale', { age: t(`fq.candle.age.${unit}`, { n }) });
 });
 const firstTs = computed(() => {
   const set_ = set.value;
@@ -692,6 +732,17 @@ async function loadOlder(): Promise<void> {
   scheduleLocalTail();
 }
 
+// The measure in progress (see the tool below); it dies with the pair or the timeframe
+interface Drag {
+  a: MeasurePoint;
+  b: MeasurePoint;
+  ax: number;
+  ay: number;
+  bx: number;
+  by: number;
+}
+const drag = ref<Drag | null>(null);
+
 watch(
   () =>
     [
@@ -708,6 +759,7 @@ watch(
     if (props.candles) set.value = toCandleSet(props.candles);
     else if (heldPair.value !== pairKey()) set.value = null;
     hover.value = null;
+    drag.value = null;
     olderError.value = null;
     void loadAll();
     resubscribe();
@@ -1009,15 +1061,6 @@ function onReady(chart: ECharts) {
 }
 
 // ---- measure tool: Shift + drag (or armed, or long press on touch) ----
-interface Drag {
-  a: MeasurePoint;
-  b: MeasurePoint;
-  ax: number;
-  ay: number;
-  bx: number;
-  by: number;
-}
-const drag = ref<Drag | null>(null);
 const LONG_PRESS_MS = 450;
 const PRESS_SLOP_PX = 10;
 let swallowing = false;
@@ -1140,6 +1183,7 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(rafId);
   clearTimeout(pressTimer);
   removeWindowListeners();
+  if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
   if (typeof window !== 'undefined') window.removeEventListener('keydown', onKey);
   chartRef?.off('updateAxisPointer');
   chartRef?.off('finished');
@@ -1229,6 +1273,7 @@ const hasOverlay = (k: keyof OverlayToggles) => {
           ? t('fq.candle.localNoteResampled', { from: resampledFrom })
           : t('fq.candle.localNote')
       }}
+      <span v-if="staleText" data-testid="candle-local-stale">{{ staleText }}</span>
     </p>
     <div
       v-if="controls && toggleKeys.some(hasOverlay)"

@@ -39,9 +39,9 @@ let bot: string;
  * A local history of `n` candles of `tf` ending at the fixture now, served like the gateway does:
  * the latest `limit` candles before `endMs`, `hasMore` while older ones remain.
  */
-function history(n: number, tf = TF) {
+function history(n: number, tf = TF, endAt = FIXTURE_NOW) {
   const store = Array.from({ length: n }, (_, i) => {
-    const ts = FIXTURE_NOW - (n - 1 - i) * tf;
+    const ts = endAt - (n - 1 - i) * tf;
     return [ts, 10, 12, 9, 11 + (i % 3), 100] as [number, number, number, number, number, number];
   });
   const calls: CandlesQuery[] = [];
@@ -390,6 +390,84 @@ describe('the newest local candles', () => {
     await vi.advanceTimersByTimeAsync(60 * MIN);
     await flushPromises();
     expect(h.calls).toHaveLength(3);
+  });
+
+  it('say how old the last local candle is when it lags by more than two candles', async () => {
+    sb = sourceB(world.fixture);
+    withHistory(history(3000, 60 * MIN, FIXTURE_NOW - 3 * 60 * MIN));
+    const w = mountFq(CandleChart, { props: props({ tf: '1h' }), attachTo: document.body });
+    await flushPromises();
+    expect(w.get('[data-testid=candle-local-stale]').text()).toBe('Last local candle 3 h ago');
+  });
+
+  it('say nothing when the last local candle is recent', async () => {
+    sb = sourceB(world.fixture);
+    withHistory(history(3000, 60 * MIN));
+    const w = mountFq(CandleChart, { props: props({ tf: '1h' }), attachTo: document.body });
+    await flushPromises();
+    expect(w.find('[data-testid=candle-local-stale]').exists()).toBe(false);
+  });
+
+  it('are caught up when the tab is shown again, a few candles at a time, and a failure is forgotten', async () => {
+    sb = sourceB(world.fixture);
+    const h = history(3000, 60 * MIN);
+    withHistory(h);
+    const w = mountFq(CandleChart, { props: props({ tf: '1h' }), attachTo: document.body });
+    await flushPromises();
+    expect(h.calls).toHaveLength(1);
+    const hidden = vi.spyOn(document, 'hidden', 'get');
+    // A tab that is still hidden asks nothing
+    hidden.mockReturnValue(true);
+    document.dispatchEvent(new Event('visibilitychange'));
+    await flushPromises();
+    expect(h.calls).toHaveLength(1);
+    // Shown again: the tail is asked at once, and it is small
+    hidden.mockReturnValue(false);
+    const real = h.api.getMockImplementation()!;
+    h.api.mockImplementationOnce(async () => {
+      throw new Error('gateway 500');
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await flushPromises();
+    expect(h.calls).toHaveLength(1);
+    expect(w.find('[data-testid=candle-error]').exists()).toBe(true);
+    h.api.mockImplementation(real);
+    document.dispatchEvent(new Event('visibilitychange'));
+    await flushPromises();
+    expect(h.calls).toHaveLength(2);
+    expect(h.calls[1]!.limit).toBeLessThanOrEqual(50);
+    expect(w.find('[data-testid=candle-error]').exists()).toBe(false);
+    // The listener goes with the chart
+    w.unmount();
+    document.dispatchEvent(new Event('visibilitychange'));
+    await flushPromises();
+    expect(h.calls).toHaveLength(2);
+    hidden.mockRestore();
+  });
+
+  it('never ask for a page: a long lag is still capped at 50 candles', async () => {
+    sb = sourceB(world.fixture);
+    const h = history(3000, 15 * MIN, FIXTURE_NOW - 5 * 24 * 60 * MIN);
+    withHistory(h);
+    mountFq(CandleChart, { props: props({ tf: '15m', botKey: 'none' }), attachTo: document.body });
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(16 * MIN);
+    await flushPromises();
+    for (const c of h.calls.slice(1)) expect(c.limit).toBeLessThanOrEqual(50);
+  });
+
+  it('go back to the bot when it answers again on its own timeframe', async () => {
+    const botCandles = { ...makeCandles(0), data: [] as unknown[][] };
+    sb = sourceB(world.fixture, { candles: botCandles as never });
+    withHistory(history(300));
+    const w = mountFq(CandleChart, { props: props(), attachTo: document.body });
+    await flushPromises();
+    expect(w.find('[data-testid=candle-local-note]').exists()).toBe(true);
+    botCandles.data.push(...makeCandles(60).data);
+    sb.push('chart', { kind: 'item', seq: 1, item: {} });
+    await flushPromises();
+    expect(w.find('[data-testid=candle-local-note]').exists()).toBe(false);
+    expect(rows()).toHaveLength(60);
   });
 
   it('are not asked after the chart is gone', async () => {

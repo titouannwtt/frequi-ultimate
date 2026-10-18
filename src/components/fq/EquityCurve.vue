@@ -90,8 +90,9 @@ const zone = computed<Tz>(() => props.tz ?? prefs.settings.tz);
 const now = computed(() => props.nowMs ?? clock.value);
 const preloaded = computed(() => props.series !== undefined);
 
-// The clock ticks every second: the start of the period is rounded to the minute so the key (and
-// the query) only changes when the question does
+// The clock ticks every second: the start of the period is rounded to the minute. The key does not
+// carry it (a sliding start is the same question): the last answer stays while the refresh, which
+// reads the start when it runs, comes in.
 const minute = computed(() => Math.floor(now.value / 60_000));
 const fromMs = computed(() => periodStartMs(props.period, minute.value * 60_000, zone.value));
 
@@ -107,7 +108,7 @@ const eq = useSourceQuery<EquitySeries>(
           tradingMode: props.mode,
         }),
   () =>
-    `${scopeKey(props.scope)}|${props.period}|${props.definition}|${props.mode}|${props.period === 'all' ? 0 : minute.value}`,
+    `${scopeKey(props.scope)}|${props.period}|${props.definition}|${props.mode}`,
   { refreshMs: 30_000, source: () => props.source },
 );
 const dd = useSourceQuery<DrawdownResult | null>(

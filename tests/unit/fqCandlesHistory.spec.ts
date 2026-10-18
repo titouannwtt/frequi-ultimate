@@ -4,6 +4,11 @@ import { DATE_COL, toCandleSet, type CandleSet } from '@/components/fq/lib/candl
 import {
   COVER_MARGIN,
   MAX_CANDLES,
+  TAIL_LIMIT,
+  ageParts,
+  staleAgeMs,
+  tailHasGap,
+  tailLimit,
   coverTarget,
   isCovered,
   nextTailDelay,
@@ -251,5 +256,28 @@ describe('overlays of a closed trade', () => {
       () => '',
     );
     expect(o.fills![0]!.win).toBe(true);
+  });
+});
+
+describe('the tail of the local history', () => {
+  it('asks for the few missing candles, between 4 and 50', () => {
+    expect(tailLimit(T0, T0 + H, H)).toBe(4);
+    expect(tailLimit(T0, T0 + 20 * H, H)).toBe(22);
+    expect(tailLimit(T0, T0 + 5000 * H, H)).toBe(TAIL_LIMIT);
+  });
+
+  it('sees a hole between the candles held and the tail', () => {
+    expect(tailHasGap(T0, T0 + H, H)).toBe(false);
+    expect(tailHasGap(T0, T0 + 3 * H, H)).toBe(true);
+    expect(tailHasGap(T0, null, H)).toBe(false);
+  });
+
+  it('calls a candle stale beyond two candles, and gives its age', () => {
+    expect(staleAgeMs(T0, T0 + 2 * H, H)).toBeNull();
+    expect(staleAgeMs(T0, T0 + 3 * H, H)).toBe(3 * H);
+    expect(staleAgeMs(null, T0, H)).toBeNull();
+    expect(ageParts(5 * 60_000)).toEqual({ n: 5, unit: 'min' });
+    expect(ageParts(3 * H)).toEqual({ n: 3, unit: 'h' });
+    expect(ageParts(72 * H)).toEqual({ n: 3, unit: 'd' });
   });
 });
