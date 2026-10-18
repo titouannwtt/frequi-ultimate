@@ -4,6 +4,16 @@ All notable fork-specific changes are documented here. Upstream FreqUI changes a
 
 This fork is also documented in detail in [`CHANGELOG_FORK.md`](CHANGELOG_FORK.md).
 
+## [Unreleased]
+
+### Added
+- Fleet page: a **Profit** block, full width under the four figures. It shows the profit of the ticked bots over 24 h, 7 d, 30 d, 90 d, 1 year, the whole history or a range of days, as two curves that start at zero where the period starts (the closed trades, and the closed trades with the open positions), with the realised and the open profit above them.
+- Fleet page: a **Bots N/M** button opens the list of bots to tick (search, All / None, a quick pick by group). The bots ticked count in the four figures, the Profit block, the table of bots, the positions to watch and the risk; live and dry keep their own figures. The alerts and the verdict still watch the whole mode. The choice is kept in the preferences, and a bot that appears later is ticked.
+- Gateway: `GET /equity` takes `to` (ms) beside `from`, cuts the range first and decimates after, and answers `base`, the value of the curve just before `from`.
+
+### Changed
+- Fleet page: the table of bots shows today, 7 days, 30 days and the total of each bot by default, and every ticked bot on a computer (a phone keeps its eight). A table saved with exactly the former six columns follows the new default; any other choice is kept.
+
 ## [2.0.0] - 2026-10-16
 
 Full redesign of the interface, plus an optional Rust gateway. Upgrade guide: [`docs/UPGRADE.en.md`](docs/UPGRADE.en.md) ([français](docs/UPGRADE.fr.md)). Nothing to re-register: the bot list stays in the browser, and the old `localStorage` keys are never deleted.

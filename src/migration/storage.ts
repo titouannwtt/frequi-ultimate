@@ -10,6 +10,7 @@ import {
   type GatewayPrefs,
   type MigrationRecord,
 } from './schema';
+import { upgradeSettings } from './upgrade';
 
 export type KeyValueStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
@@ -46,7 +47,9 @@ export function loadSettings(storage: KeyValueStorage): FqSettings | null {
   if (!isObject(raw) || raw.v !== SETTINGS_VERSION) {
     return null;
   }
-  return mergeDeep(defaultSettings(), raw);
+  // The revision is read before the merge: the defaults carry the current one
+  const storedRev = typeof raw.columnDefaultsRev === 'number' ? raw.columnDefaultsRev : 0;
+  return upgradeSettings(mergeDeep(defaultSettings(), raw), storedRev);
 }
 
 export function saveSettings(storage: KeyValueStorage, settings: FqSettings): void {
