@@ -68,6 +68,20 @@ ledger_threads = 4
 # BTC and ETH ticker from CoinGecko (an external API, never the exchange).
 coingecko = true
 
+[candles]
+# Historical candles of GET /candles (older candles of a chart, other timeframes), read from files
+# and never from the exchange. By decreasing priority: when two files carry the same candle, the
+# first directory wins. {pair} is the pair with "/" and ":" replaced by "_", {tf} the timeframe.
+# The defaults suit freqtrade-ultimate on Hyperliquid:
+# cache_series = 24
+# cache_max_rows = 400000
+# [[candles.dirs]]
+# path = "~/.freqtrade/ftcache/hyperliquid/futures"
+# pattern = "{pair}-{tf}.feather"
+# [[candles.dirs]]
+# path = "~/freqtrade/user_data/data/hyperliquid/futures"
+# pattern = "{pair}-{tf}-futures.feather"
+
 [storage]
 data_dir = "~/.local/share/frequi-gateway"
 

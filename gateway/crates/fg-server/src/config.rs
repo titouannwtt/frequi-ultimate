@@ -8,6 +8,7 @@ use fg_core::alerts::AlertRulesConfig;
 use fg_core::calc::periods::Tz;
 use fg_engine::EngineConfig;
 use fg_engine::budget::BudgetConfig;
+use fg_sources::candles::{CandleDir, CandleStoreConfig};
 use figment::Figment;
 use figment::providers::{Env, Format, Serialized, Toml};
 use serde::{Deserialize, Serialize};
@@ -186,6 +187,68 @@ impl Default for MarketSection {
     }
 }
 
+/// One directory of feather files (`GET /candles`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CandleDirSection {
+    /// Directory (`~` is the home directory).
+    pub path: String,
+    /// File name, with `{pair}` (`BTC_USDC_USDC`) and `{tf}` (`15m`) in it.
+    pub pattern: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct CandlesSection {
+    /// Where the historical candles are read from, by decreasing priority: when two files carry
+    /// the same candle, the first directory wins. Files only, never the exchange.
+    pub dirs: Vec<CandleDirSection>,
+    /// Decoded files kept in memory at most (a pair and a timeframe are two files, one per
+    /// directory).
+    pub cache_series: usize,
+    /// Candles kept in memory at most, all files together (48 bytes each).
+    pub cache_max_rows: usize,
+}
+
+impl Default for CandlesSection {
+    fn default() -> Self {
+        Self {
+            dirs: vec![
+                // The 5000 latest candles, kept fresh by the ftcache daemon.
+                CandleDirSection {
+                    path: "~/.freqtrade/ftcache/hyperliquid/futures".into(),
+                    pattern: "{pair}-{tf}.feather".into(),
+                },
+                // The long history, refreshed from time to time by freqtrade.
+                CandleDirSection {
+                    path: "~/freqtrade/user_data/data/hyperliquid/futures".into(),
+                    pattern: "{pair}-{tf}-futures.feather".into(),
+                },
+            ],
+            cache_series: 24,
+            cache_max_rows: 400_000,
+        }
+    }
+}
+
+impl CandlesSection {
+    #[must_use]
+    pub fn store_config(&self) -> CandleStoreConfig {
+        CandleStoreConfig {
+            dirs: self
+                .dirs
+                .iter()
+                .map(|d| CandleDir {
+                    path: expand_home(&d.path),
+                    pattern: d.pattern.clone(),
+                })
+                .collect(),
+            max_series: self.cache_series,
+            max_rows: self.cache_max_rows,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct StorageSection {
@@ -244,6 +307,7 @@ pub struct GatewayConfig {
     pub hyperliquid: HyperliquidSection,
     pub scheduler: SchedulerSection,
     pub market: MarketSection,
+    pub candles: CandlesSection,
     /// Default alert rules; the rules stored in `state.db` win once they exist.
     pub alerts: AlertRulesConfig,
     pub storage: StorageSection,
@@ -295,7 +359,7 @@ pub fn expand_home(p: &str) -> PathBuf {
     PathBuf::from(p)
 }
 
-const SECTIONS: [&str; 11] = [
+const SECTIONS: [&str; 12] = [
     "general",
     "server",
     "auth",
@@ -304,6 +368,7 @@ const SECTIONS: [&str; 11] = [
     "hyperliquid",
     "scheduler",
     "market",
+    "candles",
     "alerts",
     "storage",
     "log",
@@ -472,6 +537,27 @@ impl GatewayConfig {
         {
             p.push("log.level must be one of error, warn, info, debug, trace".to_owned());
         }
+        for d in &self.candles.dirs {
+            if d.path.trim().is_empty() {
+                p.push("candles.dirs: path must not be empty".to_owned());
+            }
+            if !d.pattern.contains("{pair}")
+                || !d.pattern.contains("{tf}")
+                || d.pattern.contains(['/', '\\'])
+                || d.pattern.contains("..")
+            {
+                p.push(format!(
+                    "candles.dirs: pattern {:?} must hold {{pair}} and {{tf}} and be a file name",
+                    d.pattern
+                ));
+            }
+        }
+        if !(1..=64).contains(&self.candles.cache_series) {
+            p.push("candles.cache_series must be between 1 and 64".to_owned());
+        }
+        if !(10_000..=5_000_000).contains(&self.candles.cache_max_rows) {
+            p.push("candles.cache_max_rows must be between 10000 and 5000000".to_owned());
+        }
         if let Some(s) = &self.ftcache.socket
             && !s.is_empty()
             && !s.starts_with('/')
@@ -608,6 +694,21 @@ worker_threads = 0
 # BTC and ETH ticker from CoinGecko (an external API, never the exchange).
 coingecko = true
 
+[candles]
+# Historical candles of GET /candles, read from files (never from the exchange). Directories by
+# decreasing priority: when two files carry the same candle, the first one wins.
+# In a pattern, {pair} is the pair with "/" and ":" replaced by "_", and {tf} the timeframe.
+cache_series = 24
+cache_max_rows = 400000
+
+[[candles.dirs]]
+path = "~/.freqtrade/ftcache/hyperliquid/futures"
+pattern = "{pair}-{tf}.feather"
+
+[[candles.dirs]]
+path = "~/freqtrade/user_data/data/hyperliquid/futures"
+pattern = "{pair}-{tf}-futures.feather"
+
 [storage]
 data_dir = "~/.local/share/frequi-gateway"
 
@@ -687,6 +788,62 @@ mod tests {
         assert!(p.contains("http://a:1/x"), "{p}");
         assert!(!p.contains("http://ok:9400"), "{p}");
         assert!(p.contains("password_hash"), "{p}");
+    }
+
+    #[test]
+    fn the_candle_directories_are_configurable_and_checked() {
+        let dir = tempfile::tempdir().unwrap();
+        // Without a section: the directories of this host, the ftcache cache first.
+        let d = GatewayConfig::default().candles.store_config();
+        assert_eq!(d.dirs.len(), 2);
+        assert!(
+            d.dirs[0]
+                .path
+                .ends_with(".freqtrade/ftcache/hyperliquid/futures")
+        );
+        assert_eq!(d.dirs[0].pattern, "{pair}-{tf}.feather");
+        assert!(
+            d.dirs[1]
+                .path
+                .ends_with("freqtrade/user_data/data/hyperliquid/futures")
+        );
+        assert_eq!(d.dirs[1].pattern, "{pair}-{tf}-futures.feather");
+        assert!(!d.dirs[0].path.to_string_lossy().starts_with('~'));
+        assert_eq!((d.max_series, d.max_rows), (24, 400_000));
+
+        let f = write(
+            dir.path(),
+            "c.toml",
+            "[candles]\ncache_series = 3\n[[candles.dirs]]\npath = \"/srv/a\"\npattern = \"{tf}_{pair}.arrow\"\n",
+            0o644,
+        );
+        let c = load(Some(&f), None).unwrap().config;
+        assert_eq!(c.problems(), Vec::<String>::new());
+        let s = c.candles.store_config();
+        assert_eq!(s.dirs.len(), 1, "a list replaces the default one");
+        assert_eq!(s.dirs[0].path, PathBuf::from("/srv/a"));
+        assert_eq!(s.max_series, 3);
+
+        for (body, needle) in [
+            ("[candles]\nmystery = 1\n", "mystery"),
+            (
+                "[[candles.dirs]]\npath = \"/a\"\npattern = \"{pair}.feather\"\n",
+                "{pair} and {tf}",
+            ),
+            (
+                "[[candles.dirs]]\npath = \"/a\"\npattern = \"../{pair}-{tf}\"\n",
+                "file name",
+            ),
+            ("[candles]\ncache_series = 0\n", "cache_series"),
+            ("[candles]\ncache_max_rows = 5\n", "cache_max_rows"),
+        ] {
+            let f = write(dir.path(), "bad.toml", body, 0o644);
+            let msg = match load(Some(&f), None) {
+                Err(e) => e.to_string(),
+                Ok(l) => l.config.problems().join("\n"),
+            };
+            assert!(msg.contains(needle), "{body:?}: {msg}");
+        }
     }
 
     #[test]
