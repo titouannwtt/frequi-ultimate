@@ -53,6 +53,12 @@ anyhow = "=1.0.104"
 mimalloc = "=0.1.52"
 futures-util = { version = "=0.3.34", default-features = false, features = ["sink", "std"] }
 tempfile = "=3.27.0"
+# Historical candles are read from the feather files (Arrow IPC, lz4 frames) of the ftcache daemon
+# and of the freqtrade data directory. Only the IPC reader and its array types: no compute, no
+# cast, no csv/json, no zstd.
+arrow-array = { version = "=60.0.0", default-features = false }
+arrow-ipc = { version = "=60.0.0", default-features = false, features = ["lz4"] }
+arrow-schema = { version = "=60.0.0", default-features = false }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

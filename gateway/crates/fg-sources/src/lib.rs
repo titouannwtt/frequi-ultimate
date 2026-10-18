@@ -7,12 +7,14 @@
 //!   section 4.4).
 //! * [`botrest`] and [`botws`]: per-bot REST and WebSocket clients (03 sections 3.1, 4.2, 4.3).
 //! * [`external`]: CoinGecko ticker. Never the exchange.
+//! * [`candles`]: historical candles read from the feather files of this host, never the exchange.
 //!
 //! The behaviour the rest of the gateway depends on is described by the traits of [`traits`], so
 //! that the engine can be tested against fakes.
 
 pub mod botrest;
 pub mod botws;
+pub mod candles;
 pub mod discovery;
 pub mod external;
 pub mod ftcache;

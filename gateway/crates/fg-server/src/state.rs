@@ -6,6 +6,7 @@ use std::sync::Arc;
 use axum::http::{HeaderMap, header};
 use fg_core::identity::BotKey;
 use fg_engine::EngineHandle;
+use fg_sources::candles::CandleStore;
 use tokio::sync::{Semaphore, watch};
 
 use crate::config::GatewayConfig;
@@ -31,6 +32,8 @@ pub struct Inner {
     pub local_hosts: Vec<String>,
     pub allowed_origins: Vec<String>,
     pub cache: ProxyCache,
+    /// Historical candles read from files (`GET /candles`).
+    pub candles: Arc<CandleStore>,
     pub shutdown: watch::Sender<bool>,
     pub ws_pending: Arc<Semaphore>,
 }
@@ -67,6 +70,7 @@ impl AppState {
         local_hosts.extend(local_addresses());
         let allowed_origins = cfg.allowed_origins();
         let limits = Limits::new(&cfg.auth);
+        let candles = Arc::new(CandleStore::new(cfg.candles.store_config()));
         let recon_ttl =
             std::time::Duration::from_secs(u64::from(cfg.hyperliquid.min_sweep_interval_s));
         Self(Arc::new(Inner {
@@ -79,6 +83,7 @@ impl AppState {
             local_hosts,
             allowed_origins,
             cache: ProxyCache::new(recon_ttl),
+            candles,
             shutdown: watch::channel(false).0,
             ws_pending: Arc::new(Semaphore::new(MAX_PENDING_WS)),
         }))
