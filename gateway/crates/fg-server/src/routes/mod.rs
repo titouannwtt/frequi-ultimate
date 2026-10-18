@@ -18,6 +18,7 @@ use crate::state::AppState;
 
 pub mod actions;
 pub mod alerts;
+pub mod candles;
 pub mod data;
 pub mod proxy;
 pub mod session;
@@ -156,6 +157,7 @@ pub fn build(st: &AppState) -> (Router<AppState>, Vec<RouteInfo>) {
         .guarded("GET", "/events", get(data::events))
         .guarded("GET", "/pairs/{key}", get(data::pairs))
         .guarded("GET", "/market", get(data::market))
+        .guarded("GET", "/candles", get(candles::candles))
         .guarded("GET", "/audit", get(data::audit))
         // Passthrough and writes: no request timeout of their own. A write answers `unknown` when
         // the engine's deadline passes and is never cut by a timer above it, whose 408 would

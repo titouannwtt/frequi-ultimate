@@ -9,6 +9,9 @@ publish.workspace = true
 
 [dependencies]
 fg-core = { workspace = true }
+arrow-array = { workspace = true }
+arrow-ipc = { workspace = true }
+arrow-schema = { workspace = true }
 blake3 = { workspace = true }
 chrono = { workspace = true }
 futures-util = { workspace = true }
