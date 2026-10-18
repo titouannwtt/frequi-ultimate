@@ -15,6 +15,7 @@
   <a href="#the-gateway-optional"><b>Gateway</b></a> ·
   <a href="#how-it-works"><b>How it works</b></a> ·
   <a href="#highlights"><b>Highlights</b></a> ·
+  <a href="#screenshots"><b>Screenshots</b></a> ·
   <a href="docs/UPGRADE.en.md"><b>Upgrade guide</b></a>
 </p>
 
@@ -85,7 +86,52 @@ Authentication is mandatory, the port is `9399`, and the UI finds the gateway by
 - **Tools menu:** StrategyDev, Backtest, Download data and Pairlist stay available for open-source users, out of the way.
 - **French and English.**
 
-<!-- Screenshots of the 2.0 interface are added with the release. -->
+## Screenshots
+
+Taken from a live fleet of 16 bots on FreqUI Ultimate 2.1. Amounts are blurred; percentages, prices and counts are real.
+
+### Fleet
+
+Alerts that need you now, capital, 30-day profit, drawdown against its limit, margin used, then the profit curve and every bot sorted by what needs attention.
+
+<p align="center"><img src=".readme_illustrations/v2-fleet-dark.png" alt="Fleet page in dark theme: critical alerts, capital, 30-day profit, drawdown and margin tiles, the global profit curve, the bot table and the wallet risk panel" width="100%"></p>
+
+### Global profit, realised and with open positions
+
+One curve for the whole fleet over 24 h, 7 d, 30 d, 90 d, 1 year, all time or custom dates. The solid line is realised profit; the dashed line adds the latent P&L of open positions.
+
+<p align="center"><img src=".readme_illustrations/v2-profit.png" alt="Profit panel: period selector, realised and latent totals, realised curve and the curve including open positions" width="100%"></p>
+
+### Choose the bots that count
+
+Tick the bots that feed every figure of the page, by group (live, dry-run, others) or one by one.
+
+<p align="center"><img src=".readme_illustrations/v2-bots-select.png" alt="Bot selector open over the Fleet page: search field, All and None buttons, group chips and one checkbox per bot" width="100%"></p>
+
+### Bot and trade chart
+
+Click any trade: the pair chart opens on its entry, average entry and DCA orders, with the liquidation price flagged when it is off screen. Switch timeframe, or load older candles when the trade opened before the first one shown.
+
+<p align="center"><img src=".readme_illustrations/v2-bot-trade.png" alt="Bot page: bot KPIs, a one-hour candle chart of an open long with its entry and DCA markers, the positions table and the trade side panel" width="100%"></p>
+
+### Charts
+
+Every position of the fleet in one list, with the strategy indicators the bot computes and a button to load the candles before the entry.
+
+<p align="center"><img src=".readme_illustrations/v2-charts.png" alt="Charts page: list of open positions on the left, a five-minute candle chart with moving average and VWAP, and an RSI pane below" width="100%"></p>
+
+### Journal
+
+Closed trades grouped by day, bot or pair, with net result, win rate, average win and loss, and filters by period, mode and pair.
+
+<p align="center"><img src=".readme_illustrations/v2-journal.png" alt="Journal page: net result, win rate, average win and loss, worst trade, then closed trades grouped by day" width="100%"></p>
+
+### Light theme and phone
+
+<p align="center">
+  <img src=".readme_illustrations/v2-fleet-light.png" alt="Fleet page in light theme" width="68%">
+  <img src=".readme_illustrations/v2-phone.png" alt="Fleet page on a phone: alerts, KPI tiles and the bottom navigation bar" width="28%">
+</p>
 
 ## Learn algorithmic trading
 
