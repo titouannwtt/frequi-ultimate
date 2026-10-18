@@ -38,9 +38,24 @@ describe('samples written without prices (B600)', () => {
     expect(kept.map((x) => x.ts_ms)).toEqual([1, 3]);
   });
 
-  it('keeps a run longer than 3 samples, a real close and reopen, and samples without a count', () => {
-    const long = [s(0, 5, -10, 2), s(1, 5, 0, 0), s(2, 5, 0, 0), s(3, 5, 0, 0), s(4, 5, 0, 0), s(5, 5, -11, 2)];
-    expect(dropPartialSamples(long)).toHaveLength(6);
+  it('drops a run of unpriced samples over hours (hippo, 2026-10-16 07:14 to 11:36)', () => {
+    const step = 25 * 60_000;
+    const run = [
+      s(0, 5, -528, 2),
+      ...Array.from({ length: 11 }, (_, i) => s((i + 1) * step, 5, 0, 0)),
+      s(12 * step, 5, -520, 2),
+    ];
+    expect(dropPartialSamples(run).map((x) => x.ts_ms)).toEqual([0, 12 * step]);
+  });
+
+  it('keeps a run longer than 12 hours, a real close and reopen, and samples without a count', () => {
+    const H = 3_600_000;
+    const long = [
+      s(0, 5, -10, 2),
+      ...Array.from({ length: 13 }, (_, i) => s((i + 1) * H, 5, 0, 0)),
+      s(14 * H, 5, -11, 2),
+    ];
+    expect(dropPartialSamples(long)).toHaveLength(15);
     const reopened = [s(1, 5, -10, 2), s(2, 7, 0, 0), s(3, 7, -3, 2)];
     expect(dropPartialSamples(reopened)).toHaveLength(3);
     const noCount = [s(1, 1, -5), s(2, 1, 0), s(3, 1, -5)];

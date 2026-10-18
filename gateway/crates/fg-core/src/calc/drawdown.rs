@@ -185,9 +185,11 @@ pub fn walk(points: &[(i64, f64)]) -> Walk {
     }
 }
 
-/// Longest run of consecutive samples treated as one incomplete reading (about a quarter of an
-/// hour at the bot's 5 minute sampling).
-const MAX_PARTIAL_RUN: usize = 3;
+/// Longest stretch of time a run of samples can be treated as one incomplete reading. A bot that
+/// struggles with the exchange writes unpriced samples for hours, and further apart than every
+/// 5 minutes (11 samples over 5 hours for hippo on 2026-10-16): the bound is on time, not on a
+/// number of samples.
+const MAX_PARTIAL_SPAN_MS: i64 = 12 * 3_600_000;
 
 fn same_closed(a: f64, b: f64) -> bool {
     (a - b).abs() < 1e-6
@@ -199,7 +201,7 @@ fn same_closed(a: f64, b: f64) -> bool {
 /// the others (restart, exchange hiccup): the sample then holds fewer open positions than the
 /// samples around it and a latent profit that is missing their share, down to exactly 0 when no
 /// price was known (B600). Summed across a fleet it draws a vertical spike of the size of that
-/// bot's book for a single sample. A run of at most [`MAX_PARTIAL_RUN`] samples is dropped when
+/// bot's book for a single sample. A run spanning at most [`MAX_PARTIAL_SPAN_MS`] is dropped when
 /// the counts before and after the run are equal and higher than inside it, and the closed profit
 /// did not move (a real close and reopen changes it). The merge then carries the last good value
 /// forward. Samples without a count are never touched.
@@ -218,7 +220,7 @@ pub fn drop_partial_samples(sorted: Vec<HistorySample>) -> Vec<HistorySample> {
             s.open_trades.is_some_and(|k| k < count) && same_closed(s.closed, before.closed)
         };
         let mut j = i;
-        while j < n && j - i < MAX_PARTIAL_RUN && lower(&sorted[j]) {
+        while j < n && sorted[j].ts_ms - before.ts_ms <= MAX_PARTIAL_SPAN_MS && lower(&sorted[j]) {
             j += 1;
         }
         let back = j < n
@@ -676,15 +678,19 @@ mod tests {
     }
 
     #[test]
-    fn a_short_run_of_partial_samples_is_dropped_but_a_long_one_is_a_real_change() {
-        let run = |len: usize| {
+    fn a_run_of_partial_samples_is_dropped_up_to_twelve_hours() {
+        const H: i64 = 3_600_000;
+        // hippo, 2026-10-16 07:14 to 11:36: 11 unpriced samples about 25 minutes apart
+        let run = |len: i64, step: i64| {
             let mut h = vec![counted(0, 5.0, -10.0, 2)];
-            h.extend((1..=len).map(|i| counted(i as i64, 5.0, 0.0, 0)));
-            h.push(counted(len as i64 + 1, 5.0, -11.0, 2));
+            h.extend((1..=len).map(|i| counted(i * step, 5.0, 0.0, 0)));
+            h.push(counted((len + 1) * step, 5.0, -11.0, 2));
             drop_partial_samples(h).len()
         };
-        assert_eq!(run(3), 2);
-        assert_eq!(run(4), 6);
+        assert_eq!(run(11, 25 * 60_000), 2);
+        assert_eq!(run(3, 5 * 60_000), 2);
+        // Beyond twelve hours a lower count is taken as a real change
+        assert_eq!(run(13, H), 15);
     }
 
     #[test]

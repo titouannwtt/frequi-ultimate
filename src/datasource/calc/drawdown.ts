@@ -86,8 +86,11 @@ export function walk(points: readonly CurvePoint[]): Walk {
   };
 }
 
-/** Longest run of consecutive samples treated as one incomplete reading (about 15 minutes). */
-const MAX_PARTIAL_RUN = 3;
+/**
+ * Longest stretch of time a run of samples can be treated as one incomplete reading: a bot that
+ * struggles with the exchange writes unpriced samples for hours, further apart than 5 minutes.
+ */
+const MAX_PARTIAL_SPAN_MS = 12 * 3_600_000;
 
 const sameClosed = (a: number, b: number): boolean => Math.abs(a - b) < 1e-6;
 
@@ -97,7 +100,7 @@ const sameClosed = (a: number, b: number): boolean => Math.abs(a - b) < 1e-6;
  * The bot sums the latent profit of the positions it manages to price and leaves out the others
  * (restart, exchange hiccup): the sample then holds fewer open positions than its neighbours and
  * a latent profit missing their share, down to exactly 0. Summed across a fleet it draws a
- * vertical spike for one sample. A run of at most MAX_PARTIAL_RUN samples is dropped when the
+ * vertical spike for one sample. A run spanning at most MAX_PARTIAL_SPAN_MS is dropped when the
  * counts before and after it are equal and higher than inside it, and the closed profit did not
  * move. Samples without a count are never touched. Input sorted by time.
  */
@@ -117,7 +120,12 @@ export function dropPartialSamples(sorted: readonly HistorySample[]): HistorySam
       s.open_trades < count &&
       sameClosed(s.closed, before.closed);
     let j = i;
-    while (j < sorted.length && j - i < MAX_PARTIAL_RUN && lower(sorted[j])) j += 1;
+    while (
+      j < sorted.length &&
+      sorted[j].ts_ms - before.ts_ms <= MAX_PARTIAL_SPAN_MS &&
+      lower(sorted[j])
+    )
+      j += 1;
     const back =
       j < sorted.length &&
       j > i &&
