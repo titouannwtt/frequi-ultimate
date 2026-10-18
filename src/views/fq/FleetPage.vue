@@ -275,6 +275,7 @@ const tableMeta = computed(() =>
       <ProfitPanel
         :scope="figuresScope"
         :mode="figuresMode"
+        :live-only="scope.mode.value === 'all'"
         :latent="latent.value"
         :latent-state="latent.state"
         :height="phone ? '240px' : ws === 'analysis' ? '460px' : '340px'"

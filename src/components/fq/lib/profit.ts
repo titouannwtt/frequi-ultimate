@@ -230,7 +230,9 @@ export function buildProfitOption(input: ProfitOptionInput): EChartsOption {
         type: 'line',
         data: curves.withOpen,
         showSymbol: false,
-        lineStyle: { width: 1.4, color: c.info },
+        // Amber and dashed against the blue of the first curve: the two stay apart in both themes
+        // (the blue and the teal of the info token ran together on the light one)
+        lineStyle: { width: 1.6, color: c.warn, type: 'dashed' },
       },
     ],
   };

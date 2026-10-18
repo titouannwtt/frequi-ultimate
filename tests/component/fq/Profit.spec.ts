@@ -70,6 +70,20 @@ const radio = (
 ) => w.findAll('[role=radio]').find((b) => b.text() === label)!;
 
 describe('ProfitPanel', () => {
+  it('says "Live only" in words when the page shows every mode', async () => {
+    const { source } = curveSource();
+    const all = mountFq(ProfitPanel, {
+      props: { scope: { kind: 'fleet' }, source, nowMs: FIXTURE_NOW, liveOnly: true },
+    });
+    await flushPromises();
+    expect(all.find('[data-testid=profit-live-only]').text()).toMatch(/live/i);
+    const plain = mountFq(ProfitPanel, {
+      props: { scope: { kind: 'fleet' }, source, nowMs: FIXTURE_NOW },
+    });
+    await flushPromises();
+    expect(plain.find('[data-testid=profit-live-only]').exists()).toBe(false);
+  });
+
   it('asks the two curves for the last 30 days, with no upper bound, and draws both', async () => {
     const { source, asked } = curveSource();
     const w = mountFq(ProfitPanel, {

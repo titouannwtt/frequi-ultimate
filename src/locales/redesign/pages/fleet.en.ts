@@ -160,6 +160,8 @@ export default {
     realizedHint: 'Realised: the profit of the trades already closed.',
     latentHint:
       'Unrealised: the gain or loss of the positions still open, at the current price. It is only banked when they close.',
+    liveOnly: 'Live only',
+    liveOnlyHint: 'This block only counts the live bots; Dry is never mixed in.',
     dates: 'Dates…',
     datesHint: 'Pick a day or a range of days',
     apply: 'Apply',

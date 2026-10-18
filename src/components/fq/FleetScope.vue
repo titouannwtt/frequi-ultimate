@@ -258,6 +258,11 @@ defineExpose({ focusSearch });
   }
 }
 @media (max-width: 599px) {
+  /* The mode, the bots and the filter share the row while they fit, and wrap rather than push the
+     page sideways (the layout menu is a wide-screen control: hidden below) */
+  .bar {
+    flex-wrap: wrap;
+  }
   .filters {
     flex-wrap: wrap;
   }

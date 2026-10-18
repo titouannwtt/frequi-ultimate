@@ -6,6 +6,7 @@ import router from './router';
 import i18n from './locales';
 
 import { PrimeVue, FtTheme, ToastService } from './plugins/primevue';
+import { bindPrimeLocale } from './plugins/primeLocale';
 // After the PrimeVue plugin, which loads the Tailwind layers the design system sits in
 import './styles/redesign.css';
 import { useTheme } from './composables/useTheme';
@@ -37,6 +38,7 @@ myApp.use(PrimeVue, {
     },
   },
 });
+bindPrimeLocale(myApp.config.globalProperties.$primevue.config, i18n.global.locale);
 myApp.use(ToastService);
 
 import Tooltip from 'primevue/tooltip';
