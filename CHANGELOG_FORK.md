@@ -59,6 +59,68 @@ Ne **pas** porter la migration file-router dans une PR "sync auto". Elle mérite
 
 ---
 
+## Suivi upstream — FreqUI 3.1.2 (2026-08-29)
+
+**Upstream release** : [freqtrade/frequi 3.1.2](https://github.com/freqtrade/frequi/releases/tag/3.1.2)
+**Base fork** : suivi 3.1.1 documenté ci-dessus (aucun cherry-pick applicatif effectué depuis)
+**Compare** : https://github.com/freqtrade/frequi/compare/3.1.1...3.1.2 — 59 commits (hors merges), 30 fichiers
+
+### TL;DR — impact fork
+
+Release upstream **majoritairement légère** : 43 des 59 commits sont des bumps Dependabot laissés au Dependabot du fork. Le reste se concentre sur **`TimeRangeSelect.vue`** (support des heures/minutes, quick-select, slider, bouton clear) qui a été **entièrement réécrit en 3.1.1** avec `@internationalized/date` — le fork reste sur l'ancienne implémentation `VueDatePicker`. Toute la vague TimeRange de 3.1.2 dépend donc de l'adoption préalable du refactor 3.1.1, décision non prise.
+
+Trois commits **portables sans risque** ont été intégrés dans cette PR.
+
+### Découpage des changements upstream
+
+**🟢 Portés dans cette PR (aucun impact fonctionnel négatif)**
+
+| Commit | Sujet | Impact fork |
+|--------|-------|-------------|
+| `e59ddbd4` | `fix: update echarts-induced type-error` sur `WalletHistoryChart.vue` | Retype le handler `handleLegendSelectChanged(params: unknown)` pour survivre au prochain bump `vue-echarts`. Retire un `console.log` de debug. Fichier partagé avec upstream, apply-clean. |
+| `6951900a` | `chore: add Agents stuff to gitignore` | Ajoute `.cursor/`, `.codex/`, `.claude/*.local.json`, `.claude/**/*.log`, `*.local.md` et `/playwright/.cache/`. N'ignore aucun contenu déjà versionné du fork. |
+| `c17fd2be` | `chore: update vercel.json to prevent "errors" on PR's` | Passe `vercel.json` au nouveau schéma (`$schema`, `deploymentEnabled`, `rewrites`). Le fork n'utilise pas Vercel en prod mais l'alignement évite les futurs conflits. |
+
+**🔴 Bloqués sur la refonte TimeRangeSelect (3.1.1)**
+
+Ces commits touchent `TimeRangeSelect.vue` réécrit en 3.1.1. Le fork n'a pas adopté ce refactor et son composant custom est basé sur `VueDatePicker`. Portage impossible sans décision préalable sur la migration 3.1.1.
+
+| Commit | Sujet |
+|--------|-------|
+| `a328588c` | `feat: support time based formatting for timerange` |
+| `7f3f7b42` | `feat: Add Minute based Timerange select` |
+| `7a6dc577` | `feat: use dateInput for timeRange select` |
+| `154f3a73` | `feat: add "clear" button to "time" component` |
+| `75c56d4f` | `feat: add slider bar and quickselect buttons for simpler usage` |
+| `e476f051` | `test: Update e2e Test for Use Time availability` |
+| `abb65fda` | `feat: show free balance in force enter dialog` (couplé à `TimeRangeSelect`) |
+
+Les fichiers appelants (`BacktestRun.vue`, `DownloadDataMain.vue`, `LookaheadAnalysisForm.vue`, `RecursiveAnalysisForm.vue`, `ChartView.vue`) reçoivent un prop `:can-use-time="botStore.activeBot.botFeatures.timerangeWithTime"` inutile tant que `TimeRangeSelect` custom n'expose pas cette API. Deux de ces fichiers (`LookaheadAnalysisForm.vue`, `RecursiveAnalysisForm.vue`, `ChartView.vue`) n'existent même pas dans le fork.
+
+**🟡 Fix mobile dashboard — non applicable**
+
+| Commit | Sujet | Impact fork |
+|--------|-------|-------------|
+| `8c9cf363` | `fix(dashboard): make grid cards fit the viewport on small screens` | Corrige `src/pages/dashboard.vue`. Le fork utilise `DashboardViewCustom.vue` avec grille custom — le patch upstream ne s'applique pas. À reprendre manuellement si un problème mobile équivalent est constaté. |
+| `93bd7bbd` | `fix: implement the same fix for trade pane` | Idem, sur `src/pages/trade.vue`. |
+
+**🟢 Sûr / trivial (dep bumps et CI) — Dependabot fork**
+
+Les 43 bumps restants sont automatiquement traités par le Dependabot du fork (cf. PRs `#22` à `#33`) :
+
+- npm : `reka-ui` 2.10.1→2.10.3, groupe `vue` (2 bumps successifs), `vue-echarts` 8.0.1→8.1.0, `vite` 8.2.0→8.2.1, `sass-embedded` 1.100.0→1.102.0
+- dev : `vitest` 4.1.10→4.1.11, `globals` 17.9→17.10→17.11, `@types/node` 26.1.2→26.2.0, `@tsconfig/node22` 22.0.5→22.0.6, `eslint` (groupe), `happy-dom` 20.11.0→20.11.2
+- toolchain : `pnpm` 11.17→11.22→11.23→11.24
+- CI/Docker : `nginx` 1.31.3→1.31.4, `node` 26.7.0→26.8.1, `docker/setup-buildx-action`
+
+### Plan d'action
+
+1. **Cette PR** : ajoute ce suivi + porte les 3 changements sûrs. Aucun impact sur les vues et widgets custom du fork.
+2. **PR suivi 3 — TimeRange (bloqué)** : décision préalable requise sur l'adoption de la refonte `TimeRangeSelect` de 3.1.1 (`CalendarDate` / `@internationalized/date`). Sans cette adoption, toute la vague 3.1.2 sur les timeranges reste inatteignable.
+3. **Dependabot** : laisser tourner.
+
+---
+
 ## Fichiers AJOUTÉS (40 fichiers, ~19 000 lignes)
 
 | Fichier | Lignes | Résumé | Risque |
