@@ -59,6 +59,57 @@ Ne **pas** porter la migration file-router dans une PR "sync auto". Elle mérite
 
 ---
 
+## Suivi upstream — FreqUI 3.1.2 (2026-08-29)
+
+**Upstream release** : [freqtrade/frequi 3.1.2](https://github.com/freqtrade/frequi/releases/tag/3.1.2)
+**Base fork** : cherry-picks jusqu'à 3.1.0, delta 3.1.1 documenté (aucun code applicatif porté)
+**Compare** : https://github.com/freqtrade/frequi/compare/3.1.1...3.1.2 — 98 commits, 30 fichiers, +1 271 / -894
+
+### TL;DR — impact fork
+
+Upstream décrit 3.1.2 comme un fix layout mobile + amélioration du timerange, mais l'écart 3.1.1→3.1.2 apporte aussi plusieurs features UX portables (ForceEntry, TimeRange) et un mois de dep bumps. La décision architecturale sur le file-based routing (voir 3.1.1) reste **non tranchée** : un merge complet reste hors de portée, on continue en cherry-pick sélectif.
+
+Cette PR est **documentaire seulement** : aucun fichier applicatif modifié, aucun risque.
+
+### Découpage des changements upstream
+
+**🟡 Fonctionnel (portable, à évaluer)**
+
+| Commit | Sujet | Fichiers | Impact fork |
+|--------|-------|----------|-------------|
+| `75c56d4f` | `feat: add slider bar and quickselect buttons for simpler usage` | `src/components/ftbot/ForceEntryForm.vue` (+70/-11) | Fichier peu customisé côté fork (lint autofix + perf gating). Portable, cherry-pick à évaluer. |
+| `abb65fda` | `feat: show free balance in force enter dialog` | `src/components/ftbot/ForceEntryForm.vue` (+28/-1) | Complément UX du même dialog. À porter en bloc avec `75c56d4f`. |
+| `154f3a73` | `feat: add "clear" button to "time" component` | `src/components/ftbot/TimeRangeSelect.vue` (+25/-2) | Fichier peu customisé côté fork. Portable. |
+| `7a6dc577` | `feat: use dateInput for timeRange select` | `src/components/ftbot/TimeRangeSelect.vue` (+35/-27) | Refactor du timerange, portable si adopté avec les autres commits timerange. |
+| `7f3f7b42` | `feat: Add Minute based Timerange select` | 9 fichiers, dont `src/utils/timeRange.ts` (nouveau, +80) et `TimeRangeSelect.vue` (+202) | Refonte du timerange touchant plusieurs formulaires (Backtest, DownloadData, LookaheadAnalysis, RecursiveAnalysis). À porter d'un bloc ou pas du tout. |
+| `a328588c` | `feat: support time based formatting for timerange` | `src/utils/formatters/timeformat.ts` (+8) + tests | Complément du timerange, à porter avec le bloc précédent. **Attention** : le fork a déjà customisé `tests/unit/timeformat.spec.ts` (+6 lignes), résolution manuelle attendue. |
+| `93bd7bbd` + `8c9cf363` | `fix(dashboard): make grid cards fit the viewport on small screens` (+ trade pane) | `src/pages/dashboard.vue` (2 lignes) + `src/pages/trade.vue` (2 lignes) + e2e | Le fork monte ses vues sous `src/views/*` custom (`pages/dashboard.vue` upstream n'est pas la surface active). Vérifier si le fix s'applique aussi côté vue custom, sinon skip. |
+| `91ce0f9d` | `chore: use formatDecimal for funding fees` (TradeDetail) | `src/components/ftbot/TradeDetail.vue` (2 lignes) | Fichier peu customisé côté fork. Portable trivialement si funding fees affichés. |
+
+**🟢 Sûr / trivial (dep bumps et CI — laisser à Dependabot)**
+
+Bumps notables 3.1.1→3.1.2 :
+
+- npm : `vue-echarts` 8.0.1→8.1.0, `axios` 1.18.1→1.19.0, `reka-ui` 2.10.1→2.10.3, `@internationalized/date` 3.12.2→3.12.3, groupe `vue` (2 bumps), `vueuse` (2 bumps)
+- dev : `vite` 8.1.5→8.3.0, `sass-embedded` 1.100→1.104.1, `vitest` 4.1.10→5.0.1, `happy-dom` 20.10.5→20.14.5, `@playwright/test` 1.61.1→1.62.1, `@types/node` 26.1.1→26.6.1, `globals` 17.7→17.11, `@vitejs/plugin-vue` 6.0.7→6.0.9, `eslint`, `unplugin-icons`, `@tsconfig/node22`, `humanize-duration`, `vue-tsc`
+- toolchain : `pnpm` 11.17→11.24
+- CI/Docker : `node` 26.5→26.8.1-alpine, `nginx` 1.31.3→1.31.6-alpine, `docker/setup-buildx-action`, `docker/login-action`, `zizmorcore/zizmor-action` 0.6.1→0.6.4, `pnpm/action-setup`
+
+**🔴 Rupture / architecture (inchangé depuis 3.1.1)**
+
+Le file-based routing (`src/views/` → `src/pages/`) reste hors du périmètre de cette sync : 3.1.2 continue de matérialiser des surfaces sous `src/pages/` (`dashboard.vue`, `trade.vue`) que le fork n'utilise pas. La décision d'adopter ou non le routing upstream reste ouverte (voir plan 3.1.1).
+
+### Plan d'action
+
+1. **Cette PR** : ajoute ce suivi. Ne modifie **aucun code** applicatif. Zéro risque.
+2. **PR suivi 3.1.2 A — features timerange** : cherry-pick `154f3a73` + `7a6dc577` + `7f3f7b42` + `a328588c` d'un bloc sur `TimeRangeSelect.vue` + `timeRange.ts` + `timeformat.ts` (résoudre les tests custom du fork).
+3. **PR suivi 3.1.2 B — features force-entry** : cherry-pick `75c56d4f` + `abb65fda` sur `ForceEntryForm.vue`.
+4. **PR suivi 3.1.2 C — fix dashboard mobile** : vérifier si `93bd7bbd` + `8c9cf363` s'appliquent aux vues custom du fork, porter le cas échéant.
+5. **PR suivi 3.1.1 (héritées)** — `feat: offline vs loggedout bots` et décision file-based routing : toujours en attente.
+6. **Dependabot** : laisser tourner.
+
+---
+
 ## Fichiers AJOUTÉS (40 fichiers, ~19 000 lignes)
 
 | Fichier | Lignes | Résumé | Risque |
