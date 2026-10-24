@@ -6,6 +6,58 @@
 
 ---
 
+## Suivi upstream — FreqUI 3.1.2 (2026-08-30)
+
+**Upstream release** : [freqtrade/frequi 3.1.2](https://github.com/freqtrade/frequi/releases/tag/3.1.2)
+**Base fork** : cherry-picks jusqu'à 3.1.0 ; 3.1.1 non porté (voir section ci-dessous, migration file-router incompatible).
+**Compare** : https://github.com/freqtrade/frequi/compare/3.1.1...3.1.2 — 46 commits, 30 fichiers, +1 271 / −894 lignes.
+
+### TL;DR — impact fork
+
+Contrairement à 3.1.1, **3.1.2 est une release de finition** : fix mobile
+dashboard, UX du `TimeRangeSelect` (support minute + dateInput +
+quickselect + clear), badge "free balance" dans le force-enter, et une
+grosse vague de dep bumps. **Aucun changement d'architecture** — pas de
+migration structurelle à absorber.
+
+Le blocage architectural de 3.1.1 (`views/` → `pages/`) **reste
+inchangé** : 3.1.2 hérite du router file-based upstream. Un merge
+`3.1.2 --allow-unrelated-histories` reste hors sujet ; on continue en
+cherry-pick sélectif.
+
+### Overlap fichiers upstream ↔ fork
+
+23 fichiers touchés par 3.1.2 sont aussi modifiés côté fork :
+
+**🟡 UX à porter (petits deltas fonctionnels)**
+
+| Commit amont | Sujet | Impact fork |
+|--------------|-------|-------------|
+| `75c56d4f` | `feat: add slider bar and quickselect buttons for simpler usage` (TimeRangeSelect) | Le fork a un `TimeRangeSelect.vue` custom. Reprendre le slider + quickselect à la main. |
+| `abb65fda` | `feat: show free balance in force enter dialog` | Le fork a `ForceEntryForm.vue` modifié (110 lignes de diff amont). Cherry-pick attentif. |
+| `154f3a73` | `feat: add "clear" button to "time" component` | Idem TimeRangeSelect. |
+| `7a6dc577` / `7f3f7b42` / `a328588c` | Timerange minute + dateInput | Aligner sur la nouvelle API `timeformat` amont ; le fork a des helpers custom dans `src/utils/formatters/timeformat.ts`. |
+| `cb8869ff` (`#3000`) | Fix mobile dashboard layout | Voir `src/pages/dashboard.vue` — le fork tourne encore sur `views/`, transposer dans `DashboardViewCustom.vue`. |
+| `93bd7bbd` | Fix TradeDetail pane | 10 lignes sur `TradeDetail.vue` — sûr à porter. |
+
+**🟢 Sûr / Dependabot**
+
+- Node 26.7 → 26.8.1 (Docker), pnpm 11.22 → 11.24, nginx 1.31.3 → 1.31.4
+- vue group, vitest 4.1.10 → 4.1.11, sass-embedded 1.100 → 1.102, globals 17.10 → 17.11, `@types/node`, `@tsconfig/node22`, vue-echarts, vite 8.2.x
+- `docker/setup-buildx-action`
+
+À laisser à Dependabot (`.github/dependabot.yml` du fork, si actif).
+
+### Plan d'action pour 3.1.2
+
+1. **Cette PR** : ajoute le suivi. Aucun code applicatif modifié.
+2. **PR suivi — UX TimeRangeSelect** : porter `slider + quickselect + clear + minute` en respectant les customisations fork.
+3. **PR suivi — ForceEntryForm** : cherry-pick manuel de `abb65fda` (free balance).
+4. **PR suivi — mobile dashboard fix** : transposer `cb8869ff` sur `DashboardViewCustom.vue`.
+5. **Dependabot** : laisser tourner sur les bumps.
+
+---
+
 ## Suivi upstream — FreqUI 3.1.1 (2026-07-31)
 
 **Upstream release** : [freqtrade/frequi 3.1.1](https://github.com/freqtrade/frequi/releases/tag/3.1.1)
