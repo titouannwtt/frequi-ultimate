@@ -1,14 +1,14 @@
 # Contributing to FreqUI Ultimate
 
-Thanks for your interest. This dashboard is the companion to [freqtrade-ultimate](https://github.com/titouannwtt/freqtrade-ultimate) and ships with 50+ enhanced components, fleet comparison, market context, and strategy dev UI.
+Thanks for your interest. This dashboard is the companion to [freqtrade-ultimate](https://github.com/titouannwtt/freqtrade-ultimate) and adds fleet comparison, market context widgets and a strategy development UI on top of FreqUI.
 
 ## What we accept
 
 - **Bug fixes** on fork-specific components (anything under `src/components/ftbot/`, `src/views/*Custom.vue`, `src/components/strategyDev/`, fork-specific stores in `src/stores/`).
 - **New widgets / popovers / cards** that fit the glassmorphism design system.
 - **Performance improvements** (chart rendering, large bot lists, store reactivity).
-- **i18n contributions** in `src/locales/` (currently 6 languages — translations welcome).
-- **Documentation improvements** in `README.md` or `CHANGELOG_FORK.md`.
+- **i18n contributions** in `src/locales/` (English and French are complete; German, Spanish, Italian and Portuguese are partial, so translations are welcome).
+- **Documentation improvements** in `README.md`, `CHANGELOG.md` or `docs/`.
 
 ## What we don't accept
 
@@ -24,11 +24,17 @@ Thanks for your interest. This dashboard is the companion to [freqtrade-ultimate
 4. **Run locally before pushing**:
    ```bash
    pnpm install
+   pnpm build
+   pnpm test:unit
    pnpm typecheck
    pnpm lint
-   pnpm build
    ```
-5. **Update i18n** if you add user-facing strings — at minimum English and French.
+   `pnpm build` must pass. `pnpm typecheck` and `pnpm lint` currently report errors that predate your change (the code base is being cleaned up, and there is no CI on this repository): do not add new ones in the files you touch. Two unit tests are known to fail on `main` (`ProfitPill.spec.ts`, `botProfit.spec.ts`).
+5. **Update i18n** if you add user-facing strings: at minimum English and French.
+
+## Screenshots
+
+The README screenshots are taken on a synthetic demo fleet, never on a real account. If your change alters what a screenshot shows, retake it with [`scripts/demo-fleet`](scripts/demo-fleet) (fake bots served locally, see its README) instead of capturing your own dashboard.
 
 ## Commit messages
 
@@ -40,8 +46,8 @@ Thanks for your interest. This dashboard is the companion to [freqtrade-ultimate
 
 - Vue 3 composition API with `<script setup>`.
 - TypeScript on new code.
-- TailwindCSS for styling — minimize bespoke CSS.
-- Pinia for state — use existing stores (`botComparison`, `ftbotwrapper`, `layout`, `settings`) before creating new ones.
+- TailwindCSS for styling: minimize bespoke CSS.
+- Pinia for state: use existing stores (`botComparison`, `ftbotwrapper`, `layout`, `settings`) before creating new ones.
 - Charts via ECharts (not Chart.js or other).
 
 ## Design system
@@ -53,6 +59,6 @@ Thanks for your interest. This dashboard is the companion to [freqtrade-ultimate
 
 ## Questions
 
-Open a [GitHub Discussion](https://github.com/titouannwtt/frequi-ultimate/discussions) or join the [Freqtrade France](https://buymeacoffee.com/freqtrade_france) community.
+Open an [issue](https://github.com/titouannwtt/frequi-ultimate/issues) or join the [Freqtrade France](https://buymeacoffee.com/freqtrade_france) community.
 
-— Mouton 🐑 \| Freqtrade France
+Mouton 🐑 \| Freqtrade France

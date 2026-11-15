@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "FreqUI Ultimate — Data Flow",
+    "title": "FreqUI Ultimate: Data Flow",
     "output": "frequi-architecture.html",
     "quality_profile": "showcase",
     "views": [

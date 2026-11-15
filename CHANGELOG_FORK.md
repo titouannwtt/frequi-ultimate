@@ -1,24 +1,29 @@
-# Inventaire des modifications — Fork FreqUI
+# Inventaire des modifications du fork (instantané de mai à août 2026)
 
-**Upstream** : `freqtrade/frequi` (commit `1ec764d2`)
-**Fork** : `titouannwtt/frequi`
-**Total** : 98 fichiers, +31 224 / -1 313 lignes
+> **Document daté.** Cet inventaire fichier par fichier a été dressé à l'époque de la version 0.5 (mai 2026) et complété jusqu'au suivi de l'amont du 31/07/2026. Il reste utile pour comprendre d'où viennent les composants du fork et quels fichiers de l'amont il modifie, mais ses décomptes de lignes ne sont plus à jour. L'historique version par version est dans [CHANGELOG.md](CHANGELOG.md).
+
+**Amont** : `freqtrade/frequi` (commit `1ec764d2`, avril 2026)
+**Fork** : `titouannwtt/frequi-ultimate`
+**À l'époque de l'inventaire** : 98 fichiers, +31 224 / -1 313 lignes
+**À la version 2.2.0 (15/11/2026)** : 327 fichiers sous `src/`, environ +105 000 / -2 400 lignes ; 182 composants Vue ajoutés, 49 modifiés
+
+Ce qui a changé depuis l'inventaire et n'y figure pas : colonnes Current Profit, Max Drawdown et Market, éditeur de configuration par bot, Dry Replay, écran de démarrage, courbe de profit latent, tables ajustées à l'écran, lecture d'un instantané de flotte unique, 14 types d'alerte au lieu de 13.
 
 ---
 
-## Suivi upstream — FreqUI 3.1.1 (2026-07-31)
+## Suivi upstream : FreqUI 3.1.1 (2026-07-31)
 
 **Upstream release** : [freqtrade/frequi 3.1.1](https://github.com/freqtrade/frequi/releases/tag/3.1.1)
 **Base fork** : cherry-picks jusqu'à 3.1.0 (`57ba2a21`, `7e7cce62`, `ec4a8ebb`, `c7e0c184`)
-**Compare** : https://github.com/freqtrade/frequi/compare/3.1.0...3.1.1 — 103 commits, 38 fichiers
+**Compare** : https://github.com/freqtrade/frequi/compare/3.1.0...3.1.1 (103 commits, 38 fichiers)
 
-### TL;DR — impact fork
+### TL;DR : impact fork
 
 Malgré la note upstream laconique ("aligned with freqtrade monthly release"), 3.1.1 contient une **refonte structurelle majeure** : migration vers le **file-based routing (Nuxt-style)**, `src/views/*.vue` → `src/pages/*.vue`, réécriture complète de `src/router/index.ts`.
 
 Cette refonte est **incompatible en l'état** avec les vues custom du fork (`DashboardViewCustom.vue`, `SettingsViewCustom.vue`, `StrategyDevView.vue`, `TradeJournalView.vue`, `ChartsView.vue`) et son `router/index.ts` custom.
 
-Un `git merge 3.1.1 --allow-unrelated-histories` produit **146 conflits** — la stratégie merge n'est pas viable. On reste sur la stratégie **cherry-pick sélectif** déjà utilisée pour 3.0.x / 3.1.0.
+Un `git merge 3.1.1 --allow-unrelated-histories` produit **146 conflits** : la stratégie merge n'est pas viable. On reste sur la stratégie **cherry-pick sélectif** déjà utilisée pour 3.0.x / 3.1.0.
 
 ### Découpage des changements upstream
 
@@ -31,7 +36,7 @@ Un `git merge 3.1.1 --allow-unrelated-histories` produit **146 conflits** — la
 | `341ba694` | `feat: add missing routes as base files` | ⚠️ Idem |
 | `7e4250a3` | `feat: rename existing routes` | ⚠️ Idem |
 | `6a3f7868` | `feat: first steps to move to file based routing` | ⚠️ Idem |
-| `cc6270fc` | `feat: update typechecking and HMR` | Coupé au routing — à porter avec |
+| `cc6270fc` | `feat: update typechecking and HMR` | Coupé au routing, à porter avec |
 
 Ne **pas** porter la migration file-router dans une PR "sync auto". Elle mérite sa propre décision produit + PR dédiée + validation e2e sur toutes les vues custom.
 
@@ -53,8 +58,8 @@ Ne **pas** porter la migration file-router dans une PR "sync auto". Elle mérite
 ### Plan d'action
 
 1. **Cette PR** : ajoute ce suivi. Ne modifie **aucun code** applicatif. Zéro risque.
-2. **PR suivi 1 — `feat: offline vs loggedout bots`** : cherry-pick manuel de `6bb0c095` avec merge à la main sur `BotComparisonList.vue`.
-3. **PR suivi 2 — architecturale** : décider si on adopte le file-based routing upstream. Si non, geler ce point de divergence.
+2. **PR suivi 1, `feat: offline vs loggedout bots`** : cherry-pick manuel de `6bb0c095` avec merge à la main sur `BotComparisonList.vue`.
+3. **PR suivi 2, architecturale** : décider si on adopte le file-based routing upstream. Si non, geler ce point de divergence.
 4. **Dependabot** : laisser tourner.
 
 ---
@@ -63,27 +68,27 @@ Ne **pas** porter la migration file-router dans une PR "sync auto". Elle mérite
 
 | Fichier | Lignes | Résumé | Risque |
 |---------|--------|--------|--------|
-| `src/locales/en.ts` | +1554 | Traductions anglaises (1272 clés) — système i18n complet | Cosmétique |
+| `src/locales/en.ts` | +1554 | Traductions anglaises (1272 clés), système i18n complet | Cosmétique |
 | `src/locales/fr.ts` | +1549 | Traductions françaises avec accents | Cosmétique |
 | `src/locales/de.ts` | +1547 | Traductions allemandes | Cosmétique |
 | `src/locales/es.ts` | +1547 | Traductions espagnoles | Cosmétique |
 | `src/locales/it.ts` | +1547 | Traductions italiennes | Cosmétique |
 | `src/locales/pt.ts` | +1490 | Traductions portugaises | Cosmétique |
 | `src/locales/index.ts` | +49 | Plugin vue-i18n, lazy loading des langues, sélecteur | Faible |
-| `src/components/ftbot/ProfitBenchmarkChart.vue` | +1192 | Widget unifié Profit + Benchmarks (BTC/ETH/SOL via CoinGecko) | Moyen — remplace 2 widgets |
-| `src/components/ftbot/BotProfitComparisonChart.vue` | +~370 | Widget barres profit/perte par bot : sélecteur de période (24h→1an→All), filtre live/dry/all, devise ou %, total flotte. Croise les bots sélectionnés (Comparaison des bots) avec son filtre. | Faible — nouveau widget |
+| `src/components/ftbot/ProfitBenchmarkChart.vue` | +1192 | Widget unifié Profit + Benchmarks (BTC/ETH/SOL via CoinGecko) | Moyen : remplace 2 widgets |
+| `src/components/ftbot/BotProfitComparisonChart.vue` | +~370 | Widget barres profit/perte par bot : sélecteur de période (24h→1an→All), filtre live/dry/all, devise ou %, total flotte. Croise les bots sélectionnés (Comparaison des bots) avec son filtre. | Faible : nouveau widget |
 | `src/utils/botProfit.ts` | +~130 | Agrégation profit par bot + bornes de période (date-fns), fonctions pures testées | Faible |
-| `src/components/ftbot/ProfitDistributionEnhanced.vue` | +854 | Distribution des profits (5 onglets, filtres, ECharts) | Moyen — remplace widget existant |
-| `src/components/ftbot/ProfitOverTimeEnhanced.vue` | +848 | Profit temporel (3 modes, timeframes, stats) | Moyen — remplace widget existant |
-| `src/components/ftbot/MarketPulse.vue` | +791 | Tableau de bord marché (BTC/ETH, Fear&Greed, performance) | Faible — nouveau widget |
-| `src/components/ftbot/OpenTradesEnhanced.vue` | +747 | Trades ouverts (colonnes custom, badges, popovers) | Moyen — remplace TradeList |
-| `src/components/ftbot/TradesInfoCard.vue` | +709 | Popover glassmorphism pour colonne Trades | Faible — popover card |
+| `src/components/ftbot/ProfitDistributionEnhanced.vue` | +854 | Distribution des profits (5 onglets, filtres, ECharts) | Moyen : remplace widget existant |
+| `src/components/ftbot/ProfitOverTimeEnhanced.vue` | +848 | Profit temporel (3 modes, timeframes, stats) | Moyen : remplace widget existant |
+| `src/components/ftbot/MarketPulse.vue` | +791 | Tableau de bord marché (BTC/ETH, Fear&Greed, performance) | Faible : nouveau widget |
+| `src/components/ftbot/OpenTradesEnhanced.vue` | +747 | Trades ouverts (colonnes custom, badges, popovers) | Moyen : remplace TradeList |
+| `src/components/ftbot/TradesInfoCard.vue` | +709 | Popover glassmorphism pour colonne Trades | Faible : popover card |
 | `src/components/ftbot/PeriodProfitCard.vue` | +693 | Popover profit mensuel/annuel avec projections SVG | Faible |
-| `src/components/ftbot/CumulativeProfitEnhanced.vue` | +686 | Profit cumulé (4 onglets, zoom, stats) | Moyen — remplace CumProfitChart usage |
-| `src/components/ftbot/ClosedTradesEnhanced.vue` | +682 | Trades fermés (pagination, exit reason badges) | Moyen — remplace TradeList |
-| `src/components/ftbot/ActivityTimeline.vue` | +671 | Timeline d'activité (events riches, filtres, groupement) | Faible — nouveau widget |
+| `src/components/ftbot/CumulativeProfitEnhanced.vue` | +686 | Profit cumulé (4 onglets, zoom, stats) | Moyen : remplace CumProfitChart usage |
+| `src/components/ftbot/ClosedTradesEnhanced.vue` | +682 | Trades fermés (pagination, exit reason badges) | Moyen : remplace TradeList |
+| `src/components/ftbot/ActivityTimeline.vue` | +671 | Timeline d'activité (events riches, filtres, groupement) | Faible : nouveau widget |
 | `src/components/ftbot/OpenProfitCard.vue` | +648 | Popover profit ouvert (positions, DCA, durée historique) | Faible |
-| `src/components/ftbot/RiskOverview.vue` | +521 | Aperçu risques (exposition net/brut, jauge, drawdown) | Faible — nouveau widget |
+| `src/components/ftbot/RiskOverview.vue` | +521 | Aperçu risques (exposition net/brut, jauge, drawdown) | Faible : nouveau widget |
 | `src/components/ftbot/StoplossChartPopover.vue` | +491 | Mini graphique prix SVG (5000 bougies, SL, liq) | Faible |
 | `src/components/ftbot/AlertDetailCard.vue` | +481 | Popover alertes détaillé groupé par position | Faible |
 | `src/components/ftbot/ClosedProfitCard.vue` | +467 | Popover profit fermé (donut W/L, performance grid) | Faible |
@@ -91,16 +96,16 @@ Ne **pas** porter la migration file-router dans une PR "sync auto". Elle mérite
 | `src/components/ftbot/SummaryProfitCard.vue` | +412 | Popover Summary profit (comparaison entre bots) | Faible |
 | `src/components/ftbot/BotInfoCard.vue` | +395 | Popover info bot (equity curve, donut, métriques) | Faible |
 | `src/components/ftbot/CurrencyInfoCard.vue` | +388 | Fiche currency (16+ tokens, backing, risques) | Faible |
-| `src/components/ftbot/TradesLogEnhanced.vue` | +335 | Journal trades compact filtrable | Faible — nouveau widget |
+| `src/components/ftbot/TradesLogEnhanced.vue` | +335 | Journal trades compact filtrable | Faible : nouveau widget |
 | `src/components/ftbot/TradeDetailPopover.vue` | +320 | Popover détail trade (DCA, prix, stoploss) | Faible |
 | `src/components/ftbot/SummaryWinLossCard.vue` | +307 | Popover Summary W/L (donut, breakdown par bot) | Faible |
 | `src/components/ftbot/SummaryBalanceCard.vue` | +291 | Popover Summary Balance (donut, conversion) | Faible |
 | `src/components/ftbot/LogViewerEnhanced.vue` | +286 | Logs colorés, filtres heartbeat/WS, 500 lignes | Faible |
-| `src/components/ftbot/PerformanceHeatmap.vue` | +279 | Carte thermique calendrier (jour/semaine/mois) | Faible — nouveau widget |
+| `src/components/ftbot/PerformanceHeatmap.vue` | +279 | Carte thermique calendrier (jour/semaine/mois) | Faible : nouveau widget |
 | `src/components/ftbot/SummaryTradesCard.vue` | +263 | Popover Summary Trades (capacité, capital, winrate) | Faible |
 | `src/components/ftbot/BalanceCard.vue` | +256 | Popover balance (croissance, allocation) | Faible |
 | `src/components/ftbot/WinLossCard.vue` | +232 | Popover W/L (grand donut, profit factor) | Faible |
-| `src/components/ftbot/StressTestCard.vue` | +213 | Test de stress (-50% à +50%, liquidation cappée) | Faible — nouveau widget |
+| `src/components/ftbot/StressTestCard.vue` | +213 | Test de stress (-50% à +50%, liquidation cappée) | Faible : nouveau widget |
 | `src/composables/tradeColumns.ts` | +188 | Composable partagé colonnes trades (DRY) | Faible |
 | `src/components/ftbot/ProfitGoalBar.vue` | +168 | Barre objectif profit (désactivée mais présente) | Cosmétique |
 | `src/components/ftbot/DurationHealthPopover.vue` | +140 | Popover santé durée (box plot, percentile) | Faible |
@@ -113,12 +118,12 @@ Ne **pas** porter la migration file-router dans une PR "sync auto". Elle mérite
 
 | Fichier | +/- | Résumé | Risque |
 |---------|-----|--------|--------|
-| `src/components/ftbot/BotComparisonList.vue` | +4530/-155 | **Refonte majeure** : colonnes custom, tags, filtres, tri, groupes, alertes (13 types), custom tags, popovers, drag, export CSV, raccourcis clavier | **Breaking** — réécriture quasi-complète |
-| `src/views/SettingsView.vue` | +495/-184 | Refonte glassmorphism, sections cards, About, notifications browser, visibilité | Moyen — UI modifiée |
-| `src/views/DashboardView.vue` | +209/-77 | Nouveaux widgets, widgets enhanced remplacent les anciens, layout store | **Moyen** — structure dashboard changée |
-| `src/components/layout/NavBar.vue` | +74/-37 | Glassmorphism, icônes tabs, PDF export, i18n | Moyen — navbar modifiée |
+| `src/components/ftbot/BotComparisonList.vue` | +4530/-155 | **Refonte majeure** : colonnes custom, tags, filtres, tri, groupes, alertes (13 types), custom tags, popovers, drag, export CSV, raccourcis clavier | **Breaking** : réécriture quasi-complète |
+| `src/views/SettingsView.vue` | +495/-184 | Refonte glassmorphism, sections cards, About, notifications browser, visibilité | Moyen : UI modifiée |
+| `src/views/DashboardView.vue` | +209/-77 | Nouveaux widgets, widgets enhanced remplacent les anciens, layout store | **Moyen** : structure dashboard changée |
+| `src/components/layout/NavBar.vue` | +74/-37 | Glassmorphism, icônes tabs, PDF export, i18n | Moyen : navbar modifiée |
 | `src/views/TradingView.vue` | +65/-33 | Icônes tabs, i18n, hide simultaneous entries toggle | Faible |
-| `src/types/botComparison.ts` | +99/-0 | Nouveaux types : ColumnDef, BotAlertConfig, BotGroup, CustomTag, alerts | Faible — ajouts |
+| `src/types/botComparison.ts` | +99/-0 | Nouveaux types : ColumnDef, BotAlertConfig, BotGroup, CustomTag, alerts | Faible : ajouts |
 | `src/stores/ftbotwrapper.ts` | +48/-10 | toggleBotsByExchange/Currency, background trades fetch, group toggle | Faible |
 | `src/components/ftbot/BotProfit.vue` | +52/-29 | i18n sur toutes les métriques, v-tooltip, withdrawal display | Faible |
 | `src/components/ftbot/TradeList.vue` | +44/-40 | i18n headers et labels | Cosmétique |
@@ -168,7 +173,7 @@ Ne **pas** porter la migration file-router dans une PR "sync auto". Elle mérite
 
 | Fichier | Lignes | Résumé | Risque |
 |---------|--------|--------|--------|
-| `src/components/charts/WalletHistoryChart.vue` | -361 | Supprimé (remplacé par widgets enhanced) | Moyen — breaking si référencé |
+| `src/components/charts/WalletHistoryChart.vue` | -361 | Supprimé (remplacé par widgets enhanced) | Moyen : breaking si référencé |
 | `src/types/daily.ts` | -16 | Types supprimés (inutilisés) | Faible |
 | `src/types/backtest.ts` | -10 | Types déplacés/supprimés | Faible |
 | `pnpm-workspace.yaml` | -4 | Config workspace supprimée | Cosmétique |

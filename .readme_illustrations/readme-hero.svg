@@ -72,7 +72,7 @@
     <!-- Left: chips -->
     <g class="mono" font-size="17" fill="#FDF1DC">
       <rect x="72" y="508" width="172" height="40" rx="20" fill="#0B2545"/>
-      <text x="158" y="533" text-anchor="middle"><tspan fill="#F7901E" font-weight="700">13</tspan> alert types</text>
+      <text x="158" y="533" text-anchor="middle"><tspan fill="#F7901E" font-weight="700">14</tspan> alert types</text>
       <rect x="256" y="508" width="152" height="40" rx="20" fill="#0B2545"/>
       <text x="332" y="533" text-anchor="middle"><tspan fill="#F7901E" font-weight="700">6</tspan> languages</text>
       <rect x="420" y="508" width="96" height="40" rx="20" fill="#0B2545"/>

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" width="1280" height="400" role="img" aria-labelledby="t d">
   <title id="t">What FreqUI Ultimate adds</title>
-  <desc id="d">Five areas: dashboard redesign, multi-bot fleet management with 13 alert types, a strategy development UI with a Monaco editor, six languages, and redesigned settings.</desc>
+  <desc id="d">Five areas: dashboard redesign, multi-bot fleet management with 14 alert types, a strategy development UI with a Monaco editor, six languages, and redesigned settings.</desc>
   <defs>
     <style>
       .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
@@ -53,7 +53,7 @@
       <text x="22" y="108" font-size="21" font-weight="700" fill="#FDF1DC">Fleet</text>
       <g font-size="16" fill="#FDF1DC" opacity="0.8">
         <text x="22" y="140">Bots side by side</text>
-        <text x="22" y="164"><tspan fill="#F7901E" font-weight="700">13</tspan> cross-bot alerts</text>
+        <text x="22" y="164"><tspan fill="#F7901E" font-weight="700">14</tspan> cross-bot alerts</text>
         <text x="22" y="188">Browser notifications</text>
       </g>
     </g>

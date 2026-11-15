@@ -1,6 +1,6 @@
 # Architecture diagram
 
-[`frequi-architecture.html`](frequi-architecture.html) — interactive diagram (pan/zoom,
+[`frequi-architecture.html`](frequi-architecture.html): interactive diagram (pan/zoom,
 light/dark theme) of how FreqUI Ultimate talks to a Freqtrade fleet: Pinia stores poll every
 bot's REST API independently and merge the results client-side into the fleet dashboard, with
 a separate branch for the fork-only endpoints (`/fleet/*`, `/stratdev/*`) that only exist on
