@@ -6,6 +6,12 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/
 
 > **About the version numbers.** The fork went from 0.9.0 to 2.0.0 with a full redesign (new interface and optional Rust gateway). That redesign was withdrawn on 2026-11-15. The number keeps increasing (2.2.0) so that the in-app update check and `freqtrade install-ui` prefer the current release, but 2.2.0 continues the 0.9.0 line, not the 2.x redesign.
 
+## [2.2.1] - 2026-11-15
+
+### Fixed
+- **Bot comparison popovers stay on screen.** The row popovers (open positions, periodic profit, closed profit and the others) are now capped to the visible window height and scroll inside, keep an 8 px margin from the window edges, and stay anchored next to the cell that opened them instead of jumping to the top of the window.
+- **No more `nextSibling` errors** when opening a row popover. The popover arrow was appended after the content of the PrimeVue focus trap, which then failed on every opening; the arrow now lives inside the popover content.
+
 ## [2.2.0] - 2026-11-15
 
 ### Changed
@@ -140,6 +146,7 @@ Compared with the upstream FreqUI commit the fork started from (April 2026), as 
 
 frequi-ultimate is the official dashboard of [freqtrade-ultimate](https://github.com/titouannwtt/freqtrade-ultimate). Several widgets (Market Pulse, Risk Overview, Stress Test, fleet status, Strategy Dev, Dry Replay, the configuration editor) call REST endpoints that only exist in freqtrade-ultimate. The UI also works with a standard Freqtrade bot, where those panels stay empty.
 
+[2.2.1]: https://github.com/titouannwtt/frequi-ultimate/releases/tag/v2.2.1
 [2.2.0]: https://github.com/titouannwtt/frequi-ultimate/releases/tag/v2.2.0
 [2.1.0]: https://github.com/titouannwtt/frequi-ultimate/releases/tag/v2.1.0
 [2.0.0]: https://github.com/titouannwtt/frequi-ultimate/releases/tag/v2.0.0
