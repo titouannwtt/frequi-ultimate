@@ -6,12 +6,7 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 const botStore = useBotStore();
 const pairlistStore = usePairlistConfigStore();
-// Defaults come from the bot the tool is used on (its stake currency, market and exchange)
-const bot = botStore.activeBot;
-const stake = bot?.stakeCurrency || 'USDT';
-const futures = bot?.botState?.trading_mode === TradingMode.FUTURES;
-const quoted = (base: string) => (futures ? `${base}/${stake}:${stake}` : `${base}/${stake}`);
-const pairs = ref<string[]>([quoted('BTC'), quoted('ETH'), '']);
+const pairs = ref<string[]>(['BTC/USDT', 'ETH/USDT', '']);
 const timeframes = ref<string[]>(['5m', '1h']);
 
 const timeSelection = ref({
@@ -28,10 +23,10 @@ const exchange = ref<{
 }>({
   customExchange: false,
   selectedExchange: {
-    exchange: bot?.botState?.exchange || 'binance',
+    exchange: 'binance',
     trade_mode: {
-      margin_mode: futures ? MarginMode.ISOLATED : MarginMode.NONE,
-      trading_mode: bot?.botState?.trading_mode ?? TradingMode.SPOT,
+      margin_mode: MarginMode.NONE,
+      trading_mode: TradingMode.SPOT,
     },
   },
 });
@@ -61,10 +56,6 @@ function addPairs(_pairs: string[]) {
 function replacePairs(_pairs: string[]) {
   pairs.value = [..._pairs];
 }
-
-const canDownload = computed(
-  () => pairs.value.some((p) => p !== '') && timeframes.value.some((tf) => tf !== ''),
-);
 
 async function startDownload() {
   const payload: DownloadDataPayload = {
@@ -107,8 +98,7 @@ async function startDownload() {
 <template>
   <div class="px-1 mx-auto w-full max-w-4xl lg:max-w-7xl">
     <BackgroundJobTracking class="mb-4" />
-    <section class="mx-1 p-4 rounded-lg border border-surface-300 dark:border-surface-700">
-      <h2 class="text-start font-bold text-xl mb-3">{{ t('downloadData.title') }}</h2>
+    <DraggableContainer :header="t('downloadData.title')" class="mx-1 p-4">
       <div class="flex mb-3 gap-3 flex-col">
         <div class="flex flex-col gap-3">
           <div class="flex flex-col lg:flex-row gap-3">
@@ -122,12 +112,7 @@ async function startDownload() {
                   </h5>
                 </div>
                 <div class="flex gap-2">
-                  <BaseStringList
-                    v-model="pairs"
-                    :placeholder="t('fq.pg.legacy.download.pairPlaceholder')"
-                    size="small"
-                    class="grow"
-                  />
+                  <BaseStringList v-model="pairs" placeholder="Pair" size="small" class="grow" />
                   <div class="flex flex-col gap-1">
                     <div class="flex flex-col gap-1">
                       <Button
@@ -147,7 +132,7 @@ async function startDownload() {
                       severity="secondary"
                       @click="replacePairs(pairlistStore.whitelist)"
                     >
-                      {{ t('fq.pg.legacy.download.fromPairlist') }}
+                      Use Pairs from Pairlist Config
                     </Button>
                   </div>
                 </div>
@@ -160,10 +145,7 @@ async function startDownload() {
                 <h4 class="text-start font-bold text-lg">
                   {{ t('downloadData.selectTimeframes') }}
                 </h4>
-                <BaseStringList
-                  v-model="timeframes"
-                  :placeholder="t('fq.pg.legacy.download.timeframePlaceholder')"
-                />
+                <BaseStringList v-model="timeframes" placeholder="Timeframe" />
               </div>
             </div>
           </div>
@@ -176,7 +158,7 @@ async function startDownload() {
                   {{ t('downloadData.timeSelection') }}
                 </h4>
                 <BaseCheckbox v-model="timeSelection.useCustomTimerange" class="mb-0" switch>
-                  {{ t('fq.pg.legacy.download.customTimerange') }}
+                  Use custom timerange
                 </BaseCheckbox>
               </div>
 
@@ -188,7 +170,7 @@ async function startDownload() {
                 <InputNumber
                   v-model="timeSelection.days"
                   type="number"
-                  :aria-label="t('fq.pg.legacy.download.daysAria')"
+                  aria-label="Days to download"
                   :min="1"
                   :step="1"
                   size="small"
@@ -202,29 +184,30 @@ async function startDownload() {
             class="mb-2 border dark:border-surface-700 border-surface-300 rounded-sm p-2 text-start"
           >
             <Button class="mb-2" severity="secondary" @click="isAdvancedOpen = !isAdvancedOpen">
-              {{ t('fq.pg.legacy.download.advanced') }}
+              Advanced Options
               <i-mdi-chevron-down v-if="!isAdvancedOpen" />
               <i-mdi-chevron-up v-else />
             </Button>
             <Transition>
               <div v-show="isAdvancedOpen">
                 <Message severity="info" class="mb-2 py-2">
-                  {{ t('fq.pg.legacy.download.advancedNote') }}
+                  Advanced options (Erase data, Download trades, and Custom Exchange settings) will
+                  only be applied when this section is expanded.
                 </Message>
                 <div
                   class="mb-2 border dark:border-surface-700 border-surface-300 rounded-md p-2 text-start"
                 >
-                  <BaseCheckbox v-model="advancedOptions.erase" class="mb-2">{{
-                    t('fq.pg.legacy.download.erase')
-                  }}</BaseCheckbox>
+                  <BaseCheckbox v-model="advancedOptions.erase" class="mb-2"
+                    >Erase existing data</BaseCheckbox
+                  >
                   <BaseCheckbox
                     v-model="advancedOptions.prepend_data"
                     class="mb-2"
                     v-if="botStore.activeBot.botFeatures.downloadDataPrepend"
-                    >{{ t('fq.pg.legacy.download.prepend') }}</BaseCheckbox
+                    >Prepend data when downloading</BaseCheckbox
                   >
                   <BaseCheckbox v-model="advancedOptions.downloadTrades" class="mb-2">
-                    {{ t('fq.pg.legacy.download.trades') }}
+                    Download Trades instead of OHLCV data
                   </BaseCheckbox>
                   <div class="grid grid-cols md:grid-cols-2 items-center gap-2">
                     <MultiSelect
@@ -233,16 +216,19 @@ async function startDownload() {
                       :options="candleTypes"
                       option-label="text"
                       option-value="value"
-                      :placeholder="t('fq.pg.legacy.download.candleTypes')"
+                      placeholder="Select Candle Types"
                     />
-                    <small>{{ t('fq.pg.legacy.download.candleTypesHint') }}</small>
+                    <small
+                      >When no candle-type is selected, freqtrade will download the necessary candle
+                      types for regular operation automatically.</small
+                    >
                   </div>
                 </div>
                 <div
                   class="mb-2 border dark:border-surface-700 border-surface-300 rounded-md p-2 text-start"
                 >
                   <BaseCheckbox v-model="exchange.customExchange" class="mb-2">
-                    {{ t('fq.pg.legacy.download.customExchange') }}
+                    Custom Exchange
                   </BaseCheckbox>
                   <Transition name="fade">
                     <ExchangeSelect
@@ -256,16 +242,10 @@ async function startDownload() {
           </div>
 
           <div class="px-3">
-            <Button
-              severity="primary"
-              :disabled="!canDownload"
-              :title="canDownload ? undefined : t('fq.pg.legacy.download.needPairs')"
-              @click="startDownload"
-              >{{ t('fq.pg.legacy.download.start') }}</Button
-            >
+            <Button severity="primary" @click="startDownload">Start Download</Button>
           </div>
         </div>
       </div>
-    </section>
+    </DraggableContainer>
   </div>
 </template>

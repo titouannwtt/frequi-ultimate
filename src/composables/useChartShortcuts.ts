@@ -12,7 +12,11 @@ export interface ChartShortcutActions {
   zoomOut: () => void;
 }
 
-export function useChartShortcuts(actions: ChartShortcutActions, enabled: Ref<boolean>) {
+export function useChartShortcuts(
+  actions: ChartShortcutActions,
+  enabled: Ref<boolean>,
+  containerRef?: Ref<HTMLElement | null>,
+) {
   const showHelp = ref(false);
 
   const shortcuts: { key: string; label: string; action: () => void }[] = [

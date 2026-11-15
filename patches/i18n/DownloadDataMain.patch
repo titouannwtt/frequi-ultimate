@@ -1,0 +1,70 @@
+diff --git a/src/components/ftbot/DownloadDataMain.vue b/src/components/ftbot/DownloadDataMain.vue
+index 6961bd61..cd9ca8c7 100644
+--- a/src/components/ftbot/DownloadDataMain.vue
++++ b/src/components/ftbot/DownloadDataMain.vue
+@@ -1,7 +1,9 @@
+ <script setup lang="ts">
+ import type { DownloadDataPayload, ExchangeSelection } from '@/types';
+ import { MarginMode, TradingMode } from '@/types';
++import { useI18n } from 'vue-i18n';
+ 
++const { t } = useI18n();
+ const botStore = useBotStore();
+ const pairlistStore = usePairlistConfigStore();
+ const pairs = ref<string[]>(['BTC/USDT', 'ETH/USDT', '']);
+@@ -96,7 +98,7 @@ async function startDownload() {
+ <template>
+   <div class="px-1 mx-auto w-full max-w-4xl lg:max-w-7xl">
+     <BackgroundJobTracking class="mb-4" />
+-    <DraggableContainer header="Downloading Data" class="mx-1 p-4">
++    <DraggableContainer :header="t('downloadData.title')" class="mx-1 p-4">
+       <div class="flex mb-3 gap-3 flex-col">
+         <div class="flex flex-col gap-3">
+           <div class="flex flex-col lg:flex-row gap-3">
+@@ -104,8 +106,8 @@ async function startDownload() {
+             <div class="flex-fill">
+               <div class="flex flex-col gap-2">
+                 <div class="flex justify-between">
+-                  <h4 class="text-start font-bold text-lg">Select Pairs</h4>
+-                  <h5 class="text-start font-bold text-lg">Pairs from template</h5>
++                  <h4 class="text-start font-bold text-lg">{{ t('downloadData.selectPairs') }}</h4>
++                  <h5 class="text-start font-bold text-lg">{{ t('downloadData.pairsFromTemplate') }}</h5>
+                 </div>
+                 <div class="flex gap-2">
+                   <BaseStringList v-model="pairs" placeholder="Pair" size="small" class="grow" />
+@@ -124,7 +126,7 @@ async function startDownload() {
+                     <Divider />
+                     <Button
+                       :disabled="pairlistStore.whitelist.length === 0"
+-                      title="Add all pairs from Pairlist Config - requires the pairlist config to have ran first."
++                      :title="t('downloadData.addAllPairs')"
+                       severity="secondary"
+                       @click="replacePairs(pairlistStore.whitelist)"
+                     >
+@@ -138,7 +140,7 @@ async function startDownload() {
+             <!-- Timeframes section -->
+             <div class="flex-fill px-3">
+               <div class="flex flex-col gap-2">
+-                <h4 class="text-start font-bold text-lg">Select timeframes</h4>
++                <h4 class="text-start font-bold text-lg">{{ t('downloadData.selectTimeframes') }}</h4>
+                 <BaseStringList v-model="timeframes" placeholder="Timeframe" />
+               </div>
+             </div>
+@@ -148,7 +150,7 @@ async function startDownload() {
+           <div class="px-3 border dark:border-surface-700 border-surface-300 p-2 rounded-sm">
+             <div class="flex flex-col gap-2">
+               <div class="flex justify-between items-center">
+-                <h4 class="text-start mb-0 font-bold text-lg">Time Selection</h4>
++                <h4 class="text-start mb-0 font-bold text-lg">{{ t('downloadData.timeSelection') }}</h4>
+                 <BaseCheckbox v-model="timeSelection.useCustomTimerange" class="mb-0" switch>
+                   Use custom timerange
+                 </BaseCheckbox>
+@@ -158,7 +160,7 @@ async function startDownload() {
+                 <TimeRangeSelect v-model="timeSelection.timerange" />
+               </div>
+               <div v-else class="flex items-center gap-2">
+-                <label>Days to download:</label>
++                <label>{{ t('downloadData.daysToDownload') }}:</label>
+                 <InputNumber
+                   v-model="timeSelection.days"
+                   type="number"

@@ -1,0 +1,83 @@
+diff --git a/src/components/ftbot/PairListLive.vue b/src/components/ftbot/PairListLive.vue
+index 591d5beb..0b6f5861 100644
+--- a/src/components/ftbot/PairListLive.vue
++++ b/src/components/ftbot/PairListLive.vue
+@@ -1,6 +1,9 @@
+ <script setup lang="ts">
+ import type Popover from 'primevue/popover';
+ 
++import { useI18n } from 'vue-i18n';
++
++const { t } = useI18n();
+ const newblacklistpair = ref('');
+ const blackListShow = ref(false);
+ const blacklistAddPopover = ref<InstanceType<typeof Popover>>();
+@@ -60,7 +63,7 @@ onMounted(() => {
+ <template>
+   <div>
+     <div>
+-      <h3 class="text-xl">Whitelist Methods</h3>
++      <h3 class="text-xl">{{ t('pairlist.whitelistMethods') }}</h3>
+ 
+       <ul v-if="botStore.activeBot.pairlistMethods.length" class="list wide">
+         <li
+@@ -74,7 +77,7 @@ onMounted(() => {
+     </div>
+     <!-- Show Whitelist -->
+     <h3 class="text-lg font-bold" :title="`${botStore.activeBot.whitelist.length} pairs`">
+-      Whitelist
++      {{ t('pairlist.whitelist') }}
+     </h3>
+     <ul v-if="botStore.activeBot.whitelist.length" class="list">
+       <li
+@@ -85,7 +88,7 @@ onMounted(() => {
+         {{ pair }}
+       </li>
+     </ul>
+-    <p v-else>List Unavailable. Please Login and make sure server is running.</p>
++    <p v-else>{{ t('pairlist.listUnavailable') }}</p>
+     <Divider />
+ 
+     <!-- Blacklsit -->
+@@ -93,9 +96,9 @@ onMounted(() => {
+       <div class="flex flex-row justify-center mb-1">
+         <label
+           class="text-lg font-bold mb-2 w-full"
+-          title="Blacklist - Select (followed by a click on '-') to remove pairs"
++          :title="t('pairlist.blacklistDesc')"
+         >
+-          Blacklist
++          {{ t('pairlist.blacklist') }}
+         </label>
+         <div class="flex flex-cols items-center gap-1 pe-1">
+           <Button
+@@ -113,7 +116,7 @@ onMounted(() => {
+             v-if="botStore.activeBot.botFeatures.botBlacklistModify"
+             size="small"
+             severity="secondary"
+-            title="Select pairs to delete pairs from your blacklist."
++            :title="t('pairlist.selectToDelete')"
+             :disabled="blacklistSelect.length === 0"
+             @click="deletePairs"
+           >
+@@ -126,9 +129,9 @@ onMounted(() => {
+       <Popover ref="blacklistAddPopover" class="p-1">
+         <form ref="form" @submit.prevent="addBlacklistPair">
+           <div class="space-y-1">
+-            <h4 class="font-bold mb-2">Add Pair to Blacklist</h4>
++            <h4 class="font-bold mb-2">{{ t('pairlist.addToBlacklist') }}</h4>
+             <div class="space-x-2">
+-              <label for="pair-input">Pair</label>
++              <label for="pair-input">{{ t('pairlist.pair') }}</label>
+               <InputText id="pair-input" v-model="newblacklistpair" required autofocus></InputText>
+             </div>
+             <Button
+@@ -156,7 +159,7 @@ onMounted(() => {
+         <span class="check"><i-mdi-check-circle /></span>{{ pair }}
+       </li>
+     </ul>
+-    <p v-else>BlackList Unavailable. Please Login and make sure server is running.</p>
++    <p v-else>{{ t('pairlist.listUnavailable') }}</p>
+   </div>
+ </template>
+ 

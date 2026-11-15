@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n';
 import type { Pairlist } from '@/types';
 import { useSortable, moveArrayElement } from '@vueuse/integrations/useSortable';
 
-const { t } = useI18n();
 const botStore = useBotStore();
 const pairlistStore = usePairlistConfigStore();
 
@@ -53,16 +51,7 @@ useSortable(pairlistConfigsEl, pairlistStore.config.pairlists, {
 });
 
 onMounted(async () => {
-  // The defaults come from the bot of the tool, not from a hard-coded exchange or currency
-  if (!pairlistStore.stakeCurrency && botStore.activeBot?.stakeCurrency) {
-    pairlistStore.stakeCurrency = botStore.activeBot.stakeCurrency;
-  }
-  if (!pairlistStore.selectedExchange.exchange && botStore.activeBot?.botState?.exchange) {
-    pairlistStore.selectedExchange.exchange = botStore.activeBot.botState.exchange;
-  }
-  // A bot that cannot serve the list (503 on a trading bot) leaves it empty
-  const available = await botStore.activeBot.getPairlists().catch(() => null);
-  availablePairlists.value = (available?.pairlists ?? []).sort((a, b) =>
+  availablePairlists.value = (await botStore.activeBot.getPairlists()).pairlists.sort((a, b) =>
     // Sort by is_pairlist_generator (by name), then by name.
     // TODO: this might need to be improved
     a.is_pairlist_generator === b.is_pairlist_generator
@@ -124,13 +113,13 @@ if (pairlistStore.whitelist.length > 0) {
       <PairlistConfigActions />
       <div class="border rounded-sm border-surface-500 p-2 mb-2">
         <div class="flex items-center gap-2 my-2">
-          <span class="col-auto">{{ t('fq.pg.legacy.pairlist.stakeCurrency') }}: </span>
+          <span class="col-auto">Stake currency: </span>
           <InputText v-model="pairlistStore.stakeCurrency" size="small" />
         </div>
 
         <div class="mb-2 border rounded-sm border-surface-500 p-2 text-start">
           <BaseCheckbox v-model="pairlistStore.customExchange" class="mb-2">
-            {{ t('fq.pg.legacy.pairlist.customExchange') }}
+            Custom Exchange
           </BaseCheckbox>
           <Transition name="fade">
             <ExchangeSelect
@@ -146,13 +135,13 @@ if (pairlistStore.whitelist.length > 0) {
         class="my-2"
         severity="warn"
       >
-        {{ t('fq.pg.legacy.pairlist.mustStartWithGenerator') }}
+        First entry in the pairlist must be a Generating pairlist, like StaticPairList or
+        VolumePairList.
       </Message>
       <div
         ref="pairlistConfigsEl"
         class="flex flex-col grow relative border rounded-sm border-surface-500 p-1 gap-2 min-h-32"
         :class="{ empty: configEmpty }"
-        :data-empty="t('fq.pg.legacy.pairlist.dragHere')"
       >
         <PairlistConfigItem
           v-for="(pairlist, i) in pairlistStore.config.pairlists"
@@ -169,16 +158,12 @@ if (pairlistStore.whitelist.length > 0) {
         class="mb-2"
         size="small"
         :allow-empty="false"
-        :options="[
-          { value: 'Config', label: t('fq.pg.legacy.pairlist.config') },
-          {
-            value: 'Results',
-            label: t('fq.pg.legacy.pairlist.results'),
-            disabled: pairlistStore.whitelist.length === 0,
-          },
-        ]"
-        option-label="label"
+        option-label="value"
         option-value="value"
+        :options="[
+          { value: 'Config' },
+          { value: 'Results', disabled: pairlistStore.whitelist.length === 0 },
+        ]"
         option-disabled="disabled"
       >
       </SelectButton>
@@ -209,7 +194,7 @@ if (pairlistStore.whitelist.length > 0) {
 }
 
 .empty:after {
-  content: attr(data-empty);
+  content: 'Drag pairlist here';
   position: absolute;
   align-self: center;
   font-size: 1.1rem;

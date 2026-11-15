@@ -24,7 +24,7 @@ use([
   MarkAreaComponent,
 ]);
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const settingsStore = useSettingsStore();
 
 const props = defineProps<{
@@ -53,6 +53,8 @@ const {
   botFilter: (botId: string) => isBotInMode(botId),
 });
 
+import { useWidgetDefaults } from '@/composables/useWidgetDefaults';
+import { DashboardLayout } from '@/stores/layout';
 import { useTradingModeFilter } from '@/composables/useTradingModeFilter';
 
 const { tradingMode, hasMultipleModes, isBotInMode, restorePersistedTradingMode } =
@@ -63,14 +65,51 @@ const showProfit = ref(false);
 const showAnomalies = ref(true);
 const showVolumeRatio = ref(false);
 
+const HARDCODED_DEFAULTS_VOL = {
+  selectedDays: 90,
+  selectedBucket: '1d' as string,
+  showTradeCount: false,
+  showProfit: false,
+  showAnomalies: true,
+  showVolumeRatio: false,
+  tradingMode: 'all' as string,
+};
+
+const { filtersChanged, saveCurrentAsDefault, loadDefaults } = useWidgetDefaults(
+  DashboardLayout.volumeComparator,
+  () => ({
+    selectedDays: selectedDays.value,
+    selectedBucket: selectedBucket.value,
+    showTradeCount: showTradeCount.value,
+    showProfit: showProfit.value,
+    showAnomalies: showAnomalies.value,
+    showVolumeRatio: showVolumeRatio.value,
+    tradingMode: tradingMode.value,
+  }),
+  (d) => {
+    if (d.selectedDays !== undefined) selectedDays.value = d.selectedDays as number;
+    if (d.selectedBucket !== undefined) selectedBucket.value = d.selectedBucket as string;
+    if (d.showTradeCount !== undefined) showTradeCount.value = d.showTradeCount as boolean;
+    if (d.showProfit !== undefined) showProfit.value = d.showProfit as boolean;
+    if (d.showAnomalies !== undefined) showAnomalies.value = d.showAnomalies as boolean;
+    if (d.showVolumeRatio !== undefined) showVolumeRatio.value = d.showVolumeRatio as boolean;
+    if (d.tradingMode !== undefined) tradingMode.value = d.tradingMode as typeof tradingMode.value;
+  },
+  HARDCODED_DEFAULTS_VOL,
+);
+
 onMounted(() => {
+  loadDefaults();
   restorePersistedTradingMode();
 });
+
+defineExpose({ filtersChanged, saveCurrentAsDefault });
 
 const BLUE = '#89b4fa';
 const GREEN = '#a6e3a1';
 const YELLOW = '#f9e2af';
 const MAUVE = '#cba6f7';
+const RED = '#f38ba8';
 const PEACH = '#fab387';
 const TEXT = '#cdd6f4';
 const SUBTEXT = '#bac2de';
@@ -92,9 +131,9 @@ function formatDateLabel(d: string, bucket: string): string {
     return `Q${q} ${date.getFullYear()}`;
   }
   if (bucket === '1M') {
-    return date.toLocaleDateString(locale.value, { month: 'short', year: '2-digit' });
+    return date.toLocaleDateString('en', { month: 'short', year: '2-digit' });
   }
-  return date.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
 }
 
 const chartOptions = computed((): EChartsOption => {
@@ -294,25 +333,11 @@ const chartOptions = computed((): EChartsOption => {
   };
 });
 
-// A slow bot says so instead of leaving the spinner alone
-const slow = ref(false);
-let slowTimer: ReturnType<typeof setTimeout> | undefined;
-watch(
-  loading,
-  (isLoading) => {
-    clearTimeout(slowTimer);
-    slow.value = false;
-    if (isLoading) slowTimer = setTimeout(() => (slow.value = true), 8_000);
-  },
-  { immediate: true },
-);
-onBeforeUnmount(() => clearTimeout(slowTimer));
-
 const refreshLabel = computed(() => {
   const s = secondsSinceRefresh.value;
   if (s === Infinity) return '';
-  if (s < 60) return t('volumeComparator.agoSeconds', { n: s });
-  return t('volumeComparator.agoMinutes', { n: Math.floor(s / 60) });
+  if (s < 60) return `${s}s ago`;
+  return `${Math.floor(s / 60)}m ago`;
 });
 </script>
 
@@ -343,7 +368,7 @@ const refreshLabel = computed(() => {
             :class="{ 'vc-btn--active': selectedBucket === opt.value }"
             @click="selectedBucket = opt.value"
           >
-            {{ t(`volumeComparator.buckets.${opt.value}`) }}
+            {{ opt.text }}
           </button>
         </div>
 
@@ -383,13 +408,12 @@ const refreshLabel = computed(() => {
       <div v-if="loading && !hasData" class="vc-empty">
         <div class="vc-spinner" />
         <span>{{ t('volumeComparator.loading') }}</span>
-        <small v-if="slow" class="vc-slow">{{ t('volumeComparator.loadingSlow') }}</small>
       </div>
       <div v-else-if="!hasData" class="vc-empty">
         <i-mdi-chart-bar class="vc-empty-icon" />
         <span>{{ t('volumeComparator.noData') }}</span>
         <button class="vc-retry-btn" @click="fetchData">
-          <i-mdi-refresh class="w-3.5 h-3.5" /> {{ t('volumeComparator.retry') }}
+          <i-mdi-refresh class="w-3.5 h-3.5" /> Retry
         </button>
       </div>
       <ECharts
@@ -407,18 +431,13 @@ const refreshLabel = computed(() => {
         <b>ρ</b> = {{ correlation.toFixed(2) }}
       </span>
       <span v-if="avgVolumeRatio !== null" class="vc-stat">
-        {{ t('volumeComparator.avgRatio') }}: {{ avgVolumeRatio.toFixed(3) }}%
+        Avg ratio: {{ avgVolumeRatio.toFixed(3) }}%
       </span>
       <span v-if="avgProfitPerVolume !== null" class="vc-stat">
         {{ t('volumeComparator.profitPerVol') }}: {{ avgProfitPerVolume.toFixed(2) }}%
       </span>
       <span v-if="mergedData" class="vc-stat">
-        {{
-          t('volumeComparator.pairsOn', {
-            n: mergedData.whitelist_count,
-            exchange: mergedData.exchange_name,
-          })
-        }}
+        {{ mergedData.whitelist_count }} pairs · {{ mergedData.exchange_name }}
       </span>
     </div>
   </div>

@@ -1,0 +1,71 @@
+diff --git a/src/components/ftbot/BotBalance.vue b/src/components/ftbot/BotBalance.vue
+index 2c10076d..f5427698 100644
+--- a/src/components/ftbot/BotBalance.vue
++++ b/src/components/ftbot/BotBalance.vue
+@@ -1,6 +1,8 @@
+ <script setup lang="ts">
+ import type { BalanceValues } from '@/types';
++import { useI18n } from 'vue-i18n';
+ 
++const { t } = useI18n();
+ const botStore = useBotStore();
+ const hideSmallBalances = ref(true);
+ const showBotOnly = ref(true);
+@@ -48,15 +50,15 @@ const chartValues = computed<BalanceValues[]>(() => {
+ 
+ const tableFields = computed(() => {
+   return [
+-    { field: 'currency', header: 'Currency' },
++    { field: 'currency', header: t('balance.currency') },
+     {
+       field: showBotOnly.value && canUseBotBalance.value ? 'bot_owned' : 'free',
+-      header: 'Available',
++      header: t('balance.available'),
+       asCurrency: true,
+     },
+     {
+       field: showBotOnly.value && canUseBotBalance.value ? 'est_stake_bot' : 'est_stake',
+-      header: `in ${botStore.activeBot.balance.stake}`,
++      header: `${t('balance.in')} ${botStore.activeBot.balance.stake}`,
+       asCurrency: true,
+     },
+   ];
+@@ -74,12 +76,12 @@ onMounted(() => {
+ <template>
+   <div>
+     <div class="flex flex-wrap flex-row mb-2 justify-end items-center">
+-      <label class="text-xl ms-1 me-auto mb-0">{{ showBotOnly ? 'Bot' : 'Account' }} Balance</label>
++      <label class="text-xl ms-1 me-auto mb-0">{{ t('balance.title') }}</label>
+       <div class="flex flex-row gap-1">
+         <Button
+           v-if="canUseBotBalance"
+           severity="secondary"
+-          :tooltip="!showBotOnly ? 'Showing Account balance' : 'Showing Bot balance'"
++          :tooltip="!showBotOnly ? t('balance.showingAccount') : t('balance.showingBot')"
+           @click="showBotOnly = !showBotOnly"
+         >
+           <template #icon>
+@@ -89,7 +91,7 @@ onMounted(() => {
+         </Button>
+         <Button
+           severity="secondary"
+-          :tooltip="!hideSmallBalances ? 'Hide small balances' : 'Show all balances'"
++          :tooltip="!hideSmallBalances ? t('balance.hideSmall') : t('balance.showAll')"
+           @click="hideSmallBalances = !hideSmallBalances"
+         >
+           <template #icon>
+@@ -121,12 +123,12 @@ onMounted(() => {
+         >
+         <ColumnGroup type="footer">
+           <Row>
+-            <Column footer="Total" f />
++            <Column :footer="t('balance.total')" f />
+             <Column>
+               <template #footer>
+                 <span
+                   class="font-italic"
+-                  :title="`Increase over initial capital of ${formatCurrency(
++                  :title="`${t('balance.increaseOverCapital')} ${formatCurrency(
+                     botStore.activeBot.balance.starting_capital,
+                   )} ${botStore.activeBot.balance.stake}`"
+                 >

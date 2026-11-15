@@ -1,0 +1,19 @@
+diff --git a/src/components/charts/CandleChart.vue b/src/components/charts/CandleChart.vue
+index e72f4ffd..9fd11adc 100644
+--- a/src/components/charts/CandleChart.vue
++++ b/src/components/charts/CandleChart.vue
+@@ -83,10 +83,10 @@ const downColor = props.colorDown;
+ const downBorderColor = props.colorDown;
+ 
+ // Buy / Sell Signal Colors
+-const buySignalColor = '#00ff26';
+-const shortEntrySignalColor = '#00ff26';
+-const sellSignalColor = '#faba25';
+-const shortexitSignalColor = '#faba25';
++const buySignalColor = '#00ff26';       // Long entry: green
++const shortEntrySignalColor = '#ff4444'; // Short entry: red
++const sellSignalColor = '#faba25';       // Long exit: yellow
++const shortexitSignalColor = '#faba25';  // Short exit: yellow
+ 
+ const candleChart = ref<InstanceType<typeof ECharts>>();
+ const chartOptions = ref<EChartsOption>({});

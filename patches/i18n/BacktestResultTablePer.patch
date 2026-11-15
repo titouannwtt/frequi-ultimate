@@ -1,0 +1,55 @@
+diff --git a/src/components/ftbot/BacktestResultTablePer.vue b/src/components/ftbot/BacktestResultTablePer.vue
+index 5ac0845d..ddea728a 100644
+--- a/src/components/ftbot/BacktestResultTablePer.vue
++++ b/src/components/ftbot/BacktestResultTablePer.vue
+@@ -1,5 +1,8 @@
+ <script setup lang="ts">
+ import type { ExitReasonResults, PairResult } from '@/types';
++import { useI18n } from 'vue-i18n';
++
++const { t } = useI18n();
+ 
+ type ResultsType = PairResult | ExitReasonResults;
+ type ResultsTypeWithKey = ResultsType & { key?: string | string[] };
+@@ -72,7 +75,7 @@ const metrics = computed(() =>
+       <div class="flex flex-row w-full justify-between items-center">
+         {{ title }}
+         <div>
+-          Shown metrics:
++          {{ t('backtest.metrics') }}:
+           <MultiSelect
+             id="backtestMetrics"
+             v-model="settingsStore.backtestAdditionalMetrics"
+@@ -90,25 +93,25 @@ const metrics = computed(() =>
+           {{ col.formatter(data['key'], data) }}
+         </template>
+       </Column>
+-      <Column field="trades" header="Trades"></Column>
+-      <Column field="profit_mean" header="Avg Profit %">
++      <Column field="trades" :header="t('periodBreakdown.trades')"></Column>
++      <Column field="profit_mean" :header="t('backtest.avgProfit')">
+         <template #body="{ data, field }">
+           {{ formatPercent(data[field as string], 2) }}
+         </template>
+       </Column>
+-      <Column field="profit_total_abs" :header="`Tot Profit ${props.stakeCurrency}`">
++      <Column field="profit_total_abs" :header="t('backtest.totProfitStake', { stake: props.stakeCurrency })">
+         <template #body="{ data, field }">
+           {{ formatPrice(data[field as string], props.stakeCurrencyDecimals) }}
+         </template>
+       </Column>
+-      <Column field="profit_total" header="Tot Profit %">
++      <Column field="profit_total" :header="t('backtest.totProfitPct')">
+         <template #body="{ data, field }">
+           {{ formatPercent(data[field as string], 2) }}
+         </template>
+       </Column>
+-      <Column field="wins" header="Wins"></Column>
+-      <Column field="draws" header="Draws"></Column>
+-      <Column field="losses" header="Losses"></Column>
++      <Column field="wins" :header="t('backtest.wins')"></Column>
++      <Column field="draws" :header="t('backtest.draws')"></Column>
++      <Column field="losses" :header="t('backtest.losses')"></Column>
+ 
+       <Column v-for="col in metrics" :key="col.field" :field="col.field" :header="col.header">
+         <template #body="{ data, field }">

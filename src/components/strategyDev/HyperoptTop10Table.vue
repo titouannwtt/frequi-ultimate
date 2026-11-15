@@ -52,14 +52,6 @@ function getMetrics(epoch: Record<string, unknown>): Record<string, number> {
   }
   return rm;
 }
-
-function metricText(
-  epoch: Record<string, unknown>,
-  metric: { key: string; fmt: (v: number) => string },
-): string {
-  const value = getMetrics(epoch)[metric.key];
-  return value === undefined || value === null ? '—' : metric.fmt(value);
-}
 </script>
 
 <template>
@@ -134,7 +126,9 @@ function metricText(
                 >
                   <span class="t10-metric-label">{{ mk.label }}</span>
                   <span class="t10-metric-value">
-                    {{ metricText(data as Record<string, unknown>, mk) }}
+                    {{ getMetrics(data as Record<string, unknown>)[mk.key] != null
+                      ? mk.fmt(getMetrics(data as Record<string, unknown>)[mk.key])
+                      : '—' }}
                   </span>
                 </div>
               </div>

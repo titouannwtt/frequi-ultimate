@@ -12,15 +12,11 @@ export interface RunListEntry {
   timestamp: number;
   timeframe?: string;
   timerange?: string;
-  notes?: string | null;
+  notes?: string;
   has_metadata: boolean;
   total_profit_pct?: number;
   total_trades?: number;
   best_sharpe?: number;
-  best_max_dd?: number;
-  best_profit_factor?: number;
-  best_winrate?: number;
-  best_sqn?: number;
   hyperopt_loss?: string;
   epochs_total?: number;
   epochs_completed?: number;
@@ -64,7 +60,7 @@ export interface BacktestSnapshotResponse {
 }
 
 export interface MetadataUpdateRequest {
-  notes?: string | null;
+  notes?: string;
   tags?: string[];
   favorite?: boolean;
 }
@@ -242,12 +238,4 @@ export interface EditorStrategyHints {
   common_indicators: string[];
   parameters: Record<string, string>;
   imports: string[];
-}
-
-/** Histogram of the hyperopt losses, as sent by the analysis endpoint. */
-export interface HistogramData {
-  bins: Array<{ lo: number; hi: number; count: number }>;
-  best_loss: number;
-  best_percentile: number;
-  raw_losses?: number[];
 }

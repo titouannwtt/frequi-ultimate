@@ -99,7 +99,7 @@ const chartOption = computed<EChartsOption>(() => {
   const candleData = rawData.value.map((r) => [r[oIdx], r[cIdx], r[lIdx], r[hIdx]]);
   const volumeData =
     vIdx >= 0
-      ? rawData.value.map((r) => {
+      ? rawData.value.map((r, i) => {
           const o = r[oIdx] as number;
           const c = r[cIdx] as number;
           return {
@@ -222,7 +222,7 @@ const chartOption = computed<EChartsOption>(() => {
   for (const sig of signalCols) {
     const sIdx = colIndex(sig.col);
     if (sIdx < 0) continue;
-    const scatterData: (number | null)[] = rawData.value.map((r) => {
+    const scatterData: (number | null)[] = rawData.value.map((r, i) => {
       const val = r[sIdx];
       if (val && val !== 0) {
         return (r[lIdx] as number) * 0.998;

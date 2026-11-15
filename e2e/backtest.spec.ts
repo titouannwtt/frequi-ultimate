@@ -26,8 +26,9 @@ test.describe('Backtesting', () => {
     await setLoginInfo(page);
   });
   test('Starts webserver mode', async ({ page }) => {
-    await page.goto('/tools/backtest');
+    await page.goto('/backtest');
 
+    await expect(page.locator('a', { hasText: 'Backtest' })).toBeInViewport();
     await expect(page.getByText('Run backtest')).toBeInViewport();
     await expect(page.getByText('Strategy', { exact: true })).toBeInViewport();
 

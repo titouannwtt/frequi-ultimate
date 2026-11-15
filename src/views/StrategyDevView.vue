@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import type { JobStartRequest } from '@/types';
 
 const { t } = useI18n();
 const stratDevStore = useStrategyDevStore();
@@ -55,9 +54,9 @@ function handleUseConfig(path: string) {
 }
 
 const launchConfigOverride = ref<string | null>(null);
-const launchPrefill = ref<Partial<JobStartRequest> | null>(null);
+const launchPrefill = ref<Partial<import('@/types').JobStartRequest> | null>(null);
 
-function handleReconstitute(prefill: Partial<JobStartRequest>) {
+function handleReconstitute(prefill: Partial<import('@/types').JobStartRequest>) {
   launchPrefill.value = prefill;
   showLauncher.value = true;
   stratDevStore.selectRun(null);

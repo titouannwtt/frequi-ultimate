@@ -43,10 +43,7 @@ describe('ProfitPill.vue', () => {
       },
     });
 
-    // Zero is neutral: neither the profit nor the loss style applies.
-    expect(wrapper.get('div').classes()).not.toContain('profit-pill');
-    expect(wrapper.get('div').classes()).not.toContain('profit-pill-profit');
-    expect(wrapper.get('div').classes()).toContain('border-surface-500');
+    expect(wrapper.get('div').classes()).toContain('profit-pill');
     expect(wrapper.get('div').text()).toContain('0.00%');
     expect(wrapper.get('div').text()).toContain('(0)');
     expect(wrapper.get('span').element.title).toBe('BTC');

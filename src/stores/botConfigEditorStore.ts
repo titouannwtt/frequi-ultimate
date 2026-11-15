@@ -1,5 +1,3 @@
-import { useDataSource } from '@/composables/useDataSource';
-import { requestAction } from '@/composables/useActionDialog';
 import type {
   BotConfigResponse,
   ConfigListResponse,
@@ -8,22 +6,15 @@ import type {
 } from '@/types';
 
 /**
- * Store backing the per-bot config editor modal. Targets a *specific* bot by its key (never the
- * "current bot"), reads its merged config + entry file, and writes overrides back to that bot's
- * own entry file via the fork's /stratdev/editor endpoints.
- *
- * Every call goes through the active data source (`proxy`), so it works behind the gateway
- * (whitelisted passthrough, audited, bot name in `X-Confirm-Bot` for the write) and in direct
- * mode alike, with no dependency on the legacy stores.
+ * Store backing the per-bot config editor modal. Targets a *specific* bot by id
+ * (not the active bot), reads its merged config + entry file, and writes overrides
+ * back to that bot's own entry file via the fork's /stratdev/editor endpoints.
  */
 export const useBotConfigEditorStore = defineStore('botConfigEditor', () => {
-  const data = useDataSource();
+  const botStore = useBotStore();
 
   const visible = ref(false);
-  const botKey = ref('');
-  const name = ref('');
-  /** 'live' bots get the write warning of the modal. */
-  const mode = ref<string>('');
+  const botId = ref('');
   const loading = ref(false);
   const saving = ref(false);
   /** null = ok, 'unsupported' = backend lacks the editor endpoints, else error detail. */
@@ -34,30 +25,17 @@ export const useBotConfigEditorStore = defineStore('botConfigEditor', () => {
   const schemaFields = ref<ConfigSchemaField[]>([]);
   const strategies = ref<string[]>([]);
 
+  function getApi(id: string) {
+    const loginInfo = useLoginInfo(id);
+    return useApi(loginInfo, id).api;
+  }
+
   function botName() {
-    return name.value || botKey.value;
+    return botStore.availableBots[botId.value]?.botName ?? botId.value;
   }
 
-  function source() {
-    const s = data.source.value;
-    if (!s) throw new Error('data source not started');
-    return s;
-  }
-
-  function isNotFound(e: unknown): boolean {
-    const err = e as { status?: number | null; message?: string };
-    return err?.status === 404 || /\b404\b/.test(err?.message ?? '');
-  }
-
-  function detailOf(e: unknown): string {
-    const err = e as { message?: string };
-    return err?.message ?? 'error';
-  }
-
-  async function open(key: string, botDisplayName: string, botMode = '') {
-    botKey.value = key;
-    name.value = botDisplayName;
-    mode.value = botMode;
+  async function open(id: string) {
+    botId.value = id;
     visible.value = true;
     await load();
   }
@@ -68,33 +46,34 @@ export const useBotConfigEditorStore = defineStore('botConfigEditor', () => {
     saveError.value = null;
     botConfig.value = null;
     try {
-      const s = source();
-      botConfig.value = await s.proxy<BotConfigResponse>(
-        botKey.value,
-        'GET',
-        '/stratdev/editor/bot-config',
-      );
+      const api = getApi(botId.value);
+      const { data } = await api.get<BotConfigResponse>('/stratdev/editor/bot-config');
+      botConfig.value = data;
 
       // Best-effort: schema catalog for the "add a parameter" picker.
       try {
-        schemaFields.value = await s.proxy<ConfigSchemaField[]>(
-          botKey.value,
-          'GET',
-          '/stratdev/editor/config-fields',
-        );
+        const r = await api.get<ConfigSchemaField[]>('/stratdev/editor/config-fields');
+        schemaFields.value = r.data;
       } catch {
         schemaFields.value = [];
       }
       // Best-effort: strategy list for the dropdown. Use /stratdev/configs (no mode
       // gating) rather than /strategies, which is webserver-mode-only and 404s on a live bot.
       try {
-        const r = await s.proxy<ConfigListResponse>(botKey.value, 'GET', '/stratdev/configs');
-        strategies.value = r.strategies ?? [];
+        const r = await api.get<ConfigListResponse>('/stratdev/configs');
+        strategies.value = r.data.strategies ?? [];
       } catch {
         strategies.value = [];
       }
     } catch (e) {
-      loadError.value = isNotFound(e) ? 'unsupported' : detailOf(e);
+      const err = e as {
+        response?: { status?: number; data?: { detail?: string } };
+        message?: string;
+      };
+      loadError.value =
+        err?.response?.status === 404
+          ? 'unsupported'
+          : (err?.response?.data?.detail ?? err?.message ?? 'error');
     } finally {
       loading.value = false;
     }
@@ -102,56 +81,44 @@ export const useBotConfigEditorStore = defineStore('botConfigEditor', () => {
 
   async function validateContent(content: string): Promise<EditorValidationResult | null> {
     try {
-      return await source().proxy<EditorValidationResult>(
-        botKey.value,
-        'POST',
-        '/stratdev/editor/validate',
-        { content, language: 'json' },
-      );
+      const api = getApi(botId.value);
+      const { data } = await api.post<EditorValidationResult>('/stratdev/editor/validate', {
+        content,
+        language: 'json',
+      });
+      return data;
     } catch {
       return null;
     }
   }
 
-  /**
-   * Write the new entry-file content. Returns true on success. Sent once, never retried.
-   * `typedName` is the bot name the user typed back at the review step (`X-Confirm-Bot`).
-   */
-  async function save(content: string, typedName: string): Promise<boolean> {
+  /** Write the new entry-file content. Returns true on success. */
+  async function save(content: string): Promise<boolean> {
     if (!botConfig.value) return false;
     saving.value = true;
     saveError.value = null;
     try {
-      await source().proxy(
-        botKey.value,
-        'POST',
-        '/stratdev/editor/file',
-        { path: botConfig.value.entry_file, content },
-        { confirmBot: typedName },
-      );
+      const api = getApi(botId.value);
+      await api.post('/stratdev/editor/file', {
+        path: botConfig.value.entry_file,
+        content,
+      });
       return true;
     } catch (e) {
-      saveError.value = detailOf(e);
+      const err = e as { response?: { data?: { detail?: string } }; message?: string };
+      saveError.value = err?.response?.data?.detail ?? err?.message ?? 'error';
       return false;
     } finally {
       saving.value = false;
     }
   }
 
-  /**
-   * "Reload now" and "Stop" after a save go through the one confirmation dialog of the app, for
-   * THIS bot: the modal closes first so the dialog is not hidden behind it.
-   */
-  function reloadBot(): void {
-    const key = botKey.value;
-    close();
-    requestAction(key, { kind: 'reload_config' });
+  async function reloadBot(): Promise<void> {
+    await botStore.botStores[botId.value]?.reloadConfig();
   }
 
-  function stopBot(): void {
-    const key = botKey.value;
-    close();
-    requestAction(key, { kind: 'stop' });
+  async function stopBot(): Promise<void> {
+    await botStore.botStores[botId.value]?.stopBot();
   }
 
   function close() {
@@ -165,8 +132,7 @@ export const useBotConfigEditorStore = defineStore('botConfigEditor', () => {
 
   return {
     visible,
-    botKey,
-    mode,
+    botId,
     loading,
     saving,
     loadError,

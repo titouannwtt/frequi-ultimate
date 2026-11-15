@@ -4,38 +4,23 @@ All notable fork-specific changes are documented here. Upstream FreqUI changes a
 
 This fork is also documented in detail in [`CHANGELOG_FORK.md`](CHANGELOG_FORK.md).
 
-## [2.1.0] - 2026-10-18
+## [2.2.0] - 2026-11-15
 
-### Added
-- Fleet page: a **Profit** block, full width under the four figures. It shows the profit of the ticked bots over 24 h, 7 d, 30 d, 90 d, 1 year, the whole history or a range of days, as two curves that start at zero where the period starts (the closed trades, and the closed trades with the open positions), with the realised and the open profit above them.
-- Fleet page: a **Bots N/M** button opens the list of bots to tick (search, All / None, a quick pick by group). The bots ticked count in the four figures, the Profit block, the table of bots, the positions to watch and the risk; live and dry keep their own figures. The alerts and the verdict still watch the whole mode. The choice is kept in the preferences, and a bot that appears later is ticked.
-- Gateway: `GET /equity` takes `to` (ms) beside `from`, cuts the range first and decimates after, and answers `base`, the value of the curve just before `from`.
-- Charts: the chart of any trade, open or closed, with its entry, top-ups and exit (Bot page, Journal sheet, trade drawer). A closed trade that ended beyond what the bot holds is read from the local history of the gateway.
-- Charts: "Load previous candles" reads the local history back to the open of the trade (gateway only; direct mode says the history needs the gateway). A timeframe change now loads that timeframe, with a loading veil over the previous chart. Needs the gateway route `GET /candles`.
-- Gateway: `GET /candles` serves OHLCV history read from the local candle files (ftcache cache and `user_data/data`), resampled when a timeframe has no file; no call to the exchange.
+### Back to the classic dashboard
+- The 2.0.0 and 2.1.0 redesign (new interface and the optional Rust gateway) is withdrawn. FreqUI Ultimate is again the classic multi-bot dashboard, as it was before the redesign: the 0.9.0 code base plus the fixes made after it.
+- The browser talks to each bot directly again. No gateway is needed: if you ran `frequi-gateway`, you can stop it.
+- Your bot list is kept: the redesign never removed the logins stored in the browser.
+- The version number keeps increasing (2.2.0) so that the in-app update check and `freqtrade install-ui` pick this release over 2.1.0.
+- The redesign stays available for reference under the `v2.0.0` and `v2.1.0` tags.
 
-### Changed
-- Fleet page: the table of bots shows today, 7 days, 30 days and the total of each bot by default, and every ticked bot on a computer (a phone keeps its eight). A table saved with exactly the former six columns follows the new default; any other choice is kept.
+### Since 0.9.0
+- Fleet dashboard performance: the fleet table, the profit curves and the periodic refreshes read one fleet snapshot instead of one request per bot; open trades are virtualised; dashboard charts no longer animate.
+- Partial exits and position adjustments made from the multi-bot trade list are sent to the bot that owns the trade.
+- One failed request no longer marks a bot offline.
+- Profit benchmark: the latent curve is merged from zero, the checkboxes act at once, and the curve no longer reloads in waves.
 
-## [2.0.0] - 2026-10-16
-
-Full redesign of the interface, plus an optional Rust gateway. Upgrade guide: [`docs/UPGRADE.en.md`](docs/UPGRADE.en.md) ([français](docs/UPGRADE.fr.md)). Nothing to re-register: the bot list stays in the browser, and the old `localStorage` keys are never deleted.
-
-### Added
-- **`frequi-gateway`** (`gateway/`): a static Rust service that discovers the bots of the host, reads their trades once, computes the fleet figures and alerts, and serves them over `/gw/v1` (REST and WebSocket) with mandatory authentication, an origin allow list and rate limiting. Optional: without it the UI polls the bots itself (direct mode) and falls back to it by itself.
-- New design system (`src/components/ds`, `src/components/fq`), data layer with a gateway source and a direct source (`src/datasource`), idempotent `localStorage` migration to `fqu2.*` keys (`src/migration`).
-- Packaging (`gateway/packaging`): screen launcher, systemd user unit, Dockerfile (scratch, non-root), example configuration, and `deploy-ui.sh` (backup, additive copy, atomic switch of `index.html`, verification, `--rollback`).
-- GitHub Actions: `rust.yml` (fmt, clippy, tests, cargo-deny, static musl builds), `frontend.yml` (lint, type-check ratchet, unit tests, build, optional Playwright), `contract.yml` (generated types and shared vectors on both sides), `packaging.yml`, `release.yml` (tag to prerelease with the UI archive first, so `freqtrade install-ui` keeps working, then the x86_64 and aarch64 binaries and `SHA256SUMS`).
-
-- Calmer interface: the Fleet opens on one sentence that says what needs attention, then the alerts as cards with their most useful action, "Later" or "Seen"; the rest of the history is behind the bell. Plain labels (Total capital, Open, Drawdown, Top-ups) with the technical term in a tooltip; airy density by default, compact as an option; sensitive actions under "More".
-- Charts show the trade on the price: average entry, current gain, filled entries and top-ups, pending orders (limit or stop trigger) and the closed trades of the pair.
-
-### Changed
-- Version 2.0.0 (UI and gateway). French and English only. Long and short are green and red with an arrow and an L/S letter; exiting a live position needs a one-second press-and-hold; days are cut in Europe/Paris by default.
-- README rewritten around the two modes (direct and gateway).
-
-### Fixed
-- README: `--ui-version github://...` was never supported by `install-ui`; it takes a release name such as `v2.0.0`.
+### Tooling
+- Added `scripts/deploy-ui.sh`: deploys a build into the directory a bot serves the UI from, with a backup and a rollback.
 
 ## [Unreleased]
 
@@ -44,7 +29,7 @@ Full redesign of the interface, plus an optional Rust gateway. Upgrade guide: [`
 - Full English-only README rewrite, emphasizing Freqtrade France brand and the multi-bot dashboard angle.
 - Added [`LLMS.txt`](LLMS.txt) at root for AI indexing.
 - Added [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
-- Added GitHub meta: `.github/FUNDING.yml`.
+- Added GitHub meta: `.github/FUNDING.yml`, `.github/dependabot.yml`, `.github/workflows/ci.yml` (typecheck + lint + build on push/PR).
 
 ## [v0.5.0] — Multi-bot dashboard with glassmorphism design
 
@@ -74,6 +59,5 @@ Snapshot of fork-specific features as of v0.5.0.
 
 For the complete inventory of fork modifications (148 files changed, +38 413 lines), see [`CHANGELOG_FORK.md`](CHANGELOG_FORK.md).
 
-[2.0.0]: https://github.com/titouannwtt/frequi-ultimate/compare/v0.5.0...v2.0.0
 [Unreleased]: https://github.com/titouannwtt/frequi-ultimate/compare/v0.5.0...HEAD
 [v0.5.0]: https://github.com/titouannwtt/frequi-ultimate/releases/tag/v0.5.0

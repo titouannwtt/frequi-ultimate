@@ -495,6 +495,8 @@ onUnmounted(() => {
   if (_durationInterval) clearInterval(_durationInterval);
 });
 
+const hasConsoleContent = computed(() => activeJob.value != null || jobStore.jobHistory.length > 0);
+
 const consoleBadge = computed(() => {
   if (isRunning.value) return 'live';
   if (activeJob.value?.status === JobStatus.failed) return 'error';

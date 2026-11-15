@@ -54,7 +54,7 @@ watch(
 
 onMounted(() => {
   if (botStore.activeBot.exchangeList.length === 0) {
-    botStore.activeBot.getExchangeList().catch(() => undefined);
+    botStore.activeBot.getExchangeList();
   }
 });
 </script>

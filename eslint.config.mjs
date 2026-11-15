@@ -35,7 +35,7 @@ export default defineConfigWithVueTs(
       'vue/component-name-in-template-casing': [
         'error',
         'PascalCase',
-        { registeredComponentsOnly: false, ignores: ['/i-mdi-.*/', '/i-lucide-.*/'] },
+        { registeredComponentsOnly: false, ignores: ['/i-mdi-.*/'] },
       ],
       'vue/block-lang': [
         'error',
@@ -65,14 +65,6 @@ export default defineConfigWithVueTs(
           order: ['script', 'template', 'style'],
         },
       ],
-    },
-  },
-  {
-    // The design system primitives and composites follow the names of docs/redesign/02-design.md
-    // sections 5.1 and 5.2 (`Leaderboard`, `Badge`...)
-    files: ['src/components/ds/**/*.vue', 'src/components/fq/**/*.vue'],
-    rules: {
-      'vue/multi-word-component-names': 'off',
     },
   },
 );

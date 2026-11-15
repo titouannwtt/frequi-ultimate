@@ -1,0 +1,41 @@
+diff --git a/src/components/ftbot/TradeActionsPopover.vue b/src/components/ftbot/TradeActionsPopover.vue
+index b80789e7..d41f6be1 100644
+--- a/src/components/ftbot/TradeActionsPopover.vue
++++ b/src/components/ftbot/TradeActionsPopover.vue
+@@ -2,6 +2,9 @@
+ import type { Trade } from '@/types';
+ import type { BotFeatures } from '@/types/features';
+ import Popover from 'primevue/popover';
++import { useI18n } from 'vue-i18n';
++
++const { t } = useI18n();
+ 
+ withDefaults(
+   defineProps<{
+@@ -58,7 +61,7 @@ const popover = ref<InstanceType<typeof Popover> | null>(null);
+       class="btn-xs"
+       size="small"
+       severity="secondary"
+-      title="Actions"
++      :title="t('enhancedTrades.actions')"
+       @click="popover?.toggle"
+     >
+       <i-mdi-gesture-tap />
+@@ -66,7 +69,7 @@ const popover = ref<InstanceType<typeof Popover> | null>(null);
+     <Popover
+       ref="popover"
+       :target="`btn-actions-${id}`"
+-      :title="`Actions for ${trade.pair}`"
++      :title="t('enhancedTrades.actionsFor', { pair: trade.pair })"
+       triggers="manual"
+       placement="left"
+     >
+@@ -85,7 +88,7 @@ const popover = ref<InstanceType<typeof Popover> | null>(null);
+         class="mt-1 w-full text-start"
+         size="small"
+         severity="secondary"
+-        label="Close Actions menu"
++        :label="t('enhancedTrades.closeActionsMenu')"
+         @click="popover?.hide"
+       >
+         <template #icon><i-mdi-cancel class="me-1" /></template>

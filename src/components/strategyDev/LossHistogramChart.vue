@@ -3,7 +3,6 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
-import type { HistogramData } from '@/types/strategyDev';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { BarChart } from 'echarts/charts';
@@ -15,6 +14,19 @@ import {
 } from 'echarts/components';
 
 use([BarChart, CanvasRenderer, GridComponent, TitleComponent, TooltipComponent, MarkLineComponent]);
+
+interface BinData {
+  lo: number;
+  hi: number;
+  count: number;
+}
+
+interface HistogramData {
+  bins: BinData[];
+  best_loss: number;
+  best_percentile: number;
+  raw_losses?: number[];
+}
 
 const props = defineProps<{
   histogram: HistogramData;
@@ -45,12 +57,12 @@ function fmtNum(v: number): string {
   return v.toFixed(3);
 }
 
-function rebinLosses(losses: number[], nBins: number): HistogramData['bins'] {
+function rebinLosses(losses: number[], nBins: number): BinData[] {
   if (!losses.length || nBins < 1) return [];
   const lo = Math.min(...losses);
   const hi = Math.max(...losses);
   const bw = hi > lo ? (hi - lo) / nBins : 1.0;
-  const bins: HistogramData['bins'] = [];
+  const bins: BinData[] = [];
   for (let i = 0; i < nBins; i++) {
     const edgeLo = lo + i * bw;
     const edgeHi = lo + (i + 1) * bw;

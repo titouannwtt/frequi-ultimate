@@ -11,6 +11,7 @@ export default {
     downloadData: 'Télécharger les données',
     pairlistConfig: 'Config Pairlist',
     lockLayout: 'Verrouiller la disposition',
+    resetLayout: 'Réinitialiser la disposition',
     logout: 'Déconnexion',
     exportPdf: 'Exporter en PDF',
     strategyDev: 'Dev Stratégie',
@@ -169,20 +170,7 @@ export default {
     noData:
       'Données OHLCV non disponibles. Lancez freqtrade download-data pour les pairs whitelist.',
     loading: 'Chargement des données de volume...',
-    loadingSlow: "Chargement toujours en cours : le bot lit l'historique de volume de ses paires.",
     profitPerVol: 'Profit/Vol',
-    retry: 'Réessayer',
-    avgRatio: 'Ratio moyen',
-    pairsOn: '{n} paires · {exchange}',
-    agoSeconds: 'il y a {n} s',
-    agoMinutes: 'il y a {n} min',
-    buckets: {
-      '1d': '1 jour',
-      '3d': '3 jours',
-      '7d': '7 jours',
-      '1M': '1 mois',
-      '1Q': '1 trimestre',
-    },
   },
 
   // Profit cumulé amélioré
@@ -619,7 +607,6 @@ export default {
       resetDb: 'Réinitialiser la base d’abord',
       resetDbHint:
         'Efface les trades dry-run existants avant le seed. Décoché : les trades existants sont conservés et le replay s’arrête au premier trade réel.',
-      resetDbType: 'Saisissez le nom du bot ({name}) pour confirmer l’effacement.',
       detailPeriod: 'Période',
       detailDuration: 'Durée',
       detailPairs: 'Paires',
@@ -659,15 +646,6 @@ export default {
   },
 
   configEditor: {
-    liveBadge: 'LIVE',
-    unset: '(non défini)',
-    reviewTitle: 'Revue des modifications',
-    reviewIntro:
-      'Ces modifications seront écrites dans {file}. Rien n’est appliqué au bot en marche tant que vous ne le rechargez pas.',
-    reviewLive:
-      'Ce bot est en réel avec de l’argent. Une valeur erronée est appliquée au prochain rechargement.',
-    reviewType: 'Tapez le nom du bot ({name}) pour confirmer',
-    reviewConfirm: 'Écrire le fichier',
     title: 'Modifier la configuration',
     loading: 'Chargement de la configuration…',
     unsupportedTitle: 'Backend non compatible',
@@ -2403,7 +2381,6 @@ export default {
 
   // Widgets de monitoring des taux
   rateMonitor: {
-    view: { timeline: 'Chronologie', flow: 'Flux', table: 'Tableau' },
     rateBudget: 'Budget de taux',
     rateBudgetDesc:
       'Budget de limitation de taux — indique combien de jetons sont disponibles pour les appels API. 100% = budget complet, chaque requête consomme des jetons qui se rechargent au fil du temps. En dessous de 30% = risque de blocage 429.',
@@ -2521,8 +2498,7 @@ export default {
   strategyDev: {
     title: 'Développement Stratégie',
     noRunSelected: 'Sélectionnez un run dans la barre latérale pour voir les détails.',
-    selectRunHint: 'Ou lancez un nouveau job depuis le haut de la barre latérale.',
-    openCount: '{n} ouverte | {n} ouvertes',
+    selectRunHint: 'Sélectionnez un run dans la barre latérale',
     shortcutSearch: 'Rechercher',
     shortcutSidebar: 'Barre latérale',
     shortcutNavigate: 'Naviguer les runs',
@@ -2852,6 +2828,8 @@ export default {
     // Mode comparaison
     compareLeft: 'Epoch gauche',
     compareRight: 'Epoch droite',
+    compareParams: 'Différences de paramètres',
+    compareMetric: 'Métrique',
     compareParameter: 'Paramètre',
     compareRankN: 'Rang {n}',
 
@@ -3072,6 +3050,7 @@ export default {
 
     copyJson: 'Copier JSON',
     copyAll: 'Tout copier',
+    copied: 'Copié !',
     expand: 'Développer',
     collapse: 'Réduire',
 
@@ -3398,6 +3377,7 @@ export default {
     corrTopPair: 'Paire Principale',
     corrHighPairs: 'Paires Corr. Élevées',
     corrDiversified: 'Diversifié',
+    corrModerate: 'Modéré',
     corrConcentrated: 'Concentré',
     corrVolumeShare: 'Part du Volume',
     corrMaxLoss: 'Perte Max',

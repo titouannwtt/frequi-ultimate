@@ -1,0 +1,13 @@
+diff --git a/src/components/charts/PlotConfigurator.vue b/src/components/charts/PlotConfigurator.vue
+index a0490b9c..a38a5368 100644
+--- a/src/components/charts/PlotConfigurator.vue
++++ b/src/components/charts/PlotConfigurator.vue
+@@ -176,7 +176,7 @@ function loadConfigFromString() {
+ // }
+ 
+ async function loadPlotConfigFromStrategy() {
+-  if (botStore.activeBot.isWebserverMode && !botStore.activeBot.strategy?.strategy) {
++  if (botStore.activeBot.isWebserverMode && !botStore.activeBot.strategy.strategy) {
+     showAlert(`No strategy selected, can't load plot config.`);
+     return;
+   }

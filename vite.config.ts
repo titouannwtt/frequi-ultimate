@@ -35,10 +35,6 @@ export default defineConfig({
     }),
     Components({
       resolvers: [IconsResolve(), PrimeVueResolver()],
-      // The design system primitives (Badge, Tabs, Menu...) share their names with PrimeVue
-      // components the legacy pages auto-import: they are imported explicitly, never auto-registered.
-      // The composites of src/components/fq follow the same rule.
-      globsExclude: ['src/components/ds/**', 'src/components/fq/**'],
       dts: 'src/components.d.ts',
     }),
     Icons({

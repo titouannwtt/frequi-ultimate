@@ -1,0 +1,12 @@
+diff --git a/src/views/LogView.vue b/src/views/LogView.vue
+index 164b197d..83804c76 100644
+--- a/src/views/LogView.vue
++++ b/src/views/LogView.vue
+@@ -2,6 +2,6 @@
+ 
+ <template>
+   <div class="p-1 md:p-4 md:pe-2 h-full">
+-    <LogViewer />
++    <LogViewerEnhanced />
+   </div>
+ </template>

@@ -1,0 +1,115 @@
+diff --git a/src/components/ftbot/BotControls.vue b/src/components/ftbot/BotControls.vue
+index b7c3aad6..68fca668 100644
+--- a/src/components/ftbot/BotControls.vue
++++ b/src/components/ftbot/BotControls.vue
+@@ -4,9 +4,11 @@ import type { MsgBoxObject } from '@/components/general/MessageBox.vue';
+ import type MessageBox from '@/components/general/MessageBox.vue';
+ 
+ import type { ForceExitPayload } from '@/types';
++import { useI18n } from 'vue-i18n';
+ 
+ import ForceEntryForm from './ForceEntryForm.vue';
+ 
++const { t } = useI18n();
+ const botStore = useBotStore();
+ const forceEnter = ref<boolean>(false);
+ const msgBox = ref<typeof MessageBox>();
+@@ -17,8 +19,8 @@ const isRunning = computed((): boolean => {
+ 
+ const handleStopBot = () => {
+   const msg: MsgBoxObject = {
+-    title: 'Stop Bot',
+-    message: 'Stop the bot loop from running?',
++    title: t('controls.stopBot'),
++    message: t('controls.stopBotConfirm'),
+     accept: () => {
+       botStore.activeBot.stopBot();
+     },
+@@ -28,9 +30,8 @@ const handleStopBot = () => {
+ 
+ const handleStopBuy = () => {
+   const msg: MsgBoxObject = {
+-    title: 'Pause - Stop Entering',
+-    message:
+-      'Freqtrade will continue to handle open trades, but will not enter new trades or increase position sizes.',
++    title: t('controls.pauseStopEntering'),
++    message: t('controls.pause'),
+     accept: () => {
+       botStore.activeBot.stopBuy();
+     },
+@@ -40,8 +41,8 @@ const handleStopBuy = () => {
+ 
+ const handleReloadConfig = () => {
+   const msg: MsgBoxObject = {
+-    title: 'Reload',
+-    message: 'Reload configuration (including strategy)?',
++    title: t('controls.reload'),
++    message: t('controls.reloadConfirm'),
+     accept: () => {
+       console.log('reload...');
+       botStore.activeBot.reloadConfig();
+@@ -52,8 +53,8 @@ const handleReloadConfig = () => {
+ 
+ const handleForceExit = () => {
+   const msg: MsgBoxObject = {
+-    title: 'ForceExit all',
+-    message: 'Really forceexit ALL trades?',
++    title: t('controls.forceExitAll'),
++    message: t('controls.forceExitAllConfirm'),
+     accept: () => {
+       const payload: ForceExitPayload = {
+         tradeid: 'all',
+@@ -72,7 +73,7 @@ const handleForceExit = () => {
+       size="large"
+       severity="secondary"
+       :disabled="!botStore.activeBot.isTrading || isRunning"
+-      title="Start Trading"
++      :title="t('controls.startTrading')"
+       @click="botStore.activeBot.startBot()"
+     >
+       <template #icon>
+@@ -83,7 +84,7 @@ const handleForceExit = () => {
+       size="large"
+       severity="secondary"
+       :disabled="!botStore.activeBot.isTrading || !isRunning"
+-      title="Stop Trading - Also stops handling open trades."
++      :title="t('controls.stopTrading')"
+       @click="handleStopBot()"
+     >
+       <template #icon>
+@@ -94,7 +95,7 @@ const handleForceExit = () => {
+       size="large"
+       severity="secondary"
+       :disabled="!botStore.activeBot.isTrading || !isRunning"
+-      title="Pause (StopBuy) - Freqtrade will continue to handle open trades, but will not enter new trades or increase position sizes."
++      :title="t('controls.pause')"
+       @click="handleStopBuy()"
+     >
+       <template #icon>
+@@ -105,7 +106,7 @@ const handleForceExit = () => {
+       size="large"
+       severity="secondary"
+       :disabled="!botStore.activeBot.isTrading"
+-      title="Reload Config - reloads configuration including strategy, resetting all settings changed on the fly."
++      :title="t('controls.reloadConfig')"
+       @click="handleReloadConfig()"
+     >
+       <template #icon>
+@@ -116,7 +117,7 @@ const handleForceExit = () => {
+       severity="secondary"
+       size="large"
+       :disabled="!botStore.activeBot.isTrading"
+-      title="Force exit all"
++      :title="t('controls.forceExitAll')"
+       @click="handleForceExit()"
+     >
+       <template #icon>
+@@ -128,7 +129,7 @@ const handleForceExit = () => {
+       size="large"
+       severity="secondary"
+       :disabled="!botStore.activeBot.isTrading || !isRunning"
+-      title="Force enter - Immediately enter a trade at an optional price. Exits are then handled according to strategy rules."
++      :title="t('controls.forceEnter')"
+       @click="forceEnter = true"
+     >
+       <template #icon>

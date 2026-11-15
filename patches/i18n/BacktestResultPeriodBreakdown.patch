@@ -1,0 +1,73 @@
+diff --git a/src/components/ftbot/BacktestResultPeriodBreakdown.vue b/src/components/ftbot/BacktestResultPeriodBreakdown.vue
+index fad4821e..749a3882 100644
+--- a/src/components/ftbot/BacktestResultPeriodBreakdown.vue
++++ b/src/components/ftbot/BacktestResultPeriodBreakdown.vue
+@@ -1,5 +1,8 @@
+ <script setup lang="ts">
+ import type { PeriodicBreakdown } from '@/types';
++import { useI18n } from 'vue-i18n';
++
++const { t } = useI18n();
+ 
+ const props = defineProps<{
+   periodicBreakdown: PeriodicBreakdown;
+@@ -7,15 +10,15 @@ const props = defineProps<{
+ 
+ const periodicBreakdownSelections = computed(() => {
+   const res = [
+-    { value: 'day', text: 'Days' },
+-    { value: 'week', text: 'Weeks' },
+-    { value: 'month', text: 'Months' },
++    { value: 'day', text: t('periodBreakdown.days') },
++    { value: 'week', text: t('periodBreakdown.weeks') },
++    { value: 'month', text: t('periodBreakdown.months') },
+   ];
+   if (props.periodicBreakdown.year) {
+-    res.push({ value: 'year', text: 'Years' });
++    res.push({ value: 'year', text: t('periodBreakdown.years') });
+   }
+   if (props.periodicBreakdown.weekday) {
+-    res.push({ value: 'weekday', text: 'Weekday' });
++    res.push({ value: 'weekday', text: t('periodBreakdown.weekday') });
+   }
+ 
+   return res;
+@@ -35,30 +38,30 @@ const periodicBreakdownPeriod = ref<string>('month');
+     option-value="value"
+   ></SelectButton>
+   <DataTable size="small" stacked="sm" :value="periodicBreakdown[periodicBreakdownPeriod]">
+-    <Column field="date" header="Date"></Column>
+-    <Column field="trades" header="Trades">
++    <Column field="date" :header="t('periodBreakdown.date')"></Column>
++    <Column field="trades" :header="t('periodBreakdown.trades')">
+       <template #body="{ data, field }">
+         {{ data[field as string] ?? 'N/A' }}
+       </template>
+     </Column>
+-    <Column field="profit_abs" header="Total Profit" :body="formatPrice">
++    <Column field="profit_abs" :header="t('periodBreakdown.totalProfit')" :body="formatPrice">
+       <template #body="{ data, field }">
+         {{ formatNumber(data[field as string], 2) }}
+       </template>
+     </Column>
+-    <Column field="profit_factor" header="Profit Factor">
++    <Column field="profit_factor" :header="t('periodBreakdown.profitFactor')">
+       <template #body="{ data, field }">
+         {{ formatPrice(data[field as string], 2) }}
+       </template>
+     </Column>
+-    <Column field="wins" header="Wins"></Column>
+-    <Column field="draws" header="Draws"></Column>
+-    <Column field="losses" header="Losses">
++    <Column field="wins" :header="t('backtest.wins')"></Column>
++    <Column field="draws" :header="t('backtest.draws')"></Column>
++    <Column field="losses" :header="t('backtest.losses')">
+       <template #body="{ data }">
+         {{ data.loses ?? data.losses ?? 'N/A' }}
+       </template>
+     </Column>
+-    <Column field="wins" header="Win Rate">
++    <Column field="wins" :header="t('periodBreakdown.winRate')">
+       <template #body="{ data }">
+         {{ formatPercent(data.wins / (data.wins + data.draws + (data.loses ?? data.losses)), 2) }}
+       </template>

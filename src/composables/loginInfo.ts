@@ -17,28 +17,6 @@ const APIBASE = '/api/v1';
 const allLoginInfos = useStorage<AuthStorageMulti>(AUTH_LOGIN_INFO, {});
 
 /**
- * Snapshot of every stored login (data layer of the redesign, src/datasource). Read only: the
- * caller must not mutate the entries.
- */
-export function readLoginInfos(): Readonly<AuthStorageMulti> {
-  return allLoginInfos.value;
-}
-
-/**
- * Write renewed tokens of one bot back to the shared storage, nothing else, so the legacy pages and
- * the data layer keep working from the same tokens. A bot removed meanwhile is not recreated.
- */
-export function patchLoginInfoTokens(
-  botId: string,
-  tokens: { accessToken?: string; refreshToken?: string },
-): void {
-  const current = allLoginInfos.value[botId];
-  if (!current) return;
-  if (tokens.accessToken !== undefined) current.accessToken = tokens.accessToken;
-  if (tokens.refreshToken !== undefined) current.refreshToken = tokens.refreshToken;
-}
-
-/**
  * Get available bots with their descriptors
  */
 export const loggedInBots = computed<BotDescriptors>(() => {
@@ -63,6 +41,8 @@ export const loggedInBots = computed<BotDescriptors>(() => {
 });
 
 export function useLoginInfo(botId: string) {
+  console.log('botId', botId);
+
   const currentInfo = computed({
     get: () => allLoginInfos.value[botId]!,
     set: (val) => (allLoginInfos.value[botId] = val),

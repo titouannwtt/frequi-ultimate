@@ -1,5 +1,7 @@
 import type {
   AllProfitStats,
+  AvailablePairPayload,
+  AvailablePairResult,
   BackgroundTaskStatus,
   BacktestHistoryEntry,
   BacktestMarketChange,
@@ -12,6 +14,7 @@ import type {
   BacktestStatus,
   BalanceInterface,
   BgTaskStarted,
+  BlacklistPayload,
   BlacklistResponse,
   BotDescriptor,
   BotFeatures,
@@ -26,9 +29,12 @@ import type {
   ForceEnterPayload,
   ForceExitPayload,
   FreqAIModelListResult,
+  HyperoptLossListResponse,
   HyperoptLossObj,
   LockResponse,
   LogLine,
+  Markets,
+  MarketsPayload,
   MixTagStats,
   PairCandlePayload,
   PairHistory,
@@ -45,9 +51,17 @@ import type {
   StrategyResult,
   SysInfoResponse,
   CacheStatusResponse,
+  FleetEventsResponse,
   FleetStatusResponse,
+  FleetviewOverviewResponse,
+  FleetviewReconciliationResponse,
+  FleetviewRealignPayload,
+  FleetviewRealignPreview,
+  FleetviewResolvePayload,
+  FleetviewResolveResponse,
   RateMetricsResponse,
   VolumeHistoryResponse,
+  TimeSummaryPayload,
   TimeSummaryReturnValue,
   Trade,
   TradeResponse,
@@ -56,9 +70,9 @@ import type {
   WalletHistoryPerBot,
   WhitelistResponse,
 } from '@/types';
-import { BacktestSteps, LoadingStatus, RunModes } from '@/types';
-import type { PipelineStep } from '@/types/blacklist';
+import { BacktestSteps, LoadingStatus, RunModes, TimeSummaryOptions } from '@/types';
 import type { FleetSnapshotResponse } from '@/types/fleetSnapshot';
+import type { FleetProfitHistoryResponse } from '@/types/fleetProfitHistory';
 import type { FTWsMessage } from '@/types/wsMessageTypes';
 import { FtWsMessageTypes } from '@/types/wsMessageTypes';
 import { markRaw } from 'vue';
@@ -71,7 +85,6 @@ import { closedTradesWanted } from '@/stores/closedTradesPolicy';
 import { blacklistWanted, locksWanted, whitelistWanted } from '@/stores/perBotFetchPolicy';
 import { rememberBotName } from '@/stores/botNameRegistry';
 import { scheduleSlowRefresh } from '@/stores/slowRefreshScheduler';
-import { legacyPollingAllowed } from '@/stores/legacyPollingGate';
 
 /**
  * Runaway guard on the closed-trade pagination, per bot.
@@ -101,9 +114,6 @@ export function createBotSubStore(botId: string, botName: string) {
     }
     return '';
   }
-
-  // Handle of the bot socket, kept outside the state so it can be closed on demand
-  let wsClose: (() => void) | null = null;
 
   const useBotStore = defineStore(botId, {
     state: () => {
@@ -153,7 +163,7 @@ export function createBotSubStore(botId: string, botName: string) {
          */
         slowRefreshedAt: 0,
         pairlistMethods: [] as string[],
-        pairlistPipeline: [] as PipelineStep[],
+        pairlistPipeline: [] as import('@/types/blacklist').PipelineStep[],
         handlerConfigs: [] as Record<string, any>[],
         totalMarketPairs: 0,
         addedPairs: [] as string[],
@@ -211,6 +221,7 @@ export function createBotSubStore(botId: string, botName: string) {
       selectedBacktestMetadata: (state) =>
         state.backtestHistory[state.selectedBacktestResultKey]?.metadata,
       shortAllowed: (state) => state.botState?.short_allowed || false,
+      openTradeCount: (state) => state.openTrades.length,
       isTrading: (state) =>
         state.botState?.runmode === RunModes.LIVE || state.botState?.runmode === RunModes.DRY_RUN,
       timeframe: (state) => state.botState?.timeframe || '',
@@ -242,9 +253,13 @@ export function createBotSubStore(botId: string, botName: string) {
         }
         return false;
       },
+      uiBotName: (state) =>
+        loginInfo.botName.value || botName || state.botState?.bot_name || 'freqtrade',
+      uiBotIcon: () => loginInfo.botIcon.value || '',
       botName: (state) => state.botState?.bot_name || 'freqtrade',
       botId: () => botId,
       allTrades: (state) => [...state.openTrades, ...state.trades] as Trade[],
+      activeLocks: (state) => state.currentLocks?.locks || [],
       profit: (state): ProfitStats | undefined => state.profitAll?.all,
     },
     actions: {
@@ -275,6 +290,16 @@ export function createBotSubStore(botId: string, botName: string) {
       updateBot(updatedBotInfo: Partial<BotDescriptor>) {
         loginInfo.updateBot(updatedBotInfo);
       },
+      setAutoRefresh(newRefreshValue: boolean) {
+        this.autoRefresh = newRefreshValue;
+        // TODO: Investigate this -
+        // this ONLY works if ReloadControl is only visible once,otherwise it triggers twice
+        if (newRefreshValue) {
+          this.refreshFrequent();
+          this.refreshSlow(true);
+        }
+        loginInfo.autoRefresh.value = newRefreshValue;
+      },
       setIsBotOnline(isBotOnline: boolean) {
         if (!this.isBotOnline && isBotOnline && this.isBotLoggedIn) {
           // Bot just came online.
@@ -288,8 +313,6 @@ export function createBotSubStore(botId: string, botName: string) {
         this.isBotOnline = isBotOnline;
       },
       async refreshSlow(forceUpdate = false) {
-        // A ping answered after the user left the legacy pages ends here (`setIsBotOnline`)
-        if (!legacyPollingAllowed()) return;
         if (this.isBotStarting) {
           await this.fetchPing();
           return;
@@ -333,15 +356,11 @@ export function createBotSubStore(botId: string, botName: string) {
         return Promise.resolve();
       },
       async refreshFrequent() {
-        if (!legacyPollingAllowed()) return;
         if (this.isBotStarting) {
           return;
         }
         // Refresh data that's needed in near realtime
         await this.getOpenTrades();
-        // The wait above can outlast the legacy page: a pass already in flight when the user
-        // left must not send its second request to the bot (B209).
-        if (!legacyPollingAllowed()) return;
         // Lock state is read by TradingView and PairLockList only, both through
         // `activeBot`. Polling it for the whole fleet was a quarter of the dashboard's API
         // calls for pixels that never existed. See stores/perBotFetchPolicy.
@@ -702,13 +721,90 @@ export function createBotSubStore(botId: string, botName: string) {
           return Promise.reject(error);
         }
       },
+      async getHyperoptLossList() {
+        try {
+          // Only available starting with 2.40
+          const { data } = await api.get<HyperoptLossListResponse>('/hyperopt-loss');
+          this.hyperoptLossList = data.loss_functions;
+          return Promise.resolve(data);
+        } catch (error) {
+          console.error(error);
+          return Promise.reject(error);
+        }
+      },
       async getExchangeList() {
         try {
           const { data } = await api.get<ExchangeListResult>('/exchanges');
-          // A bot that answers without the list (or a proxy answering something else) gives none
-          const exchanges = Array.isArray(data?.exchanges) ? data.exchanges : [];
-          this.exchangeList = exchanges;
-          return Promise.resolve(exchanges);
+          this.exchangeList = data.exchanges;
+          return Promise.resolve(data.exchanges);
+        } catch (error) {
+          console.error(error);
+          return Promise.reject(error);
+        }
+      },
+      async getAvailablePairs(payload: AvailablePairPayload) {
+        try {
+          const { data } = await api.get<AvailablePairResult>('/available_pairs', {
+            params: { ...payload },
+          });
+          // result is of type AvailablePairResult
+          this.pairlist = data.pairs;
+          this.pairlistWithTimeframe = data.pair_interval;
+          return Promise.resolve(data);
+        } catch (error) {
+          console.error(error);
+          return Promise.reject(error);
+        }
+      },
+      async getMarkets(payload: MarketsPayload) {
+        try {
+          const { data } = await api.get<Markets>(`/markets`, {
+            params: { ...payload },
+          });
+          return Promise.resolve(data);
+        } catch (error) {
+          console.error(error);
+          return Promise.reject(error);
+        }
+      },
+      async getPerformance() {
+        try {
+          const { data } = await api.get<PerformanceEntry[]>('/performance');
+          this.performanceStats = data;
+          return Promise.resolve(data);
+        } catch (error) {
+          console.error(error);
+          return Promise.reject(error);
+        }
+      },
+      async getEntryStats() {
+        // Available with >=2.34
+        try {
+          const { data } = await api.get<EntryStats[]>('/entries');
+          this.entryStats = data;
+          return Promise.resolve(data);
+        } catch (error) {
+          console.error(error);
+          return Promise.reject(error);
+        }
+      },
+      async getExitStats() {
+        // Available with >=2.34
+        try {
+          const { data } = await api.get<ExitStats[]>('/exits');
+          this.exitStats = data;
+          return Promise.resolve(data);
+        } catch (error) {
+          console.error(error);
+          return Promise.reject(error);
+        }
+      },
+      async getMixTagStats() {
+        // Available with >=2.34
+        try {
+          const { data } = await api.get<MixTagStats[]>('/mix_tags');
+          this.mixTagStats = data;
+          return Promise.resolve(data);
         } catch (error) {
           console.error(error);
           return Promise.reject(error);
@@ -764,6 +860,42 @@ export function createBotSubStore(botId: string, botName: string) {
           return Promise.reject(error);
         }
       },
+      async getTimeSummary(aggregation: TimeSummaryOptions, payload: TimeSummaryPayload = {}) {
+        const { timescale = 20 } = payload;
+        try {
+          const { data } = await api.get<TimeSummaryReturnValue>(`/${aggregation}`, {
+            params: { timescale },
+          });
+          if (aggregation === TimeSummaryOptions.daily) {
+            this.dailyStats = data;
+          } else if (aggregation === TimeSummaryOptions.weekly) {
+            this.weeklyStats = data;
+          } else if (aggregation === TimeSummaryOptions.monthly) {
+            this.monthlyStats = data;
+          }
+
+          return Promise.resolve(data);
+        } catch (error) {
+          console.error(error);
+          return Promise.reject(error);
+        }
+      },
+      async getProfitHistory(force = false): Promise<ProfitHistoryResponse | undefined> {
+        // Fork-specific: sampled current-profit series for time-accurate open-inclusive
+        // drawdown curves. Cached 60s (the popover mounts on every hover).
+        if (!force && this.profitHistory && Date.now() - this.profitHistoryFetchedAt < 60_000) {
+          return this.profitHistory;
+        }
+        try {
+          const { data } = await api.get<ProfitHistoryResponse>('/profit_history');
+          this.profitHistory = data;
+          this.profitHistoryFetchedAt = Date.now();
+          return data;
+        } catch {
+          // Older bot without the endpoint - callers fall back to the projected curve.
+          return undefined;
+        }
+      },
       async updateWalletChange() {
         if (!this.botFeatures.walletChange) {
           return;
@@ -792,6 +924,22 @@ export function createBotSubStore(botId: string, botName: string) {
           }
           return Promise.resolve(data);
         } catch (error) {
+          return Promise.reject(error);
+        }
+      },
+      /**
+       * @param limit lines to ask for. The multi-bot console keeps only the last 200 per
+       *   bot, so it asks for 200: downloading 500 and throwing 300 away was 60 % of the
+       *   heaviest payload on the dashboard (29,4 MB over a 4 min capture). Single-bot views
+       *   keep the deeper window.
+       */
+      async getLogs(limit = 500) {
+        try {
+          const { data } = await api.get('/logs', { params: { limit } });
+          this.lastLogs = data.logs;
+          return Promise.resolve(data);
+        } catch (error) {
+          console.error(error);
           return Promise.reject(error);
         }
       },
@@ -848,6 +996,23 @@ export function createBotSubStore(botId: string, botName: string) {
           return Promise.reject(error);
         }
       },
+      // // Post methods
+      // // TODO: Migrate calls to API to a seperate module unrelated to pinia?
+      async startBot() {
+        showAlert('Starting bot...', 'info');
+        try {
+          const { data } = await api.post<Record<string, never>, AxiosResponse<StatusResponse>>(
+            '/start',
+            {},
+          );
+          showAlert(data.status, 'success');
+          return Promise.resolve(data);
+        } catch (error) {
+          const detail = getApiErrorDetail(error);
+          showAlert(`Error starting bot: ${detail}`, 'error');
+          return Promise.reject(error);
+        }
+      },
       async stopBot() {
         showAlert('Stopping bot...', 'info');
         try {
@@ -860,6 +1025,21 @@ export function createBotSubStore(botId: string, botName: string) {
         } catch (error) {
           const detail = getApiErrorDetail(error);
           showAlert(`Error stopping bot: ${detail}`, 'error');
+          return Promise.reject(error);
+        }
+      },
+      async stopBuy() {
+        showAlert('Stopping buy...', 'info');
+        try {
+          const res = await api.post<Record<string, never>, AxiosResponse<StatusResponse>>(
+            '/stopbuy',
+            {},
+          );
+          showAlert(res.data.status, 'success');
+          return Promise.resolve(res);
+        } catch (error) {
+          const detail = getApiErrorDetail(error);
+          showAlert(`Error calling stopbuy: ${detail}`, 'error');
           return Promise.reject(error);
         }
       },
@@ -922,6 +1102,14 @@ export function createBotSubStore(botId: string, botName: string) {
           return Promise.reject(error);
         }
       },
+      async startTrade() {
+        try {
+          const res = await api.post('/start_trade', {});
+          return Promise.resolve(res);
+        } catch (error) {
+          return Promise.reject(error);
+        }
+      },
       async forceexit(payload: ForceExitPayload) {
         showAlert(`Creating exit order for trade ${payload.tradeid}...`, 'info');
         try {
@@ -952,6 +1140,77 @@ export function createBotSubStore(botId: string, botName: string) {
           } catch (error) {
             const detail = getApiErrorDetail(error);
             showAlert(`Error entering ${payload.pair}: ${detail}`, 'error');
+            return Promise.reject(error);
+          }
+        }
+        // Error branchs
+        const error = 'Pair is empty';
+        console.error(error);
+        return Promise.reject(error);
+      },
+      async addBlacklist(payload: BlacklistPayload) {
+        if (payload && payload.blacklist) {
+          showAlert(`Adding ${payload.blacklist} to blacklist...`, 'info');
+          try {
+            const result = await api.post<BlacklistPayload, AxiosResponse<BlacklistResponse>>(
+              '/blacklist',
+              payload,
+            );
+            this.blacklist = result.data.blacklist;
+            if (result.data.errors && Object.keys(result.data.errors).length !== 0) {
+              const { errors } = result.data;
+              Object.keys(errors).forEach((pair) => {
+                showAlert(
+                  `Error while adding pair ${pair} to Blacklist: ${errors[pair]?.error_msg}`,
+                  'error',
+                );
+              });
+            } else {
+              showAlert(`Pair ${payload.blacklist} added.`, 'success');
+            }
+            return Promise.resolve(result.data);
+          } catch (error) {
+            const detail = getApiErrorDetail(error);
+            showAlert(`Error adding pairs to Blacklist: ${detail}`, 'error');
+            return Promise.reject(error);
+          }
+        }
+        // Error branchs
+        const error = 'Pair is empty';
+        console.error(error);
+        return Promise.reject(error);
+      },
+      async deleteBlacklist(blacklistPairs: Array<string>) {
+        if (blacklistPairs) {
+          showAlert(`Removing ${blacklistPairs} from blacklist...`, 'info');
+          try {
+            const result = await api.delete<BlacklistPayload, AxiosResponse<BlacklistResponse>>(
+              '/blacklist',
+              {
+                params: {
+                  pairs_to_delete: blacklistPairs,
+                },
+                paramsSerializer: {
+                  indexes: null,
+                },
+              },
+            );
+            this.blacklist = result.data.blacklist;
+            if (result.data.errors && Object.keys(result.data.errors).length !== 0) {
+              const { errors } = result.data;
+              Object.keys(errors).forEach((pair) => {
+                showAlert(
+                  `Error while removing pair ${pair} from Blacklist: ${errors[pair]?.error_msg}`,
+                  'error',
+                );
+              });
+            } else {
+              showAlert(`Pair ${blacklistPairs} removed.`, 'success');
+            }
+            return Promise.resolve(result.data);
+          } catch (error) {
+            const detail = getApiErrorDetail(error);
+            showAlert(`Error removing pairs from Blacklist: ${detail}`, 'error');
             return Promise.reject(error);
           }
         }
@@ -1126,12 +1385,83 @@ export function createBotSubStore(botId: string, botName: string) {
         }
         delete this.backtestHistory[key];
       },
+      async getSysInfo() {
+        try {
+          const { data } = await api.get<SysInfoResponse>('/sysinfo');
+          this.sysInfo = data;
+          return Promise.resolve(data);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      },
+      async getCacheStatus() {
+        try {
+          const { data } = await api.get<CacheStatusResponse>('/cache_status');
+          this.cacheStatus = data;
+          return Promise.resolve(data);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      },
+      async getFleetStatus() {
+        try {
+          const { data } = await api.get<FleetStatusResponse>('/fleet/status');
+          this.fleetStatus = data;
+          return Promise.resolve(data);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      },
+      async getFleetEvents(since = 0, limit = 50) {
+        try {
+          const { data } = await api.get<FleetEventsResponse>('/fleet/events', {
+            params: { since, limit },
+          });
+          return Promise.resolve(data);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      },
+      async getFleetviewOverview() {
+        const { data } = await api.get<FleetviewOverviewResponse>('/fleetview/overview');
+        return data;
+      },
+      async getFleetviewReconciliation(refresh = false) {
+        const { data } = await api.get<FleetviewReconciliationResponse>(
+          '/fleetview/reconciliation',
+          { params: { refresh } },
+        );
+        return data;
+      },
+      async fleetviewResolve(payload: FleetviewResolvePayload) {
+        const { data } = await api.post<
+          FleetviewResolvePayload,
+          AxiosResponse<FleetviewResolveResponse>
+        >('/fleetview/reconciliation/resolve', payload);
+        return data;
+      },
+      async fleetviewRealign(payload: FleetviewRealignPayload) {
+        const { data } = await api.post<
+          FleetviewRealignPayload,
+          AxiosResponse<FleetviewRealignPreview>
+        >('/fleetview/reconciliation/realign', payload);
+        return data;
+      },
       async getFleetSnapshot(maxAgeS = 0) {
         // One request describing every bot in the fleet, served from the shared daemon
         // (see docs/fleet-snapshot.md). Any bot can answer it, so a client needs only one
         // reachable bot instead of one request per bot per datum.
         const { data } = await api.get<FleetSnapshotResponse>('/fleet/snapshot', {
           params: maxAgeS ? { max_age_s: maxAgeS } : {},
+        });
+        return data;
+      },
+      async getFleetProfitHistory(since = 0) {
+        // Every local bot's decimated profit curve in one request (see
+        // types/fleetProfitHistory.ts). Any bot on the host can answer it, which is what
+        // replaces the per-bot /profit_history fan-out — by far the dashboard's heaviest.
+        const { data } = await api.get<FleetProfitHistoryResponse>('/fleetview/profit_history', {
+          params: since ? { since } : {},
         });
         return data;
       },
@@ -1213,11 +1543,7 @@ export function createBotSubStore(botId: string, botName: string) {
       },
       startWebSocket() {
         if (
-          // Not on a gateway page: a `/show_config` answered after the user left a legacy tool
-          // must not open the bot's own socket
-          !legacyPollingAllowed() ||
           this.websocketStarted === true ||
-          wsClose !== null ||
           this.botStatusAvailable === false ||
           !this.botFeatures.websocketConnection ||
           this.isWebserverMode === true
@@ -1239,7 +1565,6 @@ export function createBotSubStore(botId: string, botName: string) {
             onError: (ws, event) => {
               console.log('onError', event, ws);
               this.websocketStarted = false;
-              wsClose = null;
               close();
             },
             onMessage: this._handleWebsocketMessage,
@@ -1276,14 +1601,6 @@ export function createBotSubStore(botId: string, botName: string) {
             },
           },
         );
-        wsClose = close;
-      },
-      /** Close the bot socket for good (no reconnect); `startWebSocket` opens a fresh one. */
-      stopWebSocket() {
-        if (wsClose === null) return;
-        wsClose();
-        wsClose = null;
-        this.websocketStarted = false;
       },
     },
   });

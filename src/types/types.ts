@@ -1,8 +1,5 @@
 export type ThemeName = 'bootstrap' | 'bootstrap_dark' | 'light' | 'dark';
 
-/** Theme choice of the redesigned UI; 'system' follows prefers-color-scheme. */
-export type ThemeMode = 'system' | 'dark' | 'light';
-
 export enum OrderSides {
   long = 'long',
   short = 'short',

@@ -1,0 +1,48 @@
+diff --git a/src/components/ftbot/PairLockList.vue b/src/components/ftbot/PairLockList.vue
+index f5881e60..b09bb15d 100644
+--- a/src/components/ftbot/PairLockList.vue
++++ b/src/components/ftbot/PairLockList.vue
+@@ -1,6 +1,8 @@
+ <script setup lang="ts">
+ import type { Lock } from '@/types';
++import { useI18n } from 'vue-i18n';
+ 
++const { t } = useI18n();
+ const botStore = useBotStore();
+ 
+ function removePairLock(item: Lock) {
+@@ -16,7 +18,7 @@ function removePairLock(item: Lock) {
+ <template>
+   <div>
+     <div class="mb-2">
+-      <label class="me-auto text-xl">Pair Locks</label>
++      <label class="me-auto text-xl">{{ t('pairLocks.title') }}</label>
+       <Button class="float-end" severity="secondary" @click="botStore.activeBot.getLocks">
+         <template #icon>
+           <i-mdi-refresh />
+@@ -25,20 +27,20 @@ function removePairLock(item: Lock) {
+     </div>
+     <div>
+       <DataTable size="small" :value="botStore.activeBot.activeLocks">
+-        <Column field="pair" header="Pair"></Column>
+-        <Column field="lock_end_timestamp" header="Until">
++        <Column field="pair" :header="t('pairLocks.pair')"></Column>
++        <Column field="lock_end_timestamp" :header="t('pairLocks.until')">
+           <template #body="{ data, field }">
+             {{ timestampms(data[field as string]) }}
+           </template>
+         </Column>
+-        <Column field="reason" header="Reason"></Column>
+-        <Column field="actions" header="Actions">
++        <Column field="reason" :header="t('pairLocks.reason')"></Column>
++        <Column field="actions" :header="t('pairLocks.actions')">
+           <template #body="{ data }">
+             <Button
+               class="btn-xs ms-1"
+               size="small"
+               severity="secondary"
+-              title="Delete Lock"
++              :title="t('pairLocks.deleteLock')"
+               @click="removePairLock(data as Lock)"
+             >
+               <i-mdi-delete />

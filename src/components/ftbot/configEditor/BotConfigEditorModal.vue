@@ -44,14 +44,6 @@ const strategyOverrides = ref<Set<string>>(new Set());
 const addedPaths = ref<string[]>([]);
 const addSearch = ref('');
 const postSaveVisible = ref(false);
-/** Diff review before the write: the name of the bot is typed back to confirm. */
-const reviewVisible = ref(false);
-const typedName = ref('');
-const nameMatches = computed(
-  () =>
-    typedName.value.trim() !== '' &&
-    typedName.value.trim().toLowerCase() === store.botName().trim().toLowerCase(),
-);
 const savedRestartNeeded = ref(false);
 /** True when the entry file failed to load — editing/saving is blocked to avoid overwrites. */
 const loadIncomplete = ref(false);
@@ -70,16 +62,6 @@ function parseEntryContent(text: string): Dict | null {
     return null;
   }
 }
-
-// The rows of the minimal_roi editor: declared before the immediate watch below, which fills them
-// (the editor is mounted after the config was loaded, so that watch runs at once)
-interface RoiRow {
-  id: number;
-  minutes: number;
-  ratio: number;
-}
-const roiRows = ref<RoiRow[]>([]);
-let _roiSeq = 0;
 
 // ── Init when bot config is (re)loaded ──
 watch(
@@ -186,6 +168,13 @@ function setTags(path: string, text: string) {
 
 // ── minimal_roi editor (local id-keyed rows, decoupled from the object form so add /
 // remove / edit are robust against duplicate or colliding "minutes" keys) ──
+interface RoiRow {
+  id: number;
+  minutes: number;
+  ratio: number;
+}
+const roiRows = ref<RoiRow[]>([]);
+let _roiSeq = 0;
 function initRoiRows() {
   const v = effectiveValue('minimal_roi');
   roiRows.value =
@@ -377,24 +366,12 @@ const saveDisabled = computed(
     store.saving,
 );
 
-function openReview() {
-  typedName.value = '';
-  reviewVisible.value = true;
-}
-
-function showValue(v: unknown): string {
-  if (v === undefined) return t('configEditor.unset');
-  return typeof v === 'string' ? v : JSON.stringify(v);
-}
-
 async function doSave() {
-  if (!nameMatches.value) return;
   const content =
     activeTab.value === 'raw' && !rawError.value
       ? rawText.value
       : JSON.stringify(draft.value, null, 4);
-  const ok = await store.save(content, typedName.value.trim());
-  reviewVisible.value = false;
+  const ok = await store.save(content);
   if (ok) {
     savedRestartNeeded.value = changes.value.some((c) => c.restartRequired);
     originalOwn.value = clone(draft.value);
@@ -405,14 +382,17 @@ async function doSave() {
   }
 }
 
-// Both go through the confirmation dialog of the app, for this bot (the editor closes first)
-function reloadNow() {
+async function reloadNow() {
+  await store.reloadBot();
+  showAlert(t('configEditor.reloadTriggered'), 'success');
   postSaveVisible.value = false;
-  store.reloadBot();
+  store.close();
 }
-function stopNow() {
+async function stopNow() {
+  await store.stopBot();
+  showAlert(t('configEditor.stopTriggered'), 'success');
   postSaveVisible.value = false;
-  store.stopBot();
+  store.close();
 }
 
 const sectionIcons: Record<string, Component> = {
@@ -483,15 +463,7 @@ function docUrlFor(path: string, sectionId?: string): string {
       <div class="flex items-center gap-2">
         <i-mdi-tune-vertical class="text-primary-400" />
         <div class="flex flex-col">
-          <span class="font-semibold" data-testid="config-editor-title">
-            {{ t('configEditor.title') }} · {{ store.botName() }}
-            <span
-              v-if="store.mode === 'live'"
-              class="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 align-middle"
-              data-testid="config-editor-live"
-              >{{ t('configEditor.liveBadge') }}</span
-            >
-          </span>
+          <span class="font-semibold">{{ t('configEditor.title') }} — {{ store.botName() }}</span>
           <span v-if="store.botConfig" class="text-xs text-surface-400 font-mono">
             {{ store.botConfig.entry_file }}
           </span>
@@ -835,73 +807,11 @@ function docUrlFor(path: string, sectionId?: string): string {
             size="small"
             :disabled="saveDisabled"
             :loading="store.saving"
-            data-testid="config-editor-save"
-            @click="openReview"
+            @click="doSave"
           >
             <i-mdi-content-save class="mr-1" /> {{ t('configEditor.save') }}
           </Button>
         </div>
-      </div>
-    </template>
-  </Dialog>
-
-  <!-- Review of the diff before the write -->
-  <Dialog
-    v-model:visible="reviewVisible"
-    modal
-    :header="t('configEditor.reviewTitle')"
-    :style="{ width: '34rem' }"
-    :closable="!store.saving"
-  >
-    <div class="flex flex-col gap-2" data-testid="config-editor-review">
-      <p class="text-sm">
-        {{ t('configEditor.reviewIntro', { file: store.botConfig?.entry_file }) }}
-      </p>
-      <p
-        v-if="store.mode === 'live'"
-        class="text-xs rounded p-2 bg-red-500/10 text-red-300"
-        data-testid="config-editor-review-live"
-      >
-        {{ t('configEditor.reviewLive') }}
-      </p>
-      <ul class="text-xs font-mono max-h-[40vh] overflow-y-auto flex flex-col gap-1">
-        <li v-for="c in changes" :key="c.path" data-testid="config-editor-change">
-          <b>{{ c.path }}</b
-          ><span v-if="c.label !== c.path" class="text-surface-400"> ({{ c.label }})</span>:
-          <span class="text-red-300">{{ showValue(c.before) }}</span>
-          →
-          <span class="text-green-300">{{ showValue(c.after) }}</span>
-          <span v-if="c.restartRequired" class="text-orange-300">
-            · {{ t('configEditor.restart') }}</span
-          >
-        </li>
-      </ul>
-      <label class="text-xs flex flex-col gap-1">
-        {{ t('configEditor.reviewType', { name: store.botName() }) }}
-        <InputText
-          v-model="typedName"
-          size="small"
-          autocomplete="off"
-          data-testid="config-editor-typed"
-          @keyup.enter="doSave"
-        />
-      </label>
-    </div>
-    <template #footer>
-      <div class="flex gap-2 justify-end w-full">
-        <Button severity="secondary" size="small" @click="reviewVisible = false">
-          {{ t('configEditor.cancel') }}
-        </Button>
-        <Button
-          severity="danger"
-          size="small"
-          :disabled="!nameMatches"
-          :loading="store.saving"
-          data-testid="config-editor-confirm"
-          @click="doSave"
-        >
-          {{ t('configEditor.reviewConfirm') }}
-        </Button>
       </div>
     </template>
   </Dialog>

@@ -1,0 +1,117 @@
+diff --git a/src/components/ftbot/ForceEntryForm.vue b/src/components/ftbot/ForceEntryForm.vue
+index a9e1253f..b6875445 100644
+--- a/src/components/ftbot/ForceEntryForm.vue
++++ b/src/components/ftbot/ForceEntryForm.vue
+@@ -1,6 +1,7 @@
+ <script setup lang="ts">
+ import type { ForceEnterPayload } from '@/types';
+ import { OrderSides } from '@/types';
++import { useI18n } from 'vue-i18n';
+ 
+ const props = withDefaults(
+   defineProps<{
+@@ -13,6 +14,7 @@ const props = withDefaults(
+   },
+ );
+ const model = defineModel<boolean>();
++const { t } = useI18n();
+ const botStore = useBotStore();
+ 
+ const form = ref<HTMLFormElement>();
+@@ -25,10 +27,10 @@ const ordertype = ref('');
+ const orderSide = ref<OrderSides>(OrderSides.long);
+ const enterTag = ref('force_entry');
+ 
+-const orderTypeOptions = [
+-  { value: 'market', text: 'Market' },
+-  { value: 'limit', text: 'Limit' },
+-];
++const orderTypeOptions = computed(() => [
++  { value: 'market', text: t('forceEntry.market') },
++  { value: 'limit', text: t('forceEntry.limit') },
++]);
+ const orderSideOptions = [
+   { value: 'long', text: 'Long' },
+   { value: 'short', text: 'Short' },
+@@ -93,14 +95,14 @@ const handleEntry = () => {
+ <template>
+   <Dialog
+     v-model:visible="model"
+-    :header="positionIncrease ? `Increasing position for ${pair}` : 'Force entering a trade'"
++    :header="positionIncrease ? t('forceEntry.increasingPosition', { pair }) : t('forceEntry.title')"
+     modal
+     @show="resetForm"
+     @hide="resetForm"
+   >
+     <form ref="form" class="space-y-4 md:min-w-[32rem]" @submit.prevent="handleSubmit">
+       <div v-if="botStore.activeBot.botFeatures.forceEnterShort && botStore.activeBot.shortAllowed">
+-        <label class="block font-medium mb-1">Order direction (Long or Short)</label>
++        <label class="block font-medium mb-1">{{ t('forceEntry.orderDirection') }}</label>
+         <SelectButton
+           v-model="orderSide"
+           :options="orderSideOptions"
+@@ -113,7 +115,7 @@ const handleEntry = () => {
+       </div>
+ 
+       <div>
+-        <label for="pair-input" class="block font-medium mb-1">Pair</label>
++        <label for="pair-input" class="block font-medium mb-1">{{ t('forceEntry.pair') }}</label>
+         <InputText
+           id="pair-input"
+           v-model="selectedPair"
+@@ -126,7 +128,7 @@ const handleEntry = () => {
+       </div>
+ 
+       <div>
+-        <label for="price-input" class="block font-medium mb-1">Price [optional]</label>
++        <label for="price-input" class="block font-medium mb-1">{{ t('forceEntry.price') }}</label>
+         <InputNumber
+           id="price-input"
+           v-model="price"
+@@ -141,7 +143,7 @@ const handleEntry = () => {
+ 
+       <div>
+         <label for="stake-input" class="block font-medium mb-1"
+-          >* Stake-amount in {{ botStore.activeBot.stakeCurrency }} [optional]</label
++          >* {{ t('forceEntry.stakeAmount', { stake: botStore.activeBot.stakeCurrency }) }}</label
+         >
+         <InputNumber
+           id="stake-input"
+@@ -156,7 +158,7 @@ const handleEntry = () => {
+ 
+       <div v-if="botStore.activeBot.botFeatures.forceEnterShort && botStore.activeBot.shortAllowed">
+         <label for="leverage-input" class="block font-medium mb-1"
+-          >Leverage to apply [optional]</label
++          >{{ t('forceEntry.leverage') }}</label
+         >
+         <InputNumber
+           id="leverage-input"
+@@ -171,7 +173,7 @@ const handleEntry = () => {
+       </div>
+ 
+       <div>
+-        <label class="block text-sm font-medium mb-1">OrderType</label>
++        <label class="block text-sm font-medium mb-1">{{ t('forceEntry.orderType') }}</label>
+         <SelectButton
+           v-model="ordertype"
+           :options="orderTypeOptions"
+@@ -184,7 +186,7 @@ const handleEntry = () => {
+ 
+       <div v-if="botStore.activeBot.botFeatures.forceEntryTag">
+         <label for="enterTag-input" class="block text-sm font-medium mb-1"
+-          >* Custom entry tag [optional]</label
++          >* {{ t('forceEntry.entryTag') }}</label
+         >
+         <InputText id="enterTag-input" v-model="enterTag" class="w-full" />
+       </div>
+@@ -192,8 +194,8 @@ const handleEntry = () => {
+ 
+     <template #footer>
+       <div class="flex justify-end gap-2">
+-        <Button severity="secondary" size="small" @click="model = false"> Cancel </Button>
+-        <Button severity="primary" size="small" @click="handleEntry"> Enter Position </Button>
++        <Button severity="secondary" size="small" @click="model = false"> {{ t('forceEntry.cancel') }} </Button>
++        <Button severity="primary" size="small" @click="handleEntry"> {{ t('forceEntry.enterPosition') }} </Button>
+       </div>
+     </template>
+   </Dialog>

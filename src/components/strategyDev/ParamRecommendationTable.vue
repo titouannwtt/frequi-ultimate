@@ -146,6 +146,7 @@ const rows = computed<Row[]>(() => {
       sensitivityColor = 'text-green-400';
     }
 
+    let reasoning = '';
     const reasons: string[] = [];
 
     if (dd?.tendency === 'converging' && !dd?.boundary_cluster) {
@@ -169,7 +170,7 @@ const rows = computed<Row[]>(() => {
     if (stab?.unstable) {
       reasons.push(t('strategyDev.prtReasonUnstable'));
     }
-    const reasoning = reasons.join('. ');
+    reasoning = reasons.join('. ');
 
     let boxPlot: BoxPlotData | null = null;
     if (

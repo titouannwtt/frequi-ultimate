@@ -25,8 +25,7 @@ const locStrategy = computed({
 
 onMounted(() => {
   if (botStore.activeBot.strategyList.length === 0) {
-    // A bot that cannot serve the list (503 on a trading bot) leaves it empty, the page says why
-    botStore.activeBot.getStrategyList().catch(() => undefined);
+    botStore.activeBot.getStrategyList();
   }
 });
 </script>

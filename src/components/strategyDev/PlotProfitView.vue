@@ -50,6 +50,7 @@ const underwaterAbs = computed(
 const underwaterPct = computed(
   () => (props.data.underwater_pct as { date: string; value: number }[]) || [],
 );
+const startingBalance = computed(() => (props.data.starting_balance as number) || 1000);
 
 const chartRefs = ref<InstanceType<typeof ECharts>[]>([]);
 
@@ -167,7 +168,7 @@ const combinedProfitOption = computed<EChartsOption>(() => {
         markArea,
       },
     ],
-  } as EChartsOption;
+  };
 });
 
 const profitPerPairOption = computed<EChartsOption>(() => {

@@ -44,7 +44,7 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
     return 60;
   }
 
-  async function fetchMetricsRaw() {
+  async function fetchMetrics() {
     const thisVersion = ++fetchVersion;
     const w = selectedWindow.value;
     const b = bucketSize(w);
@@ -279,12 +279,13 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
 
   const initialLoaded = ref(false);
 
-  /** The public fetch: the raw one plus the freshness bookkeeping. */
-  async function fetchMetrics() {
-    await fetchMetricsRaw();
+  const origFetchMetrics = fetchMetrics;
+  async function fetchMetricsWithTs() {
+    await origFetchMetrics();
     lastRefreshTs.value = Date.now();
     initialLoaded.value = true;
   }
+  fetchMetrics = fetchMetricsWithTs;
 
   function startRefresh() {
     stopRefresh();
@@ -292,7 +293,7 @@ export function useRateMetrics(opts: UseRateMetricsOptions) {
     // Skipped while the tab is hidden: this poller fans out across every bot, and a
     // dashboard left open in a background tab was spending the fleet's rate-limit
     // budget refreshing numbers nobody was reading.
-    visibleHandle = useVisibleInterval(fetchMetrics, opts.refreshMs ?? 30000);
+    visibleHandle = useVisibleInterval(fetchMetricsWithTs, opts.refreshMs ?? 30000);
     freshnessInterval.value = window.setInterval(() => {
       secondsSinceRefresh.value = lastRefreshTs.value
         ? Math.round((Date.now() - lastRefreshTs.value) / 1000)

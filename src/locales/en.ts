@@ -11,6 +11,7 @@ export default {
     downloadData: 'Download Data',
     pairlistConfig: 'Pairlist Config',
     lockLayout: 'Lock dynamic Layout',
+    resetLayout: 'Reset Layout',
     logout: 'Logout',
     exportPdf: 'Export as PDF',
     strategyDev: 'Strategy Dev',
@@ -161,14 +162,7 @@ export default {
     correlation: 'Correlation',
     noData: 'No OHLCV data available. Run freqtrade download-data for whitelist pairs.',
     loading: 'Loading volume data...',
-    loadingSlow: 'Still loading: the bot is reading the volume history of its pairs.',
     profitPerVol: 'Profit/Vol',
-    retry: 'Retry',
-    avgRatio: 'Avg ratio',
-    pairsOn: '{n} pairs · {exchange}',
-    agoSeconds: '{n} s ago',
-    agoMinutes: '{n} min ago',
-    buckets: { '1d': '1 day', '3d': '3 days', '7d': '7 days', '1M': '1 month', '1Q': '1 quarter' },
   },
 
   // Cumulative Profit Enhanced
@@ -602,7 +596,6 @@ export default {
       resetDb: 'Reset the database first',
       resetDbHint:
         'Wipe existing dry-run trades before seeding. Unchecked: existing trades are kept and the replay stops at the first real trade.',
-      resetDbType: 'Type the bot name ({name}) to confirm the wipe.',
       detailPeriod: 'Period',
       detailDuration: 'Took',
       detailPairs: 'Pairs',
@@ -642,14 +635,6 @@ export default {
   },
 
   configEditor: {
-    liveBadge: 'LIVE',
-    unset: '(not set)',
-    reviewTitle: 'Review the changes',
-    reviewIntro:
-      'These changes will be written to {file}. Nothing is applied to the running bot until you reload it.',
-    reviewLive: 'This is a live bot with real money. A wrong value is applied at the next reload.',
-    reviewType: 'Type the name of the bot ({name}) to confirm',
-    reviewConfirm: 'Write the file',
     title: 'Edit configuration',
     loading: 'Loading configuration…',
     unsupportedTitle: 'Backend not supported',
@@ -2425,7 +2410,6 @@ export default {
 
   // Rate Monitor widgets
   rateMonitor: {
-    view: { timeline: 'Timeline', flow: 'Flow', table: 'Table' },
     rateBudget: 'Rate Budget',
     rateBudgetDesc:
       'Rate limit budget — shows how many tokens are available for API calls. 100% = full budget, each request consumes tokens, they refill over time. Below 30% = risk of 429 rate-limiting.',
@@ -2540,8 +2524,7 @@ export default {
   strategyDev: {
     title: 'Strategy Development',
     noRunSelected: 'Select a run from the sidebar to view details.',
-    selectRunHint: 'Or launch a new job from the top of the sidebar.',
-    openCount: '{n} open | {n} open',
+    selectRunHint: 'Select a run from the sidebar to view details',
     shortcutSearch: 'Search runs',
     shortcutSidebar: 'Toggle sidebar',
     shortcutNavigate: 'Navigate runs',
@@ -2873,6 +2856,8 @@ export default {
     // Compare mode
     compareLeft: 'Left epoch',
     compareRight: 'Right epoch',
+    compareParams: 'Parameter Differences',
+    compareMetric: 'Metric',
     compareParameter: 'Parameter',
     compareRankN: 'Rank {n}',
 
@@ -3103,6 +3088,7 @@ export default {
     // Actions
     copyJson: 'Copy JSON',
     copyAll: 'Copy all',
+    copied: 'Copied!',
     expand: 'Expand',
     collapse: 'Collapse',
 
@@ -3425,6 +3411,7 @@ export default {
     corrTopPair: 'Top Pair',
     corrHighPairs: 'High Corr. Pairs',
     corrDiversified: 'Diversified',
+    corrModerate: 'Moderate',
     corrConcentrated: 'Concentrated',
     corrVolumeShare: 'Volume Share',
     corrMaxLoss: 'Max Loss',

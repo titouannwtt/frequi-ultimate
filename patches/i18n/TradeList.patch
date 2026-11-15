@@ -1,0 +1,150 @@
+diff --git a/src/components/ftbot/TradeList.vue b/src/components/ftbot/TradeList.vue
+index 21976656..051d5887 100644
+--- a/src/components/ftbot/TradeList.vue
++++ b/src/components/ftbot/TradeList.vue
+@@ -1,6 +1,6 @@
+ <script setup lang="ts">
+ import type { MultiDeletePayload, MultiForceExitPayload, Trade } from '@/types';
+-
++import { useI18n } from 'vue-i18n';
+ import { useRouter } from 'vue-router';
+ 
+ enum ModalReasons {
+@@ -10,6 +10,8 @@ enum ModalReasons {
+   cancelOpenOrder,
+ }
+ 
++const { t } = useI18n();
++
+ const props = withDefaults(
+   defineProps<{
+     trades: Trade[];
+@@ -49,43 +51,45 @@ function formatPriceWithDecimals(price: number) {
+   return formatPrice(price, botStore.activeBot.stakeCurrencyDecimals);
+ }
+ 
+-const tableFields = ref([
+-  { field: 'trade_id', header: 'ID' },
+-  { field: 'pair', header: 'Pair' },
+-  { field: 'amount', header: 'Amount' },
+-  props.activeTrades
+-    ? { field: 'stake_amount', header: 'Stake amount' }
+-    : { field: 'max_stake_amount', header: 'Total stake amount' },
+-  {
+-    field: 'open_rate',
+-    header: 'Open rate',
+-  },
+-  {
+-    field: props.activeTrades ? 'current_rate' : 'close_rate',
+-    header: props.activeTrades ? 'Current rate' : 'Close rate',
+-  },
+-  {
+-    field: 'profit',
+-    header: props.activeTrades ? 'Current profit %' : 'Profit %',
+-  },
+-  { field: 'open_timestamp', header: 'Open date' },
+-  ...(props.activeTrades
+-    ? [{ field: 'actions', header: '' }]
+-    : [
+-        { field: 'close_timestamp', header: 'Close date' },
+-        { field: 'exit_reason', header: 'Close Reason' },
+-      ]),
+-]);
+-
+-if (props.multiBotView) {
+-  tableFields.value.unshift({ field: 'botName', header: 'Bot' });
+-}
++const tableFields = computed(() => {
++  const fields = [
++    { field: 'trade_id', header: t('tradeList.id') },
++    { field: 'pair', header: t('tradeList.pair') },
++    { field: 'amount', header: t('tradeList.amount') },
++    props.activeTrades
++      ? { field: 'stake_amount', header: t('tradeList.stakeAmount') }
++      : { field: 'max_stake_amount', header: t('tradeList.totalStakeAmount') },
++    {
++      field: 'open_rate',
++      header: t('tradeList.openRate'),
++    },
++    {
++      field: props.activeTrades ? 'current_rate' : 'close_rate',
++      header: props.activeTrades ? t('tradeList.currentRate') : t('tradeList.closeRate'),
++    },
++    {
++      field: 'profit',
++      header: props.activeTrades ? t('tradeList.currentProfit') : t('tradeList.profit'),
++    },
++    { field: 'open_timestamp', header: t('tradeList.openDate') },
++    ...(props.activeTrades
++      ? [{ field: 'actions', header: '' }]
++      : [
++          { field: 'close_timestamp', header: t('tradeList.closeDate') },
++          { field: 'exit_reason', header: t('tradeList.closeReason') },
++        ]),
++  ];
++  if (props.multiBotView) {
++    fields.unshift({ field: 'botName', header: t('tradeList.bot') });
++  }
++  return fields;
++});
+ 
+ const feOrderType = ref<string | undefined>(undefined);
+ function forceExitHandler(item: Trade, ordertype: string | undefined = undefined) {
+   feTrade.value = item;
+   confirmExitValue.value = ModalReasons.forceExit;
+-  confirmExitText.value = `Really exit trade ${item.trade_id} (Pair ${item.pair}) using ${ordertype} Order?`;
++  confirmExitText.value = t('tradeList.confirmExit', { id: item.trade_id, pair: item.pair, orderType: ordertype });
+   feOrderType.value = ordertype;
+   if (settingsStore.confirmDialog === true) {
+     removeTradeVisible.value = true;
+@@ -128,7 +132,7 @@ function forceExitExecuter() {
+ }
+ 
+ function removeTradeHandler(item: Trade) {
+-  confirmExitText.value = `Really delete trade ${item.trade_id} (Pair ${item.pair})?`;
++  confirmExitText.value = t('tradeList.confirmDelete', { id: item.trade_id, pair: item.pair });
+   confirmExitValue.value = ModalReasons.removeTrade;
+   feTrade.value = item;
+   removeTradeVisible.value = true;
+@@ -140,7 +144,7 @@ function forceExitPartialHandler(item: Trade) {
+ }
+ 
+ function cancelOpenOrderHandler(item: Trade) {
+-  confirmExitText.value = `Cancel open order for trade ${item.trade_id} (Pair ${item.pair})?`;
++  confirmExitText.value = t('tradeList.cancelOpenOrder', { id: item.trade_id, pair: item.pair });
+   feTrade.value = item;
+   confirmExitValue.value = ModalReasons.cancelOpenOrder;
+   removeTradeVisible.value = true;
+@@ -222,7 +226,7 @@ watch(
+             {{ data.trade_id }}
+             {{
+               botStore.activeBot.botFeatures.futures && data.trading_mode !== 'spot'
+-                ? (data.trade_id ? '| ' : '') + (data.is_short ? 'Short' : 'Long')
++                ? (data.trade_id ? '| ' : '') + (data.is_short ? t('tradeList.short') : t('tradeList.long'))
+                 : ''
+             }}
+           </template>
+@@ -272,7 +276,7 @@ watch(
+       <template v-if="showFilter" #paginatorstart> </template>
+       <template v-if="showFilter" #paginatorend>
+         <div class="flex justify-end gap-2 p-2">
+-          <InputText v-model="filterText" placeholder="Filter" class="w-64" size="small" />
++          <InputText v-model="filterText" :placeholder="t('tradeList.filter')" class="w-64" size="small" />
+         </div>
+       </template>
+     </DataTable>
+@@ -289,11 +293,11 @@ watch(
+       position-increase
+     />
+ 
+-    <Dialog v-model:visible="removeTradeVisible" :modal="true" header="Exit trade">
++    <Dialog v-model:visible="removeTradeVisible" :modal="true" :header="t('tradeList.exitTrade')">
+       <p>{{ confirmExitText }}</p>
+       <template #footer>
+-        <Button label="Cancel" @click="removeTradeVisible = false" />
+-        <Button label="Confirm" severity="danger" @click="forceExitExecuter" />
++        <Button :label="t('tradeList.cancel')" @click="removeTradeVisible = false" />
++        <Button :label="t('tradeList.confirm')" severity="danger" @click="forceExitExecuter" />
+       </template>
+     </Dialog>
+   </div>

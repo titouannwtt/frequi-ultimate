@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ECharts from 'vue-echarts';
 import type { EChartsOption } from 'echarts';
@@ -349,7 +349,7 @@ const chartOptions = computed<EChartsOption>(() => {
         z: 20,
       },
     ],
-  } as EChartsOption;
+  };
 });
 
 const hasClamped = computed(() => {

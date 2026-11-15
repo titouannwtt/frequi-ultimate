@@ -40,8 +40,6 @@ yarn-error.log*
 !CODE_OF_CONDUCT.md
 !CONTRIBUTING.md
 !.github/**/*.md
-!docs/redesign/**/*.md
-!docs/UPGRADE.*.md
 
 # Build artifacts (built locally, attached to GitHub Releases instead)
 frequi-dist.tar.gz
@@ -55,10 +53,3 @@ frequi-dist.zip
 *secret*
 *.key
 *.pem
-
-# Redesign screenshots are regenerated locally, not versioned
-docs/redesign/**/*.png
-
-# Rust gateway
-/gateway/target/
-!gateway/**/*.md

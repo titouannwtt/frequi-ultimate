@@ -58,10 +58,11 @@ test.describe('Pairlists', () => {
     await setLoginInfo(page);
   });
   test('Pairlists page', async ({ page }) => {
-    await Promise.all([
-      page.goto('/tools/pairlist-config'),
-      page.waitForResponse('**/pairlists/available*'),
-    ]);
+    page.goto('/');
+
+    const pairlistConfig = page.locator('a', { hasText: 'Pairlist Config' });
+
+    await Promise.all([pairlistConfig.click(), page.waitForResponse('**/pairlists/available*')]);
 
     const volumePairList = page.locator('text="VolumePairList"');
     await expect(volumePairList).toBeVisible();
