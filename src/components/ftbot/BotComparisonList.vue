@@ -33,7 +33,15 @@ import {
   cancelDelayedHide,
   cleanupAllTimeouts,
 } from '@/composables/usePopoverHover';
-import { computePosition, flip, shift, offset, arrow as arrowMiddleware } from '@floating-ui/dom';
+import {
+  autoUpdate,
+  computePosition,
+  flip,
+  shift,
+  size,
+  offset,
+  arrow as arrowMiddleware,
+} from '@floating-ui/dom';
 // Loaded on demand: this modal pulls in Monaco, which is 895 KB gzip — 45% of the
 // dashboard's payload — for an editor that is not on screen until the user opens it.
 const BotConfigEditorModal = defineAsyncComponent(
@@ -185,6 +193,7 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('mouseleave', closeAllPopovers);
   cleanupAllTimeouts();
+  stopAllPopoverTracking();
 });
 
 // Close all info popovers (only one should be open at a time)
@@ -265,6 +274,9 @@ function showAtTarget(
     if (panel) {
       panel.style.opacity = '0';
       panel.style.transition = 'none';
+      // Incrementing z-index so sub-popovers stack above parents (once per show, not per move)
+      popoverZCounter++;
+      panel.style.zIndex = String(popoverZCounter);
     }
     // Give PrimeVue one frame to finalize the panel dimensions
     requestAnimationFrame(async () => {
@@ -274,6 +286,7 @@ function showAtTarget(
         panel.style.transition = 'opacity 0.1s ease-out';
         panel.style.opacity = '1';
       }
+      trackPopover(target, popover);
     });
   });
 }
@@ -293,7 +306,75 @@ function findPopoverPanel(popoverInstance: any): HTMLElement | null {
   return null;
 }
 
-/** Ensure a popover panel has an arrow element, create if missing */
+/** Margin kept between a hover popover and the edges of the window (px) */
+const POPOVER_VIEWPORT_PADDING = 8;
+
+/**
+ * Caps the panel at the height Floating UI found available and lets its content scroll,
+ * so a tall card stays inside the window instead of running off its bottom edge.
+ */
+function fitPanelHeight(panel: HTMLElement, availableHeight: number) {
+  Object.assign(panel.style, {
+    maxHeight: `${Math.max(0, Math.floor(availableHeight))}px`,
+    display: 'flex',
+    flexDirection: 'column',
+  });
+  const content = panel.querySelector<HTMLElement>(':scope > .p-popover-content');
+  if (content) {
+    Object.assign(content.style, { overflowY: 'auto', minHeight: '0' });
+  }
+}
+
+/** Floating UI auto-update cleanups, one per shown popover panel */
+const popoverTracking = new Map<HTMLElement, () => void>();
+
+function stopPopoverTracking(panel: HTMLElement) {
+  popoverTracking.get(panel)?.();
+  popoverTracking.delete(panel);
+}
+
+function stopAllPopoverTracking() {
+  for (const stop of popoverTracking.values()) stop();
+  popoverTracking.clear();
+}
+
+/**
+ * Keeps a shown popover anchored to its trigger while its content loads or the window changes.
+ * PrimeVue re-aligns the panel on its own when the content resizes (below or above the
+ * trigger, with no height limit). This observer is registered after PrimeVue's, so it runs
+ * last and restores the Floating UI placement within the same frame.
+ */
+function trackPopover(
+  reference: HTMLElement,
+  popoverInstance: Parameters<typeof repositionPrimePopover>[1],
+) {
+  const panel = findPopoverPanel(popoverInstance);
+  // PrimeVue re-creates the panel at each show: drop the trackers of panels already gone
+  for (const tracked of [...popoverTracking.keys()]) {
+    if (!tracked.isConnected) stopPopoverTracking(tracked);
+  }
+  if (!panel || !panel.isConnected || !reference.isConnected) return;
+  stopPopoverTracking(panel);
+  const stop = autoUpdate(reference, panel, () => {
+    if (!panel.isConnected || !reference.isConnected) {
+      stopPopoverTracking(panel);
+      return;
+    }
+    void repositionPrimePopover(reference, popoverInstance);
+  });
+  popoverTracking.set(panel, stop);
+}
+
+/**
+ * Ensure a popover panel has an arrow element, create if missing.
+ *
+ * The arrow goes inside `.p-popover-content`, never directly in the panel: PrimeVue's
+ * focustrap directive watches the panel's direct children with a MutationObserver, and a
+ * node appended last there makes it walk `null.nextSibling` (a page error at every show),
+ * while a node inserted earlier would make it move the focus into the popover. The content
+ * element is not positioned, so the arrow is still placed against the panel and is not
+ * clipped when the content scrolls.
+ */
 function ensureArrowElement(panel: HTMLElement): HTMLElement {
   let arrow = panel.querySelector<HTMLElement>('.ft-popover-arrow');
   if (!arrow) {
@@ -303,14 +384,16 @@ function ensureArrowElement(panel: HTMLElement): HTMLElement {
       position: 'absolute',
       width: '8px',
       height: '8px',
-      background: 'inherit',
+      // the content element is transparent in the dark theme: take the panel's colour
+      background: getComputedStyle(panel).backgroundColor,
       borderLeft: '1px solid rgba(255,255,255,0.08)',
       borderTop: '1px solid rgba(255,255,255,0.08)',
       borderRight: 'none',
       borderBottom: 'none',
       zIndex: '-1',
     });
-    panel.appendChild(arrow);
+    const content = panel.querySelector<HTMLElement>(':scope > .p-popover-content');
+    (content ?? panel).appendChild(arrow);
   }
   return arrow;
 }
@@ -323,31 +406,45 @@ async function repositionPrimePopover(reference: HTMLElement, popoverInstance: a
   const arrowEl = ensureArrowElement(panel);
 
   const result = await computePosition(reference, panel, {
+    // the panel is position: fixed, so compute viewport coordinates
+    strategy: 'fixed',
     placement: 'right-start',
     middleware: [
       offset(10),
       flip({
         fallbackPlacements: ['left-start', 'bottom-start', 'top-start'],
-        padding: 8,
+        padding: POPOVER_VIEWPORT_PADDING,
       }),
-      shift({ padding: 8 }),
+      shift({ padding: POPOVER_VIEWPORT_PADDING }),
+      // Never taller than the visible space: the content scrolls inside the panel instead
+      size({
+        padding: POPOVER_VIEWPORT_PADDING,
+        apply({ availableHeight, elements }) {
+          fitPanelHeight(elements.floating, availableHeight);
+        },
+      }),
       arrowMiddleware({ element: arrowEl, padding: 8 }),
     ],
   });
 
-  // Position the panel with incrementing z-index so sub-popovers stack above parents
-  popoverZCounter++;
+  const side = result.placement.split('-')[0]!;
+  // Grow from the trigger side (PrimeVue's own re-alignment sets top or bottom)
+  const origin: Record<string, string> = {
+    top: 'left bottom',
+    right: 'left top',
+    bottom: 'left top',
+    left: 'right top',
+  };
   Object.assign(panel.style, {
     position: 'fixed',
     left: `${Math.round(result.x)}px`,
     top: `${Math.round(result.y)}px`,
     margin: '0',
     transform: 'none',
-    zIndex: String(popoverZCounter),
+    transformOrigin: origin[side] ?? 'left top',
   });
 
   // Position + rotate the arrow
-  const side = result.placement.split('-')[0]!;
   const staticSide: Record<string, string> = {
     top: 'bottom',
     right: 'left',
